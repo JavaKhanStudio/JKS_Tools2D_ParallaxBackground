@@ -93,6 +93,9 @@ public abstract class ParallaxLayer {
 	 */
 	public abstract void draw(Batch batch,float x, float y);
 
+	
+	public abstract void act(float delta) ;
+
 	/**
 	 * get the {@link TileMode} in x direction
 	 * @return TileMode in x direction

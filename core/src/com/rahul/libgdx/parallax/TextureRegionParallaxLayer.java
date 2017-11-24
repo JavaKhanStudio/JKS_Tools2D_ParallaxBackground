@@ -18,8 +18,8 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 {
 
 	private TextureRegion texRegion;
-	private float padLeft=0,padRight=0,padBottom=0,padTop=0;
-	private float regionWidth,regionHeight;
+	private float pad_Left=0, pad_Right=0, pad_Bottom=0, pad_Top=0;
+	private float region_Width,region_Height;
 	private float speed ; 
 	
 	/**
@@ -83,10 +83,14 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	@Override
 	public void draw(Batch batch, float x, float y) 
 	{
-		batch.draw(texRegion, x+padLeft, y+padBottom, getRegionWidth(), getRegionHeight());
+		batch.draw(texRegion, x+pad_Left, y+pad_Bottom, getRegionWidth(), getRegionHeight());
 	}
 	
-	
+	@Override
+	public void act(float delta) 
+	{
+		pad_Left += delta * speed ; 
+	}
 
 	/**
 	 * returns the width of this layer (regionWidth+padLeft+padRight)
@@ -126,56 +130,56 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	 * @return left padding
 	 */
 	public float getPadLeft() 
-	{return padLeft;}
+	{return pad_Left;}
 
 	/**
 	 * sets the left padding
 	 * @param left padding
 	 */
 	public void setPadLeft(float padLeft) 
-	{this.padLeft = padLeft;}
+	{this.pad_Left = padLeft;}
 
 	/**
 	 * get right padding
 	 * @return right padding
 	 */
 	public float getPadRight() 
-	{return padRight;}
+	{return pad_Right;}
 
 	/**
 	 * sets the right padding
 	 * @param right padding
 	 */
 	public void setPadRight(float padRight) 
-	{this.padRight = padRight;}
+	{this.pad_Right = padRight;}
 
 	/**
 	 * get bottom padding
 	 * @return bottom padding
 	 */
 	public float getPadBottom() 
-	{return padBottom;}
+	{return pad_Bottom;}
 
 	/**
 	 * sets the bottom padding
 	 * @param bottom padding
 	 */
 	public void setPadBottom(float padBottom)
-	{this.padBottom = padBottom;}
+	{this.pad_Bottom = padBottom;}
 
 	/**
 	 * get top padding
 	 * @return top padding
 	 */
 	public float getPadTop() 
-	{return padTop;}
+	{return pad_Top;}
 
 	/**
 	 * sets the top padding
 	 * @param top padding
 	 */
 	public void setPadTop(float padTop) 
-	{this.padTop = padTop;}
+	{this.pad_Top = padTop;}
 
 
 	/**
@@ -183,25 +187,27 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	 * @return region width
 	 */
 	public float getRegionWidth() 
-	{return regionWidth;}
+	{return region_Width;}
 	
 	/**
 	 * return the region height of this layer
 	 * @return region height
 	 */
 	public float getRegionHeight() 
-	{return regionHeight;}
+	{return region_Height;}
 
 	
 	private void setRegionWidth(float width)
-	{this.regionWidth = width;}
+	{this.region_Width = width;}
 	
 	private void setRegionHeight(float height)
-	{this.regionHeight = height;}
+	{this.region_Height = height;}
 
 	public float getSpeed() 
 	{return speed;}
 
 	public void setSpeed(float speed) 
 	{this.speed = speed;}
+
+	
 }
