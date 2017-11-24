@@ -67,6 +67,7 @@ public class GameListener extends ApplicationAdapter
 		TextureRegion cloudsRegion = atlas.findRegion("clouds");
 		TextureRegionParallaxLayer cloudsLayer = new TextureRegionParallaxLayer(cloudsRegion, worldWidth, new Vector2(.6f,.6f), WH.width);
 		cloudsLayer.setPadBottom(worldHeight*.467f);
+		cloudsLayer.setSpeed(1);
 		
 		TextureRegion buildingsRegionA = atlas.findRegion("buildings_a");
 		TextureRegionParallaxLayer buildingsLayerA = new TextureRegionParallaxLayer(buildingsRegionA, worldWidth, new Vector2(.75f,.75f), WH.width);
@@ -92,8 +93,9 @@ public class GameListener extends ApplicationAdapter
 		
 		Gdx.gl.glClearColor(clearColor.r,clearColor.g,clearColor.b, clearColor.a);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		
+		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
 		batch.begin();
+		parallaxBackground.act(delta) ; 
 		parallaxBackground.draw(worldCamera, batch);
 		batch.end();
 	}
