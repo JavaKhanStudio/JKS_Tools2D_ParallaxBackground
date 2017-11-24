@@ -31,10 +31,10 @@ TODO
 -----
 * Make the code more efficient by eliminating object creation in draw loop.
 * Make the srcolling work for quadrants other than first quadrant.
-* Make part of the scene movable 
 
 DONE
-* ~~WorldCamera zooming is not considered currently . If one zooms out the world camera , the parallax background layers don't make up the whole screen. Fix it.~~
+* ~~WorldCamera zooming is not considered currently . If one zooms out the world camera , the parallax background layers don't make up the whole screen. Fix it.~~  Rahul Verma
+* ~~ Make part of the scene movable ~~ SBK
 
 
 [1]: https://github.com/libgdx/libgdx

@@ -1,4 +1,4 @@
-package com.rahul.libgdx.parallax.test;
+package jks.tools2d.parallax.test;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -11,16 +11,14 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-import com.rahul.libgdx.parallax.ParallaxBackground;
-import com.rahul.libgdx.parallax.TextureRegionParallaxLayer;
-import com.rahul.libgdx.parallax.Utils;
-import com.rahul.libgdx.parallax.Utils.WH;
-/**
- * Usage example of {@link ParallaxBackground}
- * @author Rahul Verma
- *
- */
-public class GameListener extends ApplicationAdapter
+
+import jks.tools2d.parallax.ParallaxBackground;
+import jks.tools2d.parallax.TextureRegionParallaxLayer;
+import jks.tools2d.parallax.Utils_Parralax;
+import jks.tools2d.parallax.Utils_Parralax.WH;
+
+
+public class Testing_Parallax extends ApplicationAdapter
 {
 	
 	private SpriteBatch batch;
@@ -35,11 +33,14 @@ public class GameListener extends ApplicationAdapter
 	
 	private Color clearColor = new Color(0Xbeaf7bff);
 	
+	private final float screenMovementSpeed = 1.0f;
+	private boolean autoMoveScreen = false ; 
+	
 	
 	@Override
 	public void create () 
 	{
-		worldHeight = Utils.calculateOtherDimension(WH.width, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+		worldHeight = Utils_Parralax.calculateOtherDimension(WH.width, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		
 		batch = new SpriteBatch();
 	    worldCamera = new OrthographicCamera();
@@ -67,7 +68,7 @@ public class GameListener extends ApplicationAdapter
 		TextureRegion cloudsRegion = atlas.findRegion("clouds");
 		TextureRegionParallaxLayer cloudsLayer = new TextureRegionParallaxLayer(cloudsRegion, worldWidth, new Vector2(.6f,.6f), WH.width);
 		cloudsLayer.setPadBottom(worldHeight*.467f);
-		cloudsLayer.setSpeed(1);
+		cloudsLayer.setSpeed(-1.f);
 		
 		TextureRegion buildingsRegionA = atlas.findRegion("buildings_a");
 		TextureRegionParallaxLayer buildingsLayerA = new TextureRegionParallaxLayer(buildingsRegionA, worldWidth, new Vector2(.75f,.75f), WH.width);
@@ -81,7 +82,7 @@ public class GameListener extends ApplicationAdapter
 		TextureRegionParallaxLayer buildingsLayerC = new TextureRegionParallaxLayer(buildingsRegionC, worldWidth, new Vector2(1.3f,1.3f), WH.width);
        	
 		parallaxBackground = new ParallaxBackground();
-    	parallaxBackground.addLayers(mountainsLayerA,mountainsLayerB,cloudsLayer,buildingsLayerA,buildingsLayerB,buildingsLayerC);
+    	parallaxBackground.addLayers(mountainsLayerA,mountainsLayerB,buildingsLayerA,cloudsLayer,buildingsLayerB,buildingsLayerC);
 	}
 
 
@@ -90,6 +91,9 @@ public class GameListener extends ApplicationAdapter
 	{
 		if(inputOn)
 			processInput();
+		
+		if(autoMoveScreen)
+			worldCamera.position.add(screenMovementSpeed, 0, 0);
 		
 		Gdx.gl.glClearColor(clearColor.r,clearColor.g,clearColor.b, clearColor.a);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -100,22 +104,22 @@ public class GameListener extends ApplicationAdapter
 		batch.end();
 	}
 	
-	private final float deltaDimen = 1.5f;
+	
 	
 	private void processInput() 
 	{
-		if(Gdx.input.isKeyPressed(Keys.LEFT)&&(worldCamera.position.x-worldCamera.viewportWidth*.5f>0))
-			worldCamera.position.sub(deltaDimen, 0, 0);
-		else if(Gdx.input.isKeyPressed(Keys.RIGHT))
-			worldCamera.position.add(deltaDimen, 0, 0);
-		else if(Gdx.input.isKeyPressed(Keys.DOWN)&&(worldCamera.position.y-worldCamera.viewportHeight*.5f>0))
-			worldCamera.position.sub(0, deltaDimen, 0);
-		else if(Gdx.input.isKeyPressed(Keys.UP))
-			worldCamera.position.add(0, deltaDimen, 0);
-		else if(Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT))
-			worldCamera.zoom*=1.1f;
-		else if(Gdx.input.isKeyPressed(Keys.ALT_RIGHT))
-			worldCamera.zoom/=1.1f;
+		if(Gdx.input.isKeyPressed(Keys.A)&&(worldCamera.position.x-worldCamera.viewportWidth*.5f>0))
+			worldCamera.position.sub(screenMovementSpeed, 0, 0);
+		if(Gdx.input.isKeyPressed(Keys.D))
+			worldCamera.position.add(screenMovementSpeed, 0, 0);
+		if(Gdx.input.isKeyPressed(Keys.S)&&(worldCamera.position.y-worldCamera.viewportHeight*.5f>0))
+			worldCamera.position.sub(0, screenMovementSpeed, 0);
+		if(Gdx.input.isKeyPressed(Keys.W))
+			worldCamera.position.add(0, screenMovementSpeed, 0);
+		if(Gdx.input.isKeyPressed(Keys.Q))
+			worldCamera.zoom *= 1.1f;
+		else if(Gdx.input.isKeyPressed(Keys.E))
+			worldCamera.zoom /= 1.1f;
 		
 		worldCamera.update();
 		batch.setProjectionMatrix(worldCamera.combined);
@@ -140,7 +144,7 @@ public class GameListener extends ApplicationAdapter
 			if(keycode==Keys.ESCAPE)
 			{Gdx.app.exit(); return true;}
 			
-			if(keycode==Keys.LEFT||keycode==Keys.RIGHT||keycode==Keys.UP||keycode==Keys.DOWN||keycode==Keys.CONTROL_RIGHT||keycode==Keys.ALT_RIGHT)
+			if(keycode==Keys.A||keycode==Keys.D||keycode==Keys.W||keycode==Keys.S||keycode==Keys.E||keycode==Keys.Q)
 			{inputOn = true;}
 			
 			return false;

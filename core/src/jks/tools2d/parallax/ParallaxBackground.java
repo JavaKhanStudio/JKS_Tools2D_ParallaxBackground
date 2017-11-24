@@ -1,4 +1,4 @@
-package com.rahul.libgdx.parallax;
+package jks.tools2d.parallax;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -6,7 +6,6 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
-import com.rahul.libgdx.parallax.ParallaxLayer.TileMode;
 
 
 public class ParallaxBackground 
@@ -17,6 +16,7 @@ public class ParallaxBackground
 	private Matrix4 cachedProjectionView;
 	private Vector3 cachedPos;
 	private float cachedZoom;
+	private final static float half = 0.5f ;
 	
 	/**
 	 * Create a ParallaxBackground without any layers
@@ -67,7 +67,12 @@ public class ParallaxBackground
 		ParallaxLayer layer ; 
 		Vector2 origCameraPos ; 
 		
-		for(int i=0; i<layers.size; i++)
+		float currentX  ; 
+		float currentY ;
+		float currentViewportWidth = worldCamera.viewportWidth * (worldCamera.zoom/2) ;
+		float currentViewportHeight =  worldCamera.viewportHeight * (worldCamera.zoom/2);
+		
+		for(int i = 0; i < layers.size; i++)
 		{
 			layer = layers.get(i);
 			origCameraPos = new Vector2(cachedPos.x,cachedPos.y);
@@ -76,26 +81,35 @@ public class ParallaxBackground
 		    worldCamera.update();
 		    batch.setProjectionMatrix(worldCamera.combined);
 		    
-		    float currentX = (layer.getTileModeX().equals(TileMode.single)?0:((int)((worldCamera.position.x-worldCamera.viewportWidth*.5f*worldCamera.zoom) / layer.getWidth())) * layer.getWidth())-(Math.abs((1-layer.getParallaxRatio().x)%1)*worldCamera.viewportWidth*.5f);
-			
+		    currentX = (layer.isRepeat_tileX() ? 0 : ((int)((worldCamera.position.x-worldCamera.viewportWidth*.5f*worldCamera.zoom) / layer.getWidth())) * layer.getWidth())-(Math.abs((1-layer.getParallaxRatio().x)%1)*worldCamera.viewportWidth*.5f);
+
 		    do
 			{
-		            float currentY =  (layer.getTileModeY().equals(TileMode.single)?0:((int)((worldCamera.position.y-worldCamera.viewportHeight*.5f*worldCamera.zoom) / layer.getHeight())) * layer.getHeight())-(((1-layer.getParallaxRatio().y)%1)*worldCamera.viewportHeight*.5f);
-		           
-		            do
-		            {
-		               if(!((worldCamera.position.x-worldCamera.viewportWidth*worldCamera.zoom*.5f>currentX+layer.getWidth())||(worldCamera.position.x+worldCamera.viewportWidth*worldCamera.zoom*.5f<currentX)||(worldCamera.position.y-worldCamera.viewportHeight*worldCamera.zoom*.5f>currentY+layer.getHeight())||(worldCamera.position.y+worldCamera.viewportHeight*worldCamera.zoom*.5f<currentY)))
-		                   layer.draw(batch, currentX, currentY);
-		               currentY += layer.getHeight();
-		               if(layer.getTileModeY().equals(TileMode.single))
-			        	     break;
-		            } while( currentY < worldCamera.position.y+worldCamera.viewportHeight*worldCamera.zoom*.5f);
-		            	currentX += layer.getWidth();
-		           
-		            if(layer.getTileModeX().equals(TileMode.single))
-		        	    break;
+		    	currentY =  (!layer.isRepeat_tileY() ? 0 : ((int)((worldCamera.position.y-worldCamera.viewportHeight*.5f*worldCamera.zoom) / layer.getHeight())) * layer.getHeight())-(((1-layer.getParallaxRatio().y)%1)*worldCamera.viewportHeight*.5f);
+
+	            do
+	            {
+	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getCurrentX() > currentX + layer.getWidth()) // 
+            		   || (worldCamera.position.x + currentViewportWidth - layer.getCurrentX() < currentX ) 
+            		   || (worldCamera.position.y - currentViewportHeight > currentY + layer.getHeight()) 
+            		   || (worldCamera.position.y + currentViewportHeight < currentY)))
+	               {
+	            	   layer.draw(batch, currentX, currentY);
+	               }
+	                   
+	               currentY += layer.getHeight();
+	               
+	               if(!layer.isRepeat_tileY())
+		        	     break;
+	               
+	            } while(currentY < worldCamera.position.y + currentViewportHeight);
+		            	
+	            currentX += layer.getWidth();
+	           
+	            if(!layer.repeat_tileX)
+	        	    break;
 		            
-		    } while( currentX < worldCamera.position.x+worldCamera.viewportWidth*worldCamera.zoom*.5f);
+		    } while(currentX + layer.getCurrentX() < worldCamera.position.x + currentViewportWidth);
 		     
 		}
 		

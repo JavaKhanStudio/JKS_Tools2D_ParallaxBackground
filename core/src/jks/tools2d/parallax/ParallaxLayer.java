@@ -1,4 +1,4 @@
-package com.rahul.libgdx.parallax;
+package jks.tools2d.parallax;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Vector2;
@@ -13,23 +13,16 @@ import com.badlogic.gdx.math.Vector2;
  * @author Rahul Verma
  *
  */
-public abstract class ParallaxLayer {
-	
-	/**
-	 * 
-	 * TileMode basically represents the way a layer has to repeat itself while scrolling. Parallax Scrolling can be performed infinitely in any direction if TileMode is set to <b>TileMode.repeat</b> in that direction. 
-	 * The layer will just keep on repeating itself. Specifying <b>TileMode.single</b> makes the layer render only once without repeating in a direction
-	 * @author Rahul
-	 *
-	 */
-	public enum TileMode
-	{repeat,single}
-	
+public abstract class ParallaxLayer 
+{
 	
 
 	protected Vector2 parallaxRatio;
-	protected TileMode tileModeX = TileMode.repeat;
-	protected TileMode tileModeY = TileMode.single;
+	protected float currentX = 0 ; 
+	
+
+	protected boolean repeat_tileX = true ;
+	protected boolean repeat_tileY = false ;
 	
 	/**
 	 * returns the width of this layer. This width basically represents segment width of this layer after which it either repeats itself while rendering or just ceases to render further, depending upon the horizontal TileMode (see {@link #setTileModeX(TileMode)})
@@ -51,14 +44,15 @@ public abstract class ParallaxLayer {
      * @return parallax scrolling ratio
      */
 	public Vector2 getParallaxRatio() 
-	{return parallaxRatio;	}
+	{return parallaxRatio;}
 
 
 	/**
      * set the parallax scrolling ratio of this layer in x and y direction.
      * @return parallax scrolling ratio
      */
-	public void setParallaxRatio(Vector2 parallaxRatio) {
+	public void setParallaxRatio(Vector2 parallaxRatio) 
+	{
 		if(this.parallaxRatio == null)
 			this.parallaxRatio = new Vector2();
 		this.parallaxRatio.set(parallaxRatio);
@@ -95,33 +89,23 @@ public abstract class ParallaxLayer {
 
 	
 	public abstract void act(float delta) ;
+	
+	public boolean isRepeat_tileX() 
+	{return repeat_tileX;}
 
-	/**
-	 * get the {@link TileMode} in x direction
-	 * @return TileMode in x direction
-	 */
-	public TileMode getTileModeX() 
-	{return tileModeX;}
+	public void setRepeat_tileX(boolean repeat_tileX) 
+	{this.repeat_tileX = repeat_tileX;}
 
-	/**
-	 * set the {@link TileMode} in x direction
-	 * @param tileModeX TileMode in x direction
-	 */
-	public void setTileModeX(TileMode tileModeX) 
-	{this.tileModeX = tileModeX;}
+	public boolean isRepeat_tileY() 
+	{return repeat_tileY;}
 
-	/**
-	 * get the {@link TileMode} in y direction
-	 * @return TileMode in y direction
-	 */
-	public TileMode getTileModeY()
-	{return tileModeY;}
+	public void setRepeat_tileY(boolean repeat_tileY) 
+	{this.repeat_tileY = repeat_tileY;}
 
-	/**
-	 * set the {@link TileMode} in y direction
-	 * @param tileModeY TileMode in y direction
-	 */
-	public void setTileModeY(TileMode tileModeY)
-	{this.tileModeY = tileModeY;}
+	public float getCurrentX() 
+	{return currentX;}
 
+	public void setCurrentX(float currentX) 
+	{this.currentX = currentX;}
+	
 }

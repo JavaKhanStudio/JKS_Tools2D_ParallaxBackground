@@ -1,12 +1,9 @@
-package com.rahul.libgdx.parallax;
+package jks.tools2d.parallax;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-/**
- * utility class for common calculations
- * @author Rahul Verma
- *
- */
-public class Utils 
+
+
+public class Utils_Parralax 
 {
 
 	public enum WH
@@ -22,6 +19,7 @@ public class Utils
 	public static float calculateOtherDimension(WH wh,float oneDimen,TextureRegion region)
 	{
 		float result=0;
+		
 		switch (wh)
 		{
 		    // height_specified
@@ -32,11 +30,9 @@ public class Utils
 	    	case height:
 	    		result = region.getRegionWidth()*(oneDimen/region.getRegionHeight());
 		    	break;
-		
 		}
 		
 		return result;
-		
 	}
 	
 	/**
@@ -61,7 +57,6 @@ public class Utils
 		}
 		
 		return result;
-		
 	}
 	
 	

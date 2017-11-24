@@ -1,19 +1,12 @@
-package com.rahul.libgdx.parallax;
+package jks.tools2d.parallax;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-import com.rahul.libgdx.parallax.Utils.WH;
 
-/**
- * 
- * TextureRegionParallaxLayer is the direct extension of {@link ParallaxLayer}. It represents a layer in the parallax scrolling background with just one texture region per layer . It still is very nifty and useful as it encapsulates the logic of padding in all the directions.
- * The padding can help you avoid using single full screen texture regions of background.
- * <p>
- * As an example let us suppose you wish to render repeatedly a single cloud region with 1/10  the width and height of the screen . You wish to render it at half way above the screen baseline. An plus no more than one could should be there within one screen width. You can easily achieve this using proper bottom, left and right padding in this layer  
- * @author Rahul
- *
- */
+import jks.tools2d.parallax.Utils_Parralax.WH;
+
+
 public class TextureRegionParallaxLayer extends ParallaxLayer
 {
 
@@ -63,11 +56,11 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 		switch(wh){
 		    case width:
 		    	setRegionWidth(oneDimen);
-		    	setRegionHeight(Utils.calculateOtherDimension(WH.width, oneDimen, this.texRegion));
+		    	setRegionHeight(Utils_Parralax.calculateOtherDimension(WH.width, oneDimen, this.texRegion));
 		    	break;
 		    case height:
 		    	setRegionHeight(oneDimen);
-		    	setRegionWidth(Utils.calculateOtherDimension(WH.height, oneDimen, this.texRegion));
+		    	setRegionWidth(Utils_Parralax.calculateOtherDimension(WH.height, oneDimen, this.texRegion));
 		    	break;
 		}
 		setParallaxRatio(parallaxScrollRatio);
@@ -83,13 +76,13 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	@Override
 	public void draw(Batch batch, float x, float y) 
 	{
-		batch.draw(texRegion, x+pad_Left, y+pad_Bottom, getRegionWidth(), getRegionHeight());
+		batch.draw(texRegion, x+pad_Left + currentX, y+pad_Bottom, getRegionWidth(), getRegionHeight());
 	}
 	
 	@Override
 	public void act(float delta) 
 	{
-		pad_Left += delta * speed ; 
+		currentX += delta * speed ; 
 	}
 
 	/**
