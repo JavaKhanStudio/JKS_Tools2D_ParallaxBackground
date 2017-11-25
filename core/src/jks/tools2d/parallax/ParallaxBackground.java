@@ -71,6 +71,7 @@ public class ParallaxBackground
 		float currentY ;
 		float currentViewportWidth = worldCamera.viewportWidth * (worldCamera.zoom/2) ;
 		float currentViewportHeight =  worldCamera.viewportHeight * (worldCamera.zoom/2);
+		int drawIteration = 0; 
 		
 		for(int i = 0; i < layers.size; i++)
 		{
@@ -81,23 +82,28 @@ public class ParallaxBackground
 		    worldCamera.update();
 		    batch.setProjectionMatrix(worldCamera.combined);
 		    
-		    currentX = (layer.isRepeat_tileX() ? 0 : ((int)((worldCamera.position.x-worldCamera.viewportWidth*.5f*worldCamera.zoom) / layer.getWidth())) * layer.getWidth())-(Math.abs((1-layer.getParallaxRatio().x)%1)*worldCamera.viewportWidth*.5f);
-
+//		    currentX = (layer.isRepeat_tileX() ? 0 : ((int)((worldCamera.position.x-worldCamera.viewportWidth*.5f*worldCamera.zoom) / layer.getWidth())) * layer.getWidth())-(Math.abs((1-layer.getParallaxRatio().x)%1)*worldCamera.viewportWidth*.5f);
+		    
+		    if(layer.getSpeed() != 0)
+		    	currentX = -layer.getWidth() * 1.25f ;
+	    	else
+		    	currentX = 0 ;
+		    
 		    do
 			{
 		    	currentY =  (!layer.isRepeat_tileY() ? 0 : ((int)((worldCamera.position.y-worldCamera.viewportHeight*.5f*worldCamera.zoom) / layer.getHeight())) * layer.getHeight())-(((1-layer.getParallaxRatio().y)%1)*worldCamera.viewportHeight*.5f);
 
 	            do
 	            {
-	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getCurrentX() > currentX + layer.getWidth()) // 
-            		   || (worldCamera.position.x + currentViewportWidth - layer.getCurrentX() < currentX ) 
+	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getCurrentX() > currentX + layer.getWidth())
+            		   || (worldCamera.position.x + currentViewportWidth - layer.getCurrentX() < currentX )  
             		   || (worldCamera.position.y - currentViewportHeight > currentY + layer.getHeight()) 
             		   || (worldCamera.position.y + currentViewportHeight < currentY)))
 	               {
-	            	   layer.draw(batch, currentX, currentY);
+	            	   layer.draw(batch, currentX + layer.decalX, currentY); drawIteration ++ ;
 	               }
 	                   
-	               currentY += layer.getHeight();
+	            	currentY += layer.getHeight();
 	               
 	               if(!layer.isRepeat_tileY())
 		        	     break;
@@ -110,15 +116,15 @@ public class ParallaxBackground
 	        	    break;
 		            
 		    } while(currentX + layer.getCurrentX() < worldCamera.position.x + currentViewportWidth);
-		     
+		    
+		    drawIteration = 0 ; 
 		}
 		
 		worldCamera.combined.set(cachedProjectionView);
 		worldCamera.position.set(cachedPos);
 		worldCamera.zoom = cachedZoom;
 		worldCamera.update();
-		batch.setProjectionMatrix(worldCamera.combined);
-	    
+		batch.setProjectionMatrix(worldCamera.combined);    
 	}
 	
 	public void act(float delta) 
