@@ -17,7 +17,7 @@ allprojects
     version = '1.0'
     ext 
     {
-        appName = 'ParallaxBackgroundTest'
+        appName = 'ParallaxBackground'
         gdxVersion = '1.9.6'
         roboVMVersion = '2.3.1'
     }
@@ -37,7 +37,7 @@ project(":desktop")
 
     dependencies 
     {
-        compile project(":core")
+        compile project(":test")
         compile "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
         compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
         compile "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
@@ -56,13 +56,23 @@ project(":core")
 	}
 }
 
+project(":test") 
+{
+    apply plugin: "java"
+
+    dependencies 
+    {
+     	compile project(":core")
+    }
+}
+
 project(":android") {
     apply plugin: "android"
 
     configurations { natives }
 
     dependencies {
-        compile project(":core")
+        compile project(":test")
         compile "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
         natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi"
         natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"

@@ -16,7 +16,6 @@ public class ParallaxBackground
 	private Matrix4 cachedProjectionView;
 	private Vector3 cachedPos;
 	private float cachedZoom;
-	private final static float half = 0.5f ;
 	
 	/**
 	 * Create a ParallaxBackground without any layers

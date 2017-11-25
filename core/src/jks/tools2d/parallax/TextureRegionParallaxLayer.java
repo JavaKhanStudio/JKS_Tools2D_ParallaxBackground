@@ -53,7 +53,9 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	public TextureRegionParallaxLayer(TextureRegion texRegion, float oneDimen, Vector2 parallaxScrollRatio, WH wh)
 	{
 		this.texRegion = texRegion;
-		switch(wh){
+		
+		switch(wh)
+		{
 		    case width:
 		    	setRegionWidth(oneDimen);
 		    	setRegionHeight(Utils_Parralax.calculateOtherDimension(WH.width, oneDimen, this.texRegion));
@@ -63,6 +65,7 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 		    	setRegionWidth(Utils_Parralax.calculateOtherDimension(WH.height, oneDimen, this.texRegion));
 		    	break;
 		}
+		
 		setParallaxRatio(parallaxScrollRatio);
 	}
 	
@@ -83,10 +86,9 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	public void act(float delta) 
 	{
 		decalX += delta * speed ;
-		if(Math.abs(decalX) >= region_Width) {
+		
+		if(Math.abs(decalX) >= region_Width) 
 			decalX = 0;
-			System.out.println("RESET");
-		}
 	}
 
 	/**
