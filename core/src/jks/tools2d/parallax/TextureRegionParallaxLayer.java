@@ -13,7 +13,7 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	private TextureRegion texRegion;
 	private float pad_Left=0, pad_Right=0, pad_Bottom=0, pad_Top=0;
 	private float region_Width,region_Height;
-	private float speed ; 
+	
 	
 	/**
 	 * Creates a TextureRegionParallaxLayer with regionWidth and regionHeight equal that of the texRegion. Paddings are set to 0.
@@ -76,13 +76,17 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	@Override
 	public void draw(Batch batch, float x, float y) 
 	{
-		batch.draw(texRegion, x+pad_Left + currentX, y+pad_Bottom, getRegionWidth(), getRegionHeight());
+		batch.draw(texRegion, x + pad_Left, y + pad_Bottom, getRegionWidth(), getRegionHeight());
 	}
 	
 	@Override
 	public void act(float delta) 
 	{
-		currentX += delta * speed ; 
+		decalX += delta * speed ;
+		if(Math.abs(decalX) >= region_Width) {
+			decalX = 0;
+			System.out.println("RESET");
+		}
 	}
 
 	/**
@@ -196,11 +200,4 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	private void setRegionHeight(float height)
 	{this.region_Height = height;}
 
-	public float getSpeed() 
-	{return speed;}
-
-	public void setSpeed(float speed) 
-	{this.speed = speed;}
-
-	
 }

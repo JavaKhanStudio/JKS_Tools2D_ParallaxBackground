@@ -34,6 +34,7 @@ public class Testing_Parallax extends ApplicationAdapter
 	private Color clearColor = new Color(0Xbeaf7bff);
 	
 	private final float screenMovementSpeed = 1.0f;
+	private final float cloudSpeed = 5.5f;
 	private boolean autoMoveScreen = false ; 
 	
 	
@@ -64,12 +65,18 @@ public class Testing_Parallax extends ApplicationAdapter
 		TextureRegion mountainsRegionB = atlas.findRegion("mountains_b");
 		TextureRegionParallaxLayer mountainsLayerB = new TextureRegionParallaxLayer(mountainsRegionB, worldWidth*.7275f, new Vector2(.6f,.6f), WH.width);
         mountainsLayerB.setPadLeft(.2725f*worldWidth);
+
+      	TextureRegion cloudsRegionA = atlas.findRegion("clouds");
+		TextureRegionParallaxLayer cloudsLayerA = new TextureRegionParallaxLayer(cloudsRegionA, worldWidth, new Vector2(.6f,.6f), WH.width);
+		cloudsLayerA.setPadBottom(worldHeight*.467f);
+		cloudsLayerA.setSpeed(cloudSpeed);
 		
-		TextureRegion cloudsRegion = atlas.findRegion("clouds");
-		TextureRegionParallaxLayer cloudsLayer = new TextureRegionParallaxLayer(cloudsRegion, worldWidth, new Vector2(.6f,.6f), WH.width);
-		cloudsLayer.setPadBottom(worldHeight*.467f);
-		cloudsLayer.setSpeed(-1.f);
+        TextureRegion cloudsRegionB = atlas.findRegion("clouds");
+		TextureRegionParallaxLayer cloudsLayerB = new TextureRegionParallaxLayer(cloudsRegionB, worldWidth, new Vector2(.6f,.6f), WH.width);
+		cloudsLayerB.setPadBottom(worldHeight*.1f);
+		cloudsLayerB.setSpeed(-cloudSpeed);
 		
+
 		TextureRegion buildingsRegionA = atlas.findRegion("buildings_a");
 		TextureRegionParallaxLayer buildingsLayerA = new TextureRegionParallaxLayer(buildingsRegionA, worldWidth, new Vector2(.75f,.75f), WH.width);
        	
@@ -82,7 +89,7 @@ public class Testing_Parallax extends ApplicationAdapter
 		TextureRegionParallaxLayer buildingsLayerC = new TextureRegionParallaxLayer(buildingsRegionC, worldWidth, new Vector2(1.3f,1.3f), WH.width);
        	
 		parallaxBackground = new ParallaxBackground();
-    	parallaxBackground.addLayers(mountainsLayerA,mountainsLayerB,buildingsLayerA,cloudsLayer,buildingsLayerB,buildingsLayerC);
+    	parallaxBackground.addLayers(mountainsLayerA,mountainsLayerB,buildingsLayerA,cloudsLayerA,cloudsLayerB,buildingsLayerB,buildingsLayerC);
 	}
 
 
