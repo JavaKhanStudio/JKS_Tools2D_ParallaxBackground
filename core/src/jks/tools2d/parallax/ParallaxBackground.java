@@ -1,5 +1,8 @@
 package jks.tools2d.parallax;
 
+import java.util.List;
+
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Matrix4;
@@ -10,13 +13,23 @@ import com.badlogic.gdx.utils.Array;
 
 public class ParallaxBackground 
 {
-	
-
 	public Array<ParallaxLayer> layers;
+	
 	private Matrix4 cachedProjectionView;
 	private Vector3 cachedPos;
 	private float cachedZoom;
+	private float drawingHeight  ;
 	
+	public Array<ParallaxLayer> transferLayers;
+	float transfertLvl = 0 ;
+	float transfertSpeed = 0.1f ; 
+//	float transfertSpeed = 1.1f ;
+	boolean inTransfer ;
+	Color nColor ;
+	Color transfertColor ;
+	
+	
+
 	/**
 	 * Create a ParallaxBackground without any layers
 	 */
@@ -36,9 +49,12 @@ public class ParallaxBackground
 		this.layers.addAll(layers);
 	}
 	
+
+	
     private void initialize() 
     {
     	layers = new Array<ParallaxLayer>();
+    	transferLayers = new Array<ParallaxLayer>();
 		cachedPos = new Vector3();
 		cachedProjectionView = new Matrix4();
 	}
@@ -50,6 +66,19 @@ public class ParallaxBackground
 	public void addLayers(ParallaxLayer... layers)
 	{
 		this.layers.addAll(layers);
+	}
+	
+	public void addLayers(List<TextureRegionParallaxLayer> newLayers) 
+	{
+		for(TextureRegionParallaxLayer texture : newLayers) 
+		{this.layers.add(texture);}
+	}
+	
+	public void addLayersTransfert(List<TextureRegionParallaxLayer> newLayers) 
+	{
+		inTransfer = true ; 
+		for(TextureRegionParallaxLayer texture : newLayers) 
+		{this.transferLayers.add(texture);}
 	}
 	
 	/**
@@ -72,6 +101,8 @@ public class ParallaxBackground
 		float currentViewportHeight =  worldCamera.viewportHeight * (worldCamera.zoom/2);
 		int drawIteration = 0; 
 		
+		
+		
 		for(int i = 0; i < layers.size; i++)
 		{
 			layer = layers.get(i);
@@ -80,8 +111,10 @@ public class ParallaxBackground
 			worldCamera.position.set(origCameraPos.scl(layer.getParallaxRatio()),cachedPos.z);
 		    worldCamera.update();
 		    batch.setProjectionMatrix(worldCamera.combined);
-		    
+
 //		    currentX = (layer.isRepeat_tileX() ? 0 : ((int)((worldCamera.position.x-worldCamera.viewportWidth*.5f*worldCamera.zoom) / layer.getWidth())) * layer.getWidth())-(Math.abs((1-layer.getParallaxRatio().x)%1)*worldCamera.viewportWidth*.5f);
+		    if(inTransfer)
+		    	transfert(batch) ;
 		    
 		    if(layer.getSpeed() != 0)
 		    	currentX = -layer.getWidth() * 1.25f ;
@@ -99,7 +132,13 @@ public class ParallaxBackground
             		   || (worldCamera.position.y - currentViewportHeight > currentY + layer.getHeight()) 
             		   || (worldCamera.position.y + currentViewportHeight < currentY)))
 	               {
-	            	   layer.draw(batch, currentX + layer.decalX, currentY); drawIteration ++ ;
+	            		if(inTransfer)
+	            		{
+	            			batch.setColor(transfertColor);
+	            			transferLayers.get(i).draw(batch, currentX + layer.decalX, currentY + drawingHeight);
+	            			batch.setColor(nColor);
+	            		}
+		            	layer.draw(batch, currentX + layer.decalX, currentY + drawingHeight); drawIteration ++ ;
 	               }
 	                   
 	            	currentY += layer.getHeight();
@@ -123,14 +162,40 @@ public class ParallaxBackground
 		worldCamera.position.set(cachedPos);
 		worldCamera.zoom = cachedZoom;
 		worldCamera.update();
-		batch.setProjectionMatrix(worldCamera.combined);    
+		batch.setColor(1,1,1,1);
+//		batch.setProjectionMatrix(worldCamera.combined); 
+	}
+	
+	public void transfert(Batch batch)
+	{
+		nColor = new Color(1, 1, 1, 1 - transfertLvl);
+		transfertColor = new Color(1, 1, 1, transfertLvl);
 	}
 	
 	public void act(float delta) 
 	{
 		for(int a=0; a < layers.size ; a++) 
 		{layers.get(a).act(delta);}
+		
+		if(inTransfer)
+		{
+			transfertLvl += delta * transfertSpeed ; 
+			
+			if(transfertLvl >= 1)
+			{
+				layers = transferLayers ; 
+				inTransfer = false ; 
+			}
+		}
 	}
 	
+	public float getDrawingHeight() 
+	{return drawingHeight;}
+
+	public void setDrawingHeight(float drawingHeight) 
+	{this.drawingHeight = drawingHeight;}
+
+	public void transfertTo(Array<ParallaxLayer> transferLayers)
+	{this.transferLayers = transferLayers ;}
 
 }

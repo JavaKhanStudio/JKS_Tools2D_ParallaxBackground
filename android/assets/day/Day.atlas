@@ -1,0 +1,68 @@
+Day.png
+size: 3031, 2283
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Clouds
+  rotate: false
+  xy: 1, 587
+  size: 2500, 465
+  orig: 2500, 465
+  offset: 0, 0
+  index: 1
+Green_Front
+  rotate: true
+  xy: 2888, 1
+  size: 1565, 142
+  orig: 1565, 142
+  offset: 0, 0
+  index: 1
+Green_Front
+  rotate: true
+  xy: 2724, 1
+  size: 1569, 162
+  orig: 1569, 162
+  offset: 0, 0
+  index: 2
+Green_Road
+  rotate: true
+  xy: 2503, 1
+  size: 1570, 219
+  orig: 1570, 219
+  offset: 0, 0
+  index: -1
+Mountains
+  rotate: false
+  xy: 1, 1
+  size: 2500, 584
+  orig: 2500, 584
+  offset: 0, 0
+  index: 1
+Mountains
+  rotate: false
+  xy: 1, 1054
+  size: 2500, 426
+  orig: 2500, 426
+  offset: 0, 0
+  index: 2
+Trees
+  rotate: false
+  xy: 1, 2065
+  size: 2500, 217
+  orig: 2500, 217
+  offset: 0, 0
+  index: 1
+Trees
+  rotate: false
+  xy: 1, 1482
+  size: 2500, 302
+  orig: 2500, 302
+  offset: 0, 0
+  index: 2
+Trees
+  rotate: false
+  xy: 1, 1786
+  size: 2500, 277
+  orig: 2500, 277
+  offset: 0, 0
+  index: 3

@@ -1,0 +1,47 @@
+Sunrise.atlas.png
+size: 2502, 2405
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Clouds
+  rotate: false
+  xy: 1, 1353
+  size: 2500, 465
+  orig: 2500, 465
+  offset: 0, 0
+  index: 1
+Mountains
+  rotate: false
+  xy: 1, 1820
+  size: 2500, 584
+  orig: 2500, 584
+  offset: 0, 0
+  index: 1
+Mountains
+  rotate: false
+  xy: 1, 925
+  size: 2500, 426
+  orig: 2500, 426
+  offset: 0, 0
+  index: 2
+Trees
+  rotate: false
+  xy: 1, 584
+  size: 2500, 339
+  orig: 2500, 339
+  offset: 0, 0
+  index: 1
+Trees
+  rotate: false
+  xy: 1, 280
+  size: 2500, 302
+  orig: 2500, 302
+  offset: 0, 0
+  index: 2
+Trees
+  rotate: false
+  xy: 1, 1
+  size: 2500, 277
+  orig: 2500, 277
+  offset: 0, 0
+  index: 3

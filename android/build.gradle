@@ -18,11 +18,15 @@ android {
         exclude 'META-INF/robovm/ios/robovm.xml'
     }
     defaultConfig {
-        applicationId "com.mygdx.game"
+        applicationId "com.mygdx.parallax"
         minSdkVersion 9
         targetSdkVersion 23
         multiDexEnabled  true
     }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.2'
 }
 
 
@@ -72,7 +76,7 @@ task run(type: Exec) {
     }
 
     def adb = path + "/platform-tools/adb"
-    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.mygdx.game/com.mygdx.game.AndroidLauncher'
+    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.mygdx.parallax/com.mygdx.parallax.AndroidLauncher'
 }
 
 // sets up the Android Eclipse project, using the old Ant based build.

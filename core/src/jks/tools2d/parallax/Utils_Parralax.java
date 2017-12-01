@@ -6,9 +6,6 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 public class Utils_Parralax 
 {
 
-	public enum WH
-	{width, height}
-	
 	/**
 	 * calculate new width/height maintaining aspect ratio
 	 * @param wh what oneDimen represents
@@ -16,21 +13,14 @@ public class Utils_Parralax
 	 * @param region the texture region
 	 * @return if oneDimen is width then height else width
 	 */
-	public static float calculateOtherDimension(WH wh,float oneDimen,TextureRegion region)
+	public static float calculateOtherDimension(boolean isWidth,float oneDimen,TextureRegion region)
 	{
 		float result=0;
 		
-		switch (wh)
-		{
-		    // height_specified
-		    case width:
-    		    result = region.getRegionHeight()*(oneDimen/region.getRegionWidth());
-		    	break;
-		    // width_specified
-	    	case height:
-	    		result = region.getRegionWidth()*(oneDimen/region.getRegionHeight());
-		    	break;
-		}
+		if(isWidth)
+		    result = region.getRegionHeight()*(oneDimen/region.getRegionWidth());
+		else
+    		result = region.getRegionWidth()*(oneDimen/region.getRegionHeight());
 		
 		return result;
 	}
@@ -43,18 +33,14 @@ public class Utils_Parralax
 	 * @param originalHeight the original height
 	 * @return if oneDimen is width then height else width
 	 */
-	public static float calculateOtherDimension(WH wh,float oneDimen,float originalWidth, float originalHeight)
+	public static float calculateOtherDimension(boolean isWidth,float oneDimen,float originalWidth, float originalHeight)
 	{
 		float result=0;
-		switch (wh)
-		{
-		    case width:
+		
+		if(isWidth)
     		    result = originalHeight*(oneDimen/originalWidth);
-		    	break;
-	    	case height:
+		else
 	    		result = originalWidth*(oneDimen/originalHeight);
-		    	break;
-		}
 		
 		return result;
 	}
