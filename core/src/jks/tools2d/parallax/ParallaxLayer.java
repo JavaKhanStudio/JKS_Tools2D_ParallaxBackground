@@ -70,14 +70,6 @@ public abstract class ParallaxLayer
 		this.parallaxRatio.set(ratioX,ratioY);
 	}
 
-
-	/**
-	 * draw this layer at specified position. Make sure that when you implement or extend this method you draw this layer within bounds returned by {@link #getWidth()} and {@link #getHeight()}. 
-	 * @param batch the batch used for rendering
-	 * @param pos the position of the lower left corner where rendering should be done
-	 */
-	public void draw(Batch batch,Vector2 pos)
-	{this.draw(batch, pos.x, pos.y);}
 	
 	/**
 	 * draw this layer at specified position. Make sure that when you implement or extend this method you draw this layer within bounds returned by {@link #getWidth()} and {@link #getHeight()}. 

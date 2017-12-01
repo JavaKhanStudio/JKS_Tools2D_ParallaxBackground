@@ -6,6 +6,19 @@ sourceCompatibility = 1.6
 sourceSets.main.java.srcDirs = [ "src/" ]
 
 
+jar {
+    baseName 'parallax'
+}
+
 eclipse.project {
     name = appName + "_Core"
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.1'
+}
+
+dependencies {
+     compile "com.badlogicgames.gdx:gdx:1.9.6"
+     compile "com.badlogicgames.gdx:gdx-box2d:1.9.6"
 }

@@ -4,8 +4,6 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
-import jks.tools2d.parallax.Utils_Parralax.WH;
-
 
 public class TextureRegionParallaxLayer extends ParallaxLayer
 {
@@ -50,20 +48,19 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	 * @param parallaxScrollRatio the parallax ratio in x and y direction
 	 * @param wh what does oneDimen represent
 	 */
-	public TextureRegionParallaxLayer(TextureRegion texRegion, float oneDimen, Vector2 parallaxScrollRatio, WH wh)
+	public TextureRegionParallaxLayer(TextureRegion texRegion, float oneDimen, Vector2 parallaxScrollRatio, boolean isWidth)
 	{
 		this.texRegion = texRegion;
 		
-		switch(wh)
+		if(isWidth)
 		{
-		    case width:
-		    	setRegionWidth(oneDimen);
-		    	setRegionHeight(Utils_Parralax.calculateOtherDimension(WH.width, oneDimen, this.texRegion));
-		    	break;
-		    case height:
-		    	setRegionHeight(oneDimen);
-		    	setRegionWidth(Utils_Parralax.calculateOtherDimension(WH.height, oneDimen, this.texRegion));
-		    	break;
+			setRegionWidth(oneDimen);
+	    	setRegionHeight(Utils_Parralax.calculateOtherDimension(true, oneDimen, this.texRegion));	
+		}
+		else
+		{
+	    	setRegionHeight(oneDimen);
+	    	setRegionWidth(Utils_Parralax.calculateOtherDimension(false, oneDimen, this.texRegion));
 		}
 		
 		setParallaxRatio(parallaxScrollRatio);
