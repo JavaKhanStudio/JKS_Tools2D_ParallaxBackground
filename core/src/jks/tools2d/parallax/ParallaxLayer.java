@@ -19,6 +19,7 @@ public abstract class ParallaxLayer
 
 	protected Vector2 parallaxRatio;
 	protected float decalX = 0 ; 
+	
 	protected float speed ; 
 	
 	protected boolean repeat_tileX = true ;
@@ -105,5 +106,11 @@ public abstract class ParallaxLayer
 
 	public void setSpeed(float speed) 
 	{this.speed = speed;}
+	
+	public float getDecalX() 
+	{return decalX;}
+
+	public void setDecalX(float decalX) 
+	{this.decalX = decalX;}
 	
 }

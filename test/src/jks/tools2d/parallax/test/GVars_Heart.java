@@ -16,6 +16,7 @@ public class GVars_Heart
 	public static boolean autoMoveScreen = true ; 
 	public static SpriteBatch batch;
 	public static ParallaxBackground parallaxBackground;
+	public static ParallaxBackground parallaxBackground_Road;
 	
 	public static void render()
 	{
@@ -31,6 +32,12 @@ public class GVars_Heart
 		batch.begin();
 		parallaxBackground.act(delta) ; 
 		parallaxBackground.draw(worldCamera, batch);
+		
+		if(parallaxBackground_Road != null)
+		{
+			parallaxBackground_Road.act(delta) ; 
+			parallaxBackground_Road.draw(worldCamera, batch);
+		}
 		batch.end();
 	}
 }
