@@ -1,4 +1,4 @@
-package jks.tools2d.parallax.test;
+package jks.tools2d.parallax.mains;
 
 import static jks.tools2d.parallax.test.GVars_Heart.batch;
 import static jks.tools2d.parallax.test.GVars_Heart.parallaxBackground;
@@ -16,6 +16,7 @@ import com.badlogic.gdx.math.Vector2;
 import jks.tools2d.parallax.ParallaxBackground;
 import jks.tools2d.parallax.TextureRegionParallaxLayer;
 import jks.tools2d.parallax.Utils_Parralax;
+import jks.tools2d.parallax.test.GVars_Heart;
 import jks.tools2d.parallax.test.inputs.InputProcessus; 
 
 

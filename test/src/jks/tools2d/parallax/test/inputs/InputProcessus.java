@@ -3,8 +3,6 @@ package jks.tools2d.parallax.test.inputs;
 import com.badlogic.gdx.Input.Keys;
 
 import static jks.tools2d.parallax.test.inputs.GVars_Inputs.*;
-
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 
 public class InputProcessus extends InputAdapter 

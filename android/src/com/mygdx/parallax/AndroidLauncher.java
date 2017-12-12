@@ -4,7 +4,7 @@ import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
 
 import android.os.Bundle;
-import jks.tools2d.parallax.test.Testing_Day;
+import jks.tools2d.parallax.mains.Testing_Day;
 
 public class AndroidLauncher extends AndroidApplication 
 {

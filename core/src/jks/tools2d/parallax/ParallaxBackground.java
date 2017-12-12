@@ -10,10 +10,14 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
+import jks.tools2d.parallax.side.SolarAstre;
+
 
 public class ParallaxBackground 
 {
 	public Array<ParallaxLayer> layers;
+	
+	private static final float startNewOpacity = 1f ; 
 	
 	private Matrix4 cachedProjectionView;
 	private Vector3 cachedPos;
@@ -21,17 +25,21 @@ public class ParallaxBackground
 	private float drawingHeight  ;
 	
 	public Array<ParallaxLayer> transferLayers;
-	float transfertLvl = 0 ;
-	float transfertSpeed = 0.1f ; 
+	float newLayer_transfertLvl = 0 ;
+	float oldLayer_transfertLvl = 0 ; 
+	float newLayer_transfertSpeed ; 
+	float oldLayer_transfertSpeed ; 
 	boolean inTransfer ;
 	
+	private static final float transparencyPoint = 0.9f ;
 	
-	Color transfertColor_current ;
 	Color transfertColor_objectif = new Color(1,1,1,1);
 	Color transfertColor_speed = new Color(1,1,1,1);
-	Color color = new Color(1,1,1,1); 
 	
+	Color oldLayer_transfertColor = new Color(1,1,1,1);
+	Color newLayer_transfertColor = new Color(1,1,1,0); 
 
+	
 	/**
 	 * Create a ParallaxBackground without any layers
 	 */
@@ -73,14 +81,30 @@ public class ParallaxBackground
 	public void addLayers(List<TextureRegionParallaxLayer> newLayers) 
 	{
 		for(TextureRegionParallaxLayer texture : newLayers) 
-		{this.layers.add(texture);}
+			this.layers.add(texture);
 	}
 	
-	public void addLayersTransfert(List<TextureRegionParallaxLayer> newLayers) 
+	public void addLayersTransfert(List<TextureRegionParallaxLayer> newLayers, float inXSecondes) 
 	{
 		inTransfer = true ; 
-		for(TextureRegionParallaxLayer texture : newLayers) 
-		{this.transferLayers.add(texture);}
+		newLayer_transfertSpeed = 1/inXSecondes  ;
+		oldLayer_transfertSpeed = 1/(inXSecondes * (1-transparencyPoint)) ; 
+		
+		resetTransfert() ; 
+		
+		if(newLayers != null && !newLayers.isEmpty())
+		{
+			for(TextureRegionParallaxLayer texture : newLayers) 
+				this.transferLayers.add(texture);
+		}
+		else // Keep statu Quo
+		{
+			transferLayers = layers ;
+			oldLayer_transfertSpeed = 0 ;
+		}
+			
+		
+		
 	}
 	
 	/**
@@ -101,9 +125,6 @@ public class ParallaxBackground
 		float currentY ;
 		float currentViewportWidth = worldCamera.viewportWidth * (worldCamera.zoom/2) ;
 		float currentViewportHeight =  worldCamera.viewportHeight * (worldCamera.zoom/2);
-		int drawIteration = 0; 
-		
-		
 		
 		for(int i = 0; i < layers.size; i++)
 		{
@@ -113,11 +134,10 @@ public class ParallaxBackground
 			worldCamera.position.set(origCameraPos.scl(layer.getParallaxRatio()),cachedPos.z);
 		    worldCamera.update();
 		    batch.setProjectionMatrix(worldCamera.combined);
-		    batch.setColor(color);
+//		    batch.setColor(newLayer_transfertColor);
 		    
-//		    currentX = (layer.isRepeat_tileX() ? 0 : ((int)((worldCamera.position.x-worldCamera.viewportWidth*.5f*worldCamera.zoom) / layer.getWidth())) * layer.getWidth())-(Math.abs((1-layer.getParallaxRatio().x)%1)*worldCamera.viewportWidth*.5f);
 		    if(inTransfer)
-		    	transfert(batch) ;
+		    	compute_Color_Transfert(batch) ;
 		    
 		    if(layer.getSpeed() != 0)
 		    	currentX = -layer.getWidth() * 1.25f ;
@@ -134,19 +154,20 @@ public class ParallaxBackground
             		   || (worldCamera.position.x + currentViewportWidth - layer.getCurrentX() < currentX )  
             		   || (worldCamera.position.y - currentViewportHeight > currentY + layer.getHeight()) 
             		   || (worldCamera.position.y + currentViewportHeight < currentY)))
-	               {
+	               {	            		
+	            		
+	            		batch.setColor(oldLayer_transfertColor);
+	            		
+	            		layer.draw(batch, currentX + layer.decalX, currentY + drawingHeight); 
 	            		
 	            		if(inTransfer)
 	            		{
-	            			batch.setColor(color);
+	            			batch.setColor(newLayer_transfertColor);
 	            			transferLayers.get(i).draw(batch, currentX + layer.decalX, currentY + drawingHeight);
-	            			batch.setColor(transfertColor_current);
 	            		}
-	            		
-		            	layer.draw(batch, currentX + layer.decalX, currentY + drawingHeight); drawIteration ++ ;
 	               }
 	                   
-	            	currentY += layer.getHeight();
+	               currentY += layer.getHeight();
 	               
 	               if(!layer.isRepeat_tileY())
 		        	     break;
@@ -159,20 +180,34 @@ public class ParallaxBackground
 	        	    break;
 		            
 		    } while(currentX + layer.getCurrentX() < worldCamera.position.x + currentViewportWidth);
-		    
-		    drawIteration = 0 ; 
 		}
 		
 		worldCamera.combined.set(cachedProjectionView);
 		worldCamera.position.set(cachedPos);
 		worldCamera.zoom = cachedZoom;
 		worldCamera.update();
-		batch.setColor(1,1,1,1);
+		batch.setColor(1,1,1,1);	
 	}
 	
-	public void transfert(Batch batch)
+	public void compute_Color_Transfert(Batch batch)
 	{
-		transfertColor_current = new Color(1, 1, 1, 1 - transfertLvl);
+		newLayer_transfertColor.a = newLayer_transfertLvl;	
+		
+		if(newLayer_transfertLvl >= transparencyPoint)
+		{
+			oldLayer_transfertColor.a = 1 - oldLayer_transfertLvl ;
+		}
+			
+	}
+	
+	public void resetTransfert()
+	{
+		transferLayers = new Array<ParallaxLayer>() ;
+		
+		oldLayer_transfertColor = new Color(1,1,1,1) ; 
+		newLayer_transfertColor = new Color(1,1,1,0) ; 
+		newLayer_transfertLvl = 0 ; 
+		oldLayer_transfertLvl = 0 ; 
 	}
 	
 	public void act(float delta) 
@@ -183,17 +218,19 @@ public class ParallaxBackground
 		if(inTransfer)
 		{
 			
-			transfertLvl += delta * transfertSpeed ; 
+			newLayer_transfertLvl += delta * newLayer_transfertSpeed ; 
 			
-//			transfertColor_current.a += 
+			if(newLayer_transfertLvl >= transparencyPoint)
+				oldLayer_transfertLvl += delta * oldLayer_transfertSpeed ; 
 			
-			if(transfertLvl >= 1)
+			if(newLayer_transfertLvl > 1)
 			{
 				for(int a=0; a < layers.size ; a++) 
 				{transferLayers.get(a).setDecalX(layers.get(a).getDecalX());}
 				
 				layers = transferLayers ; 
 				inTransfer = false ; 
+				resetTransfert() ; 
 			}
 		}
 	}
@@ -208,9 +245,16 @@ public class ParallaxBackground
 	{this.transferLayers = transferLayers ;}
 	
 	public Color getColor() 
-	{return color;}
+	{return newLayer_transfertColor;}
 
 	public void setColor(Color color) 
-	{this.color = color;}
+	{this.newLayer_transfertColor = color;}
+	
+	public boolean isInTransfer() 
+	{return inTransfer;}
+
+
+	public void setInTransfer(boolean inTransfer) 
+	{this.inTransfer = inTransfer;}
 
 }
