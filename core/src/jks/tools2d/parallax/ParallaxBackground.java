@@ -31,7 +31,7 @@ public class ParallaxBackground
 	float oldLayer_transfertSpeed ; 
 	boolean inTransfer ;
 	
-	private static final float transparencyPoint = 0.9f ;
+	private static final float transparencyPoint = 0.95f ;
 	
 	Color transfertColor_objectif = new Color(1,1,1,1);
 	Color transfertColor_speed = new Color(1,1,1,1);
@@ -102,9 +102,18 @@ public class ParallaxBackground
 			transferLayers = layers ;
 			oldLayer_transfertSpeed = 0 ;
 		}
-			
+	}
+	
+	public void addColorTransfert(Color color, float inXSecondes) 
+	{
+		if(color == null)
+			return ; 
 		
+		inTransfer = true ; 
+		newLayer_transfertSpeed = 1/inXSecondes ;
 		
+		transferLayers = layers ;
+		set_newLayer_Color(color);
 	}
 	
 	/**
@@ -134,8 +143,7 @@ public class ParallaxBackground
 			worldCamera.position.set(origCameraPos.scl(layer.getParallaxRatio()),cachedPos.z);
 		    worldCamera.update();
 		    batch.setProjectionMatrix(worldCamera.combined);
-//		    batch.setColor(newLayer_transfertColor);
-		    
+ 
 		    if(inTransfer)
 		    	compute_Color_Transfert(batch) ;
 		    
@@ -204,8 +212,8 @@ public class ParallaxBackground
 	{
 		transferLayers = new Array<ParallaxLayer>() ;
 		
-		oldLayer_transfertColor = new Color(1,1,1,1) ; 
-		newLayer_transfertColor = new Color(1,1,1,0) ; 
+		oldLayer_transfertColor.a = 1 ; 
+		newLayer_transfertColor.a = 0 ; 
 		newLayer_transfertLvl = 0 ; 
 		oldLayer_transfertLvl = 0 ; 
 	}
@@ -229,6 +237,7 @@ public class ParallaxBackground
 				{transferLayers.get(a).setDecalX(layers.get(a).getDecalX());}
 				
 				layers = transferLayers ; 
+				oldLayer_transfertColor = newLayer_transfertColor.cpy(); 
 				inTransfer = false ; 
 				resetTransfert() ; 
 			}
@@ -244,11 +253,18 @@ public class ParallaxBackground
 	public void transfertTo(Array<ParallaxLayer> transferLayers)
 	{this.transferLayers = transferLayers ;}
 	
-	public Color getColor() 
+	public Color get_newLayer_Color() 
 	{return newLayer_transfertColor;}
 
-	public void setColor(Color color) 
+	public void set_newLayer_Color(Color color) 
 	{this.newLayer_transfertColor = color;}
+	
+	
+	public Color get_oldLayer_Color() 
+	{return oldLayer_transfertColor;}
+
+	public void set_oldLayer_Color(Color color) 
+	{this.oldLayer_transfertColor = color;}
 	
 	public boolean isInTransfer() 
 	{return inTransfer;}
