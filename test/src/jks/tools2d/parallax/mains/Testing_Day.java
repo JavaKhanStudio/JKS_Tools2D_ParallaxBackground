@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -49,15 +50,18 @@ public class Testing_Day extends ApplicationAdapter
 	    worldCamera.update();
 	    
 	    astres = new SolarAstre() ;
-	    
-	    
+	    	    
 	    Enum_TimeOfDay nature = Enum_TimeOfDay.NIGHT;
 	    parallaxBackground = new ParallaxBackground();
 	    parallaxBackground.addLayers(nature.createLayers_day(worldWidth,worldHeight));
-	    square = new SquareBackground(nature.top.cpy(),nature.bottom.cpy(),Gdx.graphics.getHeight() * 0.33f) ; 
+	    parallaxBackground.setDrawingHeight(6.78f);
+	    square = new SquareBackground(nature.top.cpy(),nature.bottom.cpy(),Gdx.graphics.getHeight() * 0.4f) ; 
 	    shapeRender = new ShapeRenderer() ; 
-//	    astres.startAstre(GVars_Heart.transfertTime * 1.8f, true);
 
+	    parallaxBackground_Road = new ParallaxBackground();
+	    parallaxBackground_Road.addLayers(createLayers_greenRoad("day/Green.atlas")) ;
+	    parallaxBackground_Road.set_oldLayer_Color(Enum_TimeOfDay.NIGHT.colorSurronding);
+	    
 	    staticCamera = new OrthographicCamera() ;
 	    staticCamera.setToOrtho(false, Gdx.graphics.getWidth(),  Gdx.graphics.getHeight());
 	    staticCamera.position.add(0,0,0) ;
@@ -81,15 +85,14 @@ public class Testing_Day extends ApplicationAdapter
 		
 		TextureRegion roadBackRegionA = atlas2.findRegions("Green_Grass").first();
 		TextureRegionParallaxLayer roadBackLayerA = new TextureRegionParallaxLayer(roadBackRegionA, worldWidth, new Vector2(.3f,.3f), true);
-		roadBackLayerA.setPadBottom(worldHeight*.21f);
+		roadBackLayerA.setPadBottom(worldHeight*.165f);
 		
 		TextureRegion roadBackRegionB = atlas2.findRegion("Green_Back");
 		TextureRegionParallaxLayer roadBackLayerB = new TextureRegionParallaxLayer(roadBackRegionB, worldWidth, new Vector2(.35f,.35f), true);
-		roadBackLayerB.setPadBottom(worldHeight*.20f);
+		roadBackLayerB.setPadBottom(worldHeight*.15f);
 		
 		
-		return Arrays.asList(roadBackLayerA,roadBackLayerB,roadLayer) ;
-		
+		return Arrays.asList(roadBackLayerA,roadBackLayerB,roadLayer) ;	
 	}
 
 	@Override

@@ -73,14 +73,14 @@ public class SolarAstre
 		sun_image = atlas.findRegion("Sun") ; 
 		moon_image = atlas.findRegion("Moon") ; 
 		
-		moon_size = Gdx.graphics.getWidth() * 0.05f ; 
-		sun_size = Gdx.graphics.getWidth() * 0.1f ;
+		moon_size = Gdx.graphics.getWidth() * 0.04f ; 
+		sun_size = Gdx.graphics.getWidth() * 0.125f ;
 		
 		elipse_width = Gdx.graphics.getWidth() * 1.1f ;
 		a = elipse_width/2 ; 
 		aRoot = a * a ; 
 		
-		elipse_height = Gdx.graphics.getHeight() * 0.58f ; 
+		elipse_height = Gdx.graphics.getHeight() * 0.6f ; 
 		b = elipse_height/2 ;
 		
 		elipse_height_Min = Gdx.graphics.getHeight()/2 ;	
@@ -109,14 +109,10 @@ public class SolarAstre
 	public void act(float delta)
 	{
 		if(sun_running)
-		{
-			sun_currentX += sun_speedX * delta ;
-						
-		}
+			sun_currentX += sun_speedX * delta ;				
+		
 		if(moon_running)
-		{
-			moon_currentX += sun_speedX * delta ;
-		}
+			moon_currentX += moon_speedX * delta ;
 	}
 	
 	public float getY(float currentX)
