@@ -39,6 +39,7 @@ public class Testing_Day extends ApplicationAdapter
 	{
 		worldWidth = 40;
 		worldHeight = Utils_Parralax.calculateOtherDimension(true, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+		useTimeOfDay = true ;
 		
 		Index_DayLayer.init(worldWidth, worldHeight);
 		

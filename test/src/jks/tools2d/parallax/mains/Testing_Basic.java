@@ -25,9 +25,6 @@ public class Testing_Basic extends ApplicationAdapter
 	
 	
 	private TextureAtlas atlas;
-	
-	
-	
 	private final float worldWidth = 40;
 	private float worldHeight;
 	

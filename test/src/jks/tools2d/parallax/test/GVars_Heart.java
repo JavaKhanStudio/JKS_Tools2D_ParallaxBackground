@@ -37,6 +37,7 @@ public class GVars_Heart
 	
 	public static SolarAstre astres ; 
 	public static boolean keepOn ;
+	public static boolean useTimeOfDay ; 
 	
 	//Show Sequence
 	public static final ArrayList<Enum_TimeOfDay> showSequence_Parallax = new ArrayList<Enum_TimeOfDay>()
@@ -131,10 +132,18 @@ public class GVars_Heart
 	private static void computeNextBackground_parralax(ParallaxBackground background)
 	{
 		currentTime = nextParallax.get(0) ;
-		startAstre(currentTime) ;
 		
-		parallaxBackground.addLayersTransfert(Index_DayLayer.getDayMap(currentTime),transfertTime * currentTime.timeToTransfertInto);
-		nextParallax.remove(0) ; 
+		if(useTimeOfDay) 
+		{
+			startAstre(currentTime) ;
+			parallaxBackground.addLayersTransfert(Index_DayLayer.getDayMap(currentTime),transfertTime * currentTime.timeToTransfertInto);
+			nextParallax.remove(0) ; 
+		}
+		else 
+		{
+			parallaxBackground.addLayersTransfert(parallaxBackground.layers,transfertTime * currentTime.timeToTransfertInto);
+		}
+			
 		square.transfertInto(currentTime.top, currentTime.bottom, transfertTime * currentTime.timeToTransfertInto);
 		
 		if(parallaxBackground_Road != null)

@@ -1,7 +1,17 @@
 apply plugin: "java"
 
 sourceCompatibility = 1.6
-sourceSets.main.java.srcDirs = [ "src/" ]
+sourceSets 
+{
+    main 
+    {
+        java 
+        {
+            srcDir 'src'
+            srcDir 'assets'     
+        }
+    }
+}
 
 project.ext.mainClassName = "jks.tools2d.desktop.DesktopLauncher"
 project.ext.assetsDir = new File("../core/assets");
@@ -30,7 +40,7 @@ dist.dependsOn classes
 eclipse {
     project {
         name = appName + "_Desktop"
-        linkedResource name: 'assets', type: '2', location: 'PARENT-1-PROJECT_LOC/core/assets'
+        linkedResource name: 'assets', type: '2', location: 'PARENT-1-PROJECT_LOC/desktop/assets'
     }
 }
 

@@ -1,0 +1,19 @@
+divers.png
+size: 1287, 833
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Moon
+  rotate: false
+  xy: 880, 1
+  size: 406, 406
+  orig: 406, 406
+  offset: 0, 0
+  index: -1
+Sun
+  rotate: false
+  xy: 1, 1
+  size: 877, 831
+  orig: 877, 831
+  offset: 0, 0
+  index: -1
