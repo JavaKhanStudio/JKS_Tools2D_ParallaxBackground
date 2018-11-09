@@ -9,9 +9,6 @@ buildscript {
     }
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.2'
-}
 
 allprojects 
 {
@@ -59,6 +56,7 @@ project(":test")
     }
 }
 
+/*
 project(":android") {
     apply plugin: "android"
 
@@ -81,7 +79,7 @@ project(":android") {
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
     }
 }
-
+*/
 tasks.eclipse.doLast 
 {
     delete ".project"
