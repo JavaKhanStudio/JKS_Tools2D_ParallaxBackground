@@ -11,6 +11,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 import jks.tools2d.parallax.ParallaxBackground;
+import jks.tools2d.parallax.heart.ParralaxPageModel;
+import jks.tools2d.parallax.heart.Parrallax_Heart;
+import jks.tools2d.parallax.mains.Index_DayLayer;
 import jks.tools2d.parallax.side.SolarAstre;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -27,12 +30,12 @@ public class GVars_Heart
 	public static ShapeRenderer shapeRender ; 
 	public static SquareBackground square ; 
 
-	public static ArrayList<Enum_TimeOfDay> nextParallax = new ArrayList<Enum_TimeOfDay>(); 
+	public static ArrayList<ParralaxPageModel> nextParallax = new ArrayList<ParralaxPageModel>(); 
 	public static ArrayList<Color> nextColor = new ArrayList<Color>() ; 
 	
 	public static float worldWidth; 
 	public static float worldHeight ;
-	static Enum_TimeOfDay currentTime ; 
+	static ParralaxPageModel currentTime ; 
 	public static float transfertTime = 10 ; 
 	
 	public static SolarAstre astres ; 
@@ -40,16 +43,16 @@ public class GVars_Heart
 	public static boolean useTimeOfDay ; 
 	
 	//Show Sequence
-	public static final ArrayList<Enum_TimeOfDay> showSequence_Parallax = new ArrayList<Enum_TimeOfDay>()
+	public static final ArrayList<ParralaxPageModel> showSequence_Parallax = new ArrayList<ParralaxPageModel>()
 	{{
-		this.add(Enum_TimeOfDay.SUNRISE);
-		this.add(Enum_TimeOfDay.DAY);
-		this.add(Enum_TimeOfDay.STATU_QUO);
-		this.add(Enum_TimeOfDay.STATU_QUO);
-		this.add(Enum_TimeOfDay.SUNSET);
-		this.add(Enum_TimeOfDay.NIGHT);
-		this.add(Enum_TimeOfDay.STATU_QUO);
-		this.add(Enum_TimeOfDay.STATU_QUO);
+		this.add(Enum_PageModel_Day.SUNRISE.page);
+		this.add(Enum_PageModel_Day.DAY.page);
+		this.add(Enum_PageModel_Day.STATU_QUO.page);
+		this.add(Enum_PageModel_Day.STATU_QUO.page);
+		this.add(Enum_PageModel_Day.SUNSET.page);
+		this.add(Enum_PageModel_Day.NIGHT.page);
+		this.add(Enum_PageModel_Day.STATU_QUO.page);
+		this.add(Enum_PageModel_Day.STATU_QUO.page);
 	}} ; 
 	
 		
@@ -87,120 +90,8 @@ public class GVars_Heart
 		if(autoMoveScreen)
 			worldCamera.position.add(screenMovementSpeed, 0, 0);
 		
+		Parrallax_Heart.render(delta) ; 
 		
-		drawBackgroundColor(delta) ; 
-		
-		batch.begin();
-		
-		drawAstre(delta);
-		computeNextBackground() ; 
-		drawBackgroud(delta) ;
-		drawRoad(delta) ; 
-		
-		
-		batch.end();
 	}
-	
-	private static void drawBackgroundColor(float delta)
-	{
-		if(square != null)
-		{
-			shapeRender.begin(ShapeType.Filled);
-			square.act(delta);
-			square.draw(shapeRender);
-			shapeRender.end();
-		}
-	}
-	
-	private static void computeNextBackground()
-	{
-		if(!parallaxBackground.isInTransfer())
-		{
-			if(nextParallax.size() > 0)
-			{
-				computeNextBackground_parralax(parallaxBackground) ; 
-				computeNextBackground_Color(parallaxBackground) ;
-			}
-			else if(showSequence_Parallax.size() > 0)
-			{
-				nextParallax.addAll(showSequence_Parallax) ;
-				computeNextBackground() ;
-			}
-		}
-	}
-	
-	private static void computeNextBackground_parralax(ParallaxBackground background)
-	{
-		currentTime = nextParallax.get(0) ;
-		
-		if(useTimeOfDay) 
-		{
-			startAstre(currentTime) ;
-			parallaxBackground.addLayersTransfert(Index_DayLayer.getDayMap(currentTime),transfertTime * currentTime.timeToTransfertInto);
-			nextParallax.remove(0) ; 
-		}
-		else 
-		{
-			parallaxBackground.addLayersTransfert(parallaxBackground.layers,transfertTime * currentTime.timeToTransfertInto);
-		}
-			
-		square.transfertInto(currentTime.top, currentTime.bottom, transfertTime * currentTime.timeToTransfertInto);
-		
-		if(parallaxBackground_Road != null)
-		{
-			parallaxBackground_Road.addColorTransfert(currentTime.colorSurronding, transfertTime * currentTime.timeToTransfertInto);
-			parallaxBackground_Road.set_newLayer_Color(currentTime.colorSurronding);
-		}
-			
-	}
-	
-	private static void computeNextBackground_Color(ParallaxBackground background)
-	{
-		if(nextColor.size() > 0)
-		{
-			parallaxBackground.set_newLayer_Color(nextColor.get(0));
-			nextColor.remove(0) ; 
-		}
-	}
-	
-	private static void drawAstre(float delta)
-	{
-		if(astres != null)
-		{
-			batch.setProjectionMatrix(staticCamera.combined);
-			astres.act(delta);
-			astres.draw(batch);
-		}
-	}
-	
-	private static void drawBackgroud(float delta)
-	{
-		parallaxBackground.act(delta) ; 
-		parallaxBackground.draw(worldCamera, batch);
-	}
-	
-	private static void drawRoad(float delta)
-	{
-		if(parallaxBackground_Road != null)
-		{
-			parallaxBackground_Road.act(delta) ; 
-			parallaxBackground_Road.draw(worldCamera, batch);
-		}
-	}
-	
-	
-	public static void startAstre(Enum_TimeOfDay current)
-	{
-		switch(current)
-		{
-			case SUNRISE :
-			 	astres.startAstre(GVars_Heart.transfertTime * 3.7f, true); break ; 
-			case NIGHT :
-				astres.startAstre(GVars_Heart.transfertTime * 3.0f, false); break ;
-			default:
-				break; 
-		}	
-	}
-	
 	
 }

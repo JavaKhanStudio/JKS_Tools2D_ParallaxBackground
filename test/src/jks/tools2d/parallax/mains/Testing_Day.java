@@ -21,11 +21,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import jks.tools2d.parallax.ParallaxBackground;
 import jks.tools2d.parallax.TextureRegionParallaxLayer;
 import jks.tools2d.parallax.Utils_Parralax;
+import jks.tools2d.parallax.heart.ParralaxPageModel;
 import jks.tools2d.parallax.side.SolarAstre;
 import jks.tools2d.parallax.side.SquareBackground;
-import jks.tools2d.parallax.test.Enum_TimeOfDay;
+import jks.tools2d.parallax.test.Enum_PageModel_Day;
 import jks.tools2d.parallax.test.GVars_Heart;
-import jks.tools2d.parallax.test.Index_DayLayer;
 
 public class Testing_Day extends ApplicationAdapter
 {
@@ -52,16 +52,16 @@ public class Testing_Day extends ApplicationAdapter
 	    
 	    astres = new SolarAstre() ;
 	    	    
-	    Enum_TimeOfDay nature = Enum_TimeOfDay.NIGHT;
+	    Enum_PageModel_Day nature = Enum_PageModel_Day.NIGHT;
 	    parallaxBackground = new ParallaxBackground();
 	    parallaxBackground.addLayers(nature.createLayers_day(worldWidth,worldHeight));
 	    parallaxBackground.setDrawingHeight(6.78f);
-	    square = new SquareBackground(nature.top.cpy(),nature.bottom.cpy(),Gdx.graphics.getHeight() * 0.4f) ; 
+	    square = nature.page.buildSquareBackground(0.4f) ;
 	    shapeRender = new ShapeRenderer() ; 
 
 	    parallaxBackground_Road = new ParallaxBackground();
 	    parallaxBackground_Road.addLayers(createLayers_greenRoad("day/Green.atlas")) ;
-	    parallaxBackground_Road.set_oldLayer_Color(Enum_TimeOfDay.NIGHT.colorSurronding);
+	    parallaxBackground_Road.set_oldLayer_Color(Enum_PageModel_Day.NIGHT.page.colorSurronding);
 	    
 	    staticCamera = new OrthographicCamera() ;
 	    staticCamera.setToOrtho(false, Gdx.graphics.getWidth(),  Gdx.graphics.getHeight());
