@@ -89,7 +89,6 @@ public class SolarAstre
 	public void startAstre(float inXSec,boolean isDay)
 	{
 		
-		
 		if(isDay)
 		{
 			sun_speedX = elipse_width/inXSec ; 
