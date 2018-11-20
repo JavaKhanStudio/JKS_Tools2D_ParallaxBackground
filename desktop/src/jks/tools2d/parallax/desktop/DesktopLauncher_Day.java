@@ -3,8 +3,7 @@ package jks.tools2d.parallax.desktop;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 
-import jks.tools2d.parallax.mains.TestingNewModel;
-import jks.tools2d.parallax.mains.Testing_Day;
+import jks.tools2d.parallax.mains.Testing_Basic;
 
 public class DesktopLauncher_Day 
 {
@@ -22,6 +21,6 @@ public class DesktopLauncher_Day
 //        config.height = LwjglApplicationConfiguration.getDesktopDisplayMode().height;
 //        config.fullscreen = true;
 		
-		new LwjglApplication(new TestingNewModel(), config);
+		new LwjglApplication(new Testing_Basic(), config);
 	}
 }

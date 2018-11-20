@@ -5,39 +5,30 @@ import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
 import jks.tools2d.parallax.TextureRegionParallaxLayer;
 import jks.tools2d.parallax.heart.ParralaxPageModel;
 
-public enum Enum_PageModel_Day
+public class DayPageModel extends ParralaxPageModel
 {
 
-	// 026BC0
-	DAY("day/day.atlas",Color.valueOf("026BC0"),Color.valueOf("39D5FF"),0.6f, new Color(1,1,1,1)),
-	SUNSET("day/sunset.atlas",Color.valueOf("530F1D"),Color.valueOf("FE9946"),0.6f, new Color(0.25f,0.07f,0.0f,1)),
-	SUNRISE("day/sunrise.atlas",Color.valueOf("6D6A7D"),Color.valueOf("FDD069"),0.6f, new Color(0.85f,0.5f,0.4f,1)),
-	RAIN("day/rain.atlas",Color.valueOf("39393C"),Color.valueOf("A19996"),0.7f, new Color(1,1,1,1)),
-	NIGHT("day/night.atlas",Color.valueOf("21354B"),Color.valueOf("BFE5FE"),0.8f, new Color(0.1f,0.1f,0.1f,1)),
-	STATU_QUO(null,null,null,1, null)
-	;
-
-	public ParralaxPageModel page ;
-	
-	Enum_PageModel_Day(String atlasPath, Color top, Color bottom, float duree,Color colorSurronding)
+	public DayPageModel(String atlasPath, Color top, Color bottom, float duree, Color colorSurronding) 
 	{
-		page = new DayPageModel(atlasPath,top,bottom,duree,colorSurronding) ;
+		super(atlasPath, top, bottom, duree, colorSurronding);
+		
 	}
-	
-	public List<TextureRegionParallaxLayer> createLayers_day(float worldWidth, float worldHeight) 
+
+	@Override
+	public List<TextureRegionParallaxLayer> howToDraw(float worldWidth, float worldHeight) 
 	{
-		if(page.atlasPath == null)
+		if(atlasPath == null)
 			return null ; 
 		
-		TextureAtlas atlas = new TextureAtlas(page.atlasPath);
+		TextureAtlas atlas = new TextureAtlas(atlasPath);
 
 		TextureRegion cloudsRegion = atlas.findRegion("Clouds");
 		Array<AtlasRegion> mountainsRegion = atlas.findRegions("Mountains");
@@ -66,7 +57,18 @@ public enum Enum_PageModel_Day
 		treesLayerC.setPadBottom(worldHeight*.05f);
 		TextureRegionParallaxLayer treesLayerD = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.09f,.09f), true);
 		treesLayerD.setPadBottom(worldHeight*.0f);
+		TextureRegionParallaxLayer treesLayerE = new TextureRegionParallaxLayer(treesRegion.get(1), worldWidth*.7275f, new Vector2(.10f,.10f), true);
+		treesLayerE.setPadBottom(-worldHeight*.05f);
+		TextureRegionParallaxLayer treesLayerF = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.11f,.11f), true);
+		treesLayerF.setPadBottom(-worldHeight*.1f);
+		TextureRegionParallaxLayer treesLayerG = new TextureRegionParallaxLayer(treesRegion.get(1), worldWidth*.7275f, new Vector2(.11f,.11f), true);
+		treesLayerG.setPadBottom(-worldHeight*1.5f);
+		TextureRegionParallaxLayer treesLayerH = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.11f,.11f), true);
+		treesLayerH.setPadBottom(-worldHeight*2.f);
+		
 		    
-		return Arrays.asList(cloudsLayerA,mountainsLayerA,mountainsLayerB,mountainsLayerC,treesLayerA1,treesLayerA,treesLayerB,treesLayerC,treesLayerD) ;
+		return Arrays.asList(cloudsLayerA,mountainsLayerA,mountainsLayerB,mountainsLayerC,treesLayerA1,treesLayerA,treesLayerB,treesLayerC,treesLayerD,treesLayerE,treesLayerF,treesLayerG,treesLayerH) ;
+	
 	}
+
 }

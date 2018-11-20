@@ -59,6 +59,8 @@ public class Parrallax_Heart
 		batch = new SpriteBatch() ;
 
 		shapeRender = new ShapeRenderer() ;
+		parallaxBackground = new ParallaxBackground(); 
+		parallax_Sequence_ShowOrder = new ArrayList<ParralaxPageModel>() ;
 	}
 	
 	public static void init(
@@ -71,11 +73,7 @@ public class Parrallax_Heart
 	{
 		init(WorldCamera,StaticCamera,WorldWidth,WorldHeight) ;
 		currentPage = pageModel ; 
-		parallaxBackground = new ParallaxBackground();
 		parallaxBackground.addLayers(currentPage.howToDraw(worldWidth,worldHeight));
-		parallaxBackground.setDrawingHeight(6.78f);
-		
-		parallax_Sequence_ShowOrder = new ArrayList<ParralaxPageModel>() ;
 	}
 	
 	
