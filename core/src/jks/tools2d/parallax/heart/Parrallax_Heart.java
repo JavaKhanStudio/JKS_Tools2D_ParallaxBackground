@@ -72,7 +72,7 @@ public class Parrallax_Heart
 		init(WorldCamera,StaticCamera,WorldWidth,WorldHeight) ;
 		currentPage = pageModel ; 
 		parallaxBackground = new ParallaxBackground();
-		parallaxBackground.addLayers(currentPage.createLayers_day(worldWidth,worldHeight));
+		parallaxBackground.addLayers(currentPage.howToDraw(worldWidth,worldHeight));
 		parallaxBackground.setDrawingHeight(6.78f);
 		
 		parallax_Sequence_ShowOrder = new ArrayList<ParralaxPageModel>() ;
