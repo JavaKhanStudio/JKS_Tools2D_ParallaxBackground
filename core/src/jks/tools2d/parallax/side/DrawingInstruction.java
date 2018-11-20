@@ -7,7 +7,6 @@ import jks.tools2d.parallax.TextureRegionParallaxLayer;
 public interface DrawingInstruction 
 {
 
-	//List<TextureRegionParallaxLayer> 
-	// TODO FAIRE DU LAMDA
+	List<TextureRegionParallaxLayer> howToDraw(float worldWidth, float worldHeight) ;
 	
 }
