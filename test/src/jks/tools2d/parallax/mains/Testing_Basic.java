@@ -9,32 +9,33 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 import jks.tools2d.parallax.Utils_Parralax;
+import jks.tools2d.parallax.heart.Parralax_Utils_Page;
 import jks.tools2d.parallax.heart.Parrallax_Heart;
 import jks.tools2d.parallax.test.Enum_PageModel_Day;
+import jks.tools2d.parallax.test.inputs.GVars_Inputs;
+import jks.tools2d.parallax.test.inputs.InputProcessus;
 
 
 public class Testing_Basic extends ApplicationAdapter
 {
 	
-	
-	private TextureAtlas atlas;
 	private final float worldWidth = 40;
 	private float worldHeight;
-	
-	private Color clearColor = new Color(0Xbeaf7bff);
+
 	
 	@Override
 	public void create () 
 	{
 		worldHeight = Utils_Parralax.calculateOtherDimension(true, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		
-		OrthographicCamera worldCamera = new OrthographicCamera();
-	    worldCamera.setToOrtho(false,worldWidth,worldHeight);
-	    worldCamera.update();
+		
+	    Parrallax_Heart.init(worldWidth, worldHeight);
+	    Parrallax_Heart.worldCamera.setToOrtho(false,worldWidth,worldHeight);
+		Parrallax_Heart.worldCamera.update();
+		Parrallax_Heart.parallaxMainPage.setDrawingHeight(6.78f);
+	    Parralax_Utils_Page.setPage(Enum_PageModel_Day.DAY.page) ; 
 	    
-	    Parrallax_Heart.init(worldCamera, new OrthographicCamera(),Enum_PageModel_Day.DAY.page, worldWidth, worldHeight);
-	    Parrallax_Heart.parallaxBackground.setDrawingHeight(6.78f);
-//	    Gdx.input.setInputProcessor(new InputProcessus());
+	    Gdx.input.setInputProcessor(new InputProcessus());
 	}
 	 
 
@@ -46,7 +47,8 @@ public class Testing_Basic extends ApplicationAdapter
 	{
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
-		Parrallax_Heart.render(delta);
+		GVars_Inputs.updateInput(delta);
+		Parrallax_Heart.renderMainPage(delta);
 	}
 	
 	@Override

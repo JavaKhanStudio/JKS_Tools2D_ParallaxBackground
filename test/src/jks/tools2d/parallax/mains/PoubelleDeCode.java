@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
-import jks.tools2d.parallax.ParallaxBackground;
+import jks.tools2d.parallax.ParallaxPage;
 import jks.tools2d.parallax.TextureRegionParallaxLayer;
 
 public class PoubelleDeCode {

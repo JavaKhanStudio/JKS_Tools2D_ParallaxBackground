@@ -13,7 +13,7 @@ import com.badlogic.gdx.utils.Array;
 import jks.tools2d.parallax.side.SolarAstre;
 
 
-public class ParallaxBackground 
+public class ParallaxPage 
 {
 	public Array<ParallaxLayer> layers;
 	
@@ -43,7 +43,7 @@ public class ParallaxBackground
 	/**
 	 * Create a ParallaxBackground without any layers
 	 */
-	public ParallaxBackground()
+	public ParallaxPage()
 	{
 		initialize();
 	}
@@ -53,7 +53,7 @@ public class ParallaxBackground
 	 * Create a ParallaxBackground instance with the layers added
 	 * @param layers layers to be added to the parallaxBackground
 	 */
-	public ParallaxBackground(ParallaxLayer... layers)
+	public ParallaxPage(ParallaxLayer... layers)
 	{
 		initialize();
 		this.layers.addAll(layers);
