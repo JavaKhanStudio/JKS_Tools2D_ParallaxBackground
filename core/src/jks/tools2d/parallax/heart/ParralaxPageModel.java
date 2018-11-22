@@ -24,6 +24,10 @@ public abstract class ParralaxPageModel implements DrawingInstruction
 		this.colorSurronding = colorSurronding ; 
 	}
 	
+	/*
+	 * 1 = nothing
+	 * 0 = full screen
+	 */
 	public SquareBackground buildSquareBackground(float screenPercentage)
 	{return new SquareBackground(top.cpy(),bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage) ;}
 	
