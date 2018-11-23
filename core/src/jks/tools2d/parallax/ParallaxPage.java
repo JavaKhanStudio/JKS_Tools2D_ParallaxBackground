@@ -16,9 +16,7 @@ import jks.tools2d.parallax.side.SolarAstre;
 public class ParallaxPage 
 {
 	public Array<ParallaxLayer> layers;
-	
-	private static final float startNewOpacity = 1f ; 
-	
+
 	private Matrix4 cachedProjectionView;
 	private Vector3 cachedPos;
 	private float cachedZoom;
