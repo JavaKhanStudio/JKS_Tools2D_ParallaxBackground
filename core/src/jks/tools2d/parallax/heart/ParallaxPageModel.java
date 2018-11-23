@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import jks.tools2d.parallax.side.DrawingInstruction;
 import jks.tools2d.parallax.side.SquareBackground;
 
-public abstract class ParralaxPageModel implements DrawingInstruction
+public abstract class ParallaxPageModel implements DrawingInstruction
 {	
 	public String atlasPath ; 
 	public final Color colorSurronding ; 
@@ -15,7 +15,7 @@ public abstract class ParralaxPageModel implements DrawingInstruction
 	public float timeToTransfertInto ;
 	public float cloudSpeed ; 
 	
-	public ParralaxPageModel(String atlasPath, Color top, Color bottom, float duree,Color colorSurronding)
+	public ParallaxPageModel(String atlasPath, Color top, Color bottom, float duree,Color colorSurronding)
 	{
 		this.atlasPath = atlasPath ;
 		this.top = top ;

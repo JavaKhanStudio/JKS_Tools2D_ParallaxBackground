@@ -2,7 +2,7 @@ package jks.tools2d.parallax.test;
 
 import com.badlogic.gdx.graphics.Color;
 
-import jks.tools2d.parallax.heart.ParralaxPageModel;
+import jks.tools2d.parallax.heart.ParallaxPageModel;
 
 public enum Enum_PageModel_Day
 {
@@ -16,7 +16,7 @@ public enum Enum_PageModel_Day
 	STATU_QUO(null,null,null,1, null)
 	;
 
-	public ParralaxPageModel page ;
+	public ParallaxPageModel page ;
 	
 	Enum_PageModel_Day(String atlasPath, Color top, Color bottom, float duree,Color colorSurronding)
 	{

@@ -1,7 +1,7 @@
 package jks.tools2d.parallax.test.inputs ;
 
 import static jks.tools2d.parallax.mains.GVars_TestingHeart.* ; 
-import static jks.tools2d.parallax.heart.Parrallax_Heart.* ;
+import static jks.tools2d.parallax.heart.Parallax_Heart.* ;
 
 public class GVars_Inputs 
 {
