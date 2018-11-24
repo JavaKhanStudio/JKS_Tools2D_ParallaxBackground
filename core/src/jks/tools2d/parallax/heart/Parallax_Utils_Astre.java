@@ -15,14 +15,14 @@ public class Parallax_Utils_Astre
 		}
 	}
 
-	public static void startAstre(Enum_AstreType current)
+	public static void startAstre(Enum_AstreType current, float inXSecondes)
 	{
 		switch(current)
 		{
 			case SUN :
-			 	Parallax_Heart.astres.startAstre(Parallax_Heart.transfertTime * 3.7f, true); break ; 
+			 	Parallax_Heart.astres.startAstre(inXSecondes, true); break ; 
 			case MOON :
-				Parallax_Heart.astres.startAstre(Parallax_Heart.transfertTime * 3.0f, false); break ;
+				Parallax_Heart.astres.startAstre(inXSecondes, false); break ;
 			default:
 				break; 
 		}	

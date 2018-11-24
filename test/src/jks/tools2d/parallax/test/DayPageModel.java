@@ -16,9 +16,9 @@ import jks.tools2d.parallax.heart.ParallaxPageModel;
 public class DayPageModel extends ParallaxPageModel
 {
 
-	public DayPageModel(String atlasPath, Color top, Color bottom, float duree, Color colorSurronding) 
+	public DayPageModel(String atlasPath, Color top, Color bottom, Color colorSurronding) 
 	{
-		super(atlasPath, top, bottom, duree, colorSurronding);
+		super(atlasPath, top, bottom, colorSurronding);
 		
 	}
 

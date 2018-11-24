@@ -28,7 +28,7 @@ public class Testing_Basic extends ApplicationAdapter
 	    Parallax_Heart.init(worldWidth);
 		Parallax_Heart.parallaxMainPage.setDrawingHeight(6.78f);
 		Parallax_Utils_Page.setPage(Enum_PageModel_Day.DAY.page) ; 
-	    
+    
 	    Gdx.input.setInputProcessor(new InputProcessus());
 	}
 	 

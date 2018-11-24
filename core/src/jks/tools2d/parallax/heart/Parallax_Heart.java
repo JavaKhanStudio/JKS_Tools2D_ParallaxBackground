@@ -30,20 +30,21 @@ public class Parallax_Heart
 	//  1 = nothing * 0 = full screen
 	public static float squarePercentage = 0.5f; 
 
-	public static ArrayList<ParallaxPageModel> nextParallax = new ArrayList<ParallaxPageModel>(); 
+//	public static ArrayList<ParallaxPageModel> nextParallax = new ArrayList<ParallaxPageModel>(); 
 
 	public static float worldWidth; 
 	public static float worldHeight ;
 	
 	static ParallaxPageModel currentPage ; 
-	public static float transfertTime = 10 ; 
+	static ParallaxPageModel currentTransfertPage ; 
+//	public static float transfertTime = 10 ; 
 	
 	public static SolarAstre astres ; 
 	public static boolean keepOn ;
 	public static boolean useTimeOfDay ; 
 	
-	public static ArrayList<ParallaxPageModel> parallax_Sequence_ShowOrder ;
-	static HashMap<ParallaxPageModel,List<TextureRegionParallaxLayer>> parralx_Sequence_Index ;
+//	public static ArrayList<ParallaxPageModel> parallax_Sequence_ShowOrder ;
+//	static HashMap<ParallaxPageModel,List<TextureRegionParallaxLayer>> parralx_Sequence_Index ;
 	
 	public static void init(
 			float worldWidth) 
@@ -62,7 +63,7 @@ public class Parallax_Heart
 
 		shapeRender = new ShapeRenderer() ;
 		parallaxMainPage = new ParallaxPage(); 
-		parallax_Sequence_ShowOrder = new ArrayList<ParallaxPageModel>() ;
+//		parallax_Sequence_ShowOrder = new ArrayList<ParallaxPageModel>() ;
 	}
 	
 	public static void init(
@@ -81,7 +82,7 @@ public class Parallax_Heart
 
 		shapeRender = new ShapeRenderer() ;
 		parallaxMainPage = new ParallaxPage(); 
-		parallax_Sequence_ShowOrder = new ArrayList<ParallaxPageModel>() ;
+//		parallax_Sequence_ShowOrder = new ArrayList<ParallaxPageModel>() ;
 	}
 	
 	public static void init(
@@ -96,24 +97,6 @@ public class Parallax_Heart
 		init(worldCamera,staticCamera,batch,worldWidth,worldHeight) ;
 		Parallax_Utils_Page.setPage(pageModel) ; 
 	}
-	
-	
-	public static void init(
-			OrthographicCamera WorldCamera,
-			OrthographicCamera StaticCamera,
-			SpriteBatch batch,
-			ArrayList<ParallaxPageModel> Parallax_Sequence_ShowOrder,
-			HashMap<ParallaxPageModel,List<TextureRegionParallaxLayer>> Parralx_Sequence_Index,
-			float WorldWidth,
-			float WorldHeight)
-	
-	{
-		init(WorldCamera,StaticCamera,batch,WorldWidth,WorldHeight) ;
-		
-		parallax_Sequence_ShowOrder = Parallax_Sequence_ShowOrder ;
-		parralx_Sequence_Index = Parralx_Sequence_Index ;
-	}
-	
 	
 	public static void setPage(ParallaxPageModel model)
 	{Parallax_Utils_Page.setPage(model);}
