@@ -8,10 +8,29 @@ public class Parallax_Utils_Page
 	public static void setPage(ParallaxPageModel pageModel) 
 	{
 		Parallax_Heart.currentPage = pageModel ; 
+		Parallax_Heart.parallaxMainPage.layers.clear();
 		Parallax_Heart.parallaxMainPage.addLayers(Parallax_Heart.currentPage.howToDraw(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight));
 		Parallax_Utils_Background.setBackground(Parallax_Heart.currentPage) ;
 	
 	}
+	
+	public static void transfertIntoPage(ParallaxPageModel pageModel, float inXSecondes) 
+	{
+		Parallax_Heart.currentTransfertPage = pageModel ; 
+	
+		
+		Parallax_Heart.parallaxMainPage.addLayersTransfert(pageModel,inXSecondes); 
+		Parallax_Heart.square.transfertInto(pageModel.top, pageModel.bottom, inXSecondes );
+		
+		if(Parallax_Heart.parallaxSecondePage != null)
+		{
+			Parallax_Heart.parallaxSecondePage.addColorTransfert(Parallax_Heart.currentPage.colorSurronding, inXSecondes);
+			Parallax_Heart.parallaxSecondePage.set_newLayer_Color(Parallax_Heart.currentPage.colorSurronding);
+		}
+			
+	
+	}
+	
 
 	/*
 	static void computeNextBackground()
@@ -31,22 +50,6 @@ public class Parallax_Utils_Page
 		}
 	}
 */
-	static void computeNextPage_parralax(ParallaxPage background)
-	{
-		Parallax_Heart.currentPage = Parallax_Heart.nextParallax.get(0) ;
-		
-		Parallax_Heart.parallaxMainPage.addLayersTransfert(Parallax_Heart.parralx_Sequence_Index.get(Parallax_Heart.currentPage),Parallax_Heart.transfertTime * Parallax_Heart.currentPage.timeToTransfertInto);
-		Parallax_Heart.nextParallax.remove(0) ; 
-		Parallax_Heart.square.transfertInto(Parallax_Heart.currentPage.top, Parallax_Heart.currentPage.bottom, Parallax_Heart.transfertTime * Parallax_Heart.currentPage.timeToTransfertInto);
-		
-		if(Parallax_Heart.parallaxSecondePage != null)
-		{
-			Parallax_Heart.parallaxSecondePage.addColorTransfert(Parallax_Heart.currentPage.colorSurronding, Parallax_Heart.transfertTime * Parallax_Heart.currentPage.timeToTransfertInto);
-			Parallax_Heart.parallaxSecondePage.set_newLayer_Color(Parallax_Heart.currentPage.colorSurronding);
-		}
-			
-	}
-
 	
 	static void drawPage(float delta)
 	{

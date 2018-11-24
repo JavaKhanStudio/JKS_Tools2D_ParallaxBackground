@@ -12,15 +12,13 @@ public abstract class ParallaxPageModel implements DrawingInstruction
 	public final Color colorSurronding ; 
 	public final Color top ; 
 	public final Color bottom ;
-	public float timeToTransfertInto ;
 	public float cloudSpeed ; 
 	
-	public ParallaxPageModel(String atlasPath, Color top, Color bottom, float duree,Color colorSurronding)
+	public ParallaxPageModel(String atlasPath, Color top, Color bottom, Color colorSurronding)
 	{
 		this.atlasPath = atlasPath ;
 		this.top = top ;
 		this.bottom = bottom ; 
-		this.timeToTransfertInto = duree ; 
 		this.colorSurronding = colorSurronding ; 
 	}
 	
