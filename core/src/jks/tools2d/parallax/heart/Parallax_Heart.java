@@ -1,17 +1,13 @@
 package jks.tools2d.parallax.heart;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 import jks.tools2d.parallax.ParallaxPage;
-import jks.tools2d.parallax.TextureRegionParallaxLayer;
 import jks.tools2d.parallax.Utils_Parralax;
 import jks.tools2d.parallax.side.SolarAstre;
 import jks.tools2d.parallax.side.SquareBackground;
@@ -29,27 +25,20 @@ public class Parallax_Heart
 	public static SquareBackground square ;
 	//  1 = nothing * 0 = full screen
 	public static float squarePercentage = 0.5f; 
-
-//	public static ArrayList<ParallaxPageModel> nextParallax = new ArrayList<ParallaxPageModel>(); 
+	public static float bottomSquareSize = Gdx.graphics.getHeight()/5 ;
 
 	public static float worldWidth; 
 	public static float worldHeight ;
 	
 	static ParallaxPageModel currentPage ; 
 	static ParallaxPageModel currentTransfertPage ; 
-//	public static float transfertTime = 10 ; 
 	
 	public static SolarAstre astres ; 
 	public static boolean keepOn ;
 	public static boolean useTimeOfDay ; 
 	
-//	public static ArrayList<ParallaxPageModel> parallax_Sequence_ShowOrder ;
-//	static HashMap<ParallaxPageModel,List<TextureRegionParallaxLayer>> parralx_Sequence_Index ;
-	
-	public static void init(
-			float worldWidth) 
-	{
-		
+	public static void init(float worldWidth) 
+	{	
 		Parallax_Heart.worldWidth = worldWidth ;
 		Parallax_Heart.worldHeight = Utils_Parralax.calculateOtherDimension(true, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		
@@ -63,7 +52,6 @@ public class Parallax_Heart
 
 		shapeRender = new ShapeRenderer() ;
 		parallaxMainPage = new ParallaxPage(); 
-//		parallax_Sequence_ShowOrder = new ArrayList<ParallaxPageModel>() ;
 	}
 	
 	public static void init(
@@ -113,7 +101,10 @@ public class Parallax_Heart
 
 	public static void renderMainPage(float delta)
 	{
+		shapeRender.begin(ShapeType.Filled);
+		Parallax_Utils_Background.drawBottomHalf() ; 
 		Parallax_Utils_Background.drawBackgroundColor(delta) ; 
+		shapeRender.end();
 		
 		batch.begin() ;
 		Parallax_Utils_Astre.drawAstre(delta); 

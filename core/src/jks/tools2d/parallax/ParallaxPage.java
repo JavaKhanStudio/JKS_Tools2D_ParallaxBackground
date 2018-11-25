@@ -38,7 +38,6 @@ public class ParallaxPage
 	
 	Color oldLayer_transfertColor = new Color(1,1,1,1);
 	Color newLayer_transfertColor = new Color(1,1,1,0); 
-
 	
 	/**
 	 * Create a ParallaxBackground without any layers
