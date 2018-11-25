@@ -16,9 +16,9 @@ import jks.tools2d.parallax.heart.ParallaxPageModel;
 public class DayPageModel extends ParallaxPageModel
 {
 
-	public DayPageModel(String atlasPath, Color top, Color bottom, Color colorSurronding) 
+	public DayPageModel(String atlasPath, Color top, Color bottom, Color colorSurronding,Color halfBottom) 
 	{
-		super(atlasPath, top, bottom, colorSurronding);
+		super(atlasPath, top, bottom, colorSurronding,halfBottom);
 		
 	}
 
@@ -37,7 +37,7 @@ public class DayPageModel extends ParallaxPageModel
 		
 		TextureRegionParallaxLayer cloudsLayerA = new TextureRegionParallaxLayer(cloudsRegion, worldWidth, new Vector2(.01f,.01f), true);
 		cloudsLayerA.setPadBottom(worldHeight*.3f);
-		cloudsLayerA.setSpeed(1); // TODO maybie change
+		cloudsLayerA.setSpeed(1);
 		
 		TextureRegionParallaxLayer mountainsLayerA = new TextureRegionParallaxLayer(mountainsRegion.get(0), worldWidth, new Vector2(.006f,.006f), true);
 		mountainsLayerA.setPadBottom(worldHeight*.12f);
@@ -54,21 +54,13 @@ public class DayPageModel extends ParallaxPageModel
 		TextureRegionParallaxLayer treesLayerB = new TextureRegionParallaxLayer(treesRegion.get(1), worldWidth*.7275f, new Vector2(.06f,.06f), true);
 		treesLayerB.setPadBottom(worldHeight*.07f);
 		TextureRegionParallaxLayer treesLayerC = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.08f,.08f), true);
-		treesLayerC.setPadBottom(worldHeight*.05f);
-		TextureRegionParallaxLayer treesLayerD = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.09f,.09f), true);
-		treesLayerD.setPadBottom(worldHeight*.0f);
-		TextureRegionParallaxLayer treesLayerE = new TextureRegionParallaxLayer(treesRegion.get(1), worldWidth*.7275f, new Vector2(.10f,.10f), true);
-		treesLayerE.setPadBottom(-worldHeight*.05f);
-		TextureRegionParallaxLayer treesLayerF = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.11f,.11f), true);
-		treesLayerF.setPadBottom(-worldHeight*.1f);
-		TextureRegionParallaxLayer treesLayerG = new TextureRegionParallaxLayer(treesRegion.get(1), worldWidth*.7275f, new Vector2(.11f,.11f), true);
-		treesLayerG.setPadBottom(-worldHeight*1.5f);
-		TextureRegionParallaxLayer treesLayerH = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.11f,.11f), true);
-		treesLayerH.setPadBottom(-worldHeight*2.f);
-		
+		treesLayerC.setPadBottom(worldHeight*.07f);
+		TextureRegionParallaxLayer treesLayerD = new TextureRegionParallaxLayer(treesRegion.get(1), worldWidth*.7275f, new Vector2(.09f,.09f), true);
+		treesLayerD.setPadBottom(worldHeight*.01f);
+		TextureRegionParallaxLayer treesLayerE = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.10f,.10f), true);
+		treesLayerE.setPadBottom(worldHeight*.0f);
 		    
-		return Arrays.asList(cloudsLayerA,mountainsLayerA,mountainsLayerB,mountainsLayerC,treesLayerA1,treesLayerA,treesLayerB,treesLayerC,treesLayerD,treesLayerE,treesLayerF,treesLayerG,treesLayerH) ;
-	
+		return Arrays.asList(cloudsLayerA,mountainsLayerA,mountainsLayerB,mountainsLayerC,treesLayerA1,treesLayerA,treesLayerB,treesLayerC,treesLayerD,treesLayerE) ;
 	}
 
 }

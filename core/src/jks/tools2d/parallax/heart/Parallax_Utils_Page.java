@@ -1,7 +1,5 @@
 package jks.tools2d.parallax.heart;
 
-import jks.tools2d.parallax.ParallaxPage;
-
 public class Parallax_Utils_Page 
 {
 
@@ -11,14 +9,12 @@ public class Parallax_Utils_Page
 		Parallax_Heart.parallaxMainPage.layers.clear();
 		Parallax_Heart.parallaxMainPage.addLayers(Parallax_Heart.currentPage.howToDraw(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight));
 		Parallax_Utils_Background.setBackground(Parallax_Heart.currentPage) ;
-	
 	}
 	
 	public static void transfertIntoPage(ParallaxPageModel pageModel, float inXSecondes) 
 	{
 		Parallax_Heart.currentTransfertPage = pageModel ; 
 	
-		
 		Parallax_Heart.parallaxMainPage.addLayersTransfert(pageModel,inXSecondes); 
 		Parallax_Heart.square.transfertInto(pageModel.top, pageModel.bottom, inXSecondes );
 		
