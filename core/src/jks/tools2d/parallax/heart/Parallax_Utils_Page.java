@@ -23,34 +23,22 @@ public class Parallax_Utils_Page
 			Parallax_Heart.parallaxSecondePage.addColorTransfert(Parallax_Heart.currentPage.colorSurronding, inXSecondes);
 			Parallax_Heart.parallaxSecondePage.set_newLayer_Color(Parallax_Heart.currentPage.colorSurronding);
 		}
-			
-	
-	}
-	
 
-	/*
-	static void computeNextBackground()
-	{
-		if(!Parrallax_Heart.parallaxBackground.isInTransfer())
-		{
-			if(Parrallax_Heart.nextParallax.size() > 0)
-			{
-				Parralax_Utils_Page.computeNextPage_parralax(Parrallax_Heart.parallaxBackground) ; 
-				Parralax_Utils_Background.computeNextBackground_Color(Parrallax_Heart.parallaxBackground) ;
-			}
-			else if(Parrallax_Heart.parallax_Sequence_ShowOrder.size() > 0)
-			{
-				Parrallax_Heart.nextParallax.addAll(Parrallax_Heart.parallax_Sequence_ShowOrder) ;
-				computeNextBackground() ;
-			}
-		}
 	}
-*/
+		
+	static void act(float delta)
+	{
+		Parallax_Heart.parallaxMainPage.act(delta) ; 
+		if(Parallax_Heart.astres != null)
+			Parallax_Heart.astres.act(delta);
+	}
 	
 	static void drawPage(float delta)
 	{
-		Parallax_Heart.parallaxMainPage.act(delta) ; 
 		Parallax_Heart.parallaxMainPage.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
+		
+		if(Parallax_Heart.astres != null)
+			Parallax_Heart.astres.draw(Parallax_Heart.batch);
 	}
 	
 	static void drawSecondePage(float delta)
