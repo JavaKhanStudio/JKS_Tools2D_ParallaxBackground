@@ -25,6 +25,9 @@ public abstract class ParallaxLayer
 	protected boolean repeat_tileX = true ;
 	protected boolean repeat_tileY = false ;
 	
+	protected float currentX ; 
+	protected float currentY ; 
+	
 	/**
 	 * returns the width of this layer. This width basically represents segment width of this layer after which it either repeats itself while rendering or just ceases to render further, depending upon the horizontal TileMode (see {@link #setTileModeX(TileMode)})
 	 * @return width of the layer
@@ -81,7 +84,13 @@ public abstract class ParallaxLayer
 	public abstract void draw(Batch batch,float x, float y);
 
 	
-	public abstract void act(float delta) ;
+	public void act(float delta)
+	{
+		if(getSpeed() != 0)
+	    	currentX = -getWidth() * 1.25f ;
+    	else
+	    	currentX = 0 ;
+	}
 	
 	public boolean isRepeat_tileX() 
 	{return repeat_tileX;}
@@ -94,12 +103,6 @@ public abstract class ParallaxLayer
 
 	public void setRepeat_tileY(boolean repeat_tileY) 
 	{this.repeat_tileY = repeat_tileY;}
-
-	public float getCurrentX() 
-	{return decalX;}
-
-	public void setCurrentX(float currentX) 
-	{this.decalX = currentX;}
 	
 	public float getSpeed() 
 	{return speed;}
