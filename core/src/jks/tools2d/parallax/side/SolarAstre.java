@@ -45,28 +45,6 @@ public class SolarAstre
 		moon_image = moonPath ; 
 	}
 	
-	//MOCK
-//	public SolarAstre()
-//	{
-//		TextureAtlas atlas = new TextureAtlas("astre/divers.atlas");
-//		sun_image = atlas.findRegion("Sun") ; 
-//		moon_image = atlas.findRegion("Moon") ; 
-//		
-//		astre_size = Gdx.graphics.getWidth() * 0.1f ; 
-//		elipse_width = Gdx.graphics.getWidth() * 1.1f ;
-//		currentX = Gdx.graphics.getWidth() * -0.1f ;
-//		a = elipse_width/2 ; 
-//		aRoot = a * a ; 
-//		
-//		elipse_height = Gdx.graphics.getHeight() * 0.4f ; 
-//		b = elipse_height/2 ;
-//		
-//		elipse_height_Min = Gdx.graphics.getHeight()/2 ; 
-////		currentX = Gdx.graphics.getWidth() / 2 ; 
-////		currentY = Gdx.graphics.getHeight() * 0.75f ; 
-//		speedX = 60 ; 
-//	}
-	
 	public SolarAstre()
 	{
 		TextureAtlas atlas = new TextureAtlas("astre/divers.atlas");
@@ -88,7 +66,6 @@ public class SolarAstre
 	
 	public void startAstre(float inXSec,boolean isDay)
 	{
-		
 		if(isDay)
 		{
 			sun_speedX = elipse_width/inXSec ; 

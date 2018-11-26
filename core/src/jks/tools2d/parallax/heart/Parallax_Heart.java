@@ -94,10 +94,22 @@ public class Parallax_Heart
 		
 	}
 	
-	public static void render(float delta)
+	public static void act(float delta)
 	{
+		if(astres != null)
+			astres.act(delta);
+		
+		if(Parallax_Heart.parallaxMainPage != null)
+			Parallax_Heart.parallaxMainPage.act(delta);
+			
 		
 	}
+	
+	
+//	public static void render(float delta)
+//	{
+//		
+//	}
 
 	public static void renderMainPage(float delta)
 	{

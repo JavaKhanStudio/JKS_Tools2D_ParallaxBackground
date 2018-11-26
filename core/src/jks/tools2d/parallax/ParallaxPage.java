@@ -224,7 +224,6 @@ public class ParallaxPage
 		
 		if(inTransfer)
 		{
-			
 			newLayer_transfertLvl += delta * newLayer_transfertSpeed ; 
 			
 			if(newLayer_transfertLvl >= transparencyPoint)
