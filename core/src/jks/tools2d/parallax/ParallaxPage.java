@@ -147,10 +147,9 @@ public class ParallaxPage
 		    if(inTransfer)
 		    	compute_Color_Transfert(batch) ;
 		    
-		    if(layer.getSpeed() != 0)
-		    	currentX = -layer.getWidth() * 1.25f ;
-	    	else
-		    	currentX = 0 ;
+		    currentX = layer.currentX ;
+		    currentY = layer.currentY ; 
+		    
 		    
 		    do
 			{
@@ -158,8 +157,8 @@ public class ParallaxPage
 
 	            do
 	            {
-	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getCurrentX() > currentX + layer.getWidth())
-            		   || (worldCamera.position.x + currentViewportWidth - layer.getCurrentX() < currentX )  
+	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getDecalX() > currentX + layer.getWidth())
+            		   || (worldCamera.position.x + currentViewportWidth - layer.getDecalX() < currentX )  
             		   || (worldCamera.position.y - currentViewportHeight > currentY + layer.getHeight()) 
             		   || (worldCamera.position.y + currentViewportHeight < currentY)))
 	               {	            		
@@ -187,7 +186,7 @@ public class ParallaxPage
 	            if(!layer.repeat_tileX)
 	        	    break;
 		            
-		    } while(currentX + layer.getCurrentX() < worldCamera.position.x + currentViewportWidth);
+		    } while(currentX + layer.getDecalX() < worldCamera.position.x + currentViewportWidth);
 		}
 		
 		worldCamera.combined.set(cachedProjectionView);
