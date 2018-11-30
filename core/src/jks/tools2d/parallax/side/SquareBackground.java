@@ -38,6 +38,17 @@ public class SquareBackground
 		height = Gdx.graphics.getHeight() - posY ; 	
 	}
 	
+	public SquareBackground(Color color, float height)
+	{
+		bottom_backColor = color ; 
+		top_backColor = color.cpy() ; 
+		
+		posY = 0 ; 
+		posX = 0 ; 
+		width = Gdx.graphics.getWidth() ; 
+		this.height = height ; 	
+	}
+	
 	public void transfertInto(Color top_transfert, Color bottom_transfert, float inXSecondes)
 	{
 		if(top_transfert == null || bottom_transfert == null)

@@ -1,7 +1,7 @@
 package jks.tools2d.parallax.heart;
 
 
-import static jks.tools2d.parallax.heart.Parallax_Heart.square;
+import static jks.tools2d.parallax.heart.Parallax_Heart.topSquare;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -24,7 +24,9 @@ public class Parallax_Heart
 	
 	// Background
 	public static ShapeRenderer shapeRender ; 
-	public static SquareBackground square ;
+	public static SquareBackground topSquare ;
+	public static SquareBackground bottomSquare ;
+	
 	//  1 = nothing * 0 = full screen
 	public static float squarePercentage = 0.5f; 
 	public static float bottomSquareSize = Gdx.graphics.getHeight()/5 ;
@@ -74,7 +76,6 @@ public class Parallax_Heart
 
 		shapeRender = new ShapeRenderer() ;
 		parallaxMainPage = new ParallaxPage(); 
-//		parallax_Sequence_ShowOrder = new ArrayList<ParallaxPageModel>() ;
 	}
 	
 	public static void init(
@@ -103,8 +104,11 @@ public class Parallax_Heart
 		if(astres != null)
 			astres.act(delta);
 		
-		if(square != null)
-			square.act(delta);
+		if(topSquare != null)
+			topSquare.act(delta);
+		
+		if(bottomSquare != null)
+			bottomSquare.act(delta);
 		
 		if(Parallax_Heart.parallaxMainPage != null)
 			Parallax_Heart.parallaxMainPage.act(delta);
@@ -114,8 +118,8 @@ public class Parallax_Heart
 	public static void renderMainPage(float delta)
 	{
 		shapeRender.begin(ShapeType.Filled);
-		Parallax_Utils_Background.drawBottomHalf() ; 
-		Parallax_Utils_Background.drawBackgroundColor(delta) ; 
+		Parallax_Utils_Background.drawBackground_TopColor() ; 
+		Parallax_Utils_Background.drawBackground_BottomColor() ; 
 		shapeRender.end();
 		
 		batch.begin() ;

@@ -1,34 +1,29 @@
 package jks.tools2d.parallax.heart;
 
+import static jks.tools2d.parallax.heart.Parallax_Heart.bottomSquare;
 import static jks.tools2d.parallax.heart.Parallax_Heart.shapeRender;
-import static jks.tools2d.parallax.heart.Parallax_Heart.square;
 import static jks.tools2d.parallax.heart.Parallax_Heart.squarePercentage;
-
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType; 
+import static jks.tools2d.parallax.heart.Parallax_Heart.topSquare;
 
 public class Parallax_Utils_Background 
 {
 
-	static void drawBackgroundColor(float delta)
+	static void drawBackground_TopColor()
 	{
-		if(Parallax_Heart.square != null)
-		{
-			square.draw(shapeRender);
-		}
+		if(topSquare != null)
+			topSquare.draw(shapeRender);
+	}
+	
+	public static void drawBackground_BottomColor() 
+	{
+		if(bottomSquare != null)
+			bottomSquare.draw(shapeRender);
 	}
 
 	static void setBackground(ParallaxPageModel model)
 	{
-		square = model.buildSquareBackground(squarePercentage) ;
+		topSquare = model.buildTopSquareBackground(squarePercentage) ;
+		bottomSquare = model.buildBottomSquareBackground(squarePercentage) ;
 	}
 
-	public static void drawBottomHalf() 
-	{
-		if(Parallax_Heart.currentPage.bottomHalf != null)
-		{
-			shapeRender.setColor(Parallax_Heart.currentPage.bottomHalf);
-			shapeRender.rect(0, 0, Gdx.graphics.getWidth(),Parallax_Heart.bottomSquareSize );
-		}
-	}
 }

@@ -270,7 +270,6 @@ public class ParallaxPage
 	public boolean isInTransfer() 
 	{return inTransfer;}
 
-
 	public void setInTransfer(boolean inTransfer) 
 	{this.inTransfer = inTransfer;}
 
