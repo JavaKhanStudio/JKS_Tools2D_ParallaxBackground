@@ -7,7 +7,7 @@ public class Parallax_Utils_Page
 	{
 		Parallax_Heart.currentPage = pageModel ; 
 		Parallax_Heart.parallaxMainPage.layers.clear();
-		Parallax_Heart.parallaxMainPage.addLayers(Parallax_Heart.currentPage.howToDraw(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight));
+		Parallax_Heart.parallaxMainPage.addLayers(Parallax_Heart.currentPage.getDrawing());
 		Parallax_Utils_Background.setBackground(Parallax_Heart.currentPage) ;
 	}
 	

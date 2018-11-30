@@ -14,7 +14,6 @@ public class Parallax_Utils_Background
 	{
 		if(Parallax_Heart.square != null)
 		{
-			square.act(delta);
 			square.draw(shapeRender);
 		}
 	}
