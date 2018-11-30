@@ -16,7 +16,8 @@ public class Parallax_Utils_Page
 		Parallax_Heart.currentTransfertPage = pageModel ; 
 	
 		Parallax_Heart.parallaxMainPage.addLayersTransfert(pageModel,inXSecondes); 
-		Parallax_Heart.square.transfertInto(pageModel.top, pageModel.bottom, inXSecondes );
+		Parallax_Heart.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes );
+		Parallax_Heart.bottomSquare.transfertInto(pageModel.bottomHalf, pageModel.bottomHalf, inXSecondes );
 		
 		if(Parallax_Heart.parallaxSecondePage != null)
 		{

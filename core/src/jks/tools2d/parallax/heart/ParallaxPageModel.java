@@ -14,18 +14,18 @@ public abstract class ParallaxPageModel implements DrawingInstruction
 {	
 	public String atlasPath ; 
 	public final Color colorSurronding ; 
-	public final Color top ; 
-	public final Color bottom ;
-	public float cloudSpeed ;
+	
+	public final Color topHalf_top ; 
+	public final Color topHalf_bottom ;
 	public final Color bottomHalf ;
 	
 	public List<TextureRegionParallaxLayer> preloadValue ;
 	
-	public ParallaxPageModel(String atlasPath, Color top, Color bottom, Color colorSurronding, Color bottomHalf)
+	public ParallaxPageModel(String atlasPath, Color topHalf_top, Color topHalf_bottom, Color colorSurronding, Color bottomHalf)
 	{
 		this.atlasPath = atlasPath ;
-		this.top = top ;
-		this.bottom = bottom ; 
+		this.topHalf_top = topHalf_top ;
+		this.topHalf_bottom = topHalf_bottom ; 
 		this.colorSurronding = colorSurronding ; 
 		this.bottomHalf = bottomHalf ;
 	}
@@ -43,8 +43,12 @@ public abstract class ParallaxPageModel implements DrawingInstruction
 	 * 1 = nothing
 	 * 0 = full screen
 	 */
-	public SquareBackground buildSquareBackground(float screenPercentage)
-	{return new SquareBackground(top.cpy(),bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage) ;}
+	public SquareBackground buildTopSquareBackground(float screenPercentage)
+	{return new SquareBackground(topHalf_top.cpy(),topHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage) ;}
+	
+	public SquareBackground buildBottomSquareBackground(float screenPercentage)
+	{return new SquareBackground(bottomHalf.cpy(),Gdx.graphics.getHeight() * screenPercentage) ;}
+	
 	
 	public void preload()
 	{
