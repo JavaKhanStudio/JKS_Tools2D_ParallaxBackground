@@ -42,6 +42,7 @@ public class Testing_Basic extends ApplicationAdapter
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
 		GVars_Inputs.updateInput(delta);
+		Parallax_Heart.act(delta);
 		Parallax_Heart.renderMainPage(delta);
 	}
 	

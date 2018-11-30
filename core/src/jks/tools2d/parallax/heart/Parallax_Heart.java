@@ -1,6 +1,8 @@
 package jks.tools2d.parallax.heart;
 
 
+import static jks.tools2d.parallax.heart.Parallax_Heart.square;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -36,6 +38,8 @@ public class Parallax_Heart
 	public static SolarAstre astres ; 
 	public static boolean keepOn ;
 	public static boolean useTimeOfDay ; 
+	
+	public static boolean debug ; 
 	
 	public static void init(float worldWidth) 
 	{	
@@ -91,7 +95,7 @@ public class Parallax_Heart
 	
 	public static void transfertIntoPage(ParallaxPageModel model, float intoXSec)
 	{
-		
+		Parallax_Utils_Page.transfertIntoPage(model, intoXSec);
 	}
 	
 	public static void act(float delta)
@@ -99,17 +103,13 @@ public class Parallax_Heart
 		if(astres != null)
 			astres.act(delta);
 		
+		if(square != null)
+			square.act(delta);
+		
 		if(Parallax_Heart.parallaxMainPage != null)
 			Parallax_Heart.parallaxMainPage.act(delta);
 			
-		
 	}
-	
-	
-//	public static void render(float delta)
-//	{
-//		
-//	}
 
 	public static void renderMainPage(float delta)
 	{

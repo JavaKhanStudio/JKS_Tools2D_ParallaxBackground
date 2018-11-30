@@ -86,7 +86,10 @@ public class ParallaxPage
 	public void addLayersTransfert(ParallaxPageModel pageModel, float inXSecondes) 
 	{
 		inTransfer = true ; 
-		List<TextureRegionParallaxLayer> newLayers = pageModel.howToDraw(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight);
+		List<TextureRegionParallaxLayer> newLayers ;
+		
+		newLayers = pageModel.getDrawing() ; 
+		
 		newLayer_transfertSpeed = 1/inXSecondes  ;
 		oldLayer_transfertSpeed = 1/(inXSecondes * (1-transparencyPoint)) ; 
 		
