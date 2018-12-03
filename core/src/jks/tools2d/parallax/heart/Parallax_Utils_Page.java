@@ -34,7 +34,7 @@ public class Parallax_Utils_Page
 			Parallax_Heart.astres.act(delta);
 	}
 	
-	static void drawPage(float delta)
+	static void drawPage()
 	{
 		Parallax_Heart.parallaxMainPage.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
 		
@@ -42,11 +42,11 @@ public class Parallax_Utils_Page
 			Parallax_Heart.astres.draw(Parallax_Heart.batch);
 	}
 	
-	static void drawSecondePage(float delta)
+	static void drawSecondePage()
 	{
 		if(Parallax_Heart.parallaxSecondePage != null)
 		{
-			Parallax_Heart.parallaxSecondePage.act(delta) ; 
+//			Parallax_Heart.parallaxSecondePage.act(delta) ; 
 			Parallax_Heart.parallaxSecondePage.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
 		}
 	}

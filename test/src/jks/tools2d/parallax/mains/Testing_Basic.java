@@ -43,7 +43,7 @@ public class Testing_Basic extends ApplicationAdapter
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
 		GVars_Inputs.updateInput(delta);
 		Parallax_Heart.act(delta);
-		Parallax_Heart.renderMainPage(delta);
+		Parallax_Heart.renderMainPage();
 	}
 	
 	@Override

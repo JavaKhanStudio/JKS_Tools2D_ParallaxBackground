@@ -5,12 +5,11 @@ import jks.tools2d.parallax.side.Enum_AstreType;
 public class Parallax_Utils_Astre 
 {
 
-	static void drawAstre(float delta)
+	static void drawAstre()
 	{
 		if(Parallax_Heart.astres != null)
 		{
 			Parallax_Heart.batch.setProjectionMatrix(Parallax_Heart.staticCamera.combined);
-			Parallax_Heart.astres.act(delta);
 			Parallax_Heart.astres.draw(Parallax_Heart.batch);
 		}
 	}
