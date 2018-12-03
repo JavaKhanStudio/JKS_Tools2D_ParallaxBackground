@@ -115,7 +115,7 @@ public class Parallax_Heart
 			
 	}
 
-	public static void renderMainPage(float delta)
+	public static void renderMainPage()
 	{
 		shapeRender.begin(ShapeType.Filled);
 		Parallax_Utils_Background.drawBackground_TopColor() ; 
@@ -123,17 +123,18 @@ public class Parallax_Heart
 		shapeRender.end();
 		
 		batch.begin() ;
-		Parallax_Utils_Astre.drawAstre(delta); 
-		Parallax_Utils_Page.drawPage(delta) ;
+		Parallax_Utils_Astre.drawAstre(); 
+		Parallax_Utils_Page.drawPage() ;
 		batch.end();
 	}
-	
+	//TODO finish this
+	/*
 	public static void renderSecondePage(float delta)
 	{
 		batch.begin() ;
 		Parallax_Utils_Page.drawSecondePage(delta) ; 
 		batch.end();
 	}
-	
+	*/
 }
 
