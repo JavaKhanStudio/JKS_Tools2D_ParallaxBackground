@@ -1,9 +1,8 @@
 package jks.tools2d.parallax.heart;
 
 
-import static jks.tools2d.parallax.heart.Parallax_Heart.topSquare;
-
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -21,6 +20,7 @@ public class Parallax_Heart
 	public static SpriteBatch batch;
 	public static ParallaxPage parallaxMainPage;
 	public static ParallaxPage parallaxSecondePage;
+	public static AssetManager manager ;
 	
 	// Background
 	public static ShapeRenderer shapeRender ; 
@@ -43,7 +43,7 @@ public class Parallax_Heart
 	
 	public static boolean debug ; 
 	
-	public static void init(float worldWidth) 
+	public static void init(float worldWidth,AssetManager manager) 
 	{	
 		Parallax_Heart.worldWidth = worldWidth ;
 		Parallax_Heart.worldHeight = Utils_Parralax.calculateOtherDimension(true, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -57,7 +57,8 @@ public class Parallax_Heart
 		Parallax_Heart.batch = new SpriteBatch();
 
 		shapeRender = new ShapeRenderer() ;
-		parallaxMainPage = new ParallaxPage(); 
+		parallaxMainPage = new ParallaxPage();
+		Parallax_Heart.manager = manager ; 
 	}
 	
 	public static void init(
