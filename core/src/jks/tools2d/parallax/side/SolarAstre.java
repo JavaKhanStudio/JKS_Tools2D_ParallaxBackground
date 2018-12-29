@@ -5,6 +5,8 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
+import jks.tools2d.parallax.heart.Parallax_Heart;
+
 public class SolarAstre 
 {
 
@@ -47,7 +49,11 @@ public class SolarAstre
 	
 	public SolarAstre()
 	{
-		TextureAtlas atlas = new TextureAtlas("astre/divers.atlas");
+		
+		Parallax_Heart.manager.load("astre/divers.atlas", TextureAtlas.class);
+		Parallax_Heart.manager.finishLoadingAsset("astre/divers.atlas");
+		
+		TextureAtlas atlas  = Parallax_Heart.manager.get("astre/divers.atlas", TextureAtlas.class) ; 
 		sun_image = atlas.findRegion("Sun") ; 
 		moon_image = atlas.findRegion("Moon") ; 
 		
@@ -79,7 +85,6 @@ public class SolarAstre
 			moon_running = true ;
 		}
 	}
-	
 	
 	
 	public void act(float delta)

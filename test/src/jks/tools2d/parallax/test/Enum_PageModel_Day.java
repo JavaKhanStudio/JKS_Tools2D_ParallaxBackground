@@ -1,8 +1,10 @@
 package jks.tools2d.parallax.test;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 import jks.tools2d.parallax.heart.ParallaxPageModel;
+import jks.tools2d.parallax.heart.Parallax_Heart;
 
 public enum Enum_PageModel_Day
 {
@@ -19,6 +21,28 @@ public enum Enum_PageModel_Day
 	Enum_PageModel_Day(String atlasPath, Color top, Color bottom,Color colorSurronding,Color bottomHalf)
 	{
 		page = new DayPageModel(atlasPath,top,bottom,colorSurronding,bottomHalf) ;
+	}
+	
+	public void loadThemAll()
+	{
+		for(Enum_PageModel_Day model : this.values())
+		{
+			if(model.page.atlasPath != null)
+			{
+				Parallax_Heart.manager.load(model.page.atlasPath, TextureAtlas.class);		
+				
+			}
+		}
+		
+		for(Enum_PageModel_Day model : this.values())
+		{
+			if(model.page.atlasPath != null)
+			{
+				model.page.preload();
+			}
+		}
+		
+
 	}
 
 }

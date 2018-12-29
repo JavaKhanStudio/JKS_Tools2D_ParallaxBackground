@@ -12,6 +12,7 @@ import com.badlogic.gdx.utils.Array;
 
 import jks.tools2d.parallax.TextureRegionParallaxLayer;
 import jks.tools2d.parallax.heart.ParallaxPageModel;
+import jks.tools2d.parallax.heart.Parallax_Heart;
 
 public class DayPageModel extends ParallaxPageModel
 {
@@ -27,6 +28,9 @@ public class DayPageModel extends ParallaxPageModel
 	{
 		if(atlasPath == null)
 			return null ; 
+		
+		Parallax_Heart.manager.load(atlasPath, TextureAtlas.class);
+		Parallax_Heart.manager.finishLoadingAsset(atlasPath);
 		
 		TextureAtlas atlas = new TextureAtlas(atlasPath);
 
