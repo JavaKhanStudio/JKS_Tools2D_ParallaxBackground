@@ -1,9 +1,11 @@
 package jks.tools2d.parallax.heart;
 
+import jks.tools2d.parallax.pages.Page_Whole_Model;
+
 public class Parallax_Utils_Page 
 {
 
-	public static void setPage(ParallaxPageModel pageModel) 
+	public static void setPage(Page_Whole_Model pageModel) 
 	{
 		Parallax_Heart.currentPage = pageModel ; 
 		Parallax_Heart.parallaxMainPage.layers.clear();
@@ -11,7 +13,7 @@ public class Parallax_Utils_Page
 		Parallax_Utils_Background.setBackground(Parallax_Heart.currentPage) ;
 	}
 	
-	public static void transfertIntoPage(ParallaxPageModel pageModel, float inXSecondes) 
+	public static void transfertIntoPage(Page_Whole_Model pageModel, float inXSecondes) 
 	{
 		Parallax_Heart.currentTransfertPage = pageModel ; 
 	
