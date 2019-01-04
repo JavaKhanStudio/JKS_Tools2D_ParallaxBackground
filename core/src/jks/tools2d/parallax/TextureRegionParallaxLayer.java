@@ -66,8 +66,6 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 		setParallaxRatio(parallaxScrollRatio);
 	}
 	
-	
-	
 	/**
 	 * draws the texture region at x y ,with left and bottom padding 
 	 * <p>

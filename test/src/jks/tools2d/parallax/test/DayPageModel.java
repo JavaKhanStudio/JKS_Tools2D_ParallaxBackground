@@ -11,10 +11,10 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
 import jks.tools2d.parallax.TextureRegionParallaxLayer;
-import jks.tools2d.parallax.heart.ParallaxPageModel;
 import jks.tools2d.parallax.heart.Parallax_Heart;
+import jks.tools2d.parallax.pages.Page_Whole_Model;
 
-public class DayPageModel extends ParallaxPageModel
+public class DayPageModel extends Page_Whole_Model
 {
 
 	public DayPageModel(String atlasPath, Color top, Color bottom, Color colorSurronding,Color halfBottom) 

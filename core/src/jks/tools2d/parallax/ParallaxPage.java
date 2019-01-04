@@ -10,8 +10,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
-import jks.tools2d.parallax.heart.ParallaxPageModel;
 import jks.tools2d.parallax.heart.Parallax_Heart;
+import jks.tools2d.parallax.pages.Page_Whole_Model;
 import jks.tools2d.parallax.side.SolarAstre;
 
 
@@ -83,7 +83,7 @@ public class ParallaxPage
 			this.layers.add(texture);
 	}
 	
-	public void addLayersTransfert(ParallaxPageModel pageModel, float inXSecondes) 
+	public void addLayersTransfert(Page_Whole_Model pageModel, float inXSecondes) 
 	{
 		inTransfer = true ; 
 		List<TextureRegionParallaxLayer> newLayers ;
