@@ -5,7 +5,7 @@ import static jks.tools2d.parallax.heart.Parallax_Heart.shapeRender;
 import static jks.tools2d.parallax.heart.Parallax_Heart.squarePercentage;
 import static jks.tools2d.parallax.heart.Parallax_Heart.topSquare;
 
-import jks.tools2d.parallax.pages.Page_Whole_Model;
+import jks.tools2d.parallax.pages.WholePage_Model;
 
 public class Parallax_Utils_Background 
 {
@@ -22,7 +22,7 @@ public class Parallax_Utils_Background
 			bottomSquare.draw(shapeRender);
 	}
 
-	static void setBackground(Page_Whole_Model model)
+	static void setBackground(WholePage_Model model)
 	{
 		topSquare = model.buildTopSquareBackground(squarePercentage) ;
 		bottomSquare = model.buildBottomSquareBackground(squarePercentage) ;

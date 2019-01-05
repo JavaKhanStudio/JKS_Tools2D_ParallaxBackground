@@ -10,7 +10,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 import jks.tools2d.parallax.ParallaxPage;
 import jks.tools2d.parallax.Utils_Parralax;
-import jks.tools2d.parallax.pages.Page_Whole_Model;
+import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SolarAstre;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -35,8 +35,8 @@ public class Parallax_Heart
 	public static float worldWidth; 
 	public static float worldHeight ;
 	
-	static Page_Whole_Model currentPage ; 
-	static Page_Whole_Model currentTransfertPage ; 
+	static WholePage_Model currentPage ; 
+	static WholePage_Model currentTransfertPage ; 
 	
 	public static SolarAstre astres ; 
 	public static boolean keepOn ;
@@ -84,7 +84,7 @@ public class Parallax_Heart
 			OrthographicCamera worldCamera,
 			OrthographicCamera staticCamera,
 			SpriteBatch batch,
-			Page_Whole_Model pageModel,
+			WholePage_Model pageModel,
 			float worldWidth,
 			float worldHeight
 			)
@@ -93,10 +93,10 @@ public class Parallax_Heart
 		Parallax_Utils_Page.setPage(pageModel) ; 
 	}
 	
-	public static void setPage(Page_Whole_Model model)
+	public static void setPage(WholePage_Model model)
 	{Parallax_Utils_Page.setPage(model);}
 	
-	public static void transfertIntoPage(Page_Whole_Model model, float intoXSec)
+	public static void transfertIntoPage(WholePage_Model model, float intoXSec)
 	{
 		Parallax_Utils_Page.transfertIntoPage(model, intoXSec);
 	}

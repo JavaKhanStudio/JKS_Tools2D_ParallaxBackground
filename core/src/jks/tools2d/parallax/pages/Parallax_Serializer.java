@@ -12,13 +12,14 @@ public class Parallax_Serializer extends Serializer<Parallax_Model>
 	public void write(Kryo kryo, Output output, Parallax_Model object) 
 	{
 		output.writeString(object.region_Name);
-		output.writeString(object.region_Position);
+		output.writeInt(object.region_Position);
 		
 		output.writeFloat(object.ratioX);
 		output.writeFloat(object.ratioY);
 		
 		output.writeFloat(object.speed);
-		output.writeFloat(object.pad_Bottom_Ratio);
+		output.writeFloat(object.pad_X_Ratio);
+		output.writeFloat(object.pad_Y_Ratio);
 	}
 
 	@Override
@@ -26,13 +27,14 @@ public class Parallax_Serializer extends Serializer<Parallax_Model>
 	{
 		Parallax_Model returning = new Parallax_Model();
 		returning.region_Name = input.readString() ; 
-		returning.region_Position = input.readString() ;
+		returning.region_Position = input.readInt() ;
 		
 		returning.ratioX = input.readFloat() ;
 		returning.ratioY = input.readFloat() ;
 		
 		returning.speed = input.readFloat() ;
-		returning.pad_Bottom_Ratio = input.readFloat() ;
+		returning.pad_X_Ratio = input.readFloat() ;
+		returning.pad_Y_Ratio = input.readFloat() ;
 		return returning;
 	}
 

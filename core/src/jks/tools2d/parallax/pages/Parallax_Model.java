@@ -6,21 +6,11 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 public class Parallax_Model 
 {
 	public String region_Name ; 
-	public String region_Position ; 
+	public int region_Position ; 
 	public float ratioX ; 
 	public float ratioY ; 
 	
 	public float speed ; 
-	public float pad_Bottom_Ratio ; 
+	public float pad_X_Ratio ; 
+	public float pad_Y_Ratio ; 
 }
-
-
-/*
-TextureRegionParallaxLayer mountainsLayerA = new TextureRegionParallaxLayer(
-mountainsRegion.get(0), 
-worldWidth, 
-new Vector2(.006f,.006f), 
-true);
-		mountainsLayerA.setPadBottom(worldHeight*.12f);
-
-*/

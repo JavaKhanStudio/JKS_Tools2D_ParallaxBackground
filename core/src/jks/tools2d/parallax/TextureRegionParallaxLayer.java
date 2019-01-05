@@ -9,7 +9,7 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 {
 
 	private TextureRegion texRegion;
-	private float pad_Left=0, pad_Right=0, pad_Bottom=0, pad_Top=0;
+	private float pad_X = 0, pad_Y = 0 ;
 	private float region_Width,region_Height;
 	
 	
@@ -74,7 +74,7 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	@Override
 	public void draw(Batch batch, float x, float y) 
 	{
-		batch.draw(texRegion, x + pad_Left, y + pad_Bottom, getRegionWidth(), getRegionHeight());
+		batch.draw(texRegion, x + pad_X, y + pad_Y, getRegionWidth(), getRegionHeight());
 	}
 	
 	@Override
@@ -91,14 +91,14 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	 */
 	@Override
 	public float getWidth() 
-	{return getPadLeft()+getRegionWidth()+getPadRight();}
+	{return getPadLeft()+getRegionWidth();}
 
 	/**
 	 * returns the height of this layer (regionHeight+padTop+padBottom)
 	 */
 	@Override
 	public float getHeight() 
-	{return getPadTop()+getRegionHeight()+getPadBottom();}
+	{return getRegionHeight()+getPadBottom();}
 	
 	/**
 	 * sets left right top bottom padding to same value
@@ -107,8 +107,6 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	public void setAllPad(float pad)
 	{
 		setPadLeft(pad);
-		setPadRight(pad);
-		setPadTop(pad);
 		setPadBottom(pad);
 	}
 
@@ -124,72 +122,27 @@ public class TextureRegionParallaxLayer extends ParallaxLayer
 	 * @return left padding
 	 */
 	public float getPadLeft() 
-	{return pad_Left;}
+	{return pad_X;}
 
 	/**
 	 * sets the left padding
 	 * @param left padding
 	 */
 	public void setPadLeft(float padLeft) 
-	{this.pad_Left = padLeft;}
+	{this.pad_X = padLeft;}
 
-	/**
-	 * get right padding
-	 * @return right padding
-	 */
-	public float getPadRight() 
-	{return pad_Right;}
-
-	/**
-	 * sets the right padding
-	 * @param right padding
-	 */
-	public void setPadRight(float padRight) 
-	{this.pad_Right = padRight;}
-
-	/**
-	 * get bottom padding
-	 * @return bottom padding
-	 */
+	
 	public float getPadBottom() 
-	{return pad_Bottom;}
+	{return pad_Y;}
 
-	/**
-	 * sets the bottom padding
-	 * @param bottom padding
-	 */
 	public void setPadBottom(float padBottom)
-	{this.pad_Bottom = padBottom;}
+	{this.pad_Y = padBottom;}
 
-	/**
-	 * get top padding
-	 * @return top padding
-	 */
-	public float getPadTop() 
-	{return pad_Top;}
-
-	/**
-	 * sets the top padding
-	 * @param top padding
-	 */
-	public void setPadTop(float padTop) 
-	{this.pad_Top = padTop;}
-
-
-	/**
-	 * return the region width of this layer
-	 * @return region width
-	 */
 	public float getRegionWidth() 
 	{return region_Width;}
-	
-	/**
-	 * return the region height of this layer
-	 * @return region height
-	 */
+
 	public float getRegionHeight() 
 	{return region_Height;}
-
 	
 	private void setRegionWidth(float width)
 	{this.region_Width = width;}
