@@ -6,11 +6,11 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-public class Page_Whole_Serializer extends Serializer<Page_Whole_Model>
+public class WholePage_Serializer extends Serializer<WholePage_Model>
 {
 
 	@Override
-	public void write(Kryo kryo, Output output, Page_Whole_Model object) 
+	public void write(Kryo kryo, Output output, WholePage_Model object) 
 	{
 		kryo.writeObject(output, object.colorSurronding);
 		
@@ -19,13 +19,12 @@ public class Page_Whole_Serializer extends Serializer<Page_Whole_Model>
 		kryo.writeObject(output, object.bottomHalf);
 		
 		kryo.writeObject(output, object.pageModel);
-	}
-	
+	}	
 
 	@Override
-	public Page_Whole_Model read(Kryo kryo, Input input, Class<? extends Page_Whole_Model> type) 
+	public WholePage_Model read(Kryo kryo, Input input, Class<? extends WholePage_Model> type) 
 	{
-		Page_Whole_Model page = new Page_Whole_Model() ; 
+		WholePage_Model page = new WholePage_Model() ; 
 		page.colorSurronding = kryo.readObject(input,Color.class) ; 
 		
 		page.topHalf_top = kryo.readObject(input,Color.class) ; 

@@ -12,7 +12,7 @@ import com.esotericsoftware.kryo.io.Output;
 
 import jks.tools2d.parallax.pages.Color_Serializer;
 import jks.tools2d.parallax.pages.Page_Model;
-import jks.tools2d.parallax.pages.Page_Whole_Model;
+import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
 public class Kryo_Testing 
@@ -31,7 +31,7 @@ public class Kryo_Testing
 	      kryo.register(Parallax_Model.class) ; 
 	      kryo.register(Page_Model.class) ;
 	      kryo.register(ArrayList.class) ; 
-	      kryo.register(Page_Whole_Model.class) ; 
+	      kryo.register(WholePage_Model.class) ; 
 	      
 	      System.out.println("hellow kryo");
 	      testColor(kryo);
@@ -75,18 +75,18 @@ public class Kryo_Testing
 			parallaxPage.ratioX + " " + 
 			parallaxPage.ratioY + " " + 
 			parallaxPage.speed + " " + 
-			parallaxPage.pad_Bottom_Ratio + " ");
+			parallaxPage.pad_Y_Ratio + " ");
     }
     
     public static Parallax_Model buildPageModel()
     {
     	Parallax_Model parallaxPage = new Parallax_Model() ; 
     	parallaxPage.region_Name = "region_Name" ; 
-    	parallaxPage.region_Position = "region_Position" ; 
+    	parallaxPage.region_Position = 1 ; 
     	parallaxPage.ratioX = 1 ; 
     	parallaxPage.ratioY = 2 ; 
     	parallaxPage.speed = 3 ; 
-    	parallaxPage.pad_Bottom_Ratio = 4 ; 
+    	parallaxPage.pad_Y_Ratio = 4 ; 
     	return parallaxPage ; 
     }
 
@@ -101,7 +101,7 @@ public class Kryo_Testing
     	Input input = new Input(new FileInputStream(path + pageName + format));
     	Page_Model model = kryo.readObject(input, Page_Model.class);
     	input.close();   
-    	System.out.println("testPage work " + " Nuumber :" + page.pageList.size());
+    	System.out.println("testPage work " + " Number :" + page.pageList.size());
     }
     
     static public Page_Model buildPage()
@@ -118,7 +118,7 @@ public class Kryo_Testing
     
     static public void testWholePage(Kryo kryo) throws FileNotFoundException
     {
-    	Page_Whole_Model wholePage = new Page_Whole_Model() ; 
+    	WholePage_Model wholePage = new WholePage_Model() ; 
     	wholePage.colorSurronding = Color.BLACK ; 
     	wholePage.topHalf_top = Color.BLUE ; 
     	wholePage.topHalf_bottom = Color.CHARTREUSE ; 
@@ -131,22 +131,12 @@ public class Kryo_Testing
     	output.close();
 
     	Input input = new Input(new FileInputStream(path + pageWholeName + format));
-    	Page_Whole_Model model = kryo.readObject(input, Page_Whole_Model.class);
-    	System.out.println("testWholePage work " + " Nuumber :" + model.bottomHalf);
+    	WholePage_Model model = kryo.readObject(input, WholePage_Model.class);
+    	System.out.println("testWholePage work " + " Number :" + model.bottomHalf);
     	   
     }
     
     
-	   
-    /*
-     public Color colorSurronding ; 
-	
-	public Color topHalf_top ; 
-	public Color topHalf_bottom ;
-	public Color bottomHalf ;
-	
-	public Page_Model pageModel ; 
-     */
     
    static public class SomeClass 
    {

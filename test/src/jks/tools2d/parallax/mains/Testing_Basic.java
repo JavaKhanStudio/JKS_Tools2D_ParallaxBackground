@@ -32,15 +32,11 @@ public class Testing_Basic extends ApplicationAdapter
 	    Enum_PageModel_Day.STATU_QUO.loadThemAll();
 	    Parallax_Utils_Astre.startAstre(Enum_AstreType.SUN, 10);
 		Parallax_Heart.parallaxMainPage.setDrawingHeight(6.78f);
-		Parallax_Utils_Page.setPage(Enum_PageModel_Day.DAY.page) ; 
+		Parallax_Utils_Page.setPage(Enum_PageModel_Day.DAY.wholePage) ; 
 		GlobalTimmer.getElapse("TEST", "WHOLE", true);
 	    Gdx.input.setInputProcessor(new InputProcessus());
 	}
 	 
-
-
-
-
 	@Override
 	public void render () 
 	{

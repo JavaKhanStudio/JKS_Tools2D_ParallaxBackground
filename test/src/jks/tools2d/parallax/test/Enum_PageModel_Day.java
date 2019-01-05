@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 import jks.tools2d.parallax.heart.Parallax_Heart;
-import jks.tools2d.parallax.pages.Page_Whole_Model;
+import jks.tools2d.parallax.pages.WholePage_Model;
 
 public enum Enum_PageModel_Day
 {
@@ -16,29 +16,30 @@ public enum Enum_PageModel_Day
 	STATU_QUO(null,null,null,null,null),
 	;
 
-	public Page_Whole_Model page ;
+	public WholePage_Model wholePage ; 
 	
 	Enum_PageModel_Day(String atlasPath, Color top, Color bottom,Color colorSurronding,Color bottomHalf)
 	{
-		page = new DayPageModel(atlasPath,top,bottom,colorSurronding,bottomHalf) ;
+		wholePage = new WholePage_Model(atlasPath,top,bottom,colorSurronding,bottomHalf) ;
+		wholePage.pageModel.pageList = DayPageModel.buildPages() ; 
 	}
 	
 	public void loadThemAll()
 	{
+		// loading all of the atlas
 		for(Enum_PageModel_Day model : this.values())
 		{
-			if(model.page.atlasPath != null)
+			if(wholePage.pageModel.atlasPath != null)
 			{
-				Parallax_Heart.manager.load(model.page.atlasPath, TextureAtlas.class);		
-				
+				Parallax_Heart.manager.load(wholePage.pageModel.atlasPath, TextureAtlas.class);		
 			}
 		}
 		
 		for(Enum_PageModel_Day model : this.values())
 		{
-			if(model.page.atlasPath != null)
+			if(wholePage.pageModel.atlasPath != null)
 			{
-				model.page.preload();
+				wholePage.preload(); 
 			}
 		}
 		

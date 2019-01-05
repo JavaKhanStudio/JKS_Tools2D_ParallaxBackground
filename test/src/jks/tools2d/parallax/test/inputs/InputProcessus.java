@@ -84,22 +84,22 @@ public class InputProcessus extends InputAdapter
 		switch (character) 
 		{
 			case '1' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.DAY.page) ; 
+				Parallax_Utils_Page.setPage(Enum_PageModel_Day.DAY.wholePage) ; 
 				return true ;
 			case '2' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.NIGHT.page) ; 
+				Parallax_Utils_Page.setPage(Enum_PageModel_Day.NIGHT.wholePage) ; 
 				return true ;
 			case '3' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.RAIN.page) ; 
+				Parallax_Utils_Page.setPage(Enum_PageModel_Day.RAIN.wholePage) ; 
 				return true ;
 			case '4' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.SUNRISE.page) ; 
+				Parallax_Utils_Page.setPage(Enum_PageModel_Day.SUNRISE.wholePage) ; 
 				return true ;
 			case '5' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.SUNSET.page) ; 
+				Parallax_Utils_Page.setPage(Enum_PageModel_Day.SUNSET.wholePage) ; 
 				return true ;
 			case '&' : 
-				Parallax_Utils_Page.transfertIntoPage(Enum_PageModel_Day.DAY.page,10);
+				Parallax_Utils_Page.transfertIntoPage(Enum_PageModel_Day.DAY.wholePage,10);
 		}
 		return false;
 	}
