@@ -26,7 +26,6 @@ public class Parallax_Utils_Page
 			Parallax_Heart.parallaxSecondePage.addColorTransfert(Parallax_Heart.currentPage.colorSurronding, inXSecondes);
 			Parallax_Heart.parallaxSecondePage.set_newLayer_Color(Parallax_Heart.currentPage.colorSurronding);
 		}
-
 	}
 		
 	static void act(float delta)
@@ -48,10 +47,7 @@ public class Parallax_Utils_Page
 	{
 		if(Parallax_Heart.parallaxSecondePage != null)
 		{
-//			Parallax_Heart.parallaxSecondePage.act(delta) ; 
 			Parallax_Heart.parallaxSecondePage.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
 		}
 	}
-
-
 }

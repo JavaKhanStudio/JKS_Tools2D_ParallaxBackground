@@ -74,6 +74,7 @@ public class WholePage_Model
 		Parallax_Heart.manager.finishLoadingAsset(pageModel.atlasPath);
 		
 		TextureAtlas atlas = new TextureAtlas(pageModel.atlasPath);
+//		HashMap<String, Array<AtlasRegion>> regions = new HashMap<String, Array<AtlasRegion>>(); 	
 		List<TextureRegionParallaxLayer> returningList = new ArrayList<TextureRegionParallaxLayer>() ; 
 		
 		for(Parallax_Model parallax : pageModel.pageList)
