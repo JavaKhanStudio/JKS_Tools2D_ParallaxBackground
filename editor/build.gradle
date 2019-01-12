@@ -1,6 +1,7 @@
 apply plugin: "java"
 
-sourceCompatibility = 1.6
+sourceCompatibility = 1.8
+
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 sourceSets.main.java.srcDirs = [ "src/" ]
@@ -23,5 +24,6 @@ dependencies
 {
      compile "com.badlogicgames.gdx:gdx:1.9.6"
      compile "com.badlogicgames.gdx:gdx-box2d:1.9.6"
+     compile "com.kotcrab.vis:vis-ui:$visuiVersion"
 }
 

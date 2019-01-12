@@ -10,8 +10,6 @@ public class GVars_Inputs
 		leftPressed, rightPressed,
 		zoomInPressed, zoomOutPressed 
 		;
-
-	
 	
 	public static void updateInput (float delta) 
 	{

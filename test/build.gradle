@@ -4,7 +4,7 @@ sourceCompatibility = 1.6
 sourceSets.main.java.srcDirs = [ "src/" ]
 
 project.ext.mainClassName = "com.mygdx.game.desktop.Main_FYP_Game"
-project.ext.assetsDir = new File("../android/assets");
+project.ext.assetsDir = new File("../android/assets") ;
 
 task run(dependsOn: classes, type: JavaExec) {
     main = project.mainClassName
@@ -29,22 +29,26 @@ task dist(type: Jar) {
     from {configurations.compile.collect {zipTree(it)}}
     from files(project.assetsDir);
  
-    manifest {
+    manifest 
+    {
         attributes 'Main-Class': project.mainClassName
     }
 }
 
 dist.dependsOn classes
 
-eclipse {
-    project {
+eclipse 
+{
+    project 
+    {
         name = appName + "_Test"
         linkedResource name: 'assets', type: '2', location: 'PARENT-1-PROJECT_LOC/android/assets'
     }
 }
 
 task afterEclipseImport(description: "Post processing after project generation", group: "IDE") {
-  doLast {
+  doLast 
+  {
     def classpath = new XmlParser().parse(file(".classpath"))
     new Node(classpath, "classpathentry", [ kind: 'src', path: 'assets' ]);
     def writer = new FileWriter(file(".classpath"))

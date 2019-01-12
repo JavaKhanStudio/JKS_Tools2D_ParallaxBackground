@@ -1,4 +1,4 @@
-package jks.tools2d.kryo.test;
+package jks.tools2d.packing.kryo;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -10,6 +10,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import jks.tools2d.parallax.fvars.FVars_Path;
 import jks.tools2d.parallax.pages.Color_Serializer;
 import jks.tools2d.parallax.pages.Page_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -17,7 +18,6 @@ import jks.tools2d.parallax.pages.Parallax_Model;
 
 public class Kryo_Testing 
 {
-	private final static String path = "C:/Users/Simon/Documents/TestGDX/"; 
 	private final static String colorName = "color" ; 
 	private final static String parallaxName = "parallax" ; 
 	private final static String pageName = "page" ; 
@@ -48,11 +48,12 @@ public class Kryo_Testing
     	color.b = 0.6f ;
     	color.g = 0.7f ;
     	color.r = 0.8f ;
-    	Output output = new Output(new FileOutputStream(path + colorName + format));
+    	
+    	Output output = new Output(new FileOutputStream(FVars_Path.path + colorName + format));
     	kryo.writeObject(output, color);
     	output.close();
 
-    	Input input = new Input(new FileInputStream(path + colorName + format));
+    	Input input = new Input(new FileInputStream(FVars_Path.path + colorName + format));
     	Color colorLoaded = kryo.readObject(input, Color.class);
     	input.close();   
     	System.out.println("testColor work " + colorLoaded.a + " " + colorLoaded.b + " " + colorLoaded.g + " " + colorLoaded.r + " " );     
@@ -63,11 +64,11 @@ public class Kryo_Testing
     	Parallax_Model parallaxPage = buildPageModel() ; 
     	
     	
-    	Output output = new Output(new FileOutputStream(path + parallaxName + format));
+    	Output output = new Output(new FileOutputStream(FVars_Path.path + parallaxName + format));
     	kryo.writeObject(output, parallaxPage);
     	output.close();
 
-    	Input input = new Input(new FileInputStream(path + parallaxName + format));
+    	Input input = new Input(new FileInputStream(FVars_Path.path + parallaxName + format));
     	Parallax_Model model = kryo.readObject(input, Parallax_Model.class);
     	input.close();   
     	System.out.println("testParallaxModel work " + parallaxPage.region_Name + " " + 
@@ -94,11 +95,11 @@ public class Kryo_Testing
     {
     	Page_Model page = buildPage() ; 
     	
-    	Output output = new Output(new FileOutputStream(path + pageName + format));
+    	Output output = new Output(new FileOutputStream(FVars_Path.path + pageName + format));
     	kryo.writeObject(output, page);
     	output.close();
 
-    	Input input = new Input(new FileInputStream(path + pageName + format));
+    	Input input = new Input(new FileInputStream(FVars_Path.path + pageName + format));
     	Page_Model model = kryo.readObject(input, Page_Model.class);
     	input.close();   
     	System.out.println("testPage work " + " Number :" + page.pageList.size());
@@ -126,18 +127,15 @@ public class Kryo_Testing
     	
     	wholePage.pageModel = buildPage() ; 
     	
-    	Output output = new Output(new FileOutputStream(path + pageWholeName + format));
+    	Output output = new Output(new FileOutputStream(FVars_Path.path + pageWholeName + format));
     	kryo.writeObject(output, wholePage);
     	output.close();
 
-    	Input input = new Input(new FileInputStream(path + pageWholeName + format));
+    	Input input = new Input(new FileInputStream(FVars_Path.path + pageWholeName + format));
     	WholePage_Model model = kryo.readObject(input, WholePage_Model.class);
     	System.out.println("testWholePage work " + " Number :" + model.bottomHalf);
-    	   
-    }
-    
-    
-    
+   }
+      
    static public class SomeClass 
    {
       String value;

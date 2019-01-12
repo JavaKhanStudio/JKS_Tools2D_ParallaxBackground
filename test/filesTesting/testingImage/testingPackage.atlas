@@ -1,0 +1,76 @@
+
+testingPackage.png
+size: 4096,8192
+format: RGBA8888
+filter: Nearest,Nearest
+repeat: none
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Clouds
+  rotate: false
+  xy: 2, 5412
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Clouds2
+  rotate: false
+  xy: 2, 4330
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Layer
+  rotate: false
+  xy: 2, 2166
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: 1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Layer2
+  rotate: false
+  xy: 1924, 5412
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Layer3
+  rotate: false
+  xy: 2, 3248
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Layer4
+  rotate: false
+  xy: 1924, 4330
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Mountains
+  rotate: false
+  xy: 1924, 3248
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Stars
+  rotate: false
+  xy: 2, 1084
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Stars2
+  rotate: false
+  xy: 1924, 2166
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/filesTesting/testingImage/Sun
+  rotate: false
+  xy: 2, 2
+  size: 1920, 1080
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1

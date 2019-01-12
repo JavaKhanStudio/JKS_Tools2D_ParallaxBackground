@@ -11,16 +11,10 @@ public class DesktopLauncher_Day
 	{
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
 
-//		config.width = 800;
-//		config.height = 550;
-		
+
 		config.width = 1300;
 		config.height = 800;
-		
-//		config.width = LwjglApplicationConfiguration.getDesktopDisplayMode().width;
-//        config.height = LwjglApplicationConfiguration.getDesktopDisplayMode().height;
-//        config.fullscreen = true;
-		
+
 		new LwjglApplication(new Testing_Basic(), config);
 	}
 }
