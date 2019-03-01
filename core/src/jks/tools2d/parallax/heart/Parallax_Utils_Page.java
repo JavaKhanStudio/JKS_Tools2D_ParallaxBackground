@@ -1,5 +1,6 @@
 package jks.tools2d.parallax.heart;
 
+import jks.tools2d.parallax.ParallaxPage;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 public class Parallax_Utils_Page 
@@ -11,6 +12,15 @@ public class Parallax_Utils_Page
 		Parallax_Heart.parallaxMainPage.layers.clear();
 		Parallax_Heart.parallaxMainPage.addLayers(Parallax_Heart.currentPage.getDrawing());
 		Parallax_Utils_Background.setBackground(Parallax_Heart.currentPage) ;
+	}
+	
+	public static void setSecondPage(WholePage_Model pageModel) 
+	{
+		if(Parallax_Heart.parallaxSecondePage == null)
+			Parallax_Heart.parallaxSecondePage = new ParallaxPage() ; 
+		
+		Parallax_Heart.parallaxSecondePage.layers.clear();
+		Parallax_Heart.parallaxSecondePage.addLayers(pageModel.getDrawing());
 	}
 	
 	public static void transfertIntoPage(WholePage_Model pageModel, float inXSecondes) 
@@ -35,12 +45,10 @@ public class Parallax_Utils_Page
 			Parallax_Heart.astres.act(delta);
 	}
 	
-	static void drawPage()
+	static void drawPage(ParallaxPage page)
 	{
-		Parallax_Heart.parallaxMainPage.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
-		
-		if(Parallax_Heart.astres != null)
-			Parallax_Heart.astres.draw(Parallax_Heart.batch);
+		page.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
+
 	}
 	
 	static void drawSecondePage()

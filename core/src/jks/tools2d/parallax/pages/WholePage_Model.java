@@ -26,7 +26,13 @@ public class WholePage_Model
 	public List<TextureRegionParallaxLayer> preloadValue ;
 	
 	public WholePage_Model()
-	{}
+	{
+		colorSurronding = Color.WHITE ; 
+		topHalf_top = Color.WHITE ; 
+		topHalf_bottom = Color.WHITE ; 
+		bottomHalf = Color.WHITE ; 
+		pageModel = new Page_Model() ; 
+	}
 	
 	public WholePage_Model(String atlasPath, Color topHalf_top, Color topHalf_bottom, Color colorSurronding, Color bottomHalf)
 	{
@@ -35,6 +41,14 @@ public class WholePage_Model
 		this.colorSurronding = colorSurronding ;
 		this.bottomHalf = bottomHalf ; 
 		
+		pageModel = new Page_Model() ; 
+		pageModel.atlasPath = atlasPath ; 
+		pageModel.outside = false ; 
+//		newPage.pageModel.pageList = buildPage() ; 
+	}
+	
+	public WholePage_Model(String atlasPath)
+	{
 		pageModel = new Page_Model() ; 
 		pageModel.atlasPath = atlasPath ; 
 		pageModel.outside = false ; 
@@ -67,14 +81,14 @@ public class WholePage_Model
 		if(preloadValue == null)
 			preloadValue = load(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight); 
 	}
-
-	private List<TextureRegionParallaxLayer> load(float worldWidth, float worldHeight) 
+	
+	public void forceLoad(TextureAtlas atlas)
 	{
-		Parallax_Heart.manager.load(pageModel.atlasPath, TextureAtlas.class);
-		Parallax_Heart.manager.finishLoadingAsset(pageModel.atlasPath);
-		
-		TextureAtlas atlas = new TextureAtlas(pageModel.atlasPath);
-//		HashMap<String, Array<AtlasRegion>> regions = new HashMap<String, Array<AtlasRegion>>(); 	
+		preloadValue = load(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight,atlas); 
+	}
+
+	private List<TextureRegionParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
+	{
 		List<TextureRegionParallaxLayer> returningList = new ArrayList<TextureRegionParallaxLayer>() ; 
 		
 		for(Parallax_Model parallax : pageModel.pageList)
@@ -82,15 +96,28 @@ public class WholePage_Model
 			TextureRegionParallaxLayer layer = new TextureRegionParallaxLayer(
 					atlas.findRegions(parallax.region_Name).get(parallax.region_Position), 
 					worldWidth, 
-					new Vector2(parallax.ratioX,parallax.ratioY), 
+					new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY), 
+					parallax.sizeRatio,
 					true) ; 
 
-			layer.setPadBottom(parallax.pad_Y_Ratio * worldHeight);
+			layer.setPadY(parallax.pad_Y_Ratio * worldHeight);
+			layer.setDecalX(parallax.pad_X_Ratio * worldHeight);
 			layer.setSpeed(parallax.speed);
 			returningList.add(layer) ;
 		}
 		
 		return returningList;
 	}
+	
+	private List<TextureRegionParallaxLayer> load(float worldWidth, float worldHeight) 
+	{
+		Parallax_Heart.manager.load(pageModel.atlasPath, TextureAtlas.class);
+		Parallax_Heart.manager.finishLoadingAsset(pageModel.atlasPath);
+		
+		TextureAtlas atlas = new TextureAtlas(pageModel.atlasPath);
+		return load(worldWidth, worldHeight, atlas) ; 
+	}
+	
+	
 	
 }

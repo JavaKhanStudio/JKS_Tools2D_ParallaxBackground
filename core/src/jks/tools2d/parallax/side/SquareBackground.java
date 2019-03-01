@@ -7,8 +7,8 @@ import com.badlogic.gdx.math.Vector3;
 
 public class SquareBackground 
 {
-	Color bottom_backColor ; 
-	Color top_backColor; 
+	public Color bottom_backColor ; 
+	public Color top_backColor; 
 	
 	Vector3 bottom_ColorSpeed ; 
 	Color bottom_ColorObjectif ; 

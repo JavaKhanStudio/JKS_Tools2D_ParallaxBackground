@@ -10,9 +10,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
-import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.WholePage_Model;
-import jks.tools2d.parallax.side.SolarAstre;
 
 
 public class ParallaxPage 
@@ -162,7 +160,7 @@ public class ParallaxPage
 	            {
 	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getDecalX() > currentX + layer.getWidth())
             		   || (worldCamera.position.x + currentViewportWidth - layer.getDecalX() < currentX )  
-            		   || (worldCamera.position.y - currentViewportHeight > currentY + layer.getHeight()) 
+            		   || (worldCamera.position.y - currentViewportHeight > currentY + layer.getHeight() * 1.35f) 
             		   || (worldCamera.position.y + currentViewportHeight < currentY)))
 	               {	            		
 	            		
@@ -259,7 +257,6 @@ public class ParallaxPage
 
 	public void set_newLayer_Color(Color color) 
 	{this.newLayer_transfertColor = color;}
-	
 	
 	public Color get_oldLayer_Color() 
 	{return oldLayer_transfertColor;}
