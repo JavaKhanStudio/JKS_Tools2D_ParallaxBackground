@@ -3,7 +3,9 @@ package jks.tools2d.parallax.heart;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
@@ -17,7 +19,7 @@ import jks.tools2d.parallax.side.SquareBackground;
 public class Parallax_Heart 
 {
 	public static OrthographicCamera worldCamera;
-	public static OrthographicCamera staticCamera;
+	public static Camera staticCamera;
 	public static SpriteBatch batch;
 	public static ParallaxPage parallaxMainPage;
 	public static ParallaxPage parallaxSecondePage;
@@ -29,7 +31,7 @@ public class Parallax_Heart
 	public static SquareBackground bottomSquare ;
 	
 	//  1 = nothing * 0 = full screen
-	public static float squarePercentage = 0.5f; 
+	public static float topSquarePercent = 0.5f; 
 	public static float bottomSquareSize = Gdx.graphics.getHeight()/5 ;
 
 	public static float worldWidth; 
@@ -37,6 +39,7 @@ public class Parallax_Heart
 	
 	static WholePage_Model currentPage ; 
 	static WholePage_Model currentTransfertPage ; 
+	 
 	
 	public static SolarAstre astres ; 
 	public static boolean keepOn ;
@@ -53,7 +56,7 @@ public class Parallax_Heart
 		Parallax_Heart.worldCamera.setToOrtho(false,worldWidth,worldHeight);
 		Parallax_Heart.worldCamera.position.add(10000, 0, 0);
 		
-		Parallax_Heart.staticCamera = new OrthographicCamera() ;
+		Parallax_Heart.staticCamera = new PerspectiveCamera() ;
 		
 		Parallax_Heart.batch = new SpriteBatch();
 
@@ -112,13 +115,16 @@ public class Parallax_Heart
 		if(bottomSquare != null)
 			bottomSquare.act(delta);
 		
-		if(Parallax_Heart.parallaxMainPage != null)
-			Parallax_Heart.parallaxMainPage.act(delta);
-			
+		if(parallaxMainPage != null)
+			parallaxMainPage.act(delta);
+		
+		if(parallaxSecondePage != null)
+			parallaxSecondePage.act(delta);		
 	}
 
 	public static void renderMainPage()
 	{
+		shapeRender.setTransformMatrix(staticCamera.combined);
 		shapeRender.begin(ShapeType.Filled);
 		Parallax_Utils_Background.drawBackground_TopColor() ; 
 		Parallax_Utils_Background.drawBackground_BottomColor() ; 
@@ -126,17 +132,14 @@ public class Parallax_Heart
 		
 		batch.begin() ;
 		Parallax_Utils_Astre.drawAstre(); 
-		Parallax_Utils_Page.drawPage() ;
+		Parallax_Utils_Page.drawPage(parallaxMainPage) ;
 		batch.end();
 	}
-	//TODO finish this
-	/*
-	public static void renderSecondePage(float delta)
+
+	public static void renderSecondePage()
 	{
 		batch.begin() ;
-		Parallax_Utils_Page.drawSecondePage(delta) ; 
+		Parallax_Utils_Page.drawPage(parallaxSecondePage) ; 
 		batch.end();
-	}
-	*/
+	}	
 }
-

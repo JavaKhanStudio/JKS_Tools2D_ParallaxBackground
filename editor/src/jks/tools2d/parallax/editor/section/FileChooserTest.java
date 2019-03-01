@@ -116,6 +116,7 @@ public class FileChooserTest extends Dialog
             }            
          }
       };
+      
       table.row();
       Label label = new Label("..", skin);
       label.setName("..");
@@ -137,4 +138,3 @@ public class FileChooserTest extends Dialog
    }
    
 }
-

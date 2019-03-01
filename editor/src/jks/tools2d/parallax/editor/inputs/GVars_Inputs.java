@@ -1,7 +1,7 @@
 package jks.tools2d.parallax.editor.inputs ;
 
-import static jks.tools2d.parallax.heart.Parallax_Heart.* ;
-import static jks.tools2d.parallax.editor.inputs.GVars_Heart_Editor.* ; 
+import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.*;
+import static jks.tools2d.parallax.heart.Parallax_Heart.* ; 
 
 public class GVars_Inputs 
 {

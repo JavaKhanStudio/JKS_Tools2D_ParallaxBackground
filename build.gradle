@@ -5,6 +5,8 @@ buildscript
         mavenLocal()
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "https://mvnrepository.com/artifact/net.dermetfan.libgdx-utils/libgdx-utils" }
+        
     }
     dependencies 
     {
@@ -34,6 +36,12 @@ allprojects
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
     }
+    
+    properties
+    {
+    	buildDir = 'desktop' ; 
+    }
+    
 }
 
 project(":desktop") 
@@ -43,8 +51,8 @@ project(":desktop")
     dependencies 
     {
         compile project(":test")
-        compile "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
-        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+        compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+  		compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
         compile "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
     }
 }
@@ -58,8 +66,25 @@ project(":test")
     {
      	compile project(":core")
      	compile project(":editor")
+     	compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+  		compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+  		compile "com.badlogicgames.gdx:gdx-tools:$gdxVersion" 
     }
 }
+
+project(":core") 
+{
+    apply plugin: "java"
+
+    dependencies 
+	{
+     	compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+     	compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+     	compile "com.esotericsoftware:kryo:5.0.0-RC1"
+	}
+}
+
+
 
 project(":editor") 
 {
@@ -68,9 +93,11 @@ project(":editor")
     dependencies 
     {
      	compile project(":core")
-     	compile "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
-        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-  		compile "com.badlogicgames.gdx:gdx-tools:$gdxVersion" ; 
+     	compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+  		compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+  		compile "com.badlogicgames.gdx:gdx-tools:$gdxVersion" 
+  		//compile "net.dermetfan.libgdx-utils:libgdx-utils:0.3.4"
+  		
     }
 }
 

@@ -1,7 +1,7 @@
 package jks.tools2d.packing.texture;
 
-import static jks.tools2d.parallax.fvars.FVars_Path.images;
-import static jks.tools2d.parallax.fvars.FVars_Path.path;
+import static jks.tools2d.parallax.gvars.FVars_Path.images;
+import static jks.tools2d.parallax.gvars.FVars_Path.path;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,7 +12,7 @@ import com.badlogic.gdx.tools.texturepacker.TexturePacker;
 import com.badlogic.gdx.tools.texturepacker.TexturePacker.Settings;
 import com.esotericsoftware.kryo.io.Output;
 
-import jks.tools2d.parallax.fvars.FVars_Path; 
+import jks.tools2d.parallax.gvars.FVars_Path; 
 
 public class TexturePacking_Testing 
 {

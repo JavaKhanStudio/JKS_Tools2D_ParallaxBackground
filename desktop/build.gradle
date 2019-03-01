@@ -14,7 +14,7 @@ sourceSets
 }
 
 project.ext.mainClassName = "jks.tools2d.desktop.DesktopLauncher"
-project.ext.assetsDir = new File("../core/assets");
+project.ext.assetsDir = new File("../desktop/assets");
 
 task run(dependsOn: classes, type: JavaExec) {
     main = project.mainClassName

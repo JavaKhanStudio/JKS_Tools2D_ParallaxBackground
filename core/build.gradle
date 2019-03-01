@@ -18,9 +18,3 @@ task wrapper(type: Wrapper) {
     gradleVersion = '3.1'
 }
 
-dependencies 
-{
-     compile "com.badlogicgames.gdx:gdx:1.9.6"
-     compile "com.badlogicgames.gdx:gdx-box2d:1.9.6"
-     compile "com.esotericsoftware:kryo:5.0.0-RC1"
-}

@@ -2,7 +2,7 @@ package jks.tools2d.parallax.heart;
 
 import static jks.tools2d.parallax.heart.Parallax_Heart.bottomSquare;
 import static jks.tools2d.parallax.heart.Parallax_Heart.shapeRender;
-import static jks.tools2d.parallax.heart.Parallax_Heart.squarePercentage;
+import static jks.tools2d.parallax.heart.Parallax_Heart.topSquarePercent;
 import static jks.tools2d.parallax.heart.Parallax_Heart.topSquare;
 
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -10,7 +10,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 public class Parallax_Utils_Background 
 {
 
-	static void drawBackground_TopColor()
+	public static void drawBackground_TopColor()
 	{
 		if(topSquare != null)
 			topSquare.draw(shapeRender);
@@ -22,10 +22,10 @@ public class Parallax_Utils_Background
 			bottomSquare.draw(shapeRender);
 	}
 
-	static void setBackground(WholePage_Model model)
+	public static void setBackground(WholePage_Model model)
 	{
-		topSquare = model.buildTopSquareBackground(squarePercentage) ;
-		bottomSquare = model.buildBottomSquareBackground(squarePercentage) ;
+		topSquare = model.buildTopSquareBackground(topSquarePercent) ;
+		bottomSquare = model.buildBottomSquareBackground(topSquarePercent) ;
 	}
 
 }

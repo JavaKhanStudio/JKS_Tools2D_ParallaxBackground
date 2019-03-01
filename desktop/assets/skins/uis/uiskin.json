@@ -74,8 +74,24 @@ com.badlogic.gdx.scenes.scene2d.ui.TextField$TextFieldStyle: {
 	small: {font: small-font, fontColor: white, disabledFontColor: grey, selection: selection, background: textfield, cursor: cursor, messageFont: default-font, messageFontColor: grey }
 },
 com.badlogic.gdx.scenes.scene2d.ui.CheckBox$CheckBoxStyle: {
-	default: {checkboxOn: check-on, checkboxOff: check-off, font: default-font, fontColor: white, disabledFontColor: grey },
+	default: 
+	{
+		checkboxOn: check-on, 
+	 	checkboxOff: check-off, 
+	 	font: default-font, 
+	 	fontColor: white, 
+	 	disabledFontColor: grey 
+	},
+	startStop: 
+	{
+		checkboxOn: check-on, 
+	 	checkboxOff: check-off, 
+	 	font: default-font, 
+	 	fontColor: white, 
+	 	disabledFontColor: grey 
+	},
 	radio: {checkboxOn: radio-on, checkboxOff: radio-off, font: default-font, fontColor: white, disabledFontColor: grey }
+	
 },
 com.badlogic.gdx.scenes.scene2d.ui.List$ListStyle: {
 	default: {fontColorUnselected: white, selection: padded-list-selection, fontColorSelected: white, font: default-font }
@@ -194,6 +210,38 @@ com.kotcrab.vis.ui.util.form.SimpleFormValidator$FormValidatorStyle: {
 },
 com.kotcrab.vis.ui.util.adapter.SimpleListAdapter$SimpleListAdapterStyle: {
 	default: {background: window-bg, selection: list-selection }
-}
+},
+
+jks.tools2d.filechooser.FC_List$Style: {
+    default: 
+    {
+        pathFieldStyle: "default",
+        contentsStyle: "default",
+        chooseButtonStyle: "default",
+        openButtonStyle: "default",
+        cancelButtonStyle: "default",
+        backButtonStyle: "default",
+        parentButtonStyle: "default",
+        space: 10,
+        contentsPaneStyle: "default"
+    }
+},
+
+jks.tools2d.filechooser.FC_Tree$Style: {
+    "default": 
+    {
+        "treeStyle": "default",
+        "scrollPaneStyle": "default",
+        "labelStyle": "default",
+        "selectButtonStyle": "default",
+        "cancelButtonStyle": "default",
+        "background": "default"
+    }
+},
+jks.tools2d.libgdxutils.JksTextureList$ListStyle: {
+	default: {fontColorUnselected: white, selection: padded-list-selection, fontColorSelected: white, font: default-font }
+},
+
+
 
 }

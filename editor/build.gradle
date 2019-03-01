@@ -4,8 +4,21 @@ sourceCompatibility = 1.8
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
-sourceSets.main.java.srcDirs = [ "src/" ]
+sourceCompatibility = 1.8
+sourceSets 
+{
+    main 
+    {
+        java 
+        {
+            srcDir 'src'
+            srcDir 'assets'     
+        }
+    }
+}
 
+project.ext.mainClassName = "jks.tools2d.desktop.DesktopLauncher"
+project.ext.assetsDir = new File("../desktop/assets");
 
 jar {
     baseName 'editor'

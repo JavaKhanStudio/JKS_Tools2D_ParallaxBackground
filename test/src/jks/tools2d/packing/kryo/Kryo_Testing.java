@@ -10,10 +10,12 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import jks.tools2d.parallax.fvars.FVars_Path;
+import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
+import jks.tools2d.parallax.gvars.FVars_Path;
 import jks.tools2d.parallax.pages.Color_Serializer;
 import jks.tools2d.parallax.pages.Page_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
+import jks.tools2d.parallax.test.Enum_ColdNight;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
 public class Kryo_Testing 
@@ -73,8 +75,8 @@ public class Kryo_Testing
     	input.close();   
     	System.out.println("testParallaxModel work " + parallaxPage.region_Name + " " + 
 			parallaxPage.region_Position + " " + 
-			parallaxPage.ratioX + " " + 
-			parallaxPage.ratioY + " " + 
+			parallaxPage.parallaxScalingSpeedX + " " + 
+			parallaxPage.parallaxScalingSpeedY + " " + 
 			parallaxPage.speed + " " + 
 			parallaxPage.pad_Y_Ratio + " ");
     }
@@ -84,8 +86,8 @@ public class Kryo_Testing
     	Parallax_Model parallaxPage = new Parallax_Model() ; 
     	parallaxPage.region_Name = "region_Name" ; 
     	parallaxPage.region_Position = 1 ; 
-    	parallaxPage.ratioX = 1 ; 
-    	parallaxPage.ratioY = 2 ; 
+    	parallaxPage.parallaxScalingSpeedX = 1 ; 
+    	parallaxPage.parallaxScalingSpeedY = 2 ; 
     	parallaxPage.speed = 3 ; 
     	parallaxPage.pad_Y_Ratio = 4 ; 
     	return parallaxPage ; 
@@ -119,19 +121,13 @@ public class Kryo_Testing
     
     static public void testWholePage(Kryo kryo) throws FileNotFoundException
     {
-    	WholePage_Model wholePage = new WholePage_Model() ; 
-    	wholePage.colorSurronding = Color.BLACK ; 
-    	wholePage.topHalf_top = Color.BLUE ; 
-    	wholePage.topHalf_bottom = Color.CHARTREUSE ; 
-    	wholePage.bottomHalf = Color.FOREST ; 
+    	WholePage_Model wholePage = Enum_ColdNight.COLD_NIGHT.wholePage ; 
     	
-    	wholePage.pageModel = buildPage() ; 
-    	
-    	Output output = new Output(new FileOutputStream(FVars_Path.path + pageWholeName + format));
+    	Output output = new Output(new FileOutputStream(FVars_Path.path + pageWholeName + "." + FVars_Extensions.PARALLAX));
     	kryo.writeObject(output, wholePage);
     	output.close();
 
-    	Input input = new Input(new FileInputStream(FVars_Path.path + pageWholeName + format));
+    	Input input = new Input(new FileInputStream(FVars_Path.path + pageWholeName + "." + FVars_Extensions.PARALLAX));
     	WholePage_Model model = kryo.readObject(input, WholePage_Model.class);
     	System.out.println("testWholePage work " + " Number :" + model.bottomHalf);
    }

@@ -1,0 +1,8 @@
+package jks.tools2d.parallax.editor.gvars;
+
+public class FVars_Extensions
+{
+	public static final String PARALLAX = "plax" ;
+	public static final String ATLAS = "atlas" ; 
+	;
+}
