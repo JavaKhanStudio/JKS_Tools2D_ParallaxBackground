@@ -6,8 +6,10 @@ import java.util.HashMap;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 
-import jks.tools2d.parallax.TextureRegionParallaxLayer;
+import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
+import jks.tools2d.parallax.ParallaxLayer;
 
 public class GVars_Vue_Edition
 {
@@ -31,7 +33,14 @@ public class GVars_Vue_Edition
 	
 	public static float screenSpeed = 0; 
 	
-	public static TextureRegionParallaxLayer currentlySelectedParallax ;
+	public static ParallaxLayer currentlySelectedParallax ;
+	
+	public static boolean autoGoToSelected = true; 
+	
+	public static TabbedPane tabbedPane ; 
+	
+	public static boolean inTextureSelection ; 
+	public static ExtendedColorPicker colorPicked ; 
 	
 	public static void buildSizes()
 	{
@@ -39,5 +48,14 @@ public class GVars_Vue_Edition
 		size_Bloc_Parallax = (Gdx.graphics.getWidth()/4) * 3 ;
 		size_Height_Bloc_Parallax_Controle = Gdx.graphics.getHeight()/4 ; 
 		sizeTabsBar = 30 ; 
+	}
+
+	public static void selectLayer(ParallaxLayer layer)
+	{
+		currentlySelectedParallax = layer ; 
+		if(autoGoToSelected)
+		{
+			tabbedPane.switchTab(2);
+		}
 	}
 }

@@ -18,7 +18,7 @@ public class ColdNightModel
 		cloudsTop0.speed = 0.5f ;
 		cloudsTop0.parallaxScalingSpeedX = .01f ; 
 		cloudsTop0.parallaxScalingSpeedY = .01f ; 
-		cloudsTop0.pad_Y_Ratio = 1.0f ;
+		cloudsTop0.pad_Y_Ratio = 100f ;
 		
 		Parallax_Model cloudsTop1 = new Parallax_Model() ; 
 		cloudsTop1.region_Name = "clouds" ;
@@ -27,7 +27,7 @@ public class ColdNightModel
 		cloudsTop1.speed = 0.5f ;
 		cloudsTop1.parallaxScalingSpeedX = .01f ; 
 		cloudsTop1.parallaxScalingSpeedY = .01f ; 
-		cloudsTop1.pad_Y_Ratio = .90f ;
+		cloudsTop1.pad_Y_Ratio = 90f ;
 		
 		Parallax_Model cloudsTop2 = new Parallax_Model() ; 
 		cloudsTop2.region_Name = "clouds" ;
@@ -36,7 +36,7 @@ public class ColdNightModel
 		cloudsTop2.speed = 0.5f ;
 		cloudsTop2.parallaxScalingSpeedX = .01f ; 
 		cloudsTop2.parallaxScalingSpeedY = .01f ; 
-		cloudsTop2.pad_Y_Ratio = .80f ;
+		cloudsTop2.pad_Y_Ratio = 80f ;
 		
 		Parallax_Model clouds0 = new Parallax_Model() ; 
 		clouds0.region_Name = "clouds" ;
@@ -45,7 +45,7 @@ public class ColdNightModel
 		clouds0.speed = 0.5f ;
 		clouds0.parallaxScalingSpeedX = .01f ; 
 		clouds0.parallaxScalingSpeedY = .01f ; 
-		clouds0.pad_Y_Ratio = .70f ;
+		clouds0.pad_Y_Ratio = 70f ;
 		
 		Parallax_Model clouds1 = new Parallax_Model() ; 
 		clouds1.region_Name = "clouds" ;
@@ -54,7 +54,7 @@ public class ColdNightModel
 		clouds1.speed = 0.5f ;
 		clouds1.parallaxScalingSpeedX = .01f ; 
 		clouds1.parallaxScalingSpeedY = .01f ; 
-		clouds1.pad_Y_Ratio = .70f ;
+		clouds1.pad_Y_Ratio = 70f ;
 		
 		Parallax_Model rocks = new Parallax_Model() ; 
 		rocks.region_Name = "rocks" ; 
@@ -62,7 +62,7 @@ public class ColdNightModel
 		rocks.region_Position = 0 ; 
 		rocks.parallaxScalingSpeedX = .005f ; 
 		rocks.parallaxScalingSpeedY = .006f ; 
-		rocks.pad_Y_Ratio = .40f ; 
+		rocks.pad_Y_Ratio = 40f ; 
 		
 		Parallax_Model ground0 = new Parallax_Model() ; 
 		ground0.region_Name = "ground" ; 
@@ -70,7 +70,7 @@ public class ColdNightModel
 		ground0.region_Position = 1 ; 
 		ground0.parallaxScalingSpeedX = .008f ; 
 		ground0.parallaxScalingSpeedY = .006f ; 
-		ground0.pad_Y_Ratio = .38f ; 
+		ground0.pad_Y_Ratio = 38f ; 
 		
 		Parallax_Model ground1 = new Parallax_Model() ; 
 		ground1.region_Name = "ground" ; 
@@ -78,7 +78,7 @@ public class ColdNightModel
 		ground1.region_Position = 2 ; 
 		ground1.parallaxScalingSpeedX = .0105f ; 
 		ground1.parallaxScalingSpeedY = .006f ; 
-		ground1.pad_Y_Ratio = .35f ; 
+		ground1.pad_Y_Ratio = 35f ; 
 		
 		Parallax_Model ground2 = new Parallax_Model() ; 
 		ground2.region_Name = "ground" ; 
@@ -86,7 +86,7 @@ public class ColdNightModel
 		ground2.region_Position = 1 ; 
 		ground2.parallaxScalingSpeedX = .0135f ; 
 		ground2.parallaxScalingSpeedY = .006f ; 
-		ground2.pad_Y_Ratio = .30f ; 
+		ground2.pad_Y_Ratio = 30f ; 
 
 		Parallax_Model ground3 = new Parallax_Model() ; 
 		ground3.region_Name = "ground" ; 
@@ -94,7 +94,7 @@ public class ColdNightModel
 		ground3.region_Position = 0 ; 
 		ground3.parallaxScalingSpeedX = .015f ; 
 		ground3.parallaxScalingSpeedY = .006f ; 
-		ground3.pad_Y_Ratio = .25f ; 
+		ground3.pad_Y_Ratio = 25f ; 
 		
 		Parallax_Model ground4 = new Parallax_Model() ; 
 		ground4.region_Name = "ground" ; 
@@ -102,7 +102,7 @@ public class ColdNightModel
 		ground4.region_Position = 1 ; 
 		ground4.parallaxScalingSpeedX = .020f ; 
 		ground4.parallaxScalingSpeedY = .006f ; 
-		ground4.pad_Y_Ratio = .20f ; 
+		ground4.pad_Y_Ratio = 20f ; 
 		
 		Parallax_Model ground5 = new Parallax_Model() ; 
 		ground5.region_Name = "ground" ; 
@@ -110,7 +110,7 @@ public class ColdNightModel
 		ground5.region_Position = 2 ; 
 		ground5.parallaxScalingSpeedX = .024f ; 
 		ground5.parallaxScalingSpeedY = .006f ; 
-		ground5.pad_Y_Ratio = .20f ; 
+		ground5.pad_Y_Ratio = 20f ; 
 		
 		Parallax_Model water = new Parallax_Model() ; 
 		water.region_Name = "waterDark" ; 
@@ -118,7 +118,7 @@ public class ColdNightModel
 		water.region_Position = 0 ; 
 		water.parallaxScalingSpeedX = .04f ; 
 		water.parallaxScalingSpeedY = .006f ; 
-		water.pad_Y_Ratio = .08f ; 
+		water.pad_Y_Ratio = 08f ; 
 		water.speed = -1f ;
 		
 		
@@ -150,8 +150,8 @@ public class ColdNightModel
 		water1.region_Position = 0 ; 
 		water1.parallaxScalingSpeedX = .044f ; 
 		water1.parallaxScalingSpeedY = .006f ; 
-		water1.pad_X_Ratio = .20f ; 
-		water1.pad_Y_Ratio = .10f ; 
+		water1.pad_X_Ratio = 20f ; 
+		water1.pad_Y_Ratio = 10f ; 
 		water1.speed = -1.4f ;
 		
 		Parallax_Model water2 = new Parallax_Model() ; 
@@ -160,8 +160,8 @@ public class ColdNightModel
 		water2.region_Position = 0 ; 
 		water2.parallaxScalingSpeedX = .048f ; 
 		water2.parallaxScalingSpeedY = .006f ; 
-		water2.pad_X_Ratio = .30f ; 
-		water2.pad_Y_Ratio = .00f ; 
+		water2.pad_X_Ratio = 30f ; 
+		water2.pad_Y_Ratio = 00f ; 
 		water2.speed = -1f ;
 		
 		
@@ -170,5 +170,4 @@ public class ColdNightModel
 		
 		return returningList ; 
 	}
-
 }

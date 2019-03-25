@@ -17,13 +17,13 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
 import jks.tools2d.libgdxutils.JksTextureList;
 import jks.tools2d.libgdxutils.Utils_Interface;
-import jks.tools2d.parallax.TextureRegionParallaxLayer;
+import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Parallax_Heart; 
 
-public class Vue_Edition_SideBar_TexutreSelection extends Tab
+public class Vue_Edition_SideBar_TexutreAdding extends Tab
 {
 
-	Vue_Edition_SideBar_TexutreSelection()
+	Vue_Edition_SideBar_TexutreAdding()
 	{
 		super(false, false);
 		mainTable = new Table() ; 
@@ -59,7 +59,7 @@ public class Vue_Edition_SideBar_TexutreSelection extends Tab
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
 				TextureRegion text = imageList.getSelected() ; 
-				TextureRegionParallaxLayer layer = new TextureRegionParallaxLayer(
+				ParallaxLayer layer = new ParallaxLayer(
 						text,
 						Parallax_Heart.worldWidth, 
 						new Vector2(.01f,.01f), 
@@ -68,6 +68,8 @@ public class Vue_Edition_SideBar_TexutreSelection extends Tab
 				
 				
 				Parallax_Heart.parallaxMainPage.layers.add(layer);
+				
+				GVars_Vue_Edition.selectLayer(layer) ; 
 				
 				return true ; 
 			}

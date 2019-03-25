@@ -27,27 +27,28 @@ public class SquareBackground
 	
 	
 	
-	public SquareBackground(Color Top, Color bottom, float posY)
+	public SquareBackground(Color Top, Color bottom, float posY,boolean top)
 	{
-		bottom_backColor = bottom ; 
 		top_backColor = Top ; 
+		bottom_backColor = bottom ; 
 		
-		this.posY = posY ; 
+		
 		posX = 0 ; 
 		width = Gdx.graphics.getWidth() ; 
-		height = Gdx.graphics.getHeight() - posY ; 	
+		if(top)
+		{
+			height = Gdx.graphics.getHeight() - posY ; 	
+			this.posY = posY ; 
+		}
+		else
+		{
+			posY = 0 ; 
+			this.height = posY ; 	
+		}
+		
 	}
 	
-	public SquareBackground(Color color, float height)
-	{
-		bottom_backColor = color ; 
-		top_backColor = color.cpy() ; 
-		
-		posY = 0 ; 
-		posX = 0 ; 
-		width = Gdx.graphics.getWidth() ; 
-		this.height = height ; 	
-	}
+
 	
 	public void transfertInto(Color top_transfert, Color bottom_transfert, float inXSecondes)
 	{

@@ -17,13 +17,18 @@ import java.util.HashMap;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
+import com.badlogic.gdx.graphics.g2d.Gdx2DPixmap;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.utils.ScreenUtils;
 
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
@@ -77,9 +82,8 @@ public class Vue_Edition extends AVue_Model
 		
 		GVars_Ui.mainUi.addActor(new Vue_Edition_SideBar_AControl()); 
 		
-		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_Ui.mainUi, new EditorInputProcessus()));
-		
-//		Gdx.input.setInputProcessor(new EditorInputProcessus());
+		InputProcessor input = buildClickProcessor() ; 	
+		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_Ui.mainUi, new EditorInputProcessus(),input));
 	}
 	
 	
@@ -125,6 +129,72 @@ public class Vue_Edition extends AVue_Model
 		}	
 	}
 
+	InputProcessor buildClickProcessor()
+	{
+		
+		
+		return new InputProcessor()
+		{
+			
+			@Override
+			public boolean touchUp(int screenX, int screenY, int pointer, int button)
+			{
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public boolean touchDragged(int screenX, int screenY, int pointer)
+			{
+				return false;
+			}
+			
+			@Override
+			public boolean touchDown(int screenX, int screenY, int pointer, int button)
+			{
+				return false;
+			}
+			
+			@Override
+			public boolean scrolled(int amount)
+			{
+				return false;
+			}
+			
+			@Override
+			public boolean mouseMoved(int screenX, int screenY)
+			{
+				if(GVars_Vue_Edition.colorPicked != null)
+				{
+					Pixmap map = ScreenUtils.getFrameBufferPixmap(screenX, screenY, 1, 1) ; 
+					GVars_Vue_Edition.colorPicked.setColor(new Color(map.getPixel(0, 0)));
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean keyUp(int keycode)
+			{
+				
+				return false;
+			}
+			
+			@Override
+			public boolean keyTyped(char character)
+			{
+				
+				return false;
+			}
+			
+			@Override
+			public boolean keyDown(int keycode)
+			{
+				// TODO Auto-generated method stub
+				return false;
+			}
+		};
+	}
+	
 	@Override
 	public void render()
 	{

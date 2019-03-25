@@ -13,7 +13,7 @@ public class Utils_Interface
 	{
 		Texture texture  = new Texture(Gdx.files.internal(texturePath),true);
 		texture.setFilter(TextureFilter.Linear, TextureFilter.Linear) ;
-	    TextureRegion TextureRegion = new TextureRegion(texture);;
+	    TextureRegion TextureRegion = new TextureRegion(texture);
 	    return new TextureRegionDrawable(TextureRegion);
 	}
 	

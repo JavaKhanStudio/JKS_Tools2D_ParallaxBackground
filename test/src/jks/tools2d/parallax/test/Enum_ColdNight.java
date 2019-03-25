@@ -10,7 +10,6 @@ public enum Enum_ColdNight
 {
 	COLD_NIGHT("parralax/models/OneNight.atlas",Color.valueOf("0B4B6F"),Color.valueOf("0C77AD"), new Color(0.25f,0.07f,0.0f,1),Color.valueOf("030205")),
 	COLD_WATER("parralax/models/OneNight.atlas"),
-	
 	;
 	
 	public WholePage_Model wholePage ; 
@@ -43,5 +42,4 @@ public enum Enum_ColdNight
 		}
 		
 	}
-
 }

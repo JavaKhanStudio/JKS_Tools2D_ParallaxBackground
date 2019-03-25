@@ -1,15 +1,23 @@
 package jks.tools2d.parallax;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
+import jks.tools2d.parallax.heart.Parallax_Heart;
 
-public abstract class ParallaxLayer 
+
+public class ParallaxLayer
 {
+//	ParallaxLayer
+	private TextureRegion texRegion;
+	private float padPosition_X = 0, padPosition_Y = 0 ;
+	private float region_Width,region_Height;
+	private float sizeRatio =  1;
 	
 	protected Vector2 parallaxRatio;
-	protected float decalX = 0 ; 
-	
+	protected float decalX = 0, decalY = 0 ; 
+
 	protected float speed ; 
 	
 	protected boolean repeat_tileX = true ;
@@ -18,11 +26,90 @@ public abstract class ParallaxLayer
 	protected float currentX ; 
 	protected float currentY ; 
 
-	public abstract float getWidth();
+	
+	public ParallaxLayer(TextureRegion texRegion, float oneDimen, Vector2 parallaxScrollRatio, boolean isWidth)
+	{
+		this(texRegion, oneDimen, parallaxScrollRatio, 1f, isWidth) ; 
+	}
+	
+	public ParallaxLayer(TextureRegion texRegion, float oneDimen, Vector2 parallaxScrollRatio, float sizeRatio, boolean isWidth)
+	{
+		this.texRegion = texRegion ;
+		this.sizeRatio = sizeRatio ;
+		
+		if(isWidth)
+		{
+			setRegionWidth(oneDimen);
+	    	setRegionHeight(Utils_Parralax.calculateOtherDimension(true, oneDimen, this.texRegion));	
+		}
+		else
+		{
+	    	setRegionHeight(oneDimen);
+	    	setRegionWidth(Utils_Parralax.calculateOtherDimension(false, oneDimen, this.texRegion));
+		}
+		
+		setParallaxRatio(parallaxScrollRatio);
+	}
+	
 
+	public void draw(Batch batch, float x, float y) 
+	{
+		batch.draw(texRegion, x, y, getRegionWidth(), getRegionHeight());
+	}
+	
+	public void act(float delta) 
+	{
+		decalX += delta * speed ;
+		
+		if(Math.abs(decalX) >= getRegionWidth()) 
+			decalX -= getRegionWidth();
+	}
 
-	public abstract float getHeight();
+	public float getWidth() 
+	{return getRegionWidth();}
 
+	public float getHeight() 
+	{return getRegionHeight();}
+	
+	public void setAllPad(float pad)
+	{
+		setPadPositionX(pad);
+		setPadPositionY(pad);
+	}
+
+	public TextureRegion getTexRegion()
+	{return texRegion;}
+
+	public float getPadPositionX() 
+	{return padPosition_X;}
+
+	public void setPadPositionX(float padX) 
+	{
+		this.decalX = this.decalX + (padX - this.padPosition_X) * Parallax_Heart.getWidthPercent(); 
+		this.padPosition_X = padX;
+	}
+	
+	public float getPadPositionY() 
+	{return padPosition_Y;}
+
+	public void setPadPositionY(float padY)
+	{
+		this.decalY = this.decalY + (padY - this.padPosition_Y) * Parallax_Heart.getHeightPercent() ; 
+		this.padPosition_Y = padY;
+	}
+
+	public float getRegionWidth() 
+	{return region_Width * sizeRatio;}
+
+	public float getRegionHeight() 
+	{return region_Height * sizeRatio;}
+	
+	private void setRegionWidth(float width)
+	{this.region_Width = width;}
+	
+	private void setRegionHeight(float height)
+	{this.region_Height = height;}
+	
 	public Vector2 getParallaxRatio() 
 	{return parallaxRatio;}
 
@@ -41,15 +128,6 @@ public abstract class ParallaxLayer
 		this.parallaxRatio.set(ratioX,ratioY);
 	}
 
-	public abstract void draw(Batch batch,float x, float y);
-
-	public void act(float delta)
-	{
-		if(getSpeed() != 0)
-	    	currentX = -getWidth() * 1.25f ;
-    	else
-	    	currentX = 0 ;
-	}
 	
 	public boolean isRepeat_tileX() 
 	{return repeat_tileX;}
@@ -70,9 +148,21 @@ public abstract class ParallaxLayer
 	{this.speed = speed;}
 	
 	public float getDecalX() 
-	{return decalX;}
+	{return decalX ;}
 
 	public void setDecalX(float decalX) 
 	{this.decalX = decalX;}
 	
+	public float getDecalY()
+	{return decalY;}
+
+	public void setDecalY(float decalY)
+	{this.decalY = decalY;}
+	
+	public float getSizeRatio()
+	{return sizeRatio;}
+
+	public void setSizeRatio(float sizeRatio)
+	{this.sizeRatio = sizeRatio;}
+
 }

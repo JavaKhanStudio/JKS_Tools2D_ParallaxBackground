@@ -75,16 +75,16 @@ public class ParallaxPage
 		this.layers.addAll(layers);
 	}
 	
-	public void addLayers(List<TextureRegionParallaxLayer> newLayers) 
+	public void addLayers(List<ParallaxLayer> newLayers) 
 	{
-		for(TextureRegionParallaxLayer texture : newLayers) 
+		for(ParallaxLayer texture : newLayers) 
 			this.layers.add(texture);
 	}
 	
 	public void addLayersTransfert(WholePage_Model pageModel, float inXSecondes) 
 	{
 		inTransfer = true ; 
-		List<TextureRegionParallaxLayer> newLayers ;
+		List<ParallaxLayer> newLayers ;
 		
 		newLayers = pageModel.getDrawing() ; 
 		
@@ -95,7 +95,7 @@ public class ParallaxPage
 		
 		if(newLayers != null && !newLayers.isEmpty())
 		{
-			for(TextureRegionParallaxLayer texture : newLayers) 
+			for(ParallaxLayer texture : newLayers) 
 				this.transferLayers.add(texture);
 		}
 		else // Keep statu Quo
@@ -158,15 +158,15 @@ public class ParallaxPage
 
 	            do
 	            {
-	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getDecalX() > currentX + layer.getWidth())
-            		   || (worldCamera.position.x + currentViewportWidth - layer.getDecalX() < currentX )  
-            		   || (worldCamera.position.y - currentViewportHeight > currentY + layer.getHeight() * 1.35f) 
-            		   || (worldCamera.position.y + currentViewportHeight < currentY)))
+	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getDecalX() >= currentX + layer.getWidth())
+            		   || (worldCamera.position.x + currentViewportWidth - layer.getDecalX() <= currentX )  
+            		   || (worldCamera.position.y - currentViewportHeight - layer.getDecalY() > currentY + layer.getHeight() * 1.35f) 
+            		   || (worldCamera.position.y + currentViewportHeight - layer.getDecalY() < currentY)))
 	               {	            		
 	            		
 	            		batch.setColor(oldLayer_transfertColor);
 	            		
-	            		layer.draw(batch, currentX + layer.decalX, currentY + drawingHeight); 
+	            		layer.draw(batch, currentX + layer.decalX, currentY + drawingHeight + layer.decalY); 
 	            		
 	            		if(inTransfer)
 	            		{

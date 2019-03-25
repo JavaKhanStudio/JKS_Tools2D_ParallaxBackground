@@ -9,7 +9,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.DefaultSerializer;
 
-import jks.tools2d.parallax.TextureRegionParallaxLayer;
+import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -23,7 +23,7 @@ public class WholePage_Model
 	public Color bottomHalf ;
 	
 	public Page_Model pageModel ; 
-	public List<TextureRegionParallaxLayer> preloadValue ;
+	public List<ParallaxLayer> preloadValue ;
 	
 	public WholePage_Model()
 	{
@@ -55,7 +55,7 @@ public class WholePage_Model
 //		newPage.pageModel.pageList = buildPage() ; 
 	}
 
-	public List<TextureRegionParallaxLayer> getDrawing()
+	public List<ParallaxLayer> getDrawing()
 	{
 		if(preloadValue == null)
 			preload() ;
@@ -69,12 +69,10 @@ public class WholePage_Model
 	 * 0   = full screen
 	 */
 	public SquareBackground buildTopSquareBackground(float screenPercentage)
-	{return new SquareBackground(topHalf_top.cpy(),topHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage) ;}
+	{return new SquareBackground(topHalf_top.cpy(),topHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage, true) ;}
 	
 	public SquareBackground buildBottomSquareBackground(float screenPercentage)
-	{return new SquareBackground(bottomHalf.cpy(),Gdx.graphics.getHeight() * screenPercentage) ;}
-	
-	
+	{return new SquareBackground(topHalf_top.cpy(),topHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage, false) ;}
 	
 	public void preload()
 	{
@@ -87,21 +85,22 @@ public class WholePage_Model
 		preloadValue = load(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight,atlas); 
 	}
 
-	private List<TextureRegionParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
+	private List<ParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
 	{
-		List<TextureRegionParallaxLayer> returningList = new ArrayList<TextureRegionParallaxLayer>() ; 
+		List<ParallaxLayer> returningList = new ArrayList<ParallaxLayer>() ; 
 		
 		for(Parallax_Model parallax : pageModel.pageList)
 		{
-			TextureRegionParallaxLayer layer = new TextureRegionParallaxLayer(
+			ParallaxLayer layer = new ParallaxLayer(
 					atlas.findRegions(parallax.region_Name).get(parallax.region_Position), 
-					worldWidth, 
+					Parallax_Heart.worldWidth, 
 					new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY), 
 					parallax.sizeRatio,
 					true) ; 
 
-			layer.setPadY(parallax.pad_Y_Ratio * worldHeight);
-			layer.setDecalX(parallax.pad_X_Ratio * worldHeight);
+			layer.setPadPositionY(parallax.pad_Y_Ratio);
+			layer.setPadPositionX(parallax.pad_X_Ratio);
+			
 			layer.setSpeed(parallax.speed);
 			returningList.add(layer) ;
 		}
@@ -109,7 +108,7 @@ public class WholePage_Model
 		return returningList;
 	}
 	
-	private List<TextureRegionParallaxLayer> load(float worldWidth, float worldHeight) 
+	private List<ParallaxLayer> load(float worldWidth, float worldHeight) 
 	{
 		Parallax_Heart.manager.load(pageModel.atlasPath, TextureAtlas.class);
 		Parallax_Heart.manager.finishLoadingAsset(pageModel.atlasPath);
@@ -117,7 +116,5 @@ public class WholePage_Model
 		TextureAtlas atlas = new TextureAtlas(pageModel.atlasPath);
 		return load(worldWidth, worldHeight, atlas) ; 
 	}
-	
-	
-	
+		
 }

@@ -1,13 +1,19 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.kotcrab.vis.ui.widget.VisCheckBox;
+import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
+import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.libgdxutils.color.ColorPickerListener;
 import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
@@ -46,23 +52,106 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 		mainTable.add(tabbedPane.getTable()).expandX().fillX();
 		mainTable.row();
 		mainTable.add(container).expand().fill();
+		
 	}
 	
-	public Tab buildColorPalette(String colorSection,boolean topSquare)
+	public Tab buildColorPalette(String colorSection, boolean topSquare)
 	{
 		Table secondTable ; 
 		SquareBackground square = topSquare ? Parallax_Heart.topSquare : Parallax_Heart.bottomSquare ; 
 		
 		final ExtendedColorPicker topPicker = new ExtendedColorPicker() ; 
-		final ExtendedColorPicker bottomPicker = new ExtendedColorPicker() ; 
-		topPicker.setListener(buildListener(topPicker,square, true));
-		bottomPicker.setListener(buildListener(bottomPicker,square, false));
+		topPicker.setListener(buildListener(topPicker,square, true,true));
+		ImageButton topColorSelector = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/placeholder.png")) 
+		{
+			@Override
+			public float getPrefWidth()
+			{
+				return 50 ; 
+			}
+			
+			@Override
+			public float getPrefHeight()
+			{return  getPrefWidth() ; }
+		}; 
 		
+		topColorSelector.setScale(0.5f);
+		
+		
+		
+		final ExtendedColorPicker bottomPicker = new ExtendedColorPicker() ; 
+		bottomPicker.setListener(buildListener(bottomPicker,square, false,true));
+		ImageButton bottomColorSelector = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/placeholder.png")) ; 
+		
+		
+	
+		VisCheckBox topCheckBox = new VisCheckBox("Is active");
+		topCheckBox.setChecked(square != null);
+		topCheckBox.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				return true ; 
+			}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				if(topSquare)
+				{
+					if(!topCheckBox.isChecked())
+					{
+						Parallax_Heart.topSquare = null ; 
+						topPicker.setVisible(false);
+						bottomPicker.setVisible(false);
+					}
+					else
+					{
+						Parallax_Heart.topSquare = new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0,true) ;
+						
+						topPicker.setListener(buildListener(topPicker,Parallax_Heart.topSquare, true,false));
+						bottomPicker.setListener(buildListener(bottomPicker,Parallax_Heart.topSquare, false,false));
+						
+						topPicker.setVisible(true);
+						bottomPicker.setVisible(true);
+						topPicker.updateUI() ;
+						bottomPicker.updateUI();
+					}
+				}
+				else
+				{
+					if(!topCheckBox.isChecked())
+					{
+						Parallax_Heart.bottomSquare = null ; 
+						topPicker.setVisible(false);
+						bottomPicker.setVisible(false);
+					}
+					else
+					{
+						Parallax_Heart.bottomSquare = new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0.5f,false) ;
+						
+						topPicker.setListener(buildListener(topPicker,Parallax_Heart.bottomSquare, true,false));
+						bottomPicker.setListener(buildListener(bottomPicker,Parallax_Heart.bottomSquare, false,false));
+						
+						topPicker.setVisible(true);
+						bottomPicker.setVisible(true);
+						
+						topPicker.updateUI() ;
+						bottomPicker.updateUI();
+					}
+				}
+			}
+			
+		}) ; 
 		
 		secondTable = new Table() ; 
 		
-		secondTable.add(topPicker);
-		secondTable.row() ; 
+		secondTable.add(topCheckBox).row();
+		secondTable.add(new VisLabel("Top picker")).row();
+		secondTable.add(topColorSelector).row();;
+		secondTable.add(topPicker).row();
+		secondTable.add(new VisLabel("Bottom picker")).row();
 		secondTable.add(bottomPicker);
 		
 		topPicker.updateUI() ;
@@ -94,13 +183,13 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 		return tab ; 
 	}
 	
-	
-	public ColorPickerListener buildListener(ExtendedColorPicker picker, SquareBackground square,  boolean top)
+	public ColorPickerListener buildListener(ExtendedColorPicker picker, SquareBackground square,  boolean top, boolean resetVisu)
 	{
 		return new ColorPickerListener()
 		{
-			boolean firstTime = true ; 
-			boolean inInitTime = true ; 
+			boolean firstTime = resetVisu ; 
+			boolean inInitTime = resetVisu ; 
+			
 			@Override
 			public void changed(Color newColor)
 			{
@@ -128,14 +217,12 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 				if(top)
 					square.top_backColor = newColor ;
 				else
-					square.bottom_backColor = newColor ;	
-				
+					square.bottom_backColor = newColor ;					
 			}
 			
 			@Override
 			public void reset(Color previousColor, Color newColor)
 			{}
-			
 			@Override
 			public void canceled(Color oldColor)
 			{}

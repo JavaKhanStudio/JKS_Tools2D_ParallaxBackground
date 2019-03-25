@@ -32,7 +32,7 @@ public class Parallax_Heart
 	
 	//  1 = nothing * 0 = full screen
 	public static float topSquarePercent = 0.5f; 
-	public static float bottomSquareSize = Gdx.graphics.getHeight()/5 ;
+	public static float bottomSquarePercent = 0.5f ;
 
 	public static float worldWidth; 
 	public static float worldHeight ;
@@ -111,6 +111,8 @@ public class Parallax_Heart
 		
 		if(topSquare != null)
 			topSquare.act(delta);
+		else
+			System.out.println("Is null");
 		
 		if(bottomSquare != null)
 			bottomSquare.act(delta);
@@ -142,4 +144,14 @@ public class Parallax_Heart
 		Parallax_Utils_Page.drawPage(parallaxSecondePage) ; 
 		batch.end();
 	}	
+	
+	public static float getWidthPercent()
+	{
+		return worldWidth/100 ; 
+	}
+	
+	public static float getHeightPercent()
+	{
+		return worldHeight/100 ; 
+	}
 }
