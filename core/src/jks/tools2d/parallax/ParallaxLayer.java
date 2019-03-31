@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
+import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 
 
@@ -22,6 +23,8 @@ public class ParallaxLayer
 	
 	protected boolean repeat_tileX = true ;
 	protected boolean repeat_tileY = false ;
+	
+	protected boolean flipX = false ; 
 	
 	protected float currentX ; 
 	protected float currentY ; 
@@ -54,7 +57,15 @@ public class ParallaxLayer
 
 	public void draw(Batch batch, float x, float y) 
 	{
-		batch.draw(texRegion, x, y, getRegionWidth(), getRegionHeight());
+		batch.draw(
+				texRegion, 
+				x, 
+				y, 
+				getRegionWidth(), 
+				getRegionHeight()
+		);
+		
+//		* (flipX ? - 1 : 1)
 	}
 	
 	public void act(float delta) 
@@ -85,7 +96,7 @@ public class ParallaxLayer
 
 	public void setPadPositionX(float padX) 
 	{
-		this.decalX = this.decalX + (padX - this.padPosition_X) * Parallax_Heart.getWidthPercent(); 
+		this.decalX = this.decalX + (padX - this.padPosition_X) * Gvars_Parallax.getWidthPercent(); 
 		this.padPosition_X = padX;
 	}
 	
@@ -94,7 +105,7 @@ public class ParallaxLayer
 
 	public void setPadPositionY(float padY)
 	{
-		this.decalY = this.decalY + (padY - this.padPosition_Y) * Parallax_Heart.getHeightPercent() ; 
+		this.decalY = this.decalY + (padY - this.padPosition_Y) * Gvars_Parallax.getHeightPercent() ; 
 		this.padPosition_Y = padY;
 	}
 
@@ -164,5 +175,11 @@ public class ParallaxLayer
 
 	public void setSizeRatio(float sizeRatio)
 	{this.sizeRatio = sizeRatio;}
+
+	public boolean isFlipX()
+	{return flipX;}
+
+	public void setFlipX(boolean flipX)
+	{this.flipX = flipX; texRegion.flip(true, false);}
 
 }

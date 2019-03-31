@@ -10,6 +10,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.DefaultSerializer;
 
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -77,14 +78,15 @@ public class WholePage_Model
 	public void preload()
 	{
 		if(preloadValue == null)
-			preloadValue = load(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight); 
+			preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight()); 
 	}
 	
 	public void forceLoad(TextureAtlas atlas)
 	{
-		preloadValue = load(Parallax_Heart.worldWidth,Parallax_Heart.worldHeight,atlas); 
+		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight(),atlas); 
 	}
 
+	
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
 	{
 		List<ParallaxLayer> returningList = new ArrayList<ParallaxLayer>() ; 
@@ -93,7 +95,7 @@ public class WholePage_Model
 		{
 			ParallaxLayer layer = new ParallaxLayer(
 					atlas.findRegions(parallax.region_Name).get(parallax.region_Position), 
-					Parallax_Heart.worldWidth, 
+					worldWidth, 
 					new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY), 
 					parallax.sizeRatio,
 					true) ; 
@@ -110,8 +112,8 @@ public class WholePage_Model
 	
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight) 
 	{
-		Parallax_Heart.manager.load(pageModel.atlasPath, TextureAtlas.class);
-		Parallax_Heart.manager.finishLoadingAsset(pageModel.atlasPath);
+		Gvars_Parallax.getManager().load(pageModel.atlasPath, TextureAtlas.class);
+		Gvars_Parallax.getManager().finishLoadingAsset(pageModel.atlasPath);
 		
 		TextureAtlas atlas = new TextureAtlas(pageModel.atlasPath);
 		return load(worldWidth, worldHeight, atlas) ; 
