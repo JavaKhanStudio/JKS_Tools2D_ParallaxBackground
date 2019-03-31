@@ -1,10 +1,16 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
+import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
+
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.VisTable;
@@ -17,8 +23,7 @@ import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.libgdxutils.color.ColorPickerListener;
 import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
-import jks.tools2d.parallax.heart.Parallax_Heart;
-import jks.tools2d.parallax.side.SquareBackground;
+import jks.tools2d.parallax.side.SquareBackground; 
 
 public class Vue_Edition_SideBar_ColorConfig extends Tab
 {
@@ -58,36 +63,21 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 	public Tab buildColorPalette(String colorSection, boolean topSquare)
 	{
 		Table secondTable ; 
-		SquareBackground square = topSquare ? Parallax_Heart.topSquare : Parallax_Heart.bottomSquare ; 
+		SquareBackground square = topSquare ? parallax_Heart.topSquare : parallax_Heart.bottomSquare ; 
 		
 		final ExtendedColorPicker topPicker = new ExtendedColorPicker() ; 
 		topPicker.setListener(buildListener(topPicker,square, true,true));
-		ImageButton topColorSelector = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/placeholder.png")) 
-		{
-			@Override
-			public float getPrefWidth()
-			{
-				return 50 ; 
-			}
-			
-			@Override
-			public float getPrefHeight()
-			{return  getPrefWidth() ; }
-		}; 
-		
-		topColorSelector.setScale(0.5f);
-		
-		
 		
 		final ExtendedColorPicker bottomPicker = new ExtendedColorPicker() ; 
 		bottomPicker.setListener(buildListener(bottomPicker,square, false,true));
-		ImageButton bottomColorSelector = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/placeholder.png")) ; 
+		
+		ImageButton topColorSelector = buildColorSelector(topPicker) ; 
+		ImageButton bottomColorSelector =  buildColorSelector(bottomPicker) ; 
 		
 		
-	
-		VisCheckBox topCheckBox = new VisCheckBox("Is active");
-		topCheckBox.setChecked(square != null);
-		topCheckBox.addListener(new InputListener()
+		VisCheckBox activeBox = new VisCheckBox("Is active");
+		activeBox.setChecked(square != null);
+		activeBox.addListener(new InputListener()
 		{		
 			@Override
 			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
@@ -100,18 +90,18 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 			{
 				if(topSquare)
 				{
-					if(!topCheckBox.isChecked())
+					if(!activeBox.isChecked())
 					{
-						Parallax_Heart.topSquare = null ; 
+						parallax_Heart.topSquare = null ; 
 						topPicker.setVisible(false);
 						bottomPicker.setVisible(false);
 					}
 					else
 					{
-						Parallax_Heart.topSquare = new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0,true) ;
+						parallax_Heart.topSquare = new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0,true) ;
 						
-						topPicker.setListener(buildListener(topPicker,Parallax_Heart.topSquare, true,false));
-						bottomPicker.setListener(buildListener(bottomPicker,Parallax_Heart.topSquare, false,false));
+						topPicker.setListener(buildListener(topPicker,parallax_Heart.topSquare, true,false));
+						bottomPicker.setListener(buildListener(bottomPicker,parallax_Heart.topSquare, false,false));
 						
 						topPicker.setVisible(true);
 						bottomPicker.setVisible(true);
@@ -121,18 +111,18 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 				}
 				else
 				{
-					if(!topCheckBox.isChecked())
+					if(!activeBox.isChecked())
 					{
-						Parallax_Heart.bottomSquare = null ; 
+						parallax_Heart.bottomSquare = null ; 
 						topPicker.setVisible(false);
 						bottomPicker.setVisible(false);
 					}
 					else
 					{
-						Parallax_Heart.bottomSquare = new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0.5f,false) ;
+						parallax_Heart.bottomSquare = new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0.5f,false) ;
 						
-						topPicker.setListener(buildListener(topPicker,Parallax_Heart.bottomSquare, true,false));
-						bottomPicker.setListener(buildListener(bottomPicker,Parallax_Heart.bottomSquare, false,false));
+						topPicker.setListener(buildListener(topPicker,parallax_Heart.bottomSquare, true,false));
+						bottomPicker.setListener(buildListener(bottomPicker,parallax_Heart.bottomSquare, false,false));
 						
 						topPicker.setVisible(true);
 						bottomPicker.setVisible(true);
@@ -145,13 +135,42 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 			
 		}) ; 
 		
+		Slider boxSize = new Slider(0, 100, 1, false,baseSkin);
+		TextField boxSize_tf = new TextField("",baseSkin) ;
+		boxSize.setValue((square.getHeight()/Gdx.graphics.getHeight()) * 100) ;
+		boxSize_tf.setText(boxSize.getValue() + "");
+		boxSize.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				touchDragged(event, x,y,pointer) ;
+				return true ;
+			}
+			
+			@Override
+			public void touchDragged(InputEvent event, float x, float y, int pointer)
+			{
+				float value = (Gdx.graphics.getHeight() * boxSize.getValue())/100 ; 
+				square.setHeight(topSquare, value); ; 
+				boxSize_tf.setText(boxSize.getValue() + "");
+			}
+		}) ; 
+		
 		secondTable = new Table() ; 
 		
-		secondTable.add(topCheckBox).row();
-		secondTable.add(new VisLabel("Top picker")).row();
-		secondTable.add(topColorSelector).row();;
+		secondTable.add(activeBox).row();
+		secondTable.add(boxSize) ;
+		secondTable.add(boxSize_tf).width(40).row();
+		
+		secondTable.add(new VisLabel("Top Color")).row();
+		secondTable.add(new VisLabel("Picker"));
+		secondTable.add(topColorSelector).row();
 		secondTable.add(topPicker).row();
-		secondTable.add(new VisLabel("Bottom picker")).row();
+		
+		secondTable.add(new VisLabel("Bottom Color")).row();
+		secondTable.add(new VisLabel("Picker"));
+		secondTable.add(bottomColorSelector).row();
 		secondTable.add(bottomPicker);
 		
 		topPicker.updateUI() ;
@@ -181,6 +200,38 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 		};
 		
 		return tab ; 
+	}
+	
+	public ImageButton buildColorSelector(ExtendedColorPicker picker) 
+	{
+		ImageButton colorSelector = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/colorSelection.png")) 
+		{
+			@Override
+			public float getPrefWidth()
+			{return 50 ;}
+			
+			@Override
+			public float getPrefHeight()
+			{return getPrefWidth() ; }
+		}; 
+		
+		colorSelector.addListener(new InputListener()
+		{
+			@Override
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.colorPicked = picker ;  
+				return true ; 
+			}
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				super.touchUp(event, x, y, pointer, button);
+			}
+			
+		}) ;
+		
+		return colorSelector ; 
 	}
 	
 	public ColorPickerListener buildListener(ExtendedColorPicker picker, SquareBackground square,  boolean top, boolean resetVisu)
@@ -233,7 +284,6 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 		
 	}
 	
-
 	@Override
 	public String getTabTitle()
 	{
@@ -245,6 +295,4 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 	{
 		return mainTable;
 	}
-	
-	
 }

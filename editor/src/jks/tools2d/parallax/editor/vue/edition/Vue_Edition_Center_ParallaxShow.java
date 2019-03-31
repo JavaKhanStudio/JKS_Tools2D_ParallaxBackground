@@ -11,6 +11,8 @@ import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Blo
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Bloc_Selection;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 
+import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ; 
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -38,7 +40,7 @@ public class Vue_Edition_Center_ParallaxShow
 		
 		WholePage_Model parallaxPage = new WholePage_Model(); 
 		parallaxPage.forceLoad(atlas);
-		Parallax_Heart.setPage(parallaxPage);
+		parallax_Heart.setPage(parallaxPage);
 		buildOptions() ; 
 	}
 	
@@ -46,7 +48,7 @@ public class Vue_Edition_Center_ParallaxShow
 	{
 		initShow() ; 
 		
-		Parallax_Heart.setPage(page);
+		parallax_Heart.setPage(page);
 		buildOptions() ; 
 	}
 	

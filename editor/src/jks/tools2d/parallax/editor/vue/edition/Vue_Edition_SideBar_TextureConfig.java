@@ -2,18 +2,22 @@ package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.currentlySelectedParallax;
+import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ; 
 
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.ui.CheckBox;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.spinner.IntSpinnerModel;
 import com.kotcrab.vis.ui.widget.spinner.Spinner;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
-import jks.tools2d.parallax.heart.Parallax_Heart; 
+import jks.tools2d.parallax.heart.Parallax_Heart;
+import jks.tools2d.parallax.side.SquareBackground; 
 
 
 public class Vue_Edition_SideBar_TextureConfig extends Tab
@@ -21,7 +25,6 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 
 	Table mainTable ; 
 
-	
 	Slider 
 	padX_Slider, padY_Slider,
 	sizeRatio_Slider,
@@ -33,16 +36,16 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 	staticSpeed_tf, 
 	speedX_ration_tf,speedY_ration_tf; 
 	
-	
-
 	IntSpinnerModel indexPositionSpinner ; 
 	Spinner indexPositionSpinerBody ; 
+	
+	VisCheckBox flipX ; 
 	
 	Vue_Edition_SideBar_TextureConfig()
 	{
 		super(false, false);
 		mainTable = new Table() ; 
-//		currentlySelectedParallax.getParallaxRatio().
+
 		indexPositionSpinner = new IntSpinnerModel(0,0,0); 
 		indexPositionSpinerBody = new Spinner("Layer Position", indexPositionSpinner);
 		indexPositionSpinerBody.addListener(new InputListener()
@@ -59,7 +62,21 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				Parallax_Heart.parallaxMainPage.layers.swap(befaureValue, indexPositionSpinner.getValue());	
+				parallax_Heart.parallaxPage.layers.swap(befaureValue, indexPositionSpinner.getValue());	
+			}
+		}) ; 
+		
+		flipX = new VisCheckBox("Flip X") ;
+		flipX.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				currentlySelectedParallax.setFlipX(flipX.isChecked());
 			}
 		}) ; 
 		
@@ -146,7 +163,7 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 			@Override
 			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
 			{
-				touchDragged(event, x,y,pointer) ;
+				touchDragged(event, x, y, pointer) ;
 				return true ;
 			}
 			
@@ -159,6 +176,7 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 		}) ; 
 		
 		mainTable.add(indexPositionSpinerBody).row() ; 
+		mainTable.add(flipX).row() ; 
 		
 		mainTable.add(new VisLabel("Pad X")).row();
 		mainTable.add(padX_Slider).pad(10).expandX().fillX() ; 
@@ -181,19 +199,19 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 		mainTable.add(speedX_ration_Slider).pad(9).expandX().fillX() ; 
 		mainTable.add(speedX_ration_tf).width(40).row();
 		
-
 	}
 	
 	public void controleSelectedLayer()
 	{
 		
+		flipX.setChecked(currentlySelectedParallax.isFlipX());
 		
 		//	//	//	//	//	//
 		//	INDEX POSITION	//
 		//	//	//	//	//	//
-		indexPositionSpinner.setMax(Parallax_Heart.parallaxMainPage.layers.size - 1);
+		indexPositionSpinner.setMax(parallax_Heart.parallaxPage.layers.size - 1);
 		indexPositionSpinner.setMin(0);
-		indexPositionSpinner.setValue(Parallax_Heart.parallaxMainPage.layers.indexOf(currentlySelectedParallax, true)) ;
+		indexPositionSpinner.setValue(parallax_Heart.parallaxPage.layers.indexOf(currentlySelectedParallax, true)) ;
 		
 		
 		// // // //
@@ -229,8 +247,6 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 		
 	}
 	
-//	private TextureRegion texRegion;
-
 	@Override
 	public String getTabTitle()
 	{
@@ -243,10 +259,13 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 		if(currentlySelectedParallax != null)
 		{
 			controleSelectedLayer() ; 
+			mainTable.setVisible(true);
+		}
+		else
+		{
+			mainTable.setVisible(false);
 		}
 		
 		return mainTable;
-	}
-	
-	
+	}	
 }

@@ -1,7 +1,7 @@
 package jks.tools2d.parallax.test.inputs ;
 
-import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.*;
-import static jks.tools2d.parallax.heart.Parallax_Heart.* ;
+import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.parallax_Heart ;
+import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.screenMovementSpeed; 
 
 public class GVars_Inputs 
 {
@@ -11,29 +11,27 @@ public class GVars_Inputs
 		zoomInPressed, zoomOutPressed 
 		;
 
-	
-	
 	public static void updateInput (float delta) 
 	{
 		if (leftPressed)
-			worldCamera.position.add(-screenMovementSpeed, 0, 0); 
+			parallax_Heart.worldCamera.position.add(-screenMovementSpeed, 0, 0); 
 		
 		if (rightPressed)
-			worldCamera.position.add(screenMovementSpeed, 0, 0);
+			parallax_Heart.worldCamera.position.add(screenMovementSpeed, 0, 0);
 			
 		if(upPressed)
-			worldCamera.position.add(0,screenMovementSpeed, 0);
+			parallax_Heart.worldCamera.position.add(0,screenMovementSpeed, 0);
 		
 		if(downPressed)
-			worldCamera.position.add(0,-screenMovementSpeed, 0);
+			parallax_Heart.worldCamera.position.add(0,-screenMovementSpeed, 0);
 		
 		if(zoomInPressed)
-			worldCamera.zoom *= 1.1f;
+			parallax_Heart.worldCamera.zoom *= 1.1f;
 		
 		if(zoomOutPressed)
-			worldCamera.zoom /= 1.1f;
+			parallax_Heart.worldCamera.zoom /= 1.1f;
 
-		worldCamera.update();
-		batch.setProjectionMatrix(worldCamera.combined);
+		parallax_Heart.worldCamera.update();
+		parallax_Heart.batch.setProjectionMatrix(parallax_Heart.worldCamera.combined);
 	}
 }

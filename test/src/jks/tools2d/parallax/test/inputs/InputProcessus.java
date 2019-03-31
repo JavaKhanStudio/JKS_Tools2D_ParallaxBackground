@@ -7,6 +7,7 @@ import jks.tools2d.parallax.test.Enum_PageModel_Day;
 
 import static jks.tools2d.parallax.test.inputs.GVars_Inputs.*;
 import com.badlogic.gdx.InputAdapter;
+import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.parallax_Heart ;
 
 public class InputProcessus extends InputAdapter 
 {
@@ -84,22 +85,22 @@ public class InputProcessus extends InputAdapter
 		switch (character) 
 		{
 			case '1' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.DAY.wholePage) ; 
+				parallax_Heart.setPage(Enum_PageModel_Day.DAY.wholePage) ; 
 				return true ;
 			case '2' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.NIGHT.wholePage) ; 
+				parallax_Heart.setPage(Enum_PageModel_Day.NIGHT.wholePage) ; 
 				return true ;
 			case '3' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.RAIN.wholePage) ; 
+				parallax_Heart.setPage(Enum_PageModel_Day.RAIN.wholePage) ; 
 				return true ;
 			case '4' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.SUNRISE.wholePage) ; 
+				parallax_Heart.setPage(Enum_PageModel_Day.SUNRISE.wholePage) ; 
 				return true ;
 			case '5' :
-				Parallax_Utils_Page.setPage(Enum_PageModel_Day.SUNSET.wholePage) ; 
+				parallax_Heart.setPage(Enum_PageModel_Day.SUNSET.wholePage) ; 
 				return true ;
 			case '&' : 
-				Parallax_Utils_Page.transfertIntoPage(Enum_PageModel_Day.DAY.wholePage,10);
+				parallax_Heart.transfertIntoPage(Enum_PageModel_Day.DAY.wholePage,10);
 		}
 		return false;
 	}

@@ -21,7 +21,6 @@ public class GVars_Vue_Edition
 	public static ArrayList<TextureRegion> allImage ;	
 	public static HashMap<TextureRegion,TR_Infos> imageRef ; 
 	
-	
 	public static int parr_Size_X ; 
 	public static int parr_Size_Y ; 
 	public static int parr_Pos_X ; 

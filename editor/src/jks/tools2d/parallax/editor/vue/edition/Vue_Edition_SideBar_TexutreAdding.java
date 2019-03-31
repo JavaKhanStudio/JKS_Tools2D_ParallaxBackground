@@ -3,6 +3,7 @@ package jks.tools2d.parallax.editor.vue.edition;
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.allImage;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.*;
+import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ; 
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -18,6 +19,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import jks.tools2d.libgdxutils.JksTextureList;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart; 
 
 public class Vue_Edition_SideBar_TexutreAdding extends Tab
@@ -61,13 +63,13 @@ public class Vue_Edition_SideBar_TexutreAdding extends Tab
 				TextureRegion text = imageList.getSelected() ; 
 				ParallaxLayer layer = new ParallaxLayer(
 						text,
-						Parallax_Heart.worldWidth, 
+						Gvars_Parallax.getWorldWidth(), 
 						new Vector2(.01f,.01f), 
 						1,
 						true) ; 
 				
 				
-				Parallax_Heart.parallaxMainPage.layers.add(layer);
+				parallax_Heart.parallaxPage.layers.add(layer);
 				
 				GVars_Vue_Edition.selectLayer(layer) ; 
 				
@@ -89,7 +91,6 @@ public class Vue_Edition_SideBar_TexutreAdding extends Tab
 			{
 				button_changeData.setPosition(x + buttonSize/2, y + buttonSize/2);
 				button_addData.setPosition(x + buttonSize * 2.f, y + buttonSize/2);
-//				button_changeData.draw(batch, 1);
 			}
 	
 		};		
@@ -116,13 +117,9 @@ public class Vue_Edition_SideBar_TexutreAdding extends Tab
 
 	@Override
 	public String getTabTitle()
-	{
-		return "Add texture";
-	}
+	{return "Add texture";}
 
 	@Override
 	public Table getContentTable()
-	{
-		return mainTable;
-	}
+	{return mainTable;}
 }

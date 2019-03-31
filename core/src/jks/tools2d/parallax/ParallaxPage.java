@@ -150,12 +150,11 @@ public class ParallaxPage
 		    
 		    currentX = layer.currentX ;
 		    currentY = layer.currentY ; 
-		    
-		    
+		    		    
 		    do
 			{
 		    	currentY =  (!layer.isRepeat_tileY() ? 0 : ((int)((worldCamera.position.y-worldCamera.viewportHeight*.5f*worldCamera.zoom) / layer.getHeight())) * layer.getHeight())-(((1-layer.getParallaxRatio().y)%1)*worldCamera.viewportHeight*.5f);
-
+		    	
 	            do
 	            {
 	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getDecalX() >= currentX + layer.getWidth())
