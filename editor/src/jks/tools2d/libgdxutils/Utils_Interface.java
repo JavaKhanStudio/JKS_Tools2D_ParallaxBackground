@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 public class Utils_Interface
@@ -23,8 +24,19 @@ public class Utils_Interface
 	    return new TextureRegion(texture);
 	}
 	
-//	public static int getItemPosX(int size, int decal)
-//	{
-//		
-//	}
+	public static ImageButton buildSquareButton(String imagePath, float size)
+	{
+		ImageButton colorSelector = new ImageButton(Utils_Interface.buildDrawingRegionTexture(imagePath)) 
+		{
+			@Override
+			public float getPrefWidth()
+			{return size ;}
+			
+			@Override
+			public float getPrefHeight()
+			{return getPrefWidth() ; }
+		}; 
+		
+		return colorSelector ; 
+	}
 }
