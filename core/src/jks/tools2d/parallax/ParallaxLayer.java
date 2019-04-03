@@ -5,7 +5,6 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
-import jks.tools2d.parallax.heart.Parallax_Heart;
 
 
 public class ParallaxLayer
