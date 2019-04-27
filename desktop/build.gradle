@@ -14,7 +14,14 @@ sourceSets
 }
 
 project.ext.mainClassName = "jks.tools2d.parallax.desktop.DesktopLauncher_Editor"
+//project.ext.mainClassName = "jks.tools2d.parallax.desktop.test.DesktopLauncher_Basic"
 project.ext.assetsDir = new File("../desktop/assets");
+
+eclipse {
+    project {
+        name = appName + "_Desktop"
+    }
+}
 
 task run(dependsOn: classes, type: JavaExec) {
     main = project.mainClassName
@@ -107,13 +114,6 @@ task createFinalAppBundle(type: Exec, dependsOn: [cleanPackagerRuntime]) {
     }
 }
 
-
-eclipse {
-    project {
-        name = appName + "_Desktop"
-        linkedResource name: 'assets', type: '2', location: 'PARENT-1-PROJECT_LOC/desktop/assets'
-    }
-}
 
 task afterEclipseImport(description: "Post processing after project generation", group: "IDE") {
   doLast {

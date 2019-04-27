@@ -4,7 +4,6 @@ sourceCompatibility = 1.8
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
-sourceCompatibility = 1.8
 sourceSets 
 {
     main 
@@ -19,10 +18,6 @@ sourceSets
 
 project.ext.mainClassName = "jks.tools2d.parallax.desktop.DesktopLauncher"
 project.ext.assetsDir = new File("../desktop/assets");
-
-jar {
-    baseName 'editor'
-}
 
 eclipse.project {
     name = appName + "_Editor"

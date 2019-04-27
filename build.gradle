@@ -4,13 +4,13 @@ buildscript
     {
         mavenLocal()
         mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://mvnrepository.com/artifact/net.dermetfan.libgdx-utils/libgdx-utils" }
         
     }
-    dependencies 
-    {
-         classpath 'com.android.tools.build:gradle:1.5.0'
+    dependencies {
+    
     }
 }
 
@@ -37,12 +37,6 @@ allprojects
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
     }
-    
-    properties
-    {
-    	buildDir = 'desktop' ; 
-    }
-    
 }
 
 project(":desktop") 
@@ -52,6 +46,7 @@ project(":desktop")
     dependencies 
     {
         compile project(":test")
+         compile project(":core")
         compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
   		compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
         compile "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
