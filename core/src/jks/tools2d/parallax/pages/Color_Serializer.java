@@ -28,5 +28,4 @@ public class Color_Serializer extends Serializer<Color>
 		color.r = input.readFloat() ;
 		return color;
 	}
-	
 }

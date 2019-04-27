@@ -11,8 +11,6 @@ import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Blo
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Bloc_Selection;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ; 
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -26,29 +24,46 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import jks.tools2d.libgdxutils.JksCheckBox;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
-import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
-public class Vue_Edition_Center_ParallaxShow
+public class VE_Center_ParallaxShow
 {
 	float decalX = 2 ; 
 	float buttonSize ;
 	
-	Vue_Edition_Center_ParallaxShow(TextureAtlas atlas)
+	public static VE_Center_ParallaxShow build(Object ref)
+	{
+		VE_Center_ParallaxShow show = null ;
+		if(ref instanceof TextureAtlas)
+		{
+			TextureAtlas atlas = (TextureAtlas)ref ; 
+			show = new VE_Center_ParallaxShow(atlas) ; 
+		}
+		else if(ref instanceof WholePage_Model)
+		{
+			WholePage_Model page = (WholePage_Model)ref ; 
+			show =  new VE_Center_ParallaxShow(page) ; 
+		}
+
+		return show ; 
+	}
+	
+	
+	VE_Center_ParallaxShow(TextureAtlas atlas)
 	{
 		initShow() ; 
 		
-		WholePage_Model parallaxPage = new WholePage_Model(); 
-		parallaxPage.forceLoad(atlas);
-		parallax_Heart.setPage(parallaxPage);
+		WholePage_Model page = new WholePage_Model(); 
+		page.forceLoad(atlas);
+		GVars_Vue_Edition.setPage(page) ; 
+			
 		buildOptions() ; 
 	}
 	
-	Vue_Edition_Center_ParallaxShow(WholePage_Model page)
+	VE_Center_ParallaxShow(WholePage_Model page)
 	{
 		initShow() ; 
-		
-		parallax_Heart.setPage(page);
+		GVars_Vue_Edition.setPage(page) ; 
 		buildOptions() ; 
 	}
 	
@@ -82,6 +97,7 @@ public class Vue_Edition_Center_ParallaxShow
 		});
 
 		startStop.setSize(buttonSize, buttonSize);
+//		startStop.setSize(300, 300);
 		startStop.setPosition(parr_Size_X/2, size_Height_Bloc_Parallax_Controle/2 - buttonSize/2);
 		
 		Slider parallaxSpeedSlider = new Slider(-10, 10, 1, false, GVars_Ui.baseSkin) ; 

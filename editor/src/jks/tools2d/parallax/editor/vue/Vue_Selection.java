@@ -3,6 +3,7 @@ package jks.tools2d.parallax.editor.vue;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.ATLAS;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.kryo;
+import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.infos;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -23,6 +24,7 @@ import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.vue.edition.ProjectInfos;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -47,8 +49,7 @@ public class Vue_Selection extends AVue_Model
 			@Override
 			public void choose(FileHandle file)
 			{
-				String extension = file.extension() ; 
-				selectSigleFile(extension,file) ; 	
+				selectSigleFile(file) ; 	
 			}
 			
 			@Override
@@ -100,12 +101,21 @@ public class Vue_Selection extends AVue_Model
 		GVars_Ui.mainUi.addActor(title);
 	}
 	
-	public void selectSigleFile(String extension, FileHandle file)
+	public void selectSigleFile(FileHandle file)
 	{
-		if(PARALLAX.equals(extension))
+		
+		infos = new ProjectInfos();
+		infos.setPathInfo(file);
+		
+		if(PARALLAX.equals(file.extension()))
+		{
 			selectParralax(kryo.readObject(new Input(file.read()),WholePage_Model.class));
-		else if(ATLAS.equals(extension))
+		}
+		else if(ATLAS.equals(file.extension()))
+		{
 			selectTextureAtlas(new TextureAtlas(file));	
+		}
+		
 	}
 	
 	public void selectTextureAtlas(TextureAtlas atlas)
@@ -146,12 +156,9 @@ public class Vue_Selection extends AVue_Model
 	{
 		if(files.length == 1)
 		{
-			String extension = Utils_Scene2D.getExtension(files[0]) ; 
-	    	FileHandle handle = new FileHandle(files[0]); 
-	    	selectSigleFile(extension,handle) ; 
-		}
-		
-		
+			FileHandle handle = new FileHandle(files[0]); 
+	    	selectSigleFile(handle) ; 
+		}	
 	}
 
 }

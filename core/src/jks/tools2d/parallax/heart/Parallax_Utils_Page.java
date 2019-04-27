@@ -24,21 +24,7 @@ public class Parallax_Utils_Page
 	
 		ref.parallaxPage.addLayersTransfert(pageModel,inXSecondes); 
 		ref.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes );
-		ref.bottomSquare.transfertInto(pageModel.bottomHalf, pageModel.bottomHalf, inXSecondes );
-		
-//		if(Parallax_Heart.parallaxSecondePage != null)
-//		{
-//			Parallax_Heart.parallaxSecondePage.addColorTransfert(Parallax_Heart.currentPage.colorSurronding, inXSecondes);
-//			Parallax_Heart.parallaxSecondePage.set_newLayer_Color(Parallax_Heart.currentPage.colorSurronding);
-//		}
+		ref.bottomSquare.transfertInto(pageModel.bottomHalf_top, pageModel.bottomHalf_top, inXSecondes );
 	}
 
-	
-//	static void drawSecondePage()
-//	{
-//		if(Parallax_Heart.parallaxSecondePage != null)
-//		{
-//			Parallax_Heart.parallaxSecondePage.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
-//		}
-//	}
 }

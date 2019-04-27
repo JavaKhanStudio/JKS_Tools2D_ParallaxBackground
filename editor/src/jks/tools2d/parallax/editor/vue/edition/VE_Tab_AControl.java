@@ -13,16 +13,15 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 
-public class Vue_Edition_SideBar_AControl extends Table
+public class VE_Tab_AControl extends Table
 {
 
-	Vue_Edition_SideBar_ColorConfig colorConfig ;
-	Vue_Edition_SideBar_TexutreAdding textureSelection ; 
-	Vue_Edition_SideBar_TextureConfig textureConfig ; 
+	VE_Tab_ColorConfig colorConfig ;
+	VE_Tab_TextureList textureSelection ; 
+	VE_Tab_TextureConfig textureConfig ; 
 	
-	Vue_Edition_SideBar_AControl()
+	VE_Tab_AControl()
 	{
-//		super(GVars_Ui.baseSkin.get("default", TabbedPaneStyle.class)) ;
 		this.setWidth(size_Bloc_Selection);
 		this.setHeight(Gdx.graphics.getHeight());
 		final VisTable container = new VisTable();
@@ -39,17 +38,16 @@ public class Vue_Edition_SideBar_AControl extends Table
 			}
 		});
 		
-		colorConfig = new Vue_Edition_SideBar_ColorConfig() ;
-		textureSelection = new Vue_Edition_SideBar_TexutreAdding() ;
-		textureConfig =	new Vue_Edition_SideBar_TextureConfig() ;
+		colorConfig = new VE_Tab_ColorConfig() ;
+		textureSelection = new VE_Tab_TextureList() ;
+		textureConfig =	new VE_Tab_TextureConfig() ;
 		
 		tabbedPane.add(colorConfig);
 		tabbedPane.add(textureSelection);
 		tabbedPane.add(textureConfig);
 
 		tabbedPane.switchTab(colorConfig);
-//		tabbedPane.switchTab(textureSelection);
-		
+
 		this.add(tabbedPane.getTable()).expandX().fillX();
 		this.row();
 		this.add(container).expand().fill();

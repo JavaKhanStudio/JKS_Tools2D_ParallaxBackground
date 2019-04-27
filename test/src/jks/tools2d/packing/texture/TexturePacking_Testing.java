@@ -4,15 +4,10 @@ import static jks.tools2d.parallax.gvars.FVars_Path.images;
 import static jks.tools2d.parallax.gvars.FVars_Path.path;
 
 import java.io.File;
-import java.io.FileOutputStream;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.tools.texturepacker.TexturePacker;
-import com.badlogic.gdx.tools.texturepacker.TexturePacker.Settings;
-import com.esotericsoftware.kryo.io.Output;
-
-import jks.tools2d.parallax.gvars.FVars_Path; 
+import com.badlogic.gdx.tools.texturepacker.TexturePacker.Settings; 
 
 public class TexturePacking_Testing 
 {

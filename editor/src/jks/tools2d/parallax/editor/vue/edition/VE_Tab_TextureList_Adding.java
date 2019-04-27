@@ -1,9 +1,10 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.allImage;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.*;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ; 
+import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.sizeTabsBar;
+import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Bloc_Selection;
+import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -19,21 +20,21 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import jks.tools2d.libgdxutils.JksTextureList;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.heart.Gvars_Parallax;
-import jks.tools2d.parallax.heart.Parallax_Heart; 
+import jks.tools2d.parallax.heart.Gvars_Parallax; 
 
-public class Vue_Edition_SideBar_TexutreAdding extends Tab
+public class VE_Tab_TextureList_Adding extends Tab
 {
 
-	Vue_Edition_SideBar_TexutreAdding()
+	static JksTextureList imageList ; 
+	private Table mainTable ;
+	
+	
+	VE_Tab_TextureList_Adding()
 	{
 		super(false, false);
 		mainTable = new Table() ; 
 		buildTextureSelector() ; 
 	}
-	
-	private JksTextureList imageList ; 
-	private Table mainTable ; 
 	
 	public void buildTextureSelector()
 	{
@@ -60,16 +61,27 @@ public class Vue_Edition_SideBar_TexutreAdding extends Tab
 			@Override
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
-				TextureRegion text = imageList.getSelected() ; 
+				TextureRegion text = new TextureRegion(imageList.getSelected()) ; 
+				GVars_Vue_Edition.imageRef.put(text, GVars_Vue_Edition.imageRef.get(imageList.getSelected())) ;
 				ParallaxLayer layer = new ParallaxLayer(
 						text,
+						true, 
 						Gvars_Parallax.getWorldWidth(), 
-						new Vector2(.01f,.01f), 
-						1,
-						true) ; 
+						new Vector2(.01f,.01f),
+						1) ; 
 				
-				
+				layer.setFlipX(getDefaults().defaultModel.flipX,getDefaults().defaultModel.flipX);
+				layer.setFlipY(getDefaults().defaultModel.flipY,getDefaults().defaultModel.flipY);
+				layer.setDecalPercentX(getDefaults().defaultModel.decal_X_Ratio);
+				layer.setDecalPercentY(getDefaults().defaultModel.decal_Y_Ratio);
+				layer.setSizeRatio(getDefaults().defaultModel.sizeRatio);
+				layer.setSpeedAtRest(getDefaults().defaultModel.speed);
+				layer.getParallaxSpeedRatio().x = getDefaults().defaultModel.parallaxScalingSpeedX ; 
+				layer.getParallaxSpeedRatio().y = getDefaults().defaultModel.parallaxScalingSpeedY ; 
 				parallax_Heart.parallaxPage.layers.add(layer);
+				
+				if(getDefaults().increment)
+					getDefaults().doIncrement(true) ; 
 				
 				GVars_Vue_Edition.selectLayer(layer) ; 
 				
@@ -94,19 +106,14 @@ public class Vue_Edition_SideBar_TexutreAdding extends Tab
 			}
 	
 		};		
+	
+		setItems() ; 
 		
-		TextureRegion[] stockArr = new TextureRegion[allImage.size()];
-		for(int x=0 ; x < allImage.size() ; x++)
-		{
-			stockArr[x] = allImage.get(x) ; 
-		}
-
-		imageList.setItems(stockArr);
 		
 		contentsPane = new ScrollPane(imageList,baseSkin) ; 
 		contentsPane.setFadeScrollBars(false);
 		contentsPane.setWidth(size_Bloc_Selection);
-		contentsPane.setHeight(Gdx.graphics.getHeight() - sizeTabsBar);
+		contentsPane.setHeight(Gdx.graphics.getHeight() - sizeTabsBar * 2);
 		
 		mainTable.setSize(contentsPane.getWidth(),contentsPane.getHeight());
 		mainTable.addActor(contentsPane);
@@ -115,9 +122,11 @@ public class Vue_Edition_SideBar_TexutreAdding extends Tab
 		
 	}
 
+	
+
 	@Override
 	public String getTabTitle()
-	{return "Add texture";}
+	{return "Adding new";}
 
 	@Override
 	public Table getContentTable()

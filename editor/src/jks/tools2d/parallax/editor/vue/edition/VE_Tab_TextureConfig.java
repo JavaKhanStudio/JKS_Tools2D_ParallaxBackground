@@ -1,25 +1,26 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.currentlySelectedParallax;
+import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab; 
 
 
-public class Vue_Edition_SideBar_TextureConfig extends Tab
+public class VE_Tab_TextureConfig extends Tab
 {
 
 	Table secondTable ; 
-	Vue_Edition_SideBar_TextureConfig_Edit editTable; 
-	Vue_Edition_SideBar_TextureConfig_Select selectTable ; 
+	VE_Tab_TextureConfig_Edit editTable; 
+	VE_Tab_TextureConfig_Select selectTable ; 
 	
-	Vue_Edition_SideBar_TextureConfig()
+	VE_Tab_TextureConfig()
 	{
 		super(false, false);
 		secondTable = new Table() ; 
 		
-		selectTable = new Vue_Edition_SideBar_TextureConfig_Select() ; 
-		editTable = new Vue_Edition_SideBar_TextureConfig_Edit() ; 
+		selectTable = new VE_Tab_TextureConfig_Select() ; 
+		editTable = new VE_Tab_TextureConfig_Edit() ; 
 		
 		secondTable.add(selectTable).row();
 		secondTable.add(editTable) ; 
@@ -39,6 +40,10 @@ public class Vue_Edition_SideBar_TextureConfig extends Tab
 		{
 			editTable.update(); 
 			editTable.setVisible(true);
+		}
+		else if(parallax_Heart.parallaxPage.layers.size > 0)
+		{
+			GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(0)); 			
 		}
 		else
 		{

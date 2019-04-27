@@ -1,6 +1,7 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.allImage;
+import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.*;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.isPause;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Pos_X;
@@ -12,9 +13,6 @@ import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.screenSp
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
-
-import org.lwjgl.input.Mouse;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
@@ -27,11 +25,12 @@ import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.PixmapIO;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
@@ -48,6 +47,7 @@ public class Vue_Edition extends AVue_Model
 	private TextureAtlas atlas ; 
 	public static Parallax_Heart parallax_Heart ;
 	public ShapeRenderer shapeRender ;
+	public Object preloadingValue ; 
 
 	public void preload()
 	{
@@ -60,7 +60,8 @@ public class Vue_Edition extends AVue_Model
 	{
 		preload() ; 
 		this.atlas = atlas ;
-		new Vue_Edition_Center_ParallaxShow(atlas) ; 
+		preloadingValue = atlas ;  
+		
 	}
 
 	public Vue_Edition(WholePage_Model parallax)
@@ -68,32 +69,36 @@ public class Vue_Edition extends AVue_Model
 		preload() ; 
 		Gvars_Parallax.getManager().load(parallax.pageModel.atlasPath, TextureAtlas.class);
 		Gvars_Parallax.getManager().finishLoadingAsset(parallax.pageModel.atlasPath);	
-		TextureAtlas atlas = new TextureAtlas(parallax.pageModel.atlasPath);
 		
+		TextureAtlas atlas = new TextureAtlas(parallax.pageModel.atlasPath);
 		this.atlas = atlas ;
-		new Vue_Edition_Center_ParallaxShow(parallax) ; 
+
+		preloadingValue = parallax ; 
 	}
 
 
 	@Override
 	public void init()
 	{
-		allImage = new ArrayList<>() ; 
-		imageRef = new HashMap<TextureRegion, TR_Infos>() ;
+		VE_Center_ParallaxShow.build(preloadingValue) ; 
 		
+		allImage = new ArrayList<>() ; 
+		// TODO Import the base value
+		
+		setDefaults(new ParallaxDefaultValues() ); 
+			
 		for(AtlasRegion region : atlas.getRegions())
 		{
 			allImage.add(region) ; 
-			imageRef.put(region, new TR_Infos(region)) ; 
+			imageRef.put(region, new Position_Infos(region)) ; 
 		}
 		
-		GVars_Ui.mainUi.addActor(new Vue_Edition_SideBar_AControl()); 
+		GVars_Ui.mainUi.addActor(new VE_Options()) ;
+		GVars_Ui.mainUi.addActor(new VE_Tab_AControl()); 
 		
 		InputProcessor input = buildClickProcessor() ; 	
 		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_Ui.mainUi, new EditorInputProcessus(),input));
 	}
-	
-	
 	
 	public void saveAllData()
 	{	
@@ -109,15 +114,13 @@ public class Vue_Edition extends AVue_Model
 	@Override
 	public void destroy()
 	{
-		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void restart()
 	{
-		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -257,9 +260,22 @@ public class Vue_Edition extends AVue_Model
 	@Override
 	public void reciveFiles(String[] files)
 	{
-		String extension = Utils_Scene2D.getExtension(files[0]) ; 
-    	System.out.println(extension);
-		FileHandle handle = new FileHandle("C:\\Users\\Simon\\Documents\\JKS_Tools2D_ParallaxBackground\\editor\\Files"); 
+		TextureRegion texture  ; 
+		for(String path : files)
+		{
+			if("png".equals(Utils_Scene2D.getExtension(path)))
+			{
+				texture = new TextureRegion(new Texture(new FileHandle(path))) ; 
+				imageRef.put(texture, new Position_Infos(false,path,-1)) ; 
+				allImage.add(texture) ; 
+			}
+			else
+			{
+				System.out.println("bad Format");
+			}
+		}
+		
+		GVars_Vue_Edition.setItems();
 	}
 
 }

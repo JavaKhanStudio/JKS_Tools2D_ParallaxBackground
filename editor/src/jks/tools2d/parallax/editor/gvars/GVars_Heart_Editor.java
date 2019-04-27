@@ -42,9 +42,6 @@ public class GVars_Heart_Editor
 		{
 			if(vue != null)
 				vue.destroy();
-//			GVars_AudioManager.StopAndDisposeMusic();
-//			GVars_Map.clearAllData(); ; 
-//			GVars_Heart.isPaused = false ; 
 		}
 		if (View != null) 
 		{

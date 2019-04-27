@@ -9,15 +9,16 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 
 public enum Enum_ColdNight 
 {
-	COLD_NIGHT("parralax/models/OneNight.atlas",Color.valueOf("0B4B6F"),Color.valueOf("0C77AD"), new Color(0.25f,0.07f,0.0f,1),Color.valueOf("030205")),
+	COLD_NIGHT("parralax/models/OneNight.atlas",Color.valueOf("0B4B6F"),Color.valueOf("0C77AD"), Color.valueOf("030205"),Color.valueOf("030205")),
 	COLD_WATER("parralax/models/OneNight.atlas"),
 	;
 	
+	//Color.valueOf("0B4B6F")
 	public WholePage_Model wholePage ; 
 	
-	Enum_ColdNight(String atlasPath, Color top, Color bottom,Color colorSurronding,Color bottomHalf)
+	Enum_ColdNight(String atlasPath, Color topTop, Color topBottom,Color bottomTop,Color bottomBottom)
 	{
-		wholePage = new WholePage_Model(atlasPath,top,bottom,colorSurronding,bottomHalf) ;
+		wholePage = new WholePage_Model(atlasPath,topTop,topBottom,bottomTop,bottomBottom) ;
 		wholePage.pageModel.pageList = ColdNightModel.buildPages() ; 
 	}
 	

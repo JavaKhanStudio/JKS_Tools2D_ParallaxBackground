@@ -78,7 +78,7 @@ public class Kryo_Testing
 			parallaxPage.parallaxScalingSpeedX + " " + 
 			parallaxPage.parallaxScalingSpeedY + " " + 
 			parallaxPage.speed + " " + 
-			parallaxPage.pad_Y_Ratio + " ");
+			parallaxPage.decal_Y_Ratio + " ");
     }
     
     public static Parallax_Model buildPageModel()
@@ -89,7 +89,7 @@ public class Kryo_Testing
     	parallaxPage.parallaxScalingSpeedX = 1 ; 
     	parallaxPage.parallaxScalingSpeedY = 2 ; 
     	parallaxPage.speed = 3 ; 
-    	parallaxPage.pad_Y_Ratio = 4 ; 
+    	parallaxPage.decal_Y_Ratio = 4 ; 
     	return parallaxPage ; 
     }
 
@@ -129,7 +129,7 @@ public class Kryo_Testing
 
     	Input input = new Input(new FileInputStream(FVars_Path.path + pageWholeName + "." + FVars_Extensions.PARALLAX));
     	WholePage_Model model = kryo.readObject(input, WholePage_Model.class);
-    	System.out.println("testWholePage work " + " Number :" + model.bottomHalf);
+    	System.out.println("testWholePage work " + " Number :" + model.bottomHalf_top);
    }
       
    static public class SomeClass 

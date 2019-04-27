@@ -54,7 +54,6 @@ public class JksTextureList extends Widget implements Cullable
 		this.itemHeight = itemHeight ;
 		decalX = itemWidth/decalXPower ; 
 		decalY = itemHeight/decalYPower ;  	
-
 	}
 
 

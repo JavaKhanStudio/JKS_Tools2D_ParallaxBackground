@@ -1,15 +1,17 @@
 package jks.tools2d.test.interfaces;
 
-import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.kotcrab.vis.ui.VisUI;
 import com.kotcrab.vis.ui.widget.VisLabel;
+import com.kotcrab.vis.ui.widget.VisRadioButton;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
+import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 
 public class Testing_TabbedPane extends UiTestModel
@@ -19,8 +21,43 @@ public class Testing_TabbedPane extends UiTestModel
 	public void create () 
 	{
 		GVars_Ui.init();
+		buildTabbed() ; 
+		buildSlider(); 
+		buildRadio() ; 
+	}
+	
+	public void buildRadio()
+	{
+		ButtonGroup<VisRadioButton> groupeRadio = new ButtonGroup<VisRadioButton>() ;
+		VisRadioButton radio = new VisRadioButton("test1");
+		radio.setBounds(400, 400, 100, 100);
+		VisRadioButton radio2 = new VisRadioButton("test2");
+		radio2.setBounds(500, 500, 100, 100);
 		
-		VisUI.load(GVars_Ui.baseSkin);
+		groupeRadio.add(radio,radio2);
+		
+		
+		GVars_Ui.mainUi.addActor(radio);
+		GVars_Ui.mainUi.addActor(radio2);
+	}
+	
+	public void buildSlider()
+	{
+		JksNumberSlider slider = new JksNumberSlider(0, 100, 1, GVars_Ui.baseSkin )
+		{		
+			@Override
+			public void actionOnSliderMovement()
+			{
+				// TODO Auto-generated method stub
+				
+			}
+		};
+		GVars_Ui.mainUi.addActor(slider);
+		slider.setBounds(100, 300, 100, 100);
+	}
+	
+	public void buildTabbed()
+	{
 		Table theTable = new Table(GVars_Ui.baseSkin) ; 
 		final VisTable container = new VisTable();
 
@@ -50,7 +87,6 @@ public class Testing_TabbedPane extends UiTestModel
 //		debugAll();
 		theTable.setSize(300, 200);
 		GVars_Ui.mainUi.addActor(theTable);
-//		centerWindow();
 	}
 	
 	public Testing_TabbedPane()

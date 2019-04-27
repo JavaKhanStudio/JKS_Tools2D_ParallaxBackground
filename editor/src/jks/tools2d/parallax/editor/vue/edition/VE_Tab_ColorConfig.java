@@ -25,12 +25,12 @@ import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.side.SquareBackground; 
 
-public class Vue_Edition_SideBar_ColorConfig extends Tab
+public class VE_Tab_ColorConfig extends Tab
 {
 
 	Table mainTable  ; 
 	
-	Vue_Edition_SideBar_ColorConfig()
+	VE_Tab_ColorConfig()
 	{
 		super(false, false);
 		
@@ -166,12 +166,12 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 		secondTable.add(new VisLabel("Top Color")).row();
 		secondTable.add(new VisLabel("Picker"));
 		secondTable.add(topColorSelector).row();
-		secondTable.add(topPicker).row();
+		secondTable.add(topPicker).colspan(2).row();
 		
 		secondTable.add(new VisLabel("Bottom Color")).row();
 		secondTable.add(new VisLabel("Picker"));
 		secondTable.add(bottomColorSelector).row();
-		secondTable.add(bottomPicker);
+		secondTable.add(bottomPicker).colspan(2);
 		
 		topPicker.updateUI() ;
 		bottomPicker.updateUI();
@@ -251,24 +251,24 @@ public class Vue_Edition_SideBar_ColorConfig extends Tab
 				}
 				if(firstTime)
 				{
-					if(top && newColor.equals(square.top_backColor))
+					if(top && newColor.equals(square.topColor))
 						return ; 
-					if(!top && newColor.equals(square.bottom_backColor))
+					if(!top && newColor.equals(square.bottomColor))
 						return ; 
 					
 					if(top)
-						picker.setColor(square.top_backColor) ; 
+						picker.setColor(square.topColor) ; 
 					else
-						picker.setColor(square.bottom_backColor) ; 
+						picker.setColor(square.bottomColor) ; 
 					
 					firstTime = false ; 
 					return ; 
 				}
 			
 				if(top)
-					square.top_backColor = newColor ;
+					square.topColor = newColor ;
 				else
-					square.bottom_backColor = newColor ;					
+					square.bottomColor = newColor ;					
 			}
 			
 			@Override

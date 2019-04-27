@@ -195,5 +195,12 @@ public class Utils_Scene2D
 		if (dotIndex == -1) return "";
 		return fileName.substring(dotIndex + 1);	
 	}
+	
+	public static String getPath(String fileName)
+	{
+		int dotIndex = fileName.lastIndexOf('.');
+		if (dotIndex == -1) return "";
+		return "" ; 
+	}
 
 }

@@ -1,21 +1,11 @@
 package jks.tools2d.parallax.editor.mains;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.esotericsoftware.kryo.io.Input;
 
-import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.vue.ScrollPaneTest;
-import jks.tools2d.parallax.editor.vue.Vue_Selection;
-import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
-import jks.tools2d.parallax.pages.WholePage_Model; 
+import jks.tools2d.parallax.editor.vue.Vue_Selection; 
 
 public class Main_Editor extends ApplicationAdapter 
 {
@@ -25,29 +15,9 @@ public class Main_Editor extends ApplicationAdapter
 	{
 		GVars_Heart_Editor.init();
 		Gdx.graphics.setVSync(true);
-//		GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
-//		directTestAtlas() ;
-		directTestParallax() ; 
+		GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
 	}
 
-	void directTestAtlas()
-	{
-		TextureAtlas textures = new TextureAtlas(new FileHandle("../editor/Files/Atlas/OneNight.atlas"));
-		GVars_Heart_Editor.changeVue(new Vue_Edition(textures), true) ;  	
-	}
-	
-	void directTestParallax()
-	{
-		Input input;
-		try
-		{
-			input = new Input(new FileInputStream("../editor/Files/Parallax/whole." + FVars_Extensions.PARALLAX));
-			GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Heart_Editor.kryo.readObject(input,WholePage_Model.class)),true) ;  
-		} 
-		catch (FileNotFoundException e)
-		{e.printStackTrace();}
-	}
-	
 	
 	@Override
 	public void render () 

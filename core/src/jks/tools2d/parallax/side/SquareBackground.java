@@ -7,8 +7,8 @@ import com.badlogic.gdx.math.Vector3;
 
 public class SquareBackground 
 {
-	public Color bottom_backColor ; 
-	public Color top_backColor; 
+	public Color topColor; 
+	public Color bottomColor ; 
 	
 	Vector3 bottom_ColorSpeed ; 
 	Color bottom_ColorObjectif ; 
@@ -29,8 +29,8 @@ public class SquareBackground
 	
 	public SquareBackground(Color Top, Color bottom, float posY,boolean top)
 	{
-		top_backColor = Top ; 
-		bottom_backColor = bottom ; 
+		topColor = Top ; 
+		bottomColor = bottom ; 
 		
 		setHeight(top,posY) ;
 		posX = 0 ; 
@@ -69,14 +69,14 @@ public class SquareBackground
 		
 		
 		top_ColorSpeed = new Vector3(
-										(top_ColorObjectif.r-top_backColor.r) * (1/inXSecondes), 
-										(top_ColorObjectif.g-top_backColor.g) * (1/inXSecondes), 
-										(top_ColorObjectif.b-top_backColor.b) * (1/inXSecondes)
+										(top_ColorObjectif.r-topColor.r) * (1/inXSecondes), 
+										(top_ColorObjectif.g-topColor.g) * (1/inXSecondes), 
+										(top_ColorObjectif.b-topColor.b) * (1/inXSecondes)
 									) ;
 		bottom_ColorSpeed = new Vector3(
-										(bottom_ColorObjectif.r-bottom_backColor.r) * (1/inXSecondes), 
-										(bottom_ColorObjectif.g-bottom_backColor.g) * (1/inXSecondes), 
-										(bottom_ColorObjectif.b-bottom_backColor.b) * (1/inXSecondes)
+										(bottom_ColorObjectif.r-bottomColor.r) * (1/inXSecondes), 
+										(bottom_ColorObjectif.g-bottomColor.g) * (1/inXSecondes), 
+										(bottom_ColorObjectif.b-bottomColor.b) * (1/inXSecondes)
 										) ;
 		
 		inTransfert = true ; 
@@ -87,8 +87,8 @@ public class SquareBackground
 	{
 		if(inTransfert)
 		{		
-			top_backColor.add(top_ColorSpeed.x * delta,top_ColorSpeed.y * delta,top_ColorSpeed.z * delta,0) ;
-			bottom_backColor.add(bottom_ColorSpeed.x * delta,bottom_ColorSpeed.y * delta,bottom_ColorSpeed.z * delta,0) ;
+			topColor.add(top_ColorSpeed.x * delta,top_ColorSpeed.y * delta,top_ColorSpeed.z * delta,0) ;
+			bottomColor.add(bottom_ColorSpeed.x * delta,bottom_ColorSpeed.y * delta,bottom_ColorSpeed.z * delta,0) ;
 			transfertTimmer += delta ; 
 
 			if(transfertTimmer >= transfertStop)
@@ -104,7 +104,7 @@ public class SquareBackground
 	
 	public void draw(ShapeRenderer render)
 	{
-		render.rect(posX, posY, width, height, bottom_backColor, bottom_backColor, top_backColor, top_backColor);
+		render.rect(posX, posY, width, height, bottomColor, bottomColor, topColor, topColor);
 	}
 	
 }

@@ -13,14 +13,18 @@ public class Parallax_Serializer extends Serializer<Parallax_Model>
 	{
 		output.writeString(object.region_Name);
 		output.writeInt(object.region_Position);
+		output.writeBoolean(object.flipX);
 		
 		output.writeFloat(object.parallaxScalingSpeedX);
 		output.writeFloat(object.parallaxScalingSpeedY);
 		
 		output.writeFloat(object.speed);
 		output.writeFloat(object.sizeRatio);
-		output.writeFloat(object.pad_X_Ratio);
-		output.writeFloat(object.pad_Y_Ratio);
+		output.writeFloat(object.decal_X_Ratio);
+		output.writeFloat(object.decal_Y_Ratio);
+		
+		output.writeFloat(object.padMin);
+		output.writeFloat(object.padFactor);
 	}
 
 	@Override
@@ -29,14 +33,19 @@ public class Parallax_Serializer extends Serializer<Parallax_Model>
 		Parallax_Model returning = new Parallax_Model();
 		returning.region_Name = input.readString() ; 
 		returning.region_Position = input.readInt() ;
+		returning.flipX = input.readBoolean() ;
 		
 		returning.parallaxScalingSpeedX = input.readFloat() ;
 		returning.parallaxScalingSpeedY = input.readFloat() ;
 		
 		returning.speed = input.readFloat() ;
 		returning.sizeRatio = input.readFloat() ;
-		returning.pad_X_Ratio = input.readFloat() ;
-		returning.pad_Y_Ratio = input.readFloat() ;
+		returning.decal_X_Ratio = input.readFloat() ;
+		returning.decal_Y_Ratio = input.readFloat() ;
+		
+		returning.padMin = input.readFloat() ;
+		returning.padFactor = input.readFloat() ;
+		
 		return returning;
 	}
 
