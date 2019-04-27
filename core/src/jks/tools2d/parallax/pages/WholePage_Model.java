@@ -11,41 +11,40 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
-import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.side.SquareBackground;
 
 @DefaultSerializer(WholePage_Serializer.class)
 public class WholePage_Model
 {	
-	public Color colorSurronding ; 
-	
 	public Color topHalf_top ; 
 	public Color topHalf_bottom ;
-	public Color bottomHalf ;
+	public Color bottomHalf_top ;
+	public Color bottomHalf_bottom ;
 	
-	public Page_Model pageModel ; 
+	public Page_Model pageModel ;
+	
 	public List<ParallaxLayer> preloadValue ;
 	
 	public WholePage_Model()
 	{
-		colorSurronding = Color.WHITE ; 
 		topHalf_top = Color.WHITE ; 
 		topHalf_bottom = Color.WHITE ; 
-		bottomHalf = Color.WHITE ; 
+		bottomHalf_top = Color.WHITE ; 
+		bottomHalf_bottom = Color.WHITE ; 
+		
 		pageModel = new Page_Model() ; 
 	}
 	
-	public WholePage_Model(String atlasPath, Color topHalf_top, Color topHalf_bottom, Color colorSurronding, Color bottomHalf)
+	public WholePage_Model(String atlasPath, Color topHalf_top, Color topHalf_bottom, Color bottomHalf_top, Color bottomHalf_bottom)
 	{
 		this.topHalf_top = topHalf_top ; 
 		this.topHalf_bottom = topHalf_bottom ; 
-		this.colorSurronding = colorSurronding ;
-		this.bottomHalf = bottomHalf ; 
+		this.bottomHalf_top = bottomHalf_top ; 
+		this.bottomHalf_bottom = bottomHalf_bottom ; 
 		
 		pageModel = new Page_Model() ; 
 		pageModel.atlasPath = atlasPath ; 
 		pageModel.outside = false ; 
-//		newPage.pageModel.pageList = buildPage() ; 
 	}
 	
 	public WholePage_Model(String atlasPath)
@@ -53,7 +52,6 @@ public class WholePage_Model
 		pageModel = new Page_Model() ; 
 		pageModel.atlasPath = atlasPath ; 
 		pageModel.outside = false ; 
-//		newPage.pageModel.pageList = buildPage() ; 
 	}
 
 	public List<ParallaxLayer> getDrawing()
@@ -73,7 +71,7 @@ public class WholePage_Model
 	{return new SquareBackground(topHalf_top.cpy(),topHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage, true) ;}
 	
 	public SquareBackground buildBottomSquareBackground(float screenPercentage)
-	{return new SquareBackground(topHalf_top.cpy(),topHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage, false) ;}
+	{return new SquareBackground(bottomHalf_top.cpy(),bottomHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage, false) ;}
 	
 	public void preload()
 	{
@@ -95,15 +93,15 @@ public class WholePage_Model
 		{
 			ParallaxLayer layer = new ParallaxLayer(
 					atlas.findRegions(parallax.region_Name).get(parallax.region_Position), 
+					true, 
 					worldWidth, 
-					new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY), 
-					parallax.sizeRatio,
-					true) ; 
+					new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY),
+					parallax.sizeRatio) ; 
 
-			layer.setPadPositionY(parallax.pad_Y_Ratio);
-			layer.setPadPositionX(parallax.pad_X_Ratio);
+			layer.setDecalPercentY(parallax.decal_Y_Ratio);
+			layer.setDecalPercentX(parallax.decal_X_Ratio);
 			
-			layer.setSpeed(parallax.speed);
+			layer.setSpeedAtRest(parallax.speed);
 			returningList.add(layer) ;
 		}
 		

@@ -19,13 +19,14 @@ allprojects
 {
     apply plugin: "eclipse"
     apply plugin: "idea"
+    apply plugin: "distribution"
 
-    version = '0.1'
+    version = '1.0'
     ext 
     {
         appName = 'ParallaxBackground'
-        gdxVersion = '1.9.6'
-        roboVMVersion = '2.3.1'
+        gdxVersion = '1.9.8'
+        roboVMVersion = '2.3.5'
         visuiVersion = '1.4.2'
     }
 
@@ -96,9 +97,7 @@ project(":editor")
      	compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
   		compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
   		compile "com.badlogicgames.gdx:gdx-tools:$gdxVersion" 
-  		//compile "net.dermetfan.libgdx-utils:libgdx-utils:0.3.4"
-  		
-    }
+  	}
 }
 
 tasks.eclipse.doLast 

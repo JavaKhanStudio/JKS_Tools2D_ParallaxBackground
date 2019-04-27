@@ -13,7 +13,6 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import jks.tools2d.parallax.ParallaxPage;
 import jks.tools2d.parallax.Utils_Parralax;
 import jks.tools2d.parallax.pages.WholePage_Model;
-import jks.tools2d.parallax.side.SolarAstre;
 import jks.tools2d.parallax.side.SquareBackground;
 
 public class Parallax_Heart 
@@ -22,8 +21,6 @@ public class Parallax_Heart
 	public Camera staticCamera;
 	public SpriteBatch batch;
 	public ParallaxPage parallaxPage;
-//	public ParallaxPage parallaxSecondePage;
-//	public AssetManager manager ;
 	
 	// Background
 	public ShapeRenderer shapeRender ; 
@@ -104,12 +101,10 @@ public class Parallax_Heart
 	{
 		if(topSquare != null)
 			topSquare.act(delta);
-		else
-			System.out.println("Is null");
-		
 		
 		if(bottomSquare != null)
 			bottomSquare.act(delta);
+		
 		if(parallaxPage != null)
 			parallaxPage.act(delta);	
 	}
