@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.Vector2;
@@ -62,6 +63,17 @@ public class WholePage_Model
 		return preloadValue ; 
 	}
 	
+	public List<ParallaxLayer> getDrawing(String relativePath)
+	{
+		if("".equals(relativePath))
+			return getDrawing() ;
+		
+		if(preloadValue == null)
+			preload(relativePath) ;
+		
+		return preloadValue ; 
+	}
+	
 	/*
 	 * 1   = empty screen
 	 * 0.5 = half screen
@@ -75,8 +87,12 @@ public class WholePage_Model
 	
 	public void preload()
 	{
-		if(preloadValue == null)
-			preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight()); 
+		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight()); 
+	}
+	
+	public void preload(String relativePath)
+	{
+		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight(),relativePath); 
 	}
 	
 	public void forceLoad(TextureAtlas atlas)
@@ -108,6 +124,14 @@ public class WholePage_Model
 		return returningList;
 	}
 	
+	// External Reading
+	private List<ParallaxLayer> load(float worldWidth, float worldHeight, String relativePath) 
+	{
+		TextureAtlas atlas = new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasPath));
+		return load(worldWidth, worldHeight, atlas) ; 
+	}
+	
+	// Internal Reading
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight) 
 	{
 		Gvars_Parallax.getManager().load(pageModel.atlasPath, TextureAtlas.class);
@@ -115,6 +139,11 @@ public class WholePage_Model
 		
 		TextureAtlas atlas = new TextureAtlas(pageModel.atlasPath);
 		return load(worldWidth, worldHeight, atlas) ; 
+	}
+	
+	public void cleanPath()
+	{
+		pageModel.atlasPath = pageModel.atlasPath.substring(pageModel.atlasPath.lastIndexOf("/") + 1, pageModel.atlasPath.length()) ; 
 	}
 		
 }

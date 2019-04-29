@@ -6,7 +6,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
@@ -50,6 +53,9 @@ public class GVars_Vue_Edition
 	public static Array<ParallaxLayer> trashedValues = new Array<ParallaxLayer>(); 
 	public static Array<Integer> trashedValuesPosition = new Array<Integer>(); 
 	
+	public static String relativePath ;
+	public static TextureAtlas atlas;
+	
 	public static ParallaxDefaultValues getDefaults()
 	{return infos.defaults ;}
 	
@@ -85,11 +91,16 @@ public class GVars_Vue_Edition
 		
 	}
 	
+	public static TextureAtlas getAtlas()
+	{
+		return atlas ;
+	}
+	
 	public static void setItems()
 	{
 		if(VE_Tab_TextureList_Adding.imageList == null)
 		{
-			System.out.println("Set Items mal call");
+			System.out.println("Set Items badly call");
 			return ;
 		}
 		

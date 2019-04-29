@@ -12,6 +12,7 @@ import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Blo
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -26,7 +27,7 @@ import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
-public class VE_Center_ParallaxShow
+public class VE_Center_ParallaxShow extends Table
 {
 	float decalX = 2 ; 
 	float buttonSize ;
@@ -34,17 +35,22 @@ public class VE_Center_ParallaxShow
 	public static VE_Center_ParallaxShow build(Object ref)
 	{
 		VE_Center_ParallaxShow show = null ;
+		TextureAtlas atlas = null;
+		
 		if(ref instanceof TextureAtlas)
 		{
-			TextureAtlas atlas = (TextureAtlas)ref ; 
+			atlas = (TextureAtlas)ref ; 
 			show = new VE_Center_ParallaxShow(atlas) ; 
 		}
 		else if(ref instanceof WholePage_Model)
 		{
 			WholePage_Model page = (WholePage_Model)ref ; 
+			atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + page.pageModel.atlasPath));
 			show =  new VE_Center_ParallaxShow(page) ; 
 		}
 
+		
+		GVars_Vue_Edition.atlas = atlas ; 
 		return show ; 
 	}
 	
@@ -77,11 +83,10 @@ public class VE_Center_ParallaxShow
 		buttonSize = size_Height_Bloc_Parallax_Controle/1.5f ; 
 	}
 	
-	Table buildOptionsTable ; 
+	
 	public void buildOptions()
 	{
-		buildOptionsTable = new Table() ;
-		buildOptionsTable.setBounds(size_Bloc_Selection, 0, size_Bloc_Parallax, size_Height_Bloc_Parallax_Controle);
+		setBounds(size_Bloc_Selection, 0, size_Bloc_Parallax, size_Height_Bloc_Parallax_Controle);
 		
 		// TODO Effacer et mettre dans le UISKIN
 		CheckBoxStyle checkBox = new CheckBoxStyle() ;
@@ -118,12 +123,11 @@ public class VE_Center_ParallaxShow
 			}
 		}) ; 
 		
-		parallaxSpeedSlider.setSize(buildOptionsTable.getWidth()/2 - buttonSize, buttonSize);
-		parallaxSpeedSlider.setPosition(buttonSize/3, buildOptionsTable.getHeight()/2 - parallaxSpeedSlider.getHeight()/2);
+		parallaxSpeedSlider.setSize(this.getWidth()/2 - buttonSize, buttonSize);
+		parallaxSpeedSlider.setPosition(buttonSize/3, this.getHeight()/2 - parallaxSpeedSlider.getHeight()/2);
 		
 		
-		buildOptionsTable.addActor(startStop) ;
-		buildOptionsTable.addActor(parallaxSpeedSlider) ; 
-		mainUi.addActor(buildOptionsTable);
+		this.addActor(startStop) ;
+		this.addActor(parallaxSpeedSlider) ; 
 	}
 }

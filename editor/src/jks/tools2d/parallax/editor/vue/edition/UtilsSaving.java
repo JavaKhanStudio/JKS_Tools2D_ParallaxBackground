@@ -62,7 +62,7 @@ public class UtilsSaving
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("probleme grave avec le save");
+			e.printStackTrace();
 		}
 		
 	}

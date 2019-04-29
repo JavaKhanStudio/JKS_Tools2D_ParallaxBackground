@@ -39,6 +39,7 @@ public class Parallax_Heart
 	public static boolean useTimeOfDay ; 
 	
 	public static boolean debug ; 
+	public String relativePath = "";
 	
 	public Parallax_Heart(float worldWidth,AssetManager manager) 
 	{	
@@ -115,7 +116,6 @@ public class Parallax_Heart
 		drawBackGround() ; 
 		
 		batch.begin() ;
-//		Parallax_Utils_Astre.drawAstre(); 
 		parallaxPage.draw(worldCamera, batch);
 
 		batch.end();
@@ -134,5 +134,4 @@ public class Parallax_Heart
 		shapeRender.end();
 	}
 
-	
 }

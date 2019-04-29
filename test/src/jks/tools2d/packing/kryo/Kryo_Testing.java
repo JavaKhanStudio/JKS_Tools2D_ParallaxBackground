@@ -122,7 +122,7 @@ public class Kryo_Testing
     static public void testWholePage(Kryo kryo) throws FileNotFoundException
     {
     	WholePage_Model wholePage = Enum_ColdNight.COLD_NIGHT.wholePage ; 
-    	
+    	wholePage.cleanPath();
     	Output output = new Output(new FileOutputStream(FVars_Path.path + pageWholeName + "." + FVars_Extensions.PARALLAX));
     	kryo.writeObject(output, wholePage);
     	output.close();

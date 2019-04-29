@@ -1,7 +1,7 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.allImage;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.*;
+import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.getAtlas;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.isPause;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Pos_X;
@@ -10,6 +10,7 @@ import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Siz
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Size_Y;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.screenSize;
 import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.screenSpeed;
+import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.setDefaults;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,7 +27,6 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -37,14 +37,11 @@ import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
-import jks.tools2d.parallax.heart.Gvars_Parallax;
-import jks.tools2d.parallax.heart.Parallax_Heart;
-import jks.tools2d.parallax.pages.WholePage_Model; 
+import jks.tools2d.parallax.heart.Parallax_Heart; 
 
 public class Vue_Edition extends AVue_Model 
 {
 
-	private TextureAtlas atlas ; 
 	public static Parallax_Heart parallax_Heart ;
 	public ShapeRenderer shapeRender ;
 	public Object preloadingValue ; 
@@ -52,42 +49,28 @@ public class Vue_Edition extends AVue_Model
 	public void preload()
 	{
 		parallax_Heart = new Parallax_Heart(screenSize,new AssetManager());
+		parallax_Heart.relativePath = GVars_Vue_Edition.relativePath ;
 		GVars_Vue_Edition.buildSizes();
 		shapeRender = new ShapeRenderer() ;
 	}
 	
-	public Vue_Edition(TextureAtlas atlas)
+	public Vue_Edition(Object preloadingValue)
 	{
 		preload() ; 
-		this.atlas = atlas ;
-		preloadingValue = atlas ;  
-		
+		this.preloadingValue = preloadingValue ;  	
 	}
-
-	public Vue_Edition(WholePage_Model parallax)
-	{
-		preload() ; 
-		Gvars_Parallax.getManager().load(parallax.pageModel.atlasPath, TextureAtlas.class);
-		Gvars_Parallax.getManager().finishLoadingAsset(parallax.pageModel.atlasPath);	
-		
-		TextureAtlas atlas = new TextureAtlas(parallax.pageModel.atlasPath);
-		this.atlas = atlas ;
-
-		preloadingValue = parallax ; 
-	}
-
 
 	@Override
 	public void init()
 	{
-		VE_Center_ParallaxShow.build(preloadingValue) ; 
-		
+		VE_Center_ParallaxShow center = VE_Center_ParallaxShow.build(preloadingValue) ; 
+
 		allImage = new ArrayList<>() ; 
 		// TODO Import the base value
 		
 		setDefaults(new ParallaxDefaultValues() ); 
 			
-		for(AtlasRegion region : atlas.getRegions())
+		for(AtlasRegion region : getAtlas().getRegions())
 		{
 			allImage.add(region) ; 
 			imageRef.put(region, new Position_Infos(region)) ; 
@@ -95,6 +78,7 @@ public class Vue_Edition extends AVue_Model
 		
 		GVars_Ui.mainUi.addActor(new VE_Options()) ;
 		GVars_Ui.mainUi.addActor(new VE_Tab_AControl()); 
+		GVars_Ui.mainUi.addActor(center); 
 		
 		InputProcessor input = buildClickProcessor() ; 	
 		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_Ui.mainUi, new EditorInputProcessus(),input));

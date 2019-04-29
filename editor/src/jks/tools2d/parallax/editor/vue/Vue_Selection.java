@@ -3,7 +3,7 @@ package jks.tools2d.parallax.editor.vue;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.ATLAS;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.kryo;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.infos;
+import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.*;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -93,9 +93,10 @@ public class Vue_Selection extends AVue_Model
          
 		chooser.setFileFilter(filter);
 
-		FileHandle handle = new FileHandle("C:\\Users\\Simon\\Documents\\JKS_Tools2D_ParallaxBackground\\editor\\Files"); 
-		FileHandle relative = new FileHandle("C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/editor"); 
-		chooser.setDirectory(handle);
+		String filePath = new File("").getAbsolutePath();
+		String relativePath = filePath + "/Files" ; 
+		FileHandle relative = new FileHandle(relativePath); 
+		chooser.setDirectory(relative);
 		
 		GVars_Ui.mainUi.addActor(chooser); 
 		GVars_Ui.mainUi.addActor(title);
@@ -106,27 +107,30 @@ public class Vue_Selection extends AVue_Model
 		
 		infos = new ProjectInfos();
 		infos.setPathInfo(file);
+		relativePath = infos.projectPath ; 
 		
 		if(PARALLAX.equals(file.extension()))
 		{
-			selectParralax(kryo.readObject(new Input(file.read()),WholePage_Model.class));
+//			selectParralax(kryo.readObject(new Input(file.read()),WholePage_Model.class));
+			GVars_Heart_Editor.changeVue(new Vue_Edition(kryo.readObject(new Input(file.read()),WholePage_Model.class)), true);
 		}
 		else if(ATLAS.equals(file.extension()))
 		{
-			selectTextureAtlas(new TextureAtlas(file));	
+//			selectTextureAtlas(new TextureAtlas(file));	
+			GVars_Heart_Editor.changeVue(new Vue_Edition(new TextureAtlas(file)), true);
 		}
 		
 	}
 	
-	public void selectTextureAtlas(TextureAtlas atlas)
-	{
-		GVars_Heart_Editor.changeVue(new Vue_Edition(atlas), true);
-	}
-	
-	public void selectParralax(WholePage_Model parallax)
-	{
-		GVars_Heart_Editor.changeVue(new Vue_Edition(parallax), true);
-	}
+//	public void selectTextureAtlas(TextureAtlas atlas)
+//	{
+//		GVars_Heart_Editor.changeVue(new Vue_Edition(atlas), true);
+//	}
+//	
+//	public void selectParralax(WholePage_Model parallax)
+//	{
+//		GVars_Heart_Editor.changeVue(new Vue_Edition(parallax), true);
+//	}
 
 	@Override
 	public void destroy() 

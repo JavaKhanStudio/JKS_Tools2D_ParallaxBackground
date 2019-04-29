@@ -20,7 +20,7 @@ public class VE_Options extends Table
 	float size = 50 ;
 	float textWidth, pathWidth,  textHeight, formatWidth ;
 	
-	TextField parallaxName,parallaxPath  ; 
+	TextField parallaxPath,parallaxName  ; 
 	VisCheckBox  formatLibGDX,formatJson ; 
 	
 	ImageButton savingExport, savingProject ;
@@ -41,7 +41,7 @@ public class VE_Options extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				UtilsSaving.saving_Parallax_Kryo("C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/editor", "thes");
+				UtilsSaving.saving_Parallax_Kryo(parallaxPath.getText(), parallaxName.getText());
 			}
 			
 		}) ;
@@ -56,7 +56,7 @@ public class VE_Options extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				UtilsSaving.saving_Parallax_Kryo("C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/editor", "thes");
+				UtilsSaving.saving_Parallax_Kryo(parallaxPath.getText(), parallaxName.getText());
 			}
 			
 		}) ;

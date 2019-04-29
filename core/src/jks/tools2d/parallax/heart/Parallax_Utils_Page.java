@@ -12,7 +12,7 @@ public class Parallax_Utils_Page
 	{
 		ref.currentPage = pageModel ; 
 		ref.parallaxPage.layers.clear();
-		ref.parallaxPage.addLayers(ref.currentPage.getDrawing());
+		ref.parallaxPage.addLayers(ref.currentPage.getDrawing(ref.relativePath));
 		
 		ref.topSquare = pageModel.buildTopSquareBackground(topSquarePercent) ;
 		ref.bottomSquare = pageModel.buildBottomSquareBackground(bottomSquarePercent) ;
