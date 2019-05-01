@@ -21,6 +21,7 @@ public class Position_Infos
 		this.fromAtlas = fromAtlas ;
 		this.url = url ; 
 		this.position = position ; 
+		System.out.println(url + " region :" + position);
 	}
 	
 	public Position_Infos(AtlasRegion region)
@@ -35,6 +36,7 @@ public class Position_Infos
 		fromAtlas = true ; 
 		url = parallax_Model.region_Name ; 
 		position = parallax_Model.region_Position ; 
+		System.out.println(url + " region :" + position);
 	}	
 }
 
