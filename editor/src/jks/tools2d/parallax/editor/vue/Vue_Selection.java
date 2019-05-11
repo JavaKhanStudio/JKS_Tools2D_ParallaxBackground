@@ -3,7 +3,7 @@ package jks.tools2d.parallax.editor.vue;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.ATLAS;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.kryo;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.*;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -24,8 +24,8 @@ import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
-import jks.tools2d.parallax.editor.vue.edition.ProjectInfos;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
@@ -105,7 +105,7 @@ public class Vue_Selection extends AVue_Model
 	public void selectSigleFile(FileHandle file)
 	{
 		
-		infos = new ProjectInfos();
+		infos = new Project_Infos();
 		infos.setPathInfo(file);
 		relativePath = infos.projectPath ; 
 		

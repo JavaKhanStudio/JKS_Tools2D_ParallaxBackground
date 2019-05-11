@@ -1,4 +1,4 @@
-package jks.tools2d.parallax.editor.vue.edition;
+package jks.tools2d.parallax.editor.vue.edition.data;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.Kryo;
@@ -83,14 +83,6 @@ public class ParallaxDefaultValues
 	} 
 	
 }
-
-//public Parallax_Model defaultModel;
-//public Parallax_Model incrementValue ; 
-//public boolean addAsLast ; 
-//public boolean increment ;
-//public boolean autoGoToSelected ;
-//public boolean alternateFlipX ; 
-//public boolean alternateFlipY ; 
 
 class ParallaxLayerBaseValues_Serializer extends Serializer<ParallaxDefaultValues>
 {

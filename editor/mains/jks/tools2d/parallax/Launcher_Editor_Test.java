@@ -7,7 +7,6 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.mains.Main_Editor;
 import jks.tools2d.parallax.editor.mains.Main_Editor_Test;
 
 public class Launcher_Editor_Test 

@@ -1,10 +1,8 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.*;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.sizeTabsBar;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Bloc_Selection;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -20,12 +18,14 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import jks.tools2d.libgdxutils.JksTextureList;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.heart.Gvars_Parallax; 
 
 public class VE_Tab_TextureList_Adding extends Tab
 {
 
-	static JksTextureList imageList ; 
+	static public JksTextureList imageList ; 
 	private Table mainTable ;
 	
 	
@@ -62,6 +62,8 @@ public class VE_Tab_TextureList_Adding extends Tab
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
 				TextureRegion text = new TextureRegion(imageList.getSelected()) ; 
+				Position_Infos infoss = GVars_Vue_Edition.imageRef.get(imageList.getSelected()) ; 
+				System.out.println(infoss.url + " " + infoss.position);
 				GVars_Vue_Edition.imageRef.put(text, GVars_Vue_Edition.imageRef.get(imageList.getSelected())) ;
 				ParallaxLayer layer = new ParallaxLayer(
 						text,

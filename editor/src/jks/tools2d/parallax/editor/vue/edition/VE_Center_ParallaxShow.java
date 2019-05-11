@@ -2,14 +2,14 @@ package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.mainUi;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.isPause;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Pos_X;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Pos_Y;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Size_X;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Size_Y;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Bloc_Parallax;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Bloc_Selection;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.isPause;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_X;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_Y;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Parallax;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Selection;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
@@ -25,6 +25,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import jks.tools2d.libgdxutils.JksCheckBox;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
 public class VE_Center_ParallaxShow extends Table

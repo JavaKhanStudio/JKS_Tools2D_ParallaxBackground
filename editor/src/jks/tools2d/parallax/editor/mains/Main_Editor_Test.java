@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.mains;
 
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.infos;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.infos;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -14,8 +14,8 @@ import com.esotericsoftware.kryo.io.Input;
 
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.vue.edition.ProjectInfos;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
 public class Main_Editor_Test extends ApplicationAdapter 
@@ -32,20 +32,20 @@ public class Main_Editor_Test extends ApplicationAdapter
 
 	void directTestAtlas()
 	{
-		infos = new ProjectInfos();
+		infos = new Project_Infos();
 		infos.projectName = "OneNight" ; 
 		infos.projectPath = "C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/editor/test" ; 
 		FileHandle handler = new FileHandle("../editor/Files/Atlas/OneNight.atlas") ; 
 		TextureAtlas textures = new TextureAtlas(handler);
 		
-		infos = new ProjectInfos();
+		infos = new Project_Infos();
 		infos.setPathInfo(handler);
 		GVars_Heart_Editor.changeVue(new Vue_Edition(textures), true) ;  	
 	}
 	
 	void directTestParallax()
 	{
-		infos = new ProjectInfos();
+		infos = new Project_Infos();
 		infos.projectName = "whole" ; 
 		infos.projectPath = "CANT FIND" ; 
 		Input input;

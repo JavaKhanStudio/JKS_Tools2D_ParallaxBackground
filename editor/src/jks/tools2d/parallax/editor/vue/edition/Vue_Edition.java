@@ -1,16 +1,16 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.allImage;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.getAtlas;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.imageRef;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.isPause;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Pos_X;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Pos_Y;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Size_X;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.parr_Size_Y;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.screenSize;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.screenSpeed;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.setDefaults;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.allImage;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.getAtlas;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.imageRef;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.isPause;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_X;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_Y;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.screenSize;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.screenSpeed;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setDefaults;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -36,6 +36,9 @@ import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
+import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
+import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
 import jks.tools2d.parallax.heart.Parallax_Heart; 
 
@@ -69,12 +72,9 @@ public class Vue_Edition extends AVue_Model
 		// TODO Import the base value
 		
 		setDefaults(new ParallaxDefaultValues() ); 
-			
-		for(AtlasRegion region : getAtlas().getRegions())
-		{
-			allImage.add(region) ; 
-			imageRef.put(region, new Position_Infos(region)) ; 
-		}
+		buildImageList() ; 
+		
+		
 		
 		GVars_Ui.mainUi.addActor(new VE_Options()) ;
 		GVars_Ui.mainUi.addActor(new VE_Tab_AControl()); 
@@ -84,6 +84,24 @@ public class Vue_Edition extends AVue_Model
 		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_Ui.mainUi, new EditorInputProcessus(),input));
 	}
 	
+	private void buildImageList() 
+	{
+		// TODO more testing require
+		int position ; 
+		for(AtlasRegion region : getAtlas().getRegions())
+		{
+			allImage.add(region) ;
+			position = region.index ; 
+			if(position == -1)
+				position = 0 ; 
+			else if(position > 0)
+				position-- ;
+			
+			imageRef.put(region, new Position_Infos(region,position)) ; 
+		}
+		
+	}
+
 	public void saveAllData()
 	{	
 		FileHandle handler ; 

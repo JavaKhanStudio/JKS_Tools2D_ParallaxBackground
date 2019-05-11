@@ -1,4 +1,4 @@
-package jks.tools2d.parallax.editor.vue.edition;
+package jks.tools2d.parallax.editor.vue.edition.data;
 
 import com.badlogic.gdx.files.FileHandle;
 import com.esotericsoftware.kryo.DefaultSerializer;
@@ -8,7 +8,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 @DefaultSerializer(ProjectInfos_Serializer.class)
-public class ProjectInfos
+public class Project_Infos
 {
 	public String projectName ; 
 	public String projectPath ; 
@@ -23,18 +23,18 @@ public class ProjectInfos
 	
 }
 
-class ProjectInfos_Serializer extends Serializer<ProjectInfos>
+class ProjectInfos_Serializer extends Serializer<Project_Infos>
 {
 	@Override
-	public void write(Kryo kryo, Output output, ProjectInfos object) 
+	public void write(Kryo kryo, Output output, Project_Infos object) 
 	{
 //		kryo.wr
 	}
 
 	@Override
-	public ProjectInfos read(Kryo kryo, Input input, Class<? extends ProjectInfos> type) 
+	public Project_Infos read(Kryo kryo, Input input, Class<? extends Project_Infos> type) 
 	{
-		ProjectInfos returning = new ProjectInfos();
+		Project_Infos returning = new Project_Infos();
 
 		
 		return returning;

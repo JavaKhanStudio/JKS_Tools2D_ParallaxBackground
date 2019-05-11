@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.*;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -13,6 +13,7 @@ import com.kotcrab.vis.ui.widget.VisLabel;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.vue.edition.data.UtilsSaving;
 
 public class VE_Options extends Table
 {

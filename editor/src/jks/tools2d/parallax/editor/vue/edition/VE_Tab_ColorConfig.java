@@ -23,6 +23,7 @@ import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.libgdxutils.color.ColorPickerListener;
 import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.side.SquareBackground; 
 
 public class VE_Tab_ColorConfig extends Tab

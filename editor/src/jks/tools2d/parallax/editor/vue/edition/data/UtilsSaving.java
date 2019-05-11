@@ -1,4 +1,4 @@
-package jks.tools2d.parallax.editor.vue.edition;
+package jks.tools2d.parallax.editor.vue.edition.data;
 
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 

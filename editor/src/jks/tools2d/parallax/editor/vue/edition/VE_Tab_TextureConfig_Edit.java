@@ -1,8 +1,8 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
-import static jks.tools2d.parallax.editor.vue.edition.GVars_Vue_Edition.currentlySelectedParallax;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.currentlySelectedParallax;
 
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
@@ -15,6 +15,7 @@ import com.kotcrab.vis.ui.widget.spinner.Spinner;
 
 import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 
 public class VE_Tab_TextureConfig_Edit extends Table
 {
