@@ -1,24 +1,24 @@
 package jks.tools2d.parallax;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 
-public class ParallaxPage 
+public class ParallaxPageReader 
 {
 	public Array<ParallaxLayer> layers;
 
 	private Matrix4 cachedProjectionView;
-	private Vector3 cachedPos;
 	private float cachedZoom;
 	private float drawingHeight  ;
 	
@@ -37,10 +37,12 @@ public class ParallaxPage
 	Color oldLayer_transfertColor = new Color(1,1,1,1);
 	Color newLayer_transfertColor = new Color(1,1,1,0); 
 	
+	boolean moveOnX = true; 
+	
 	/**
 	 * Create a ParallaxBackground without any layers
 	 */
-	public ParallaxPage()
+	public ParallaxPageReader()
 	{
 		initialize();
 	}
@@ -50,7 +52,7 @@ public class ParallaxPage
 	 * Create a ParallaxBackground instance with the layers added
 	 * @param layers layers to be added to the parallaxBackground
 	 */
-	public ParallaxPage(ParallaxLayer... layers)
+	public ParallaxPageReader(ParallaxLayer... layers)
 	{
 		initialize();
 		this.layers.addAll(layers);
@@ -62,7 +64,6 @@ public class ParallaxPage
     {
     	layers = new Array<ParallaxLayer>();
     	transferLayers = new Array<ParallaxLayer>();
-		cachedPos = new Vector3();
 		cachedProjectionView = new Matrix4();
 	}
 	
@@ -116,12 +117,36 @@ public class ParallaxPage
 		transferLayers = layers ;
 		set_newLayer_Color(color);
 	}
+	///*
+	public void draw(OrthographicCamera worldCamera, Batch batch,  Vector2 refPoint)
+	{
+		cachedProjectionView.set(worldCamera.combined);
+		cachedZoom = worldCamera.zoom;
+		
+		ParallaxLayer layer ; 
+		Vector2 origCameraPos ; 
+		
+		float currentViewportDecal = (moveOnX ? worldCamera.viewportHeight : worldCamera.viewportWidth) * (worldCamera.zoom/2);
+			
+		batch.setProjectionMatrix(worldCamera.combined);   
+		worldCamera.update();
+		
+		for(int i = 0; i < layers.size; i++)
+		{
+			layer = layers.get(i);
+			batch.setColor(oldLayer_transfertColor);
+    		
+    		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
+		   
+    		if(inTransfer)
+		    	compute_Color_Transfert(batch) ;	    		    
+		}
+		
+		batch.setColor(1,1,1,1);	
+	}
+	//*/
 	
-	/**
-	 * render the layers held by this module. Of course the layers are rendered in parallax scrolling manner. The worldCamera and batch provided are unaffected by the method
-	 * @param worldCamera The Orthographic WorldCamera , all layers are rendered relative to its position.
-	 * @param batch The batch which is used to render the layers.
-	 */
+	/*
 	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
 		cachedProjectionView.set(worldCamera.combined);
@@ -195,6 +220,7 @@ public class ParallaxPage
 		worldCamera.update();
 		batch.setColor(1,1,1,1);	
 	}
+//	*/
 	
 	public void compute_Color_Transfert(Batch batch)
 	{
@@ -221,6 +247,8 @@ public class ParallaxPage
 	{
 		for(int a=0; a < layers.size ; a++) 
 		{layers.get(a).act(delta);}
+		
+//		layers.
 		
 		if(inTransfer)
 		{

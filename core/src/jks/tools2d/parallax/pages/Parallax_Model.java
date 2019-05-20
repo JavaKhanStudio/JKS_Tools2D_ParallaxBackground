@@ -2,7 +2,7 @@ package jks.tools2d.parallax.pages;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 
-@DefaultSerializer(Parallax_Serializer.class)
+@DefaultSerializer(Parallax_Model_Serializer.class)
 public class Parallax_Model 
 {
 	public String region_Name ; 
@@ -20,8 +20,6 @@ public class Parallax_Model
 	
 	public float padMin ; 
 	public float padFactor ;
-	
-	
 	
 	public String getRegion_Name()
 	{return region_Name;}
@@ -95,6 +93,4 @@ public class Parallax_Model
 	public void setPadFactor(float padFactor)
 	{this.padFactor = padFactor;} 
 
-	
-	
 }

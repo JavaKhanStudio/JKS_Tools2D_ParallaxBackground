@@ -2,226 +2,27 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b55857c0-5269-4dc6-a392-08e79e900f1d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.classpath" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.settings/gradle/org.springsource.ide.eclipse.gradle.core.import.prefs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.settings/gradle/org.springsource.ide.eclipse.gradle.core.prefs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.settings/gradle/org.springsource.ide.eclipse.gradle.refresh.prefs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.settings/org.eclipse.buildship.core.prefs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.classpath" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.project" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.settings/gradle/org.springsource.ide.eclipse.gradle.core.prefs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.settings/gradle/org.springsource.ide.eclipse.gradle.refresh.prefs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.settings/org.eclipse.buildship.core.prefs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.settings/org.eclipse.jdt.core.prefs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/AndroidManifest.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/astre/divers.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/astre/divers.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/data/main_atlas.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/data/main_atlas.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/data/main_atlas2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/Day.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/Day.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/Green.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/Green.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/Sunrise.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/night.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/night.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/rain.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/rain.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/sunrise.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/sunset.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/day/sunset.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/preview.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/bleached-peach.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/button-maroon-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/button-maroon.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/button-orange-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/button-orange.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/check-box-off.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/check-box.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/close-button-alt-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/close-button-alt-highlight.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/close-button-alt.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/close-button-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/close-button-highlight.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/close-button.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/cursor.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/dark-dim-orange.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/dark-maroon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/dark-orange.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/dim-orange.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/folder-open.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/folder.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/font-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/font-export.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/font-title-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/font-title-export.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-delete-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-delete.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-duplicate-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-duplicate.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-help-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-help.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-info-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-info.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-left-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-left.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-minus-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-minus.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-music-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-music-off-copy-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-music-off.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-music.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-plus-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-plus.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-right-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-right.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-settings-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-settings.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-sound-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-sound-off-down.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-sound-off.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/image-sound.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/maroon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-button-dark-maroon.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-button-dark-orange.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-button-maroon.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-button-orange.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-center.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-down-center.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-down-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-down-left.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-down-middle.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-down-right.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-down-up.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-left.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-middle.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-right.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/menu-up.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/minus.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/old.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/old1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/old2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/orange.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/panel-maroon.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/panel-orange.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/panel-peach.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/peach.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/plus.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/progress-bar-before-knob.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/progress-bar-vertical-before-knob.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/progress-bar-vertical.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/progress-bar.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/radio-button-off.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/radio-button.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/round-dark-maroon.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/round-dark-orange.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/round-maroon.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/round-orange.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/scrollbar-android-knob.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/scrollbar-android-vertical-knob.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/scrollbar-android-vertical.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/scrollbar-android.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/scrollbar-knob.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/scrollbar-vertical.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/scrollbar.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/select-box-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/select-box.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/slider-bar-knob.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/spinner-minus-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/spinner-minus.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/spinner-plus-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/spinner-plus.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/spinner-text-field-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/spinner-text-field.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/splitpane.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/switch-off.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/switch-text-off.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/switch-text.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/switch.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/textfield-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/textfield-login-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/textfield-login.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/textfield-password-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/textfield-password.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/textfield-search-down.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/textfield-search.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/textfield.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/touchpad-knob.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/touchpad.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/white.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/window-large.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/window-maroon.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/window-orange.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/raw/window-peach.9.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-dark/dark-peel-ui.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-dark/dark-peel-ui.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-dark/dark-peel-ui.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-dark/font-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-dark/font-shortcut-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-dark/font-title-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-light/font-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-light/font-shortcut-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-light/font-title-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-light/uiskin.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-light/uiskin.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/extras/skin-composer-light/uiskin.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/font-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/font-title-export.fnt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/uiskin.atlas" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/uiskin.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/skin/uiskin.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/assets/skins/orange/style-guide.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/bin/AndroidManifest.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/bin/classes/com/mygdx/parallax/AndroidLauncher.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/bin/classes/com/mygdx/parallax/BuildConfig.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/bin/classes/com/mygdx/parallax/R$attr.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/bin/classes/com/mygdx/parallax/R$drawable.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/bin/classes/com/mygdx/parallax/R$string.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/bin/classes/com/mygdx/parallax/R$style.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/bin/classes/com/mygdx/parallax/R.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/build.gradle" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gen/com/mygdx/parallax/BuildConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gen/com/mygdx/parallax/R.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gradle/wrapper/gradle-wrapper.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gradlew" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gradlew.bat" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/ic_launcher-web.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/arm64-v8a/libgdx-box2d.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/arm64-v8a/libgdx.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/armeabi-v7a/libgdx-box2d.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/armeabi-v7a/libgdx.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/armeabi/libgdx-box2d.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/armeabi/libgdx.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/x86/libgdx-box2d.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/x86/libgdx.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/x86_64/libgdx-box2d.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/libs/x86_64/libgdx.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/lint.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/proguard-project.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/project.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/res/drawable-hdpi/ic_launcher.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/res/drawable-mdpi/ic_launcher.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/res/drawable-xhdpi/ic_launcher.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/res/drawable-xxhdpi/ic_launcher.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/res/drawable-xxxhdpi/ic_launcher.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/res/values/strings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/res/values/styles.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/src/com/mygdx/parallax/AndroidLauncher.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/core/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/desktop/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/desktop/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/editor/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradlew" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradlew.bat" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/test/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Page_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Page_Model.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/Files/Parallax/thes.plax" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/Files/Parallax/whole2.plax" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/Files/Parallax/whole3.plax" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/FVars_Extensions.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/FVars_Extensions.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Heart_Editor.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Heart_Editor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Ui.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Ui.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/mains/Main_Editor_Test.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/mains/Main_Editor_Test.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/Vue_Selection.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/Vue_Selection.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Options.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Options.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/GVars_Vue_Edition.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/GVars_Vue_Edition.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/ParallaxDefaultValues.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/ParallaxDefaultValues.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Position_Infos.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Position_Infos.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Project_Infos.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Project_Infos.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/UtilsSaving.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/UtilsSaving.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/.gradle/" />
@@ -254,50 +55,15 @@
     </projectState>
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="26" column="5" selection-start-line="26" selection-start-column="5" selection-end-line="26" selection-end-column="5" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/test/DesktopLauncher_Basic.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="187">
-              <caret line="14" selection-start-line="14" selection-end-line="14" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor_Test.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="68">
-              <caret line="10" column="13" selection-start-line="10" selection-start-column="13" selection-end-line="10" selection-end-column="13" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectConfigurationFiles">
-    <option name="files">
-      <list>
-        <option value="$PROJECT_DIR$/.idea/vcs.xml" />
-      </list>
-    </option>
-  </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="-9" />
-    <option name="width" value="1198" />
-    <option name="height" value="1039" />
+    <option name="x" value="-10" />
+    <option name="width" value="1199" />
+    <option name="height" value="1040" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -312,32 +78,6 @@
               <item name="JKS_Tools2D_ParallaxBackground" type="b2602c69:ProjectViewProjectNode" />
               <item name="JKS_Tools2D_ParallaxBackground" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
             </path>
-            <path>
-              <item name="JKS_Tools2D_ParallaxBackground" type="b2602c69:ProjectViewProjectNode" />
-              <item name="JKS_Tools2D_ParallaxBackground" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="desktop" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-            </path>
-            <path>
-              <item name="JKS_Tools2D_ParallaxBackground" type="b2602c69:ProjectViewProjectNode" />
-              <item name="JKS_Tools2D_ParallaxBackground" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="desktop" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="src" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-            </path>
-            <path>
-              <item name="JKS_Tools2D_ParallaxBackground" type="b2602c69:ProjectViewProjectNode" />
-              <item name="JKS_Tools2D_ParallaxBackground" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="desktop" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="src" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="desktop" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="JKS_Tools2D_ParallaxBackground" type="b2602c69:ProjectViewProjectNode" />
-              <item name="JKS_Tools2D_ParallaxBackground" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="desktop" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="src" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
-              <item name="desktop" type="462c0819:PsiDirectoryNode" />
-              <item name="test" type="462c0819:PsiDirectoryNode" />
-            </path>
           </expand>
           <select />
         </subPane>
@@ -347,6 +87,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="settings.editor.selected.configurable" value="reference.projectsettings.compiler.javacompiler" />
   </component>
   <component name="RunDashboard">
@@ -409,17 +150,15 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-7" y="0" width="958" height="831" extended-state="0" />
-    <editor active="true" />
+    <frame x="-8" y="0" width="959" height="832" extended-state="0" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.32182628" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.32925472" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
       <window_info id="Capture Tool" order="4" />
       <window_info id="UI Designer" order="5" />
       <window_info id="Favorites" order="6" side_tool="true" />
-      <window_info anchor="bottom" id="Messages" weight="0.32904148" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32904148" />
@@ -431,6 +170,7 @@
       <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="9" />
       <window_info anchor="bottom" id="Build" order="10" weight="0.3295129" />
+      <window_info anchor="bottom" id="Messages" order="11" weight="0.32904148" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -443,6 +183,20 @@
     </layout>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/test/DesktopLauncher_Day.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="68">
+          <caret line="7" column="13" selection-start-line="7" selection-start-column="13" selection-end-line="7" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="26" column="5" selection-start-line="26" selection-start-column="5" selection-end-line="26" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor_Test.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="68">
@@ -454,20 +208,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="187">
           <caret line="14" selection-start-line="14" selection-end-line="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/test/DesktopLauncher_Day.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="68">
-          <caret line="7" column="13" selection-start-line="7" selection-start-column="13" selection-end-line="7" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="26" column="5" selection-start-line="26" selection-start-column="5" selection-end-line="26" selection-end-column="5" />
         </state>
       </provider>
     </entry>

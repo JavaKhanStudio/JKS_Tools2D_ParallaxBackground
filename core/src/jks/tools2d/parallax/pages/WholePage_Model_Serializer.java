@@ -6,7 +6,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-public class WholePage_Serializer extends Serializer<WholePage_Model>
+public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 
 	@Override

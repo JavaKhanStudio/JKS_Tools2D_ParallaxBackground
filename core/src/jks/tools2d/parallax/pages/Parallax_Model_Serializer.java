@@ -5,7 +5,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-public class Parallax_Serializer extends Serializer<Parallax_Model>
+public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 {
 
 	@Override

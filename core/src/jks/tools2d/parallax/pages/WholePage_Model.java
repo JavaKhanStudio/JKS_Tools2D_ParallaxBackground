@@ -14,7 +14,7 @@ import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.side.SquareBackground;
 
-@DefaultSerializer(WholePage_Serializer.class)
+@DefaultSerializer(WholePage_Model_Serializer.class)
 public class WholePage_Model
 {	
 	public Color topHalf_top ; 
@@ -44,14 +44,14 @@ public class WholePage_Model
 		this.bottomHalf_bottom = bottomHalf_bottom ; 
 		
 		pageModel = new Page_Model() ; 
-		pageModel.atlasPath = atlasPath ; 
+		pageModel.atlasName = atlasPath ; 
 		pageModel.outside = false ; 
 	}
 	
 	public WholePage_Model(String atlasPath)
 	{
 		pageModel = new Page_Model() ; 
-		pageModel.atlasPath = atlasPath ; 
+		pageModel.atlasName = atlasPath ; 
 		pageModel.outside = false ; 
 	}
 
@@ -101,49 +101,55 @@ public class WholePage_Model
 	}
 
 	
-	private List<ParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
+	protected List<ParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
 	{
 		List<ParallaxLayer> returningList = new ArrayList<ParallaxLayer>() ; 
+		ParallaxLayer layer ; 
 		
 		for(Parallax_Model parallax : pageModel.pageList)
 		{
-			ParallaxLayer layer = new ParallaxLayer(
-					atlas.findRegions(parallax.region_Name).get(parallax.region_Position), 
-					true, 
-					worldWidth, 
-					new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY),
-					parallax.sizeRatio) ; 
-
-			layer.setDecalPercentY(parallax.decal_Y_Ratio);
-			layer.setDecalPercentX(parallax.decal_X_Ratio);
-			
-			layer.setSpeedAtRest(parallax.speed);
-			returningList.add(layer) ;
+			returningList.add(buildLayer(parallax,atlas,worldWidth)) ;
 		}
 		
 		return returningList;
 	}
 	
+	protected ParallaxLayer buildLayer(Parallax_Model parallax, TextureAtlas atlas,float worldWidth)
+	{
+		ParallaxLayer layer = new ParallaxLayer(
+				atlas.findRegions(parallax.region_Name).get(parallax.region_Position), 
+				true, 
+				worldWidth, 
+				new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY),
+				parallax.sizeRatio) ; 
+
+		layer.setDecalPercentY(parallax.decal_Y_Ratio);
+		layer.setDecalPercentX(parallax.decal_X_Ratio);
+		
+		layer.setSpeedAtRest(parallax.speed);
+		return layer ; 
+	}
+	
 	// External Reading
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight, String relativePath) 
 	{
-		TextureAtlas atlas = new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasPath));
+		TextureAtlas atlas = new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName));
 		return load(worldWidth, worldHeight, atlas) ; 
 	}
 	
 	// Internal Reading
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight) 
 	{
-		Gvars_Parallax.getManager().load(pageModel.atlasPath, TextureAtlas.class);
-		Gvars_Parallax.getManager().finishLoadingAsset(pageModel.atlasPath);
+		Gvars_Parallax.getManager().load(pageModel.atlasName, TextureAtlas.class);
+		Gvars_Parallax.getManager().finishLoadingAsset(pageModel.atlasName);
 		
-		TextureAtlas atlas = new TextureAtlas(pageModel.atlasPath);
+		TextureAtlas atlas = new TextureAtlas(pageModel.atlasName);
 		return load(worldWidth, worldHeight, atlas) ; 
 	}
 	
 	public void cleanPath()
 	{
-		pageModel.atlasPath = pageModel.atlasPath.substring(pageModel.atlasPath.lastIndexOf("/") + 1, pageModel.atlasPath.length()) ; 
+		pageModel.atlasName = pageModel.atlasName.substring(pageModel.atlasName.lastIndexOf("/") + 1, pageModel.atlasName.length()) ; 
 	}
 		
 }
