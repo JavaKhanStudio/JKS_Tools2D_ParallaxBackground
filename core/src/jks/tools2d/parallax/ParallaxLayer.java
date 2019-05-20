@@ -1,8 +1,11 @@
 package jks.tools2d.parallax;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 
@@ -32,11 +35,6 @@ public class ParallaxLayer
 	protected float currentX ; 
 	protected float currentY ; 
 
-	
-	public ParallaxLayer(TextureRegion texRegion, float oneDimen, Vector2 parallaxScrollRatio, boolean isWidth)
-	{
-		this(texRegion, isWidth, oneDimen, parallaxScrollRatio, 1f) ; 
-	}
 	
 	public ParallaxLayer(TextureRegion texRegion, boolean isWidth, float worldDimension, Vector2 parallaxScrollRatio, float sizeRatio)
 	{
@@ -68,7 +66,6 @@ public class ParallaxLayer
 			getRegionWidth(), 
 			getRegionHeight()
 		);
-		
 	}
 	
 	public void act(float delta) 
@@ -76,7 +73,7 @@ public class ParallaxLayer
 		currentDistanceX += delta * speedAtRest ;
 		
 		if(Math.abs(currentDistanceX) >= getRegionWidth()) 
-			currentDistanceX -= getRegionWidth();
+			currentDistanceX -= getRegionWidth() * (currentDistanceX > 0 ? 1 : -1);
 	}
 
 	public float getWidth() 

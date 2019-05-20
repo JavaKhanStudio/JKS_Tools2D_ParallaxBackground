@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
+import com.badlogic.gdx.math.Vector2;
 
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parralax;
@@ -48,7 +49,6 @@ public class Parallax_Heart
 	
 		worldCamera = new OrthographicCamera() ;
 		worldCamera.setToOrtho(false,Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight());
-		worldCamera.position.add(10000, 0, 0);
 		
 		staticCamera = new PerspectiveCamera() ;
 		
@@ -116,6 +116,7 @@ public class Parallax_Heart
 		drawBackGround() ; 
 		
 		batch.begin() ;
+//		parallaxPage.draw(worldCamera, batch, new Vector2());
 		parallaxPage.draw(worldCamera, batch);
 
 		batch.end();

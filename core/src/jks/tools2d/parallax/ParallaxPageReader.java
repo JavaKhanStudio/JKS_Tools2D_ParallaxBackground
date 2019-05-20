@@ -1,6 +1,8 @@
 package jks.tools2d.parallax;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -9,20 +11,20 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.math.Vector3;
 
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 
 public class ParallaxPageReader 
 {
-	public Array<ParallaxLayer> layers;
+	public ArrayList<ParallaxLayer> layers;
 
 	private Matrix4 cachedProjectionView;
 	private float cachedZoom;
 	private float drawingHeight  ;
 	
-	public Array<ParallaxLayer> transferLayers;
+	public ArrayList<ParallaxLayer> transferLayers;
 	float newLayer_transfertLvl = 0 ;
 	float oldLayer_transfertLvl = 0 ; 
 	float newLayer_transfertSpeed ; 
@@ -39,12 +41,15 @@ public class ParallaxPageReader
 	
 	boolean moveOnX = true; 
 	
+	private Vector3 cachedPos;
+	
 	/**
 	 * Create a ParallaxBackground without any layers
 	 */
 	public ParallaxPageReader()
 	{
 		initialize();
+		cachedPos = new Vector3() ; 
 	}
 	
 
@@ -55,15 +60,16 @@ public class ParallaxPageReader
 	public ParallaxPageReader(ParallaxLayer... layers)
 	{
 		initialize();
-		this.layers.addAll(layers);
+		Collections.addAll(this.layers, layers);
+		cachedPos = new Vector3() ; 
 	}
 	
 
 	
     private void initialize() 
     {
-    	layers = new Array<ParallaxLayer>();
-    	transferLayers = new Array<ParallaxLayer>();
+    	layers = new ArrayList<ParallaxLayer>();
+    	transferLayers = new ArrayList<ParallaxLayer>();
 		cachedProjectionView = new Matrix4();
 	}
 	
@@ -73,7 +79,7 @@ public class ParallaxPageReader
 	 */
 	public void addLayers(ParallaxLayer... layers)
 	{
-		this.layers.addAll(layers);
+		Collections.addAll(this.layers, layers);
 	}
 	
 	public void addLayers(List<ParallaxLayer> newLayers) 
@@ -117,7 +123,8 @@ public class ParallaxPageReader
 		transferLayers = layers ;
 		set_newLayer_Color(color);
 	}
-	///*
+	
+	/*
 	public void draw(OrthographicCamera worldCamera, Batch batch,  Vector2 refPoint)
 	{
 		cachedProjectionView.set(worldCamera.combined);
@@ -127,17 +134,21 @@ public class ParallaxPageReader
 		Vector2 origCameraPos ; 
 		
 		float currentViewportDecal = (moveOnX ? worldCamera.viewportHeight : worldCamera.viewportWidth) * (worldCamera.zoom/2);
-			
-		batch.setProjectionMatrix(worldCamera.combined);   
-		worldCamera.update();
-		
-		for(int i = 0; i < layers.size; i++)
+
+		for(int i = 0; i < layers.size(); i++)
 		{
 			layer = layers.get(i);
 			batch.setColor(oldLayer_transfertColor);
     		
     		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
-		   
+    		
+    		for(float a = layer.getWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX ; a+= layer.getWidth())
+    			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY); 
+    		
+    		for(float a = 1 ; layer.currentDistanceX - a * layer.getWidth() > -layer.getWidth() ; a++)
+    			layer.draw(batch, layer.currentDistanceX - a * layer.getWidth(), drawingHeight + layer.currentDistanceY); 
+    		
+    		
     		if(inTransfer)
 		    	compute_Color_Transfert(batch) ;	    		    
 		}
@@ -146,7 +157,7 @@ public class ParallaxPageReader
 	}
 	//*/
 	
-	/*
+	///*
 	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
 		cachedProjectionView.set(worldCamera.combined);
@@ -161,7 +172,7 @@ public class ParallaxPageReader
 		float currentViewportWidth = worldCamera.viewportWidth * (worldCamera.zoom/2) ;
 		float currentViewportHeight =  worldCamera.viewportHeight * (worldCamera.zoom/2);
 		
-		for(int i = 0; i < layers.size; i++)
+		for(int i = 0; i < layers.size(); i++)
 		{
 			layer = layers.get(i);
 			origCameraPos = new Vector2(cachedPos.x,cachedPos.y);
@@ -235,7 +246,7 @@ public class ParallaxPageReader
 	
 	public void resetTransfert()
 	{
-		transferLayers = new Array<ParallaxLayer>() ;
+		transferLayers = new ArrayList<ParallaxLayer>() ;
 		
 		oldLayer_transfertColor.a = 1 ; 
 		newLayer_transfertColor.a = 0 ; 
@@ -245,11 +256,8 @@ public class ParallaxPageReader
 	
 	public void act(float delta) 
 	{
-		for(int a=0; a < layers.size ; a++) 
-		{layers.get(a).act(delta);}
-		
-//		layers.
-		
+		layers.stream().forEach(x -> x.act(delta));
+
 		if(inTransfer)
 		{
 			newLayer_transfertLvl += delta * newLayer_transfertSpeed ; 
@@ -259,7 +267,7 @@ public class ParallaxPageReader
 			
 			if(newLayer_transfertLvl > 1)
 			{
-				for(int a=0; a < layers.size ; a++) 
+				for(int a=0; a < layers.size() ; a++) 
 				{transferLayers.get(a).setCurrentDistanceX(layers.get(a).getCurrentDistanceX());}
 				
 				layers = transferLayers ; 
@@ -276,7 +284,7 @@ public class ParallaxPageReader
 	public void setDrawingHeight(float drawingHeight) 
 	{this.drawingHeight = drawingHeight;}
 
-	public void transfertTo(Array<ParallaxLayer> transferLayers)
+	public void transfertTo(ArrayList<ParallaxLayer> transferLayers)
 	{this.transferLayers = transferLayers ;}
 	
 	public Color get_newLayer_Color() 
