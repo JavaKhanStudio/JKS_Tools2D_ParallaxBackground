@@ -1,7 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.mainUi;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.isPause;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
@@ -24,8 +23,10 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 
 import jks.tools2d.libgdxutils.JksCheckBox;
 import jks.tools2d.libgdxutils.Utils_Interface;
+import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
 public class VE_Center_ParallaxShow extends Table
@@ -41,17 +42,24 @@ public class VE_Center_ParallaxShow extends Table
 		if(ref instanceof TextureAtlas)
 		{
 			atlas = (TextureAtlas)ref ; 
-			show = new VE_Center_ParallaxShow(atlas) ; 
+			show = new VE_Center_ParallaxShow(atlas) ;
 		}
 		else if(ref instanceof WholePage_Model)
 		{
 			WholePage_Model page = (WholePage_Model)ref ; 
-			atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + page.pageModel.atlasPath));
+			atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + page.pageModel.atlasName));
 			show =  new VE_Center_ParallaxShow(page) ; 
 		}
-
+		else if(ref instanceof Project_Data)
+		{
+			Project_Data project = (Project_Data)ref ; 
+			atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
+			show =  new VE_Center_ParallaxShow(project.saving) ;
+			GVars_Vue_Edition.datas = project ;
+		}
 		
 		GVars_Vue_Edition.atlas = atlas ; 
+		
 		return show ; 
 	}
 	
@@ -61,6 +69,7 @@ public class VE_Center_ParallaxShow extends Table
 		initShow() ; 
 		
 		WholePage_Model page = new WholePage_Model(); 
+		page.pageModel.atlasName = GVars_Vue_Edition.infos.projectName + "." + FVars_Extensions.ATLAS ; 
 		page.forceLoad(atlas);
 		GVars_Vue_Edition.setPage(page) ; 
 			
@@ -103,7 +112,6 @@ public class VE_Center_ParallaxShow extends Table
 		});
 
 		startStop.setSize(buttonSize, buttonSize);
-//		startStop.setSize(300, 300);
 		startStop.setPosition(parr_Size_X/2, size_Height_Bloc_Parallax_Controle/2 - buttonSize/2);
 		
 		Slider parallaxSpeedSlider = new Slider(-10, 10, 1, false, GVars_Ui.baseSkin) ; 

@@ -33,13 +33,13 @@ public enum Enum_ColdNight
 		// loading all of the atlas
 		for(Enum_ColdNight model : this.values())
 		{
-			if(wholePage.pageModel.atlasPath != null)
-			{Gvars_Parallax.getManager().load(wholePage.pageModel.atlasPath, TextureAtlas.class);}
+			if(wholePage.pageModel.atlasName != null)
+			{Gvars_Parallax.getManager().load(wholePage.pageModel.atlasName, TextureAtlas.class);}
 		}
 		
 		for(Enum_ColdNight model : this.values())
 		{
-			if(wholePage.pageModel.atlasPath != null)
+			if(wholePage.pageModel.atlasName != null)
 			{wholePage.preload();}
 		}
 		

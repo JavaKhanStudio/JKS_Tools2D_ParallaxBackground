@@ -1,7 +1,5 @@
 package jks.tools2d.parallax;
 
-import javax.swing.JOptionPane;
-
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
@@ -17,6 +15,7 @@ public class Launcher_Editor_Test
 		{
 			Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 			config.setWindowedMode(1300, 800);
+			config.useVsync(true);
 	
 			config.setWindowListener(new Lwjgl3WindowAdapter() 
 			{
@@ -31,7 +30,8 @@ public class Launcher_Editor_Test
 		}
 		catch (Exception e)
 		{
-			JOptionPane.showMessageDialog(null, e.getMessage());
+			e.printStackTrace();
+//			JOptionPane.showMessageDialog(null, e.getMessage());
 		}
 	}
 }

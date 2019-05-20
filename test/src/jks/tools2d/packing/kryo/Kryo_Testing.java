@@ -110,7 +110,7 @@ public class Kryo_Testing
     static public Page_Model buildPage()
     {
     	Page_Model page = new Page_Model() ; 
-    	page.atlasPath = "atlasPath" ;
+    	page.atlasName = "atlasPath" ;
     	page.outside = false ; 
     	page.pageList = new ArrayList<Parallax_Model>() ; 
     	page.pageList.add(buildPageModel()) ; 

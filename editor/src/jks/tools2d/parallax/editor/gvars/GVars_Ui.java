@@ -31,11 +31,7 @@ public class GVars_Ui implements Runnable
 	}
 
 	@Override
-	public void run() {
-		init();
-	}
-	
-
-	
+	public void run() 
+	{init();}
 
 }

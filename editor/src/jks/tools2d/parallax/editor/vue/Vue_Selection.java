@@ -1,8 +1,8 @@
 package jks.tools2d.parallax.editor.vue;
 
-import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.ATLAS;
+import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.*;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX;
-import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.kryo;
+import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.*;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 
 import java.io.File;
@@ -23,8 +23,10 @@ import jks.tools2d.filechooser.FileChooser_Listener;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
+import jks.tools2d.parallax.editor.gvars.GVars_Kryo;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -41,6 +43,8 @@ public class Vue_Selection extends AVue_Model
 	boolean showParallax = true; 
 	boolean showAtlas = true; 
 	boolean showFiles = true ; 
+	boolean showParallaxProject = true ; 
+	
 	final float sizeMutlChooser = 0.7f ; 
 	public void buildSelection(Skin skin)
 	{
@@ -83,6 +87,8 @@ public class Vue_Selection extends AVue_Model
                 	{return true ;}
                 	if(ATLAS.equals(extension) && showAtlas)
                 	{return true ;}
+                	if(PARALLAX_PROJECT.equals(extension) && showParallaxProject)
+                	{return true ;}
             	}
             	else if(showFiles)
             	{return true ;}
@@ -107,30 +113,18 @@ public class Vue_Selection extends AVue_Model
 		
 		infos = new Project_Infos();
 		infos.setPathInfo(file);
+		datas = new Project_Data() ; 
 		relativePath = infos.projectPath ; 
 		
 		if(PARALLAX.equals(file.extension()))
-		{
-//			selectParralax(kryo.readObject(new Input(file.read()),WholePage_Model.class));
-			GVars_Heart_Editor.changeVue(new Vue_Edition(kryo.readObject(new Input(file.read()),WholePage_Model.class)), true);
-		}
+			GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Kryo.kryo.readObject(new Input(file.read()),WholePage_Model.class)), true);
 		else if(ATLAS.equals(file.extension()))
-		{
-//			selectTextureAtlas(new TextureAtlas(file));	
 			GVars_Heart_Editor.changeVue(new Vue_Edition(new TextureAtlas(file)), true);
-		}
+		else if(PARALLAX_PROJECT.equals(file.extension()))
+			GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Kryo.kryo.readObject(new Input(file.read()),Project_Data.class)), true);
 		
 	}
 	
-//	public void selectTextureAtlas(TextureAtlas atlas)
-//	{
-//		GVars_Heart_Editor.changeVue(new Vue_Edition(atlas), true);
-//	}
-//	
-//	public void selectParralax(WholePage_Model parallax)
-//	{
-//		GVars_Heart_Editor.changeVue(new Vue_Edition(parallax), true);
-//	}
 
 	@Override
 	public void destroy() 

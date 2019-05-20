@@ -63,7 +63,6 @@ public class VE_Tab_TextureList_Adding extends Tab
 			{
 				TextureRegion text = new TextureRegion(imageList.getSelected()) ; 
 				Position_Infos infoss = GVars_Vue_Edition.imageRef.get(imageList.getSelected()) ; 
-				System.out.println(infoss.url + " " + infoss.position);
 				GVars_Vue_Edition.imageRef.put(text, GVars_Vue_Edition.imageRef.get(imageList.getSelected())) ;
 				ParallaxLayer layer = new ParallaxLayer(
 						text,

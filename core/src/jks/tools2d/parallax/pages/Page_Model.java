@@ -4,26 +4,25 @@ import java.util.ArrayList;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 
-@DefaultSerializer(Page_Serializer.class)
+@DefaultSerializer(Page_Model_Serializer.class)
 public class Page_Model 
 {
-	public String atlasPath ; 
+	public String atlasName ; 
 	public boolean outside ; 
+	public boolean moveOnX ; 
 	public ArrayList<Parallax_Model> pageList ; 
 	
 	public Page_Model()
 	{
-		atlasPath = "" ; 
+		atlasName = "" ; 
 		outside = false ; 
 		pageList = new ArrayList<Parallax_Model>() ; 
 	}
 	
 	public Page_Model(String atlasPath,boolean outside, ArrayList<Parallax_Model> pageList)
 	{
-		this.atlasPath = atlasPath ; 
+		this.atlasName = atlasPath ; 
 		this.outside = outside ; 
 		this.pageList = pageList ; 
 	}
 }
-
-

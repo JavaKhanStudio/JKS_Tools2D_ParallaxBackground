@@ -13,6 +13,8 @@ public class Main_Editor extends ApplicationAdapter
 	@Override
 	public void create () 
 	{
+		
+//		Gdx.gl.glEnable(GL20.GL);
 		GVars_Heart_Editor.init();
 		Gdx.graphics.setVSync(true);
 		GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
@@ -27,8 +29,6 @@ public class Main_Editor extends ApplicationAdapter
     
     	if (delta > 0) 
     	{
-//    		GVars_Inputs.updateInput_ControllingInterface() ;
-    		
     		GVars_Heart_Editor.vue.update(delta);
     		GVars_Heart_Editor.vue.render();
     	}

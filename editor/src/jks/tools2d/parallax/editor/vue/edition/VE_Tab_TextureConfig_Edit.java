@@ -123,9 +123,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		}) ; 
 		
-		
-		
-		
+				
 		flipX = new VisCheckBox("Flip X") ;
 		flipX.addListener(new InputListener()
 		{		
@@ -154,7 +152,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		}) ; 
 		
-		decalX_Slider = new JksNumberSlider(-50, 50, 1, baseSkin)
+		decalX_Slider = new JksNumberSlider(-50, 50, 0.5f, baseSkin)
 		{	
 			@Override
 			public void actionOnSliderMovement()
@@ -162,9 +160,8 @@ public class VE_Tab_TextureConfig_Edit extends Table
 				currentlySelectedParallax.setDecalPercentX(Float.parseFloat(decalX_Slider.textField.getText()));		
 			}
 		};
-		
-			
-		decalY_Slider = new JksNumberSlider(-150, 150, 1,baseSkin)
+					
+		decalY_Slider = new JksNumberSlider(-150, 150, 0.5f,baseSkin)
 		{		
 			@Override
 			public void actionOnSliderMovement()
@@ -173,7 +170,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		} ; 
 			
-		sizeRatio_Slider = new JksNumberSlider(0.01f, 3, 0.01f,baseSkin)
+		sizeRatio_Slider = new JksNumberSlider(0.01f, 3, 0.005f,baseSkin)
 		{		
 			@Override
 			public void actionOnSliderMovement()
@@ -184,7 +181,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		} ; 
 		
-		staticSpeed_Slider = new JksNumberSlider(-10, 10, 0.5f,baseSkin)
+		staticSpeed_Slider = new JksNumberSlider(-10, 10, 0.1f,baseSkin)
 		{		
 			@Override
 			public void actionOnSliderMovement()

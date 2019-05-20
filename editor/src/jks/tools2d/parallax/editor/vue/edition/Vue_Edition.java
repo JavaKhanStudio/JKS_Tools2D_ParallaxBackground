@@ -73,9 +73,7 @@ public class Vue_Edition extends AVue_Model
 		
 		setDefaults(new ParallaxDefaultValues() ); 
 		buildImageList() ; 
-		
-		
-		
+			
 		GVars_Ui.mainUi.addActor(new VE_Options()) ;
 		GVars_Ui.mainUi.addActor(new VE_Tab_AControl()); 
 		GVars_Ui.mainUi.addActor(center); 
@@ -87,18 +85,41 @@ public class Vue_Edition extends AVue_Model
 	private void buildImageList() 
 	{
 		// TODO more testing require
-		int position ; 
+		
 		for(AtlasRegion region : getAtlas().getRegions())
 		{
-			allImage.add(region) ;
-			position = region.index ; 
-			if(position == -1)
-				position = 0 ; 
-			else if(position > 0)
-				position-- ;
-			
-			imageRef.put(region, new Position_Infos(region,position)) ; 
+			buildInsideData(region) ; 
 		}
+		
+		if(GVars_Vue_Edition.datas.outsideInfos != null)
+		{
+			for(Position_Infos infos : GVars_Vue_Edition.datas.outsideInfos)
+			{
+				// TODO relative path
+				TextureRegion region = new TextureRegion(new Texture(new FileHandle(infos.url))) ; 
+				allImage.add(region) ;
+				imageRef.put(region, infos) ; 
+			}
+			
+		}
+		
+	}
+	
+	public void buildInsideData(AtlasRegion region)
+	{
+		int position ; 
+		allImage.add(region) ;
+		position = region.index ; 
+		if(position == -1)
+			position = 0 ; 
+		else if(position > 0)
+			position-- ;
+		
+		imageRef.put(region, new Position_Infos(region,position)) ; 
+	}
+	
+	public void buildOutisdeData()
+	{
 		
 	}
 
@@ -143,11 +164,8 @@ public class Vue_Edition extends AVue_Model
 
 	InputProcessor buildClickProcessor()
 	{
-		
-		
 		return new InputProcessor()
-		{
-			
+		{		
 			@Override
 			public boolean touchUp(int screenX, int screenY, int pointer, int button)
 			{
@@ -235,7 +253,7 @@ public class Vue_Edition extends AVue_Model
 	@Override
 	public void render()
 	{
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT | (Gdx.graphics.getBufferFormat().coverageSampling?GL20.GL_COVERAGE_BUFFER_BIT_NV:0)) ; 
 		Gdx.gl.glViewport(parr_Pos_X,parr_Pos_Y, parr_Size_X, parr_Size_Y);
 		parallax_Heart.render() ; 
 		
@@ -263,21 +281,26 @@ public class Vue_Edition extends AVue_Model
 	public void reciveFiles(String[] files)
 	{
 		TextureRegion texture  ; 
-		for(String path : files)
+		try 
 		{
-			if("png".equals(Utils_Scene2D.getExtension(path)))
+			for(String path : files)
 			{
-				texture = new TextureRegion(new Texture(new FileHandle(path))) ; 
-				imageRef.put(texture, new Position_Infos(false,path,-1)) ; 
-				allImage.add(texture) ; 
-			}
-			else
-			{
-				System.out.println("bad Format");
+				if("png".equals(Utils_Scene2D.getExtension(path)))
+				{
+					texture = new TextureRegion(new Texture(new FileHandle(path))) ; 
+					imageRef.put(texture, new Position_Infos(false,path,-1)) ; 
+					allImage.add(texture) ; 
+				}
+				else
+				{
+					System.out.println("bad Format");
+				}
 			}
 		}
-		
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 		GVars_Vue_Edition.setItems();
 	}
-
 }

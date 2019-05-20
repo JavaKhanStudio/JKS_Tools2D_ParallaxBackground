@@ -1,5 +1,6 @@
 package jks.tools2d.parallax;
 
+import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
@@ -13,7 +14,11 @@ public class Launcher_Editor
 	{
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setWindowedMode(1300, 800);
-
+		config.useVsync(true);
+		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);
+		LwjglApplicationConfiguration config2 = new LwjglApplicationConfiguration();
+		
+		
 		config.setWindowListener(new Lwjgl3WindowAdapter() 
 		{
             @Override

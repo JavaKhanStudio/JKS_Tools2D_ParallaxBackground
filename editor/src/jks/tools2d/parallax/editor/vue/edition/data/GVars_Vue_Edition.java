@@ -47,7 +47,8 @@ public class GVars_Vue_Edition
 	public static boolean inTextureSelection ; 
 	public static ExtendedColorPicker colorPicked ; 
 	
-	public static Project_Infos infos ; 
+	public static Project_Infos infos ;
+	public static Project_Data datas ; 
 	
 	public static Array<ParallaxLayer> trashedValues = new Array<ParallaxLayer>(); 
 	public static Array<Integer> trashedValuesPosition = new Array<Integer>(); 
@@ -56,10 +57,10 @@ public class GVars_Vue_Edition
 	public static TextureAtlas atlas;
 	
 	public static ParallaxDefaultValues getDefaults()
-	{return infos.defaults ;}
+	{return datas.defaults ;}
 	
 	public static void setDefaults(ParallaxDefaultValues Defaults)
-	{infos.defaults = Defaults ;} 
+	{datas.defaults = Defaults ;} 
 	
 	public static void buildSizes()
 	{
@@ -85,7 +86,7 @@ public class GVars_Vue_Edition
 		for(int x = 0 ; x < parallaxPage.preloadValue.size() ; x++)
 		{
 			imageRef.put(parallaxPage.preloadValue.get(x).getTexRegion(),
-					new Position_Infos(parallaxPage.pageModel.atlasPath,parallaxPage.pageModel.pageList.get(x))); 
+					new Position_Infos(parallaxPage.pageModel.atlasName,parallaxPage.pageModel.pageList.get(x))); 
 		}		
 	}
 	

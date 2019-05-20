@@ -10,7 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
-import jks.tools2d.parallax.ParallaxPage;
+import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parralax;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
@@ -20,7 +20,7 @@ public class Parallax_Heart
 	public OrthographicCamera worldCamera;
 	public Camera staticCamera;
 	public SpriteBatch batch;
-	public ParallaxPage parallaxPage;
+	public ParallaxPageReader parallaxPage;
 	
 	// Background
 	public ShapeRenderer shapeRender ; 
@@ -55,7 +55,7 @@ public class Parallax_Heart
 		batch = new SpriteBatch();
 
 		shapeRender = new ShapeRenderer() ;
-		parallaxPage = new ParallaxPage();
+		parallaxPage = new ParallaxPageReader();
 		Gvars_Parallax.setManager(manager) ; 
 	}
 	
@@ -74,7 +74,7 @@ public class Parallax_Heart
 		this.batch = batch;
 
 		shapeRender = new ShapeRenderer() ;
-		parallaxPage = new ParallaxPage(); 
+		parallaxPage = new ParallaxPageReader(); 
 	}
 	
 	public Parallax_Heart(
@@ -133,5 +133,4 @@ public class Parallax_Heart
 		
 		shapeRender.end();
 	}
-
 }

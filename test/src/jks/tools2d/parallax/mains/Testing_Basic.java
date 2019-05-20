@@ -12,7 +12,6 @@ import jks.tools2d.parallax.test.inputs.InputProcessus;
 import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.parallax_Heart; 
 import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.parallax_Heart_second; 
 
-
 public class Testing_Basic extends ApplicationAdapter
 {
 	

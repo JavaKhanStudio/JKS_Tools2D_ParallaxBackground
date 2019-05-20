@@ -42,7 +42,7 @@ public class VE_Options extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				UtilsSaving.saving_Parallax_Kryo(parallaxPath.getText(), parallaxName.getText());
+				UtilsSaving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText());
 			}
 			
 		}) ;
