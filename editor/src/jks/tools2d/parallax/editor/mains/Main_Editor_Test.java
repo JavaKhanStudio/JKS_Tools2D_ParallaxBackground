@@ -57,7 +57,8 @@ public class Main_Editor_Test extends ApplicationAdapter
 		Input input;
 		try
 		{
-			input = new Input(new FileInputStream("../editor/Files/Parallax/Test1." + FVars_Extensions.PARALLAX));
+			input = new Input(new FileInputStream("../editor/Files/Parallax/whole." + FVars_Extensions.PARALLAX));
+//			input = new Input(new FileInputStream("../editor/Files/Parallax/Test1." + FVars_Extensions.PARALLAX));
 			GVars_Vue_Edition.relativePath = "../editor/Files/Parallax" ; 
 			GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Kryo.kryo.readObject(input,WholePage_Model.class)),true) ;  
 		} 

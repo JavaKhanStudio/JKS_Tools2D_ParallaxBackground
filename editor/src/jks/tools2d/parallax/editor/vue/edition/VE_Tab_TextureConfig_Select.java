@@ -47,7 +47,7 @@ public class VE_Tab_TextureConfig_Select extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				if(parallax_Heart.parallaxPage.layers.size != 0)
+				if(parallax_Heart.parallaxPage.layers.size() != 0)
 					GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(indexPositionSpinner.getValue())); 
 				
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
@@ -94,7 +94,7 @@ public class VE_Tab_TextureConfig_Select extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(parallax_Heart.parallaxPage.layers.size - 1)); 			
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(parallax_Heart.parallaxPage.layers.size() - 1)); 			
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
 			}
 		}) ; 
@@ -132,12 +132,12 @@ public class VE_Tab_TextureConfig_Select extends Table
 				trashedValues.add(parallax_Heart.parallaxPage.layers.get(indexPositionSpinner.getValue())) ; 
 				trashedValuesPosition.add(indexPositionSpinner.getValue()) ; 
 				
-				parallax_Heart.parallaxPage.layers.removeIndex(indexPositionSpinner.getValue()) ;
+				parallax_Heart.parallaxPage.layers.remove(indexPositionSpinner.getValue()) ;
 				
-				if(parallax_Heart.parallaxPage.layers.size <= indexPositionSpinner.getValue())
+				if(parallax_Heart.parallaxPage.layers.size() <= indexPositionSpinner.getValue())
 					indexPositionSpinner.decrement() ; 
 				
-				if(parallax_Heart.parallaxPage.layers.size != 0)
+				if(parallax_Heart.parallaxPage.layers.size() != 0)
 				{GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(indexPositionSpinner.getValue())); }
 				else
 				{currentlySelectedParallax = null ;}
@@ -160,8 +160,8 @@ public class VE_Tab_TextureConfig_Select extends Table
 				if(trashedValuesPosition.size == 0)
 					return ;
 				
-				if(parallax_Heart.parallaxPage.layers.size > trashedValuesPosition.peek()) 
-					parallax_Heart.parallaxPage.layers.insert(trashedValuesPosition.peek(), trashedValues.peek());
+				if(parallax_Heart.parallaxPage.layers.size() > trashedValuesPosition.peek()) 
+					parallax_Heart.parallaxPage.layers.add(trashedValuesPosition.peek(), trashedValues.peek());
 				else
 					parallax_Heart.parallaxPage.layers.add(trashedValues.peek());	
 				
@@ -197,19 +197,19 @@ public class VE_Tab_TextureConfig_Select extends Table
 	}
 	
 	public int getMiddle()
-	{return parallax_Heart.parallaxPage.layers.size/2 ;}
+	{return parallax_Heart.parallaxPage.layers.size()/2 ;}
 	
 	public void update()
 	{
 		indexPositionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
-		indexPositionSpinnerQuick_Last.setText((parallax_Heart.parallaxPage.layers.size - 1) + "+");
+		indexPositionSpinnerQuick_Last.setText((parallax_Heart.parallaxPage.layers.size() - 1) + "+");
 		
 		try
 		{
 			showSelect.setDrawable(null) ; 
-			indexPositionSpinner.setMax(parallax_Heart.parallaxPage.layers.size - 1);
+			indexPositionSpinner.setMax(parallax_Heart.parallaxPage.layers.size() - 1);
 			indexPositionSpinner.setMin(0);
-			indexPositionSpinner.setValue(parallax_Heart.parallaxPage.layers.indexOf(currentlySelectedParallax, true)) ;
+			indexPositionSpinner.setValue(parallax_Heart.parallaxPage.layers.indexOf(currentlySelectedParallax)) ;
 		}
 		catch(Exception e)
 		{

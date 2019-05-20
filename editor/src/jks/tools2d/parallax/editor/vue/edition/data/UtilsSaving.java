@@ -1,16 +1,17 @@
 package jks.tools2d.parallax.editor.vue.edition.data;
 
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.* ;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.datas;
+
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.PixmapPacker;
 import com.badlogic.gdx.tools.texturepacker.TexturePacker.Settings;
-import com.badlogic.gdx.utils.Array;
 import com.esotericsoftware.kryo.io.Output;
 
 import jks.tools2d.parallax.ParallaxLayer;
@@ -31,7 +32,7 @@ public class UtilsSaving
 		{
 			Output output = new Output(new FileOutputStream(where + "/" + whatName + "." + FVars_Extensions.PARALLAX));
 	    	
-			Array<ParallaxLayer> parallaxs = parallax_Heart.parallaxPage.layers ; 
+			ArrayList<ParallaxLayer> parallaxs = parallax_Heart.parallaxPage.layers ; 
 			WholePage_Model outputFinalModel = buildSavingWholePageFlat(parallaxs) ; 
 			
 			GVars_Kryo.kryo.writeObject(output, outputFinalModel);
@@ -44,10 +45,13 @@ public class UtilsSaving
 		
 	}
 	
-	public static ArrayList<Position_Infos> buildSavingOutsideValues(Array<ParallaxLayer> parallaxs)
+	public static ArrayList<Position_Infos> buildSavingOutsideValues(ArrayList<ParallaxLayer> parallaxs)
 	{
-		ArrayList<Position_Infos> returning = new ArrayList<>() ; 
+		
+		
+		/* OLD
 		Position_Infos info ;
+		ArrayList<Position_Infos> returning = new ArrayList<>() ; 
 		for(ParallaxLayer layer: parallaxs)
 		{
 			info = GVars_Vue_Edition.imageRef.get(layer.getTexRegion()) ; 
@@ -56,9 +60,15 @@ public class UtilsSaving
 		}
 		
 		return returning ; 
+		*/
+		
+		return new ArrayList(parallaxs.stream().filter(
+				x -> !GVars_Vue_Edition.imageRef.get(x.getTexRegion()).fromAtlas)
+					.collect(Collectors.toList())) ; 
+		
 	}
 	
-	public static WholePage_Model buildSavingWholePageFlat(Array<ParallaxLayer> parallaxs)
+	public static WholePage_Model buildSavingWholePageFlat(ArrayList<ParallaxLayer> parallaxs)
 	{
 		WholePage_Model outputFinalModel = new WholePage_Model() ;
 		Page_Model outputModel = new Page_Model() ; 
@@ -85,7 +95,7 @@ public class UtilsSaving
 		return outputFinalModel ; 	
 	}
 	
-	public static WholePage_Editor buildSavingWholePageAsProject(Array<ParallaxLayer> parallaxs)
+	public static WholePage_Editor buildSavingWholePageAsProject(ArrayList<ParallaxLayer> parallaxs)
 	{
 		WholePage_Editor outputFinalModel = new WholePage_Editor() ;
 		Page_Model outputModel = new Page_Model() ; 
@@ -117,7 +127,7 @@ public class UtilsSaving
 		try 
 		{
 			Output output = new Output(new FileOutputStream(where + "/" + whatName + "." + FVars_Extensions.PARALLAX_PROJECT));
-			Array<ParallaxLayer> parallaxs = parallax_Heart.parallaxPage.layers ; 
+			ArrayList<ParallaxLayer> parallaxs = parallax_Heart.parallaxPage.layers ; 
 			WholePage_Editor outputFinalModel = buildSavingWholePageAsProject(parallaxs) ; 
 			datas.prepareForSaving(outputFinalModel);
 			

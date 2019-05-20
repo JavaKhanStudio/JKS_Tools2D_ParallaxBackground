@@ -4,6 +4,8 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.currentlySelectedParallax;
 
+import java.util.Collections;
+
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -69,7 +71,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				parallax_Heart.parallaxPage.layers.swap(befaureValue, indexPositionSpinner.getValue());	
+				Collections.swap(parallax_Heart.parallaxPage.layers, befaureValue, indexPositionSpinner.getValue());
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
 			}
 		}) ; 
@@ -84,8 +86,8 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				ParallaxLayer layer = parallax_Heart.parallaxPage.layers.removeIndex(indexPositionSpinner.getValue()) ;
-				parallax_Heart.parallaxPage.layers.insert(0, layer);
+				ParallaxLayer layer = parallax_Heart.parallaxPage.layers.remove(indexPositionSpinner.getValue()) ;
+				parallax_Heart.parallaxPage.layers.add(0, layer);
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
 			}
 		}) ; 
@@ -101,8 +103,8 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
 				int value = getMiddle() ;
-				ParallaxLayer layer = parallax_Heart.parallaxPage.layers.removeIndex(indexPositionSpinner.getValue()) ;
-				parallax_Heart.parallaxPage.layers.insert(value, layer);
+				ParallaxLayer layer = parallax_Heart.parallaxPage.layers.remove(indexPositionSpinner.getValue()) ;
+				parallax_Heart.parallaxPage.layers.add(value, layer);
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
 			}
 		}) ; 
@@ -117,7 +119,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				ParallaxLayer layer = parallax_Heart.parallaxPage.layers.removeIndex(indexPositionSpinner.getValue()) ;
+				ParallaxLayer layer = parallax_Heart.parallaxPage.layers.remove(indexPositionSpinner.getValue()) ;
 				parallax_Heart.parallaxPage.layers.add(layer);
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
 			}
@@ -242,19 +244,19 @@ public class VE_Tab_TextureConfig_Edit extends Table
 	int colspan = 3 ; 
 	
 	public int getMiddle()
-	{return parallax_Heart.parallaxPage.layers.size/2 ;}
+	{return parallax_Heart.parallaxPage.layers.size()/2 ;}
 	
 	public void update()
 	{
 		indexPositionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
-		indexPositionSpinnerQuick_Last.setText((parallax_Heart.parallaxPage.layers.size - 1) + "+");
+		indexPositionSpinnerQuick_Last.setText((parallax_Heart.parallaxPage.layers.size() - 1) + "+");
 		
 		flipX.setChecked(currentlySelectedParallax.isFlipX());
 		flipY.setChecked(currentlySelectedParallax.isFlipY());
 		
-		indexPositionSpinner.setMax(parallax_Heart.parallaxPage.layers.size - 1);
+		indexPositionSpinner.setMax(parallax_Heart.parallaxPage.layers.size() - 1);
 		indexPositionSpinner.setMin(0);
-		indexPositionSpinner.setValue(parallax_Heart.parallaxPage.layers.indexOf(currentlySelectedParallax, true)) ;
+		indexPositionSpinner.setValue(parallax_Heart.parallaxPage.layers.indexOf(currentlySelectedParallax)) ;
 			
 		decalX_Slider.setValue(currentlySelectedParallax.getDecalPercentX()) ; 
 		

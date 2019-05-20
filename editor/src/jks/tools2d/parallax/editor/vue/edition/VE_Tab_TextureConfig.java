@@ -43,7 +43,7 @@ public class VE_Tab_TextureConfig extends Tab
 			editTable.update(); 
 			editTable.setVisible(true);
 		}
-		else if(parallax_Heart.parallaxPage.layers.size > 0)
+		else if(parallax_Heart.parallaxPage.layers.size() > 0)
 		{
 			GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(0)); 			
 		}

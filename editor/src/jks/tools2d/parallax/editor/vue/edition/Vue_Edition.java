@@ -27,6 +27,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -280,16 +281,18 @@ public class Vue_Edition extends AVue_Model
 	@Override
 	public void reciveFiles(String[] files)
 	{
-		TextureRegion texture  ; 
+		TextureRegion textureRegion  ; 
 		try 
 		{
 			for(String path : files)
 			{
 				if("png".equals(Utils_Scene2D.getExtension(path)))
 				{
-					texture = new TextureRegion(new Texture(new FileHandle(path))) ; 
-					imageRef.put(texture, new Position_Infos(false,path,-1)) ; 
-					allImage.add(texture) ; 
+					Texture texture = new Texture(new FileHandle(path),true) ;
+					texture.setFilter(TextureFilter.MipMap, TextureFilter.MipMap);
+					textureRegion = new TextureRegion(texture) ; 
+					imageRef.put(textureRegion, new Position_Infos(false,path,-1)) ; 
+					allImage.add(textureRegion) ; 
 				}
 				else
 				{

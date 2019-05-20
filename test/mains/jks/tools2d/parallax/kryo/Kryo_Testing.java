@@ -1,4 +1,4 @@
-package jks.tools2d.packing.kryo;
+package jks.tools2d.parallax.kryo;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

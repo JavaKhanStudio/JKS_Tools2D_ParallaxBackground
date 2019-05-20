@@ -1,7 +1,7 @@
-Test1.png
+testPower.png
 size: 10526, 2482
 format: RGBA8888
-filter: Linear,Linear
+filter: MipMap,MipMap
 repeat: none
 BIO1_PA1
   rotate: false
