@@ -17,9 +17,10 @@ public abstract class FileWatcher extends TimerTask
 		FileWatcher watcher = new FileWatcher("C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/test/desktop/Saving.txt")
 		{
 			@Override
-			public void onModified() 
+			public void onModified(Kind<?> kind) 
 			{
-				System.out.println("india");	
+				System.out.println("india");
+				System.out.println(kind);
 			}
 			
 		}; 
@@ -41,12 +42,14 @@ public abstract class FileWatcher extends TimerTask
             throw new IllegalArgumentException(watchFile + " is not a regular file");
         }
 
+        folderPath = filePath.getParent();
+        this.watchFile = watchFile.substring(watchFile.lastIndexOf("/") + 1) ; 
+        
         Timer timer = new Timer();
         timer.schedule(this , new Date(), 1000 );
         
-        folderPath = filePath.getParent();
-
-        this.watchFile = watchFile.replace(folderPath.toString() + File.separator, "");
+       
+//        this.watchFile = watchFile.replace(folderPath.toString() + File.separator, "");
     }
     
     @Override
@@ -61,35 +64,28 @@ public abstract class FileWatcher extends TimerTask
 
     public void watchFile() throws Exception
     {
-        // We obtain the file system of the Path
-        FileSystem fileSystem = folderPath.getFileSystem();
-
+    	FileSystem fileSystem ; 
+        
+    	try
+        {fileSystem = folderPath.getFileSystem();}
+        catch(Exception e)
+        {System.out.println("Hick file watch"); return ; }
+    	
         // We create the new WatchService using the try-with-resources block
         try (WatchService service = fileSystem.newWatchService())
         {
             // We watch for modification events
             folderPath.register(service, ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
-            // Start the infinite polling loop
-            // Wait for the next event
-                WatchKey watchKey = service.take();
+            WatchKey watchKey = service.take();
 
-                for (WatchEvent<?> watchEvent : watchKey.pollEvents())
-                {
-                    // Get the type of the event
-                    Kind<?> kind = watchEvent.kind();
-                    System.out.println(kind);
-                    if (kind == ENTRY_MODIFY)
-                    {
-                        Path watchEventPath = (Path) watchEvent.context();
-                        // Call this if the right file is involved
-                        if (watchEventPath.toString().equals(watchFile))
-                        {
-                            onModified();
-                        }
-                    }
-                }
+            for (WatchEvent<?> watchEvent : watchKey.pollEvents())
+            {
+                Path watchEventPath = (Path) watchEvent.context();
+                if (watchEventPath.toString().equals(watchFile))
+                	onModified(watchEvent.kind());       
+            }
         }
     }
 
-    public abstract void onModified();
+    public abstract void onModified(Kind<?> kind);
 }

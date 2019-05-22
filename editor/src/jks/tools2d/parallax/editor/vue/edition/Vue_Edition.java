@@ -10,10 +10,11 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.par
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_Y;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.screenSize;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.screenSpeed;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setDefaults;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
@@ -27,19 +28,21 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
+import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
+import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
+import jks.tools2d.parallax.editor.vue.edition.data.UtilsTexture;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
 import jks.tools2d.parallax.heart.Parallax_Heart; 
 
@@ -160,7 +163,34 @@ public class Vue_Edition extends AVue_Model
 			parallax_Heart.worldCamera.update();
 			parallax_Heart.batch.setProjectionMatrix(parallax_Heart.worldCamera.combined);
 			parallax_Heart.act(delta);
-		}	
+		}
+		
+		if(textureChange != null)
+		{			
+			Position_Infos pos = imageRef.get(textureChange.concernTexture) ; 
+			TextureRegion region = UtilsTexture.getTextureRegionFromPath(pos.url) ; 
+			ArrayList<ParallaxLayer> layers = GVars_Vue_Edition.textureLink.get(textureChange.concernTexture) ; 			
+			
+			imageRef.remove(textureChange.concernTexture) ; 
+			imageRef.put(region, pos) ; 
+			
+			if(layers != null)
+			{
+				for(ParallaxLayer layer : layers)
+				{
+					layer.setTexRegion(region);
+				}
+			}
+		
+			textureLink.remove(textureChange.concernTexture) ; 
+			textureLink.put(region, layers) ; 
+			
+			Collections.replaceAll(allImage, textureChange.concernTexture, region) ; 
+			
+			textureChange.concernTexture = region ; 
+			textureChange = null ;
+			GVars_Vue_Edition.setItems();
+		}
 	}
 
 	InputProcessor buildClickProcessor()
@@ -239,7 +269,8 @@ public class Vue_Edition extends AVue_Model
 		};
 	}
 	
-	public static Pixmap getFrameBufferPixmap (int x, int y, int w, int h) {
+	public static Pixmap getFrameBufferPixmap (int x, int y, int w, int h) 
+	{
 		Gdx.gl.glPixelStorei(GL30.GL_PACK_ALIGNMENT, 2);
 		final Pixmap pixmap = new Pixmap(w, h, Format.RGBA8888);
 		ByteBuffer pixels = pixmap.getPixels();
@@ -282,15 +313,15 @@ public class Vue_Edition extends AVue_Model
 	public void reciveFiles(String[] files)
 	{
 		TextureRegion textureRegion  ; 
+		
 		try 
 		{
 			for(String path : files)
 			{
 				if("png".equals(Utils_Scene2D.getExtension(path)))
 				{
-					Texture texture = new Texture(new FileHandle(path),true) ;
-					texture.setFilter(TextureFilter.MipMap, TextureFilter.MipMap);
-					textureRegion = new TextureRegion(texture) ; 
+					textureRegion = UtilsTexture.getTextureRegionFromPath(path) ; 
+					new FileWatching_Image(path,textureRegion) ; 
 					imageRef.put(textureRegion, new Position_Infos(false,path,-1)) ; 
 					allImage.add(textureRegion) ; 
 				}
@@ -304,6 +335,7 @@ public class Vue_Edition extends AVue_Model
 		{
 			e.printStackTrace();
 		}
+		
 		GVars_Vue_Edition.setItems();
 	}
 }

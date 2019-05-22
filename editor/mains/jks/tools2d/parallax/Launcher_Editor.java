@@ -15,9 +15,7 @@ public class Launcher_Editor
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setWindowedMode(1300, 800);
 		config.useVsync(true);
-		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);
-		LwjglApplicationConfiguration config2 = new LwjglApplicationConfiguration();
-		
+		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);	
 		
 		config.setWindowListener(new Lwjgl3WindowAdapter() 
 		{
@@ -29,5 +27,6 @@ public class Launcher_Editor
         });
 
 		new Lwjgl3Application(new Main_Editor(), config);
+		System.exit(0);
 	}
 }

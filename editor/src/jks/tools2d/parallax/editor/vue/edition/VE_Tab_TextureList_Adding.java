@@ -4,6 +4,8 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 
+import java.util.ArrayList;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -61,7 +63,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 			@Override
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
-				TextureRegion text = new TextureRegion(imageList.getSelected()) ; 
+				TextureRegion text = imageList.getSelected() ; 
 				Position_Infos infoss = GVars_Vue_Edition.imageRef.get(imageList.getSelected()) ; 
 				GVars_Vue_Edition.imageRef.put(text, GVars_Vue_Edition.imageRef.get(imageList.getSelected())) ;
 				ParallaxLayer layer = new ParallaxLayer(
@@ -85,6 +87,15 @@ public class VE_Tab_TextureList_Adding extends Tab
 					getDefaults().doIncrement(true) ; 
 				
 				GVars_Vue_Edition.selectLayer(layer) ; 
+				
+				ArrayList<ParallaxLayer> linkList = textureLink.get(text) ; 
+				if(linkList == null)
+				{
+					linkList = new ArrayList<ParallaxLayer>() ; 
+					textureLink.put(text, linkList) ; 
+				}
+				
+				linkList.add(layer) ; 
 				
 				return true ; 
 			}

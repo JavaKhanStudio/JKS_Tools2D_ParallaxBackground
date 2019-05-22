@@ -1,10 +1,8 @@
 package jks.tools2d.parallax;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -125,7 +123,7 @@ public class ParallaxPageReader
 	}
 	
 	/*
-	public void draw(OrthographicCamera worldCamera, Batch batch,  Vector2 refPoint)
+	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
 		cachedProjectionView.set(worldCamera.combined);
 		cachedZoom = worldCamera.zoom;
@@ -254,9 +252,9 @@ public class ParallaxPageReader
 		oldLayer_transfertLvl = 0 ; 
 	}
 	
-	public void act(float delta) 
+	public void act(float delta,float speed) 
 	{
-		layers.stream().forEach(x -> x.act(delta));
+		layers.stream().forEach(x -> x.act(delta,speed));
 
 		if(inTransfer)
 		{

@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 
+import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.vue.edition.VE_Tab_TextureList_Adding;
@@ -27,7 +28,8 @@ public class GVars_Vue_Edition
 	
 	public static ArrayList<TextureRegion> allImage ;
 	
-	public static HashMap<TextureRegion,Position_Infos> imageRef  = new HashMap<TextureRegion, Position_Infos>() ;; 
+	public static HashMap<TextureRegion,Position_Infos> imageRef  = new HashMap<TextureRegion, Position_Infos>() ; 
+	public static HashMap<TextureRegion,ArrayList<ParallaxLayer>> textureLink = new HashMap<TextureRegion,ArrayList<ParallaxLayer>>() ; 
 	
 	public static int parr_Size_X ; 
 	public static int parr_Size_Y ; 
@@ -55,6 +57,8 @@ public class GVars_Vue_Edition
 	
 	public static String relativePath ;
 	public static TextureAtlas atlas;
+	
+	public static FileWatching_Image textureChange ;
 	
 	public static ParallaxDefaultValues getDefaults()
 	{return datas.defaults ;}
@@ -111,5 +115,4 @@ public class GVars_Vue_Edition
 		
 		VE_Tab_TextureList_Adding.imageList.setItems(stockArr);	
 	}
-
 }
