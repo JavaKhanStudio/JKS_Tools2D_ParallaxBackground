@@ -36,8 +36,8 @@ public class Parallax_Heart
 	public WholePage_Model currentTransfertPage ; 
 
 //	public static SolarAstre astres ; 
-	public static boolean keepOn ;
 	public static boolean useTimeOfDay ; 
+	public float screenSpeed ; 
 	
 	public static boolean debug ; 
 	public String relativePath = "";
@@ -49,6 +49,8 @@ public class Parallax_Heart
 	
 		worldCamera = new OrthographicCamera() ;
 		worldCamera.setToOrtho(false,Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight());
+//		worldCamera.position.add(10000, 0, 0);
+		
 		
 		staticCamera = new PerspectiveCamera() ;
 		
@@ -107,7 +109,7 @@ public class Parallax_Heart
 			bottomSquare.act(delta);
 		
 		if(parallaxPage != null)
-			parallaxPage.act(delta);	
+			parallaxPage.act(delta,screenSpeed);	
 	}
 
 	public void render()

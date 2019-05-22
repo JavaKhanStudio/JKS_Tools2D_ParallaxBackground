@@ -1,11 +1,8 @@
 package jks.tools2d.parallax;
 
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 
@@ -14,6 +11,8 @@ public class ParallaxLayer
 {
 //	ParallaxLayer
 	private TextureRegion texRegion;
+	private TextureRegion changingRegion ; 
+
 	private float decalPosition_X = 0, decalPercent_Y = 0 ;
 	private float region_Width,region_Height;
 	private float sizeRatio =  1;
@@ -61,16 +60,22 @@ public class ParallaxLayer
 		batch.draw
 		(
 			texRegion, 
-			x, 
-			y, 
-			getRegionWidth(), 
-			getRegionHeight()
+			x + (flipX ? getRegionWidth() : 0), 
+			y + (flipY ? getRegionHeight() : 0), 
+			getRegionWidth() * (flipX ? -1 : 1), 
+			getRegionHeight() * (flipY ? -1 : 1)
 		);
 	}
 	
-	public void act(float delta) 
+	public void act(float delta, float speed) 
 	{
-		currentDistanceX += delta * speedAtRest ;
+		if(changingRegion != null)
+		{
+			texRegion = changingRegion ; 
+			changingRegion = null ; 
+		}
+		
+		currentDistanceX += delta * (speedAtRest + speed) ;
 		
 		if(Math.abs(currentDistanceX) >= getRegionWidth()) 
 			currentDistanceX -= getRegionWidth() * (currentDistanceX > 0 ? 1 : -1);
@@ -171,13 +176,13 @@ public class ParallaxLayer
 	{return flipX;}
 
 	public void setFlipX(boolean flipX, boolean doTheFlip)
-	{this.flipX = flipX; if(doTheFlip)texRegion.flip(true, false);}
+	{this.flipX = flipX; /*if(doTheFlip)texRegion.flip(true, false);*/}
 	
 	public boolean isFlipY()
 	{return flipY;}
 
 	public void setFlipY(boolean flipY, boolean doTheFlip)
-	{this.flipY = flipY; if(doTheFlip)texRegion.flip(false, true);}
+	{this.flipY = flipY; /*if(doTheFlip)texRegion.flip(false, true);*/}
 
 	public float getPadMin()
 	{return padMin;}
@@ -190,5 +195,9 @@ public class ParallaxLayer
 
 	public void setPadFactor(float padFactor)
 	{this.padFactor = padFactor;}
+	
+	public void setTexRegion(TextureRegion texRegion) {
+		this.texRegion = texRegion;
+	}
 
 }
