@@ -11,7 +11,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
-import jks.tools2d.parallax.editor.vue.edition.data.UtilsTexture;
+import jks.tools2d.parallax.editor.vue.edition.data.Utils_Texture;
 
 public class FileWatching_Image extends FileWatchingModel
 {
@@ -32,7 +32,7 @@ public class FileWatching_Image extends FileWatchingModel
 	{
 		if(kind == StandardWatchEventKinds.ENTRY_MODIFY)
 		{
-			GVars_Vue_Edition.textureChange = this ;
+			GVars_Vue_Edition.textureChange.add(this) ;
 //			Position_Infos pos = GVars_Vue_Edition.imageRef.get(concernTexture) ; 
 //			GVars_Vue_Edition.imageRef.remove(concernTexture) ; 
 //			TextureRegion region = UtilsTexture.getTextureRegionFromPath(pos.url) ; 

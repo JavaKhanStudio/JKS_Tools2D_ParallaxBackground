@@ -15,6 +15,9 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.vue.edition.VE_Center_ParallaxShow;
+import jks.tools2d.parallax.editor.vue.edition.VE_Options;
+import jks.tools2d.parallax.editor.vue.edition.VE_Tab_AControl;
 import jks.tools2d.parallax.editor.vue.edition.VE_Tab_TextureList_Adding;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
@@ -40,8 +43,6 @@ public class GVars_Vue_Edition
 	
 	public static int screenSize = 40 ; 
 	
-	public static float screenSpeed = 0; 
-	
 	public static ParallaxLayer currentlySelectedParallax ;
 	
 	public static TabbedPane tabbedPane ; 
@@ -58,7 +59,18 @@ public class GVars_Vue_Edition
 	public static String relativePath ;
 	public static TextureAtlas atlas;
 	
-	public static FileWatching_Image textureChange ;
+	public static ArrayList<FileWatching_Image> textureChange = new  ArrayList<FileWatching_Image>();
+	
+	public static boolean showParallaxFullScreen = false ; 
+	
+	public static VE_Center_ParallaxShow centerControl ;
+	public static VE_Tab_AControl tabControl ; 
+	public static VE_Options optionsControl ; 
+	
+	public static float hideInterfaceTimmer ;
+	
+	public static float timeForAutoSaveTimmer ; 
+	public static final float timeForAutoSaveAt = 300; 
 	
 	public static ParallaxDefaultValues getDefaults()
 	{return datas.defaults ;}
@@ -80,6 +92,7 @@ public class GVars_Vue_Edition
 		if(getDefaults().autoGoToSelected)
 		{
 			tabbedPane.switchTab(2);
+			
 		}
 	}
 

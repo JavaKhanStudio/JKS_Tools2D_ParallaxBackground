@@ -75,7 +75,8 @@ public class ParallaxLayer
 			changingRegion = null ; 
 		}
 		
-		currentDistanceX += delta * (speedAtRest + speed) ;
+//		currentDistanceX += delta * (speedAtRest) ;
+		currentDistanceX += delta * -(speedAtRest + (speed * parallaxSpeedRatio.x)) ; // TODO OPTI
 		
 		if(Math.abs(currentDistanceX) >= getRegionWidth()) 
 			currentDistanceX -= getRegionWidth() * (currentDistanceX > 0 ? 1 : -1);

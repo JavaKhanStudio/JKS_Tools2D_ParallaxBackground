@@ -159,4 +159,10 @@ public class Vue_Selection extends AVue_Model
 		}	
 	}
 
+	@Override
+	public void resize(int x, int y) 
+	{
+
+	}
+
 }

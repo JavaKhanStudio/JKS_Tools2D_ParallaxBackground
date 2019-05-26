@@ -13,7 +13,8 @@ public class Utils_Interface
 	public static TextureRegionDrawable buildDrawingRegionTexture(String texturePath)
 	{
 		Texture texture  = new Texture(Gdx.files.internal(texturePath),true);
-		texture.setFilter(TextureFilter.Linear, TextureFilter.Linear) ;
+//		texture.setFilter(TextureFilter.Linear, TextureFilter.Linear) ;
+		texture.setFilter(TextureFilter.MipMap, TextureFilter.MipMap) ;
 	    TextureRegion TextureRegion = new TextureRegion(texture);
 	    return new TextureRegionDrawable(TextureRegion);
 	}

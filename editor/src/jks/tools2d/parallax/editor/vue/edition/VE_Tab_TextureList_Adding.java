@@ -81,7 +81,11 @@ public class VE_Tab_TextureList_Adding extends Tab
 				layer.setSpeedAtRest(getDefaults().defaultModel.speed);
 				layer.getParallaxSpeedRatio().x = getDefaults().defaultModel.parallaxScalingSpeedX ; 
 				layer.getParallaxSpeedRatio().y = getDefaults().defaultModel.parallaxScalingSpeedY ; 
-				parallax_Heart.parallaxPage.layers.add(layer);
+				
+				if(getDefaults().addInFront)
+					parallax_Heart.parallaxPage.layers.add(layer);
+				else
+					parallax_Heart.parallaxPage.layers.add(0,layer);
 				
 				if(getDefaults().increment)
 					getDefaults().doIncrement(true) ; 
@@ -95,7 +99,10 @@ public class VE_Tab_TextureList_Adding extends Tab
 					textureLink.put(text, linkList) ; 
 				}
 				
-				linkList.add(layer) ; 
+				if(getDefaults().addInFront)
+					linkList.add(layer) ; 
+				else
+					linkList.add(0,layer) ; 
 				
 				return true ; 
 			}
@@ -130,8 +137,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 		mainTable.setSize(contentsPane.getWidth(),contentsPane.getHeight());
 		mainTable.addActor(contentsPane);
 		mainTable.addActor(button_changeData);
-		mainTable.addActor(button_addData);
-		
+		mainTable.addActor(button_addData);		
 	}
 
 	

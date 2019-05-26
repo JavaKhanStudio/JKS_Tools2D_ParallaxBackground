@@ -14,7 +14,7 @@ public class ParallaxLayerBaseValues_Serializer extends Serializer<ParallaxDefau
 	{
 		kryo.writeObject(output, object.defaultModel);
 		kryo.writeObject(output, object.incrementValue);
-		output.writeBoolean(object.addAsLast);
+		output.writeBoolean(object.addInFront);
 		output.writeBoolean(object.increment);
 		output.writeBoolean(object.autoGoToSelected);
 		output.writeBoolean(object.alternateFlipX);
@@ -29,7 +29,7 @@ public class ParallaxLayerBaseValues_Serializer extends Serializer<ParallaxDefau
 		returning.defaultModel = kryo.readObject(input,Parallax_Model.class) ; 
 		returning.incrementValue = kryo.readObject(input,Parallax_Model.class) ; 
 		
-		returning.addAsLast = input.readBoolean() ;
+		returning.addInFront = input.readBoolean() ;
 		returning.increment = input.readBoolean() ;
 		returning.autoGoToSelected = input.readBoolean() ;
 		returning.alternateFlipX = input.readBoolean() ;

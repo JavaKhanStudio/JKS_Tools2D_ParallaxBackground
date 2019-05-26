@@ -16,6 +16,7 @@ public abstract class AVue_Model implements ImportAction
 	
 	public abstract void update (float delta) ;
 	public abstract void render () ;
+	public abstract void resize(int x, int y) ; 
 	
 	
 	public void clear()

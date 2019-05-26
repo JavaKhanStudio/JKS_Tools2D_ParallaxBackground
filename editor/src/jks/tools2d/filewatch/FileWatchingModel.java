@@ -55,8 +55,7 @@ public abstract class FileWatchingModel extends TimerTask
             for (WatchEvent<?> watchEvent : watchKey.pollEvents())
             {
             	Path watchEventPath = (Path) watchEvent.context();
-            	System.out.println("look at that expected " + watchFile + " but got " + watchEventPath.toString());   
-                if (watchEventPath.toString().equals(watchFile))
+            	if (watchEventPath.toString().equals(watchFile))
                 	onModified(watchEvent.kind());       
             }
         }

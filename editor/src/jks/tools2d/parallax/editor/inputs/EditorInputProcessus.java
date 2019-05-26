@@ -1,14 +1,38 @@
 package jks.tools2d.parallax.editor.inputs;
 
-import com.badlogic.gdx.Input.Keys;
-
-import jks.tools2d.parallax.heart.Parallax_Utils_Page;
-
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.*;
+import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.leftPressed;
+import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.rightPressed;
+import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.upPressed;
+import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.zoomInPressed;
+import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.zoomOutPressed;
+
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
+
+import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 
 public class EditorInputProcessus extends InputAdapter 
 {
+	@Override
+	public boolean mouseMoved (int screenX, int screenY) 
+	{
+		GVars_Vue_Edition.hideInterfaceTimmer = 0 ; 
+		return true;
+	}
+	
+	@Override
+	public boolean scrolled (int amount) 
+	{
+		if(selectedItem != null)
+		{
+			selectedItem.scrolled(amount);
+		}
+
+		return false;
+		
+	}
+	
 	@Override
 	public boolean keyDown (int keycode) 
 	{

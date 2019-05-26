@@ -9,7 +9,8 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.par
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_X;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_Y;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.screenSize;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.screenSpeed;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setDefaults;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureChange;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 
 import java.nio.ByteBuffer;
@@ -42,7 +43,8 @@ import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
-import jks.tools2d.parallax.editor.vue.edition.data.UtilsTexture;
+import jks.tools2d.parallax.editor.vue.edition.data.Utils_Saving;
+import jks.tools2d.parallax.editor.vue.edition.data.Utils_Texture;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
 import jks.tools2d.parallax.heart.Parallax_Heart; 
 
@@ -70,7 +72,7 @@ public class Vue_Edition extends AVue_Model
 	@Override
 	public void init()
 	{
-		VE_Center_ParallaxShow center = VE_Center_ParallaxShow.build(preloadingValue) ; 
+		centerControl = VE_Center_ParallaxShow.build(preloadingValue) ; 
 
 		allImage = new ArrayList<>() ; 
 		// TODO Import the base value
@@ -78,9 +80,12 @@ public class Vue_Edition extends AVue_Model
 		setDefaults(new ParallaxDefaultValues() ); 
 		buildImageList() ; 
 			
-		GVars_Ui.mainUi.addActor(new VE_Options()) ;
-		GVars_Ui.mainUi.addActor(new VE_Tab_AControl()); 
-		GVars_Ui.mainUi.addActor(center); 
+		tabControl = new VE_Tab_AControl() ; 
+		optionsControl = new VE_Options() ; 
+		
+		GVars_Ui.mainUi.addActor(optionsControl) ;
+		GVars_Ui.mainUi.addActor(tabControl); 
+		GVars_Ui.mainUi.addActor(centerControl); 
 		
 		InputProcessor input = buildClickProcessor() ; 	
 		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_Ui.mainUi, new EditorInputProcessus(),input));
@@ -89,7 +94,6 @@ public class Vue_Edition extends AVue_Model
 	private void buildImageList() 
 	{
 		// TODO more testing require
-		
 		for(AtlasRegion region : getAtlas().getRegions())
 		{
 			buildInsideData(region) ; 
@@ -104,9 +108,7 @@ public class Vue_Edition extends AVue_Model
 				allImage.add(region) ;
 				imageRef.put(region, infos) ; 
 			}
-			
 		}
-		
 	}
 	
 	public void buildInsideData(AtlasRegion region)
@@ -114,6 +116,7 @@ public class Vue_Edition extends AVue_Model
 		int position ; 
 		allImage.add(region) ;
 		position = region.index ; 
+		
 		if(position == -1)
 			position = 0 ; 
 		else if(position > 0)
@@ -150,49 +153,7 @@ public class Vue_Edition extends AVue_Model
 
 	}
 
-	@Override
-	public void update(float delta)
-	{
-		GVars_Ui.mainUi.act(delta);
-		
-		GVars_Inputs.updateInput(delta);
-		
-		if(!isPause)
-		{
-			parallax_Heart.worldCamera.position.add(screenSpeed, 0, 0); 
-			parallax_Heart.worldCamera.update();
-			parallax_Heart.batch.setProjectionMatrix(parallax_Heart.worldCamera.combined);
-			parallax_Heart.act(delta);
-		}
-		
-		if(textureChange != null)
-		{			
-			Position_Infos pos = imageRef.get(textureChange.concernTexture) ; 
-			TextureRegion region = UtilsTexture.getTextureRegionFromPath(pos.url) ; 
-			ArrayList<ParallaxLayer> layers = GVars_Vue_Edition.textureLink.get(textureChange.concernTexture) ; 			
-			
-			imageRef.remove(textureChange.concernTexture) ; 
-			imageRef.put(region, pos) ; 
-			
-			if(layers != null)
-			{
-				for(ParallaxLayer layer : layers)
-				{
-					layer.setTexRegion(region);
-				}
-			}
-		
-			textureLink.remove(textureChange.concernTexture) ; 
-			textureLink.put(region, layers) ; 
-			
-			Collections.replaceAll(allImage, textureChange.concernTexture, region) ; 
-			
-			textureChange.concernTexture = region ; 
-			textureChange = null ;
-			GVars_Vue_Edition.setItems();
-		}
-	}
-
+	
 	InputProcessor buildClickProcessor()
 	{
 		return new InputProcessor()
@@ -256,7 +217,6 @@ public class Vue_Edition extends AVue_Model
 			@Override
 			public boolean keyTyped(char character)
 			{
-				
 				return false;
 			}
 			
@@ -281,32 +241,116 @@ public class Vue_Edition extends AVue_Model
 	
 	private final float circlePosition = 10 ;
 	private final float circleSize = 12 ;
+	private float hideInterfaceQuota = 4 ; 
+	private boolean changeTexture ;
+	private FileWatching_Image currentFile ; 
+	
+	@Override
+	public void update(float delta)
+	{
+		GVars_Ui.mainUi.act(delta);
+		
+		GVars_Inputs.updateInput(delta);
+		
+		if(!isPause)
+		{
+			// TODO OPTI
+//			parallax_Heart.worldCamera.position.add(screenSpeed, 0, 0); 
+//			parallax_Heart.worldCamera.update();
+//			parallax_Heart.batch.setProjectionMatrix(parallax_Heart.worldCamera.combined);
+			parallax_Heart.act(delta);
+		}
+		
+		while(!textureChange.isEmpty())
+		{		
+			currentFile = textureChange.get(0) ; 
+			Position_Infos pos = imageRef.get(currentFile.concernTexture) ; 
+			TextureRegion region = Utils_Texture.getTextureRegionFromPath(pos.url) ; 
+			ArrayList<ParallaxLayer> layers = GVars_Vue_Edition.textureLink.get(currentFile.concernTexture) ; 			
+			
+			imageRef.remove(currentFile.concernTexture) ; 
+			imageRef.put(region, pos) ; 
+			
+			if(layers != null)
+			{
+				for(ParallaxLayer layer : layers)
+				{
+					layer.setTexRegion(region);
+				}
+			}
+		
+			textureLink.remove(currentFile) ; 
+			textureLink.put(region, layers) ; 
+			
+			Collections.replaceAll(allImage, currentFile.concernTexture, region) ; 
+			
+			currentFile.concernTexture = region ; 
+			textureChange.remove(0) ; 
+			
+			changeTexture = true ; 
+		}
+	
+		if(changeTexture)
+		{
+			GVars_Vue_Edition.setItems(); changeTexture = false ; 
+		}
+		
+		if(showParallaxFullScreen)
+		{
+			GVars_Vue_Edition.hideInterfaceTimmer += delta ; 
+		}
+		
+		timeForAutoSaveTimmer += delta ; 
+		if(timeForAutoSaveTimmer > timeForAutoSaveAt)
+		{
+			Utils_Saving.autoSave() ; 
+			timeForAutoSaveTimmer = 0 ;
+		}
+	}
+
+	public void resize(int width, int height) 
+	{
+		centerControl.resize();
+	}
 	
 	@Override
 	public void render()
 	{
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT | (Gdx.graphics.getBufferFormat().coverageSampling?GL20.GL_COVERAGE_BUFFER_BIT_NV:0)) ; 
-		Gdx.gl.glViewport(parr_Pos_X,parr_Pos_Y, parr_Size_X, parr_Size_Y);
-		parallax_Heart.render() ; 
 		
-		
-		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-		
-		if(GVars_Vue_Edition.colorPicked != null)
+		if(showParallaxFullScreen)
 		{
-			Pixmap map = getFrameBufferPixmap(Gdx.input.getX(), Gdx.input.getY(), 1, 1) ; 
-			Color color = new Color(map.getPixel(0, 0)) ;
-			shapeRender.begin(ShapeType.Filled);
-			shapeRender.setColor(color);
-			shapeRender.circle(Gdx.input.getX() + circlePosition, Gdx.graphics.getHeight() - Gdx.input.getY() + circlePosition, circleSize);
-			shapeRender.end();
-			shapeRender.begin(ShapeType.Line);
-			shapeRender.setColor(new Color(Math.abs(1 - color.r),Math.abs(1 - color.g),Math.abs(1 - color.b),1));
-			shapeRender.circle(Gdx.input.getX() + circlePosition, Gdx.graphics.getHeight() - Gdx.input.getY() + circlePosition, circleSize);
-			shapeRender.end();
+			parallax_Heart.render() ; 
+			if(GVars_Vue_Edition.hideInterfaceTimmer < hideInterfaceQuota)
+			{GVars_Ui.mainUi.draw() ;}
+			
+		}
+		else
+		{
+			Gdx.gl.glViewport(parr_Pos_X,parr_Pos_Y, parr_Size_X, parr_Size_Y);
+			parallax_Heart.render() ; 
+			
+			
+			Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+			
+			if(GVars_Vue_Edition.colorPicked != null)
+			{
+				Pixmap map = getFrameBufferPixmap(Gdx.input.getX(), Gdx.input.getY(), 1, 1) ; 
+				Color color = new Color(map.getPixel(0, 0)) ;
+				shapeRender.begin(ShapeType.Filled);
+				shapeRender.setColor(color);
+				shapeRender.circle(Gdx.input.getX() + circlePosition, Gdx.graphics.getHeight() - Gdx.input.getY() + circlePosition, circleSize);
+				shapeRender.end();
+				shapeRender.begin(ShapeType.Line);
+				shapeRender.setColor(new Color(Math.abs(1 - color.r),Math.abs(1 - color.g),Math.abs(1 - color.b),1));
+				shapeRender.circle(Gdx.input.getX() + circlePosition, Gdx.graphics.getHeight() - Gdx.input.getY() + circlePosition, circleSize);
+				shapeRender.end();
+			}
+			
+			GVars_Ui.mainUi.draw() ;
+		
 		}
 		
-		GVars_Ui.mainUi.draw() ;	
 	}
 
 	@Override
@@ -320,7 +364,7 @@ public class Vue_Edition extends AVue_Model
 			{
 				if("png".equals(Utils_Scene2D.getExtension(path)))
 				{
-					textureRegion = UtilsTexture.getTextureRegionFromPath(path) ; 
+					textureRegion = Utils_Texture.getTextureRegionFromPath(path) ; 
 					new FileWatching_Image(path,textureRegion) ; 
 					imageRef.put(textureRegion, new Position_Infos(false,path,-1)) ; 
 					allImage.add(textureRegion) ; 

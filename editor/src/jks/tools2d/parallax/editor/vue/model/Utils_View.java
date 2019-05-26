@@ -24,10 +24,7 @@ public class Utils_View
 			GVars_Heart_Editor.vue.overlay.destroy();
 			GVars_Heart_Editor.vue.overlay = null ; 
 		}
-		else if(GVars_Heart_Editor.debug)
-			System.out.println("no Overlay to remove in removeCurrentOverlay of Utils_View");
-		
-//		GVars_Interface.resetInterface() ;
+
 	}
 	
 	public static void setFilter(AView_Model_Filter filter_CanBuild)

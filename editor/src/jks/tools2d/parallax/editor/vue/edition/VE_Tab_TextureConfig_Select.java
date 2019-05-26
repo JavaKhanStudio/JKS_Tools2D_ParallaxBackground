@@ -181,20 +181,23 @@ public class VE_Tab_TextureConfig_Select extends Table
 			
 		}; 
 						
-		this.add(new VisLabel("SECTION SELECTION")).colspan(4).row();
+		this.add(new VisLabel("SECTION SELECTION")).padTop(indexPositionSpinerBody.getHeight()/4).padBottom(indexPositionSpinerBody.getHeight()/4).colspan(4).row();
 		this.add(showSelect).colspan(4).row();
 		this.add(indexPositionSpinerBody) ;
 		this.add(indexPositionSpinnerQuick_First) ;
 		this.add(indexPositionSpinnerQuick_Middle) ;
 		this.add(indexPositionSpinnerQuick_Last) ;
 		this.row() ; 
-		this.add(new VisLabel("Select Direct : "));
-		this.add(selectDirect).center().row() ; 
+		this.add(new VisLabel("Select Direct : ")).center();
+		this.add(selectDirect).center().padTop(30).row() ; 
 		this.add(new VisLabel("Delete : "));
 		this.add(delete) ; 
 		this.add(unDelete); 
 		this.row() ;
 	}
+	
+	
+	
 	
 	public int getMiddle()
 	{return parallax_Heart.parallaxPage.layers.size()/2 ;}

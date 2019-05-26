@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
+import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.Vue_Selection; 
 
 public class Main_Editor extends ApplicationAdapter 
@@ -13,8 +14,6 @@ public class Main_Editor extends ApplicationAdapter
 	@Override
 	public void create () 
 	{
-		
-//		Gdx.gl.glEnable(GL20.GL);
 		GVars_Heart_Editor.init();
 		Gdx.graphics.setVSync(true);
 		GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
@@ -37,8 +36,9 @@ public class Main_Editor extends ApplicationAdapter
     @Override
 	public void resize(int width, int height) 
 	{
-//		if(GVars_Camera.mapRenderer != null)
-//			GVars_Camera.mapRenderer.setView(GVars_Camera.camera);
+		GVars_Ui.mainUi.getViewport().update(width, height, true);
+		if(GVars_Heart_Editor.vue !=null)
+			GVars_Heart_Editor.vue.resize(width,height) ; 
 	}
 
     @Override

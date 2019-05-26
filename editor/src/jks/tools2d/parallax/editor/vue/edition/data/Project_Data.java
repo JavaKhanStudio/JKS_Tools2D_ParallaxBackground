@@ -16,6 +16,6 @@ public class Project_Data
 	public void prepareForSaving(WholePage_Editor model)
 	{
 		saving = model ; 
-		outsideInfos = UtilsSaving.buildSavingOutsideValues(parallax_Heart.parallaxPage.layers) ; 
+		outsideInfos = Utils_Saving.buildSavingOutsideValues(parallax_Heart.parallaxPage.layers) ; 
 	}
 }

@@ -2,12 +2,13 @@ package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.currentlySelectedParallax;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 
 import java.util.Collections;
 
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
@@ -16,6 +17,7 @@ import com.kotcrab.vis.ui.widget.spinner.IntSpinnerModel;
 import com.kotcrab.vis.ui.widget.spinner.Spinner;
 
 import jks.tools2d.libgdxutils.JksNumberSlider;
+import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 
@@ -26,14 +28,24 @@ public class VE_Tab_TextureConfig_Edit extends Table
 	sizeRatio_Slider,
 	staticSpeed_Slider,
 	speedX_ration_Slider,speedY_ration_Slider; 
+	
+	CopyUpAndDown 
+	decalX_Slider_Clone,
+	decalY_Slider_Clone,
+	sizeRatio_Slider_Clone,
+	staticSpeed_Slider_Clone, 
+	speedX_ration_Slider_Clone, 
+	speedY_ration_Slider_Clone; 
 
-	IntSpinnerModel indexPositionSpinner ; 
+	public IntSpinnerModel indexPositionSpinner ; 
 	Spinner indexPositionSpinerBody ; 
 	
 	VisCheckBox flipX, flipY ; 
 	
 	TextButton makeAsDefault,
 	indexPositionSpinnerQuick_First,indexPositionSpinnerQuick_Last,indexPositionSpinnerQuick_Middle ; 
+	
+	
 	
 	public VE_Tab_TextureConfig_Edit()
 	{
@@ -50,7 +62,8 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				System.out.println("TODO");
+				getDefaults().copyValue(currentlySelectedParallax);
+				
 			}
 		}) ; 
 		
@@ -162,6 +175,16 @@ public class VE_Tab_TextureConfig_Edit extends Table
 				currentlySelectedParallax.setDecalPercentX(Float.parseFloat(decalX_Slider.textField.getText()));		
 			}
 		};
+		
+		decalX_Slider_Clone = new CopyUpAndDown(indexPositionSpinner) 
+		{		
+			@Override
+			void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) 
+			{
+				currentlySelect.setDecalPercentX((layerFrom.getDecalPercentX()));
+				decalX_Slider.setValue(layerFrom.getDecalPercentX());
+			}
+		};
 					
 		decalY_Slider = new JksNumberSlider(-150, 150, 0.5f,baseSkin)
 		{		
@@ -170,7 +193,18 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			{
 				currentlySelectedParallax.setDecalPercentY(decalY_Slider.getValue());
 			}
-		} ; 
+		} ;
+		
+		decalY_Slider_Clone = new CopyUpAndDown(indexPositionSpinner) 
+		{
+			@Override
+			void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) 
+			{
+				currentlySelect.setDecalPercentY(layerFrom.getDecalPercentY());
+				decalY_Slider.setValue(layerFrom.getDecalPercentY());		
+			}
+		};
+			
 			
 		sizeRatio_Slider = new JksNumberSlider(0.01f, 3, 0.005f,baseSkin)
 		{		
@@ -183,6 +217,16 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		} ; 
 		
+		sizeRatio_Slider_Clone = new CopyUpAndDown(indexPositionSpinner) 
+		{
+			@Override
+			void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) 
+			{
+				currentlySelect.setSizeRatio(layerFrom.getSizeRatio());
+				sizeRatio_Slider.setValue(layerFrom.getSizeRatio());		
+			}
+		};
+		
 		staticSpeed_Slider = new JksNumberSlider(-10, 10, 0.1f,baseSkin)
 		{		
 			@Override
@@ -192,6 +236,16 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		} ; 
 		
+		staticSpeed_Slider_Clone = new CopyUpAndDown(indexPositionSpinner) 
+		{
+			@Override
+			void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) 
+			{
+				currentlySelect.setSpeedAtRest(layerFrom.getSpeedAtRest());
+				staticSpeed_Slider.setValue(layerFrom.getSpeedAtRest());		
+			}
+		};
+		
 		speedX_ration_Slider = new JksNumberSlider(0.005f, 0.2f, 0.001f,baseSkin)
 		{		
 			@Override
@@ -199,7 +253,17 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			{
 				currentlySelectedParallax.getParallaxSpeedRatio().x = (speedX_ration_Slider.getValue());
 			}
-		} ; 
+		} ;
+		
+		speedX_ration_Slider_Clone = new CopyUpAndDown(indexPositionSpinner) 
+		{
+			@Override
+			void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) 
+			{
+				currentlySelect.getParallaxSpeedRatio().x = (layerFrom.getParallaxSpeedRatio().x);
+				speedX_ration_Slider.setValue(layerFrom.getParallaxSpeedRatio().x);		
+			}
+		};
 		
 		speedY_ration_Slider = new JksNumberSlider(0.005f, 0.2f, 0.001f,baseSkin)
 		{		
@@ -210,6 +274,15 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		} ; 
 		
+		speedY_ration_Slider_Clone = new CopyUpAndDown(indexPositionSpinner) 
+		{
+			@Override
+			void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) 
+			{
+				currentlySelect.getParallaxSpeedRatio().y = (layerFrom.getParallaxSpeedRatio().y);
+				speedY_ration_Slider.setValue(layerFrom.getParallaxSpeedRatio().y);		
+			}
+		};
 		
 		this.add(new VisLabel("SECTION EDITION")).row();
 		this.add(makeAsDefault).row();
@@ -222,23 +295,41 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		this.add(flipY).row() ; 
 		
 		this.add(new VisLabel("decal X")).row();
-		this.add(decalX_Slider).colspan(colspan).row() ; 
+		this.add(decalX_Slider).colspan(2) ; 
+		this.add(decalX_Slider_Clone.cloneFromFront) ;
+		this.add(decalX_Slider_Clone.cloneFromBack) ;
+		this.row() ; 
 
 		this.add(new VisLabel("decal Y")).row();
-		this.add(decalY_Slider).colspan(colspan).row(); ; 
+		this.add(decalY_Slider).colspan(2) ; 
+		this.add(decalY_Slider_Clone.cloneFromFront) ;
+		this.add(decalY_Slider_Clone.cloneFromBack) ;
+		this.row();
 		
 		this.add(new VisLabel("Size Ratio")).row();
-		this.add(sizeRatio_Slider).colspan(colspan).row();
+		this.add(sizeRatio_Slider).colspan(2) ;
+		this.add(sizeRatio_Slider_Clone.cloneFromFront) ;
+		this.add(sizeRatio_Slider_Clone.cloneFromBack) ;
+		this.row();
 		
 		this.add(new VisLabel("At rest Speed")).row();
-		this.add(staticSpeed_Slider).colspan(colspan).row();
+		this.add(staticSpeed_Slider).colspan(2);
+		this.add(staticSpeed_Slider_Clone.cloneFromFront) ;
+		this.add(staticSpeed_Slider_Clone.cloneFromBack) ;
+		this.row();
 		
 		this.add(new VisLabel("-- Speed ratio --")).row();
 		this.add(new VisLabel("-- X --")).row();
-		this.add(speedX_ration_Slider).colspan(colspan).row();
+		this.add(speedX_ration_Slider).colspan(2);
+		this.add(speedX_ration_Slider_Clone.cloneFromFront) ;
+		this.add(speedX_ration_Slider_Clone.cloneFromBack) ;
+		this.row();
 		
 		this.add(new VisLabel("-- Y --")).row();
-		this.add(speedY_ration_Slider).colspan(colspan).row();
+		this.add(speedY_ration_Slider).colspan(2);
+		this.add(speedY_ration_Slider_Clone.cloneFromFront) ;
+		this.add(speedY_ration_Slider_Clone.cloneFromBack) ;
+		this.row();
 	}
 	
 	int colspan = 3 ; 
@@ -269,6 +360,55 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		speedX_ration_Slider.setValue(currentlySelectedParallax.getParallaxSpeedRatio().x) ; 
 		
 		speedY_ration_Slider.setValue(currentlySelectedParallax.getParallaxSpeedRatio().y) ; 
+		
+	}
+}
+
+abstract class CopyUpAndDown
+{
+	abstract void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) ; 
+	
+	ImageButton cloneFromFront ; 
+	ImageButton cloneFromBack ; 
+	
+	private static String cloneFrontImage = "editor/interfaces/down-card.png" ; 
+	private static String cloneBackImage = "editor/interfaces/up-card.png" ; 
+	
+	private static float buttonSize = 30; 
+	
+	CopyUpAndDown(IntSpinnerModel posRef)
+	{
+		cloneFromFront = Utils_Interface.buildSquareButton(cloneFrontImage,buttonSize) ; 
+		cloneFromFront.addListener(new InputListener() // ONE MORE
+		{
+			@Override
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				if(posRef.getValue() < parallax_Heart.parallaxPage.layers.size() - 1)
+				{setValueOn(currentlySelectedParallax, parallax_Heart.parallaxPage.layers.get(posRef.getValue() + 1));}
+			}
+			
+		}) ;
+		
+		cloneFromBack = Utils_Interface.buildSquareButton(cloneBackImage,buttonSize) ; 
+		cloneFromBack.addListener(new InputListener() // ONE LESS
+		{
+			@Override
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				if(posRef.getValue() != 0)
+				{setValueOn(currentlySelectedParallax, parallax_Heart.parallaxPage.layers.get(posRef.getValue() - 1));}
+			}
+			
+		}) ;
 		
 	}
 	

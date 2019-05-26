@@ -6,7 +6,6 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.inf
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
@@ -22,7 +21,7 @@ import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
-public class Main_Editor_Test extends ApplicationAdapter 
+public class Main_Editor_Test extends Main_Editor 
 {
 	
 	@Override
@@ -30,7 +29,6 @@ public class Main_Editor_Test extends ApplicationAdapter
 	{
 		GVars_Heart_Editor.init();
 		Gdx.graphics.setVSync(true);
-//		directTestAtlas() ;
 		directTestParallax() ; 
 	}
 
@@ -66,38 +64,4 @@ public class Main_Editor_Test extends ApplicationAdapter
 		{e.printStackTrace();}
 	}
 	
-	
-	@Override
-	public void render () 
-	{
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-    	float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
-    
-    	if (delta > 0) 
-    	{
-//    		GVars_Inputs.updateInput_ControllingInterface() ;
-    		
-    		GVars_Heart_Editor.vue.update(delta);
-    		GVars_Heart_Editor.vue.render();
-    	}
-	}
-	
-    @Override
-	public void resize(int width, int height) 
-	{
-//		if(GVars_Camera.mapRenderer != null)
-//			GVars_Camera.mapRenderer.setView(GVars_Camera.camera);
-	}
-
-    @Override
-    public void pause()
-    {}
-
-    @Override
-    public void resume()
-    {}
-
-    @Override
-	public void dispose() 
-	{}
 }

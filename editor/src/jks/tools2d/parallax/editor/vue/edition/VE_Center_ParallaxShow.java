@@ -1,11 +1,12 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.isPause;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_X;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_Y;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.showParallaxFullScreen;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Parallax;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Selection;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
@@ -66,7 +67,7 @@ public class VE_Center_ParallaxShow extends Table
 	
 	VE_Center_ParallaxShow(TextureAtlas atlas)
 	{
-		initShow() ; 
+		resize() ; 
 		
 		WholePage_Model page = new WholePage_Model(); 
 		page.pageModel.atlasName = GVars_Vue_Edition.infos.projectName + "." + FVars_Extensions.ATLAS ; 
@@ -78,12 +79,12 @@ public class VE_Center_ParallaxShow extends Table
 	
 	VE_Center_ParallaxShow(WholePage_Model page)
 	{
-		initShow() ; 
+		resize() ; 
 		GVars_Vue_Edition.setPage(page) ; 
 		buildOptions() ; 
 	}
 	
-	public void initShow()
+	public void resize()
 	{
 		parr_Size_X = (int)(((Gdx.graphics.getWidth()/3) * 2) - decalX * 2) ; 
 		parr_Size_Y = (parr_Size_X/16) * 9 ; 
@@ -96,15 +97,20 @@ public class VE_Center_ParallaxShow extends Table
 	
 	public void buildOptions()
 	{
-		setBounds(size_Bloc_Selection, 0, size_Bloc_Parallax, size_Height_Bloc_Parallax_Controle);
-		
+		setBounds(size_Bloc_Selection, 1, size_Bloc_Parallax, Gdx.graphics.getHeight() - parr_Pos_Y/2 - parr_Size_Y);
+//		this.setDebug(true);
 		// TODO Effacer et mettre dans le UISKIN
-		CheckBoxStyle checkBox = new CheckBoxStyle() ;
-		checkBox.checkboxOff = baseSkin.newDrawable(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_play.png"));
-		checkBox.checkboxOn = baseSkin.newDrawable(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_pause.png"));
-		checkBox.font = baseSkin.getFont("default-font");
+		CheckBoxStyle checkBoxStyle = new CheckBoxStyle() ;
+		checkBoxStyle.checkboxOff = baseSkin.newDrawable(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_play.png"));
+		checkBoxStyle.checkboxOn = baseSkin.newDrawable(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_pause.png"));
+		checkBoxStyle.font = baseSkin.getFont("default-font");
 		
-		JksCheckBox startStop = new JksCheckBox("",checkBox,false) ; 
+		CheckBoxStyle extendScreenStyle = new CheckBoxStyle() ;
+		extendScreenStyle.checkboxOff = baseSkin.newDrawable(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/expand.png"));
+		extendScreenStyle.checkboxOn = baseSkin.newDrawable(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/contract.png"));
+		extendScreenStyle.font = baseSkin.getFont("default-font");
+		
+		JksCheckBox startStop = new JksCheckBox("",checkBoxStyle,false) ; 
 		startStop.addListener(new ChangeListener() 
 		{
 			public void changed (ChangeEvent event, Actor actor) 
@@ -114,21 +120,49 @@ public class VE_Center_ParallaxShow extends Table
 		startStop.setSize(buttonSize, buttonSize);
 		startStop.setPosition(parr_Size_X/2, size_Height_Bloc_Parallax_Controle/2 - buttonSize/2);
 		
-		Slider parallaxSpeedSlider = new Slider(-10, 10, 1, false, GVars_Ui.baseSkin) ; 
+		
+		JksCheckBox extendScreen = new JksCheckBox("",extendScreenStyle,false) ; 
+		extendScreen.addListener(new ChangeListener() 
+		{
+			public void changed (ChangeEvent event, Actor actor) 
+			{
+				showParallaxFullScreen = extendScreen.isChecked();
+				
+				if(showParallaxFullScreen)
+				{
+					tabControl.setVisible(false);
+					optionsControl.setVisible(false);
+				}
+				else
+				{
+					tabControl.setVisible(true);
+					optionsControl.setVisible(true);
+				}
+			}
+		});
+
+
+		extendScreen.setSize(buttonSize, buttonSize);
+		extendScreen.setPosition(
+				this.getWidth() - extendScreen.getWidth() ,
+				this.getHeight() - extendScreen.getHeight()/2);
+		extendScreen.setChecked(false);
+		
+		Slider parallaxSpeedSlider = new Slider(-10, 10, 0.2f, false, GVars_Ui.baseSkin) ; 
 		parallaxSpeedSlider.setValue(0) ; 
 		parallaxSpeedSlider.addListener(new InputListener()
 		{		
 			@Override
 			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
 			{
-				GVars_Vue_Edition.screenSpeed = parallaxSpeedSlider.getValue() ; 
+//				GVars_Vue_Edition.screenSpeed = parallaxSpeedSlider.getValue() ; 
 				return true ;
 			}
 			
 			@Override
 			public void touchDragged(InputEvent event, float x, float y, int pointer)
 			{
-				GVars_Vue_Edition.screenSpeed = parallaxSpeedSlider.getValue() ; 
+				Vue_Edition.parallax_Heart.screenSpeedConstant = parallaxSpeedSlider.getValue() * 100 ; 
 			}
 		}) ; 
 		
@@ -137,6 +171,7 @@ public class VE_Center_ParallaxShow extends Table
 		
 		
 		this.addActor(startStop) ;
-		this.addActor(parallaxSpeedSlider) ; 
+		this.addActor(parallaxSpeedSlider) ;
+		this.addActor(extendScreen) ; 
 	}
 }

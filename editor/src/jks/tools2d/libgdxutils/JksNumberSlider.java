@@ -1,5 +1,6 @@
 package jks.tools2d.libgdxutils;
 
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Event;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputEvent.Type;
@@ -10,15 +11,19 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldFilter;
 
-public abstract class JksNumberSlider extends Table
+import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
+
+public abstract class JksNumberSlider extends Table implements SelectableItem
 {
 
 	public Slider slider ;
-	public TextField textField ; 
-	boolean dontSet ; 
+	public TextField textField ;  
+	public boolean inTextField ; 
 	
 	public JksNumberSlider(float min, float max, float stepSize, Skin skin)
 	{
+		JksNumberSlider ref = this ; 
 		slider = new Slider(min, max, stepSize, false, skin);
 		
 		textField = new TextField("", skin) ;
@@ -26,24 +31,53 @@ public abstract class JksNumberSlider extends Table
 		textField.setText(slider.getValue() + "");
 		textField.addListener(new InputListener()
 		{
+			boolean lockExit ; 
+			
 			@Override
 			public boolean handle(Event e)
 			{
 				if (!(e instanceof InputEvent)) return false;
 				InputEvent event = (InputEvent) e;
-				
+
 				if(event.getType() == Type.keyTyped)
 				{
-					if(textField.getText().equals("") || textField.getText().equals("."))
+					if(textField.getText().equals("") || textField.getText().equals(".") || textField.getText().equals("-"))
 						textField.setText(slider.getMinValue() + "");
 					
 					slider.setValue(Float.parseFloat(textField.getText())) ; 	
 					actionOnSliderMovement() ; 
 				}
+				else if(event.getType() == Type.enter)
+				{
+					GVars_Inputs.selectedItem = ref ;
+					inTextField = true ; 
+				}
+				else if(event.getType() == Type.touchDown)
+				{
+					lockExit = true ; 
+				}
+				else if(event.getType() == Type.exit && !lockExit)
+				{
+					GVars_Inputs.quitSelectedItem(ref) ; 
+					GVars_Ui.mainUi.setKeyboardFocus(null) ;
+					textField.clearSelection();
+				} 
+				else if(event.getType() == Type.touchDragged 
+						|| event.getType() == Type.touchUp
+						|| event.getType() == Type.mouseMoved)
+				{
+					
+				}
+				else
+				{
+					lockExit = false ; 
+				}
 				
-				return false;
+				return true;
 			}
+			
 		}) ; 
+
 		
 		slider.addListener(new InputListener()
 		{		
@@ -56,15 +90,31 @@ public abstract class JksNumberSlider extends Table
 			{
 				textField.setText(slider.getValue() + "");
 				actionOnSliderMovement() ; 
-			}			
+			}	
+			
+			@Override
+			public void enter (InputEvent event, float x, float y, int pointer, Actor fromActor) 
+			{
+				GVars_Inputs.selectedItem = ref ;
+				inTextField = false ; 
+			}
+			public void exit (InputEvent event, float x, float y, int pointer, Actor toActor) 
+			{
+				GVars_Inputs.quitSelectedItem(ref) ; 
+			}
+		
 		}) ; 
 		
 		this.add(slider) ; 
 		this.add(textField).width(80) ; 
 	}
 	
-//	this.add(staticSpeed_Slider).pad(10).expandX().fillX() ; 
-//	this.add(staticSpeed_tf).width(40).row();
+	public void scrolled (int amount)
+	{
+		System.out.println(amount);
+		
+		
+	}
 
 	TextFieldFilter floatFilter = new TextFieldFilter()
 	{	

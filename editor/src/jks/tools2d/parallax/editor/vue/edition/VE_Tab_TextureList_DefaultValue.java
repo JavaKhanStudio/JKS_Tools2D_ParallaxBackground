@@ -6,6 +6,7 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.get
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
@@ -13,7 +14,8 @@ import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.VisRadioButton;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
-import jks.tools2d.libgdxutils.JksNumberSlider; 
+import jks.tools2d.libgdxutils.JksNumberSlider;
+import jks.tools2d.libgdxutils.Utils_Interface; 
 
 public class VE_Tab_TextureList_DefaultValue extends Tab
 {
@@ -36,10 +38,41 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 	
 	VisCheckBox front,back, increment ; 
 	
+	ImageButton setBackToFrontButton, setFrontToBackButton ; 
+	float frontButtonSize = 70 ; 
+	
 	public VE_Tab_TextureList_DefaultValue()
 	{
 		super(false,false) ; 
 		mainTable = new Table() ; 
+		
+		setBackToFrontButton = Utils_Interface.buildSquareButton("editor/interfaces/addInBack.png",frontButtonSize) ; 	
+		setBackToFrontButton.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				getDefaults().setIncrementBackToFront();
+			}
+		}) ; 
+		
+		setFrontToBackButton = Utils_Interface.buildSquareButton("editor/interfaces/addInFront.png",frontButtonSize) ;  ;
+		setFrontToBackButton.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				getDefaults().setIncrementFrontToBack();
+			}
+		}) ; 
 		
 		increment = new VisCheckBox("Increment Each Time") ;
 		increment.addListener(new InputListener()
@@ -246,9 +279,14 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			public void actionOnSliderMovement()
 			{getDefaults().incrementValue.setParallaxScalingSpeedY(speedY_ration_SliderIncrement.getValue());}
 		} ; 
+		
+		
 		increment.center() ; 
+		mainTable.add(setBackToFrontButton).colspan(1) ;
+		mainTable.add(setFrontToBackButton).colspan(1) ;
+		mainTable.row() ; 
 		mainTable.add(increment).colspan(2).row()  ; 
-		mainTable.add(incrementOnce) ; 
+		mainTable.add(incrementOnce).padRight(10) ; 
 		mainTable.add(decrementOnce).row() ;
 		
 		mainTable.add(flipX) ; 

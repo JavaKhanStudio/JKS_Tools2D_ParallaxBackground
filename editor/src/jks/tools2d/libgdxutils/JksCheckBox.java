@@ -40,8 +40,6 @@ public class JksCheckBox extends TextButton
 			add(label);
 			add(image) ;
 		}
-
-	
 	}
 
 	public void setStyle (ButtonStyle style) 
@@ -82,5 +80,4 @@ public class JksCheckBox extends TextButton
 
 	public Image getImage () 
 	{return image;}
-
 }

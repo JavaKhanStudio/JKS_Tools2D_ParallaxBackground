@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
-public class UtilsTexture 
+public class Utils_Texture 
 {
 
 	public static TextureRegion getTextureRegionFromPath(String path)

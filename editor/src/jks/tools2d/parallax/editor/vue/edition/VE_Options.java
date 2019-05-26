@@ -13,7 +13,7 @@ import com.kotcrab.vis.ui.widget.VisLabel;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
-import jks.tools2d.parallax.editor.vue.edition.data.UtilsSaving;
+import jks.tools2d.parallax.editor.vue.edition.data.Utils_Saving;
 
 public class VE_Options extends Table
 {
@@ -21,7 +21,7 @@ public class VE_Options extends Table
 	float size = 50 ;
 	float textWidth, pathWidth,  textHeight, formatWidth ;
 	
-	TextField parallaxPath,parallaxName  ; 
+	public static TextField parallaxPath,parallaxName  ; 
 	VisCheckBox  formatLibGDX,formatJson ; 
 	
 	ImageButton savingExport, savingProject ;
@@ -42,7 +42,7 @@ public class VE_Options extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				UtilsSaving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText());
+				Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText());
 			}
 			
 		}) ;
@@ -57,7 +57,7 @@ public class VE_Options extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				UtilsSaving.saving_Parallax_Kryo(parallaxPath.getText(), parallaxName.getText());
+				Utils_Saving.saving_Parallax_Kryo(parallaxPath.getText(), parallaxName.getText());
 			}
 			
 		}) ;
@@ -94,7 +94,6 @@ public class VE_Options extends Table
 		}) ; 
 		
 		// TABLES //
-		
 		Table projectPathTable = new Table() ; 
 		projectPathTable.setBounds(savingProject.getX() - pathWidth - decal, savingProject.getY() + textHeight/2 - decal, pathWidth, textHeight);
 		Table projectNameTable = new Table() ; 
@@ -107,7 +106,7 @@ public class VE_Options extends Table
 			{return super.getPrefWidth() * 3;}
 		}; 
 		
-		ImageButton pathSelection = Utils_Interface.buildSquareButton("editor/interfaces/saveProject.png",size - decal * 2) ; 
+		ImageButton pathSelection = Utils_Interface.buildSquareButton("editor/interfaces/open-folder.png",size - decal * 2) ; 
 		
 		
 		projectPathTable.add(new VisLabel("Project Path : "));
@@ -118,7 +117,6 @@ public class VE_Options extends Table
 		parallaxName = new TextField("", GVars_Ui.baseSkin) ; 
 		projectNameTable.add(new VisLabel("Project Name : "));
 		projectNameTable.add(parallaxName).right() ;
-		
 		
 		
 		Table formatTable = new Table() ; 
