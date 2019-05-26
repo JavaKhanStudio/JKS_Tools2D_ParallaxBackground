@@ -12,7 +12,11 @@ public class GVars_Inputs
 	public static void quitSelectedItem(SelectableItem item )
 	{
 		if(selectedItem == item)
+		{
+			selectedItem.quit();
 			selectedItem = null ; 
+		}
+			
 	}
 	
 	public static boolean touched, 

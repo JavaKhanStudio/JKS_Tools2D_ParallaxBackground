@@ -20,6 +20,7 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 	public Slider slider ;
 	public TextField textField ;  
 	public boolean inTextField ; 
+	boolean lockExit ; 
 	
 	public JksNumberSlider(float min, float max, float stepSize, Skin skin)
 	{
@@ -31,7 +32,7 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 		textField.setText(slider.getValue() + "");
 		textField.addListener(new InputListener()
 		{
-			boolean lockExit ; 
+			
 			
 			@Override
 			public boolean handle(Event e)
@@ -41,8 +42,11 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 
 				if(event.getType() == Type.keyTyped)
 				{
-					if(textField.getText().equals("") || textField.getText().equals(".") || textField.getText().equals("-"))
+					if(textField.getText().equals("") || textField.getText().equals("."))
 						textField.setText(slider.getMinValue() + "");
+					
+					if(textField.getText().equals("-"))
+						textField.setText("-" + slider.getMinValue());
 					
 					slider.setValue(Float.parseFloat(textField.getText())) ; 	
 					actionOnSliderMovement() ; 
@@ -109,10 +113,47 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 		this.add(textField).width(80) ; 
 	}
 	
+	@Override
 	public void scrolled (int amount)
 	{
-		System.out.println(amount);
+		if(inTextField)
+		{
+			int cursorPosition = textField.getCursorPosition();
+			
+			if(cursorPosition == 0)
+				return ;
+			
+			double power = 0 ;
+			float virgulePosition = textField.getText().indexOf(".") ; 
+			
+			if(virgulePosition >= cursorPosition)
+			{
+				power = Math.pow(10, virgulePosition - cursorPosition) ;
+			}
+			else
+			{
+				power = 1/Math.pow(10, cursorPosition - virgulePosition) ;
+			}
 		
+			textField.setText((Float.parseFloat(textField.getText()) + power * amount) + "");
+			textField.setCursorPosition(cursorPosition);
+//			System.out.println(power + " Cursor " + textField.getCursorPosition() + " Virgule " + virgulePosition);
+		}
+		else
+		{
+			this.setValue(slider.getValue() + slider.getStepSize() * amount) ; 
+		}
+		
+		actionOnSliderMovement() ; 
+	}
+	
+	@Override
+	public void quit() 
+	{
+		if(inTextField)
+			textField.setCursorPosition(0);
+		
+		System.out.println("quitting");
 		
 	}
 
@@ -125,6 +166,7 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 				return true ; 
 			if(c == '-' && !textField.getText().contains("-") && textField.getCursorPosition() == 0)
 				return true ; 
+			
 			return Character.isDigit(c);
 		}
 	};
