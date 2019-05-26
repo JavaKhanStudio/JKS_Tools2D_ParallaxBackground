@@ -1,15 +1,11 @@
 package jks.tools2d.parallax.heart;
 
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
-import com.badlogic.gdx.math.Vector2;
 
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parralax;
@@ -19,7 +15,6 @@ import jks.tools2d.parallax.side.SquareBackground;
 public class Parallax_Heart 
 {
 	public OrthographicCamera worldCamera;
-	public Camera staticCamera;
 	public SpriteBatch batch;
 	public ParallaxPageReader parallaxPage;
 	
@@ -36,8 +31,10 @@ public class Parallax_Heart
 	public WholePage_Model currentTransfertPage ; 
 
 //	public static SolarAstre astres ; 
-	public static boolean useTimeOfDay ; 
-	public float screenSpeed ; 
+	public boolean useTimeOfDay ; 
+	
+	public float screenSpeedConsumable ; 
+	public float screenSpeedConstant ; 
 	
 	public static boolean debug ; 
 	public String relativePath = "";
@@ -52,7 +49,7 @@ public class Parallax_Heart
 //		worldCamera.position.add(10000, 0, 0);
 		
 		
-		staticCamera = new PerspectiveCamera() ;
+//		staticCamera = new PerspectiveCamera() ;
 		
 		batch = new SpriteBatch();
 
@@ -69,7 +66,6 @@ public class Parallax_Heart
 			float worldHeight) 
 	{
 		this.worldCamera = worldCamera ;
-		this.staticCamera = staticCamera ;
 		Gvars_Parallax.setWorldWidth(worldWidth);
 		Gvars_Parallax.setWorldHeight(worldHeight);
 		
@@ -109,12 +105,16 @@ public class Parallax_Heart
 			bottomSquare.act(delta);
 		
 		if(parallaxPage != null)
-			parallaxPage.act(delta,screenSpeed);	
+			parallaxPage.act(delta,screenSpeedConsumable + screenSpeedConstant);	
+		
+		screenSpeedConsumable = 0 ; 
 	}
 
 	public void render()
 	{
-		shapeRender.setTransformMatrix(staticCamera.combined);
+		worldCamera.update();
+		batch.setProjectionMatrix(worldCamera.combined);
+//		shapeRender.setTransformMatrix(staticCamera.combined);
 		drawBackGround() ; 
 		
 		batch.begin() ;

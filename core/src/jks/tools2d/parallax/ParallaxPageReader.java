@@ -122,7 +122,8 @@ public class ParallaxPageReader
 		set_newLayer_Color(color);
 	}
 	
-	/*
+	// TODO POSSIBLE OPTI
+	///*
 	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
 		cachedProjectionView.set(worldCamera.combined);
@@ -155,7 +156,7 @@ public class ParallaxPageReader
 	}
 	//*/
 	
-	///*
+	/*
 	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
 		cachedProjectionView.set(worldCamera.combined);
@@ -251,6 +252,7 @@ public class ParallaxPageReader
 		newLayer_transfertLvl = 0 ; 
 		oldLayer_transfertLvl = 0 ; 
 	}
+	
 	
 	public void act(float delta,float speed) 
 	{
