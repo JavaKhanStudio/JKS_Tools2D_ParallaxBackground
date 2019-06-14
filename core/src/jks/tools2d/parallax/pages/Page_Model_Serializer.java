@@ -15,7 +15,7 @@ public class Page_Model_Serializer extends Serializer<Page_Model>
 	{
 		output.writeString(object.atlasName);
 		output.writeBoolean(object.outside);
-		output.writeBoolean(object.moveOnX);
+		output.writeBoolean(object.repeatOnX);
 		kryo.writeObject(output, object.pageList);
 	}
 	
@@ -25,7 +25,7 @@ public class Page_Model_Serializer extends Serializer<Page_Model>
 		Page_Model page = new Page_Model() ; 
 		page.atlasName = input.readString() ; 
 		page.outside = input.readBoolean() ; 
-		page.moveOnX = input.readBoolean() ; 
+		page.repeatOnX = input.readBoolean() ; 
 		page.pageList = kryo.readObject(input, ArrayList.class); 
 		return page;
 	}

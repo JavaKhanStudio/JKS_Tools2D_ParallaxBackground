@@ -25,7 +25,7 @@ allprojects
     ext 
     {
         appName = 'ParallaxBackground'
-        gdxVersion = '1.9.8'
+        gdxVersion = '1.9.9'
         roboVMVersion = '2.3.5'
         visuiVersion = '1.4.2'
     }
@@ -51,6 +51,7 @@ project(":test")
      	compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
   		compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
   		compile "com.badlogicgames.gdx:gdx-tools:$gdxVersion" 
+  		compile group: 'commons-io', name: 'commons-io', version: '2.4'
     }
 }
 
@@ -63,6 +64,7 @@ project(":core")
      	compile "com.badlogicgames.gdx:gdx:$gdxVersion"
      	compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
      	compile "com.esotericsoftware:kryo:5.0.0-RC1"
+     	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.0.1'
 	}
 }
 
@@ -81,6 +83,7 @@ project(":editor")
   		compile "com.badlogicgames.gdx:gdx:$gdxVersion"
     	compile "com.kotcrab.vis:vis-ui:$visuiVersion"
     	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
+    	
   	}
 }
 
