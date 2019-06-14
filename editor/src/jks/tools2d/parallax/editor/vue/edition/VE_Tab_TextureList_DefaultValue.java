@@ -36,6 +36,7 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 	
 	Table mainTable ; 
 	
+	ButtonGroup<VisCheckBox> groupeRadio ; 
 	VisCheckBox front,back, increment ; 
 	
 	ImageButton setBackToFrontButton, setFrontToBackButton ; 
@@ -56,7 +57,7 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				getDefaults().setIncrementBackToFront();
+				getDefaults().setIncrementBackToFront(); update();
 			}
 		}) ; 
 		
@@ -70,7 +71,7 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				getDefaults().setIncrementFrontToBack();
+				getDefaults().setIncrementFrontToBack(); update();
 			}
 		}) ; 
 		
@@ -112,10 +113,10 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{getDefaults().doIncrement(false) ; update() ; }
 		}) ; 
-		
-		
-		ButtonGroup<VisRadioButton> groupeRadio = new ButtonGroup<VisRadioButton>() ;
-		front = new VisRadioButton("Front");
+
+		groupeRadio = new ButtonGroup<VisCheckBox>() ;
+	
+		front = new VisCheckBox("Add at Front");
 		front.addListener(new InputListener()
 		{		
 			@Override
@@ -130,7 +131,7 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			}
 		}) ; 
 		
-		back = new VisRadioButton("Back");
+		back = new VisCheckBox("Add at Back");
 		back.addListener(new InputListener()
 		{		
 			@Override
@@ -144,6 +145,9 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			
 			}
 		}) ; 
+		
+		groupeRadio.add(front);
+		groupeRadio.add(back);
 		
 		flipX = new VisCheckBox("Flip X") ;
 		flipX.addListener(new InputListener()
@@ -285,6 +289,10 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 		mainTable.add(setBackToFrontButton).colspan(1) ;
 		mainTable.add(setFrontToBackButton).colspan(1) ;
 		mainTable.row() ; 
+		mainTable.add(back) ; 
+		mainTable.add(front) ;
+		mainTable.row() ; 
+				
 		mainTable.add(increment).colspan(2).row()  ; 
 		mainTable.add(incrementOnce).padRight(10) ; 
 		mainTable.add(decrementOnce).row() ;
@@ -325,6 +333,11 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 	public void update()
 	{	
 		increment.setChecked(getDefaults().increment);
+		
+		if(getDefaults().addInFront)
+			front.setChecked(true);
+		else
+			back.setChecked(true);
 		
 		flipX.setChecked(getDefaults().defaultModel.isFlipX());
 		flipY.setChecked(getDefaults().defaultModel.isFlipY());

@@ -93,17 +93,18 @@ public class VE_Tab_ColorConfig extends Tab
 				{
 					if(!activeBox.isChecked())
 					{
-						parallax_Heart.topSquare = null ; 
+						parallax_Heart.topSquare.visible = false ; 
 						topPicker.setVisible(false);
 						bottomPicker.setVisible(false);
 					}
 					else
 					{
-						parallax_Heart.topSquare = new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0,true) ;
-						
-						topPicker.setListener(buildListener(topPicker,parallax_Heart.topSquare, true,false));
-						bottomPicker.setListener(buildListener(bottomPicker,parallax_Heart.topSquare, false,false));
-						
+						parallax_Heart.topSquare.visible = true ; 
+//						= new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0,true) ;
+//						
+//						topPicker.setListener(buildListener(topPicker,parallax_Heart.topSquare, true,false));
+//						bottomPicker.setListener(buildListener(bottomPicker,parallax_Heart.topSquare, false,false));
+//						
 						topPicker.setVisible(true);
 						bottomPicker.setVisible(true);
 						topPicker.updateUI() ;
@@ -114,16 +115,17 @@ public class VE_Tab_ColorConfig extends Tab
 				{
 					if(!activeBox.isChecked())
 					{
-						parallax_Heart.bottomSquare = null ; 
+						parallax_Heart.bottomSquare.visible = false ; 
 						topPicker.setVisible(false);
 						bottomPicker.setVisible(false);
 					}
 					else
 					{
-						parallax_Heart.bottomSquare = new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0.5f,false) ;
-						
-						topPicker.setListener(buildListener(topPicker,parallax_Heart.bottomSquare, true,false));
-						bottomPicker.setListener(buildListener(bottomPicker,parallax_Heart.bottomSquare, false,false));
+						parallax_Heart.bottomSquare.visible = true ;  
+//						= new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0.5f,false) ;
+//						
+//						topPicker.setListener(buildListener(topPicker,parallax_Heart.bottomSquare, true,false));
+//						bottomPicker.setListener(buildListener(bottomPicker,parallax_Heart.bottomSquare, false,false));
 						
 						topPicker.setVisible(true);
 						bottomPicker.setVisible(true);

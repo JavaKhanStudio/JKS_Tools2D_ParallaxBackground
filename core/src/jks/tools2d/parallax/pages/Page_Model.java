@@ -9,7 +9,10 @@ public class Page_Model
 {
 	public String atlasName ; 
 	public boolean outside ; 
-	public boolean moveOnX ; 
+	
+	public boolean repeatOnX = true ; 
+	public boolean repeatOnY = false ; 
+	
 	public ArrayList<Parallax_Model> pageList ; 
 	
 	public Page_Model()

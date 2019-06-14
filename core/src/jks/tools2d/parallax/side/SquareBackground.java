@@ -17,6 +17,7 @@ public class SquareBackground
 	Color top_ColorObjectif ;
 	
 	boolean inTransfert ; 
+	public boolean visible = true; 
 	float transfertTimmer ;
 	float transfertStop ; 
 	
@@ -104,7 +105,8 @@ public class SquareBackground
 	
 	public void draw(ShapeRenderer render)
 	{
-		render.rect(posX, posY, width, height, bottomColor, bottomColor, topColor, topColor);
+		if(visible)
+			render.rect(posX, posY, width, height, bottomColor, bottomColor, topColor, topColor);
 	}
 	
 }

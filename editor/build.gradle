@@ -12,8 +12,8 @@ sourceSets
         java 
         {
             srcDir 'src'
-            srcDir 'assets'
-            srcDir 'mains'
+			srcDir 'assets'
+			srcDir 'mains'
         }
     }
 }
@@ -21,11 +21,13 @@ sourceSets
 
 
 project.ext.mainClassName = "jks.tools2d.parallax.Launcher_Editor"
-//project.ext.mainClassName = "jks.tools2d.parallax.Testing_Launcher"
 project.ext.assetsDir = new File("../editor/assets");
 
-eclipse.project {
-    name = appName + "_Editor"
+
+eclipse {
+    project {
+        name = appName + "_Editor"
+    }
 }
 
 task run(dependsOn: classes, type: JavaExec) {
@@ -118,7 +120,6 @@ task createFinalAppBundle(type: Exec, dependsOn: [cleanPackagerRuntime]) {
         System.out.println(" -> location: ${buildDir}/distribution/${project.name}/")
     }
 }
-
 
 task afterEclipseImport(description: "Post processing after project generation", group: "IDE") {
   doLast {

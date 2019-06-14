@@ -24,8 +24,8 @@ public class Parallax_Heart
 	public SquareBackground bottomSquare ;
 	
 	//  1 = nothing * 0 = full screen
-	public static float topSquarePercent = 0.5f; 
-	public static float bottomSquarePercent = 0.5f ;
+	//public static float topSquarePercent = 0.5f; 
+	//public static float bottomSquarePercent = 0.5f ;
 
 	public WholePage_Model currentPage ; 
 	public WholePage_Model currentTransfertPage ; 

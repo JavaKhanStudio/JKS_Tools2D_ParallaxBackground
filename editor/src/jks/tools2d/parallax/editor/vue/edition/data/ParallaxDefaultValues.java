@@ -27,24 +27,6 @@ public class ParallaxDefaultValues
 	
 	public void setIncrementBackToFront()
 	{
-		addInFront = true ; 
-		
-		defaultModel = new Parallax_Model() ;
-		defaultModel.sizeRatio = 1 ; 
-		defaultModel.parallaxScalingSpeedX = 0.01f ;
-		defaultModel.parallaxScalingSpeedY = 0.01f ; 
-		defaultModel.decal_Y_Ratio = 85 ;
-		
-		incrementValue = new Parallax_Model() ;
-		incrementValue.decal_X_Ratio = 10 ; 
-		incrementValue.decal_Y_Ratio = -8 ;
-		incrementValue.parallaxScalingSpeedX = 0.003f ; 
-		incrementValue.parallaxScalingSpeedY = 0.00025f ;
-		incrementValue.sizeRatio = 0 ; 
-	}
-	
-	public void setIncrementFrontToBack()
-	{
 		addInFront = false ;
 		
 		defaultModel = new Parallax_Model() ;
@@ -59,6 +41,24 @@ public class ParallaxDefaultValues
 		incrementValue.parallaxScalingSpeedX = -0.003f ; 
 		incrementValue.parallaxScalingSpeedY = -0.00025f ;
 		incrementValue.sizeRatio = -0.1f ; 
+	}
+	
+	public void setIncrementFrontToBack()
+	{
+		addInFront = true ; 
+		
+		defaultModel = new Parallax_Model() ;
+		defaultModel.sizeRatio = 1 ; 
+		defaultModel.parallaxScalingSpeedX = 0.01f ;
+		defaultModel.parallaxScalingSpeedY = 0.01f ; 
+		defaultModel.decal_Y_Ratio = 85 ;
+		
+		incrementValue = new Parallax_Model() ;
+		incrementValue.decal_X_Ratio = 10 ; 
+		incrementValue.decal_Y_Ratio = -8 ;
+		incrementValue.parallaxScalingSpeedX = 0.003f ; 
+		incrementValue.parallaxScalingSpeedY = 0.00025f ;
+		incrementValue.sizeRatio = 0 ; 
 	}
 	
 	

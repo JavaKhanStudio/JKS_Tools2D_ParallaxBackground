@@ -19,8 +19,11 @@ public class WholePage_Model
 {	
 	public Color topHalf_top ; 
 	public Color topHalf_bottom ;
+	public float topHalfSize ; 
+	
 	public Color bottomHalf_top ;
 	public Color bottomHalf_bottom ;
+	public float bottomHalfSize ; 
 	
 	public Page_Model pageModel ;
 	
@@ -31,11 +34,14 @@ public class WholePage_Model
 		topHalf_top = Color.WHITE ; 
 		topHalf_bottom = Color.WHITE ; 
 		bottomHalf_top = Color.WHITE ; 
-		bottomHalf_bottom = Color.WHITE ; 
+		bottomHalf_bottom = Color.WHITE ;
+		topHalfSize = 0.5f ;
+		bottomHalfSize = 0.5f ; 
 		
 		pageModel = new Page_Model() ; 
 	}
 	
+	// Testing constructor
 	public WholePage_Model(String atlasPath, Color topHalf_top, Color topHalf_bottom, Color bottomHalf_top, Color bottomHalf_bottom)
 	{
 		this.topHalf_top = topHalf_top ; 

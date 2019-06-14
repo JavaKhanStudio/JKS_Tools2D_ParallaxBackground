@@ -5,10 +5,11 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.GL20;
 
+import jks.tools2d.parallax.data.Enum_ColdNight;
 import jks.tools2d.parallax.heart.Parallax_Heart;
-import jks.tools2d.parallax.test.Enum_ColdNight;
-import jks.tools2d.parallax.test.inputs.GVars_Inputs;
-import jks.tools2d.parallax.test.inputs.InputProcessus;
+import jks.tools2d.parallax.inputs.GVars_Inputs;
+import jks.tools2d.parallax.inputs.InputProcessus;
+
 import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.parallax_Heart; 
 import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.parallax_Heart_second; 
 
@@ -24,7 +25,6 @@ public class Testing_Basic extends ApplicationAdapter
 		parallax_Heart = new Parallax_Heart(worldWidth, new AssetManager());
 		parallax_Heart_second = new Parallax_Heart(worldWidth, new AssetManager());
 
-	    parallax_Heart.topSquarePercent = 0.3f ; 
 	    parallax_Heart.parallaxPage.setDrawingHeight(2.4f);
 //	    Parallax_Utils_Astre.startAstre(Enum_AstreType.SUN, 10);
 		

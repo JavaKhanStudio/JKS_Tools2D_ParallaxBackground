@@ -1,9 +1,11 @@
 package jks.tools2d.parallax.editor.vue;
 
-import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.*;
+import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.ATLAS;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX;
-import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.*;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
+import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX_PROJECT;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.datas;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.infos;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.relativePath;
 
 import java.io.File;
 import java.io.FileFilter;
