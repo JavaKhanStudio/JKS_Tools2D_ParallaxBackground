@@ -20,6 +20,9 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 		output.writeFloat(object.topHalfSize) ; 
 		output.writeFloat(object.bottomHalfSize) ; 
 		
+		output.writeBoolean(object.repeatOnX);
+		output.writeBoolean(object.repeatOnY);
+		
 		kryo.writeObject(output, object.pageModel);
 	}	
 
@@ -34,11 +37,14 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 		page.bottomHalf_top = kryo.readObject(input,Color.class) ; 
 		page.bottomHalf_bottom = kryo.readObject(input,Color.class) ; 
 		
-//		page.topHalfSize = input.readFloat() ; 
-//		page.bottomHalfSize = input.readFloat() ; 
-		input.readFloat() ;  input.readFloat() ; 
-		page.topHalfSize = 0.5f ; 
-		page.bottomHalfSize = 0.5f ; 
+		page.topHalfSize = input.readFloat() ; 
+		page.bottomHalfSize = input.readFloat() ; 
+//		input.readFloat() ;  input.readFloat() ; 
+//		page.topHalfSize = 0.5f ; 
+//		page.bottomHalfSize = 0.5f ; 
+		
+		page.repeatOnX = input.readBoolean() ; 
+		page.repeatOnY = input.readBoolean() ; 
 		
 		page.pageModel = kryo.readObject(input,Page_Model.class) ; 
 		return page;

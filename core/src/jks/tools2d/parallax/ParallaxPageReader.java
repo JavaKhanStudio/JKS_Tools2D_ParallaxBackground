@@ -1,14 +1,11 @@
 package jks.tools2d.parallax;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -18,8 +15,8 @@ public class ParallaxPageReader
 {
 	public ArrayList<ParallaxLayer> layers;
 
-	private Matrix4 cachedProjectionView;
-	private float cachedZoom;
+	private boolean repeatOnX,repeatOnY  ; 
+
 	private float drawingHeight  ;
 	
 	public ArrayList<ParallaxLayer> transferLayers;
@@ -41,43 +38,17 @@ public class ParallaxPageReader
 	
 	private Vector3 cachedPos;
 	
-	/**
-	 * Create a ParallaxBackground without any layers
-	 */
 	public ParallaxPageReader()
 	{
 		initialize();
 		cachedPos = new Vector3() ; 
 	}
 	
-
-	/**
-	 * Create a ParallaxBackground instance with the layers added
-	 * @param layers layers to be added to the parallaxBackground
-	 */
-	public ParallaxPageReader(ParallaxLayer... layers)
-	{
-		initialize();
-		Collections.addAll(this.layers, layers);
-		cachedPos = new Vector3() ; 
-	}
-	
-
 	
     private void initialize() 
     {
     	layers = new ArrayList<ParallaxLayer>();
     	transferLayers = new ArrayList<ParallaxLayer>();
-		cachedProjectionView = new Matrix4();
-	}
-	
-	/**
-	 * Add the layers to the {@link #layers} array. These layers are rendered over the layers previously in the layers array
-	 * @param layers layers to be added to the parallaxBackground
-	 */
-	public void addLayers(ParallaxLayer... layers)
-	{
-		Collections.addAll(this.layers, layers);
 	}
 	
 	public void addLayers(List<ParallaxLayer> newLayers) 
@@ -122,18 +93,28 @@ public class ParallaxPageReader
 		set_newLayer_Color(color);
 	}
 	
-	// TODO POSSIBLE OPTI
-	///*
 	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
-		cachedProjectionView.set(worldCamera.combined);
-		cachedZoom = worldCamera.zoom;
 		
+		if(repeatOnY && repeatOnX)
+		{
+			drawOnXY(worldCamera,batch) ; 
+		}
+		else if(repeatOnY)
+		{
+			drawOnY(worldCamera,batch) ; 
+		}
+		else if(repeatOnX)
+		{	
+			drawOnX(worldCamera,batch) ; 
+		}
+		
+		batch.setColor(1,1,1,1);	
+	}
+	
+	private void drawOnXY(OrthographicCamera worldCamera, Batch batch) 
+	{
 		ParallaxLayer layer ; 
-		Vector2 origCameraPos ; 
-		
-		float currentViewportDecal = (moveOnX ? worldCamera.viewportHeight : worldCamera.viewportWidth) * (worldCamera.zoom/2);
-
 		for(int i = 0; i < layers.size(); i++)
 		{
 			layer = layers.get(i);
@@ -141,96 +122,80 @@ public class ParallaxPageReader
     		
     		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
     		
-    		for(float a = layer.getWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX ; a+= layer.getWidth())
+    		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX ; a+= layer.getTotalWidth())
     			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY); 
     		
-    		for(float a = 1 ; layer.currentDistanceX - a * layer.getWidth() > -layer.getWidth() ; a++)
-    			layer.draw(batch, layer.currentDistanceX - a * layer.getWidth(), drawingHeight + layer.currentDistanceY); 
+    		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth() > -layer.getTotalWidth() ; a++)
+    			layer.draw(batch, layer.currentDistanceX - a * layer.getTotalWidth(), drawingHeight + layer.currentDistanceY); 
     		
-    		
+    		for(float a = layer.getTotalHeight(); a < worldCamera.viewportHeight - layer.currentDistanceY ; a+= layer.getTotalHeight())
+    		{
+    			layer.draw(batch, layer.currentDistanceX , drawingHeight  + a + layer.currentDistanceY); 
+    			for(float b = layer.getTotalWidth(); b < worldCamera.viewportWidth - layer.currentDistanceX ; b+= layer.getTotalWidth())
+        			layer.draw(batch, layer.currentDistanceX + b, drawingHeight  + a + layer.currentDistanceY); 
+    			for(float b = 1 ; layer.currentDistanceX - b * layer.getTotalWidth() > -layer.getWidth() ; b++)
+	    			layer.draw(batch, layer.currentDistanceX - b * layer.getTotalWidth(), drawingHeight  + a + layer.currentDistanceY); 	    		
+    		}
+		
+			for(float a = 1 ; layer.currentDistanceY - (a * layer.getTotalHeight()) > -layer.getHeight() ; a++)
+			{
+				layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY - (a * layer.getTotalHeight())); 
+				for(float b = layer.getTotalWidth(); b < worldCamera.viewportWidth - layer.currentDistanceX ; b+= layer.getTotalWidth())
+	    			layer.draw(batch, layer.currentDistanceX + b, drawingHeight + layer.currentDistanceY - (a * layer.getTotalHeight())); 
+	    		
+	    		for(float b = 1 ; layer.currentDistanceX - b * layer.getTotalWidth() > -layer.getWidth() ; b++)
+	    			layer.draw(batch, layer.currentDistanceX - b * layer.getTotalWidth(), drawingHeight + layer.currentDistanceY - (a * layer.getTotalHeight())); 	    		
+			}
+
     		if(inTransfer)
 		    	compute_Color_Transfert(batch) ;	    		    
-		}
-		
-		batch.setColor(1,1,1,1);	
+		}	
 	}
-	//*/
-	
-	/*
-	public void draw(OrthographicCamera worldCamera, Batch batch)
+
+
+	public void drawOnX(OrthographicCamera worldCamera, Batch batch)
 	{
-		cachedProjectionView.set(worldCamera.combined);
-		cachedPos.set(worldCamera.position);
-		cachedZoom = worldCamera.zoom;
-		
 		ParallaxLayer layer ; 
-		Vector2 origCameraPos ; 
-		
-		float currentX  ; 
-		float currentY ;
-		float currentViewportWidth = worldCamera.viewportWidth * (worldCamera.zoom/2) ;
-		float currentViewportHeight =  worldCamera.viewportHeight * (worldCamera.zoom/2);
-		
 		for(int i = 0; i < layers.size(); i++)
 		{
 			layer = layers.get(i);
-			origCameraPos = new Vector2(cachedPos.x,cachedPos.y);
-			
-			worldCamera.position.set(origCameraPos.scl(layer.getParallaxSpeedRatio()),cachedPos.z);
-		    worldCamera.update();
-		    batch.setProjectionMatrix(worldCamera.combined);
- 
-		    if(inTransfer)
-		    	compute_Color_Transfert(batch) ;
-		    
-		    currentX = layer.currentX ;
-		    currentY = layer.currentY ; 
-		    		    
-		    do
-			{
-		    	currentY =  (!layer.isRepeat_tileY() ? 0 : ((int)((worldCamera.position.y-worldCamera.viewportHeight*.5f*worldCamera.zoom) / layer.getHeight())) * layer.getHeight())-(((1-layer.getParallaxSpeedRatio().y)%1)*worldCamera.viewportHeight*.5f);
-		    	
-	            do
-	            {
-	            	if(! ((worldCamera.position.x - currentViewportWidth - layer.getCurrentDistanceX() >= currentX + layer.getWidth())
-            		   || (worldCamera.position.x + currentViewportWidth - layer.getCurrentDistanceX() <= currentX )  
-            		   || (worldCamera.position.y - currentViewportHeight - layer.getCurrentDistanceY() > currentY + layer.getHeight() * 1.35f) 
-            		   || (worldCamera.position.y + currentViewportHeight - layer.getCurrentDistanceY() < currentY)))
-	               {	            		
-	            		
-	            		batch.setColor(oldLayer_transfertColor);
-	            		
-	            		layer.draw(batch, currentX + layer.currentDistanceX, currentY + drawingHeight + layer.currentDistanceY); 
-	            		
-	            		if(inTransfer)
-	            		{
-	            			batch.setColor(newLayer_transfertColor);
-	            			transferLayers.get(i).draw(batch, currentX + layer.currentDistanceX, currentY + drawingHeight);
-	            		}
-	               }
-	                   
-	               currentY += layer.getHeight();
-	               
-	               if(!layer.isRepeat_tileY())
-		        	     break;
-	               
-	            } while(currentY < worldCamera.position.y + currentViewportHeight);
-		            	
-	            currentX += layer.getWidth();
-	           
-	            if(!layer.repeat_tileX)
-	        	    break;
-		            
-		    } while(currentX + layer.getCurrentDistanceX() < worldCamera.position.x + currentViewportWidth);
-		}
-		
-		worldCamera.combined.set(cachedProjectionView);
-		worldCamera.position.set(cachedPos);
-		worldCamera.zoom = cachedZoom;
-		worldCamera.update();
-		batch.setColor(1,1,1,1);	
+			batch.setColor(oldLayer_transfertColor);
+    		
+    		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
+    		
+    		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX ; a+= layer.getTotalWidth())
+    			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY); 
+    		
+    		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
+    			layer.draw(batch, layer.currentDistanceX - (a * layer.getTotalWidth()), drawingHeight + layer.currentDistanceY); 
+    		
+    		if(inTransfer)
+		    	compute_Color_Transfert(batch) ;	    		    
+		}	
 	}
-//	*/
+	
+	public void drawOnY(OrthographicCamera worldCamera, Batch batch)
+	{
+		ParallaxLayer layer ; 
+		for(int i = 0; i < layers.size(); i++)
+		{
+			layer = layers.get(i);
+			batch.setColor(oldLayer_transfertColor);
+    		
+    		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
+    		
+    		for(float a = layer.getTotalHeight() ; a < worldCamera.viewportHeight - layer.currentDistanceY ; a+= layer.getTotalHeight())
+    			layer.draw(batch, layer.currentDistanceX , drawingHeight  + a + layer.currentDistanceY); 
+    		
+    		for(float a = 1 ; layer.currentDistanceY - a * layer.getTotalHeight() > -layer.getHeight() ; a++)
+    			layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY - a * layer.getTotalHeight()); 
+    			
+    		if(inTransfer)
+		    	compute_Color_Transfert(batch) ;	    		    
+		}	
+	}
+	
+
 	
 	public void compute_Color_Transfert(Batch batch)
 	{
@@ -253,10 +218,16 @@ public class ParallaxPageReader
 		oldLayer_transfertLvl = 0 ; 
 	}
 	
-	
-	public void act(float delta,float speed) 
+	public void resetPositions()
 	{
-		layers.stream().forEach(x -> x.act(delta,speed));
+		layers.stream().forEach(x -> x.resetPosition()) ; 
+		
+	}
+
+	
+	public void act(float delta,float speedX,float speedY) 
+	{
+		layers.stream().forEach(x -> x.act(delta,speedX,speedY,repeatOnX,repeatOnY));
 
 		if(inTransfer)
 		{
@@ -304,5 +275,17 @@ public class ParallaxPageReader
 
 	public void setInTransfer(boolean inTransfer) 
 	{this.inTransfer = inTransfer;}
+
+	public boolean isRepeatOnX()
+	{return repeatOnX;}
+
+	public void setRepeatOnX(boolean repeatOnX) 
+	{this.repeatOnX = repeatOnX;}
+
+	public boolean isRepeatOnY() 
+	{return repeatOnY;}
+
+	public void setRepeatOnY(boolean repeatOnY) 
+	{this.repeatOnY = repeatOnY;}
 
 }

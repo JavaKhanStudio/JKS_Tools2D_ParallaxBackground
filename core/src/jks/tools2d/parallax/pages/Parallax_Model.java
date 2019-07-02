@@ -5,8 +5,8 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 @DefaultSerializer(Parallax_Model_Serializer.class)
 public class Parallax_Model 
 {
-	public String region_Name ; 
-	public int region_Position ;
+	public String regionName ; 
+	public int regionPosition ;
 	public boolean flipX ; 
 	public boolean flipY ; 
 	
@@ -18,20 +18,12 @@ public class Parallax_Model
 	public float decal_X_Ratio ; 
 	public float decal_Y_Ratio ; 
 	
-	public float padMin ; 
-	public float padFactor ;
+	public float padX ; 
+	public float padXFactor ;
 	
-	public String getRegion_Name()
-	{return region_Name;}
+	public float padY ; 
+	public float padYFactor ;
 	
-	public void setRegion_Name(String region_Name)
-	{this.region_Name = region_Name;}
-	
-	public int getRegion_Position()
-	{return region_Position;}
-	
-	public void setRegion_Position(int region_Position)
-	{this.region_Position = region_Position;}
 	
 	public boolean isFlipX()
 	{return flipX;}
@@ -81,16 +73,4 @@ public class Parallax_Model
 	public void setDecal_Y_Ratio(float decal_Y_Ratio)
 	{this.decal_Y_Ratio = decal_Y_Ratio;}
 	
-	public float getPadMin()
-	{return padMin;}
-	
-	public void setPadMin(float padMin)
-	{this.padMin = padMin;}
-	
-	public float getPadFactor()
-	{return padFactor;}
-	
-	public void setPadFactor(float padFactor)
-	{this.padFactor = padFactor;} 
-
 }

@@ -9,14 +9,18 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.DefaultSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.side.SquareBackground;
 
 @DefaultSerializer(WholePage_Model_Serializer.class)
+@JsonIgnoreProperties(value = { "preloadValue" })
 public class WholePage_Model
 {	
+	
 	public Color topHalf_top ; 
 	public Color topHalf_bottom ;
 	public float topHalfSize ; 
@@ -24,6 +28,9 @@ public class WholePage_Model
 	public Color bottomHalf_top ;
 	public Color bottomHalf_bottom ;
 	public float bottomHalfSize ; 
+	
+	public boolean repeatOnX = true ; 
+	public boolean repeatOnY = false ;
 	
 	public Page_Model pageModel ;
 	
@@ -61,6 +68,7 @@ public class WholePage_Model
 		pageModel.outside = false ; 
 	}
 
+	@JsonIgnore
 	public List<ParallaxLayer> getDrawing()
 	{
 		if(preloadValue == null)
@@ -69,6 +77,7 @@ public class WholePage_Model
 		return preloadValue ; 
 	}
 	
+	@JsonIgnore
 	public List<ParallaxLayer> getDrawing(String relativePath)
 	{
 		if("".equals(relativePath))
@@ -91,6 +100,7 @@ public class WholePage_Model
 	public SquareBackground buildBottomSquareBackground(float screenPercentage)
 	{return new SquareBackground(bottomHalf_top.cpy(),bottomHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage, false) ;}
 	
+	
 	public void preload()
 	{
 		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight()); 
@@ -101,6 +111,7 @@ public class WholePage_Model
 		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight(),relativePath); 
 	}
 	
+	@JsonIgnore
 	public void forceLoad(TextureAtlas atlas)
 	{
 		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight(),atlas); 
@@ -123,16 +134,14 @@ public class WholePage_Model
 	protected ParallaxLayer buildLayer(Parallax_Model parallax, TextureAtlas atlas,float worldWidth)
 	{
 		ParallaxLayer layer = new ParallaxLayer(
-				atlas.findRegions(parallax.region_Name).get(parallax.region_Position), 
+				atlas.findRegions(parallax.regionName).get(parallax.regionPosition), 
 				true, 
 				worldWidth, 
 				new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY),
 				parallax.sizeRatio) ; 
 
-		layer.setDecalPercentY(parallax.decal_Y_Ratio);
-		layer.setDecalPercentX(parallax.decal_X_Ratio);
+		layer.setUpEverything(parallax);
 		
-		layer.setSpeedAtRest(parallax.speed);
 		return layer ; 
 	}
 	
@@ -157,5 +166,77 @@ public class WholePage_Model
 	{
 		pageModel.atlasName = pageModel.atlasName.substring(pageModel.atlasName.lastIndexOf("/") + 1, pageModel.atlasName.length()) ; 
 	}
-		
+
+	public Color getTopHalf_top() {
+		return topHalf_top;
+	}
+
+	public void setTopHalf_top(Color topHalf_top) {
+		this.topHalf_top = topHalf_top;
+	}
+
+	public Color getTopHalf_bottom() {
+		return topHalf_bottom;
+	}
+
+	public void setTopHalf_bottom(Color topHalf_bottom) {
+		this.topHalf_bottom = topHalf_bottom;
+	}
+
+	public float getTopHalfSize() {
+		return topHalfSize;
+	}
+
+	public void setTopHalfSize(float topHalfSize) {
+		this.topHalfSize = topHalfSize;
+	}
+
+	public Color getBottomHalf_top() {
+		return bottomHalf_top;
+	}
+
+	public void setBottomHalf_top(Color bottomHalf_top) {
+		this.bottomHalf_top = bottomHalf_top;
+	}
+
+	public Color getBottomHalf_bottom() {
+		return bottomHalf_bottom;
+	}
+
+	public void setBottomHalf_bottom(Color bottomHalf_bottom) {
+		this.bottomHalf_bottom = bottomHalf_bottom;
+	}
+
+	public float getBottomHalfSize() {
+		return bottomHalfSize;
+	}
+
+	public void setBottomHalfSize(float bottomHalfSize) {
+		this.bottomHalfSize = bottomHalfSize;
+	}
+
+	public boolean isRepeatOnX() {
+		return repeatOnX;
+	}
+
+	public void setRepeatOnX(boolean repeatOnX) {
+		this.repeatOnX = repeatOnX;
+	}
+
+	public boolean isRepeatOnY() {
+		return repeatOnY;
+	}
+
+	public void setRepeatOnY(boolean repeatOnY) {
+		this.repeatOnY = repeatOnY;
+	}
+
+	public Page_Model getPageModel() {
+		return pageModel;
+	}
+
+	public void setPageModel(Page_Model pageModel) {
+		this.pageModel = pageModel;
+	}
+
 }

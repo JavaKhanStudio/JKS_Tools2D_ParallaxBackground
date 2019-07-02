@@ -8,10 +8,7 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 public class Page_Model 
 {
 	public String atlasName ; 
-	public boolean outside ; 
-	
-	public boolean repeatOnX = true ; 
-	public boolean repeatOnY = false ; 
+	public boolean outside ;  
 	
 	public ArrayList<Parallax_Model> pageList ; 
 	
@@ -28,4 +25,29 @@ public class Page_Model
 		this.outside = outside ; 
 		this.pageList = pageList ; 
 	}
+
+	public String getAtlasName() {
+		return atlasName;
+	}
+
+	public void setAtlasName(String atlasName) {
+		this.atlasName = atlasName;
+	}
+
+	public boolean isOutside() {
+		return outside;
+	}
+
+	public void setOutside(boolean outside) {
+		this.outside = outside;
+	}
+
+	public ArrayList<Parallax_Model> getPageList() {
+		return pageList;
+	}
+
+	public void setPageList(ArrayList<Parallax_Model> pageList) {
+		this.pageList = pageList;
+	}
+	
 }

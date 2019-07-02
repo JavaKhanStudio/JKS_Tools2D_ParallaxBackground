@@ -26,8 +26,6 @@ public class Gvars_Parallax
 	public static void setManager(AssetManager newManager)
 	{manager = newManager ;}
 	
-
-
 	
 	public static float getWidthPercent()
 	{return worldWidth/100 ;}
@@ -35,18 +33,14 @@ public class Gvars_Parallax
 	public static float getHeightPercent()
 	{return worldHeight/100 ; }
 
-
 	public static float getWorldWidth()
 	{return worldWidth;}
-
 
 	public static void setWorldWidth(float worldWidth)
 	{Gvars_Parallax.worldWidth = worldWidth;}
 
-
 	public static float getWorldHeight()
 	{return worldHeight;}
-
 
 	public static void setWorldHeight(float worldHeight)
 	{Gvars_Parallax.worldHeight = worldHeight;}
