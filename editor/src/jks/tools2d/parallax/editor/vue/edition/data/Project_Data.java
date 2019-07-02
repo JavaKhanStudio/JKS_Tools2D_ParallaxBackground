@@ -9,6 +9,7 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 @DefaultSerializer(Project_Data_Serializer.class)
 public class Project_Data
 {
+	
 	public WholePage_Editor saving ; 
 	public ArrayList<Position_Infos> outsideInfos ; 
 	public ParallaxDefaultValues defaults ;
@@ -16,6 +17,6 @@ public class Project_Data
 	public void prepareForSaving(WholePage_Editor model)
 	{
 		saving = model ; 
-		outsideInfos = Utils_Saving.buildSavingOutsideValues(parallax_Heart.parallaxPage.layers) ; 
+		outsideInfos = Utils_Saving.buildSavingOutsideValues(parallax_Heart.parallaxReader.layers) ; 
 	}
 }

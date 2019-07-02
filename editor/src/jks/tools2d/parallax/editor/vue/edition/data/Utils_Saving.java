@@ -1,10 +1,10 @@
 package jks.tools2d.parallax.editor.vue.edition.data;
 
+import static jks.tools2d.parallax.editor.gvars.GVars_Serialization.objectMapper;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.datas;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.stream.Collectors;
 
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.PixmapPacker;
@@ -21,7 +20,7 @@ import com.esotericsoftware.kryo.io.Output;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
-import jks.tools2d.parallax.editor.gvars.GVars_Kryo;
+import jks.tools2d.parallax.editor.gvars.GVars_Serialization;
 import jks.tools2d.parallax.editor.vue.edition.VE_Options;
 import jks.tools2d.parallax.pages.Page_Model;
 import jks.tools2d.parallax.pages.Utils_Page;
@@ -36,11 +35,11 @@ public class Utils_Saving
 	{
 		try 
 		{
-			ArrayList<ParallaxLayer> parallaxs = parallax_Heart.parallaxPage.layers ; 
+			ArrayList<ParallaxLayer> parallaxs = parallax_Heart.parallaxReader.layers ; 
 			WholePage_Model outputFinalModel = buildSavingWholePageFlat(parallaxs) ; 
 			
 			Output output = new Output(new FileOutputStream(where + "/" + whatName + "." + FVars_Extensions.PARALLAX));
-			GVars_Kryo.kryo.writeObject(output, outputFinalModel);
+			GVars_Serialization.kryo.writeObject(output, outputFinalModel);
 	    	output.close();
 		}
 		catch(Exception e)
@@ -51,8 +50,32 @@ public class Utils_Saving
 		
 	}
 	
+	public static void saving_Parallax_Project(String where, String whatName)
+	{
+		try 
+		{
+			WholePage_Editor outputFinalModel = buildSavingWholePageAsProject() ; 
+			datas.prepareForSaving(outputFinalModel);
+			
+			// Version JSON
+			objectMapper.writeValue(new File(where + "/" + whatName + "." + FVars_Extensions.PARALLAX_PROJECT), datas); 
+			
+			// Version Kryo 
+			/*
+			Output output = new Output(new FileOutputStream(where + "/" + whatName + "." + FVars_Extensions.PARALLAX_PROJECT));
+			GVars_Kryo.kryo.writeObject(output, datas);
+	    	output.close();
+	    	*/
+		}
+		catch(Exception e)
+		{
+			// TODO GIVE SIGNAL
+			e.printStackTrace();
+		}
+	}
+	
 	@SuppressWarnings("unchecked")
-	public static ArrayList<Position_Infos> buildSavingOutsideValues(ArrayList<ParallaxLayer> parallaxs)
+	static ArrayList<Position_Infos> buildSavingOutsideValues(ArrayList<ParallaxLayer> parallaxs)
 	{	
 		return new ArrayList(parallaxs.stream().filter(
 				x -> !GVars_Vue_Edition.imageRef.get(x.getTexRegion()).fromAtlas)
@@ -92,8 +115,9 @@ public class Utils_Saving
 		return outputFinalModel ; 	
 	}
 	
-	public static WholePage_Editor buildSavingWholePageAsProject(ArrayList<ParallaxLayer> parallaxs)
+	public static WholePage_Editor buildSavingWholePageAsProject()
 	{
+		ArrayList<ParallaxLayer> parallaxs = parallax_Heart.parallaxReader.layers ; 
 		WholePage_Editor outputFinalModel = new WholePage_Editor() ;
 		Page_Model outputModel = new Page_Model() ; 
 		
@@ -120,29 +144,12 @@ public class Utils_Saving
 		}
 		
 		outputFinalModel.pageModel = outputModel ; 
+		outputFinalModel.repeatOnX = parallax_Heart.parallaxReader.isRepeatOnX(); 
+		outputFinalModel.repeatOnY = parallax_Heart.parallaxReader.isRepeatOnY(); 
 		
 		return outputFinalModel ; 
-		
 	}
 	
-	public static void saving_Parallax_Project(String where, String whatName)
-	{
-		try 
-		{
-			ArrayList<ParallaxLayer> parallaxs = parallax_Heart.parallaxPage.layers ; 
-			WholePage_Editor outputFinalModel = buildSavingWholePageAsProject(parallaxs) ; 
-			datas.prepareForSaving(outputFinalModel);
-			
-			Output output = new Output(new FileOutputStream(where + "/" + whatName + "." + FVars_Extensions.PARALLAX_PROJECT));
-			GVars_Kryo.kryo.writeObject(output, datas);
-	    	output.close();
-		}
-		catch(Exception e)
-		{
-			// TODO GIVE SIGNAL
-			e.printStackTrace();
-		}
-	}
 	
 	public void packTexture(String path,String name,ParallaxLayer layer)
 	{

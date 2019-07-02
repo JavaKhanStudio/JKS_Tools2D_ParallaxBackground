@@ -27,14 +27,13 @@ public class Launcher_Editor_Test
 	            }
 	        });
 	
-			new Lwjgl3Application(new Main_Editor_Test(), config);
-			
+			new Lwjgl3Application(new Main_Editor_Test(), config);		
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
-//			JOptionPane.showMessageDialog(null, e.getMessage());
 		}
+		
 		System.exit(0);
 	}
 }

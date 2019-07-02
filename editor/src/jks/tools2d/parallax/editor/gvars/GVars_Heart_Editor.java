@@ -8,13 +8,13 @@ public class GVars_Heart_Editor
 //	public static float screenMovementSpeed = 10.5f;
 	public static float screenMovementSpeed = 1000.5f;
 	public static boolean autoMoveScreen = true ; 
-	public static boolean inDebug = false ; 
+	public static boolean inDebug = true ; 
 	public static AVue_Model vue;
 	
 	public static void init()
 	{
 		GVars_Ui.init();
-		GVars_Kryo.init() ; 
+		GVars_Serialization.init() ; 
 	}
 
 	public static void changeVue(AVue_Model View,boolean cleanAll) 

@@ -2,7 +2,11 @@ package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.getDefaults;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setItems;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.sizeTabsBar;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Selection;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureLink;
 
 import java.util.ArrayList;
 
@@ -21,7 +25,6 @@ import jks.tools2d.libgdxutils.JksTextureList;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
-import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.heart.Gvars_Parallax; 
 
 public class VE_Tab_TextureList_Adding extends Tab
@@ -64,7 +67,6 @@ public class VE_Tab_TextureList_Adding extends Tab
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
 				TextureRegion text = imageList.getSelected() ; 
-				Position_Infos infoss = GVars_Vue_Edition.imageRef.get(imageList.getSelected()) ; 
 				GVars_Vue_Edition.imageRef.put(text, GVars_Vue_Edition.imageRef.get(imageList.getSelected())) ;
 				ParallaxLayer layer = new ParallaxLayer(
 						text,
@@ -72,37 +74,9 @@ public class VE_Tab_TextureList_Adding extends Tab
 						Gvars_Parallax.getWorldWidth(), 
 						new Vector2(.01f,.01f),
 						1) ; 
-				
-				layer.setFlipX(getDefaults().defaultModel.flipX,getDefaults().defaultModel.flipX);
-				layer.setFlipY(getDefaults().defaultModel.flipY,getDefaults().defaultModel.flipY);
-				layer.setDecalPercentX(getDefaults().defaultModel.decal_X_Ratio);
-				layer.setDecalPercentY(getDefaults().defaultModel.decal_Y_Ratio);
-				layer.setSizeRatio(getDefaults().defaultModel.sizeRatio);
-				layer.setSpeedAtRest(getDefaults().defaultModel.speed);
-				layer.getParallaxSpeedRatio().x = getDefaults().defaultModel.parallaxScalingSpeedX ; 
-				layer.getParallaxSpeedRatio().y = getDefaults().defaultModel.parallaxScalingSpeedY ; 
-				
-				if(getDefaults().addInFront)
-					parallax_Heart.parallaxPage.layers.add(layer);
-				else
-					parallax_Heart.parallaxPage.layers.add(0,layer);
-				
-				if(getDefaults().increment)
-					getDefaults().doIncrement(true) ; 
-				
-				GVars_Vue_Edition.selectLayer(layer) ; 
-				
-				ArrayList<ParallaxLayer> linkList = textureLink.get(text) ; 
-				if(linkList == null)
-				{
-					linkList = new ArrayList<ParallaxLayer>() ; 
-					textureLink.put(text, linkList) ; 
-				}
-				
-				if(getDefaults().addInFront)
-					linkList.add(layer) ; 
-				else
-					linkList.add(0,layer) ; 
+
+				layer.setUpEverything(getDefaults().defaultModel);
+				addItem(layer) ; 
 				
 				return true ; 
 			}
@@ -126,8 +100,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 	
 		};		
 	
-		setItems() ; 
-		
+		setItems() ;
 		
 		contentsPane = new ScrollPane(imageList,baseSkin) ; 
 		contentsPane.setFadeScrollBars(false);
@@ -140,6 +113,41 @@ public class VE_Tab_TextureList_Adding extends Tab
 		mainTable.addActor(button_addData);		
 	}
 
+	public static void addItem(ParallaxLayer layer)
+	{
+		if(getDefaults().addInFront)
+			addItem(layer,-1) ; 
+		else
+			addItem(layer,0) ; 
+	}
+	
+	public static void addItem(ParallaxLayer layer, int position)
+	{
+		if(position == -1)
+			parallax_Heart.parallaxReader.layers.add(layer);
+		else
+			parallax_Heart.parallaxReader.layers.add(position,layer);
+		
+		if(getDefaults().increment)
+			getDefaults().doIncrement(true) ; 
+		
+		GVars_Vue_Edition.selectLayer(layer) ; 
+		
+		ArrayList<ParallaxLayer> linkList = textureLink.get(layer.getTexRegion()) ; 
+		if(linkList == null)
+		{
+			linkList = new ArrayList<ParallaxLayer>() ; 
+			textureLink.put(layer.getTexRegion(), linkList) ; 
+		}
+		
+		linkList.add(layer) ; 
+		/*
+		if(position == - 1)
+			linkList.add(layer) ; 
+		else
+			linkList.add(position,layer) ; 
+		*/
+	}
 	
 
 	@Override

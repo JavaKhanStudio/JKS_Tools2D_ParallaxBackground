@@ -16,27 +16,23 @@ public class Parallax_Heart
 {
 	public OrthographicCamera worldCamera;
 	public SpriteBatch batch;
-	public ParallaxPageReader parallaxPage;
+	public ParallaxPageReader parallaxReader;
 	
 	// Background
 	public ShapeRenderer shapeRender ; 
 	public SquareBackground topSquare ;
 	public SquareBackground bottomSquare ;
+	//
 	
-	//  1 = nothing * 0 = full screen
-	//public static float topSquarePercent = 0.5f; 
-	//public static float bottomSquarePercent = 0.5f ;
-
 	public WholePage_Model currentPage ; 
 	public WholePage_Model currentTransfertPage ; 
-
-//	public static SolarAstre astres ; 
-	public boolean useTimeOfDay ; 
 	
-	public float screenSpeedConsumable ; 
-	public float screenSpeedConstant ; 
+	public float screenSpeedConsumableX ; 
+	public float screenSpeedConstantX ; 
 	
-	public static boolean debug ; 
+	public float screenSpeedConsumableY ; 
+	public float screenSpeedConstantY ; 
+	
 	public String relativePath = "";
 	
 	public Parallax_Heart(float worldWidth,AssetManager manager) 
@@ -46,15 +42,11 @@ public class Parallax_Heart
 	
 		worldCamera = new OrthographicCamera() ;
 		worldCamera.setToOrtho(false,Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight());
-//		worldCamera.position.add(10000, 0, 0);
-		
-		
-//		staticCamera = new PerspectiveCamera() ;
 		
 		batch = new SpriteBatch();
 
 		shapeRender = new ShapeRenderer() ;
-		parallaxPage = new ParallaxPageReader();
+		parallaxReader = new ParallaxPageReader();
 		Gvars_Parallax.setManager(manager) ; 
 	}
 	
@@ -72,7 +64,7 @@ public class Parallax_Heart
 		this.batch = batch;
 
 		shapeRender = new ShapeRenderer() ;
-		parallaxPage = new ParallaxPageReader(); 
+		parallaxReader = new ParallaxPageReader(); 
 	}
 	
 	public Parallax_Heart(
@@ -104,22 +96,21 @@ public class Parallax_Heart
 		if(bottomSquare != null)
 			bottomSquare.act(delta);
 		
-		if(parallaxPage != null)
-			parallaxPage.act(delta,screenSpeedConsumable + screenSpeedConstant);	
+		if(parallaxReader != null)
+			parallaxReader.act(delta,screenSpeedConsumableX + screenSpeedConstantX,screenSpeedConsumableY + screenSpeedConstantY);	
 		
-		screenSpeedConsumable = 0 ; 
+		screenSpeedConsumableX = 0 ; 
+		screenSpeedConsumableY = 0 ; 
 	}
 
 	public void render()
 	{
 		worldCamera.update();
 		batch.setProjectionMatrix(worldCamera.combined);
-//		shapeRender.setTransformMatrix(staticCamera.combined);
 		drawBackGround() ; 
 		
 		batch.begin() ;
-//		parallaxPage.draw(worldCamera, batch, new Vector2());
-		parallaxPage.draw(worldCamera, batch);
+		parallaxReader.draw(worldCamera, batch);
 
 		batch.end();
 	}

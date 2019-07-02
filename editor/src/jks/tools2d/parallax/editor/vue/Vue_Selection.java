@@ -25,7 +25,7 @@ import jks.tools2d.filechooser.FileChooser_Listener;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_Kryo;
+import jks.tools2d.parallax.editor.gvars.GVars_Serialization;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
@@ -118,12 +118,19 @@ public class Vue_Selection extends AVue_Model
 		datas = new Project_Data() ; 
 		relativePath = infos.projectPath ; 
 		
-		if(PARALLAX.equals(file.extension()))
-			GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Kryo.kryo.readObject(new Input(file.read()),WholePage_Model.class)), true);
-		else if(ATLAS.equals(file.extension()))
-			GVars_Heart_Editor.changeVue(new Vue_Edition(new TextureAtlas(file)), true);
-		else if(PARALLAX_PROJECT.equals(file.extension()))
-			GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Kryo.kryo.readObject(new Input(file.read()),Project_Data.class)), true);
+		try
+		{
+			if(PARALLAX.equals(file.extension()))
+				GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Serialization.kryo.readObject(new Input(file.read()),WholePage_Model.class)), true);
+			else if(ATLAS.equals(file.extension()))
+				GVars_Heart_Editor.changeVue(new Vue_Edition(new TextureAtlas(file)), true);
+			else if(PARALLAX_PROJECT.equals(file.extension()))
+				GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Serialization.objectMapper.readValue(file.file(), Project_Data.class)), true);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 		
 	}
 	
@@ -131,7 +138,7 @@ public class Vue_Selection extends AVue_Model
 	@Override
 	public void destroy() 
 	{	
-		GVars_Ui.mainUi.clear();
+		GVars_Ui.reset();
 	}
 
 	@Override

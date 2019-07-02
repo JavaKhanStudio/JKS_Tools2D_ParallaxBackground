@@ -33,7 +33,6 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 		textField.addListener(new InputListener()
 		{
 			
-			
 			@Override
 			public boolean handle(Event e)
 			{
@@ -151,10 +150,7 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 	public void quit() 
 	{
 		if(inTextField)
-			textField.setCursorPosition(0);
-		
-		System.out.println("quitting");
-		
+			textField.setCursorPosition(0);	
 	}
 
 	TextFieldFilter floatFilter = new TextFieldFilter()

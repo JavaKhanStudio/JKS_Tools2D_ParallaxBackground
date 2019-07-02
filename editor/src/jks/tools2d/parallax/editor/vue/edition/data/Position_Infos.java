@@ -29,8 +29,8 @@ public class Position_Infos
 	public Position_Infos(String atlasPath, Parallax_Model parallax_Model)
 	{
 		fromAtlas = true ; 
-		url = parallax_Model.region_Name ; 
-		position = parallax_Model.region_Position ; 
+		url = parallax_Model.regionName ; 
+		position = parallax_Model.regionPosition ; 
 	}	
 
 }

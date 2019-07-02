@@ -3,10 +3,7 @@ package jks.tools2d.parallax.editor.vue.edition.data;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.esotericsoftware.kryo.DefaultSerializer;
 
 import jks.tools2d.parallax.ParallaxLayer;
@@ -24,7 +21,6 @@ public class WholePage_Editor extends WholePage_Model
 		inside = new  ArrayList<Boolean>() ; 
 	}
 	
-
 	@Override
 	protected List<ParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
 	{
@@ -38,10 +34,9 @@ public class WholePage_Editor extends WholePage_Model
 				layer = buildLayer(parallax,atlas,worldWidth) ; 
 			else
 			{
-				System.out.println(parallax.getRegion_Name());
+				//System.out.println(parallax.getRegion_Name());
 //				layer = buildOutsideLayer(parallax, worldWidth) ; 
 			}
-			
 			
 			returningList.add(layer) ;
 			
@@ -51,9 +46,9 @@ public class WholePage_Editor extends WholePage_Model
 		return returningList;
 	}
 	
-	protected Parallax_Model buildOutsideLayer(Parallax_Model parallax, float worldWidth)
-	{
-		TextureRegion texture = new TextureRegion(new Texture(new FileHandle(parallax.getRegion_Name()))) ; 
-		return null ; 
-	}
+//	protected Parallax_Model buildOutsideLayer(Parallax_Model parallax, float worldWidth)
+//	{
+//		TextureRegion texture = new TextureRegion(new Texture(new FileHandle(parallax.regionName))) ; 
+//		return null ; 
+//	}
 }

@@ -23,7 +23,6 @@ public class WholePage_Editor_Serializer extends Serializer<WholePage_Editor>
 		
 		kryo.writeObject(output, object.pageModel);
 		kryo.writeObject(output, object.inside);
-		
 	}	
 
 	@Override

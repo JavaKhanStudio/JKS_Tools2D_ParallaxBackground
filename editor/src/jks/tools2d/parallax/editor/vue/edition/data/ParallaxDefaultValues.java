@@ -80,8 +80,8 @@ public class ParallaxDefaultValues
 		defaultModel.decal_X_Ratio += (positive ? 1 : -1)*incrementValue.decal_X_Ratio ; 
 		defaultModel.decal_Y_Ratio += (positive ? 1 : -1)*incrementValue.decal_Y_Ratio ; 
 		
-		defaultModel.padMin += (positive ? 1 : -1)*incrementValue.padMin ; 
-		defaultModel.padFactor += (positive ? 1 : -1)*incrementValue.padFactor ;
+		defaultModel.padX += (positive ? 1 : -1) * incrementValue.padX ; 
+		defaultModel.padXFactor += (positive ? 1 : -1) * incrementValue.padXFactor ;
 	}
 
 	public boolean isAlternateFlipX()
@@ -116,8 +116,10 @@ public class ParallaxDefaultValues
 		defaultModel.sizeRatio = newValue.getSizeRatio() ; 
 		defaultModel.decal_X_Ratio = newValue.getDecalPercentX() ; 
 		defaultModel.decal_Y_Ratio = newValue.getDecalPercentY() ; 
-		defaultModel.padMin = newValue.getPadMin() ; 
-		defaultModel.padFactor = newValue.getPadFactor() ; 
+		defaultModel.padX = newValue.getPadX() ; 
+		defaultModel.padXFactor = newValue.getPadXFactor() ;
+		defaultModel.padY = newValue.getPadY() ; 
+		defaultModel.padYFactor = newValue.getPadYFactor() ; 
 //		*/
 	}
 }

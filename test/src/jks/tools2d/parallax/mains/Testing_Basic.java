@@ -25,7 +25,7 @@ public class Testing_Basic extends ApplicationAdapter
 		parallax_Heart = new Parallax_Heart(worldWidth, new AssetManager());
 		parallax_Heart_second = new Parallax_Heart(worldWidth, new AssetManager());
 
-	    parallax_Heart.parallaxPage.setDrawingHeight(2.4f);
+	    parallax_Heart.parallaxReader.setDrawingHeight(2.4f);
 //	    Parallax_Utils_Astre.startAstre(Enum_AstreType.SUN, 10);
 		
 	    parallax_Heart.setPage(Enum_ColdNight.COLD_NIGHT.wholePage) ; 

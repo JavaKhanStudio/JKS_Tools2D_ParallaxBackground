@@ -144,7 +144,7 @@ public class Vue_Edition extends AVue_Model
 	@Override
 	public void destroy()
 	{
-
+		GVars_Ui.reset();
 	}
 
 	@Override

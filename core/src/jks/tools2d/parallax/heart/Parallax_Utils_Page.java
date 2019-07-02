@@ -8,8 +8,11 @@ public class Parallax_Utils_Page
 	public static void setPage(Parallax_Heart ref, WholePage_Model pageModel) 
 	{
 		ref.currentPage = pageModel ; 
-		ref.parallaxPage.layers.clear();
-		ref.parallaxPage.addLayers(ref.currentPage.getDrawing(ref.relativePath));
+		ref.parallaxReader.layers.clear();
+		ref.parallaxReader.addLayers(ref.currentPage.getDrawing(ref.relativePath));
+		ref.parallaxReader.setRepeatOnX(pageModel.repeatOnX) ; 
+		ref.parallaxReader.setRepeatOnY(pageModel.repeatOnY) ; 
+		
 		
 		ref.topSquare = pageModel.buildTopSquareBackground(pageModel.topHalfSize) ;
 		ref.bottomSquare = pageModel.buildBottomSquareBackground(pageModel.bottomHalfSize) ;
@@ -19,7 +22,7 @@ public class Parallax_Utils_Page
 	{
 		ref.currentTransfertPage = pageModel ; 
 	
-		ref.parallaxPage.addLayersTransfert(pageModel,inXSecondes); 
+		ref.parallaxReader.addLayersTransfert(pageModel,inXSecondes); 
 		ref.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes );
 		ref.bottomSquare.transfertInto(pageModel.bottomHalf_top, pageModel.bottomHalf_top, inXSecondes );
 	}

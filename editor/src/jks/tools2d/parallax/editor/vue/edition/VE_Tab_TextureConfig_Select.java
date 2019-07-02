@@ -31,7 +31,7 @@ public class VE_Tab_TextureConfig_Select extends Table
 	indexPositionSpinnerQuick_Last,
 	indexPositionSpinnerQuick_Middle ; 
 	
-	ImageButton selectDirect, delete, unDelete ; 
+	ImageButton delete, unDelete ; 
 	
 	public VE_Tab_TextureConfig_Select()
 	{
@@ -47,8 +47,8 @@ public class VE_Tab_TextureConfig_Select extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				if(parallax_Heart.parallaxPage.layers.size() != 0)
-					GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(indexPositionSpinner.getValue())); 
+				if(parallax_Heart.parallaxReader.layers.size() != 0)
+					GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexPositionSpinner.getValue())); 
 				
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
 			}
@@ -64,7 +64,7 @@ public class VE_Tab_TextureConfig_Select extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(0)); 			
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(0)); 			
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
 			}
 		}) ; 
@@ -79,7 +79,7 @@ public class VE_Tab_TextureConfig_Select extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(getMiddle())); 			
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(getMiddle())); 			
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
 			}
 		}) ; 
@@ -94,27 +94,12 @@ public class VE_Tab_TextureConfig_Select extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(parallax_Heart.parallaxPage.layers.size() - 1)); 			
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(parallax_Heart.parallaxReader.layers.size() - 1)); 			
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
 			}
 		}) ; 
 		
-		selectDirect = Utils_Interface.buildSquareButton("editor/interfaces/click.png",50) ; 
-		
-		selectDirect.addListener(new InputListener()
-		{
-			@Override
-			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				super.touchUp(event, x, y, pointer, button);
-			}
-			
-		}) ;
-		
+	
 		delete = Utils_Interface.buildSquareButton("editor/interfaces/delete.png",50) ; 
 		
 		delete.addListener(new InputListener()
@@ -129,16 +114,16 @@ public class VE_Tab_TextureConfig_Select extends Table
 				if(currentlySelectedParallax == null)
 					return ; 
 				
-				trashedValues.add(parallax_Heart.parallaxPage.layers.get(indexPositionSpinner.getValue())) ; 
+				trashedValues.add(parallax_Heart.parallaxReader.layers.get(indexPositionSpinner.getValue())) ; 
 				trashedValuesPosition.add(indexPositionSpinner.getValue()) ; 
 				
-				parallax_Heart.parallaxPage.layers.remove(indexPositionSpinner.getValue()) ;
+				parallax_Heart.parallaxReader.layers.remove(indexPositionSpinner.getValue()) ;
 				
-				if(parallax_Heart.parallaxPage.layers.size() <= indexPositionSpinner.getValue())
+				if(parallax_Heart.parallaxReader.layers.size() <= indexPositionSpinner.getValue())
 					indexPositionSpinner.decrement() ; 
 				
-				if(parallax_Heart.parallaxPage.layers.size() != 0)
-				{GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(indexPositionSpinner.getValue())); }
+				if(parallax_Heart.parallaxReader.layers.size() != 0)
+				{GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexPositionSpinner.getValue())); }
 				else
 				{currentlySelectedParallax = null ;}
 				
@@ -160,10 +145,10 @@ public class VE_Tab_TextureConfig_Select extends Table
 				if(trashedValuesPosition.size == 0)
 					return ;
 				
-				if(parallax_Heart.parallaxPage.layers.size() > trashedValuesPosition.peek()) 
-					parallax_Heart.parallaxPage.layers.add(trashedValuesPosition.peek(), trashedValues.peek());
+				if(parallax_Heart.parallaxReader.layers.size() > trashedValuesPosition.peek()) 
+					parallax_Heart.parallaxReader.layers.add(trashedValuesPosition.peek(), trashedValues.peek());
 				else
-					parallax_Heart.parallaxPage.layers.add(trashedValues.peek());	
+					parallax_Heart.parallaxReader.layers.add(trashedValues.peek());	
 				
 				GVars_Vue_Edition.selectLayer(trashedValues.peek()); 			
 				trashedValues.removeIndex(trashedValues.size -1) ; 
@@ -188,8 +173,6 @@ public class VE_Tab_TextureConfig_Select extends Table
 		this.add(indexPositionSpinnerQuick_Middle) ;
 		this.add(indexPositionSpinnerQuick_Last) ;
 		this.row() ; 
-		this.add(new VisLabel("Select Direct : ")).center();
-		this.add(selectDirect).center().padTop(30).row() ; 
 		this.add(new VisLabel("Delete : "));
 		this.add(delete) ; 
 		this.add(unDelete); 
@@ -200,19 +183,19 @@ public class VE_Tab_TextureConfig_Select extends Table
 	
 	
 	public int getMiddle()
-	{return parallax_Heart.parallaxPage.layers.size()/2 ;}
+	{return parallax_Heart.parallaxReader.layers.size()/2 ;}
 	
 	public void update()
 	{
 		indexPositionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
-		indexPositionSpinnerQuick_Last.setText((parallax_Heart.parallaxPage.layers.size() - 1) + "+");
+		indexPositionSpinnerQuick_Last.setText((parallax_Heart.parallaxReader.layers.size() - 1) + "+");
 		
 		try
 		{
 			showSelect.setDrawable(null) ; 
-			indexPositionSpinner.setMax(parallax_Heart.parallaxPage.layers.size() - 1);
+			indexPositionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
 			indexPositionSpinner.setMin(0);
-			indexPositionSpinner.setValue(parallax_Heart.parallaxPage.layers.indexOf(currentlySelectedParallax)) ;
+			indexPositionSpinner.setValue(parallax_Heart.parallaxReader.layers.indexOf(currentlySelectedParallax)) ;
 		}
 		catch(Exception e)
 		{

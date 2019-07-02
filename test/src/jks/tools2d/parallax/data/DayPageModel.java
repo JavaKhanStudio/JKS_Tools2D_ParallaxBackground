@@ -18,8 +18,8 @@ public class DayPageModel
 		ArrayList<Parallax_Model> returningList = new ArrayList<Parallax_Model>() ; 
 		Parallax_Model cloud = new Parallax_Model() ; 
 
-		cloud.region_Name = "Clouds" ; 
-		cloud.region_Position = 0 ; 
+		cloud.regionName = "Clouds" ; 
+		cloud.regionPosition = 0 ; 
 		cloud.speed = 0.5f ;
 		cloud.parallaxScalingSpeedX = .01f ; 
 		cloud.parallaxScalingSpeedY = .01f ; 
@@ -27,64 +27,64 @@ public class DayPageModel
 		
 		
 		Parallax_Model montains0 = new Parallax_Model() ; 
-		montains0.region_Name = "Mountains" ; 
-		montains0.region_Position = 0 ; 
+		montains0.regionName = "Mountains" ; 
+		montains0.regionPosition = 0 ; 
 		montains0.parallaxScalingSpeedX = .006f ; 
 		montains0.parallaxScalingSpeedY = .006f ; 
 		montains0.decal_Y_Ratio = 12f ; 
 		
 		Parallax_Model montains1 = new Parallax_Model() ; 
-		montains1.region_Name = "Mountains" ; 
-		montains1.region_Position = 1 ; 
+		montains1.regionName = "Mountains" ; 
+		montains1.regionPosition = 1 ; 
 		montains1.parallaxScalingSpeedX = .008f ; 
 		montains1.parallaxScalingSpeedY = .008f ; 
 		montains1.decal_Y_Ratio = 09.5f ; 
 		
 		Parallax_Model montains2 = new Parallax_Model() ; 
-		montains2.region_Name = "Mountains" ; 
-		montains2.region_Position = 1 ; 
+		montains2.regionName = "Mountains" ; 
+		montains2.regionPosition = 1 ; 
 		montains2.parallaxScalingSpeedX = .012f ; 
 		montains2.parallaxScalingSpeedY = .012f ; 
 		montains2.decal_Y_Ratio = 04.5f ;
 		
 		Parallax_Model tree0 = new Parallax_Model() ; 
-		tree0.region_Name = "Trees" ; 
-		tree0.region_Position = 0 ; 
+		tree0.regionName = "Trees" ; 
+		tree0.regionPosition = 0 ; 
 		tree0.parallaxScalingSpeedX = .03f ; 
 		tree0.parallaxScalingSpeedY = .03f ; 
 		tree0.decal_Y_Ratio = 12f ; 
 
 		Parallax_Model tree1 = new Parallax_Model() ; 
-		tree1.region_Name = "Trees" ; 
-		tree1.region_Position = 0 ; 
+		tree1.regionName = "Trees" ; 
+		tree1.regionPosition = 0 ; 
 		tree1.parallaxScalingSpeedX = .04f ; 
 		tree1.parallaxScalingSpeedY = .04f ; 
 		tree1.decal_Y_Ratio = 09f ; 
 		
 		Parallax_Model tree2 = new Parallax_Model() ; 
-		tree2.region_Name = "Trees" ; 
-		tree2.region_Position = 1 ; 
+		tree2.regionName = "Trees" ; 
+		tree2.regionPosition = 1 ; 
 		tree2.parallaxScalingSpeedX = .06f ; 
 		tree2.parallaxScalingSpeedY = .06f ; 
 		tree2.decal_Y_Ratio = 07f ; 
 		
 		Parallax_Model tree3 = new Parallax_Model() ; 
-		tree3.region_Name = "Trees" ; 
-		tree3.region_Position = 2 ; 
+		tree3.regionName = "Trees" ; 
+		tree3.regionPosition = 2 ; 
 		tree3.parallaxScalingSpeedX = .08f ; 
 		tree3.parallaxScalingSpeedY = .08f ; 
 		tree3.decal_Y_Ratio = 07f ; 
 		
 		Parallax_Model tree4 = new Parallax_Model() ; 
-		tree4.region_Name = "Trees" ; 
-		tree4.region_Position = 1 ; 
+		tree4.regionName = "Trees" ; 
+		tree4.regionPosition = 1 ; 
 		tree4.parallaxScalingSpeedX = .09f ; 
 		tree4.parallaxScalingSpeedY = .09f ; 
 		tree4.decal_Y_Ratio = 01f ; 
 		
 		Parallax_Model tree5 = new Parallax_Model() ; 
-		tree5.region_Name = "Trees" ; 
-		tree5.region_Position = 2 ; 
+		tree5.regionName = "Trees" ; 
+		tree5.regionPosition = 2 ; 
 		tree5.parallaxScalingSpeedX = .1f ; 
 		tree5.parallaxScalingSpeedY = .1f ; 
 		tree5.decal_Y_Ratio = 0f ; 

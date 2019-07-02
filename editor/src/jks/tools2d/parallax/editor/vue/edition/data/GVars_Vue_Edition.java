@@ -84,6 +84,7 @@ public class GVars_Vue_Edition
 		size_Bloc_Parallax = (Gdx.graphics.getWidth()/4) * 3 ;
 		size_Height_Bloc_Parallax_Controle = Gdx.graphics.getHeight()/4 ; 
 		sizeTabsBar = 30 ; 
+		
 	}
 
 	public static void selectLayer(ParallaxLayer layer)

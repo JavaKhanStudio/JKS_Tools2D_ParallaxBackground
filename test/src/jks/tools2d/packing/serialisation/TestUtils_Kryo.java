@@ -52,8 +52,8 @@ public class TestUtils_Kryo
     	Input input = new Input(new FileInputStream(FVars_Path.path + parallaxName + formatKryo));
     	Parallax_Model model = kryo.readObject(input, Parallax_Model.class);
     	input.close();   
-    	System.out.println("testParallaxModel work " + parallaxPage.region_Name + " " + 
-			parallaxPage.region_Position + " " + 
+    	System.out.println("testParallaxModel work " + parallaxPage.regionName + " " + 
+			parallaxPage.regionPosition + " " + 
 			parallaxPage.parallaxScalingSpeedX + " " + 
 			parallaxPage.parallaxScalingSpeedY + " " + 
 			parallaxPage.speed + " " + 
@@ -63,8 +63,8 @@ public class TestUtils_Kryo
     public static Parallax_Model buildPageModel()
     {
     	Parallax_Model parallaxPage = new Parallax_Model() ; 
-    	parallaxPage.region_Name = "region_Name" ; 
-    	parallaxPage.region_Position = 1 ; 
+    	parallaxPage.regionName = "region_Name" ; 
+    	parallaxPage.regionPosition = 1 ; 
     	parallaxPage.parallaxScalingSpeedX = 1 ; 
     	parallaxPage.parallaxScalingSpeedY = 2 ; 
     	parallaxPage.speed = 3 ; 
@@ -102,6 +102,7 @@ public class TestUtils_Kryo
     {
     	WholePage_Model wholePage = Enum_ColdNight.COLD_NIGHT.wholePage ; 
     	wholePage.cleanPath();
+    	
     	Output output = new Output(new FileOutputStream(FVars_Path.path + pageWholeName + "." + FVars_Extensions.PARALLAX));
     	kryo.writeObject(output, wholePage);
     	output.close();

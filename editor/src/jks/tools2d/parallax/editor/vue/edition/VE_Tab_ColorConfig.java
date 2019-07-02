@@ -290,7 +290,7 @@ public class VE_Tab_ColorConfig extends Tab
 	@Override
 	public String getTabTitle()
 	{
-		return "Color Config";
+		return "Background";
 	}
 
 	@Override

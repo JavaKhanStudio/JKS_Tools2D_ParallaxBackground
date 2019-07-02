@@ -31,7 +31,7 @@ public class VE_Tab_TextureConfig extends Tab
 	@Override
 	public String getTabTitle()
 	{
-		return "Texture Config";
+		return "Textures";
 	}
 
 	@Override
@@ -43,9 +43,9 @@ public class VE_Tab_TextureConfig extends Tab
 			editTable.update(); 
 			editTable.setVisible(true);
 		}
-		else if(parallax_Heart.parallaxPage.layers.size() > 0)
+		else if(parallax_Heart.parallaxReader.layers.size() > 0)
 		{
-			GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxPage.layers.get(0)); 			
+			GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(0)); 			
 		}
 		else
 		{

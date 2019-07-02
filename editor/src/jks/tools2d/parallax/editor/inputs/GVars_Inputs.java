@@ -51,10 +51,16 @@ public class GVars_Inputs
 		//*/
 		
 		if (leftPressed)
-			parallax_Heart.screenSpeedConsumable = -screenMovementSpeed ; 
+			parallax_Heart.screenSpeedConsumableX = -screenMovementSpeed ; 
 		
 		if (rightPressed)
-			parallax_Heart.screenSpeedConsumable = screenMovementSpeed ;
+			parallax_Heart.screenSpeedConsumableX = screenMovementSpeed ;
+		
+		if(upPressed)
+			parallax_Heart.screenSpeedConsumableY = screenMovementSpeed ; 
+		
+		if(downPressed)
+			parallax_Heart.screenSpeedConsumableY = -screenMovementSpeed ; 
 		
 	}
 }

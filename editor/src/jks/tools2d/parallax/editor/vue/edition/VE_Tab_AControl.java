@@ -16,6 +16,7 @@ import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 public class VE_Tab_AControl extends Table
 {
 
+	VE_Tab_ParallaxConfig parallaxConfig ;
 	VE_Tab_ColorConfig colorConfig ;
 	VE_Tab_TextureList textureSelection ; 
 	VE_Tab_TextureConfig textureConfig ; 
@@ -38,15 +39,17 @@ public class VE_Tab_AControl extends Table
 			}
 		});
 		
+		parallaxConfig = new VE_Tab_ParallaxConfig() ; 
 		colorConfig = new VE_Tab_ColorConfig() ;
 		textureSelection = new VE_Tab_TextureList() ;
 		textureConfig =	new VE_Tab_TextureConfig() ;
 		
-		tabbedPane.add(colorConfig);
+		tabbedPane.add(parallaxConfig);
 		tabbedPane.add(textureSelection);
 		tabbedPane.add(textureConfig);
+		tabbedPane.add(colorConfig);
 
-		tabbedPane.switchTab(colorConfig);
+		tabbedPane.switchTab(parallaxConfig);
 
 		this.add(tabbedPane.getTable()).expandX().fillX();
 		this.row();

@@ -1,6 +1,7 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
@@ -10,17 +11,19 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.sho
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Parallax;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Selection;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.CheckBox.CheckBoxStyle;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.kotcrab.vis.ui.widget.VisTextButton;
 
 import jks.tools2d.libgdxutils.JksCheckBox;
 import jks.tools2d.libgdxutils.Utils_Interface;
@@ -34,6 +37,11 @@ public class VE_Center_ParallaxShow extends Table
 {
 	float decalX = 2 ; 
 	float buttonSize ;
+	
+	Slider parallaxSpeedXSlider ; 
+	Slider parallaxSpeedYSlider ; 
+	
+	VisTextButton resetSpeedX,resetSpeedY, resetPosition ; 
 	
 	public static VE_Center_ParallaxShow build(Object ref)
 	{
@@ -98,7 +106,7 @@ public class VE_Center_ParallaxShow extends Table
 	public void buildOptions()
 	{
 		setBounds(size_Bloc_Selection, 1, size_Bloc_Parallax, Gdx.graphics.getHeight() - parr_Pos_Y/2 - parr_Size_Y);
-//		this.setDebug(true);
+
 		// TODO Effacer et mettre dans le UISKIN
 		CheckBoxStyle checkBoxStyle = new CheckBoxStyle() ;
 		checkBoxStyle.checkboxOff = baseSkin.newDrawable(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_play.png"));
@@ -148,30 +156,92 @@ public class VE_Center_ParallaxShow extends Table
 				this.getHeight() - extendScreen.getHeight()/2);
 		extendScreen.setChecked(false);
 		
-		Slider parallaxSpeedSlider = new Slider(-10, 10, 0.2f, false, GVars_Ui.baseSkin) ; 
-		parallaxSpeedSlider.setValue(0) ; 
-		parallaxSpeedSlider.addListener(new InputListener()
+		Table speedSlider = new Table() ; 
+		speedSlider.setSize(this.getWidth()/2 - buttonSize, buttonSize);
+		speedSlider.setPosition(buttonSize/3, this.getHeight()/2 - speedSlider.getHeight()/2);
+		
+		
+		parallaxSpeedXSlider = new Slider(-20, 20, 0.2f, false, GVars_Ui.baseSkin) ; 
+		parallaxSpeedXSlider.setValue(0) ; 
+		parallaxSpeedXSlider.addListener(new InputListener()
 		{		
 			@Override
 			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{
-//				GVars_Vue_Edition.screenSpeed = parallaxSpeedSlider.getValue() ; 
-				return true ;
-			}
+			{return true ;}
 			
 			@Override
 			public void touchDragged(InputEvent event, float x, float y, int pointer)
 			{
-				Vue_Edition.parallax_Heart.screenSpeedConstant = parallaxSpeedSlider.getValue() * 100 ; 
+				Vue_Edition.parallax_Heart.screenSpeedConstantX = parallaxSpeedXSlider.getValue() * 100 ; 
 			}
 		}) ; 
 		
-		parallaxSpeedSlider.setSize(this.getWidth()/2 - buttonSize, buttonSize);
-		parallaxSpeedSlider.setPosition(buttonSize/3, this.getHeight()/2 - parallaxSpeedSlider.getHeight()/2);
+		resetSpeedX = new VisTextButton("X = 0") ; 
+		resetSpeedX.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				parallaxSpeedXSlider.setValue(0) ; 
+				Vue_Edition.parallax_Heart.screenSpeedConstantX = 0 ; 
+				return true ;
+			}
+
+		}) ; 
+		
+		parallaxSpeedYSlider = new Slider(-20, 20, 0.2f, false, GVars_Ui.baseSkin) ; 
+		parallaxSpeedYSlider.setValue(0) ; 
+		parallaxSpeedYSlider.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchDragged(InputEvent event, float x, float y, int pointer)
+			{
+				Vue_Edition.parallax_Heart.screenSpeedConstantY = parallaxSpeedYSlider.getValue() * 100 ; 
+			}
+		}) ; 
+		
+		resetSpeedY = new VisTextButton("Y = 0") ; 
+		resetSpeedY.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				parallaxSpeedYSlider.setValue(0) ; 
+				Vue_Edition.parallax_Heart.screenSpeedConstantY = 0 ; 
+				return true ;
+			}
+			
+		}) ; 
+		
+		resetPosition = new VisTextButton("Reset position") ; 
+		resetPosition.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				parallax_Heart.parallaxReader.resetPositions();
+				return true ;
+			}
+			
+		}) ; 
+		
+		speedSlider.add(new Label("Speed X",GVars_Ui.baseSkin)) ; 
+		speedSlider.add(parallaxSpeedXSlider) ; 
+		speedSlider.add(resetSpeedX) ; 
+		speedSlider.row() ; 
+		speedSlider.add(new Label("Speed Y",GVars_Ui.baseSkin)) ; 
+		speedSlider.add(parallaxSpeedYSlider) ; 
+		speedSlider.add(resetSpeedY) ; 
+		speedSlider.row() ; 
+		speedSlider.add(resetPosition).colspan(3) ; 
 		
 		
 		this.addActor(startStop) ;
-		this.addActor(parallaxSpeedSlider) ;
+		this.addActor(speedSlider) ;
 		this.addActor(extendScreen) ; 
 	}
 }

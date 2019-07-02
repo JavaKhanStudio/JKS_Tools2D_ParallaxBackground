@@ -2,27 +2,46 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b55857c0-5269-4dc6-a392-08e79e900f1d" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/bin/jks/tools2d/parallax/ParallaxLayer.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/bin/jks/tools2d/parallax/ParallaxLayer.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/ParallaxLayer.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/ParallaxLayer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/ParallaxPageReader.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/ParallaxPageReader.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/heart/Gvars_Parallax.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/heart/Gvars_Parallax.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/heart/Parallax_Heart.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/heart/Parallax_Heart.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/heart/Parallax_Utils_Page.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/heart/Parallax_Utils_Page.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Page_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Page_Model.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Page_Model_Serializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Page_Model_Serializer.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model_Serializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model_Serializer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Utils_Page.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Utils_Page.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/Files/Parallax/thes.plax" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/Files/Parallax/whole2.plax" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/Files/Parallax/whole3.plax" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/FVars_Extensions.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/FVars_Extensions.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Heart_Editor.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Heart_Editor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Ui.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Ui.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model_Serializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model_Serializer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/Files/Parallax/whole.plax" beforeDir="false" afterPath="$PROJECT_DIR$/editor/Files/Parallax/whole.plax" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/libgdxutils/JksNumberSlider.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/libgdxutils/JksNumberSlider.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/inputs/GVars_Inputs.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/inputs/GVars_Inputs.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/mains/Main_Editor_Test.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/mains/Main_Editor_Test.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/Vue_Selection.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/Vue_Selection.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Options.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Options.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_AControl.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_AControl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ColorConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ColorConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/GVars_Vue_Edition.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/GVars_Vue_Edition.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/ParallaxDefaultValues.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/ParallaxDefaultValues.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Position_Infos.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Position_Infos.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Project_Infos.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Project_Infos.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/UtilsSaving.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/UtilsSaving.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Project_Data.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Project_Data.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Utils_Saving.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/Utils_Saving.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/filesTesting/page.kryo" beforeDir="false" afterPath="$PROJECT_DIR$/test/filesTesting/page.kryo" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/filesTesting/parallax.kryo" beforeDir="false" afterPath="$PROJECT_DIR$/test/filesTesting/parallax.kryo" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/filesTesting/whole.plax" beforeDir="false" afterPath="$PROJECT_DIR$/test/filesTesting/whole.plax" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/packing/serialisation/TestUtils_Kryo.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/packing/serialisation/TestUtils_Kryo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/packing/texture/TexturePacking_Testing.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/packing/texture/TexturePacking_Testing.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/data/Enum_ColdNight.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/data/Enum_ColdNight.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/mains/Testing_Basic.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/mains/Testing_Basic.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/.gradle/" />
@@ -54,23 +73,154 @@
       <ProjectState />
     </projectState>
   </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
+        <task path="$PROJECT_DIR$/core">
+          <activation />
+        </task>
+        <task path="$PROJECT_DIR$/editor">
+          <activation />
+        </task>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="JKS_Tools2D_ParallaxBackground" type="f1a62948:ProjectNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="JKS_Tools2D_ParallaxBackground" type="f1a62948:ProjectNode" />
+                <item name="editor" type="2d1252cf:ModuleNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300" />
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/build.gradle">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="357">
+              <caret line="21" column="1" lean-forward="true" selection-start-line="21" selection-start-column="1" selection-end-line="21" selection-end-column="1" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/core/src/jks/tools2d/parallax/ParallaxLayer.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1751">
+              <caret line="107" column="5" selection-start-line="107" selection-start-column="5" selection-end-line="107" selection-end-column="5" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="136">
+              <caret line="13" column="14" selection-start-line="13" selection-start-column="14" selection-end-line="13" selection-end-column="14" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor_Test.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="187">
+              <caret line="16" column="23" selection-start-line="16" selection-start-column="23" selection-end-line="16" selection-end-column="23" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/test/mains/jks/tools2d/parallax/serialisation/Kryo_Testing.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="170">
+              <caret line="23" column="10" lean-forward="true" selection-start-line="23" selection-start-column="10" selection-end-line="23" selection-end-column="10" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/test/build.gradle">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="187">
+              <caret line="11" column="5" lean-forward="true" selection-start-line="11" selection-start-column="5" selection-end-line="11" selection-end-column="5" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/settings.gradle">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <caret column="32" selection-start-column="32" selection-end-column="32" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Utils_Launcher.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="34">
+              <caret line="2" column="13" selection-start-line="2" selection-start-column="13" selection-end-line="2" selection-end-column="13" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Testing_Launcher.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="68">
+              <caret line="4" column="13" selection-start-line="4" selection-start-column="13" selection-end-line="4" selection-end-column="13" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="-10" />
-    <option name="width" value="1199" />
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-5" />
+    <option name="width" value="1200" />
     <option name="height" value="1040" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
+      <flattenPackages ProjectPane="true" />
+      <abbreviatePackageNames ProjectPane="false" />
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
       <pane id="Scope" />
+      <pane id="PackagesPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="JKS_Tools2D_ParallaxBackground" type="58d84e3e:PackageViewProjectNode" />
+              <item name="JKS_Tools2D_ParallaxBackground" type="eaaa3913:PackageViewModuleGroupNode" />
+            </path>
+            <path>
+              <item name="JKS_Tools2D_ParallaxBackground" type="58d84e3e:PackageViewProjectNode" />
+              <item name="JKS_Tools2D_ParallaxBackground" type="eaaa3913:PackageViewModuleGroupNode" />
+              <item name="JKS_Tools2D_ParallaxBackground.core" type="616d4139:PackageViewModuleNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -82,13 +232,13 @@
           <select />
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="settings.editor.selected.configurable" value="reference.projectsettings.compiler.javacompiler" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -102,20 +252,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Application.DesktopLauncher_Editor">
-    <configuration name="DesktopLauncher_Basic" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.desktop.test.DesktopLauncher_Basic" />
-      <module name="JKS_Tools2D_ParallaxBackground.desktop.main" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="jks.tools2d.parallax.desktop.test.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="Application.Kryo_Testing">
     <configuration name="DesktopLauncher_Editor" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.desktop.DesktopLauncher_Editor" />
       <module name="JKS_Tools2D_ParallaxBackground.desktop.main" />
@@ -129,10 +266,69 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Kryo_Testing" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.serialisation.Kryo_Testing" />
+      <module name="JKS_Tools2D_ParallaxBackground.test" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="jks.tools2d.parallax.serialisation.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Launcher_Editor" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.Launcher_Editor" />
+      <module name="JKS_Tools2D_ParallaxBackground.editor.main" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="jks.tools2d.parallax.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Launcher_Editor_Test" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.Launcher_Editor_Test" />
+      <module name="JKS_Tools2D_ParallaxBackground.editor.main" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="jks.tools2d.parallax.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="JKS_Tools2D_ParallaxBackground" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list />
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <GradleScriptDebugEnabled>true</GradleScriptDebugEnabled>
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.Kryo_Testing" />
+        <item itemvalue="Gradle.JKS_Tools2D_ParallaxBackground" />
+        <item itemvalue="Application.Launcher_Editor_Test" />
+        <item itemvalue="Application.Launcher_Editor" />
         <item itemvalue="Application.DesktopLauncher_Editor" />
-        <item itemvalue="Application.DesktopLauncher_Basic" />
       </list>
     </recent_temporary>
   </component>
@@ -150,18 +346,19 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="0" width="959" height="832" extended-state="0" />
+    <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.32925472" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.22080536" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
       <window_info id="Capture Tool" order="4" />
       <window_info id="UI Designer" order="5" />
       <window_info id="Favorites" order="6" side_tool="true" />
+      <window_info anchor="bottom" id="Gradle View" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32904148" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.3286119" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -170,44 +367,83 @@
       <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="9" />
       <window_info anchor="bottom" id="Build" order="10" weight="0.3295129" />
-      <window_info anchor="bottom" id="Messages" order="11" weight="0.32904148" />
+      <window_info anchor="bottom" id="Messages" order="11" weight="0.3286119" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Palette" order="3" />
       <window_info anchor="right" id="Maven" order="4" />
-      <window_info anchor="right" id="Gradle" order="5" />
+      <window_info anchor="right" id="Gradle" order="5" visible="true" weight="0.3295302" />
       <window_info anchor="right" id="Theme Preview" order="6" />
       <window_info anchor="right" id="Capture Analysis" order="7" />
       <window_info anchor="right" id="Palette&#9;" order="8" />
     </layout>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/test/DesktopLauncher_Day.java">
+    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/test/DesktopLauncher_Day.java" />
+    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor.java" />
+    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor_Test.java" />
+    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/test/DesktopLauncher_Basic.java" />
+    <entry file="file://$PROJECT_DIR$/core/src/jks/tools2d/parallax/ParallaxLayer.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="68">
-          <caret line="7" column="13" selection-start-line="7" selection-start-column="13" selection-end-line="7" selection-end-column="13" />
+        <state relative-caret-position="1751">
+          <caret line="107" column="5" selection-start-line="107" selection-start-column="5" selection-end-line="107" selection-end-column="5" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor.java">
+    <entry file="file://$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="26" column="5" selection-start-line="26" selection-start-column="5" selection-end-line="26" selection-end-column="5" />
+        <state relative-caret-position="136">
+          <caret line="13" column="14" selection-start-line="13" selection-start-column="14" selection-end-line="13" selection-end-column="14" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/DesktopLauncher_Editor_Test.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="68">
-          <caret line="10" column="13" selection-start-line="10" selection-start-column="13" selection-end-line="10" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/desktop/src/jks/tools2d/parallax/desktop/test/DesktopLauncher_Basic.java">
+    <entry file="file://$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor_Test.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="187">
-          <caret line="14" selection-start-line="14" selection-end-line="14" />
+          <caret line="16" column="23" selection-start-line="16" selection-start-column="23" selection-end-line="16" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/settings.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="32" selection-start-column="32" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Utils_Launcher.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="34">
+          <caret line="2" column="13" selection-start-line="2" selection-start-column="13" selection-end-line="2" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Testing_Launcher.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="68">
+          <caret line="4" column="13" selection-start-line="4" selection-start-column="13" selection-end-line="4" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/mains/jks/tools2d/parallax/serialisation/Kryo_Testing.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="170">
+          <caret line="23" column="10" lean-forward="true" selection-start-line="23" selection-start-column="10" selection-end-line="23" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/build.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="187">
+          <caret line="11" column="5" lean-forward="true" selection-start-line="11" selection-start-column="5" selection-end-line="11" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="357">
+          <caret line="21" column="1" lean-forward="true" selection-start-line="21" selection-start-column="1" selection-end-line="21" selection-end-column="1" />
         </state>
       </provider>
     </entry>
