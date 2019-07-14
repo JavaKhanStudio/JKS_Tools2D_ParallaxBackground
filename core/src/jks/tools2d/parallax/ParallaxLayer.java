@@ -2,7 +2,6 @@ package jks.tools2d.parallax;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Vector2;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
@@ -14,13 +13,15 @@ public class ParallaxLayer implements Cloneable
 {
 //	ParallaxLayer
 	private TextureRegion texRegion;
-	private TextureRegion changingRegion ; 
+	//private TextureRegion changingRegion ; 
 
 	private float decalPosition_X = 0, decalPercent_Y = 0 ;
 	private float region_Width,region_Height;
 	private float sizeRatio =  1;
 	
-	protected Vector2 parallaxSpeedRatio;
+	protected float parallaxSpeedRatioX;
+	protected float parallaxSpeedRatioY;
+	
 	protected float currentDistanceX = 0, currentDistanceY = 0 ; 
 
 	protected float padX ; 
@@ -43,8 +44,8 @@ public class ParallaxLayer implements Cloneable
 	
 	protected boolean isMirror ; 
 
-	
-	public ParallaxLayer(TextureRegion texRegion, boolean isWidth, float worldDimension, Vector2 parallaxScrollRatio, float sizeRatio)
+
+	public ParallaxLayer(TextureRegion texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
 	{
 		this.texRegion = texRegion ;
 		this.sizeRatio = sizeRatio ;
@@ -60,7 +61,8 @@ public class ParallaxLayer implements Cloneable
 	    	setRegionWidth(Utils_Parralax.calculateOtherDimension(false, worldDimension, this.texRegion));
 		}
 		
-		setParallaxSpeedRatio(parallaxScrollRatio);
+		setParallaxSpeedRatioX(parallaxScrollRatioX);
+		setParallaxSpeedRatioY(parallaxScrollRatioY);
 	}
 	
 	public void setUpEverything(Parallax_Model model)
@@ -71,8 +73,12 @@ public class ParallaxLayer implements Cloneable
 		setDecalPercentY(model.decal_Y_Ratio);
 		setSizeRatio(model.sizeRatio);
 		setSpeedAtRest(model.speed);
-		getParallaxSpeedRatio().x = model.parallaxScalingSpeedX ; 
-		getParallaxSpeedRatio().y = model.parallaxScalingSpeedY ; 
+		setParallaxSpeedRatioX(model.parallaxScalingSpeedX) ; 
+		setParallaxSpeedRatioY( model.parallaxScalingSpeedY) ; 
+		setPadX(model.padX);
+		setPadXFactor(model.padXFactor);
+		setPadY(model.padY);
+		setPadYFactor(model.padYFactor);
 	}
 	
 	public void resetPosition() 
@@ -96,6 +102,33 @@ public class ParallaxLayer implements Cloneable
 		);
 	}
 	
+	public void draw(Batch batch, float x, float y, boolean onX) 
+	{
+		if(onX)
+		{
+			batch.draw
+			(
+				texRegion, 
+				x + (flipX ? getRegionWidth() : 0), 
+				y + (!flipY ? getRegionHeight() : 0), 
+				getRegionWidth() * (flipX ? -1 : 1), 
+				getRegionHeight() * (!flipY ? -1 : 1)
+			);
+		}
+		else
+		{
+			batch.draw
+			(
+				texRegion, 
+				x + (!flipX ? getRegionWidth() : 0), 
+				y + (flipY ? getRegionHeight() : 0), 
+				getRegionWidth() * (!flipX ? -1 : 1), 
+				getRegionHeight() * (flipY ? -1 : 1)
+			);
+		}
+		
+	}
+	
 	public ParallaxLayer clone()
 	{
 		ParallaxLayer o = null;
@@ -110,14 +143,14 @@ public class ParallaxLayer implements Cloneable
 	
 	public void act(float delta, float speedX, float speedY, boolean onX, boolean onY) 
 	{
-		if(changingRegion != null)
-		{
-			texRegion = changingRegion ; 
-			changingRegion = null ; 
-		}
+//		if(changingRegion != null)
+//		{
+//			texRegion = changingRegion ; 
+//			changingRegion = null ; 
+//		}
 		
-		currentDistanceY += delta * -(speedYAtRest + (speedY * parallaxSpeedRatio.y)) ; 
-		currentDistanceX += delta * -(speedXAtRest + (speedX * parallaxSpeedRatio.x)) ; 
+		currentDistanceY += delta * -(speedYAtRest + speedY) * parallaxSpeedRatioY ; 
+		currentDistanceX += delta * -(speedXAtRest + speedX) * parallaxSpeedRatioX ; 
 		
 		if(Math.abs(currentDistanceX) >= getTotalWidth() && onX) 
 			currentDistanceX -= getTotalWidth() * (currentDistanceX > 0 ? 1 : -1);
@@ -171,15 +204,6 @@ public class ParallaxLayer implements Cloneable
 	private void setRegionHeight(float height)
 	{this.region_Height = height;}
 	
-	public Vector2 getParallaxSpeedRatio() 
-	{return parallaxSpeedRatio;}
-
-	public void setParallaxSpeedRatio(Vector2 parallaxRatio) 
-	{
-		if(this.parallaxSpeedRatio == null)
-			this.parallaxSpeedRatio = new Vector2();
-		this.parallaxSpeedRatio.set(parallaxRatio);
-	}
 	
 	public boolean isRepeat_tileX() 
 	{return repeat_tileX;}
@@ -263,5 +287,23 @@ public class ParallaxLayer implements Cloneable
 
 	public void setPadYFactor(float padYFactor) 
 	{this.padYFactor = padYFactor;}
+	
+	public float getParallaxSpeedRatioX() 
+	{return parallaxSpeedRatioX;}
+
+	public void setParallaxSpeedRatioX(float parallaxSpeedRatioX) 
+	{this.parallaxSpeedRatioX = parallaxSpeedRatioX;}
+
+	public float getParallaxSpeedRatioY()
+	{return parallaxSpeedRatioY;}
+
+	public void setParallaxSpeedRatioY(float parallaxSpeedRatioY) 
+	{this.parallaxSpeedRatioY = parallaxSpeedRatioY;}
+	
+	public boolean isMirror() 
+	{return isMirror;}
+
+	public void setMirror(boolean isMirror) 
+	{this.isMirror = isMirror;}
 
 }

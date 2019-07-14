@@ -12,8 +12,8 @@ public class Utils_Page
 		model.regionPosition = region_Position ; 
 		model.flipX = (page.isFlipX());
 		model.flipY = (page.isFlipY());
-		model.parallaxScalingSpeedX = (page.getParallaxSpeedRatio().x);
-		model.parallaxScalingSpeedY = (page.getParallaxSpeedRatio().y);
+		model.parallaxScalingSpeedX = (page.getParallaxSpeedRatioX());
+		model.parallaxScalingSpeedY = (page.getParallaxSpeedRatioY());
 		model.speed = (page.getSpeedAtRest());
 		model.sizeRatio = (page.getSizeRatio());
 		model.decal_X_Ratio = (page.getDecalPercentX());

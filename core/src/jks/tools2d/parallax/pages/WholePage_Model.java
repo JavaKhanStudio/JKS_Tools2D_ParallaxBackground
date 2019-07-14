@@ -7,7 +7,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -121,7 +120,6 @@ public class WholePage_Model
 	protected List<ParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
 	{
 		List<ParallaxLayer> returningList = new ArrayList<ParallaxLayer>() ; 
-		ParallaxLayer layer ; 
 		
 		for(Parallax_Model parallax : pageModel.pageList)
 		{
@@ -137,7 +135,7 @@ public class WholePage_Model
 				atlas.findRegions(parallax.regionName).get(parallax.regionPosition), 
 				true, 
 				worldWidth, 
-				new Vector2(parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY),
+				parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY,
 				parallax.sizeRatio) ; 
 
 		layer.setUpEverything(parallax);
@@ -148,6 +146,9 @@ public class WholePage_Model
 	// External Reading
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight, String relativePath) 
 	{
+		if(pageModel.atlasName == null)
+			return new ArrayList<ParallaxLayer>() ; 
+		
 		TextureAtlas atlas = new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName));
 		return load(worldWidth, worldHeight, atlas) ; 
 	}
@@ -167,76 +168,58 @@ public class WholePage_Model
 		pageModel.atlasName = pageModel.atlasName.substring(pageModel.atlasName.lastIndexOf("/") + 1, pageModel.atlasName.length()) ; 
 	}
 
-	public Color getTopHalf_top() {
-		return topHalf_top;
-	}
+	public Color getTopHalf_top() 
+	{return topHalf_top;}
 
-	public void setTopHalf_top(Color topHalf_top) {
-		this.topHalf_top = topHalf_top;
-	}
+	public void setTopHalf_top(Color topHalf_top) 
+	{this.topHalf_top = topHalf_top;}
 
-	public Color getTopHalf_bottom() {
-		return topHalf_bottom;
-	}
+	public Color getTopHalf_bottom() 
+	{return topHalf_bottom;}
 
-	public void setTopHalf_bottom(Color topHalf_bottom) {
-		this.topHalf_bottom = topHalf_bottom;
-	}
+	public void setTopHalf_bottom(Color topHalf_bottom) 
+	{this.topHalf_bottom = topHalf_bottom;}
 
-	public float getTopHalfSize() {
-		return topHalfSize;
-	}
+	public float getTopHalfSize() 
+	{return topHalfSize;}
 
-	public void setTopHalfSize(float topHalfSize) {
-		this.topHalfSize = topHalfSize;
-	}
+	public void setTopHalfSize(float topHalfSize) 
+	{this.topHalfSize = topHalfSize;}
 
-	public Color getBottomHalf_top() {
-		return bottomHalf_top;
-	}
+	public Color getBottomHalf_top() 
+	{return bottomHalf_top;}
 
-	public void setBottomHalf_top(Color bottomHalf_top) {
-		this.bottomHalf_top = bottomHalf_top;
-	}
+	public void setBottomHalf_top(Color bottomHalf_top) 
+	{this.bottomHalf_top = bottomHalf_top;}
 
-	public Color getBottomHalf_bottom() {
-		return bottomHalf_bottom;
-	}
+	public Color getBottomHalf_bottom() 
+	{return bottomHalf_bottom;}
 
-	public void setBottomHalf_bottom(Color bottomHalf_bottom) {
-		this.bottomHalf_bottom = bottomHalf_bottom;
-	}
+	public void setBottomHalf_bottom(Color bottomHalf_bottom) 
+	{this.bottomHalf_bottom = bottomHalf_bottom;}
 
-	public float getBottomHalfSize() {
-		return bottomHalfSize;
-	}
+	public float getBottomHalfSize() 
+	{return bottomHalfSize;}
 
-	public void setBottomHalfSize(float bottomHalfSize) {
-		this.bottomHalfSize = bottomHalfSize;
-	}
+	public void setBottomHalfSize(float bottomHalfSize) 
+	{this.bottomHalfSize = bottomHalfSize;}
 
-	public boolean isRepeatOnX() {
-		return repeatOnX;
-	}
+	public boolean isRepeatOnX() 
+	{return repeatOnX;}
 
-	public void setRepeatOnX(boolean repeatOnX) {
-		this.repeatOnX = repeatOnX;
-	}
+	public void setRepeatOnX(boolean repeatOnX) 
+	{this.repeatOnX = repeatOnX;}
 
-	public boolean isRepeatOnY() {
-		return repeatOnY;
-	}
+	public boolean isRepeatOnY()
+	{return repeatOnY;}
 
-	public void setRepeatOnY(boolean repeatOnY) {
-		this.repeatOnY = repeatOnY;
-	}
+	public void setRepeatOnY(boolean repeatOnY) 
+	{this.repeatOnY = repeatOnY;}
 
-	public Page_Model getPageModel() {
-		return pageModel;
-	}
+	public Page_Model getPageModel()
+	{return pageModel;}
 
-	public void setPageModel(Page_Model pageModel) {
-		this.pageModel = pageModel;
-	}
+	public void setPageModel(Page_Model pageModel) 
+	{this.pageModel = pageModel;}
 
 }

@@ -4,7 +4,12 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 
 public class Parallax_Utils_Page 
 {
-
+//	public static void setEmptyPage()
+//	{
+//		ref.currentPage = pageModel ; 
+//	}
+//	
+	
 	public static void setPage(Parallax_Heart ref, WholePage_Model pageModel) 
 	{
 		ref.currentPage = pageModel ; 

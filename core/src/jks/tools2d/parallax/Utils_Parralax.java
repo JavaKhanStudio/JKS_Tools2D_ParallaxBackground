@@ -20,8 +20,8 @@ public class Utils_Parralax
 	
 	public static float calculateOtherDimension(boolean isWidth,float oneDimen,float originalWidth, float originalHeight)
 	{
-		float result=0;
 		
+		float result=0;
 		if(isWidth)
     		    result = originalHeight*(oneDimen/originalWidth);
 		else

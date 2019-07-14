@@ -169,6 +169,18 @@ public class ParallaxPageReader
     		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
     			layer.draw(batch, layer.currentDistanceX - (a * layer.getTotalWidth()), drawingHeight + layer.currentDistanceY); 
     		
+    		if(layer.isMirror)
+    		{
+    			layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY + layer.padY + layer.getHeight(),true); 
+        		
+        		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX ; a+= layer.getTotalWidth())
+        			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY + layer.padY + layer.getHeight(),true); 
+        		
+        		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
+        			layer.draw(batch, layer.currentDistanceX - (a * layer.getTotalWidth()), drawingHeight + layer.currentDistanceY + layer.padY + layer.getHeight(),true); 
+        	}
+    		
+    		
     		if(inTransfer)
 		    	compute_Color_Transfert(batch) ;	    		    
 		}	
@@ -189,7 +201,18 @@ public class ParallaxPageReader
     		
     		for(float a = 1 ; layer.currentDistanceY - a * layer.getTotalHeight() > -layer.getHeight() ; a++)
     			layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY - a * layer.getTotalHeight()); 
-    			
+    		
+    		if(layer.isMirror)
+    		{
+    			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight + layer.currentDistanceY); 
+        		
+        		for(float a = layer.getTotalHeight() ; a < worldCamera.viewportHeight - layer.currentDistanceY ; a+= layer.getTotalHeight())
+        			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight  + a + layer.currentDistanceY); 
+        		
+        		for(float a = 1 ; layer.currentDistanceY - a * layer.getTotalHeight() > -layer.getHeight() ; a++)
+        			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight + layer.currentDistanceY - a * layer.getTotalHeight()); 
+        	}
+    		
     		if(inTransfer)
 		    	compute_Color_Transfert(batch) ;	    		    
 		}	
