@@ -13,8 +13,9 @@ public class Launcher_Editor
 	{
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setWindowedMode(1300, 800);
-		config.useVsync(true);
-		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);	
+		config.useOpenGL3(true, 1, 1);
+//		config.useVsync(true);
+//		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);	
 		
 		config.setWindowListener(new Lwjgl3WindowAdapter() 
 		{

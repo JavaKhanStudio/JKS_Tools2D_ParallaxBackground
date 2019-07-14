@@ -44,17 +44,18 @@ public class VE_Tab_TextureConfig_Edit extends Table
 	public IntSpinnerModel indexPositionSpinner ; 
 	Spinner indexPositionSpinerBody ; 
 	
-	VisCheckBox flipX, flipY ; 
+	VisCheckBox flipX, flipY, mirror ; 
 	
 	TextButton makeAsDefault,
 	indexPositionSpinnerQuick_First,indexPositionSpinnerQuick_Last,indexPositionSpinnerQuick_Middle,
-	clone,cloneIncrement; 
+	clone
+	; 
 	
 	
 	public VE_Tab_TextureConfig_Edit()
 	{
 		
-		makeAsDefault = new TextButton("Make default Values",baseSkin) ; 
+		makeAsDefault = new TextButton("Set default",baseSkin) ; 
 		makeAsDefault.addListener(new InputListener()
 		{		
 			int befaureValue = 0;
@@ -70,7 +71,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		}) ; 	
 		
-		clone = new TextButton("Clone this ",baseSkin) ; 
+		clone = new TextButton("Clone",baseSkin) ; 
 		clone.addListener(new InputListener()
 		{					
 			@Override
@@ -80,33 +81,24 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				ParallaxLayer layer = currentlySelectedParallax.clone() ; 
-				
-				VE_Tab_TextureList_Adding.addItem(layer,
-						indexPositionSpinner.getValue() + (getDefaults().addInFront? 1 : -1)) ; 
-				
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
+				cloneLayout() ; 
 			}
 		}) ; 	
 		
-		cloneIncrement = new TextButton("Clone this ",baseSkin) ; 
-		cloneIncrement.addListener(new InputListener()
-		{					
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				ParallaxLayer layer = currentlySelectedParallax.clone() ; 
-				
-				VE_Tab_TextureList_Adding.addItem(layer,
-						indexPositionSpinner.getValue() + (getDefaults().addInFront? 1 : -1)) ; 
-				
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
-			}
-		}) ; 	
+//		cloneIncrement = new TextButton("Inc + Clone",baseSkin) ; 
+//		cloneIncrement.addListener(new InputListener()
+//		{					
+//			@Override
+//			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+//			{return true ;}
+//			
+//			@Override
+//			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+//			{
+//				getDefaults().doIncrement(true) ; 
+//				cloneLayout(); 
+//			}
+//		}) ; 	
 		
 		indexPositionSpinner = new IntSpinnerModel(0,0,0); 
 		indexPositionSpinerBody = new Spinner("Layer Position", indexPositionSpinner);
@@ -207,6 +199,20 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		}) ; 
 		
+		mirror = new VisCheckBox("Mirror") ;
+		mirror.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				currentlySelectedParallax.setMirror(mirror.isChecked());
+			}
+		}) ; 
+		
 		decalX_Slider = new JksNumberSlider(-50, 50, 0.5f, baseSkin)
 		{	
 			@Override
@@ -286,12 +292,12 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		};
 		
-		speedX_ration_Slider = new JksNumberSlider(0.005f, 0.2f, 0.001f,baseSkin)
+		speedX_ration_Slider = new JksNumberSlider(0.005f, 0.1f, 0.001f,baseSkin)
 		{		
 			@Override
 			public void actionOnSliderMovement()
 			{
-				currentlySelectedParallax.getParallaxSpeedRatio().x = (speedX_ration_Slider.getValue());
+				currentlySelectedParallax.setParallaxSpeedRatioX(speedX_ration_Slider.getValue()) ;
 			}
 		} ;
 		
@@ -300,17 +306,17 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			@Override
 			void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) 
 			{
-				currentlySelect.getParallaxSpeedRatio().x = (layerFrom.getParallaxSpeedRatio().x);
-				speedX_ration_Slider.setValue(layerFrom.getParallaxSpeedRatio().x);		
+				currentlySelect.setParallaxSpeedRatioX(layerFrom.getParallaxSpeedRatioX());
+				speedX_ration_Slider.setValue(layerFrom.getParallaxSpeedRatioX());		
 			}
 		};
 		
-		speedY_ration_Slider = new JksNumberSlider(0.005f, 0.2f, 0.001f,baseSkin)
+		speedY_ration_Slider = new JksNumberSlider(0.005f, 0.1f, 0.001f,baseSkin)
 		{		
 			@Override
 			public void actionOnSliderMovement()
 			{
-				currentlySelectedParallax.getParallaxSpeedRatio().y = (speedY_ration_Slider.getValue());
+				currentlySelectedParallax.setParallaxSpeedRatioY(speedY_ration_Slider.getValue());
 			}
 		} ; 
 		
@@ -319,8 +325,8 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			@Override
 			void setValueOn(ParallaxLayer currentlySelect, ParallaxLayer layerFrom) 
 			{
-				currentlySelect.getParallaxSpeedRatio().y = (layerFrom.getParallaxSpeedRatio().y);
-				speedY_ration_Slider.setValue(layerFrom.getParallaxSpeedRatio().y);		
+				currentlySelect.setParallaxSpeedRatioY(layerFrom.getParallaxSpeedRatioY());
+				speedY_ration_Slider.setValue(layerFrom.getParallaxSpeedRatioY());		
 			}
 		};
 		
@@ -364,22 +370,24 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		
 		this.add(new VisLabel("SECTION EDITION")).colspan(4).row();
 		this.add(clone) ; 
+//		this.add(cloneIncrement) ; 
 		this.add(makeAsDefault).colspan(3).row();
 		this.add(indexPositionSpinerBody) ; 
 		this.add(indexPositionSpinnerQuick_First) ;
 		this.add(indexPositionSpinnerQuick_Middle) ;
 		this.add(indexPositionSpinnerQuick_Last) ;
 		this.row();
-		this.add(flipX).colspan(2) ; 
-		this.add(flipY).row() ; 
+		this.add(flipX) ; 
+		this.add(flipY) ; 
+		this.add(mirror).row() ; 
 		
-		this.add(new VisLabel("decal X")).row();
+		this.add(new VisLabel("Decal X")).row();
 		this.add(decalX_Slider).colspan(2) ; 
 		this.add(decalX_Slider_Clone.cloneFromFront) ;
 		this.add(decalX_Slider_Clone.cloneFromBack) ;
 		this.row() ; 
 
-		this.add(new VisLabel("decal Y")).row();
+		this.add(new VisLabel("Decal Y")).row();
 		this.add(decalY_Slider).colspan(2) ; 
 		this.add(decalY_Slider_Clone.cloneFromFront) ;
 		this.add(decalY_Slider_Clone.cloneFromBack) ;
@@ -397,14 +405,13 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		this.add(staticSpeed_Slider_Clone.cloneFromBack) ;
 		this.row();
 		
-		this.add(new VisLabel("-- Speed ratio --")).row();
-		this.add(new VisLabel("-- X --")).row();
+		this.add(new VisLabel("-- Speed ratio X --")).row();
 		this.add(speedX_ration_Slider).colspan(2);
 		this.add(speedX_ration_Slider_Clone.cloneFromFront) ;
 		this.add(speedX_ration_Slider_Clone.cloneFromBack) ;
 		this.row();
 		
-		this.add(new VisLabel("-- Y --")).row();
+		this.add(new VisLabel("-- Speed ratio Y --")).row();
 		this.add(speedY_ration_Slider).colspan(2);
 		this.add(speedY_ration_Slider_Clone.cloneFromFront) ;
 		this.add(speedY_ration_Slider_Clone.cloneFromBack) ;
@@ -429,6 +436,20 @@ public class VE_Tab_TextureConfig_Edit extends Table
 	public int getMiddle()
 	{return parallax_Heart.parallaxReader.layers.size()/2 ;}
 	
+	public ParallaxLayer cloneLayout()
+	{
+		ParallaxLayer layer = currentlySelectedParallax.clone() ; 
+		
+		VE_Tab_TextureList_Adding.addItem(layer,
+				indexPositionSpinner.getValue() + 1) ; 
+
+		GVars_Vue_Edition.selectLayer(layer) ; 
+		
+		GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
+		
+		return layer ; 
+	}
+	
 	public void update()
 	{
 		indexPositionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
@@ -436,6 +457,8 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		
 		flipX.setChecked(currentlySelectedParallax.isFlipX());
 		flipY.setChecked(currentlySelectedParallax.isFlipY());
+		
+		mirror.setChecked(currentlySelectedParallax.isMirror()) ; 
 		
 		indexPositionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
 		indexPositionSpinner.setMin(0);
@@ -449,9 +472,9 @@ public class VE_Tab_TextureConfig_Edit extends Table
 	
 		staticSpeed_Slider.setValue(currentlySelectedParallax.getSpeedAtRest()) ; 
 
-		speedX_ration_Slider.setValue(currentlySelectedParallax.getParallaxSpeedRatio().x) ; 
+		speedX_ration_Slider.setValue(currentlySelectedParallax.getParallaxSpeedRatioX()) ; 
 		
-		speedY_ration_Slider.setValue(currentlySelectedParallax.getParallaxSpeedRatio().y) ; 
+		speedY_ration_Slider.setValue(currentlySelectedParallax.getParallaxSpeedRatioY()) ; 
 		
 		pad_X_Slider.setValue(currentlySelectedParallax.getPadX()) ; 
 		

@@ -12,6 +12,10 @@ public class Position_Infos
 	public String url ; 
 	public int position ; 
 	
+	//JSON constructor 
+	public Position_Infos()
+	{}
+	
 	public Position_Infos(boolean fromAtlas, String url, int position)
 	{
 		this.fromAtlas = fromAtlas ;
@@ -26,13 +30,20 @@ public class Position_Infos
 		this.position = position ;
 	}
 
-	public Position_Infos(String atlasPath, Parallax_Model parallax_Model)
+	public Position_Infos(boolean fromAtlas, String atlasPath, Parallax_Model parallax_Model)
 	{
-		fromAtlas = true ; 
+		this.fromAtlas = fromAtlas ; 
 		url = parallax_Model.regionName ; 
 		position = parallax_Model.regionPosition ; 
 	}	
 
+	public String getPageName()
+	{
+		// TODO rendre compatible texture animee
+		if(!fromAtlas)
+			return url.substring(url.lastIndexOf("\\") + 1, url.lastIndexOf(".")) ;
+		else
+			return url ; 
+	}
+	
 }
-
-

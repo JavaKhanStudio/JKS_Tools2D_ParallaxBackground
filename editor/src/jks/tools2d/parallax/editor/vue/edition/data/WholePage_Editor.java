@@ -4,13 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.esotericsoftware.kryo.DefaultSerializer;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.pages.Parallax_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
-@DefaultSerializer(WholePage_Editor_Serializer.class)
 public class WholePage_Editor extends WholePage_Model
 {
 	public ArrayList<Boolean> inside ;
@@ -33,10 +32,7 @@ public class WholePage_Editor extends WholePage_Model
 			if(inside.get(inc))
 				layer = buildLayer(parallax,atlas,worldWidth) ; 
 			else
-			{
-				//System.out.println(parallax.getRegion_Name());
-//				layer = buildOutsideLayer(parallax, worldWidth) ; 
-			}
+				layer = buildOutsideLayer(parallax, worldWidth) ; 
 			
 			returningList.add(layer) ;
 			
@@ -46,9 +42,17 @@ public class WholePage_Editor extends WholePage_Model
 		return returningList;
 	}
 	
-//	protected Parallax_Model buildOutsideLayer(Parallax_Model parallax, float worldWidth)
-//	{
-//		TextureRegion texture = new TextureRegion(new Texture(new FileHandle(parallax.regionName))) ; 
-//		return null ; 
-//	}
+	protected ParallaxLayer buildOutsideLayer(Parallax_Model parallax, float worldWidth)
+	{
+		TextureRegion texture = GVars_Vue_Edition.outsideReserve.get(parallax.regionName) ; 
+		ParallaxLayer layer = new ParallaxLayer(
+				texture,
+				true, 
+				worldWidth, 
+				parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY,
+				parallax.sizeRatio) ; 
+
+		layer.setUpEverything(parallax);
+		return layer ; 
+	}
 }

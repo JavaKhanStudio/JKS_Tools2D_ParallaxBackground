@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
@@ -52,7 +51,9 @@ public class VE_Tab_TextureList_Adding extends Tab
 			@Override
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
-				System.out.println("test me good");
+				TextureRegion text = imageList.getSelected() ; 
+				System.out.println(GVars_Vue_Edition.textureLink.size());
+				
 				return true ; 
 			}
 			
@@ -72,7 +73,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 						text,
 						true, 
 						Gvars_Parallax.getWorldWidth(), 
-						new Vector2(.01f,.01f),
+						.01f,.01f,
 						1) ; 
 
 				layer.setUpEverything(getDefaults().defaultModel);
@@ -133,20 +134,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 		
 		GVars_Vue_Edition.selectLayer(layer) ; 
 		
-		ArrayList<ParallaxLayer> linkList = textureLink.get(layer.getTexRegion()) ; 
-		if(linkList == null)
-		{
-			linkList = new ArrayList<ParallaxLayer>() ; 
-			textureLink.put(layer.getTexRegion(), linkList) ; 
-		}
-		
-		linkList.add(layer) ; 
-		/*
-		if(position == - 1)
-			linkList.add(layer) ; 
-		else
-			linkList.add(position,layer) ; 
-		*/
+		GVars_Vue_Edition.addToLinks(layer);
 	}
 	
 

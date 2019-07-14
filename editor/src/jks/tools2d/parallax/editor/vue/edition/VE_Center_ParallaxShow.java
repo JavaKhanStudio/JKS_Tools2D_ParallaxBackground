@@ -3,17 +3,12 @@ package jks.tools2d.parallax.editor.vue.edition;
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_X;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_Y;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.showParallaxFullScreen;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Parallax;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Selection;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
@@ -25,11 +20,14 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.kotcrab.vis.ui.widget.VisTextButton;
 
+import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.JksCheckBox;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
+import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
@@ -51,20 +49,40 @@ public class VE_Center_ParallaxShow extends Table
 		if(ref instanceof TextureAtlas)
 		{
 			atlas = (TextureAtlas)ref ; 
-			show = new VE_Center_ParallaxShow(atlas) ;
+			
+			WholePage_Model page = new WholePage_Model(); 
+			page.pageModel.atlasName = GVars_Vue_Edition.projectInfos.projectName + "." + FVars_Extensions.ATLAS ; 
+			page.forceLoad(atlas);
+			GVars_Vue_Edition.setPage(page) ; 
+			
+			show = new VE_Center_ParallaxShow() ;
 		}
 		else if(ref instanceof WholePage_Model)
 		{
 			WholePage_Model page = (WholePage_Model)ref ; 
 			atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + page.pageModel.atlasName));
-			show =  new VE_Center_ParallaxShow(page) ; 
+			GVars_Vue_Edition.setPage(page) ;
+			
+			show =  new VE_Center_ParallaxShow() ; 
 		}
 		else if(ref instanceof Project_Data)
 		{
 			Project_Data project = (Project_Data)ref ; 
+			GVars_Vue_Edition.projectDatas = project ;
+			
+			buildOutsideValues() ; 
+			
 			atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
-			show =  new VE_Center_ParallaxShow(project.saving) ;
-			GVars_Vue_Edition.datas = project ;
+			GVars_Vue_Edition.setPage(project.saving) ; 
+				
+			show =  new VE_Center_ParallaxShow() ;
+		}
+		else 
+		{
+			WholePage_Model page = new WholePage_Model(); 
+			page.pageModel.atlasName = null ; 
+			GVars_Vue_Edition.setPage(page) ; 
+			show = new VE_Center_ParallaxShow() ;
 		}
 		
 		GVars_Vue_Edition.atlas = atlas ; 
@@ -72,23 +90,24 @@ public class VE_Center_ParallaxShow extends Table
 		return show ; 
 	}
 	
-	
-	VE_Center_ParallaxShow(TextureAtlas atlas)
+	private static void buildOutsideValues()
 	{
-		resize() ; 
-		
-		WholePage_Model page = new WholePage_Model(); 
-		page.pageModel.atlasName = GVars_Vue_Edition.infos.projectName + "." + FVars_Extensions.ATLAS ; 
-		page.forceLoad(atlas);
-		GVars_Vue_Edition.setPage(page) ; 
-			
-		buildOptions() ; 
+		if(GVars_Vue_Edition.projectDatas.outsideInfos != null)
+		{
+			for(Outside_Source infos : GVars_Vue_Edition.projectDatas.outsideInfos)
+			{
+				TextureRegion region = new TextureRegion(new Texture(new FileHandle(infos.url))) ; 
+				allImage.add(region) ;
+				imageRef.put(region, new Position_Infos(false, infos.url,0)) ;
+				new FileWatching_Image(infos.url,region) ; 
+				outsideReserve.put(infos.url, region) ; 
+			}
+		}
 	}
 	
-	VE_Center_ParallaxShow(WholePage_Model page)
+	VE_Center_ParallaxShow()
 	{
 		resize() ; 
-		GVars_Vue_Edition.setPage(page) ; 
 		buildOptions() ; 
 	}
 	
@@ -161,7 +180,7 @@ public class VE_Center_ParallaxShow extends Table
 		speedSlider.setPosition(buttonSize/3, this.getHeight()/2 - speedSlider.getHeight()/2);
 		
 		
-		parallaxSpeedXSlider = new Slider(-20, 20, 0.2f, false, GVars_Ui.baseSkin) ; 
+		parallaxSpeedXSlider = new Slider(-15, 15, 0.05f, false, GVars_Ui.baseSkin) ; 
 		parallaxSpeedXSlider.setValue(0) ; 
 		parallaxSpeedXSlider.addListener(new InputListener()
 		{		

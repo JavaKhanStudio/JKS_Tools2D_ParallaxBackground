@@ -3,13 +3,12 @@ package jks.tools2d.filechooser;
 import java.io.File;
 import java.io.FileFilter;
 
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle;
@@ -23,14 +22,13 @@ import com.badlogic.gdx.scenes.scene2d.utils.Selection;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.Json.Serializable;
+import com.badlogic.gdx.utils.JsonValue;
+import com.badlogic.gdx.utils.Pools;
 
 import jks.tools2d.libgdxutils.Accessor;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 
-import com.badlogic.gdx.utils.JsonValue;
-import com.badlogic.gdx.utils.Pools;
 
-//OLD AUTHOR @author dermetfan
 public class FC_Tree extends FileChooser
 {
 

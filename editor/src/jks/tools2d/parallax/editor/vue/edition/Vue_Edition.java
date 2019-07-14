@@ -12,6 +12,7 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.scr
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setDefaults;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureChange;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
+import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize ; 
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
+import com.kotcrab.vis.ui.util.dialog.Dialogs;
 
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
@@ -41,8 +43,10 @@ import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
+import jks.tools2d.parallax.editor.vue.edition.data.Utils_LoadingImages;
 import jks.tools2d.parallax.editor.vue.edition.data.Utils_Saving;
 import jks.tools2d.parallax.editor.vue.edition.data.Utils_Texture;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
@@ -59,6 +63,7 @@ public class Vue_Edition extends AVue_Model
 	{
 		parallax_Heart = new Parallax_Heart(screenSize,new AssetManager());
 		parallax_Heart.relativePath = GVars_Vue_Edition.relativePath ;
+		
 		GVars_Vue_Edition.buildSizes();
 		shapeRender = new ShapeRenderer() ;
 	}
@@ -69,15 +74,19 @@ public class Vue_Edition extends AVue_Model
 		this.preloadingValue = preloadingValue ;  	
 	}
 
+	public Vue_Edition() 
+	{
+		preload() ; 
+	}
+
 	@Override
 	public void init()
-	{
-		centerControl = VE_Center_ParallaxShow.build(preloadingValue) ; 
-
+	{	
 		allImage = new ArrayList<>() ; 
-		// TODO Import the base value
 		
-		setDefaults(new ParallaxDefaultValues() ); 
+		centerControl = VE_Center_ParallaxShow.build(preloadingValue) ; 
+		
+		setDefaults(new ParallaxDefaultValues()); 
 		buildImageList() ; 
 			
 		tabControl = new VE_Tab_AControl() ; 
@@ -93,23 +102,16 @@ public class Vue_Edition extends AVue_Model
 	
 	private void buildImageList() 
 	{
-		// TODO more testing require
+		if(getAtlas() == null)
+			return ; 
+		
 		for(AtlasRegion region : getAtlas().getRegions())
 		{
 			buildInsideData(region) ; 
 		}
-		
-		if(GVars_Vue_Edition.datas.outsideInfos != null)
-		{
-			for(Position_Infos infos : GVars_Vue_Edition.datas.outsideInfos)
-			{
-				// TODO relative path
-				TextureRegion region = new TextureRegion(new Texture(new FileHandle(infos.url))) ; 
-				allImage.add(region) ;
-				imageRef.put(region, infos) ; 
-			}
-		}
 	}
+	
+	
 	
 	public void buildInsideData(AtlasRegion region)
 	{
@@ -123,11 +125,6 @@ public class Vue_Edition extends AVue_Model
 			position-- ;
 		
 		imageRef.put(region, new Position_Infos(region,position)) ; 
-	}
-	
-	public void buildOutisdeData()
-	{
-		
 	}
 
 	public void saveAllData()
@@ -183,7 +180,6 @@ public class Vue_Edition extends AVue_Model
 					Pixmap map = getFrameBufferPixmap(screenX, screenY, 1, 1) ; 
 					GVars_Vue_Edition.colorPicked.setColor(new Color(map.getPixel(0, 0)));
 				}
-				
 				
 				return false;
 			}
@@ -349,37 +345,14 @@ public class Vue_Edition extends AVue_Model
 			
 			GVars_Ui.mainUi.draw() ;
 		
-		}
-		
+		}	
 	}
 
+	
 	@Override
 	public void reciveFiles(String[] files)
 	{
-		TextureRegion textureRegion  ; 
-		
-		try 
-		{
-			for(String path : files)
-			{
-				if("png".equals(Utils_Scene2D.getExtension(path)))
-				{
-					textureRegion = Utils_Texture.getTextureRegionFromPath(path) ; 
-					new FileWatching_Image(path,textureRegion) ; 
-					imageRef.put(textureRegion, new Position_Infos(false,path,-1)) ; 
-					allImage.add(textureRegion) ; 
-				}
-				else
-				{
-					System.out.println("bad Format");
-				}
-			}
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		
-		GVars_Vue_Edition.setItems();
+		Utils_LoadingImages.fileReception(files);
 	}
+	
 }

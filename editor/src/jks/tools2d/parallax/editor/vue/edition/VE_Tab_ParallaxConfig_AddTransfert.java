@@ -12,6 +12,7 @@ import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 public class VE_Tab_ParallaxConfig_AddTransfert extends Tab
 {
 
+	// TODO
 	private Table mainTable ; 
 	
 	VE_Tab_ParallaxConfig_AddTransfert()

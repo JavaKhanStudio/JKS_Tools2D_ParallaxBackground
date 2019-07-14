@@ -33,6 +33,8 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 	VisCheckBox flipX, flipY ; 
 	VisCheckBox flipXAlternate, flipYAlternate ; 
 	
+	TextButton incrementOnce , decrementOnce; 
+	
 	Table mainTable ; 
 	
 	ButtonGroup<VisCheckBox> groupeRadio ; 
@@ -89,7 +91,7 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			}
 		}) ; 
 		
-		TextButton incrementOnce = new TextButton("increment Once +",baseSkin) ; 
+		incrementOnce = new TextButton("increment Once +",baseSkin) ; 
 		incrementOnce.addListener(new InputListener()
 		{		
 			@Override
@@ -101,7 +103,7 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			{getDefaults().doIncrement(true) ; update() ; }
 		}) ; 
 		
-		TextButton decrementOnce = new TextButton("decrementOnce Once -",baseSkin) ; 
+		decrementOnce = new TextButton("decrementOnce Once -",baseSkin) ; 
 		decrementOnce.addListener(new InputListener()
 		{		
 			@Override

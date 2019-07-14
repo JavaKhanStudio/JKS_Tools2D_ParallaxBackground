@@ -1,14 +1,11 @@
 package jks.tools2d.parallax.editor.mains;
 
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.datas;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.infos;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectDatas;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectInfos;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.File;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.esotericsoftware.kryo.io.Input;
 
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
@@ -18,7 +15,7 @@ import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
-import jks.tools2d.parallax.pages.WholePage_Model; 
+import jks.tools2d.parallax.editor.vue.edition.data.WholePage_Editor; 
 
 public class Main_Editor_Test extends Main_Editor 
 {
@@ -31,35 +28,25 @@ public class Main_Editor_Test extends Main_Editor
 		directTestParallax() ; 
 	}
 
-	void directTestAtlas()
-	{
-		infos = new Project_Infos();
-		infos.projectName = "OneNight" ; 
-		infos.projectPath = "C:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/editor/test" ; 
-		FileHandle handler = new FileHandle("../editor/Files/Atlas/OneNight.atlas") ; 
-		TextureAtlas textures = new TextureAtlas(handler);
-		
-		infos = new Project_Infos();
-		infos.setPathInfo(handler);
-		GVars_Heart_Editor.changeVue(new Vue_Edition(textures), true) ;  	
-	}
-	
+
 	void directTestParallax()
 	{
-		infos = new Project_Infos();
-		infos.projectName = "whole" ; 
-		infos.projectPath = "D:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/editor/Files/Parallax" ; 
+		projectInfos = new Project_Infos();
+		projectInfos.projectName = "whole" ; 
+		projectInfos.projectPath = "D:/Users/Simon/Documents/JKS_Tools2D_ParallaxBackground/editor/Files/Parallax" ; 
 		
-		datas = new Project_Data() ; 
-		Input input;
+		projectDatas = new Project_Data() ; 
+
 		try
 		{
-			input = new Input(new FileInputStream("../editor/Files/Parallax/whole." + FVars_Extensions.PARALLAX));
 			GVars_Vue_Edition.relativePath = "../editor/Files/Parallax" ; 
-			GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Serialization.kryo.readObject(input,WholePage_Model.class)),true) ;  
+			Project_Data project = GVars_Serialization.objectMapper.readValue(new File(GVars_Vue_Edition.relativePath + "/whole." + FVars_Extensions.PARALLAX_PROJECT), Project_Data.class) ; 
+			
+			GVars_Heart_Editor.changeVue(new Vue_Edition(project),true) ;  
 		} 
-		catch (FileNotFoundException e)
-		{e.printStackTrace();}
+		catch (Exception e)
+		{e.printStackTrace();} 
+		
 	}
 	
 }

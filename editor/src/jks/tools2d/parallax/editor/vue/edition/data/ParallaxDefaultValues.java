@@ -5,7 +5,7 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
-@DefaultSerializer(ParallaxLayerBaseValues_Serializer.class)
+//@DefaultSerializer(ParallaxLayerBaseValues_Serializer.class)
 public class ParallaxDefaultValues
 {
 	
@@ -31,14 +31,14 @@ public class ParallaxDefaultValues
 		
 		defaultModel = new Parallax_Model() ;
 		defaultModel.sizeRatio = 1 ; 
-		defaultModel.parallaxScalingSpeedX = 0.06f ;
+		defaultModel.parallaxScalingSpeedX = 0.1f ;
 		defaultModel.parallaxScalingSpeedY = 0.06f ; 
 		defaultModel.decal_Y_Ratio = 0 ;
 		
 		incrementValue = new Parallax_Model() ;
 		incrementValue.decal_X_Ratio = 10 ; 
 		incrementValue.decal_Y_Ratio = 10 ;
-		incrementValue.parallaxScalingSpeedX = -0.003f ; 
+		incrementValue.parallaxScalingSpeedX = -0.02f ; 
 		incrementValue.parallaxScalingSpeedY = -0.00025f ;
 		incrementValue.sizeRatio = -0.1f ; 
 	}
@@ -110,8 +110,8 @@ public class ParallaxDefaultValues
 		alternateFlipX = newValue.isFlipX(); 
 		alternateFlipY = newValue.isFlipY(); 
 		
-		defaultModel.parallaxScalingSpeedX = newValue.getParallaxSpeedRatio().x ; 
-		defaultModel.parallaxScalingSpeedY = newValue.getParallaxSpeedRatio().y ; 
+		defaultModel.parallaxScalingSpeedX = newValue.getParallaxSpeedRatioX() ; 
+		defaultModel.parallaxScalingSpeedY = newValue.getParallaxSpeedRatioY() ; 
 		defaultModel.speed = newValue.getSpeedAtRest() ; 
 		defaultModel.sizeRatio = newValue.getSizeRatio() ; 
 		defaultModel.decal_X_Ratio = newValue.getDecalPercentX() ; 

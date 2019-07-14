@@ -6,7 +6,6 @@ import java.io.FileFilter;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 
 
-// OLD AUTHOR @author dermetfan
 public abstract class FileChooser extends Table 
 {
 

@@ -28,10 +28,10 @@ public class Gvars_Parallax
 	
 	
 	public static float getWidthPercent()
-	{return worldWidth/100 ;}
+	{return worldWidth/100;}
 	
 	public static float getHeightPercent()
-	{return worldHeight/100 ; }
+	{return worldHeight/100;}
 
 	public static float getWorldWidth()
 	{return worldWidth;}

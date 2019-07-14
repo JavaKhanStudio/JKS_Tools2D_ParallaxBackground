@@ -43,7 +43,7 @@ public class VE_Tab_ParallaxConfig extends Tab
 		
 		
 		tabbedPane.add(config);
-		tabbedPane.add(transfert);
+		//tabbedPane.add(transfert); // TODO WORK IN PROGRESS
 		
 		tabbedPane.switchTab(config);
 		mainTable = new Table() ; 

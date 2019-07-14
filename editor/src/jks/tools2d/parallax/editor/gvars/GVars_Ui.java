@@ -17,7 +17,6 @@ public class GVars_Ui implements Runnable
 	
 	public static void init() 
 	{
-//		Skin skin = VisUI.load(Gdx.files.internal("skins/uis/uiskin.json")) ;
 		baseSkin = new Skin(Gdx.files.internal("skins/uis/uiskin.json"));
 		VisUI.load(GVars_Ui.baseSkin);
 		mainUi = new Stage();

@@ -8,4 +8,5 @@ public class FVars_SerialisationName
 	public final static String pageWholeName = "whole" ; 
 	public final static String formatKryo = ".kryo" ;
 	public final static String formatJSON = ".bin" ;
+	
 }

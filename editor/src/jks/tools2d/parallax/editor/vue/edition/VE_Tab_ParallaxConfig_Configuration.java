@@ -1,5 +1,7 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
+import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
+import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -11,19 +13,13 @@ import com.kotcrab.vis.ui.util.dialog.Dialogs;
 import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
 import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
-import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.VisTextButton;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
-import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
-import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
-import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.data.Utils_Saving; 
-
-import static jks.tools2d.parallax.editor.vue.edition.VE_Options.* ; 
 
 public class VE_Tab_ParallaxConfig_Configuration extends Tab
 {
@@ -41,18 +37,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 	
 	public void buildTextureSelector()
 	{
-		final VisTable container = new VisTable();
-		TabbedPane tabbedPane = new TabbedPane(GVars_Ui.baseSkin.get("default", TabbedPaneStyle.class));
-		tabbedPane.setAllowTabDeselect(false);
-		tabbedPane.addListener(new TabbedPaneAdapter()
-		{
-			@Override
-			public void switchedTab(Tab tab)
-			{
-				container.clearChildren();
-				container.add(tab.getContentTable()).expand().fill();
-			}
-		});
+		mainTable = new Table() ; 
 		
 		repeatOnX = new VisCheckBox("Repeat On X") ;
 		repeatOnX.addListener(new InputListener()
@@ -90,7 +75,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			@Override
 			public void changed (ChangeEvent event, Actor actor) 
 			{
-				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "do you want to save the projectr before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() {
+				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() {
 					@Override
 					public void yes () 
 					{
@@ -111,14 +96,10 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			}
 		});
 		
-		mainTable = new Table() ; 
-		mainTable.add(tabbedPane.getTable()).expandX().fillX();
+		mainTable.add(repeatOnX) ; 
+		mainTable.add(repeatOnY) ; 
 		mainTable.row();
-		mainTable.add(container).expand().fill();
-		
-		container.add(repeatOnX,repeatOnY);
-		container.row() ; 
-		container.add(showOptionDialog).colspan(2) ; 
+		mainTable.add(showOptionDialog).colspan(2) ; 
 	}
 	
 	public void update()

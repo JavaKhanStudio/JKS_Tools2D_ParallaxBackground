@@ -33,6 +33,7 @@ public class GVars_Vue_Edition
 	
 	public static HashMap<TextureRegion,Position_Infos> imageRef  = new HashMap<TextureRegion, Position_Infos>() ; 
 	public static HashMap<TextureRegion,ArrayList<ParallaxLayer>> textureLink = new HashMap<TextureRegion,ArrayList<ParallaxLayer>>() ; 
+	public static HashMap<String,TextureRegion> outsideReserve = new HashMap<String, TextureRegion>(); 
 	
 	public static int parr_Size_X ; 
 	public static int parr_Size_Y ; 
@@ -50,8 +51,8 @@ public class GVars_Vue_Edition
 	public static boolean inTextureSelection ; 
 	public static ExtendedColorPicker colorPicked ; 
 	
-	public static Project_Infos infos ;
-	public static Project_Data datas ; 
+	public static Project_Infos projectInfos ;
+	public static Project_Data projectDatas ; 
 	
 	public static Array<ParallaxLayer> trashedValues = new Array<ParallaxLayer>(); 
 	public static Array<Integer> trashedValuesPosition = new Array<Integer>(); 
@@ -73,10 +74,10 @@ public class GVars_Vue_Edition
 	public static final float timeForAutoSaveAt = 300; 
 	
 	public static ParallaxDefaultValues getDefaults()
-	{return datas.defaults ;}
+	{return projectDatas.defaults ;}
 	
 	public static void setDefaults(ParallaxDefaultValues Defaults)
-	{datas.defaults = Defaults ;} 
+	{projectDatas.defaults = Defaults ;} 
 	
 	public static void buildSizes()
 	{
@@ -84,7 +85,6 @@ public class GVars_Vue_Edition
 		size_Bloc_Parallax = (Gdx.graphics.getWidth()/4) * 3 ;
 		size_Height_Bloc_Parallax_Controle = Gdx.graphics.getHeight()/4 ; 
 		sizeTabsBar = 30 ; 
-		
 	}
 
 	public static void selectLayer(ParallaxLayer layer)
@@ -92,8 +92,7 @@ public class GVars_Vue_Edition
 		currentlySelectedParallax = layer ; 
 		if(getDefaults().autoGoToSelected)
 		{
-			tabbedPane.switchTab(2);
-			
+			tabbedPane.switchTab(2);	
 		}
 	}
 
@@ -103,8 +102,14 @@ public class GVars_Vue_Edition
 
 		for(int x = 0 ; x < parallaxPage.preloadValue.size() ; x++)
 		{
-			imageRef.put(parallaxPage.preloadValue.get(x).getTexRegion(),
-					new Position_Infos(parallaxPage.pageModel.atlasName,parallaxPage.pageModel.pageList.get(x))); 
+			TextureRegion texture = parallaxPage.preloadValue.get(x).getTexRegion() ; 
+			
+			boolean isFromAtlas = outsideReserve.get(parallaxPage.pageModel.pageList.get(x).regionName) == null; 
+			
+			imageRef.put(texture,
+					new Position_Infos(isFromAtlas, parallaxPage.pageModel.atlasName,parallaxPage.pageModel.pageList.get(x))); 
+			
+			GVars_Vue_Edition.addToLinks(parallaxPage.preloadValue.get(x));
 		}		
 	}
 	
@@ -129,4 +134,18 @@ public class GVars_Vue_Edition
 		
 		VE_Tab_TextureList_Adding.imageList.setItems(stockArr);	
 	}
+	
+	public static void addToLinks(ParallaxLayer layer)
+	{
+		ArrayList<ParallaxLayer> linkList = textureLink.get(layer.getTexRegion()) ; 
+		if(linkList == null)
+		{
+			linkList = new ArrayList<ParallaxLayer>() ; 
+			linkList.add(layer) ; 
+			textureLink.put(layer.getTexRegion(), linkList) ; 
+		}
+		
+		linkList.add(layer) ; 
+	}
+	
 }
