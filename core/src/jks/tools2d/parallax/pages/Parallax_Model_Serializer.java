@@ -18,7 +18,7 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 		output.writeFloat(object.parallaxScalingSpeedX);
 		output.writeFloat(object.parallaxScalingSpeedY);
 		
-		output.writeFloat(object.speed);
+		output.writeFloat(object.speedXAtRest);
 		output.writeFloat(object.sizeRatio);
 		output.writeFloat(object.decal_X_Ratio);
 		output.writeFloat(object.decal_Y_Ratio);
@@ -41,7 +41,7 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 		returning.parallaxScalingSpeedX = input.readFloat() ;
 		returning.parallaxScalingSpeedY = input.readFloat() ;
 		
-		returning.speed = input.readFloat() ;
+		returning.speedXAtRest = input.readFloat() ;
 		returning.sizeRatio = input.readFloat() ;
 		returning.decal_X_Ratio = input.readFloat() ;
 		returning.decal_Y_Ratio = input.readFloat() ;

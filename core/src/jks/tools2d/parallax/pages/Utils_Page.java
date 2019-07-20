@@ -14,7 +14,7 @@ public class Utils_Page
 		model.flipY = (page.isFlipY());
 		model.parallaxScalingSpeedX = (page.getParallaxSpeedRatioX());
 		model.parallaxScalingSpeedY = (page.getParallaxSpeedRatioY());
-		model.speed = (page.getSpeedAtRest());
+		model.speedXAtRest = (page.getSpeedAtRest());
 		model.sizeRatio = (page.getSizeRatio());
 		model.decal_X_Ratio = (page.getDecalPercentX());
 		model.decal_Y_Ratio = (page.getDecalPercentY());
