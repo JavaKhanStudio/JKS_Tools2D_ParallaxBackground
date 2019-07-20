@@ -26,28 +26,22 @@ public class Page_Model
 		this.pageList = pageList ; 
 	}
 
-	public String getAtlasName() {
-		return atlasName;
-	}
+	public String getAtlasName() 
+	{return atlasName;}
 
-	public void setAtlasName(String atlasName) {
-		this.atlasName = atlasName;
-	}
+	public void setAtlasName(String atlasName) 
+	{this.atlasName = atlasName;}
 
-	public boolean isOutside() {
-		return outside;
-	}
+	public boolean isOutside() 
+	{return outside;}
 
-	public void setOutside(boolean outside) {
-		this.outside = outside;
-	}
+	public void setOutside(boolean outside) 
+	{this.outside = outside;}
 
-	public ArrayList<Parallax_Model> getPageList() {
-		return pageList;
-	}
+	public ArrayList<Parallax_Model> getPageList() 
+	{return pageList;}
 
-	public void setPageList(ArrayList<Parallax_Model> pageList) {
-		this.pageList = pageList;
-	}
+	public void setPageList(ArrayList<Parallax_Model> pageList) 
+	{this.pageList = pageList;}
 	
 }

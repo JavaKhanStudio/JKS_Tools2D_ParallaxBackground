@@ -13,7 +13,7 @@ public class Parallax_Model
 	public float parallaxScalingSpeedX ; 
 	public float parallaxScalingSpeedY ; 
 	
-	public float speed ; 
+	public float speedXAtRest ; 
 	public float sizeRatio = 1; 
 	public float decal_X_Ratio ; 
 	public float decal_Y_Ratio ; 
@@ -50,10 +50,10 @@ public class Parallax_Model
 	{this.parallaxScalingSpeedY = parallaxScalingSpeedY;}
 	
 	public float getSpeed()
-	{return speed;}
+	{return speedXAtRest;}
 	
 	public void setSpeed(float speed)
-	{this.speed = speed;}
+	{this.speedXAtRest = speed;}
 	
 	public float getSizeRatio()
 	{return sizeRatio;}

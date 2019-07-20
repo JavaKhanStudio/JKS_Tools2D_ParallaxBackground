@@ -56,7 +56,7 @@ public class TestUtils_Kryo
 			parallaxPage.regionPosition + " " + 
 			parallaxPage.parallaxScalingSpeedX + " " + 
 			parallaxPage.parallaxScalingSpeedY + " " + 
-			parallaxPage.speed + " " + 
+			parallaxPage.speedXAtRest + " " + 
 			parallaxPage.decal_Y_Ratio + " ");
     }
     
@@ -67,7 +67,7 @@ public class TestUtils_Kryo
     	parallaxPage.regionPosition = 1 ; 
     	parallaxPage.parallaxScalingSpeedX = 1 ; 
     	parallaxPage.parallaxScalingSpeedY = 2 ; 
-    	parallaxPage.speed = 3 ; 
+    	parallaxPage.speedXAtRest = 3 ; 
     	parallaxPage.decal_Y_Ratio = 4 ; 
     	return parallaxPage ; 
     }

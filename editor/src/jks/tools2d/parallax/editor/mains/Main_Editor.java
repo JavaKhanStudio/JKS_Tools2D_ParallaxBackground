@@ -1,9 +1,14 @@
 package jks.tools2d.parallax.editor.mains;
 
+import java.io.File;
+import java.net.URISyntaxException;
+
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
 
+import jks.tools2d.parallax.Launcher_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.Vue_Selection; 
@@ -14,12 +19,21 @@ public class Main_Editor extends ApplicationAdapter
 	@Override
 	public void create () 
 	{
+		Gdx.graphics.setWindowedMode(1300, 800) ; 
 		GVars_Heart_Editor.init();
 		Gdx.graphics.setVSync(true);
+		
+		if(Vue_Selection.selectSigleFile
+				(new FileHandle(
+						new File(Launcher_Editor.launchingValue))))
+		{
+			return ;
+		}
+	
 		GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
 	}
 
-	
+
 	@Override
 	public void render () 
 	{

@@ -11,6 +11,10 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.rel
 
 import java.io.File;
 import java.io.FileFilter;
+import java.net.URISyntaxException;
+import java.net.URL;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
@@ -28,6 +32,7 @@ import com.esotericsoftware.kryo.io.Input;
 import jks.tools2d.filechooser.FC_List;
 import jks.tools2d.filechooser.FileChooser_Listener;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
+import jks.tools2d.parallax.Launcher_Editor;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Serialization;
@@ -57,7 +62,8 @@ public class Vue_Selection extends AVue_Model
 	@Override
 	public void init() 
 	{	
-		buildSelection(GVars_Ui.baseSkin) ; 
+		buildSelection(GVars_Ui.baseSkin) ;
+		
 	}
 	
 	public void buildSelection(Skin skin)
@@ -92,16 +98,14 @@ public class Vue_Selection extends AVue_Model
 		buttonSize = (int) (chooser.getX() * 0.75f) ; 
 		creatNew.setBounds((chooser.getX() - buttonSize)/2, Gdx.graphics.getHeight()/2 - buttonSize/2, buttonSize, buttonSize);
 		
-		Label title = new Label("Select a Paralax (." + FVars_Extensions.PARALLAX + ") to modify it / Or an atlas (." + FVars_Extensions.ATLAS + ") to creat a new",skin) ; 
+		Label title = new Label("You can select a Project : (." + FVars_Extensions.PARALLAX + ")\n Paralax : (." + FVars_Extensions.PARALLAX + " / ." +  FVars_Extensions.JSON_PARALLAX + ") \n Or an atlas (." + FVars_Extensions.ATLAS + ") to creat a new project",skin) ; 
 		title.getStyle().fontColor = Color.LIGHT_GRAY ; 
 
 		title.setAlignment(0, 0);
 		title.setSize(chooser.getWidth(), ((Gdx.graphics.getHeight() - chooser.getHeight()) / 2));
 		title.setPosition(chooser.getX(), chooser.getY() + chooser.getHeight());
 		 
-		chooser.setFileFilter(buildFileFilter());
-
-	
+		chooser.setFileFilter(buildFileFilter());	
 		chooser.setDirectory(relative);
 		
 		GVars_Ui.mainUi.addActor(creatNew); 
@@ -154,15 +158,19 @@ public class Vue_Selection extends AVue_Model
          };
 	}
 	
-	public void selectSigleFile(FileHandle file)
+	public static boolean selectSigleFile(FileHandle file)
 	{
-		projectInfos = new Project_Infos();
-		projectInfos.setPathInfo(file);
-		projectDatas = new Project_Data() ; 
-		relativePath = projectInfos.projectPath ; 
+		
+		if(StringUtils.isEmpty(file.extension()))
+			return false ; 
 		
 		try
-		{
+		{	
+			projectInfos = new Project_Infos();
+			projectInfos.setPathInfo(file);
+			projectDatas = new Project_Data() ; 
+			relativePath = projectInfos.projectPath ; 
+			
 			if(PARALLAX.equals(file.extension()))
 				GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Serialization.kryo.readObject(new Input(file.read()),WholePage_Model.class)), true);
 			else if(JSON_PARALLAX.equals(file.extension()))
@@ -171,10 +179,13 @@ public class Vue_Selection extends AVue_Model
 				GVars_Heart_Editor.changeVue(new Vue_Edition(new TextureAtlas(file)), true);
 			else if(PARALLAX_PROJECT.equals(file.extension()))
 				GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Serialization.objectMapper.readValue(file.file(), Project_Data.class)), true);
+			else
+				return false ; 
 		}
 		catch(Exception e)
-		{e.printStackTrace();}
+		{e.printStackTrace(); return false ;}
 		
+		return true ; 
 	}
 	
 

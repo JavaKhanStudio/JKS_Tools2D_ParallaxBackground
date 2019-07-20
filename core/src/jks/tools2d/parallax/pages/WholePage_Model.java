@@ -19,7 +19,6 @@ import jks.tools2d.parallax.side.SquareBackground;
 @JsonIgnoreProperties(value = { "preloadValue" })
 public class WholePage_Model
 {	
-	
 	public Color topHalf_top ; 
 	public Color topHalf_bottom ;
 	public float topHalfSize ; 

@@ -20,7 +20,7 @@ public class DayPageModel
 
 		cloud.regionName = "Clouds" ; 
 		cloud.regionPosition = 0 ; 
-		cloud.speed = 0.5f ;
+		cloud.speedXAtRest = 0.5f ;
 		cloud.parallaxScalingSpeedX = .01f ; 
 		cloud.parallaxScalingSpeedY = .01f ; 
 		cloud.decal_Y_Ratio = 35f ;

@@ -72,7 +72,7 @@ public class ParallaxLayer implements Cloneable
 		setDecalPercentX(model.decal_X_Ratio);
 		setDecalPercentY(model.decal_Y_Ratio);
 		setSizeRatio(model.sizeRatio);
-		setSpeedAtRest(model.speed);
+		setSpeedAtRest(model.speedXAtRest);
 		setParallaxSpeedRatioX(model.parallaxScalingSpeedX) ; 
 		setParallaxSpeedRatioY( model.parallaxScalingSpeedY) ; 
 		setPadX(model.padX);

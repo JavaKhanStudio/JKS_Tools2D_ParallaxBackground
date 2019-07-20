@@ -460,7 +460,11 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		
 		mirror.setChecked(currentlySelectedParallax.isMirror()) ; 
 		
-		indexPositionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
+		if(parallax_Heart.parallaxReader.layers.size() > 0)
+			indexPositionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
+		else
+			indexPositionSpinner.setMax(0);
+		
 		indexPositionSpinner.setMin(0);
 		indexPositionSpinner.setValue(parallax_Heart.parallaxReader.layers.indexOf(currentlySelectedParallax)) ;
 			

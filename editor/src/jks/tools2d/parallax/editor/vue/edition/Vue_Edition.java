@@ -46,9 +46,9 @@ import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
-import jks.tools2d.parallax.editor.vue.edition.data.Utils_LoadingImages;
-import jks.tools2d.parallax.editor.vue.edition.data.Utils_Saving;
-import jks.tools2d.parallax.editor.vue.edition.data.Utils_Texture;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_LoadingImages;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
 import jks.tools2d.parallax.heart.Parallax_Heart; 
 

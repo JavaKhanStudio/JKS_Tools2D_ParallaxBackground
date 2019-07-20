@@ -11,7 +11,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
-import jks.tools2d.parallax.editor.vue.edition.data.Utils_Texture;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 
 public class FileWatching_Image extends FileWatchingModel
 {

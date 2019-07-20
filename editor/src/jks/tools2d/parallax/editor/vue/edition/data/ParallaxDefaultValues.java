@@ -72,7 +72,7 @@ public class ParallaxDefaultValues
 		defaultModel.parallaxScalingSpeedX += (positive ? 1 : -1)* incrementValue.parallaxScalingSpeedX ; 
 		defaultModel.parallaxScalingSpeedY += (positive ? 1 : -1)*incrementValue.parallaxScalingSpeedY ; 
 		
-		defaultModel.speed += (positive ? 1 : -1)*incrementValue.speed ; 
+		defaultModel.speedXAtRest += (positive ? 1 : -1)*incrementValue.speedXAtRest ; 
 		defaultModel.sizeRatio += (positive ? 1 : -1)*incrementValue.sizeRatio ; 
 		if(defaultModel.sizeRatio <= 0)
 			defaultModel.sizeRatio = 0.01f ; 
@@ -112,7 +112,7 @@ public class ParallaxDefaultValues
 		
 		defaultModel.parallaxScalingSpeedX = newValue.getParallaxSpeedRatioX() ; 
 		defaultModel.parallaxScalingSpeedY = newValue.getParallaxSpeedRatioY() ; 
-		defaultModel.speed = newValue.getSpeedAtRest() ; 
+		defaultModel.speedXAtRest = newValue.getSpeedAtRest() ; 
 		defaultModel.sizeRatio = newValue.getSizeRatio() ; 
 		defaultModel.decal_X_Ratio = newValue.getDecalPercentX() ; 
 		defaultModel.decal_Y_Ratio = newValue.getDecalPercentY() ; 

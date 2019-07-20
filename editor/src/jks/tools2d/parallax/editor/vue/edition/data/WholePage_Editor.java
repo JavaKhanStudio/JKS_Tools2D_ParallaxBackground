@@ -27,12 +27,21 @@ public class WholePage_Editor extends WholePage_Model
 		ParallaxLayer layer = null ; 
 		
 		int inc = 0 ; 
+
 		for(Parallax_Model parallax : pageModel.pageList)
 		{
 			if(inside.get(inc))
 				layer = buildLayer(parallax,atlas,worldWidth) ; 
 			else
 				layer = buildOutsideLayer(parallax, worldWidth) ; 
+			
+			//TODO make it more fexible
+			if(layer == null)
+			{
+				//pageModel.pageList.remove(parallax) ; 
+				inside.remove(inc) ; 
+				continue ;
+			}
 			
 			returningList.add(layer) ;
 			
@@ -45,12 +54,16 @@ public class WholePage_Editor extends WholePage_Model
 	protected ParallaxLayer buildOutsideLayer(Parallax_Model parallax, float worldWidth)
 	{
 		TextureRegion texture = GVars_Vue_Edition.outsideReserve.get(parallax.regionName) ; 
+		if(texture == null) {
+			GVars_Vue_Edition.outsideReserve.remove(parallax.regionName) ; 
+			return null; 
+		}
 		ParallaxLayer layer = new ParallaxLayer(
-				texture,
-				true, 
-				worldWidth, 
-				parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY,
-				parallax.sizeRatio) ; 
+			texture,
+			true, 
+			worldWidth, 
+			parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY,
+			parallax.sizeRatio) ; 
 
 		layer.setUpEverything(parallax);
 		return layer ; 

@@ -92,15 +92,24 @@ public class VE_Center_ParallaxShow extends Table
 	
 	private static void buildOutsideValues()
 	{
+		String errors = "" ; 
+		
 		if(GVars_Vue_Edition.projectDatas.outsideInfos != null)
 		{
 			for(Outside_Source infos : GVars_Vue_Edition.projectDatas.outsideInfos)
 			{
-				TextureRegion region = new TextureRegion(new Texture(new FileHandle(infos.url))) ; 
-				allImage.add(region) ;
-				imageRef.put(region, new Position_Infos(false, infos.url,0)) ;
-				new FileWatching_Image(infos.url,region) ; 
-				outsideReserve.put(infos.url, region) ; 
+				try 
+				{
+					TextureRegion region = new TextureRegion(new Texture(new FileHandle(infos.url))) ; 
+					allImage.add(region) ;
+					imageRef.put(region, new Position_Infos(false, infos.url,0)) ;
+					new FileWatching_Image(infos.url,region) ; 
+					outsideReserve.put(infos.url, region) ; 
+				}
+				catch(Exception e)
+				{
+					errors += "Could not load " + infos.url ; 
+				}
 			}
 		}
 	}

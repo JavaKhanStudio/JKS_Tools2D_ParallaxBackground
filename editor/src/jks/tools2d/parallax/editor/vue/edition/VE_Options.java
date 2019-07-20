@@ -13,7 +13,7 @@ import com.kotcrab.vis.ui.widget.VisLabel;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
-import jks.tools2d.parallax.editor.vue.edition.data.Utils_Saving;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving;
 
 public class VE_Options extends Table
 {
@@ -22,7 +22,7 @@ public class VE_Options extends Table
 	float textWidth, pathWidth,  textHeight, formatWidth ;
 	
 	public static TextField parallaxPath,parallaxName  ; 
-	public static VisCheckBox  formatLibGDX,formatJson ; 
+	public static VisCheckBox  formatLibGDX,formatJson,forceExport ; 
 	
 	ImageButton savingExport, savingProject ;
 	
@@ -72,11 +72,7 @@ public class VE_Options extends Table
 		{		
 			@Override
 			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{getDefaults().defaultModel.setFlipX(formatLibGDX.isChecked());}
+			{return true ;}		
 		}) ; 
 		
 		formatLibGDX.setChecked(true);
@@ -86,11 +82,15 @@ public class VE_Options extends Table
 		{		
 			@Override
 			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
+			{return true ;}		
+		}) ; 
+		
+		forceExport = new VisCheckBox("F.Export") ;
+		forceExport.addListener(new InputListener()
+		{		
 			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{getDefaults().defaultModel.setFlipX(formatJson.isChecked());}
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
 		}) ; 
 		
 		// TABLES //
@@ -122,8 +122,9 @@ public class VE_Options extends Table
 		Table formatTable = new Table() ; 
 		formatTable.setBounds(savingExport.getWidth() +  savingExport.getX(), savingExport.getY(), 100, savingExport.getHeight());
 		
-		formatTable.add(formatLibGDX).left().row(); ; 
-		formatTable.add(formatJson).left() ;
+		formatTable.add(formatLibGDX).left().row() ; 
+		formatTable.add(formatJson).left().row();
+		formatTable.add(forceExport).left() ;
 		
 				
 		setInfos() ; 
