@@ -1,6 +1,5 @@
 package jks.tools2d.parallax.heart;
 
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -8,134 +7,124 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
-import jks.tools2d.parallax.ParallaxPage;
+import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parralax;
-import jks.tools2d.parallax.side.SolarAstre;
+import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
 
 public class Parallax_Heart 
 {
-	public static OrthographicCamera worldCamera;
-	public static OrthographicCamera staticCamera;
-	public static SpriteBatch batch;
-	public static ParallaxPage parallaxMainPage;
-	public static ParallaxPage parallaxSecondePage;
-	public static AssetManager manager ;
+	public OrthographicCamera worldCamera;
+	public SpriteBatch batch;
+	public ParallaxPageReader parallaxReader;
 	
 	// Background
-	public static ShapeRenderer shapeRender ; 
-	public static SquareBackground topSquare ;
-	public static SquareBackground bottomSquare ;
+	public ShapeRenderer shapeRender ; 
+	public SquareBackground topSquare ;
+	public SquareBackground bottomSquare ;
+	//
 	
-	//  1 = nothing * 0 = full screen
-	public static float squarePercentage = 0.5f; 
-	public static float bottomSquareSize = Gdx.graphics.getHeight()/5 ;
-
-	public static float worldWidth; 
-	public static float worldHeight ;
+	public WholePage_Model currentPage ; 
+	public WholePage_Model currentTransfertPage ; 
 	
-	static ParallaxPageModel currentPage ; 
-	static ParallaxPageModel currentTransfertPage ; 
+	public float screenSpeedConsumableX ; 
+	public float screenSpeedConstantX ; 
 	
-	public static SolarAstre astres ; 
-	public static boolean keepOn ;
-	public static boolean useTimeOfDay ; 
+	public float screenSpeedConsumableY ; 
+	public float screenSpeedConstantY ; 
 	
-	public static boolean debug ; 
+	public String relativePath = "";
 	
-	public static void init(float worldWidth,AssetManager manager) 
+	public Parallax_Heart(float worldWidth,AssetManager manager) 
 	{	
-		Parallax_Heart.worldWidth = worldWidth ;
-		Parallax_Heart.worldHeight = Utils_Parralax.calculateOtherDimension(true, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+		Gvars_Parallax.setWorldWidth(worldWidth);
+		Gvars_Parallax.setWorldHeight(Utils_Parralax.calculateOtherDimension(true, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
+	
+		worldCamera = new OrthographicCamera() ;
+		worldCamera.setToOrtho(false,Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight());
 		
-		Parallax_Heart.worldCamera = new OrthographicCamera() ;
-		Parallax_Heart.worldCamera.setToOrtho(false,worldWidth,worldHeight);
-		Parallax_Heart.worldCamera.position.add(10000, 0, 0);
-		
-		Parallax_Heart.staticCamera = new OrthographicCamera() ;
-		
-		Parallax_Heart.batch = new SpriteBatch();
+		batch = new SpriteBatch();
 
 		shapeRender = new ShapeRenderer() ;
-		parallaxMainPage = new ParallaxPage();
-		Parallax_Heart.manager = manager ; 
+		parallaxReader = new ParallaxPageReader();
+		Gvars_Parallax.setManager(manager) ; 
 	}
 	
-	public static void init(
+	public Parallax_Heart(
 			OrthographicCamera worldCamera,
 			OrthographicCamera staticCamera,
 			SpriteBatch batch,
 			float worldWidth,
 			float worldHeight) 
 	{
-		Parallax_Heart.worldCamera = worldCamera ;
-		Parallax_Heart.staticCamera = staticCamera ;
-		Parallax_Heart.worldWidth = worldWidth ;
-		Parallax_Heart.worldHeight = worldHeight ;
+		this.worldCamera = worldCamera ;
+		Gvars_Parallax.setWorldWidth(worldWidth);
+		Gvars_Parallax.setWorldHeight(worldHeight);
 		
-		Parallax_Heart.batch = batch;
+		this.batch = batch;
 
 		shapeRender = new ShapeRenderer() ;
-		parallaxMainPage = new ParallaxPage(); 
+		parallaxReader = new ParallaxPageReader(); 
 	}
 	
-	public static void init(
+	public Parallax_Heart(
 			OrthographicCamera worldCamera,
 			OrthographicCamera staticCamera,
 			SpriteBatch batch,
-			ParallaxPageModel pageModel,
+			WholePage_Model pageModel,
 			float worldWidth,
 			float worldHeight
 			)
 	{
-		init(worldCamera,staticCamera,batch,worldWidth,worldHeight) ;
-		Parallax_Utils_Page.setPage(pageModel) ; 
+		this(worldCamera,staticCamera,batch,worldWidth,worldHeight) ;
+		Parallax_Utils_Page.setPage(this,pageModel) ; 
 	}
 	
-	public static void setPage(ParallaxPageModel model)
-	{Parallax_Utils_Page.setPage(model);}
+	public void setPage(WholePage_Model model)
+	{Parallax_Utils_Page.setPage(this,model);}
 	
-	public static void transfertIntoPage(ParallaxPageModel model, float intoXSec)
+	public void transfertIntoPage(WholePage_Model model, float intoXSec)
 	{
-		Parallax_Utils_Page.transfertIntoPage(model, intoXSec);
+		Parallax_Utils_Page.transfertIntoPage(this,model, intoXSec);
 	}
 	
-	public static void act(float delta)
+	public void act(float delta)
 	{
-		if(astres != null)
-			astres.act(delta);
-		
 		if(topSquare != null)
 			topSquare.act(delta);
 		
 		if(bottomSquare != null)
 			bottomSquare.act(delta);
 		
-		if(Parallax_Heart.parallaxMainPage != null)
-			Parallax_Heart.parallaxMainPage.act(delta);
-			
+		if(parallaxReader != null)
+			parallaxReader.act(delta,screenSpeedConsumableX + screenSpeedConstantX,screenSpeedConsumableY + screenSpeedConstantY);	
+		
+		screenSpeedConsumableX = 0 ; 
+		screenSpeedConsumableY = 0 ; 
 	}
 
-	public static void renderMainPage()
+	public void render()
 	{
-		shapeRender.begin(ShapeType.Filled);
-		Parallax_Utils_Background.drawBackground_TopColor() ; 
-		Parallax_Utils_Background.drawBackground_BottomColor() ; 
-		shapeRender.end();
+		worldCamera.update();
+		batch.setProjectionMatrix(worldCamera.combined);
+		drawBackGround() ; 
 		
 		batch.begin() ;
-		Parallax_Utils_Astre.drawAstre(); 
-		Parallax_Utils_Page.drawPage() ;
-		batch.end();
-	}
-	//TODO finish this
-	/*
-	public static void renderSecondePage(float delta)
-	{
-		batch.begin() ;
-		Parallax_Utils_Page.drawSecondePage(delta) ; 
-		batch.end();
-	}
-	*/
-}
+		parallaxReader.draw(worldCamera, batch);
 
+		batch.end();
+	}
+	
+	public void drawBackGround()
+	{
+		shapeRender.begin(ShapeType.Filled);
+		
+		if(topSquare != null)
+			topSquare.draw(shapeRender);
+
+		if(bottomSquare != null)
+			bottomSquare.draw(shapeRender);
+		
+		shapeRender.end();
+	}
+}

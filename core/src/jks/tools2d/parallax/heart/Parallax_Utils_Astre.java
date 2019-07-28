@@ -1,13 +1,8 @@
 package jks.tools2d.parallax.heart;
 
-import jks.tools2d.parallax.side.Enum_AstreType;
-import jks.tools2d.parallax.side.SolarAstre;
-
-import static jks.tools2d.parallax.heart.Parallax_Heart.*;
-
 public class Parallax_Utils_Astre 
 {
-
+/*
 	static void drawAstre()
 	{
 		if(astres != null)
@@ -35,5 +30,5 @@ public class Parallax_Utils_Astre
 		}	
 	}
 
-
+*/
 }

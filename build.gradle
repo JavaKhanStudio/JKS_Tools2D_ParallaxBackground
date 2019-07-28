@@ -1,26 +1,36 @@
-buildscript {
-    repositories {
+buildscript 
+{
+    repositories 
+    {
         mavenLocal()
         mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "https://mvnrepository.com/artifact/net.dermetfan.libgdx-utils/libgdx-utils" }
+        
     }
     dependencies {
-         classpath 'com.android.tools.build:gradle:1.5.0'
+    
     }
 }
 
+plugins {
+  id "org.sonarqube" version "2.7"
+}
 
 allprojects 
 {
     apply plugin: "eclipse"
     apply plugin: "idea"
+    apply plugin: "distribution"
 
-    version = '0.1'
+    version = '1.0'
     ext 
     {
         appName = 'ParallaxBackground'
-        gdxVersion = '1.9.6'
-        roboVMVersion = '2.3.1'
+        gdxVersion = '1.9.9'
+        roboVMVersion = '2.3.5'
+        visuiVersion = '1.4.2'
     }
 
     repositories 
@@ -32,19 +42,6 @@ allprojects
     }
 }
 
-project(":desktop") 
-{
-    apply plugin: "java"
-
-    dependencies 
-    {
-        compile project(":test")
-        compile "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
-        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-        compile "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
-    }
-}
-
 
 project(":test") 
 {
@@ -53,8 +50,28 @@ project(":test")
     dependencies 
     {
      	compile project(":core")
+     	compile project(":editor")
+     	compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+  		compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+  		compile "com.badlogicgames.gdx:gdx-tools:$gdxVersion" 
+  		compile group: 'commons-io', name: 'commons-io', version: '2.4'
     }
 }
+
+project(":core") 
+{
+    apply plugin: "java"
+
+    dependencies 
+	{
+     	compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+     	compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+     	compile "com.esotericsoftware:kryo:5.0.0-RC1"
+     	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.0.1'
+	}
+}
+
+
 
 project(":editor") 
 {
@@ -63,35 +80,16 @@ project(":editor")
     dependencies 
     {
      	compile project(":core")
-     	compile "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
-        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-    }
+     	compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+  		compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+  		compile "com.badlogicgames.gdx:gdx-tools:$gdxVersion" 
+  		compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+    	compile "com.kotcrab.vis:vis-ui:$visuiVersion"
+    	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
+    	
+  	}
 }
 
-/*
-project(":android") {
-    apply plugin: "android"
-
-    configurations { natives }
-
-    dependencies {
-        compile project(":test")
-        compile project(":core")
-        compile "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
-        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi"
-        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
-        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
-        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
-        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
-        compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
-        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-armeabi"
-        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-armeabi-v7a"
-        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a"
-        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86"
-        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
-    }
-}
-*/
 tasks.eclipse.doLast 
 {
     delete ".project"
