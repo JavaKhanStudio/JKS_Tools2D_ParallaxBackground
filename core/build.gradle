@@ -1,26 +1,10 @@
 apply plugin: "java"
 
-sourceCompatibility = 1.6
+sourceCompatibility = 1.8
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 sourceSets.main.java.srcDirs = [ "src/" ]
 
-
-jar {
-    baseName 'parallax'
-}
-
 eclipse.project {
     name = appName + "_Core"
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.1'
-}
-
-dependencies 
-{
-     compile "com.badlogicgames.gdx:gdx:1.9.6"
-     compile "com.badlogicgames.gdx:gdx-box2d:1.9.6"
-     compile "com.esotericsoftware:kryo:5.0.0-RC1"
 }

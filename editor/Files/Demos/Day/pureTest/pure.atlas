@@ -1,0 +1,103 @@
+pure.png
+size: 8191, 6282
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Clouds
+  rotate: false
+  xy: 0, 2709
+  size: 5000, 930
+  orig: 5000, 930
+  offset: 0, 0
+  index: -1
+crasygrass
+  rotate: false
+  xy: 5050, 3017
+  size: 3137, 324
+  orig: 3137, 324
+  offset: 0, 0
+  index: -1
+feuille_fond
+  rotate: false
+  xy: 5050, 1686
+  size: 3138, 846
+  orig: 3138, 846
+  offset: 0, 0
+  index: -1
+feuille_vert
+  rotate: false
+  xy: 5050, 455
+  size: 3140, 694
+  orig: 3140, 694
+  offset: 0, 0
+  index: -1
+grass
+  rotate: false
+  xy: 5050, 0
+  size: 3141, 405
+  orig: 3141, 405
+  offset: 0, 0
+  index: -1
+grass_back
+  rotate: false
+  xy: 5050, 3391
+  size: 3130, 284
+  orig: 3130, 284
+  offset: 0, 0
+  index: -1
+idkman
+  rotate: false
+  xy: 5050, 2582
+  size: 3138, 385
+  orig: 3138, 385
+  offset: 0, 0
+  index: -1
+Mountains_big
+  rotate: false
+  xy: 0, 1492
+  size: 5000, 1167
+  orig: 5000, 1167
+  offset: 0, 0
+  index: -1
+Mountains_small
+  rotate: false
+  xy: 0, 3689
+  size: 5000, 852
+  orig: 5000, 852
+  offset: 0, 0
+  index: -1
+road
+  rotate: false
+  xy: 5050, 1199
+  size: 3140, 437
+  orig: 3140, 437
+  offset: 0, 0
+  index: -1
+Sky
+  rotate: false
+  xy: 0, 0
+  size: 5000, 1442
+  orig: 5000, 1442
+  offset: 0, 0
+  index: -1
+Trees_close
+  rotate: false
+  xy: 0, 5848
+  size: 5000, 434
+  orig: 5000, 434
+  offset: 0, 0
+  index: -1
+Trees_far
+  rotate: false
+  xy: 0, 4591
+  size: 5000, 604
+  orig: 5000, 604
+  offset: 0, 0
+  index: -1
+Trees_fartest
+  rotate: false
+  xy: 0, 5245
+  size: 5000, 553
+  orig: 5000, 553
+  offset: 0, 0
+  index: -1

@@ -1,0 +1,62 @@
+
+whole_1.png
+size: 6144,3102
+format: RGBA8888
+filter: Nearest,Nearest
+repeat: none
+clouds_double
+  rotate: false
+  xy: 10,10
+  size: 1658,444
+  orig: 1658, 444
+  offset: 0, 0
+  index: -1
+clouds_signe
+  rotate: false
+  xy: 10,464
+  size: 452,123
+  orig: 452, 123
+  offset: 0, 0
+  index: -1
+rocks
+  rotate: false
+  xy: 1678,10
+  size: 1920,675
+  orig: 1920, 675
+  offset: 0, 0
+  index: -1
+ground_close
+  rotate: false
+  xy: 1678,695
+  size: 1920,1034
+  orig: 1920, 1034
+  offset: 0, 0
+  index: -1
+ground_far
+  rotate: false
+  xy: 1678,1739
+  size: 1920,963
+  orig: 1920, 963
+  offset: 0, 0
+  index: -1
+ground_open
+  rotate: false
+  xy: 3608,10
+  size: 1920,721
+  orig: 1920, 721
+  offset: 0, 0
+  index: -1
+waterDark
+  rotate: false
+  xy: 3608,741
+  size: 2048,256
+  orig: 2048, 256
+  offset: 0, 0
+  index: -1
+ScoreLabel
+  rotate: false
+  xy: 10,597
+  size: 830,248
+  orig: 830, 248
+  offset: 0, 0
+  index: -1

@@ -1,55 +1,30 @@
 package jks.tools2d.parallax.heart;
 
+import jks.tools2d.parallax.pages.WholePage_Model;
+
 public class Parallax_Utils_Page 
 {
-
-	public static void setPage(ParallaxPageModel pageModel) 
-	{
-		Parallax_Heart.currentPage = pageModel ; 
-		Parallax_Heart.parallaxMainPage.layers.clear();
-		Parallax_Heart.parallaxMainPage.addLayers(Parallax_Heart.currentPage.getDrawing());
-		Parallax_Utils_Background.setBackground(Parallax_Heart.currentPage) ;
-	}
 	
-	public static void transfertIntoPage(ParallaxPageModel pageModel, float inXSecondes) 
+	public static void setPage(Parallax_Heart ref, WholePage_Model pageModel) 
 	{
-		Parallax_Heart.currentTransfertPage = pageModel ; 
-	
-		Parallax_Heart.parallaxMainPage.addLayersTransfert(pageModel,inXSecondes); 
-		Parallax_Heart.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes );
-		Parallax_Heart.bottomSquare.transfertInto(pageModel.bottomHalf, pageModel.bottomHalf, inXSecondes );
+		ref.currentPage = pageModel ; 
+		ref.parallaxReader.layers.clear();
+		ref.parallaxReader.addLayers(ref.currentPage.getDrawing(ref.relativePath));
+		ref.parallaxReader.setRepeatOnX(pageModel.repeatOnX) ; 
+		ref.parallaxReader.setRepeatOnY(pageModel.repeatOnY) ; 
 		
-		if(Parallax_Heart.parallaxSecondePage != null)
-		{
-			Parallax_Heart.parallaxSecondePage.addColorTransfert(Parallax_Heart.currentPage.colorSurronding, inXSecondes);
-			Parallax_Heart.parallaxSecondePage.set_newLayer_Color(Parallax_Heart.currentPage.colorSurronding);
-		}
-
-	}
 		
-	static void act(float delta)
-	{
-		Parallax_Heart.parallaxMainPage.act(delta) ; 
-		if(Parallax_Heart.astres != null)
-			Parallax_Heart.astres.act(delta);
+		ref.topSquare = pageModel.buildTopSquareBackground(pageModel.topHalfSize) ;
+		ref.bottomSquare = pageModel.buildBottomSquareBackground(pageModel.bottomHalfSize) ;
 	}
 	
-	static void drawPage()
+	public static void transfertIntoPage(Parallax_Heart ref, WholePage_Model pageModel, float inXSecondes) 
 	{
-		Parallax_Heart.parallaxMainPage.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
-		
-		if(Parallax_Heart.astres != null)
-			Parallax_Heart.astres.draw(Parallax_Heart.batch);
-	}
+		ref.currentTransfertPage = pageModel ; 
 	
-	static void drawSecondePage()
-	{
-		if(Parallax_Heart.parallaxSecondePage != null)
-		{
-//			Parallax_Heart.parallaxSecondePage.act(delta) ; 
-			Parallax_Heart.parallaxSecondePage.draw(Parallax_Heart.worldCamera, Parallax_Heart.batch);
-		}
+		ref.parallaxReader.addLayersTransfert(pageModel,inXSecondes); 
+		ref.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes );
+		ref.bottomSquare.transfertInto(pageModel.bottomHalf_top, pageModel.bottomHalf_top, inXSecondes );
 	}
-
 
 }

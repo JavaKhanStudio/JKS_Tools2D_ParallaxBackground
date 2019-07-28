@@ -1,49 +1,52 @@
+package jks.tools2d.parallax.poubelle;
 
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
 
-//package jks.tools2d.parallax.poubelle;
-//
-//public class PoubelleDeCode {
-//
-//}
+import jks.tools2d.parallax.ParallaxPageReader;
+import jks.tools2d.parallax.ParallaxLayer;
+
+public class PoubelleDeCode {
+
+}
 
 /*
- 	
-	public List<TextureRegionParallaxLayer> createLayers_day(float worldWidth, float worldHeight) 
-	{
-		if(page.atlasPath == null)
-			return null ; 
-		
-		TextureAtlas atlas = new TextureAtlas(page.atlasPath);
+private void createLayers() 
+{
+	atlas = new TextureAtlas("data/main_atlas.atlas");
 
-		TextureRegion cloudsRegion = atlas.findRegion("Clouds");
-		Array<AtlasRegion> mountainsRegion = atlas.findRegions("Mountains");
-		Array<AtlasRegion> treesRegion = atlas.findRegions("Trees");
-		
-		
-		TextureRegionParallaxLayer cloudsLayerA = new TextureRegionParallaxLayer(cloudsRegion, worldWidth, new Vector2(.01f,.01f), true);
-		cloudsLayerA.setPadBottom(worldHeight*.3f);
-		cloudsLayerA.setSpeed(1); // TODO maybie change
-		
-		TextureRegionParallaxLayer mountainsLayerA = new TextureRegionParallaxLayer(mountainsRegion.get(0), worldWidth, new Vector2(.006f,.006f), true);
-		mountainsLayerA.setPadBottom(worldHeight*.12f);
-		TextureRegionParallaxLayer mountainsLayerB = new TextureRegionParallaxLayer(mountainsRegion.get(1), worldWidth, new Vector2(.008f,.008f), true);
-		mountainsLayerB.setPadBottom(worldHeight*.095f);
-		TextureRegionParallaxLayer mountainsLayerC = new TextureRegionParallaxLayer(mountainsRegion.get(1), worldWidth, new Vector2(.012f,.012f), true);
-		mountainsLayerC.setPadBottom(worldHeight*.045f);
-		
-        
-        TextureRegionParallaxLayer treesLayerA1 = new TextureRegionParallaxLayer(treesRegion.get(0), worldWidth*.7275f, new Vector2(.03f,.03f), true);
-		treesLayerA1.setPadBottom(worldHeight*.12f);
-        TextureRegionParallaxLayer treesLayerA = new TextureRegionParallaxLayer(treesRegion.get(0), worldWidth*.7275f, new Vector2(.04f,.04f), true);
-		treesLayerA.setPadBottom(worldHeight*.09f);
-		TextureRegionParallaxLayer treesLayerB = new TextureRegionParallaxLayer(treesRegion.get(1), worldWidth*.7275f, new Vector2(.06f,.06f), true);
-		treesLayerB.setPadBottom(worldHeight*.07f);
-		TextureRegionParallaxLayer treesLayerC = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.08f,.08f), true);
-		treesLayerC.setPadBottom(worldHeight*.05f);
-		TextureRegionParallaxLayer treesLayerD = new TextureRegionParallaxLayer(treesRegion.get(2), worldWidth*.7275f, new Vector2(.09f,.09f), true);
-		treesLayerD.setPadBottom(worldHeight*.0f);
-		    
-		return Arrays.asList(cloudsLayerA,mountainsLayerA,mountainsLayerB,mountainsLayerC,treesLayerA1,treesLayerA,treesLayerB,treesLayerC,treesLayerD) ;
-	}
+	TextureRegion mountainsRegionA = atlas.findRegion("mountains_a");
+	TextureRegionParallaxLayer mountainsLayerA = new TextureRegionParallaxLayer(mountainsRegionA, worldWidth, new Vector2(.3f,.3f), true);
+
+	TextureRegion mountainsRegionB = atlas.findRegion("mountains_b");
+	TextureRegionParallaxLayer mountainsLayerB = new TextureRegionParallaxLayer(mountainsRegionB, worldWidth*.7275f, new Vector2(.6f,.6f), true);
+    mountainsLayerB.setPadLeft(.2725f*worldWidth);
+
+  	TextureRegion cloudsRegionA = atlas.findRegion("clouds");
+	TextureRegionParallaxLayer cloudsLayerA = new TextureRegionParallaxLayer(cloudsRegionA, worldWidth, new Vector2(.6f,.6f), true);
+	cloudsLayerA.setPadBottom(worldHeight*.467f);
+	cloudsLayerA.setSpeed(cloudSpeed);
 	
-	*/
+    TextureRegion cloudsRegionB = atlas.findRegion("clouds");
+	TextureRegionParallaxLayer cloudsLayerB = new TextureRegionParallaxLayer(cloudsRegionB, worldWidth, new Vector2(.6f,.6f), true);
+	cloudsLayerB.setPadBottom(worldHeight*.1f);
+	cloudsLayerB.setSpeed(-cloudSpeed);
+	
+
+	TextureRegion buildingsRegionA = atlas.findRegion("buildings_a");
+	TextureRegionParallaxLayer buildingsLayerA = new TextureRegionParallaxLayer(buildingsRegionA, worldWidth, new Vector2(.75f,.75f), true);
+   	
+	TextureRegion buildingsRegionB = atlas.findRegion("buildings_b");
+	TextureRegionParallaxLayer buildingsLayerB = new TextureRegionParallaxLayer(buildingsRegionB, worldWidth*.8575f, new Vector2(1,1), true);
+   	buildingsLayerB.setPadLeft(.07125f*worldWidth);
+	buildingsLayerB.setPadRight(buildingsLayerB.getPadLeft());
+   	
+	TextureRegion buildingsRegionC = atlas.findRegion("buildings_c");
+	TextureRegionParallaxLayer buildingsLayerC = new TextureRegionParallaxLayer(buildingsRegionC, worldWidth, new Vector2(1.3f,1.3f), true);
+   	
+	parallaxBackground = new ParallaxBackground();
+	parallaxBackground.addLayers(mountainsLayerA,mountainsLayerB,buildingsLayerA,cloudsLayerA,cloudsLayerB,buildingsLayerB,buildingsLayerC);
+}
+
+*/

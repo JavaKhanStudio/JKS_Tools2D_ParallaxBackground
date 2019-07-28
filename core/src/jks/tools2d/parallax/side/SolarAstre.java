@@ -50,12 +50,12 @@ public class SolarAstre
 	public SolarAstre()
 	{
 		
-		Parallax_Heart.manager.load("astre/divers.atlas", TextureAtlas.class);
-		Parallax_Heart.manager.finishLoadingAsset("astre/divers.atlas");
+//		Parallax_Heart.manager.load("astre/divers.atlas", TextureAtlas.class);
+//		Parallax_Heart.manager.finishLoadingAsset("astre/divers.atlas");
 		
-		TextureAtlas atlas  = Parallax_Heart.manager.get("astre/divers.atlas", TextureAtlas.class) ; 
-		sun_image = atlas.findRegion("Sun") ; 
-		moon_image = atlas.findRegion("Moon") ; 
+//		TextureAtlas atlas  = Parallax_Heart.manager.get("astre/divers.atlas", TextureAtlas.class) ; 
+//		sun_image = atlas.findRegion("Sun") ; 
+//		moon_image = atlas.findRegion("Moon") ; 
 		
 		moon_size = Gdx.graphics.getWidth() * 0.04f ; 
 		sun_size = Gdx.graphics.getWidth() * 0.125f ;
