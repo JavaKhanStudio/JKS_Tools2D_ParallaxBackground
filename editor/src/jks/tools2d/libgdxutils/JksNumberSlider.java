@@ -61,9 +61,9 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 				}
 				else if(event.getType() == Type.exit && !lockExit)
 				{
-					GVars_Inputs.quitSelectedItem(ref) ; 
-					GVars_Ui.mainUi.setKeyboardFocus(null) ;
-					textField.clearSelection();
+				//	GVars_Inputs.quitSelectedItem(ref) ; 
+					//GVars_Ui.mainUi.setKeyboardFocus(null) ;
+					//textField.clearSelection();
 				} 
 				else if(event.getType() == Type.touchDragged 
 						|| event.getType() == Type.touchUp

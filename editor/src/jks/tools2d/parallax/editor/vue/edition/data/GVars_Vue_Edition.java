@@ -99,7 +99,7 @@ public class GVars_Vue_Edition
 	public static void setPage(WholePage_Model parallaxPage)
 	{
 		parallax_Heart.setPage(parallaxPage);
-
+		
 		for(int x = 0 ; x < parallaxPage.preloadValue.size() ; x++)
 		{
 			TextureRegion texture = parallaxPage.preloadValue.get(x).getTexRegion() ; 

@@ -12,6 +12,7 @@ public class Utils_Texture
 	{
 		Texture texture = new Texture(new FileHandle(path),true) ;
 		texture.setFilter(TextureFilter.MipMap, TextureFilter.MipMap);
+//		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
 		return new TextureRegion(texture) ; 
 	}
 	

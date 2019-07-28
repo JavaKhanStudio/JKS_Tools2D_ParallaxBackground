@@ -62,7 +62,6 @@ public class Utils_Saving
 		}
 		catch(Exception e)
 		{e.printStackTrace();}
-		
 	}
 	
 	public static void savingExport(String where, String whatName) throws JsonGenerationException, JsonMappingException, IOException
@@ -146,8 +145,7 @@ public class Utils_Saving
 		}
 		
 		outputModel.atlasName =  parallax_Heart.currentPage.pageModel.atlasName ;
-		System.out.println("Setting output atlasName at " + outputModel.atlasName);
-		
+
 		if(parallax_Heart.topSquare != null)
 		{
 			outputFinalModel.topHalf_top = parallax_Heart.topSquare.topColor ; 

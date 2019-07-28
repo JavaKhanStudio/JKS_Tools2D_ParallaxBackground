@@ -72,7 +72,12 @@ public class VE_Center_ParallaxShow extends Table
 			
 			buildOutsideValues() ; 
 			
-			atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
+			//TODO Check it ouy
+			if(project.saving.pageModel.atlasName != null)
+				atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
+			else
+				atlas = new TextureAtlas() ; 
+			
 			GVars_Vue_Edition.setPage(project.saving) ; 
 				
 			show =  new VE_Center_ParallaxShow() ;

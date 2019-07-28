@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.Pixmap.Blending;
 import com.badlogic.gdx.graphics.Pixmap.Filter;
 import com.badlogic.gdx.graphics.Pixmap.Format;
@@ -33,7 +34,7 @@ public class Utils_TextureAtlas
 			
 		ArrayList<ParallaxLayer> parrallaxLayers = parallax_Heart.parallaxReader.layers ; 
 		PixmapPacker pixmap = findAtlasRequiredSize(parrallaxLayers) ; 
-		pixmap.setPadding(40);
+	
 		Position_Infos info ;
 		
 		ArrayList<String> currentValue = new ArrayList<>() ; 
@@ -69,7 +70,7 @@ public class Utils_TextureAtlas
 		parallax_Heart.currentPage.pageModel.atlasName =  atlasName ; 
 	}
 	
-	static final int paddingSize = 10 ; 
+	static final int paddingSize = 0 ; 
 
 	public static PixmapPacker findAtlasRequiredSize(ArrayList<ParallaxLayer> parrallaxLayers)
 	{
@@ -88,17 +89,16 @@ public class Utils_TextureAtlas
 		largestWidth *= 3 ; 
 		largestHeight *= 3 ; 
 		
-		
 		if(largestWidth > atlasMaxSize)
 			largestWidth = atlasMaxSize ; 
 		
 		if(largestHeight > atlasMaxSize)
 			largestHeight = atlasMaxSize ; 
 		
-		PixmapPacker pixmap = new PixmapPacker(largestWidth, largestHeight, Format.RGBA8888, paddingSize, false); 
+		PixmapPacker pixmap = new PixmapPacker(largestWidth, largestHeight, 
+				Format.RGBA8888, paddingSize, true); 
 		
-		return pixmap ; 
-		
+		return pixmap ; 	
 	}
 	
 	public static Texture textureSave= null ; 
@@ -114,15 +114,16 @@ public class Utils_TextureAtlas
 			if (!texture.getTextureData().isPrepared()) 
 			    texture.getTextureData().prepare();
 			
+			textureSave.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
 			
-			pixmapSave = texture.getTextureData().consumePixmap();
+			pixmapSave = textureSave.getTextureData().consumePixmap();
 			pixmapSave.setFilter(Pixmap.Filter.NearestNeighbour);	
+			pixmapSave.setBlending(Blending.None);
 		}
 		
 		Pixmap exportingPixmap = new Pixmap(textureRegion.getRegionWidth(), textureRegion.getRegionHeight(), Format.RGBA8888); 
 		exportingPixmap.setFilter(Filter.NearestNeighbour);
 		exportingPixmap.setBlending(Blending.None);
-		
 		exportingPixmap.drawPixmap(pixmapSave, textureRegion.getRegionX(), textureRegion.getRegionY(), textureRegion.getRegionWidth(), textureRegion.getRegionHeight(), 0, 0, textureRegion.getRegionWidth(), textureRegion.getRegionHeight());
 		
 		return exportingPixmap ; 

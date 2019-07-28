@@ -145,10 +145,13 @@ public class WholePage_Model
 	// External Reading
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight, String relativePath) 
 	{
-		if(pageModel.atlasName == null)
-			return new ArrayList<ParallaxLayer>() ; 
+		TextureAtlas atlas ; 
+		if(pageModel.atlasName != null)
+			atlas = new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName));
+		else
+			atlas = new TextureAtlas();
+			
 		
-		TextureAtlas atlas = new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName));
 		return load(worldWidth, worldHeight, atlas) ; 
 	}
 	

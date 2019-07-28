@@ -171,25 +171,30 @@ public class PixmapPacker implements Disposable
 		}
 
 		Page page = packStrategy.pack(this, name, rect);
-		if (name != null) {
+		if (name != null) 
+		{
 			page.rects.put(name, rect);
 			page.addedRects.add(name);
 		}
 
 		int rectX = (int)rect.x, rectY = (int)rect.y, rectWidth = (int)rect.width, rectHeight = (int)rect.height;
 
-		if (packToTexture && !duplicateBorder && page.texture != null && !page.dirty) {
+		if (packToTexture && !duplicateBorder && page.texture != null && !page.dirty) 
+		{
 			page.texture.bind();
 			Gdx.gl.glTexSubImage2D(page.texture.glTarget, 0, rectX, rectY, rectWidth, rectHeight, image.getGLFormat(),
 				image.getGLType(), image.getPixels());
-		} else
+		} 
+		else
 			page.dirty = true;
 
 		page.image.setBlending(Blending.None);
+//		page.image.setBlending(Blending.SourceOver);
 
 		page.image.drawPixmap(image, rectX, rectY);
-
-		if (duplicateBorder) {
+		boolean doubleDip = true ; 
+		if (duplicateBorder) 
+		{
 			int imageWidth = image.getWidth(), imageHeight = image.getHeight();
 			// Copy corner pixels to fill corners of the padding.
 			page.image.drawPixmap(image, 0, 0, 1, 1, rectX - 1, rectY - 1, 1, 1);
@@ -201,6 +206,20 @@ public class PixmapPacker implements Disposable
 			page.image.drawPixmap(image, 0, imageHeight - 1, imageWidth, 1, rectX, rectY + rectHeight, rectWidth, 1);
 			page.image.drawPixmap(image, 0, 0, 1, imageHeight, rectX - 1, rectY, 1, rectHeight);
 			page.image.drawPixmap(image, imageWidth - 1, 0, 1, imageHeight, rectX + rectWidth, rectY, 1, rectHeight);
+		}
+		if(duplicateBorder && doubleDip) 
+		{
+			int imageWidth = image.getWidth(), imageHeight = image.getHeight();
+			// Copy corner pixels to fill corners of the padding.
+			page.image.drawPixmap(image, 0, 0, 1, 1, rectX - 1, rectY - 2, 2, 2);
+			page.image.drawPixmap(image, imageWidth - 1, 0, 1, 1, rectX + rectWidth, rectY - 2, 2, 2);
+			page.image.drawPixmap(image, 0, imageHeight - 1, 1, 1, rectX - 2, rectY + rectHeight, 2, 2);
+			page.image.drawPixmap(image, imageWidth - 1, imageHeight - 1, 1, 1, rectX + rectWidth, rectY + rectHeight, 2, 2);
+			// Copy edge pixels into padding.
+			page.image.drawPixmap(image, 0, 0, imageWidth, 1, rectX, rectY - 2, rectWidth, 2);
+			page.image.drawPixmap(image, 0, imageHeight - 1, imageWidth, 1, rectX, rectY + rectHeight, rectWidth, 2);
+			page.image.drawPixmap(image, 0, 0, 1, imageHeight, rectX - 2, rectY, 2, rectHeight);
+			page.image.drawPixmap(image, imageWidth - 1, 0, 1, imageHeight, rectX + rectWidth, rectY, 2, rectHeight);	
 		}
 
 		if (pixmapToDispose != null) {

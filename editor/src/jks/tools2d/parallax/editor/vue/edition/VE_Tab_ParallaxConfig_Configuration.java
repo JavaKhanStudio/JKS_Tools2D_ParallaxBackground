@@ -141,14 +141,14 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			}
 		}) ; 
 		
-		mainTable.add(new VisLabel("-- Configuration --")) ; 
+		mainTable.add(new VisLabel("-- Configuration --")).colspan(2).row();
 		mainTable.add(repeatOnX) ; 
 		mainTable.add(repeatOnY) ; 
 		mainTable.row();
-		mainTable.add(new VisLabel("-- Parameter --")) ; 
+		mainTable.add(new VisLabel("-- Parameter --")).colspan(2).row();
 		mainTable.add(showOptionDialog).colspan(2) ;
 		mainTable.row();
-		mainTable.add(new VisLabel("-- Video --")) ; 
+		mainTable.add(new VisLabel("-- Video --")).colspan(2) ;
 	}
 	
 	public void update()

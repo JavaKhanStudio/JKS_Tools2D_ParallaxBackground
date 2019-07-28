@@ -204,13 +204,13 @@ public class ParallaxPageReader
     		
     		if(layer.isMirror)
     		{
-    			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight + layer.currentDistanceY); 
+    			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight + layer.currentDistanceY,false); 
         		
         		for(float a = layer.getTotalHeight() ; a < worldCamera.viewportHeight - layer.currentDistanceY ; a+= layer.getTotalHeight())
-        			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight  + a + layer.currentDistanceY); 
+        			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight  + a + layer.currentDistanceY,false); 
         		
         		for(float a = 1 ; layer.currentDistanceY - a * layer.getTotalHeight() > -layer.getHeight() ; a++)
-        			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight + layer.currentDistanceY - a * layer.getTotalHeight()); 
+        			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight + layer.currentDistanceY - a * layer.getTotalHeight(),false); 
         	}
     		
     		if(inTransfer)

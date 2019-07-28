@@ -1,7 +1,5 @@
 package jks.tools2d.parallax.editor.vue.edition.data;
 
-import com.esotericsoftware.kryo.DefaultSerializer;
-
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
@@ -27,20 +25,24 @@ public class ParallaxDefaultValues
 	
 	public void setIncrementBackToFront()
 	{
-		addInFront = false ;
+		addInFront = true ;
 		
 		defaultModel = new Parallax_Model() ;
+		incrementValue = new Parallax_Model() ;
+		
 		defaultModel.sizeRatio = 1 ; 
 		defaultModel.parallaxScalingSpeedX = 0.1f ;
+		incrementValue.parallaxScalingSpeedX = 0.75f ; 
 		defaultModel.parallaxScalingSpeedY = 0.06f ; 
+		incrementValue.parallaxScalingSpeedY = 0.75f ;
 		defaultModel.decal_Y_Ratio = 0 ;
 		
-		incrementValue = new Parallax_Model() ;
+		
 		incrementValue.decal_X_Ratio = 10 ; 
 		incrementValue.decal_Y_Ratio = 10 ;
-		incrementValue.parallaxScalingSpeedX = -0.02f ; 
-		incrementValue.parallaxScalingSpeedY = -0.00025f ;
-		incrementValue.sizeRatio = -0.1f ; 
+		
+		
+		incrementValue.sizeRatio = -0.0f ; 
 	}
 	
 	public void setIncrementFrontToBack()
@@ -48,19 +50,25 @@ public class ParallaxDefaultValues
 		addInFront = true ; 
 		
 		defaultModel = new Parallax_Model() ;
+		incrementValue = new Parallax_Model() ;
+		
 		defaultModel.sizeRatio = 1 ; 
 		defaultModel.parallaxScalingSpeedX = 0.01f ;
+		incrementValue.parallaxScalingSpeedX = 1.25f ; 
 		defaultModel.parallaxScalingSpeedY = 0.01f ; 
+		incrementValue.parallaxScalingSpeedY = 1.25f ;
 		defaultModel.decal_Y_Ratio = 85 ;
 		
-		incrementValue = new Parallax_Model() ;
+		
 		incrementValue.decal_X_Ratio = 10 ; 
 		incrementValue.decal_Y_Ratio = -8 ;
-		incrementValue.parallaxScalingSpeedX = 0.003f ; 
-		incrementValue.parallaxScalingSpeedY = 0.00025f ;
+		
+		
 		incrementValue.sizeRatio = 0 ; 
 	}
 	
+	private float minValueX = 0.005f ; 
+	private float minValueY = minValueX ; 
 	
 	public void doIncrement(boolean positive)
 	{
@@ -69,8 +77,14 @@ public class ParallaxDefaultValues
 		if(alternateFlipY)
 			defaultModel.flipX = !incrementValue.flipY ;  
  
-		defaultModel.parallaxScalingSpeedX += (positive ? 1 : -1)* incrementValue.parallaxScalingSpeedX ; 
-		defaultModel.parallaxScalingSpeedY += (positive ? 1 : -1)*incrementValue.parallaxScalingSpeedY ; 
+	
+		defaultModel.parallaxScalingSpeedX *= (positive ? incrementValue.parallaxScalingSpeedX : 1/incrementValue.parallaxScalingSpeedX) ; 
+//		if(defaultModel.parallaxScalingSpeedX < minValueX)
+//			defaultModel.parallaxScalingSpeedX = minValueX ; 
+		defaultModel.parallaxScalingSpeedY *= (positive ? incrementValue.parallaxScalingSpeedY : 1/incrementValue.parallaxScalingSpeedY) ; 
+//		if(defaultModel.parallaxScalingSpeedY < minValueY)
+//			defaultModel.parallaxScalingSpeedY = minValueY ; 
+		
 		
 		defaultModel.speedXAtRest += (positive ? 1 : -1)*incrementValue.speedXAtRest ; 
 		defaultModel.sizeRatio += (positive ? 1 : -1)*incrementValue.sizeRatio ; 

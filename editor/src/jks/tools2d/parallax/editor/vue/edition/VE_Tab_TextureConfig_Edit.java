@@ -273,7 +273,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		};
 		
-		staticSpeed_Slider = new JksNumberSlider(-10, 10, 0.1f,baseSkin)
+		staticSpeed_Slider = new JksNumberSlider(-100, 100, 0.1f,baseSkin)
 		{		
 			@Override
 			public void actionOnSliderMovement()
