@@ -25,7 +25,7 @@ public class ParallaxDefaultValues
 	
 	public void setIncrementBackToFront()
 	{
-		addInFront = true ;
+		addInFront = false ;
 		
 		defaultModel = new Parallax_Model() ;
 		incrementValue = new Parallax_Model() ;

@@ -19,7 +19,6 @@ public class Launcher_Editor
 		if(arg.length > 0)
 			launchingValue = arg[0] ; 
 		
-	
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setWindowedMode(1300, 800);
 		config.useOpenGL3(true, 1, 1);
@@ -37,7 +36,6 @@ public class Launcher_Editor
             	GVars_Heart_Editor.vue.reciveFiles(files) ; 
             }
         });
-
 		
 		Lwjgl3Application application = new Lwjgl3Application(new Main_Editor(), config);
 	

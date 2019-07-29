@@ -192,7 +192,7 @@ public class PixmapPacker implements Disposable
 //		page.image.setBlending(Blending.SourceOver);
 
 		page.image.drawPixmap(image, rectX, rectY);
-		boolean doubleDip = true ; 
+		boolean doubleDip = false ; 
 		if (duplicateBorder) 
 		{
 			int imageWidth = image.getWidth(), imageHeight = image.getHeight();
