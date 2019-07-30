@@ -70,7 +70,7 @@ public class Utils_TextureAtlas
 		parallax_Heart.currentPage.pageModel.atlasName =  atlasName ; 
 	}
 	
-	static final int paddingSize = 0 ; 
+	static final int paddingSize = 50 ; 
 
 	public static PixmapPacker findAtlasRequiredSize(ArrayList<ParallaxLayer> parrallaxLayers)
 	{

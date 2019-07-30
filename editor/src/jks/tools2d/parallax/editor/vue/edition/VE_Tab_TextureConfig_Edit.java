@@ -67,7 +67,8 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				getDefaults().copyValue(currentlySelectedParallax);			
+				getDefaults().copyValue(currentlySelectedParallax);
+				getDefaults().doIncrement(true);
 			}
 		}) ; 	
 		
