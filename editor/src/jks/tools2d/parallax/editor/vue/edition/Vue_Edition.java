@@ -1,18 +1,22 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.allImage;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.centerControl;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.getAtlas;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.isPause;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.optionsControl;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_X;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_Y;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.screenSize;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setDefaults;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.showParallaxFullScreen;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.tabControl;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureChange;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
-import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize ; 
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureLink;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.timeForAutoSaveAt;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.timeForAutoSaveTimmer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -21,7 +25,6 @@ import java.util.Collections;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -29,21 +32,17 @@ import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.PixmapIO;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
-import com.kotcrab.vis.ui.util.dialog.Dialogs;
 
 import jks.tools2d.filewatch.FileWatching_Image;
-import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
-import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_LoadingImages;
@@ -61,7 +60,7 @@ public class Vue_Edition extends AVue_Model
 
 	public void preload()
 	{
-		parallax_Heart = new Parallax_Heart(screenSize,new AssetManager());
+		parallax_Heart = new Parallax_Heart();
 		parallax_Heart.relativePath = GVars_Vue_Edition.relativePath ;
 		
 		GVars_Vue_Edition.buildSizes();
@@ -353,6 +352,7 @@ public class Vue_Edition extends AVue_Model
 	public void reciveFiles(String[] files)
 	{
 		Utils_LoadingImages.fileReception(files);
+		GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
 	}
 	
 }

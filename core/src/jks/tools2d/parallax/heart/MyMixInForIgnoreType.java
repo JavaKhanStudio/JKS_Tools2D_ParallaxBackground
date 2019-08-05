@@ -1,4 +1,4 @@
-package jks.tools2d.parallax.editor.gvars;
+package jks.tools2d.parallax.heart;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 

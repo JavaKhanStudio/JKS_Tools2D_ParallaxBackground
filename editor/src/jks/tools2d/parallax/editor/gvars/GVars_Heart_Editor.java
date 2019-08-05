@@ -13,7 +13,7 @@ public class GVars_Heart_Editor
 	public static void init()
 	{
 		GVars_Ui.init();
-		GVars_Serialization.init() ; 
+		GVars_Serialization_Editor.init() ; 
 	}
 
 	public static void changeVue(AVue_Model View,boolean cleanAll) 

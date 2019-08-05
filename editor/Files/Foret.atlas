@@ -1,0 +1,13 @@
+
+Foret_1.png
+size: 15000,1659
+format: RGBA8888
+filter: Nearest,Nearest
+repeat: none
+Trees_fartest
+  rotate: false
+  xy: 50,50
+  size: 5000,553
+  orig: 5000, 553
+  offset: 0, 0
+  index: -1

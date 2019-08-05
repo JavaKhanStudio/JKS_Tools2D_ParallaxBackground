@@ -1,4 +1,4 @@
-package jks.tools2d.parallax.editor.gvars;
+package jks.tools2d.parallax.heart;
 
 import java.util.ArrayList;
 
@@ -8,10 +8,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
-import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
-import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
-import jks.tools2d.parallax.editor.vue.edition.data.WholePage_Editor;
 import jks.tools2d.parallax.pages.Color_Serializer;
 import jks.tools2d.parallax.pages.Page_Model;
 import jks.tools2d.parallax.pages.Parallax_Model;
@@ -21,32 +17,32 @@ public class GVars_Serialization
 {
 
 	public static Kryo kryo ;
-	public static ObjectMapper objectMapper ; 
-
+	public static ObjectMapper objectMapper ;
+	
 	public static void init() 
 	{
-		kryo = prepareKryo() ; 
-		objectMapper = prepareJson() ; 
+		prepareKryo() ; 
+		prepareJson() ; 
 	}
 
-	private static Kryo prepareKryo()
+	public static Kryo prepareKryo()
 	{
-		Kryo kryo = new Kryo();
+		if(kryo == null)
+			kryo = new Kryo();
+		
 	    kryo.register(Color.class, new Color_Serializer());
 	    kryo.register(Parallax_Model.class) ; 
 	    kryo.register(Page_Model.class) ;
 	    kryo.register(ArrayList.class) ; 
-	    kryo.register(WholePage_Model.class) ;
-	    kryo.register(WholePage_Editor.class) ;
-	    kryo.register(ParallaxDefaultValues.class) ; 
-	    kryo.register(Position_Infos.class) ; 
-	    kryo.register(Project_Data.class) ; 
+	    kryo.register(WholePage_Model.class) ; 
 	    return kryo ; 
 	}
 	
-	private static ObjectMapper prepareJson() 
+	public static ObjectMapper prepareJson() 
 	{
-		ObjectMapper objectMapper = new ObjectMapper() ; 
+		if(objectMapper == null)
+			objectMapper = new ObjectMapper() ; 
+		
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false) ; 
 		objectMapper.addMixInAnnotations(TextureRegion.class, MyMixInForIgnoreType.class);
 		return objectMapper ; 

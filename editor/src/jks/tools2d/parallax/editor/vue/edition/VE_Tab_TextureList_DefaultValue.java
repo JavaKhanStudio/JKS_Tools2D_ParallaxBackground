@@ -197,9 +197,7 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{getDefaults().setAlternateFlipX(flipYAlternate.isChecked());}
 		}) ; 
-		
-		
-		
+			
 		decalX_Slider = new JksNumberSlider(-50, 50, 1, baseSkin)
 		{	
 			@Override

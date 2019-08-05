@@ -4,19 +4,20 @@ public interface ImportAction
 {
 
 	public void reciveFiles(String[] files);
-	
-	/*
-	public static ImportAction getVueSelection()
-	{
-		return new ImportAction()
-		{
-			@Override
-			public void reciveFiles(String[] files)
-			{
-				
-			}
-		};
-		
-	}
-	*/
+
 }
+
+/*
+public static ImportAction getVueSelection()
+{
+	return new ImportAction()
+	{
+		@Override
+		public void reciveFiles(String[] files)
+		{
+			
+		}
+	};
+	
+}
+*/

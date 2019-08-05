@@ -59,6 +59,7 @@ public class VE_Tab_TextureList extends Tab
 	@Override
 	public Table getContentTable()
 	{
+		add.update();
 		setDefault.update();
 	
 		return mainTable;

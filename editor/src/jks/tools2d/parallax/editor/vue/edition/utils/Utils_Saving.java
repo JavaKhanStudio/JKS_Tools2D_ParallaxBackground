@@ -1,6 +1,5 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Serialization.objectMapper;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
@@ -24,12 +23,12 @@ import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
-import jks.tools2d.parallax.editor.gvars.GVars_Serialization;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.edition.VE_Options;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.data.WholePage_Editor;
+import jks.tools2d.parallax.heart.GVars_Serialization;
 import jks.tools2d.parallax.pages.Page_Model;
 import jks.tools2d.parallax.pages.Utils_Page;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -62,6 +61,10 @@ public class Utils_Saving
 		}
 		catch(Exception e)
 		{e.printStackTrace();}
+		
+		Dialogs.showOKDialog(GVars_Ui.mainUi, "Saving", "Successful export of " + whatName + "as a \n" +
+				(VE_Options.formatLibGDX.isChecked()? " 	.plax	\n" : "") +
+				(VE_Options.formatJson.isChecked()? " 	.jplax	" : "")) ; 
 	}
 	
 	public static void savingExport(String where, String whatName) throws JsonGenerationException, JsonMappingException, IOException
@@ -114,7 +117,7 @@ public class Utils_Saving
 	
 	public static void saving_Parallax_JSON(String where, String whatName, WholePage_Model outputFinalModel) throws JsonGenerationException, JsonMappingException, IOException
 	{
-		objectMapper.writeValue(new File(where + "/" + whatName + "." + FVars_Extensions.JSON_PARALLAX), outputFinalModel); 
+		GVars_Serialization.objectMapper.writeValue(new File(where + "/" + whatName + "." + FVars_Extensions.JSON_PARALLAX), outputFinalModel); 
 	}
 	
 	public static void saving_Parallax_Project(String where, String whatName)
@@ -123,10 +126,12 @@ public class Utils_Saving
 		{
 			WholePage_Editor outputFinalModel = buildWholePageAsProjectForSaving() ; 
 			projectDatas.prepareForSaving(outputFinalModel);
-			objectMapper.writeValue(new File(where + "/" + whatName + "." + FVars_Extensions.PARALLAX_PROJECT), projectDatas); 
+			GVars_Serialization.objectMapper.writeValue(new File(where + "/" + whatName + "." + FVars_Extensions.PARALLAX_PROJECT), projectDatas); 
 		}
 		catch(Exception e)
 		{e.printStackTrace();}
+		
+		Dialogs.showOKDialog(GVars_Ui.mainUi, "Saving", "The project have been saved") ; 
 	}
 
 	

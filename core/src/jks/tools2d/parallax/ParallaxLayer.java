@@ -11,7 +11,7 @@ import jks.tools2d.parallax.pages.Parallax_Model;
 @JsonIgnoreType
 public class ParallaxLayer implements Cloneable
 {
-//	ParallaxLayer
+
 	private TextureRegion texRegion;
 	//private TextureRegion changingRegion ; 
 

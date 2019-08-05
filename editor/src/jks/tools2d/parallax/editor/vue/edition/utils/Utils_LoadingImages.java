@@ -44,7 +44,7 @@ public class Utils_LoadingImages
 					
 					if(textureRegion.getRegionWidth() > atlasMaxSize || textureRegion.getRegionWidth()  > atlasMaxSize)
 					{
-						errorMessage += "Warning ! This file is bigger then the limit : " + atlasMaxSize + " pixels \n" ; 
+						errorMessage += "\nWarning ! This file is bigger then the limit : " + atlasMaxSize + " pixels \n" ; 
 						continue ; 
 					}
 					
@@ -55,7 +55,7 @@ public class Utils_LoadingImages
 				}
 				else
 				{
-					System.out.println("bad Format");
+					errorMessage += "\n Impossible to load " + path + " was expecting the .png format" ; 
 				}
 			}
 			

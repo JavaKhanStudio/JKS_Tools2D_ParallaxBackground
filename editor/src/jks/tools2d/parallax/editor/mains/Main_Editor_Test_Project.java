@@ -13,11 +13,11 @@ import com.esotericsoftware.kryo.io.Input;
 
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_Serialization;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
+import jks.tools2d.parallax.heart.GVars_Serialization;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
 public class Main_Editor_Test_Project extends Main_Editor 

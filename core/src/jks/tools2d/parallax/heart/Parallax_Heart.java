@@ -1,11 +1,15 @@
 package jks.tools2d.parallax.heart;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
+import com.esotericsoftware.kryo.io.Input;
 
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parralax;
@@ -22,7 +26,6 @@ public class Parallax_Heart
 	public ShapeRenderer shapeRender ; 
 	public SquareBackground topSquare ;
 	public SquareBackground bottomSquare ;
-	//
 	
 	public WholePage_Model currentPage ; 
 	public WholePage_Model currentTransfertPage ; 
@@ -35,10 +38,12 @@ public class Parallax_Heart
 	
 	public String relativePath = "";
 	
-	public Parallax_Heart(float worldWidth,AssetManager manager) 
+	private static int defaultWidth = 40 ;
+	
+	public Parallax_Heart() 
 	{	
-		Gvars_Parallax.setWorldWidth(worldWidth);
-		Gvars_Parallax.setWorldHeight(Utils_Parralax.calculateOtherDimension(true, worldWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
+		Gvars_Parallax.setWorldWidth(defaultWidth);
+		Gvars_Parallax.setWorldHeight(Utils_Parralax.calculateOtherDimension(true, defaultWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
 	
 		worldCamera = new OrthographicCamera() ;
 		worldCamera.setToOrtho(false,Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight());
@@ -47,7 +52,16 @@ public class Parallax_Heart
 
 		shapeRender = new ShapeRenderer() ;
 		parallaxReader = new ParallaxPageReader();
-		Gvars_Parallax.setManager(manager) ; 
+		Gvars_Parallax.setManager(new AssetManager()) ; 
+	}
+	
+	public Parallax_Heart(String internPath) throws FileNotFoundException 
+	{
+		this() ; 
+		GVars_Serialization.init();
+		Input input = new Input(new FileInputStream(internPath));
+		WholePage_Model page = GVars_Serialization.kryo.readObject(input,WholePage_Model.class) ; 
+		Parallax_Utils_Page.setPage(this,page) ; 
 	}
 	
 	public Parallax_Heart(

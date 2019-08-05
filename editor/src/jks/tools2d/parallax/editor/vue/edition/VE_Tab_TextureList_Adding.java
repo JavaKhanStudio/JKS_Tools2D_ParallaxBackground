@@ -6,9 +6,6 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.get
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setItems;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.sizeTabsBar;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Selection;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureLink;
-
-import java.util.ArrayList;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -32,6 +29,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 	static public JksTextureList imageList ; 
 	private Table mainTable ;
 	
+	ImageButton button_changeData,button_addData ; 
 	
 	VE_Tab_TextureList_Adding()
 	{
@@ -44,22 +42,20 @@ public class VE_Tab_TextureList_Adding extends Tab
 	{
 		ScrollPane contentsPane;
 		float buttonSize = size_Bloc_Selection/4; 
-		ImageButton button_changeData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_transform.png")) ; 
+		button_changeData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_transform.png")) ; 
 		button_changeData.setSize(buttonSize, buttonSize);
 		button_changeData.addListener(new InputListener()
 		{
 			@Override
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
-				TextureRegion text = imageList.getSelected() ; 
-				System.out.println(GVars_Vue_Edition.textureLink.size());
-				
+				TextureRegion text = imageList.getSelected() ;
 				return true ; 
 			}
 			
 		}) ;
 		
-		ImageButton button_addData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_add.png")) ; 
+		button_addData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_add.png")) ; 
 		button_addData.setSize(buttonSize, buttonSize);
 		button_addData.addListener(new InputListener()
 		{
@@ -108,6 +104,9 @@ public class VE_Tab_TextureList_Adding extends Tab
 		contentsPane.setWidth(size_Bloc_Selection);
 		contentsPane.setHeight(Gdx.graphics.getHeight() - sizeTabsBar * 2);
 		
+		button_changeData.setVisible(false);
+		button_addData.setVisible(false);
+		
 		mainTable.setSize(contentsPane.getWidth(),contentsPane.getHeight());
 		mainTable.addActor(contentsPane);
 		mainTable.addActor(button_changeData);
@@ -137,12 +136,23 @@ public class VE_Tab_TextureList_Adding extends Tab
 		GVars_Vue_Edition.addToLinks(layer);
 	}
 	
-
+	public void update()
+	{
+		if(imageList.getItems() != null && imageList.getItems().size > 0)
+		{
+			button_changeData.setVisible(true);
+			button_addData.setVisible(true);
+		}
+	}
+	
 	@Override
 	public String getTabTitle()
 	{return "Adding new";}
 
 	@Override
 	public Table getContentTable()
-	{return mainTable;}
+	{
+		update() ;	
+		return mainTable;
+	}
 }

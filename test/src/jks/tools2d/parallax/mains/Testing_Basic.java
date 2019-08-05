@@ -22,8 +22,8 @@ public class Testing_Basic extends ApplicationAdapter
 	public void create () 
 	{
 		GlobalTimmer.registerTime("TEST");
-		parallax_Heart = new Parallax_Heart(worldWidth, new AssetManager());
-		parallax_Heart_second = new Parallax_Heart(worldWidth, new AssetManager());
+		parallax_Heart = new Parallax_Heart();
+		parallax_Heart_second = new Parallax_Heart();
 
 	    parallax_Heart.parallaxReader.setDrawingHeight(2.4f);
 //	    Parallax_Utils_Astre.startAstre(Enum_AstreType.SUN, 10);

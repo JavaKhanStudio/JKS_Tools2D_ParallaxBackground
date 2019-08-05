@@ -11,8 +11,6 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.rel
 
 import java.io.File;
 import java.io.FileFilter;
-import java.net.URISyntaxException;
-import java.net.URL;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -32,21 +30,19 @@ import com.esotericsoftware.kryo.io.Input;
 import jks.tools2d.filechooser.FC_List;
 import jks.tools2d.filechooser.FileChooser_Listener;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
-import jks.tools2d.parallax.Launcher_Editor;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_Serialization;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
+import jks.tools2d.parallax.heart.GVars_Serialization;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 public class Vue_Selection extends AVue_Model 
 {
 
-	
 	boolean showParallax = true; 
 	boolean showParallaxJson = true ;
 	boolean showAtlas = true; 
