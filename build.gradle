@@ -85,8 +85,7 @@ project(":editor")
   		compile "com.badlogicgames.gdx:gdx-tools:$gdxVersion" 
   		compile "com.badlogicgames.gdx:gdx:$gdxVersion"
     	compile "com.kotcrab.vis:vis-ui:$visuiVersion"
-    	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
-    	
+    	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0' 	
   	}
 }
 
