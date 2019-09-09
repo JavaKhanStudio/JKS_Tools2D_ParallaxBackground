@@ -141,4 +141,9 @@ public class Parallax_Heart
 		
 		shapeRender.end();
 	}
+	
+	public String getAtlasName()
+	{
+		return currentPage.pageModel.getAtlasName() ; 
+	}
 }

@@ -2,10 +2,7 @@ package jks.tools2d.parallax.side;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-
-import jks.tools2d.parallax.heart.Parallax_Heart;
 
 public class SolarAstre 
 {
