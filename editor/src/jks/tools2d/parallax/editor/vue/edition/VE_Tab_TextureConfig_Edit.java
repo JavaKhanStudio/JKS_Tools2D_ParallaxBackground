@@ -2,7 +2,8 @@ package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.*;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.currentlySelectedParallax;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.getDefaults;
 
 import java.util.Collections;
 

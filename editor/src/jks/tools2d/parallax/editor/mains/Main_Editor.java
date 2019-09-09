@@ -1,7 +1,6 @@
 package jks.tools2d.parallax.editor.mains;
 
 import java.io.File;
-import java.net.URISyntaxException;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;

@@ -2,8 +2,6 @@ package jks.tools2d.parallax.editor.vue.model;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.mainUi;
 
-import java.util.ArrayList;
-
 public abstract class AVue_Model implements ImportAction
 {
 

@@ -8,11 +8,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
+import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.nio.file.WatchEvent.Kind;
-import java.util.Date;
-import java.util.Timer;
 import java.util.TimerTask;
 
 public abstract class FileWatchingModel extends TimerTask

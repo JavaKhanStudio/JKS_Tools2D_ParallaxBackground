@@ -1,7 +1,12 @@
 package jks.tools2d.packing.serialisation;
 
-import java.io.FileInputStream;
+import static jks.tools2d.packing.serialisation.FVars_SerialisationName.colorName;
+import static jks.tools2d.packing.serialisation.FVars_SerialisationName.formatKryo;
+import static jks.tools2d.packing.serialisation.FVars_SerialisationName.pageName;
+import static jks.tools2d.packing.serialisation.FVars_SerialisationName.pageWholeName;
+import static jks.tools2d.packing.serialisation.FVars_SerialisationName.parallaxName;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
@@ -16,8 +21,7 @@ import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.gvars.FVars_Path;
 import jks.tools2d.parallax.pages.Page_Model;
 import jks.tools2d.parallax.pages.Parallax_Model;
-import jks.tools2d.parallax.pages.WholePage_Model;
-import static jks.tools2d.packing.serialisation.FVars_SerialisationName.* ; 
+import jks.tools2d.parallax.pages.WholePage_Model; 
 
 public class TestUtils_Kryo 
 {

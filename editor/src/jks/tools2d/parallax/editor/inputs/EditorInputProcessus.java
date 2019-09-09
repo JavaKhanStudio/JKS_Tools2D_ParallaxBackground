@@ -1,8 +1,9 @@
 package jks.tools2d.parallax.editor.inputs;
 
-import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.*;
+import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.downPressed;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.leftPressed;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.rightPressed;
+import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.selectedItem;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.upPressed;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.zoomInPressed;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.zoomOutPressed;

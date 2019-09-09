@@ -60,6 +60,7 @@ public class GVars_Vue_Edition
 	public static String relativePath ;
 	public static TextureAtlas atlas;
 	
+	public static HashMap<TextureRegion,FileWatching_Image> activeFileWatching = new  HashMap<TextureRegion,FileWatching_Image>();
 	public static ArrayList<FileWatching_Image> textureChange = new  ArrayList<FileWatching_Image>();
 	
 	public static boolean showParallaxFullScreen = false ; 

@@ -4,7 +4,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
-import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 public enum Enum_ColdNight 

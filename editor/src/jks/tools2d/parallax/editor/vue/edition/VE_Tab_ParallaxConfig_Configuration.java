@@ -4,7 +4,7 @@ import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
-import java.util.Collections;
+import org.apache.commons.lang3.StringUtils;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -12,7 +12,6 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.esotericsoftware.asm.Label;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
 import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
 import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
@@ -26,7 +25,6 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.Vue_Selection;
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving; 
 
 public class VE_Tab_ParallaxConfig_Configuration extends Tab
@@ -39,7 +37,9 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 	public IntSpinnerModel nbSampleSpinner ; 
 	Spinner nbSampleSpinnerBody ; 
 
-	VisTextButton showOptionDialog ; 
+	VisTextButton changeAtlas, showOptionDialog ; 
+	VisLabel atlasNameLabel ;  
+	
 	
 	VE_Tab_ParallaxConfig_Configuration()
 	{
@@ -82,13 +82,17 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			}
 		}) ; 
 		
+		atlasNameLabel = new VisLabel() ; 
+		changeAtlas = new VisTextButton("Return to selection");
+		
 		showOptionDialog = new VisTextButton("Return to selection");
 		showOptionDialog.addListener(new ChangeListener() 
 		{
 			@Override
 			public void changed (ChangeEvent event, Actor actor) 
 			{
-				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() {
+				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
+				{
 					@Override
 					public void yes () 
 					{
@@ -145,6 +149,9 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		mainTable.add(repeatOnX) ; 
 		mainTable.add(repeatOnY) ; 
 		mainTable.row();
+		mainTable.add(atlasNameLabel) ; 
+		mainTable.add(changeAtlas) ;
+		mainTable.row();
 		mainTable.add(new VisLabel("-- Parameter --")).colspan(2).row();
 		mainTable.add(showOptionDialog).colspan(2) ;
 		mainTable.row();
@@ -155,6 +162,14 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 	{
 		repeatOnX.setChecked(parallax_Heart.parallaxReader.isRepeatOnX());
 		repeatOnY.setChecked(parallax_Heart.parallaxReader.isRepeatOnY());
+		String atlasName = "Current atlas : " ; 
+		
+		if(StringUtils.isEmpty(parallax_Heart.getAtlasName()))
+			atlasName += "none selected" ; 
+		else
+			atlasName += parallax_Heart.getAtlasName() ; 
+		
+		atlasNameLabel.setText(atlasName);
 //		vSynch.setChecked(Gdx.graphics.get);
 	}
 

@@ -1,5 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
+import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize ;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectDatas;
 
@@ -10,13 +11,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.Pixmap.Blending;
 import com.badlogic.gdx.graphics.Pixmap.Filter;
 import com.badlogic.gdx.graphics.Pixmap.Format;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize ; 
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;

@@ -1,12 +1,14 @@
 package jks.tools2d.parallax.pages;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -32,7 +34,10 @@ public class WholePage_Model
 	
 	public Page_Model pageModel ;
 	
+	@JsonIgnore
 	public List<ParallaxLayer> preloadValue ;
+	@JsonIgnore
+	public HashMap<String,AtlasRegion> loadedRegion ;
 	
 	public WholePage_Model()
 	{
@@ -130,8 +135,9 @@ public class WholePage_Model
 	
 	protected ParallaxLayer buildLayer(Parallax_Model parallax, TextureAtlas atlas,float worldWidth)
 	{
+		//Region position reserved for animation
 		ParallaxLayer layer = new ParallaxLayer(
-				atlas.findRegions(parallax.regionName).get(parallax.regionPosition), 
+				findLayer(parallax, atlas), 
 				true, 
 				worldWidth, 
 				parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY,
@@ -140,6 +146,19 @@ public class WholePage_Model
 		layer.setUpEverything(parallax);
 		
 		return layer ; 
+	}
+	
+	protected AtlasRegion findLayer(Parallax_Model parallax,TextureAtlas atlas)
+	{
+		
+		AtlasRegion region = loadedRegion.get(parallax.regionName) ;
+		if(region == null)
+		{
+			region = atlas.findRegions(parallax.regionName).get(parallax.regionPosition) ; 
+			loadedRegion.put(parallax.regionName, region) ; 
+		}
+		
+		return region ; 
 	}
 	
 	// External Reading

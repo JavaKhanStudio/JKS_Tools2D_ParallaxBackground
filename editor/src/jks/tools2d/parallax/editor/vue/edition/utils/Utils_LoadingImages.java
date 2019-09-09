@@ -1,9 +1,13 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize;
+import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.activeFileWatching;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.allImage;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.currentlySelectedParallax;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectDatas;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureLink;
 
 import java.util.ArrayList;
 
@@ -14,7 +18,9 @@ import com.kotcrab.vis.ui.util.dialog.Dialogs;
 
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
+import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.vue.edition.VE_Tab_TextureList_Adding;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
@@ -48,7 +54,7 @@ public class Utils_LoadingImages
 						continue ; 
 					}
 					
-					new FileWatching_Image(path,textureRegion) ; 
+					activeFileWatching.put(textureRegion,new FileWatching_Image(path,textureRegion)) ; 
 					projectDatas.outsideInfos.add(new Outside_Source(path,extractName(path))) ; 
 					imageRef.put(textureRegion, new Position_Infos(false,path,0)) ; 
 					allImage.add(textureRegion) ; 				
@@ -75,5 +81,37 @@ public class Utils_LoadingImages
 	public static String extractName(String path)
 	{
 		return path.substring(path.lastIndexOf('\\') + 1, path.lastIndexOf('.')) ; 
+	}
+	
+	public static void removeFile(TextureRegion text)
+	{
+		
+		ArrayList<ParallaxLayer> layers = textureLink.get(text) ; 
+		
+		if(layers != null)
+		{
+			for(ParallaxLayer layer : layers)
+			{
+				parallax_Heart.parallaxReader.layers.remove(layer) ; 
+			}
+			
+			textureLink.remove(text) ;
+		}
+			
+		allImage.remove(text) ; 
+
+		VE_Tab_TextureList_Adding.imageList.getItems().removeValue(text, true) ; 
+		imageRef.remove(text) ;
+
+		if(activeFileWatching.get(text) != null) 
+		{
+			activeFileWatching.get(text).cancel() ;
+			activeFileWatching.remove(text) ;
+		}
+		
+		if(currentlySelectedParallax != null && currentlySelectedParallax.getTexRegion() == text)
+		{
+			currentlySelectedParallax = null ; 
+		}
 	}
 }

@@ -9,7 +9,7 @@ import com.badlogic.gdx.InputAdapter;
 import static jks.tools2d.parallax.gvars.GVars_Heart_Testing.parallax_Heart ;
 import static jks.tools2d.parallax.inputs.GVars_Inputs.*;
 
-public class InputProcessus extends InputAdapter 
+public class Testing_InputProcessus extends InputAdapter 
 {
 	@Override
 	public boolean keyDown (int keycode) 

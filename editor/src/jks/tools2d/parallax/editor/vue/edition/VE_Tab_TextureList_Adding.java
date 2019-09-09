@@ -15,12 +15,19 @@ import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.kotcrab.vis.ui.util.dialog.Dialogs;
+import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialog;
+import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
+import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
 import jks.tools2d.libgdxutils.JksTextureList;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_LoadingImages;
 import jks.tools2d.parallax.heart.Gvars_Parallax; 
 
 public class VE_Tab_TextureList_Adding extends Tab
@@ -29,7 +36,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 	static public JksTextureList imageList ; 
 	private Table mainTable ;
 	
-	ImageButton button_changeData,button_addData ; 
+	ImageButton button_removeData,button_addData ; 
 	
 	VE_Tab_TextureList_Adding()
 	{
@@ -42,18 +49,52 @@ public class VE_Tab_TextureList_Adding extends Tab
 	{
 		ScrollPane contentsPane;
 		float buttonSize = size_Bloc_Selection/4; 
-		button_changeData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_transform.png")) ; 
-		button_changeData.setSize(buttonSize, buttonSize);
-		button_changeData.addListener(new InputListener()
+		
+		button_removeData = Utils_Interface.buildSquareButton("editor/interfaces/delete.png",buttonSize) ; 
+		button_removeData.setSize(buttonSize, buttonSize);
+		button_removeData.addListener(new InputListener()
 		{
 			@Override
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
-				TextureRegion text = imageList.getSelected() ;
+				TextureRegion text = imageList.getSelected() ; 
+				Position_Infos position = GVars_Vue_Edition.imageRef.get(text) ; 
+				
+				String message ; 
+				
+				if(position.fromAtlas)
+					message= "Do you really want to delete this part of the atlas? You wont be able to add it back " ;
+				else
+					message = "Do you really want to delete this reference and all its occurences ? " ; 
+				
+					
+				
+				OptionDialog deleteDialog = Dialogs.showOptionDialog(GVars_Ui.mainUi, "Delete segment", message, OptionDialogType.YES_NO, new OptionDialogAdapter() 
+				{
+					@Override
+					public void yes () 
+					{
+						delete(text) ;
+						update();
+						showButton(false) ; 
+					}
+
+					@Override
+					public void no () 
+					{}
+
+					@Override
+					public void cancel () 
+					{}
+				});
+				
+				// deleteDialog.setPosition(Mouse.getX(), Mouse.getY());
 				return true ; 
 			}
 			
 		}) ;
+		
+
 		
 		button_addData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_add.png")) ; 
 		button_addData.setSize(buttonSize, buttonSize);
@@ -91,7 +132,8 @@ public class VE_Tab_TextureList_Adding extends Tab
 			@Override
 			public void drawOnSelected(Batch batch, float x, float y, float width, float itemHeight)
 			{
-				button_changeData.setPosition(x + buttonSize/2, y + buttonSize/2);
+				showButton(true) ; 
+				button_removeData.setPosition(x + buttonSize/2, y + buttonSize/2);
 				button_addData.setPosition(x + buttonSize * 2.f, y + buttonSize/2);
 			}
 	
@@ -104,12 +146,12 @@ public class VE_Tab_TextureList_Adding extends Tab
 		contentsPane.setWidth(size_Bloc_Selection);
 		contentsPane.setHeight(Gdx.graphics.getHeight() - sizeTabsBar * 2);
 		
-		button_changeData.setVisible(false);
+		button_removeData.setVisible(false);
 		button_addData.setVisible(false);
 		
 		mainTable.setSize(contentsPane.getWidth(),contentsPane.getHeight());
 		mainTable.addActor(contentsPane);
-		mainTable.addActor(button_changeData);
+		mainTable.addActor(button_removeData);
 		mainTable.addActor(button_addData);		
 	}
 
@@ -132,7 +174,6 @@ public class VE_Tab_TextureList_Adding extends Tab
 			getDefaults().doIncrement(true) ; 
 		
 		GVars_Vue_Edition.selectLayer(layer) ; 
-		
 		GVars_Vue_Edition.addToLinks(layer);
 	}
 	
@@ -140,9 +181,33 @@ public class VE_Tab_TextureList_Adding extends Tab
 	{
 		if(imageList.getItems() != null && imageList.getItems().size > 0)
 		{
-			button_changeData.setVisible(true);
+			showButton(true) ; 
+		}
+		else
+		{
+			showButton(false) ; 
+		}
+		
+	}
+	
+	public void showButton(boolean show)
+	{
+		if(show)
+		{
+			button_removeData.setVisible(true);
 			button_addData.setVisible(true);
 		}
+		else
+		{
+			button_removeData.setVisible(false);
+			button_addData.setVisible(false);
+		}
+	}
+	
+	public static void delete(TextureRegion text) 
+	{
+		System.out.println("removing " + text);
+		Utils_LoadingImages.removeFile(text);
 	}
 	
 	@Override

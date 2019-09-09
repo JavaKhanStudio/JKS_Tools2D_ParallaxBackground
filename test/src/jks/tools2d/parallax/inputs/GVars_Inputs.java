@@ -14,16 +14,16 @@ public class GVars_Inputs
 	public static void updateInput (float delta) 
 	{
 		if (leftPressed)
-			parallax_Heart.worldCamera.position.add(-screenMovementSpeed, 0, 0); 
+			parallax_Heart.screenSpeedConsumableX = -screenMovementSpeed; 
 		
 		if (rightPressed)
-			parallax_Heart.worldCamera.position.add(screenMovementSpeed, 0, 0);
+			parallax_Heart.screenSpeedConsumableX = screenMovementSpeed; 
 			
 		if(upPressed)
-			parallax_Heart.worldCamera.position.add(0,screenMovementSpeed, 0);
+			parallax_Heart.screenSpeedConsumableY = screenMovementSpeed; 
 		
 		if(downPressed)
-			parallax_Heart.worldCamera.position.add(0,-screenMovementSpeed, 0);
+			parallax_Heart.screenSpeedConsumableY = -screenMovementSpeed; 
 		
 		if(zoomInPressed)
 			parallax_Heart.worldCamera.zoom *= 1.1f;

@@ -1,10 +1,9 @@
 package jks.tools2d.parallax.editor.inputs ;
 
+import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.screenMovementSpeed;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
 
 import jks.tools2d.libgdxutils.SelectableItem;
-
-import static jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor.screenMovementSpeed;
 public class GVars_Inputs 
 {
 	public static SelectableItem selectedItem ; 
