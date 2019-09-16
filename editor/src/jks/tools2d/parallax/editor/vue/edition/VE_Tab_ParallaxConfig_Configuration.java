@@ -83,7 +83,34 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		}) ; 
 		
 		atlasNameLabel = new VisLabel() ; 
-		changeAtlas = new VisTextButton("Return to selection");
+		changeAtlas = new VisTextButton("Change Atlas");
+		changeAtlas.addListener(new ChangeListener() 
+		{
+			@Override
+			public void changed (ChangeEvent event, Actor actor) 
+			{
+				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
+				{
+					@Override
+					public void yes () 
+					{
+						Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText());
+						GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
+					}
+
+					@Override
+					public void no () 
+					{
+						GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
+					}
+
+					@Override
+					public void cancel () 
+					{}
+				});
+			}
+		});
+		
 		
 		showOptionDialog = new VisTextButton("Return to selection");
 		showOptionDialog.addListener(new ChangeListener() 
@@ -155,7 +182,9 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		mainTable.add(new VisLabel("-- Parameter --")).colspan(2).row();
 		mainTable.add(showOptionDialog).colspan(2) ;
 		mainTable.row();
-		mainTable.add(new VisLabel("-- Video --")).colspan(2) ;
+		mainTable.add(new VisLabel("-- Visuel --")).colspan(2) ;
+		mainTable.row() ; 
+		mainTable.add(vSynch) ; 
 	}
 	
 	public void update()

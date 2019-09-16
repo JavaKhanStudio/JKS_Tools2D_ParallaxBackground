@@ -28,8 +28,6 @@ import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 public class Utils_LoadingImages 
 {
 	
-	// Todo Check pour des fichiers au même nom
-
 	public static void fileReception(String[] files)
 	{
 		TextureRegion textureRegion  ; 
@@ -85,7 +83,7 @@ public class Utils_LoadingImages
 	
 	public static void removeFile(TextureRegion text)
 	{
-		
+
 		ArrayList<ParallaxLayer> layers = textureLink.get(text) ; 
 		
 		if(layers != null)
@@ -99,9 +97,26 @@ public class Utils_LoadingImages
 		}
 			
 		allImage.remove(text) ; 
-
+		
+		Position_Infos position = imageRef.get(text) ;
+		if(!position.fromAtlas) 
+		{
+			System.out.println(position.url);
+			for(Outside_Source source : projectDatas.outsideInfos)
+			{
+				if(source.url.equals(position.url))
+				{
+					projectDatas.outsideInfos.remove(source) ; 
+					break ; 
+				}
+			}
+			
+		}
+	
+		
 		VE_Tab_TextureList_Adding.imageList.getItems().removeValue(text, true) ; 
 		imageRef.remove(text) ;
+			
 
 		if(activeFileWatching.get(text) != null) 
 		{

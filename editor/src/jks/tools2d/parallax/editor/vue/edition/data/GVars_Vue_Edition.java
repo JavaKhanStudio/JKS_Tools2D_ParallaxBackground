@@ -33,7 +33,7 @@ public class GVars_Vue_Edition
 	
 	public static HashMap<TextureRegion,Position_Infos> imageRef  = new HashMap<TextureRegion, Position_Infos>() ; 
 	public static HashMap<TextureRegion,ArrayList<ParallaxLayer>> textureLink = new HashMap<TextureRegion,ArrayList<ParallaxLayer>>() ; 
-	public static HashMap<String,TextureRegion> outsideReserve = new HashMap<String, TextureRegion>(); 
+	public static HashMap<String,TextureRegion> outsideTextureReserve = new HashMap<String, TextureRegion>(); 
 	
 	public static int parr_Size_X ; 
 	public static int parr_Size_Y ; 
@@ -105,7 +105,7 @@ public class GVars_Vue_Edition
 		{
 			TextureRegion texture = parallaxPage.preloadValue.get(x).getTexRegion() ; 
 			
-			boolean isFromAtlas = outsideReserve.get(parallaxPage.pageModel.pageList.get(x).regionName) == null; 
+			boolean isFromAtlas = outsideTextureReserve.get(parallaxPage.pageModel.pageList.get(x).regionName) == null; 
 			
 			imageRef.put(texture,
 					new Position_Infos(isFromAtlas, parallaxPage.pageModel.atlasName,parallaxPage.pageModel.pageList.get(x))); 

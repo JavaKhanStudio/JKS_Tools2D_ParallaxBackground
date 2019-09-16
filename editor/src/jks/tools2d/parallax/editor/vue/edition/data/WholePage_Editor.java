@@ -43,21 +43,26 @@ public class WholePage_Editor extends WholePage_Model
 				continue ;
 			}
 			
+			
 			returningList.add(layer) ;
 			
 			inc ++ ; 
 		}
 		
+		//GVars_Vue_Edition.outsideTextureReserve = null ; 
 		return returningList;
 	}
 	
 	protected ParallaxLayer buildOutsideLayer(Parallax_Model parallax, float worldWidth)
 	{
-		TextureRegion texture = GVars_Vue_Edition.outsideReserve.get(parallax.regionName) ; 
+		TextureRegion texture = GVars_Vue_Edition.outsideTextureReserve.get(parallax.regionName) ; 
+		
 		if(texture == null) {
-			GVars_Vue_Edition.outsideReserve.remove(parallax.regionName) ; 
+			GVars_Vue_Edition.outsideTextureReserve.remove(parallax.regionName) ; 
+			// TODO set as empty texture
 			return null; 
 		}
+
 		ParallaxLayer layer = new ParallaxLayer(
 			texture,
 			true, 

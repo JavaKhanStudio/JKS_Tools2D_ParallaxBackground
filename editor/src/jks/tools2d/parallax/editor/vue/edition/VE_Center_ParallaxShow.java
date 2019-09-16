@@ -6,7 +6,7 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.all
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.isPause;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.optionsControl;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.outsideReserve;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.outsideTextureReserve;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_X;
@@ -84,7 +84,6 @@ public class VE_Center_ParallaxShow extends Table
 			
 			buildOutsideValues() ; 
 			
-			//TODO Check it ouy
 			if(project.saving.pageModel.atlasName != null)
 				atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
 			else
@@ -121,7 +120,7 @@ public class VE_Center_ParallaxShow extends Table
 					allImage.add(region) ;
 					imageRef.put(region, new Position_Infos(false, infos.url,0)) ;
 					new FileWatching_Image(infos.url,region) ; 
-					outsideReserve.put(infos.url, region) ; 
+					outsideTextureReserve.put(infos.url, region) ; 
 				}
 				catch(Exception e)
 				{

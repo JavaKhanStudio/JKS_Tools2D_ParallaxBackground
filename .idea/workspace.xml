@@ -2,37 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b55857c0-5269-4dc6-a392-08e79e900f1d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/heart/Parallax_Heart.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/heart/Parallax_Heart.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/Utils_Parralax.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/Utils_Parralax.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/side/SolarAstre.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/side/SolarAstre.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/Files/newProject2.plax" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/Files/newProject2.plaxpj" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/filewatch/FileWatchingModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/filewatch/FileWatchingModel.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/filewatch/FileWatching_Image.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/filewatch/FileWatching_Image.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/libgdxutils/JksNumberSlider.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/libgdxutils/JksNumberSlider.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/Files/Foret.plaxpj" beforeDir="false" afterPath="$PROJECT_DIR$/editor/Files/Foret.plaxpj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/Files/Foret_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/editor/Files/Foret_1.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/libgdxutils/JksTextureList.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/libgdxutils/JksTextureList.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/inputs/EditorInputProcessus.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/inputs/EditorInputProcessus.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/inputs/GVars_Inputs.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/inputs/GVars_Inputs.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/mains/Main_Editor.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/mains/Main_Editor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/mains/Main_Editor_Test.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/mains/Main_Editor_Test.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Options.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Options.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/GVars_Vue_Edition.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/data/GVars_Vue_Edition.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/pixmap/PixmapPacker.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/pixmap/PixmapPacker.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/utils/Utils_LoadingImages.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/utils/Utils_LoadingImages.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/utils/Utils_TextureAtlas.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/utils/Utils_TextureAtlas.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/model/AVue_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/model/AVue_Model.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/mains/jks/tools2d/parallax/DesktopLauncher_Basic.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/mains/jks/tools2d/parallax/DesktopLauncher_Basic.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/packing/serialisation/TestUtils_Kryo.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/packing/serialisation/TestUtils_Kryo.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/data/Enum_ColdNight.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/data/Enum_ColdNight.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/inputs/GVars_Inputs.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/inputs/GVars_Inputs.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/inputs/InputProcessus.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/inputs/Testing_InputProcessus.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/mains/Testing_Basic.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/jks/tools2d/parallax/mains/Testing_Basic.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />

@@ -315,6 +315,12 @@ public class JksTextureList extends Widget implements Cullable
 		invalidateHierarchy();
 	}
 
+	public void clearSelected()
+	{
+		selection.clear();
+		invalidateHierarchy();
+	}
+	
 	/**
 	 * Returns the internal items array. If modified, {@link #setItems(Array)} must
 	 * be called to reflect the changes.

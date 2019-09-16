@@ -22,7 +22,7 @@ public class Main_Editor extends ApplicationAdapter
 		GVars_Heart_Editor.init();
 		Gdx.graphics.setVSync(true);
 		
-		if(Vue_Selection.selectSigleFile
+		if(Vue_Selection.selectSingleFile
 				(new FileHandle(
 						new File(Launcher_Editor.launchingValue))))
 		{

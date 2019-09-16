@@ -115,7 +115,7 @@ public class Vue_Selection extends AVue_Model
 		{
 			@Override
 			public void choose(FileHandle file)
-			{selectSigleFile(file) ;}
+			{selectSingleFile(file) ;}
 			
 			@Override
 			public void choose(Array<FileHandle> files) {} // NA
@@ -154,7 +154,7 @@ public class Vue_Selection extends AVue_Model
          };
 	}
 	
-	public static boolean selectSigleFile(FileHandle file)
+	public static boolean selectSingleFile(FileHandle file)
 	{
 		
 		if(StringUtils.isEmpty(file.extension()))
@@ -214,7 +214,7 @@ public class Vue_Selection extends AVue_Model
 		if(files.length == 1)
 		{
 			FileHandle handle = new FileHandle(files[0]); 
-	    	selectSigleFile(handle) ; 
+	    	selectSingleFile(handle) ; 
 		}	
 	}
 

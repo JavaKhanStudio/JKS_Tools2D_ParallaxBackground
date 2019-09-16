@@ -75,6 +75,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 					public void yes () 
 					{
 						delete(text) ;
+						imageList.clearSelected();
 						update();
 						showButton(false) ; 
 					}
@@ -94,8 +95,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 			
 		}) ;
 		
-
-		
+	
 		button_addData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_add.png")) ; 
 		button_addData.setSize(buttonSize, buttonSize);
 		button_addData.addListener(new InputListener()
@@ -206,7 +206,6 @@ public class VE_Tab_TextureList_Adding extends Tab
 	
 	public static void delete(TextureRegion text) 
 	{
-		System.out.println("removing " + text);
 		Utils_LoadingImages.removeFile(text);
 	}
 	

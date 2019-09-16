@@ -106,7 +106,7 @@ public class Vue_Edition extends AVue_Model
 		
 		for(AtlasRegion region : getAtlas().getRegions())
 		{
-			buildInsideData(region) ; 
+			buildInsideData(parallax_Heart.currentPage.findInternalLayer(region)) ; 
 		}
 	}
 	
@@ -204,23 +204,15 @@ public class Vue_Edition extends AVue_Model
 			
 			@Override
 			public boolean keyUp(int keycode)
-			{
-				
-				return false;
-			}
+			{return false;}
 			
 			@Override
 			public boolean keyTyped(char character)
-			{
-				return false;
-			}
+			{return false;}
 			
 			@Override
 			public boolean keyDown(int keycode)
-			{
-				// TODO Auto-generated method stub
-				return false;
-			}
+			{return false;}
 		};
 	}
 	
