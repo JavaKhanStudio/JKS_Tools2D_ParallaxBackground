@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.Utils_Parralax;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -37,7 +38,7 @@ public class WholePage_Model
 	@JsonIgnore
 	public List<ParallaxLayer> preloadValue ;
 	@JsonIgnore
-	public HashMap<String,AtlasRegion> loadedRegion ;
+	private HashMap<String,AtlasRegion> loadedRegion;
 	
 	public WholePage_Model()
 	{
@@ -132,7 +133,7 @@ public class WholePage_Model
 		
 		return returningList;
 	}
-	
+
 	protected ParallaxLayer buildLayer(Parallax_Model parallax, TextureAtlas atlas,float worldWidth)
 	{
 		//Region position reserved for animation
@@ -148,18 +149,36 @@ public class WholePage_Model
 		return layer ; 
 	}
 	
-	protected AtlasRegion findLayer(Parallax_Model parallax,TextureAtlas atlas)
+	public AtlasRegion findInternalLayer(AtlasRegion searchingFor) 
 	{
-		
-		AtlasRegion region = loadedRegion.get(parallax.regionName) ;
+		String name = Utils_Parralax.getRegionName(searchingFor) ;
+		AtlasRegion region = loadedRegion.get(name) ;
 		if(region == null)
 		{
-			region = atlas.findRegions(parallax.regionName).get(parallax.regionPosition) ; 
-			loadedRegion.put(parallax.regionName, region) ; 
+			region = searchingFor ; 
+			loadedRegion.put(name, region) ; 
 		}
 		
 		return region ; 
 	}
+	
+	protected AtlasRegion findLayer(Parallax_Model parallax,TextureAtlas atlas)
+	{
+		if(loadedRegion == null )
+			loadedRegion = new HashMap<>() ; 
+		
+		
+		AtlasRegion region = loadedRegion.get(parallax.getCompleteRegionName()) ;
+		if(region == null)
+		{
+			region = atlas.findRegions(parallax.regionName).get(parallax.regionPosition) ; 
+			loadedRegion.put(parallax.getCompleteRegionName(), region) ; 
+		}
+		
+		return region ; 
+	}
+	
+	
 	
 	// External Reading
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight, String relativePath) 

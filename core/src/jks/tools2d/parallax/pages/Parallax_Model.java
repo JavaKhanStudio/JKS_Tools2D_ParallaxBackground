@@ -73,4 +73,7 @@ public class Parallax_Model
 	public void setDecal_Y_Ratio(float decal_Y_Ratio)
 	{this.decal_Y_Ratio = decal_Y_Ratio;}
 	
+	public String getCompleteRegionName()
+	{return this.regionName + this.regionPosition;}
+	
 }
