@@ -16,6 +16,7 @@ import com.badlogic.gdx.graphics.Pixmap.Filter;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.ParallaxLayer;
@@ -160,6 +161,13 @@ public class Utils_TextureAtlas
 			return new int[] {Integer.parseInt(lookingAt.substring(from - at + 1, from)),from} ; 
 		else
 			return recurciveNumber(lookingAt,from,at - 1) ; 
+	}
+	
+	public static void changeAtlas(TextureAtlas atlas) 
+	{
+		GVars_Vue_Edition.atlas = atlas ; 
+//		GVars_Vue_Edition.setPage(page) ; 
+		GVars_Vue_Edition.allImage.clear(); 
 	}
 	
 }

@@ -1,6 +1,8 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize;
+import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
+import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.activeFileWatching;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.allImage;
@@ -13,13 +15,19 @@ import java.util.ArrayList;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
+import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
+import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
 
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.VE_Tab_TextureList_Adding;
 import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
@@ -30,7 +38,6 @@ public class Utils_LoadingImages
 	
 	public static void fileReception(String[] files)
 	{
-		TextureRegion textureRegion  ; 
 		String errorMessage = "";
 		
 		if(projectDatas.outsideInfos == null)
@@ -44,18 +51,11 @@ public class Utils_LoadingImages
 			{
 				if("png".equals(Utils_Scene2D.getExtension(path)))
 				{
-					textureRegion = Utils_Texture.getTextureRegionFromPath(path) ; 
-					
-					if(textureRegion.getRegionWidth() > atlasMaxSize || textureRegion.getRegionWidth()  > atlasMaxSize)
-					{
-						errorMessage += "\nWarning ! This file is bigger then the limit : " + atlasMaxSize + " pixels \n" ; 
-						continue ; 
-					}
-					
-					activeFileWatching.put(textureRegion,new FileWatching_Image(path,textureRegion)) ; 
-					projectDatas.outsideInfos.add(new Outside_Source(path,extractName(path))) ; 
-					imageRef.put(textureRegion, new Position_Infos(false,path,0)) ; 
-					allImage.add(textureRegion) ; 				
+					loadPNG(path)	;
+				}
+				else if("atlas".equals(Utils_Scene2D.getExtension(path)))
+				{
+					loadAtlas(path) ; 
 				}
 				else
 				{
@@ -74,6 +74,56 @@ public class Utils_LoadingImages
 		}
 		
 		GVars_Vue_Edition.setItems();
+	}
+	
+	private static void loadAtlas(String path) 
+	{
+		TextureAtlas atlas ; 
+		
+		try
+		{
+			atlas = new TextureAtlas(new FileHandle(path)) ;
+			Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Are you sure you want to change the atlas ?", OptionDialogType.YES_NO, new OptionDialogAdapter() 
+			{
+				@Override
+				public void yes () 
+				{
+
+				}
+
+				@Override
+				public void no () 
+				{
+					GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
+				}
+
+				@Override
+				public void cancel () 
+				{}
+			});
+			
+		}
+		catch(Exception e)
+		{
+			
+		}
+		
+	}
+
+	public static String loadPNG(String path)
+	{
+		TextureRegion textureRegion = Utils_Texture.getTextureRegionFromPath(path) ; 
+		
+		if(textureRegion.getRegionWidth() > atlasMaxSize || textureRegion.getRegionWidth()  > atlasMaxSize)
+		{
+			return "\nWarning ! This file is bigger then the limit : " + atlasMaxSize + " pixels \n" ; 
+		}
+		
+		activeFileWatching.put(textureRegion,new FileWatching_Image(path,textureRegion)) ; 
+		projectDatas.outsideInfos.add(new Outside_Source(path,extractName(path))) ; 
+		imageRef.put(textureRegion, new Position_Infos(false,path,0)) ; 
+		allImage.add(textureRegion) ; 		
+		return "" ; 
 	}
 	
 	public static String extractName(String path)
@@ -101,7 +151,6 @@ public class Utils_LoadingImages
 		Position_Infos position = imageRef.get(text) ;
 		if(!position.fromAtlas) 
 		{
-			System.out.println(position.url);
 			for(Outside_Source source : projectDatas.outsideInfos)
 			{
 				if(source.url.equals(position.url))

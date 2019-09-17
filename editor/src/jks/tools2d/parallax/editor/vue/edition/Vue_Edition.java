@@ -192,13 +192,6 @@ public class Vue_Edition extends AVue_Model
 			@Override
 			public boolean mouseMoved(int screenX, int screenY)
 			{
-//				if(GVars_Vue_Edition.colorPicked != null)
-//				{
-//					Pixmap map = ScreenUtils.getFrameBufferPixmap(screenX, screenY, 1, 1) ; 
-//					System.out.println(map.getPixels());
-//					
-//					GVars_Vue_Edition.colorPicked.setColor(new Color(map.getPixel(0, 0)));
-//				}
 				return true;
 			}
 			
@@ -241,10 +234,6 @@ public class Vue_Edition extends AVue_Model
 		
 		if(!isPause)
 		{
-			// TODO OPTI
-//			parallax_Heart.worldCamera.position.add(screenSpeed, 0, 0); 
-//			parallax_Heart.worldCamera.update();
-//			parallax_Heart.batch.setProjectionMatrix(parallax_Heart.worldCamera.combined);
 			parallax_Heart.act(delta);
 		}
 		

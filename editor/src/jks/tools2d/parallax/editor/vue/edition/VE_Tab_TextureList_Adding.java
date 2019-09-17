@@ -6,6 +6,7 @@ import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.get
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setItems;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.sizeTabsBar;
 import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Selection;
+import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -35,6 +36,8 @@ public class VE_Tab_TextureList_Adding extends Tab
 
 	static public JksTextureList imageList ; 
 	private Table mainTable ;
+	private static final int divisonPower = 5 ; 
+	float midButtonHeight ; 
 	
 	ImageButton button_removeData,button_addData ; 
 	
@@ -48,7 +51,8 @@ public class VE_Tab_TextureList_Adding extends Tab
 	public void buildTextureSelector()
 	{
 		ScrollPane contentsPane;
-		float buttonSize = size_Bloc_Selection/4; 
+		float buttonSize = size_Bloc_Selection/divisonPower; 
+		midButtonHeight = buttonSize/2 ; 
 		
 		button_removeData = Utils_Interface.buildSquareButton("editor/interfaces/delete.png",buttonSize) ; 
 		button_removeData.setSize(buttonSize, buttonSize);
@@ -133,8 +137,9 @@ public class VE_Tab_TextureList_Adding extends Tab
 			public void drawOnSelected(Batch batch, float x, float y, float width, float itemHeight)
 			{
 				showButton(true) ; 
-				button_removeData.setPosition(x + buttonSize/2, y + buttonSize/2);
-				button_addData.setPosition(x + buttonSize * 2.f, y + buttonSize/2);
+//				size_Bloc_Selection
+				button_removeData.setPosition(x , y + size_Height_Bloc_Parallax_Controle - midButtonHeight);
+				button_addData.setPosition(x , y + size_Height_Bloc_Parallax_Controle - midButtonHeight);
 			}
 	
 		};		
