@@ -1,10 +1,10 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.currentlySelectedParallax;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValues;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValuesPosition;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.currentlySelectedParallax;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.trashedValues;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.trashedValuesPosition;
 
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
@@ -18,7 +18,7 @@ import com.kotcrab.vis.ui.widget.spinner.IntSpinnerModel;
 import com.kotcrab.vis.ui.widget.spinner.Spinner;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 
 public class VE_Tab_TextureConfig_Select extends Table 
 {

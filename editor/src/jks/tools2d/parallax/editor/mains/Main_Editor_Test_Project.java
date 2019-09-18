@@ -1,7 +1,7 @@
 package jks.tools2d.parallax.editor.mains;
 
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectDatas;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectInfos;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectInfos;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -13,8 +13,8 @@ import com.esotericsoftware.kryo.io.Input;
 
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
 import jks.tools2d.parallax.heart.GVars_Serialization;

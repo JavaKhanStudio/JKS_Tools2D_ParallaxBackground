@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectInfos;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectInfos;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;

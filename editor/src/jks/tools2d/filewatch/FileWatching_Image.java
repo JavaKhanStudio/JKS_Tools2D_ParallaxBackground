@@ -7,7 +7,7 @@ import java.util.Timer;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 
 public class FileWatching_Image extends FileWatchingModel
 {

@@ -1,22 +1,22 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.allImage;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.centerControl;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.getAtlas;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.imageRef;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.isPause;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.optionsControl;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_X;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Pos_Y;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_X;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.parr_Size_Y;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setDefaults;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.showParallaxFullScreen;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.tabControl;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureChange;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureLink;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.timeForAutoSaveAt;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.timeForAutoSaveTimmer;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.allImage;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.centerControl;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getAtlas;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.imageRef;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.isPause;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.optionsControl;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.parr_Pos_X;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.parr_Pos_Y;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.parr_Size_X;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.parr_Size_Y;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.setDefaults;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.showParallaxFullScreen;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabControl;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.textureChange;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.textureLink;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.timeForAutoSaveAt;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.timeForAutoSaveTimmer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -40,9 +40,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_LoadingImages;
@@ -55,6 +55,7 @@ public class Vue_Edition extends AVue_Model
 {
 
 	public static Parallax_Heart parallax_Heart ;
+	public static boolean isVSynch = false ;
 	public ShapeRenderer shapeRender ;
 	public Object preloadingValue ; 
 

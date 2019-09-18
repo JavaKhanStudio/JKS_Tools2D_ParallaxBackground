@@ -5,9 +5,9 @@ import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.JSON_PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX_PROJECT;
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectDatas;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectInfos;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.relativePath;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectInfos;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.relativePath;
 
 import java.io.File;
 import java.io.FileFilter;

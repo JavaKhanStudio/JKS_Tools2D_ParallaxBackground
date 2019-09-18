@@ -8,12 +8,9 @@ import com.kotcrab.vis.ui.VisUI;
 
 public class GVars_Ui implements Runnable 
 {
-
 	public static Skin baseSkin;
 	public static Stage mainUi;
 	public static Table interaction;
-	
-	
 	
 	public static void init() 
 	{
@@ -32,5 +29,4 @@ public class GVars_Ui implements Runnable
 	@Override
 	public void run() 
 	{init();}
-
 }

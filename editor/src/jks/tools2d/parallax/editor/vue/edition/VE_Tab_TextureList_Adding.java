@@ -1,12 +1,12 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.setItems;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.sizeTabsBar;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.getDefaults;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.setItems;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.sizeTabsBar;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Bloc_Selection;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -26,7 +26,7 @@ import jks.tools2d.libgdxutils.JksTextureList;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_LoadingImages;
 import jks.tools2d.parallax.heart.Gvars_Parallax; 

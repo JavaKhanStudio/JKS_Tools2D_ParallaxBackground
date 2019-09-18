@@ -1,8 +1,8 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize ;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectDatas;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.pixmap.PixmapPacker;
 import jks.tools2d.parallax.editor.vue.edition.pixmap.PixmapPackerIO;

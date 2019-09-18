@@ -9,9 +9,10 @@ import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.zoomInPressed;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.zoomOutPressed;
 
 import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.InputAdapter;
 
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
+
+import com.badlogic.gdx.InputAdapter;
 
 public class EditorInputProcessus extends InputAdapter 
 {

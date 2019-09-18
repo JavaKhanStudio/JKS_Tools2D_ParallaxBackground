@@ -1,15 +1,15 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.activeFileWatching;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.allImage;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.currentlySelectedParallax;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.imageRef;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.textureLink;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.activeFileWatching;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.allImage;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.currentlySelectedParallax;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.imageRef;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectDatas;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.textureLink;
 
 import java.util.ArrayList;
 
@@ -27,9 +27,9 @@ import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.VE_Tab_TextureList_Adding;
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 

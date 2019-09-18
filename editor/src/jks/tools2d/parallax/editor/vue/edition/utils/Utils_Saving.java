@@ -1,9 +1,9 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
-import static jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition.projectDatas;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,11 +21,15 @@ import com.kotcrab.vis.ui.util.dialog.Dialogs;
 import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
 import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.* ; 
+
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.VE_Options;
-import jks.tools2d.parallax.editor.vue.edition.data.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.data.WholePage_Editor;
 import jks.tools2d.parallax.heart.GVars_Serialization;
@@ -221,4 +225,21 @@ public class Utils_Saving
 		catch(Exception e)
 		{e.printStackTrace();}
 	}
+	
+
+
+	public static void packTextures() 
+	{
+		File newFolder = new File("/Files/packing_" + parallaxName.getText());
+        boolean created =  newFolder.mkdir();
+        
+        for(Outside_Source source : GVars_Vue_Edition.projectDatas.outsideInfos)
+        {
+        	
+        }
+        
+        FileUtils.copyFile() ; 
+		
+	}
+	
 }

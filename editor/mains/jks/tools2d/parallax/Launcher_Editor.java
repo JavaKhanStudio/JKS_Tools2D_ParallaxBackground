@@ -6,8 +6,10 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 
+import jks.tools2d.parallax.debug.GVars_Debug;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.mains.Main_Editor;
+import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
 
 public class Launcher_Editor 
 {
@@ -26,7 +28,9 @@ public class Launcher_Editor
 		config.setWindowIcon("skins/uis/parallaxIcon.png");
 
 		config.useVsync(true);
-		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);	
+		Vue_Edition.isVSynch = true ; 
+		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);
+		GVars_Debug.inDebug = true ; 
 		
 		config.setWindowListener(new Lwjgl3WindowAdapter() 
 		{

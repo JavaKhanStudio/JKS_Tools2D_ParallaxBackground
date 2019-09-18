@@ -5,6 +5,7 @@ import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import org.apache.commons.lang3.StringUtils;
+import org.lwjgl.glfw.GLFW;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -37,7 +38,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 	public IntSpinnerModel nbSampleSpinner ; 
 	Spinner nbSampleSpinnerBody ; 
 
-	VisTextButton changeAtlas, showOptionDialog ; 
+	VisTextButton changeAtlas, showOptionDialog, packUpTextures ; 
 	VisLabel atlasNameLabel ;  
 	
 	
@@ -140,6 +141,33 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			}
 		});
 		
+
+		packUpTextures = new VisTextButton("Pack external texture for moving");
+		packUpTextures.addListener(new ChangeListener() 
+		{
+			@Override
+			public void changed (ChangeEvent event, Actor actor) 
+			{
+				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Are you sure you want to pack ? \nTexture will be put in : \"packing_" + parallaxName.getText() + "\"" , OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
+				{
+					@Override
+					public void yes () 
+					{
+						Utils_Saving.packTextures() ; 						
+					}
+
+					@Override
+					public void no () 
+					{
+					}
+
+					@Override
+					public void cancel () 
+					{}
+				});
+			}
+		});
+		
 		vSynch = new VisCheckBox("VSynch") ;
 		vSynch.addListener(new InputListener()
 		{		
@@ -150,11 +178,12 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
+				Vue_Edition.isVSynch = vSynch.isChecked() ;
 				Gdx.graphics.setVSync(vSynch.isChecked());
 			}
 		}) ; 
 		
-		nbSampleSpinner = new IntSpinnerModel(0,0,4); 
+		nbSampleSpinner = new IntSpinnerModel(0,0,100); 
 		nbSampleSpinnerBody = new Spinner("Nb Sample", nbSampleSpinner);
 		nbSampleSpinnerBody.addListener(new InputListener()
 		{		
@@ -167,8 +196,9 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				
-				//nbSampleSpinnerBody.
+				System.out.println("chaning value");
+				GLFW.glfwWindowHint(GLFW.GLFW_SAMPLES, nbSampleSpinner.getValue());
+			//	Gdx.graphics.getBufferFormat().samples = nbSampleSpinner.getValue() ; 
 			}
 		}) ; 
 		
@@ -182,9 +212,15 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		mainTable.add(new VisLabel("-- Parameter --")).colspan(2).row();
 		mainTable.add(showOptionDialog).colspan(2) ;
 		mainTable.row();
+		
+		/*// must check if it works
 		mainTable.add(new VisLabel("-- Visuel --")).colspan(2) ;
 		mainTable.row() ; 
 		mainTable.add(vSynch) ; 
+		mainTable.add(nbSampleSpinnerBody) ; 
+		*/
+
+		
 	}
 	
 	public void update()
@@ -199,6 +235,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			atlasName += parallax_Heart.getAtlasName() ; 
 		
 		atlasNameLabel.setText(atlasName);
+		vSynch.setChecked(Vue_Edition.isVSynch);
 //		vSynch.setChecked(Gdx.graphics.get);
 	}
 
