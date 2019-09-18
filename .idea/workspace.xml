@@ -2,16 +2,180 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b55857c0-5269-4dc6-a392-08e79e900f1d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/Utils_Parralax.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/Utils_Parralax.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/Parallax_Model.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/core/src/jks/tools2d/parallax/pages/WholePage_Model.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/Files/Foret.plaxpj" beforeDir="false" afterPath="$PROJECT_DIR$/editor/Files/Foret.plaxpj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/Files/Foret_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/editor/Files/Foret_1.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/libgdxutils/JksTextureList.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/libgdxutils/JksTextureList.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/JKS_Tools2D_ParallaxBackground.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/JKS_Tools2D_ParallaxBackground.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/ParallaxLayer.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/ParallaxLayer.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/ParallaxPageReader.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/ParallaxPageReader.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/Utils_Parralax.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/Utils_Parralax.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/heart/Parallax_Heart.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/heart/Parallax_Heart.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/Page_Model.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/Page_Model.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/Parallax_Model.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/Parallax_Model.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/Parallax_Model_Serializer.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/Parallax_Model_Serializer.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/Utils_Page.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/Utils_Page.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/WholePage_Model.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/pages/WholePage_Model.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/side/SolarAstre.class" beforeDir="false" afterPath="$PROJECT_DIR$/core/out/production/classes/jks/tools2d/parallax/side/SolarAstre.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor_Test.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor_Test.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor_Test_Project.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/mains/jks/tools2d/parallax/Launcher_Editor_Test_Project.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$4.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$5.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$6.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$6.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$7.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$7.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$8.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$8.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$9.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$9.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$Style.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List$Style.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_List.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$4.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$5.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$Style.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree$Style.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FC_Tree.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FileChooser$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FileChooser$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FileChooser.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filechooser/FileChooser.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filewatch/FileWatchingModel.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filewatch/FileWatchingModel.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filewatch/FileWatching_Image.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/filewatch/FileWatching_Image.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksCheckBox.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksCheckBox.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksNumberSlider$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksNumberSlider$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksNumberSlider$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksNumberSlider$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksNumberSlider$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksNumberSlider$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksNumberSlider.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksNumberSlider.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksTextureList$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksTextureList$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksTextureList$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksTextureList$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksTextureList$ListStyle.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksTextureList$ListStyle.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksTextureList.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/JksTextureList.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/Utils_Interface$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/Utils_Interface$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/Utils_Interface.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/Utils_Interface.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/Utils_Scene2D.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/Utils_Scene2D.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/color/BasicColorPicker$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/color/BasicColorPicker$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/color/BasicColorPicker.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/color/BasicColorPicker.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/color/ExtendedColorPicker.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/libgdxutils/color/ExtendedColorPicker.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/Launcher_Editor$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/Launcher_Editor$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/Launcher_Editor.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/Launcher_Editor.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/Launcher_Editor_Test$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/Launcher_Editor_Test$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/Launcher_Editor_Test.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/Launcher_Editor_Test.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/gvars/FVars_Extensions.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/gvars/FVars_Extensions.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/gvars/GVars_Heart_Editor.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/gvars/GVars_Heart_Editor.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/gvars/GVars_Kryo.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/gvars/GVars_Ui.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/gvars/GVars_Ui.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/inputs/EditorInputProcessus.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/inputs/EditorInputProcessus.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/inputs/GVars_Inputs.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/inputs/GVars_Inputs.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/mains/Main_Editor.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/mains/Main_Editor.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/mains/Main_Editor_Test.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/mains/Main_Editor_Test.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/section/FileChooserTest$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/section/FileChooserTest$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/section/FileChooserTest.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/section/FileChooserTest.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/GridPacker.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/ImageProcessor.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/MaxRectsPacker$1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/MaxRectsPacker$2.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/MaxRectsPacker$3.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/MaxRectsPacker$BinarySearch.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/MaxRectsPacker$FreeRectChoiceHeuristic.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/MaxRectsPacker$MaxRects.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/MaxRectsPacker$RectComparator.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/MaxRectsPacker.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/Packer.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/Page.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/Rect.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/TexturePacker$1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/TexturePacker$2.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/TexturePacker$Alias.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/TexturePacker$InputImage.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/TexturePacker.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/texturepacking/Utils_TexturePacking.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/ScrollPaneTest.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/ScrollPaneTest.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/Vue_Selection$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/Vue_Selection$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/Vue_Selection$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/Vue_Selection$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/Vue_Selection.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/Vue_Selection.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/CopyUpAndDown$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/CopyUpAndDown$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/CopyUpAndDown$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/CopyUpAndDown$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/CopyUpAndDown.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/CopyUpAndDown.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Center_ParallaxShow.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$4.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options$5.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Options.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ColorConfig$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ColorConfig$4.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ColorConfig$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ColorConfig$5.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ColorConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ColorConfig.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_AddTransfert$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_AddTransfert$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_AddTransfert.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_AddTransfert.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$10.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$10.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$11.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$11.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$12.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$12.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$13.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$13.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$14.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$14.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$15.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$15.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$16.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$16.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$17.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$17.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$18.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$18.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$19.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$19.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$4.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$5.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$6.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$6.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$7.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$7.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$8.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$8.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$9.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit$9.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Edit.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select$5.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select$6.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select$6.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureConfig_Select.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_Adding.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$10.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$10.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$11.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$11.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$4.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$5.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$6.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$6.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$7.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$7.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$8.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$8.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$9.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue$9.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/VE_Tab_TextureList_DefaultValue.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/Vue_Edition$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/Vue_Edition$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/GVars_Vue_Edition.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/GVars_Vue_Edition.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/ParallaxDefaultValues.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/ParallaxDefaultValues.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/ParallaxLayerBaseValues_Serializer.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/Position_Infos.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/Position_Infos.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/Project_Data.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/Project_Data.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/Project_Data_Serializer.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/Utils_Saving.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/Utils_Texture.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/WholePage_Editor.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/WholePage_Editor.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/edition/data/WholePage_Editor_Serializer.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/model/AVue_Model.class" beforeDir="false" afterPath="$PROJECT_DIR$/editor/out/production/classes/jks/tools2d/parallax/editor/vue/model/AVue_Model.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/tres/Testing_TabbedPane$1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/tres/Testing_TabbedPane$TestTab.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/tres/Testing_TabbedPane.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/out/production/classes/tres/UiTestModel.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Ui.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/gvars/GVars_Ui.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/VE_Tab_ParallaxConfig_Configuration.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/Vue_Edition.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/utils/Utils_LoadingImages.java" beforeDir="false" afterPath="$PROJECT_DIR$/editor/src/jks/tools2d/parallax/editor/vue/edition/utils/Utils_LoadingImages.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -46,6 +210,17 @@
               <path>
                 <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
                 <item name="JKS_Tools2D_ParallaxBackground" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="JKS_Tools2D_ParallaxBackground" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+                <item name="build" type="c8890929:TasksNode$1" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="JKS_Tools2D_ParallaxBackground" type="f1a62948:ProjectNode" />
                 <item name="editor" type="2d1252cf:ModuleNode" />
               </path>
             </expand>
@@ -55,12 +230,6 @@
       </state>
     </system>
   </component>
-  <component name="FindInProjectRecents">
-    <findStrings>
-      <find>outsideInfos</find>
-      <find>saving</find>
-    </findStrings>
-  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -68,8 +237,11 @@
   <component name="PropertiesComponent">
     <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/build.gradle" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+    <property name="show.inlinked.gradle.project.popup" value="true" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -83,20 +255,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Application.Kryo_Testing">
-    <configuration name="DesktopLauncher_Editor" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.desktop.DesktopLauncher_Editor" />
-      <module name="JKS_Tools2D_ParallaxBackground.desktop.main" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="jks.tools2d.parallax.desktop.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="Application.Launcher_Editor">
     <configuration name="Kryo_Testing" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.serialisation.Kryo_Testing" />
       <module name="JKS_Tools2D_ParallaxBackground.test" />
@@ -112,7 +271,7 @@
     </configuration>
     <configuration name="Launcher_Editor" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.Launcher_Editor" />
-      <module name="JKS_Tools2D_ParallaxBackground.editor.main" />
+      <module name="JKS_Tools2D_ParallaxBackground.editor" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="jks.tools2d.parallax.*" />
@@ -123,18 +282,43 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Launcher_Editor_Test" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="jks.tools2d.parallax.Launcher_Editor_Test" />
-      <module name="JKS_Tools2D_ParallaxBackground.editor.main" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="jks.tools2d.parallax.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
+    <configuration name="JKS_Tools2D_ParallaxBackground [build]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="build" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <GradleScriptDebugEnabled>true</GradleScriptDebugEnabled>
+      <method v="2" />
+    </configuration>
+    <configuration name="JKS_Tools2D_ParallaxBackground [clean]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="clean" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <GradleScriptDebugEnabled>true</GradleScriptDebugEnabled>
+      <method v="2" />
     </configuration>
     <configuration name="JKS_Tools2D_ParallaxBackground" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
@@ -155,11 +339,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.Launcher_Editor" />
+        <item itemvalue="Gradle.JKS_Tools2D_ParallaxBackground [build]" />
+        <item itemvalue="Gradle.JKS_Tools2D_ParallaxBackground [clean]" />
         <item itemvalue="Application.Kryo_Testing" />
         <item itemvalue="Gradle.JKS_Tools2D_ParallaxBackground" />
-        <item itemvalue="Application.Launcher_Editor_Test" />
-        <item itemvalue="Application.Launcher_Editor" />
-        <item itemvalue="Application.DesktopLauncher_Editor" />
       </list>
     </recent_temporary>
   </component>
@@ -173,8 +357,26 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1556401103068</updated>
+      <workItem from="1568720529545" duration="1911000" />
+      <workItem from="1568802469363" duration="1500000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="masterDetails">
     <states>
