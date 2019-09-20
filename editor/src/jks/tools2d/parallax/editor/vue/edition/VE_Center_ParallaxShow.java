@@ -15,7 +15,11 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Para
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabControl;
+import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
+import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
@@ -30,17 +34,23 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.kotcrab.vis.ui.util.dialog.Dialogs;
+import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
+import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
 import com.kotcrab.vis.ui.widget.VisTextButton;
 
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.JksCheckBox;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
+import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving;
 import jks.tools2d.parallax.pages.WholePage_Model; 
 
 public class VE_Center_ParallaxShow extends Table
@@ -112,22 +122,26 @@ public class VE_Center_ParallaxShow extends Table
 		
 		if(GVars_Vue_Edition.projectDatas.outsideInfos != null)
 		{
-			for(Outside_Source infos : GVars_Vue_Edition.projectDatas.outsideInfos)
+			for(Outside_Source outsideInfos : GVars_Vue_Edition.projectDatas.outsideInfos)
 			{
 				try 
 				{
-					TextureRegion region = new TextureRegion(new Texture(new FileHandle(infos.url))) ; 
+					TextureRegion region = new TextureRegion(new Texture(new FileHandle(outsideInfos.url))) ; 
 					allImage.add(region) ;
-					imageRef.put(region, new Position_Infos(false, infos.url,0)) ;
-					new FileWatching_Image(infos.url,region) ; 
-					outsideTextureReserve.put(infos.url, region) ; 
+					imageRef.put(region, new Position_Infos(false, outsideInfos.url,0)) ;
+					new FileWatching_Image(outsideInfos.url,region) ; 
+					outsideTextureReserve.put(outsideInfos.url, region) ; 
 				}
 				catch(Exception e)
 				{
-					errors += "Could not load " + infos.url ; 
+					errors += "Could not load " + outsideInfos.url + "\n" ; 
 				}
 			}
 		}
+		
+		// TODO TODO WORK HERE TO FINISH
+		if(!StringUtils.isBlank(errors))
+			Dialogs.showErrorDialog(GVars_Ui.mainUi, "Loading not possible", errors);
 	}
 	
 	VE_Center_ParallaxShow()

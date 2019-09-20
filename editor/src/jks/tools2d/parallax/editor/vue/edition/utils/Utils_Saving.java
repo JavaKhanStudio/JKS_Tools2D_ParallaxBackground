@@ -66,9 +66,7 @@ public class Utils_Saving
 		catch(Exception e)
 		{e.printStackTrace();}
 		
-		Dialogs.showOKDialog(GVars_Ui.mainUi, "Saving", "Successful export of " + whatName + "as a \n" +
-				(VE_Options.formatLibGDX.isChecked()? " 	.plax	\n" : "") +
-				(VE_Options.formatJson.isChecked()? " 	.jplax	" : "")) ; 
+		
 	}
 	
 	public static void savingExport(String where, String whatName) throws JsonGenerationException, JsonMappingException, IOException
@@ -80,6 +78,10 @@ public class Utils_Saving
 		
 		if(VE_Options.formatJson.isChecked())
 			saving_Parallax_JSON(where,whatName,outputFinalModel) ; 
+		
+		Dialogs.showOKDialog(GVars_Ui.mainUi, "Saving", "Successful export of " + whatName + "as a \n" +
+				(VE_Options.formatLibGDX.isChecked()? " 	.plax	\n" : "") +
+				(VE_Options.formatJson.isChecked()? " 	.jplax	" : "")) ; 
 	}
 	
 	private static void askForFlatening(String where, String whatName) 
@@ -227,19 +229,32 @@ public class Utils_Saving
 	}
 	
 
-
 	public static void packTextures() 
 	{
-		File newFolder = new File("/Files/packing_" + parallaxName.getText());
+		String newFilePath = "/Files/packing_" + parallaxName.getText() ; 
+		
+		String filePath = new File("").getAbsolutePath();
+		File newFolder = new File(filePath + newFilePath);
         boolean created =  newFolder.mkdir();
-        
+
         for(Outside_Source source : GVars_Vue_Edition.projectDatas.outsideInfos)
         {
-        	
+        	try 
+        	{
+				FileUtils.copyFile(new File(source.url),new File(newFolder.getPath() + "/" + source.name + ".png")) ;
+				source.url = ".." + newFilePath + "/" + source.name + ".png" ; 
+				
+			} 
+        	catch (IOException e) 
+        	{
+				e.printStackTrace();
+			} 
         }
         
-        FileUtils.copyFile() ; 
-		
+        for(Position_Infos ref :GVars_Vue_Edition.imageRef.values())
+        {
+        	ref.url = ".." + newFilePath + "/" + ref.getPageName() + ".png" ; 
+        }
+        
 	}
-	
 }

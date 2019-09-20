@@ -206,9 +206,14 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		mainTable.add(repeatOnX) ; 
 		mainTable.add(repeatOnY) ; 
 		mainTable.row();
+		
 		mainTable.add(atlasNameLabel) ; 
 		mainTable.add(changeAtlas) ;
 		mainTable.row();
+		
+		mainTable.add(packUpTextures).colspan(2) ;
+		mainTable.row();
+		
 		mainTable.add(new VisLabel("-- Parameter --")).colspan(2).row();
 		mainTable.add(showOptionDialog).colspan(2) ;
 		mainTable.row();
@@ -236,7 +241,6 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		
 		atlasNameLabel.setText(atlasName);
 		vSynch.setChecked(Vue_Edition.isVSynch);
-//		vSynch.setChecked(Gdx.graphics.get);
 	}
 
 	@Override

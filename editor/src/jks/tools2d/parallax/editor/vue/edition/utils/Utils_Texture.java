@@ -10,9 +10,19 @@ public class Utils_Texture
 
 	public static TextureRegion getTextureRegionFromPath(String path)
 	{
-		Texture texture = new Texture(new FileHandle(path),true) ;
-		texture.setFilter(TextureFilter.MipMap, TextureFilter.MipMap);
-		return new TextureRegion(texture) ; 
+		try
+		{
+			Texture texture = new Texture(new FileHandle(path),true) ;
+			texture.setFilter(TextureFilter.MipMap, TextureFilter.MipMap);
+			return new TextureRegion(texture) ; 
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return null ; 
+		
 	}
 	
 }
