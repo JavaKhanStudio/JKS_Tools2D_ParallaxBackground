@@ -44,7 +44,7 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	        for (int y=0; y<pixmap.getHeight(); y++) 
 	        {
 	           //  pixmap.drawPixel(x, y, Enum_ColorFun.NONE.buildFromInteger(pixmap.getPixel(x, y)));
-	        	System.out.println(pixmap.getPixel(x, y));
+	        	//System.out.println(pixmap.getPixel(x, y));
 	        	pixmap.drawPixel(x, y, Enum_ColorFun.NONE.buildFromInteger(pixmap.getPixel(x, y)));
 	    	     
 	        }
