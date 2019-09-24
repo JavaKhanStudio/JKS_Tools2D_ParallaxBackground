@@ -18,7 +18,8 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 {
 
 	public static Texture texture ; 
-	public static Texture texture2 ; 
+	public static Texture textureGrayMod ; 
+	public static Texture textureGrayMod2 ; 
 	public SpriteBatch batch;
 	
 	private static final String path = "single/chiot.jpg" ; 
@@ -40,18 +41,34 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	    textureData.prepare();
 	    
 	    Pixmap pixmap = textureData.consumePixmap() ;
+	    textureData.prepare();
+	    Pixmap pixmap2 = textureData.consumePixmap() ;
 	    for (int x = 0; x < pixmap.getWidth(); x++) 
 	    {
 	        for (int y = 0; y < pixmap.getHeight(); y++) 
 	        {
+
+	        	pixmap.drawPixel(x, y,Enum_ColorIsolation.GRAY.buildFromInteger(pixmap.getPixel(x, y))) ; 
+	        	pixmap2.drawPixel(x, y,Enum_ColorIsolation.GRAY.buildFromInteger2(pixmap.getPixel(x, y))) ; 
+	        	
 	        	pixmap.drawPixel(x, y, 
-	        			Utils_ColorMerge.mergeColor(Enum_ColorIsolation.GRAY.buildFromInteger(pixmap.getPixel(x, y)),
+	        			Utils_ColorMerge.mergeColor(pixmap.getPixel(x, y),
 	        					((float)y/pixmap.getHeight() * 100), 
-	        					Color.RED.toIntBits(), Color.RED.toIntBits()));
+	        					Color.RED.toIntBits(), Color.GREEN.toIntBits()));
+	        	pixmap2.drawPixel(x, y, 
+	        			Utils_ColorMerge.mergeColor(pixmap2.getPixel(x, y),
+	        					((float)y/pixmap.getHeight() * 100), 
+	        					Color.RED.toIntBits(), Color.GREEN.toIntBits()));
+	        	
+//	        	pixmap.drawPixel(x, y, 
+//	        			Utils_ColorMerge.mergeColor(Enum_ColorIsolation.GRAY.buildFromInteger(pixmap.getPixel(x, y)),
+//	        					((float)y/pixmap.getHeight() * 100), 
+//	        					Color.RED.toIntBits(), Color.RED.toIntBits()));
 	        }
 	    }
 	    
-	    texture2 = new Texture(pixmap) ; 
+	    textureGrayMod = new Texture(pixmap) ; 
+	    textureGrayMod2 = new Texture(pixmap2) ; 
  	}
 	
 	@Override
@@ -60,8 +77,9 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);	  
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
 		batch.begin();
-		batch.draw(texture2, 0, 0);
-		batch.draw(texture, texture2.getWidth(), 0);
+		batch.draw(textureGrayMod, 0, 0);
+		batch.draw(textureGrayMod2, textureGrayMod.getWidth(), 0);
+		batch.draw(texture, textureGrayMod.getWidth() * 2, 0);
 		batch.end();
 	}
 	

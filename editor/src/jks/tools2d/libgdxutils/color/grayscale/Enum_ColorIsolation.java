@@ -81,7 +81,29 @@ public enum Enum_ColorIsolation
         }
 
         return (avg<<24) | (avg<<16) | (avg<<8) | a ;
+
     }
+    
+    public int buildFromInteger2(int value)
+    {
+    	if(value == -256)
+    		return -256; 
+    	
+    	
+        final int r = (value>>24)&0xff ;
+        final int g = (value>>16)&0xff ;
+        final int b = (value>>8)&0xff ;
+        final int a = value&0xff ;
+        
+        final int avg = (r + g + b)/3 ;
+
+//        int nightmare = (76 * r + 150 * g + 29 * b + a);
+//        int nightmare2 = (int)((76 + avg) + (150 + avg) + (29 + avg));
+        int gray =  (76 * r + 150 * g + 29 * b) >> 8;
+        //return (avg<<24) | (avg<<16) | (avg<<8) | a ;
+        return (gray<<24) | (gray<<16) | (gray<<8) | a ;
+    }
+    
 //    public int buildFromInteger(int value)
 //    {
 //    	if(value == -256)
