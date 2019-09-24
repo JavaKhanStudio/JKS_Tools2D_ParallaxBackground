@@ -1,12 +1,12 @@
 package jks.tools2d.libgdxutils.color.grayscale;
 
 
-public enum Enum_ColorFun
+public enum Enum_ColorIsolation
 {
     RED,
     GREEN,
     BLUE,
-    NONE,
+    GRAY,
     ;
 
     static final float percentFull = 1.1f ;
@@ -44,9 +44,9 @@ public enum Enum_ColorFun
                 if(r > avg * percentFull)
                     return value ;
                 else if(r > avg * percentHalf)
-                    return (a<<24) | (avg<<16) | ((int)((avg * halfPower))<<8) | (int)(avg * halfPower) ;
+                    return (avg<<24) | ((int)((avg * halfPower))<<16) | (int)(avg * halfPower)<<8 | a ;
                 else if(r > avg * percentTier)
-                    return (a<<24) | (avg<<16) | ((int)((avg * tierPower))<<8) | (int)(avg * tierPower) ;
+                    return (avg<<24) | ((int)((avg * tierPower))<<16) | (int)(avg * tierPower)<<8 | a ;
 
                 break ;
             }
@@ -58,9 +58,9 @@ public enum Enum_ColorFun
                 if(g > avg * percentFullGreen)
                     return value ;
                 else if(g > avg * percentHalfGreen)
-                    return (a<<24) | ((int)((avg * halfPower))<<16) | (avg<<8) | (int)(avg * halfPower)  ;
+                    return ((int)((avg * halfPower))<<24) | (avg<<16) | (int)(avg * halfPower)<<8 | a ;
                 else if(g > avg * percentTierGreen)
-                    return (a<<24) | ((int)((avg * tierPower))<<16) | (avg<<8) | (int)(avg * tierPower) ;
+                    return ((int)((avg * tierPower))<<16) | (avg<<16) | (int)(avg * tierPower)<<8 | a ;
 
                 break ;
             }
@@ -72,9 +72,9 @@ public enum Enum_ColorFun
                 if(b > avg * percentFull)
                     return value ;
                 else if(b > avg * percentHalf)
-                    return (a<<24) | ((int)((avg * halfPower))<<16) | ((int)((avg * halfPower))<<8) | avg ;
+                    return ((int)((avg * halfPower))<<24) | ((int)((avg * halfPower))<<16) | avg<<8 | a ;
                 else if(b > avg * percentTier)
-                    return (a<<24) | ((int)((avg * tierPower))<<16) | ((int)((avg * tierPower))<<8) | avg ;
+                    return ((int)((avg * tierPower))<<24) | ((int)((avg * tierPower))<<16) | avg<<8 | a ;
 
                 break ;
             }

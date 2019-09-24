@@ -1,7 +1,5 @@
 package jks.tools2d.colorplay;
 
-import java.nio.ByteBuffer;
-
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
@@ -13,7 +11,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import jks.tools2d.libgdxutils.color.grayscale.Enum_ColorFun;
+import jks.tools2d.libgdxutils.color.grayscale.Enum_ColorIsolation;
+import jks.tools2d.libgdxutils.color.grayscale.Utils_ColorMerge;
 
 public class ChangeColorOnTextureTest extends ApplicationAdapter 
 {
@@ -22,6 +21,8 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	public static Texture texture2 ; 
 	public SpriteBatch batch;
 	
+	private static final String path = "single/chiot.jpg" ; 
+ 	
 	public static void main (String[] arg) 
 	{
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
@@ -34,21 +35,22 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
  	public void create () 
  	{
 		batch = new SpriteBatch();
-		texture = new Texture("single/chiot.png") ;
+		texture = new Texture(path) ;
 		TextureData textureData = texture.getTextureData();
 	    textureData.prepare();
 	    
 	    Pixmap pixmap = textureData.consumePixmap() ;
-	    for (int x=0; x<pixmap.getWidth(); x++) 
+	    for (int x = 0; x < pixmap.getWidth(); x++) 
 	    {
-	        for (int y=0; y<pixmap.getHeight(); y++) 
+	        for (int y = 0; y < pixmap.getHeight(); y++) 
 	        {
-	           //  pixmap.drawPixel(x, y, Enum_ColorFun.NONE.buildFromInteger(pixmap.getPixel(x, y)));
-	        	//System.out.println(pixmap.getPixel(x, y));
-	        	pixmap.drawPixel(x, y, Enum_ColorFun.NONE.buildFromInteger(pixmap.getPixel(x, y)));
-	    	     
+	        	pixmap.drawPixel(x, y, 
+	        			Utils_ColorMerge.mergeColor(Enum_ColorIsolation.GRAY.buildFromInteger(pixmap.getPixel(x, y)),
+	        					((float)y/pixmap.getHeight() * 100), 
+	        					Color.RED.toIntBits(), Color.RED.toIntBits()));
 	        }
 	    }
+	    
 	    texture2 = new Texture(pixmap) ; 
  	}
 	
