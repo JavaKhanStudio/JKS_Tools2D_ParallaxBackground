@@ -52,11 +52,11 @@ public class ColorOnTextureBasicTest extends ApplicationAdapter
 	        	pixmap2.drawPixel(x, y,Enum_ColorIsolation.RED.buildFromInteger2(pixmap.getPixel(x, y))) ; 
 	        	
 	        	pixmap.drawPixel(x, y, 
-	        			Utils_ColorMerge.mergeColor2(pixmap.getPixel(x, y),
+	        			Utils_ColorMerge.mergeColorTopAndBot(pixmap.getPixel(x, y),
 	        					((float)y/pixmap.getHeight() * 100), 
 	        					Color.BLUE.toIntBits(), Color.RED.toIntBits()));
 	        	pixmap2.drawPixel(x, y, 
-	        			Utils_ColorMerge.mergeColor2(pixmap2.getPixel(x, y),
+	        			Utils_ColorMerge.mergeColorTopAndBot(pixmap2.getPixel(x, y),
 	        					((float)y/pixmap.getHeight() * 100), 
 	        					Color.GREEN.toIntBits(), Color.PURPLE.toIntBits()));
 	        	
