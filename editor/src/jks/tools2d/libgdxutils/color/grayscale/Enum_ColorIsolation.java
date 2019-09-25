@@ -1,5 +1,7 @@
 package jks.tools2d.libgdxutils.color.grayscale;
 
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Pixmap.Format;
 
 public enum Enum_ColorIsolation
 {
@@ -24,7 +26,6 @@ public enum Enum_ColorIsolation
     {
     	if(value == -256)
     		return -256; 
-    	
     	
         final int r = (value>>24)&0xff ;
         final int g = (value>>16)&0xff ;
@@ -84,6 +85,22 @@ public enum Enum_ColorIsolation
 
     }
     
+    public Pixmap rebuildPixmap(Pixmap sourcePixmap)
+    {
+    
+    	Pixmap grayPixmap = new Pixmap(sourcePixmap.getWidth(),sourcePixmap.getHeight(), Format.RGB888) ;
+    	
+    	for (int x = 0; x < sourcePixmap.getWidth(); x++) 
+	    {
+	        for (int y = 0; y < sourcePixmap.getHeight(); y++) 
+	        {
+	        	grayPixmap.drawPixel(x, y,Enum_ColorIsolation.GRAY.buildFromInteger(sourcePixmap.getPixel(x, y))) ; 
+	        }
+	    }
+    	
+    	return grayPixmap ; 
+    }
+    
     public int buildFromInteger2(int value)
     {
     	if(value == -256)
@@ -103,72 +120,5 @@ public enum Enum_ColorIsolation
         //return (avg<<24) | (avg<<16) | (avg<<8) | a ;
         return (gray<<24) | (gray<<16) | (gray<<8) | a ;
     }
-    
-//    public int buildFromInteger(int value)
-//    {
-//    	if(value == -256)
-//    		return -256; 
-//    	
-//    	
-//        final int a = (value>>24)&0xff ;
-//        final int r = (value>>16)&0xff ;
-//        final int g = (value>>8)&0xff ;
-//        final int b = value&0xff ;
-//
-//        System.out.println(a);
-//        System.out.println(r);
-//        System.out.println(g);
-//        System.out.println(b);
-//        final int avg = (r + g + b)/3 ;
-//
-//        switch (this)
-//        {
-//            case RED:
-//            {
-//                if(r < g || r < b)
-//                    break ;
-//
-//                if(r > avg * percentFull)
-//                    return value ;
-//                else if(r > avg * percentHalf)
-//                    return (a<<24) | (avg<<16) | ((int)((avg * halfPower))<<8) | (int)(avg * halfPower) ;
-//                else if(r > avg * percentTier)
-//                    return (a<<24) | (avg<<16) | ((int)((avg * tierPower))<<8) | (int)(avg * tierPower) ;
-//
-//                break ;
-//            }
-//            case GREEN:
-//            {
-//                if(g < b || g < r)
-//                    break ;
-//
-//                if(g > avg * percentFullGreen)
-//                    return value ;
-//                else if(g > avg * percentHalfGreen)
-//                    return (a<<24) | ((int)((avg * halfPower))<<16) | (avg<<8) | (int)(avg * halfPower)  ;
-//                else if(g > avg * percentTierGreen)
-//                    return (a<<24) | ((int)((avg * tierPower))<<16) | (avg<<8) | (int)(avg * tierPower) ;
-//
-//                break ;
-//            }
-//            case BLUE:
-//            {
-//                if(b < g || b < r)
-//                    break ;
-//
-//                if(b > avg * percentFull)
-//                    return value ;
-//                else if(b > avg * percentHalf)
-//                    return (a<<24) | ((int)((avg * halfPower))<<16) | ((int)((avg * halfPower))<<8) | avg ;
-//                else if(b > avg * percentTier)
-//                    return (a<<24) | ((int)((avg * tierPower))<<16) | ((int)((avg * tierPower))<<8) | avg ;
-//
-//                break ;
-//            }
-//        }
-//
-//        return (avg<<24) | (avg<<16) | (avg<<8) | avg ;
-//    }
-
-
+ 
 }
