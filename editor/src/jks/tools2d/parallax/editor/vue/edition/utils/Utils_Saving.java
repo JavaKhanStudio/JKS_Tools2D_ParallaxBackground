@@ -22,7 +22,6 @@ import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
 import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.* ; 
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;

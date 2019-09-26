@@ -102,30 +102,31 @@ public class Utils_TextureAtlas
 		return pixmap ; 	
 	}
 	
-	public static Texture textureSave= null ; 
-	public static Pixmap pixmapSave = null ; 
+	public static Texture atlasTextureSave= null ; 
+	public static Pixmap atlasPixmapSave = null ; 
 	
+		
 	public static Pixmap extractRegion(TextureRegion textureRegion)
 	{
 		Texture texture = textureRegion.getTexture();
 		
-		if(textureSave == null || textureSave != texture)
+		if(atlasTextureSave == null || atlasTextureSave != texture)
 		{
-			textureSave = texture ; 
+			atlasTextureSave = texture ; 
 			if (!texture.getTextureData().isPrepared()) 
 			    texture.getTextureData().prepare();
 			
-			textureSave.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+			atlasTextureSave.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
 			
-			pixmapSave = textureSave.getTextureData().consumePixmap();
-			pixmapSave.setFilter(Pixmap.Filter.NearestNeighbour);	
-			pixmapSave.setBlending(Blending.None);
+			atlasPixmapSave = atlasTextureSave.getTextureData().consumePixmap();
+			atlasPixmapSave.setFilter(Pixmap.Filter.NearestNeighbour);	
+			atlasPixmapSave.setBlending(Blending.None);
 		}
 		
 		Pixmap exportingPixmap = new Pixmap(textureRegion.getRegionWidth(), textureRegion.getRegionHeight(), Format.RGBA8888); 
 		exportingPixmap.setFilter(Filter.NearestNeighbour);
 		exportingPixmap.setBlending(Blending.None);
-		exportingPixmap.drawPixmap(pixmapSave, textureRegion.getRegionX(), textureRegion.getRegionY(), textureRegion.getRegionWidth(), textureRegion.getRegionHeight(), 0, 0, textureRegion.getRegionWidth(), textureRegion.getRegionHeight());
+		exportingPixmap.drawPixmap(atlasPixmapSave, textureRegion.getRegionX(), textureRegion.getRegionY(), textureRegion.getRegionWidth(), textureRegion.getRegionHeight(), 0, 0, textureRegion.getRegionWidth(), textureRegion.getRegionHeight());
 		
 		return exportingPixmap ; 
 	}

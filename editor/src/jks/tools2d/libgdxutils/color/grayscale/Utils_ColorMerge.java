@@ -8,65 +8,6 @@ import com.badlogic.gdx.graphics.Pixmap.Format;
 public class Utils_ColorMerge 
 {
 	
-	public enum Direction 
-	{
-		FromTop,FromBottom ; 
-	}
-
-
-	private static float baseLevel = 0.7f; 
-	
-	public static Color evalColor(Pixmap pixmap, float scanPercent, Direction direction)
-	{
-		int totalRed = 0 ; 
-		int totalGreen = 0 ; 
-		int totalBlue = 0 ; 
-		
-		int count = 0 ; 
-		switch(direction)
-		{
-			case FromTop : 
-			{
-				float nbPercentToCheck = scanPercent/100 * pixmap.getHeight(); 
-				for (int x = 0; x < pixmap.getWidth(); x++) 
-			    {
-			        for (int y = 0; y < nbPercentToCheck; y++) 
-			        {
-			        	int pixColor = pixmap.getPixel(x, y) ; 
-			        	totalRed += (pixColor>>24)&0xff ;
-			        	totalGreen += (pixColor>>16)&0xff ;
-			        	totalBlue += (pixColor>>8)&0xff ;
-			        	count ++ ; 
-			        }
-			    }
-			}
-			case FromBottom :
-			{
-				float nbPercentToCheck = scanPercent/100 * pixmap.getHeight(); 
-				for (int x = 0; x < pixmap.getWidth(); x++) 
-			    {
-			        for (int y = pixmap.getHeight(); y >  pixmap.getHeight() - nbPercentToCheck; y--) 
-			        {
-			        	int pixColor = pixmap.getPixel(x, y) ; 
-			        	totalRed += (pixColor>>24)&0xff ;
-			        	totalGreen += (pixColor>>16)&0xff ;
-			        	totalBlue += (pixColor>>8)&0xff ;
-			        	count ++ ; 
-			        }
-			    }
-			}
-		}
-		
-		
-		
-		totalRed /= count ; 
-		totalGreen /= count ; 
-		totalBlue /= count ; 
-
-		System.out.println(totalRed + " " + totalGreen + " " + totalBlue);
-		return new Color((totalRed<<24) | (totalGreen<<16) | (totalBlue<<8) | 255) ;
-	}
-
 	
 	public static Texture buildTexture(Pixmap pixmapRef, Color top, Color bottom) 
 	{
@@ -88,17 +29,18 @@ public class Utils_ColorMerge
 		return new Texture(newPixmap);
 	}
 	
+	private static float baseLevel = 0.7f; 
 	
 	public static int mergeColorTopAndBot(int pixelColor, float percent, int topColor, int bottomColor)
 	{
-		
-		if(pixelColor == -256)
-    		return -256; 
+		final int a = pixelColor&0xff ;
+		if(a < 200)
+    		return	(0<<24) | (0<<16) | (0<<8) | a ; 
 		
 		int r = (pixelColor>>24)&0xff ;
         int g = (pixelColor>>16)&0xff ;
         int b = (pixelColor>>8)&0xff ;
-        final int a = pixelColor&0xff ;
+       
         
         //ABGR
         final float r_top = topColor&0xff ;

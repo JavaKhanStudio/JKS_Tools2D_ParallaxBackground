@@ -18,9 +18,13 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 
 import jks.tools2d.libgdxutils.color.ColorPickerListener;
 import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
+import jks.tools2d.libgdxutils.color.grayscale.ColorExtractor;
+import jks.tools2d.libgdxutils.color.grayscale.Direction;
 import jks.tools2d.libgdxutils.color.grayscale.Enum_ColorIsolation;
 import jks.tools2d.libgdxutils.color.grayscale.Utils_ColorMerge;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_TextureAtlas;
 
 public class ChangeColorOnTextureTest extends ApplicationAdapter
 {
@@ -58,31 +62,18 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
  	public void create () 
  	{
 		GVars_Ui.init();
-		width = getStandard() ; 
+		
 		batch = new SpriteBatch();
-		sourceTexture = new Texture(path) ;
-		TextureData textureData = sourceTexture.getTextureData();
-	    textureData.prepare();
-	    sourcePixmap = textureData.consumePixmap() ;
-	    grayPixmap = Enum_ColorIsolation.GRAY.rebuildPixmap(sourcePixmap) ;
 
-	    topColor = Utils_ColorMerge.evalColor(sourcePixmap, 1,Utils_ColorMerge.Direction.FromTop) ;
-	    bottomColor = Utils_ColorMerge.evalColor(sourcePixmap, 1,Utils_ColorMerge.Direction.FromBottom) ;
-	    
-	    if(textureData.getWidth() < getStandard())
-	    	width = textureData.getWidth() ; 
-	    
-	    height = width/textureData.getWidth() * textureData.getHeight() ; 
-	    grayTexture = new Texture(grayPixmap) ; 
-	    newTexture = Utils_ColorMerge.buildTexture(grayPixmap, topColor, bottomColor) ; 
-	    
-	    topPicker = new ExtendedColorPicker() ; 
+		topPicker = new ExtendedColorPicker() ; 
 		topPicker.setListener(buildListener(topPicker, true));
-		topPicker.setColor(topColor);
+
 		
 		bottomPicker = new ExtendedColorPicker() ; 
 		bottomPicker.setListener(buildListener(bottomPicker, false));
-		bottomPicker.setColor(bottomColor);
+		
+		readNewTexture(new Texture(path)) ;
+			
 
 		Table table = new Table() ; 
 		table.setBounds(sourceTexture.getWidth() * 2, 0 , Gdx.graphics.getWidth() - sourceTexture.getWidth() * 2, Gdx.graphics.getHeight());
@@ -155,31 +146,35 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 
 	public static void reciveFiles(String[] files)
 	{
-		System.out.println("test");
-		
 		if(files.length == 1)
 		{
 			FileHandle handle = new FileHandle(files[0]); 
 			Texture implementingTexture = new Texture(handle) ;
-			TextureData textureData = implementingTexture.getTextureData();
-		    textureData.prepare();
-		    sourcePixmap = textureData.consumePixmap() ;
-		    grayPixmap = Enum_ColorIsolation.GRAY.rebuildPixmap(sourcePixmap) ;
-		    height = (getStandard()/textureData.getWidth()) *  textureData.getHeight() ; 
-		    
-		    if(textureData.getWidth() < getStandard())
-		    	width = textureData.getWidth() ; 
-		    else 
-		    	width = getStandard() ; 
-		    
-			topColor = Utils_ColorMerge.evalColor(sourcePixmap, 1,Utils_ColorMerge.Direction.FromTop) ;
-		    bottomColor = Utils_ColorMerge.evalColor(sourcePixmap, 1,Utils_ColorMerge.Direction.FromBottom) ;
-		    topPicker.setColor(topColor); 
-		    bottomPicker.setColor(bottomColor);
-		    
-		    sourceTexture = implementingTexture ; 
-		    newTexture = Utils_ColorMerge.buildTexture(grayPixmap, topColor, bottomColor) ;
-		}	
+			readNewTexture(implementingTexture) ; 
+		}
+		
+	}
+	
+	
+	public static void readNewTexture(Texture implementingTexture)
+	{
+		sourcePixmap = Utils_Texture.extractPixMap(implementingTexture) ; 
+	    grayPixmap = Enum_ColorIsolation.GRAY.rebuildPixmap(sourcePixmap) ;
+	    height = (getStandard()/sourcePixmap.getWidth()) *  sourcePixmap.getHeight() ; 
+	    
+	    if(sourcePixmap.getWidth() < getStandard())
+	    	width = sourcePixmap.getWidth() ; 
+	    else 
+	    	width = getStandard() ; 
+	    
+		topColor = new ColorExtractor(sourcePixmap, 5,Direction.FromTop).getColor() ;
+	    bottomColor = new ColorExtractor(sourcePixmap, 10,Direction.FromBottom).getColor() ;
+	    topPicker.setColor(topColor); 
+	    bottomPicker.setColor(bottomColor);
+	    
+	    sourceTexture = implementingTexture ; 
+	    newTexture = Utils_ColorMerge.buildTexture(grayPixmap, topColor, bottomColor) ;
+		
 	}
 	
 	public static float getStandard()

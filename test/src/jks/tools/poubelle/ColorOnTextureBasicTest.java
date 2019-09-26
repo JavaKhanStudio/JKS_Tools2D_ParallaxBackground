@@ -1,4 +1,4 @@
-package jks.tools2d.colorplay;
+package jks.tools.poubelle;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
