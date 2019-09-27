@@ -12,19 +12,23 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.kotcrab.vis.ui.widget.VisCheckBox;
+import com.kotcrab.vis.ui.widget.VisSlider;
 
+import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.libgdxutils.color.ColorPickerListener;
 import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
-import jks.tools2d.libgdxutils.color.grayscale.ColorExtractor;
 import jks.tools2d.libgdxutils.color.grayscale.Direction;
 import jks.tools2d.libgdxutils.color.grayscale.Enum_ColorIsolation;
+import jks.tools2d.libgdxutils.color.grayscale.Utils_ColorExtractor;
 import jks.tools2d.libgdxutils.color.grayscale.Utils_ColorMerge;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
-import jks.tools2d.parallax.editor.vue.edition.utils.Utils_TextureAtlas;
 
 public class ChangeColorOnTextureTest extends ApplicationAdapter
 {
@@ -35,12 +39,21 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	
 	public static Color topColor = Color.WHITE, bottomColor = Color.WHITE;
 	
-	private static final String path = "single/chiot.jpg" ;
+	private static final String path = "single/chiot.png" ;
 	
 	private static ExtendedColorPicker topPicker, bottomPicker ; 
 	
 	private static float width ; 
 	private static float height ; 
+	
+	ButtonGroup<VisCheckBox> grayScalingRadio ; 
+	private static Enum_ColorIsolation selectedIsolation = Enum_ColorIsolation.GRAY; 
+	VisCheckBox red,gray,dark, darker ; 
+	
+	VisCheckBox setAsShadow ; 
+	JksNumberSlider shadowPosition ; 
+	
+	
 	
 	public static void main (String[] arg) 
 	{
@@ -72,17 +85,72 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 		bottomPicker = new ExtendedColorPicker() ; 
 		bottomPicker.setListener(buildListener(bottomPicker, false));
 		
-		readNewTexture(new Texture(path)) ;
+		grayScalingRadio = new ButtonGroup<VisCheckBox>() ;
+		
+		setAsShadow = new VisCheckBox("Set As Shadow");
+		setAsShadow.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
 			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
 
+			}
+		}) ; 
+		
+		shadowPosition = new JksNumberSlider(-100,100,1,GVars_Ui.baseSkin)
+		{
+			@Override
+			public void actionOnSliderMovement()
+			{}
+		};
+		
+
+		shadowPosition.setValue(0);
+		
 		Table table = new Table() ; 
-		table.setBounds(sourceTexture.getWidth() * 2, 0 , Gdx.graphics.getWidth() - sourceTexture.getWidth() * 2, Gdx.graphics.getHeight());
-		table.add(topPicker) ;
+		table.setBounds(getStandard() * 2, 0 , Gdx.graphics.getWidth() - getStandard() * 2, Gdx.graphics.getHeight());
+		
+		table.add(buildColorIsolation(Enum_ColorIsolation.GRAY)) ; 
+		table.add(buildColorIsolation(Enum_ColorIsolation.GRAY_DARK)) ; 
+		table.add(buildColorIsolation(Enum_ColorIsolation.GREEN)) ; 
+		table.add(buildColorIsolation(Enum_ColorIsolation.RED)) ; 
 		table.row() ; 
-		table.add(bottomPicker) ;
+		table.add(setAsShadow) ; 
+		table.add(shadowPosition).colspan(3) ; 
+		table.row() ; 
+		table.add(topPicker).colspan(4) ;
+		table.row() ; 
+		table.add(bottomPicker).colspan(4) ;
 		GVars_Ui.mainUi.addActor(table);
 		
+		readNewTexture(new Texture(path)) ;
  	}
+	
+	public VisCheckBox buildColorIsolation(Enum_ColorIsolation iso)
+	{
+		VisCheckBox building = new VisCheckBox(iso.name());
+		building.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				building.setChecked(true);
+				selectedIsolation = iso ; 
+				createOutupTexture(false) ; 
+			}
+		}) ; 
+		
+		grayScalingRadio.add(building);
+		return building ; 
+	}
 	
 	@Override
 	public void render () 
@@ -90,7 +158,7 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);	  
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
 		batch.begin();
-		batch.draw(sourceTexture, 0, 0,width, height);
+		
 		
 		if(toChange)
 		{
@@ -98,8 +166,18 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 			newTexture = Utils_ColorMerge.buildTexture(grayPixmap, topColor, bottomColor) ; 
 		}
 		
-		if(newTexture != null)
-			batch.draw(newTexture, getStandard(), 0,width, height);
+		if(setAsShadow.isChecked())
+		{
+			if(newTexture != null)
+				batch.draw(newTexture, shadowPosition.getValue(), 0,width, height);
+		}
+		else
+		{
+			if(newTexture != null)
+				batch.draw(newTexture, getStandard(), 0,width, height);
+		}
+		
+		batch.draw(sourceTexture, 0, 0,width, height);
 		
 		batch.end();
 		mainUi.draw() ;		
@@ -158,8 +236,14 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	
 	public static void readNewTexture(Texture implementingTexture)
 	{
-		sourcePixmap = Utils_Texture.extractPixMap(implementingTexture) ; 
-	    grayPixmap = Enum_ColorIsolation.GRAY.rebuildPixmap(sourcePixmap) ;
+		sourcePixmap = Utils_Texture.extractPixMap(implementingTexture) ;
+		sourceTexture = implementingTexture ; 
+		createOutupTexture(true) ; 
+	}
+	
+	public static void createOutupTexture(boolean shiftColor)
+	{
+		grayPixmap = selectedIsolation.rebuildPixmap(sourcePixmap) ;
 	    height = (getStandard()/sourcePixmap.getWidth()) *  sourcePixmap.getHeight() ; 
 	    
 	    if(sourcePixmap.getWidth() < getStandard())
@@ -167,14 +251,17 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	    else 
 	    	width = getStandard() ; 
 	    
-		topColor = new ColorExtractor(sourcePixmap, 5,Direction.FromTop).getColor() ;
-	    bottomColor = new ColorExtractor(sourcePixmap, 10,Direction.FromBottom).getColor() ;
-	    topPicker.setColor(topColor); 
-	    bottomPicker.setColor(bottomColor);
-	    
-	    sourceTexture = implementingTexture ; 
+	    if(shiftColor)
+	    {
+	    	topColor = new Utils_ColorExtractor(sourcePixmap, 10,Direction.FromTop).getColor() ;
+		    bottomColor = new Utils_ColorExtractor(sourcePixmap, 10,Direction.FromBottom).getColor() ;
+		    
+		    topPicker.setColor(topColor); 
+		    bottomPicker.setColor(bottomColor);
+	    }
+		    
+
 	    newTexture = Utils_ColorMerge.buildTexture(grayPixmap, topColor, bottomColor) ;
-		
 	}
 	
 	public static float getStandard()

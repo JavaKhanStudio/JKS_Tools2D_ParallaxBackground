@@ -1,7 +1,8 @@
 package jks.tools2d.libgdxutils.color.grayscale;
 
 import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Pixmap.Format;
+
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 
 public enum Enum_ColorIsolation
 {
@@ -9,6 +10,7 @@ public enum Enum_ColorIsolation
     GREEN,
     BLUE,
     GRAY,
+    GRAY_DARK
     ;
 
     static final float percentFull = 1.1f ;
@@ -24,16 +26,20 @@ public enum Enum_ColorIsolation
     // R G B
     public int buildFromInteger(int value)
     {
-    	if(value == -256)
-    		return -256; 
+    		
+    	final int a = value&0xff ;
+
+    	if(a < 200)
+    		return (0<<24) | (0<<16) | (0<<8) | 0 ; 
+    	
     	
         final int r = (value>>24)&0xff ;
         final int g = (value>>16)&0xff ;
         final int b = (value>>8)&0xff ;
-        final int a = value&0xff ;
+       
 
     
-        final int avg = (r + g + b)/3 ;
+        int avg = (r + g + b)/3 ;
 
         switch (this)
         {
@@ -79,22 +85,28 @@ public enum Enum_ColorIsolation
 
                 break ;
             }
+            case GRAY_DARK :
+            	avg /= 3 ;
+            	if(avg < 0)
+            		avg = 0 ; 
+            	
+            case GRAY :
+        	default :      		 
         }
-
+        
         return (avg<<24) | (avg<<16) | (avg<<8) | a ;
-
     }
     
     public Pixmap rebuildPixmap(Pixmap sourcePixmap)
     {
-    
-    	Pixmap grayPixmap = new Pixmap(sourcePixmap.getWidth(),sourcePixmap.getHeight(), Format.RGB888) ;
+    	
+    	Pixmap grayPixmap = Utils_Texture.buildPixmapCopy(sourcePixmap) ;
     	
     	for (int x = 0; x < sourcePixmap.getWidth(); x++) 
 	    {
 	        for (int y = 0; y < sourcePixmap.getHeight(); y++) 
 	        {
-	        	grayPixmap.drawPixel(x, y,Enum_ColorIsolation.GRAY.buildFromInteger(sourcePixmap.getPixel(x, y))) ; 
+	        	grayPixmap.drawPixel(x, y,this.buildFromInteger(sourcePixmap.getPixel(x, y))) ; 
 	        }
 	    }
     	

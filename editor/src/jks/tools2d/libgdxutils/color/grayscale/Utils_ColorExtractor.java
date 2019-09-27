@@ -3,7 +3,7 @@ package jks.tools2d.libgdxutils.color.grayscale;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 
-public class ColorExtractor 
+public class Utils_ColorExtractor 
 {
 	int red ;
 	int green ;
@@ -12,12 +12,12 @@ public class ColorExtractor
 	int nbColorAdded ; 
 	
 	
-	public ColorExtractor(int pixColor)
+	public Utils_ColorExtractor(int pixColor)
 	{
 		addColor(pixColor) ; 
 	}
 	
-	public ColorExtractor(Pixmap pixmap,float scanPercent, Direction direction) 
+	public Utils_ColorExtractor(Pixmap pixmap,float scanPercent, Direction direction) 
 	{
 		switch(direction)
 		{
@@ -75,7 +75,11 @@ public class ColorExtractor
     	int partiallRed = (pixcolor>>24)&0xff ; 
 		int partialGreen = (pixcolor>>16)&0xff ; 
 		int partialBlue = (pixcolor>>8)&0xff ; 
-    	
+		int partialAlpha = (pixcolor)&0xff ; 
+		
+		if(partialAlpha < 120)
+			return ; 
+		
 		switch(powerType)
 		{
 			case ByHalfIsFull :

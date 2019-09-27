@@ -38,7 +38,7 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 	Table mainTable ; 
 	
 	ButtonGroup<VisCheckBox> groupeRadio ; 
-	VisCheckBox front,back, increment ; 
+	VisCheckBox front,back,increment ; 
 	
 	ImageButton setBackToFrontButton, setFrontToBackButton ; 
 	float frontButtonSize = 70 ; 
@@ -128,7 +128,6 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
 				front.setChecked(true);
-				
 			}
 		}) ; 
 		

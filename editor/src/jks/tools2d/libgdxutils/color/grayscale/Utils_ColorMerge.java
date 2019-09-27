@@ -3,7 +3,8 @@ package jks.tools2d.libgdxutils.color.grayscale;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.Pixmap.Format;
+
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 
 public class Utils_ColorMerge 
 {
@@ -11,8 +12,8 @@ public class Utils_ColorMerge
 	
 	public static Texture buildTexture(Pixmap pixmapRef, Color top, Color bottom) 
 	{
-		Pixmap newPixmap = new Pixmap(pixmapRef.getWidth(),pixmapRef.getHeight(), Format.RGB888) ;
-	    
+		Pixmap newPixmap = Utils_Texture.buildPixmapCopy(pixmapRef) ;
+		
 		for (int x = 0; x < pixmapRef.getWidth(); x++) 
 	    {
 	        for (int y = 0; y < pixmapRef.getHeight(); y++) 
@@ -22,7 +23,6 @@ public class Utils_ColorMerge
 	        					((float)y/pixmapRef.getHeight() * 100), 
 	        					top.toIntBits(),bottom.toIntBits()));
 	        	
-	  
 	        }
 	    }
 		  
@@ -34,8 +34,9 @@ public class Utils_ColorMerge
 	public static int mergeColorTopAndBot(int pixelColor, float percent, int topColor, int bottomColor)
 	{
 		final int a = pixelColor&0xff ;
+
 		if(a < 200)
-    		return	(0<<24) | (0<<16) | (0<<8) | a ; 
+    		return	(255<<24) | (255<<16) | (255<<8) | a ; 
 		
 		int r = (pixelColor>>24)&0xff ;
         int g = (pixelColor>>16)&0xff ;
@@ -58,7 +59,7 @@ public class Utils_ColorMerge
 
         float avg = 1 + percentFromTop + percentFromBottom ; 
         r = (int)((r + (r_top * percentFromTop) + (r_bot * percentFromBottom))/avg) ;
-        g = (int)((g + (g_top * percentFromTop) + (g_bot * percentFromBottom))/avg);
+        g = (int)((g + (g_top * percentFromTop) + (g_bot * percentFromBottom))/avg) ;
         b = (int)((b + (b_top * percentFromTop) + (b_bot * percentFromBottom))/avg) ;
      
         if(r > 255)
