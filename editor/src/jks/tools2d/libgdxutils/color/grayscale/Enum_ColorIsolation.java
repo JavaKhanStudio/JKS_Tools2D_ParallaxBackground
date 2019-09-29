@@ -7,15 +7,17 @@ import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 public enum Enum_ColorIsolation
 {
     RED,
+    RED_ADV,
     GREEN,
     BLUE,
     GRAY,
     GRAY_DARK
     ;
 
-    static final float percentFull = 1.1f ;
-    static final float percentHalf = 1.15f ;
-    static final float percentTier = 1.2f ;
+    static final float percentFull = 1.15f ;
+    static final float percentHalf = 1.2f ;
+    static final float percentTier = 1.25f ;
+    static final float percentQuater = 1.3f ;
 
     static final float percentFullGreen = 1.2f ;
     static final float percentHalfGreen = 1.25f ;
@@ -54,6 +56,20 @@ public enum Enum_ColorIsolation
                     return (avg<<24) | ((int)((avg * halfPower))<<16) | (int)(avg * halfPower)<<8 | a ;
                 else if(r > avg * percentTier)
                     return (avg<<24) | ((int)((avg * tierPower))<<16) | (int)(avg * tierPower)<<8 | a ;
+
+                break ;
+            }
+            case RED_ADV :
+            {
+                if(r < g || r < b)
+                    break ;
+
+                if(r > avg * percentTier)
+                    return value ;
+                else if(r > avg * percentQuater)
+                    return (avg<<24) | ((int)((avg * halfPower))<<16) | (int)(avg * halfPower)<<8 | a ;
+//                else if(r > avg * percentQuater)
+//                    return (avg<<24) | ((int)((avg * percentQuater))<<16) | (int)(avg * tierPower)<<8 | a ;
 
                 break ;
             }

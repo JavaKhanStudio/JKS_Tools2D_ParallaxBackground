@@ -148,7 +148,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			@Override
 			public void changed (ChangeEvent event, Actor actor) 
 			{
-				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Are you sure you want to pack ? \nTexture will be put in : \"packing_" + parallaxName.getText() + "\"" , OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
+				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Are you sure you want to pack ? \nTexture will be put in : \"packing_" + parallaxName.getText() + "\"" , OptionDialogType.YES_NO, new OptionDialogAdapter() 
 				{
 					@Override
 					public void yes () 
@@ -225,7 +225,6 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		mainTable.add(nbSampleSpinnerBody) ; 
 		*/
 
-		
 	}
 	
 	public void update()

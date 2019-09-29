@@ -18,7 +18,6 @@ import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
-import com.kotcrab.vis.ui.widget.VisSlider;
 
 import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.libgdxutils.color.ColorPickerListener;
@@ -50,7 +49,7 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	private static Enum_ColorIsolation selectedIsolation = Enum_ColorIsolation.GRAY; 
 	VisCheckBox red,gray,dark, darker ; 
 	
-	VisCheckBox setAsShadow ; 
+	VisCheckBox setAsShadow, putFilter; 
 	JksNumberSlider shadowPosition ; 
 	
 	
@@ -108,8 +107,24 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 			{}
 		};
 		
-
 		shadowPosition.setValue(0);
+		
+		putFilter = new VisCheckBox("Filter");
+		putFilter.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+
+			}
+		}) ; 
+		
+		putFilter.setChecked(true);
+		
 		
 		Table table = new Table() ; 
 		table.setBounds(getStandard() * 2, 0 , Gdx.graphics.getWidth() - getStandard() * 2, Gdx.graphics.getHeight());
@@ -117,10 +132,16 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 		table.add(buildColorIsolation(Enum_ColorIsolation.GRAY)) ; 
 		table.add(buildColorIsolation(Enum_ColorIsolation.GRAY_DARK)) ; 
 		table.add(buildColorIsolation(Enum_ColorIsolation.GREEN)) ; 
+		table.add(buildColorIsolation(Enum_ColorIsolation.BLUE)) ;
+		table.row() ; 
 		table.add(buildColorIsolation(Enum_ColorIsolation.RED)) ; 
+		table.add(buildColorIsolation(Enum_ColorIsolation.RED_ADV)) ; 
+		
 		table.row() ; 
 		table.add(setAsShadow) ; 
 		table.add(shadowPosition).colspan(3) ; 
+		table.row() ; 
+		table.add(putFilter) ;
 		table.row() ; 
 		table.add(topPicker).colspan(4) ;
 		table.row() ; 
@@ -159,6 +180,7 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
 		batch.begin();
 		
+		float position = setAsShadow.isChecked() ? shadowPosition.getValue():getStandard() ;
 		
 		if(toChange)
 		{
@@ -166,19 +188,18 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 			newTexture = Utils_ColorMerge.buildTexture(grayPixmap, topColor, bottomColor) ; 
 		}
 		
-		if(setAsShadow.isChecked())
+		if(putFilter.isChecked())
 		{
 			if(newTexture != null)
-				batch.draw(newTexture, shadowPosition.getValue(), 0,width, height);
+				batch.draw(newTexture, position, 0,width, height);
 		}
 		else
 		{
 			if(newTexture != null)
-				batch.draw(newTexture, getStandard(), 0,width, height);
+				batch.draw(grayTexture, position, 0,width, height);
 		}
 		
 		batch.draw(sourceTexture, 0, 0,width, height);
-		
 		batch.end();
 		mainUi.draw() ;		
 	}
@@ -230,7 +251,6 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 			Texture implementingTexture = new Texture(handle) ;
 			readNewTexture(implementingTexture) ; 
 		}
-		
 	}
 	
 	
@@ -259,8 +279,7 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 		    topPicker.setColor(topColor); 
 		    bottomPicker.setColor(bottomColor);
 	    }
-		    
-
+		grayTexture = new Texture(grayPixmap) ; 
 	    newTexture = Utils_ColorMerge.buildTexture(grayPixmap, topColor, bottomColor) ;
 	}
 	

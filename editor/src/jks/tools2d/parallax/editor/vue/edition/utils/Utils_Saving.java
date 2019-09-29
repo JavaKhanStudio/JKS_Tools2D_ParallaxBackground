@@ -230,10 +230,10 @@ public class Utils_Saving
 
 	public static void packTextures() 
 	{
-		String newFilePath = "/Files/packing_" + parallaxName.getText() ; 
+		String newFilePath = "packing_" + parallaxName.getText() ; 
 		
 		String filePath = new File("").getAbsolutePath();
-		File newFolder = new File(filePath + newFilePath);
+		File newFolder = new File(filePath + "/" + newFilePath);
         boolean created =  newFolder.mkdir();
 
         for(Outside_Source source : GVars_Vue_Edition.projectDatas.outsideInfos)
@@ -241,7 +241,7 @@ public class Utils_Saving
         	try 
         	{
 				FileUtils.copyFile(new File(source.url),new File(newFolder.getPath() + "/" + source.name + ".png")) ;
-				source.url = ".." + newFilePath + "/" + source.name + ".png" ; 
+				source.url =  newFilePath + "/" + source.name + ".png" ; 
 				
 			} 
         	catch (IOException e) 
@@ -252,7 +252,7 @@ public class Utils_Saving
         
         for(Position_Infos ref :GVars_Vue_Edition.imageRef.values())
         {
-        	ref.url = ".." + newFilePath + "/" + ref.getPageName() + ".png" ; 
+        	ref.url = newFilePath + "/" + ref.getPageName() + ".png" ; 
         }
         
 	}
