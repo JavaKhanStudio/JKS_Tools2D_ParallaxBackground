@@ -90,25 +90,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			@Override
 			public void changed (ChangeEvent event, Actor actor) 
 			{
-				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
-				{
-					@Override
-					public void yes () 
-					{
-						Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText());
-						GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
-					}
-
-					@Override
-					public void no () 
-					{
-						GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
-					}
-
-					@Override
-					public void cancel () 
-					{}
-				});
+				
 			}
 		});
 		

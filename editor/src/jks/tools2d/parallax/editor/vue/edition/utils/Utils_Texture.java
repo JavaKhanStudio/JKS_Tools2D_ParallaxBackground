@@ -8,6 +8,12 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
+import jks.tools2d.parallax.ParallaxLayer;
+
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.* ;
+
+import java.util.ArrayList; 
+
 public class Utils_Texture 
 {
 
@@ -40,7 +46,6 @@ public class Utils_Texture
 		atlasPixmapSave.setFilter(Pixmap.Filter.NearestNeighbour);	
 		atlasPixmapSave.setBlending(Blending.None);
 		
-
 		return atlasPixmapSave ; 
 	}
 	
@@ -51,6 +56,32 @@ public class Utils_Texture
 		newPix.setFilter(Pixmap.Filter.NearestNeighbour);	
 		newPix.setBlending(Blending.None);
 		return newPix ; 
+	}
+	
+	public static void changeTextureInPage(TextureRegion target, TextureRegion newTexture)
+	{
+		ArrayList<ParallaxLayer> layers = textureLink.get(target) ; 
+		
+//		System.out.println("current target " + target );
+//		for(ArrayList<ParallaxLayer> list : textureLink.values())
+//		{
+//			for(ParallaxLayer layer : list)
+//			{
+//				System.out.println("missa " + layer.getTexRegion());
+//			}
+//		}
+		
+		if(layers == null)
+			return ;
+		
+		for(ParallaxLayer layer : layers)
+		{
+			layer.setTexRegion(newTexture);
+		}
+		
+		textureLink.remove(target) ;
+		textureLink.put(newTexture, layers) ;
+		
 	}
 	
 }

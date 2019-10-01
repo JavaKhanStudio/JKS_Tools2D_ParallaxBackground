@@ -123,6 +123,7 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 			
 			double power = 0 ;
 			float virgulePosition = textField.getText().indexOf(".") ; 
+			float currentValue = (Float.parseFloat(textField.getText())) ; 
 			
 			if(virgulePosition >= cursorPosition)
 			{
@@ -132,10 +133,14 @@ public abstract class JksNumberSlider extends Table implements SelectableItem
 			{
 				power = 1/Math.pow(10, cursorPosition - virgulePosition) ;
 			}
-		
-			textField.setText((Float.parseFloat(textField.getText()) + power * amount) + "");
+			System.out.println(currentValue);
+			//TODO TODO TODO SIMON TODO
+			textField.setText(
+				//	currentValue < 0 ? "-" : "" + 
+							currentValue + (power * amount) + "");
+			
+			// TODO shift if grow ?
 			textField.setCursorPosition(cursorPosition);
-//			System.out.println(power + " Cursor " + textField.getCursorPosition() + " Virgule " + virgulePosition);
 		}
 		else
 		{

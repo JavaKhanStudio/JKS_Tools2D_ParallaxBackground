@@ -4,7 +4,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.setItems;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.sizeTabsBar;
-import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
 
@@ -29,6 +29,7 @@ import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_LoadingImages;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 import jks.tools2d.parallax.heart.Gvars_Parallax; 
 
 public class VE_Tab_TextureList_Adding extends Tab
@@ -36,10 +37,19 @@ public class VE_Tab_TextureList_Adding extends Tab
 
 	static public JksTextureList imageList ; 
 	private Table mainTable ;
-	private static final int divisonPower = 5 ; 
-	float midButtonHeight ; 
+	private static final int divisonPower_small = 5 ; 
+	private static final int divisonPower_large = 4 ; 
 	
-	ImageButton button_removeData,button_addData ; 
+	float buttonSize_small,buttonSize_large ; 
+	
+	boolean inChangeselection = false ; 
+	
+	boolean baseButtonShow,switchButtonShow ; 
+	
+	ImageButton button_addData, button_changeData, button_removeData ; 
+	ImageButton button_switchFor, button_cancel ;
+	
+	TextureRegion changingRegion ; 
 	
 	VE_Tab_TextureList_Adding()
 	{
@@ -49,59 +59,83 @@ public class VE_Tab_TextureList_Adding extends Tab
 	}
 	
 	public void buildTextureSelector()
-	{
-		ScrollPane contentsPane;
-		float buttonSize = size_Bloc_Selection/divisonPower; 
-		midButtonHeight = buttonSize/2 ; 
+	{	
+		init() ; 
+		resize();
 		
-		button_removeData = Utils_Interface.buildSquareButton("editor/interfaces/delete.png",buttonSize) ; 
-		button_removeData.setSize(buttonSize, buttonSize);
-		button_removeData.addListener(new InputListener()
+		buildBaseInteraction() ;
+		buildSwitchInteraction() ;
+		imageList = buildImageList() ; 
+		setItems() ;
+		
+		ScrollPane scrollPane;
+		scrollPane = new ScrollPane(imageList,baseSkin) ; 
+		scrollPane.setFadeScrollBars(false);
+		scrollPane.setWidth(size_Bloc_Selection_Parallax);
+		scrollPane.setHeight(Gdx.graphics.getHeight() - sizeTabsBar * 2);
+		
+			
+		mainTable.setSize(scrollPane.getWidth(),scrollPane.getHeight());
+		mainTable.addActor(scrollPane);
+		mainTable.addActor(button_addData);	
+		mainTable.addActor(button_changeData);	
+		mainTable.addActor(button_removeData);
+		
+		mainTable.addActor(button_switchFor);
+		mainTable.addActor(button_cancel);
+	}
+
+	private void init() 
+	{
+		//button_addData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_add.png")) ; 
+		button_addData = Utils_Interface.buildSquareButton("editor/interfaces/button_add.png",buttonSize_small) ; 
+		button_changeData = Utils_Interface.buildSquareButton("editor/interfaces/button_transform.png",buttonSize_small) ; 
+		button_removeData = Utils_Interface.buildSquareButton("editor/interfaces/delete.png",buttonSize_small) ; 
+	
+		button_switchFor = Utils_Interface.buildSquareButton("editor/interfaces/button_transform.png",buttonSize_large) ;
+		button_cancel = Utils_Interface.buildSquareButton("editor/interfaces/delete.png",buttonSize_large) ;
+	}
+
+	
+	private JksTextureList buildImageList() 
+	{
+		return new JksTextureList(baseSkin,size_Bloc_Selection_Parallax,size_Bloc_Selection_Parallax/2) 
 		{
 			@Override
-			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			public void choiceAction(TextureRegion item)
 			{
-				TextureRegion text = imageList.getSelected() ; 
-				Position_Infos position = GVars_Vue_Edition.imageRef.get(text) ; 
-				
-				String message ; 
-				
-				if(position.fromAtlas)
-					message= "Do you really want to delete this part of the atlas? You wont be able to add it back " ;
-				else
-					message = "Do you really want to delete this reference and all its occurences ? " ; 
-				
-					
-				
-				OptionDialog deleteDialog = Dialogs.showOptionDialog(GVars_Ui.mainUi, "Delete segment", message, OptionDialogType.YES_NO, new OptionDialogAdapter() 
-				{
-					@Override
-					public void yes () 
-					{
-						delete(text) ;
-						imageList.clearSelected();
-						update();
-						showButton(false) ; 
-					}
-
-					@Override
-					public void no () 
-					{}
-
-					@Override
-					public void cancel () 
-					{}
-				});
-				
-				// deleteDialog.setPosition(Mouse.getX(), Mouse.getY());
-				return true ; 
+				if(!baseButtonShow && !switchButtonShow )
+					showBaseButton(true);
 			}
 			
-		}) ;
+			@Override
+			public void drawOnSelected(Batch batch, float x, float y, float width, float itemHeight)
+			{
+				if(y > Gdx.graphics.getHeight() - size_Bloc_Selection_Parallax/2.3f)
+				{
+					hideAll(true) ;
+				}
+				else
+				{
+					hideAll(false) ; 
+				}
+					
+				
+				button_addData.setPosition(x + buttonSize_small * 0.5f, y + size_Bloc_Selection_Parallax/4 - buttonSize_small/2);
+				button_changeData.setPosition(x + buttonSize_small * 2.0f, y + size_Bloc_Selection_Parallax/4 - buttonSize_small/2);
+				button_removeData.setPosition(x + buttonSize_small * 3.5f, y + size_Bloc_Selection_Parallax/4 - buttonSize_small/2);
+				
+				button_switchFor.setPosition(x + buttonSize_large * 0.5f, y + size_Bloc_Selection_Parallax/4 - buttonSize_large/2);
+				button_cancel.setPosition(x + buttonSize_large * 2.0f, y + size_Bloc_Selection_Parallax/4 - buttonSize_large/2);
+			}
+			
 		
 	
-		button_addData = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/button_add.png")) ; 
-		button_addData.setSize(buttonSize, buttonSize);
+		};			
+	}
+
+	private void buildBaseInteraction() 
+	{
 		button_addData.addListener(new InputListener()
 		{
 
@@ -125,40 +159,109 @@ public class VE_Tab_TextureList_Adding extends Tab
 			
 		}) ;
 		
-		imageList = new JksTextureList(baseSkin,size_Bloc_Selection,size_Bloc_Selection/2) 
+		button_changeData.addListener(new InputListener()
 		{
 			@Override
-			public void choiceAction(TextureRegion item)
-			{
-				
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{	
+
+				changingRegion = imageList.getSelected() ; 
+				showBaseButton(false) ; 
+				showSwitchButton(true) ; 
+
+				return true ; 
 			}
 			
+		}) ;
+		
+	
+		button_removeData.addListener(new InputListener()
+		{
 			@Override
-			public void drawOnSelected(Batch batch, float x, float y, float width, float itemHeight)
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
 			{
-				showButton(true) ; 
-//				size_Bloc_Selection
-				button_removeData.setPosition(x , y + size_Height_Bloc_Parallax_Controle - midButtonHeight);
-				button_addData.setPosition(x , y + size_Height_Bloc_Parallax_Controle - midButtonHeight);
+				TextureRegion text = imageList.getSelected() ; 
+				Position_Infos position = GVars_Vue_Edition.imageRef.get(text) ; 
+				
+				String message ; 
+				
+				if(position.fromAtlas)
+					message= "Do you really want to delete this part of the atlas? You wont be able to add it back "
+							+ "\n YES Delete from the parallax AND the selection"
+							+ "\n NO  Delete from ONLY the parallax" ;
+				else
+					message = "Do you really want to delete this reference and all its occurences ? "
+							+ "\n YES Delete from the parallax AND the selection"
+							+ "\n NO  Delete from ONLY the parallax" ;
+				
+					
+				OptionDialog deleteDialog = Dialogs.showOptionDialog(GVars_Ui.mainUi, "Delete segment", message, OptionDialogType.YES_NO, new OptionDialogAdapter() 
+				{
+					@Override
+					public void yes () 
+					{
+						delete(text,true) ;
+						imageList.clearSelected();
+						update();
+						showBaseButton(false) ; 
+					}
+
+					@Override
+					public void no () 
+					{
+						delete(text,false) ;
+						update();
+					}
+
+					@Override
+					public void cancel () 
+					{}
+				});
+				
+				return true ; 
 			}
-	
-		};		
-	
-		setItems() ;
+			
+		}) ;
 		
-		contentsPane = new ScrollPane(imageList,baseSkin) ; 
-		contentsPane.setFadeScrollBars(false);
-		contentsPane.setWidth(size_Bloc_Selection);
-		contentsPane.setHeight(Gdx.graphics.getHeight() - sizeTabsBar * 2);
-		
-		button_removeData.setVisible(false);
 		button_addData.setVisible(false);
-		
-		mainTable.setSize(contentsPane.getWidth(),contentsPane.getHeight());
-		mainTable.addActor(contentsPane);
-		mainTable.addActor(button_removeData);
-		mainTable.addActor(button_addData);		
+		button_changeData.setVisible(false);
+		button_removeData.setVisible(false);	
 	}
+	
+	private void buildSwitchInteraction() 
+	{
+		button_switchFor.addListener(new InputListener()
+		{
+			@Override
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{
+				Utils_Texture.changeTextureInPage(changingRegion, imageList.getSelected());
+				showBaseButton(true) ; 
+				showSwitchButton(false) ; 
+				
+				return true ; 
+			}
+			
+		}) ;
+		
+		button_cancel.addListener(new InputListener()
+		{
+
+			@Override
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{
+				showBaseButton(true) ; 
+				showSwitchButton(false) ; 
+				
+				return true ; 
+			}
+			
+		}) ;
+		
+		button_switchFor.setVisible(false);
+		button_cancel.setVisible(false);
+	}
+
 
 	public static void addItem(ParallaxLayer layer)
 	{
@@ -184,34 +287,72 @@ public class VE_Tab_TextureList_Adding extends Tab
 	
 	public void update()
 	{
+
 		if(imageList.getItems() != null && imageList.getItems().size > 0)
 		{
-			showButton(true) ; 
+			showBaseButton(true) ; 
 		}
 		else
 		{
-			showButton(false) ; 
+			showBaseButton(false) ; 
+			showSwitchButton(false) ; 
 		}
 		
 	}
 	
-	public void showButton(boolean show)
+	public void hideAll(boolean show)
 	{
 		if(show)
 		{
-			button_removeData.setVisible(true);
-			button_addData.setVisible(true);
+			button_addData.setVisible(false);
+			button_changeData.setVisible(false);
+			button_removeData.setVisible(false);
+			button_switchFor.setVisible(false);
+			button_cancel.setVisible(false);
 		}
 		else
 		{
-			button_removeData.setVisible(false);
-			button_addData.setVisible(false);
+			showBaseButton(baseButtonShow) ; 
+			showSwitchButton(switchButtonShow) ; 
 		}
+		
 	}
 	
-	public static void delete(TextureRegion text) 
+	public void showBaseButton(boolean show)
 	{
-		Utils_LoadingImages.removeFile(text);
+		baseButtonShow = show ; 
+		button_addData.setVisible(show);
+		button_changeData.setVisible(show);
+		button_removeData.setVisible(show);
+	}
+	
+	public void showSwitchButton(boolean show)
+	{
+		switchButtonShow = show ; 
+		button_switchFor.setVisible(show);
+		button_cancel.setVisible(show);
+		if(!show)
+			changingRegion = null ; 
+	}
+	
+	
+	
+	public static void delete(TextureRegion text, boolean hardClean) 
+	{
+		Utils_LoadingImages.removeFile(text, hardClean);
+	}
+	
+	public void resize()
+	{
+		buttonSize_small = size_Bloc_Selection_Parallax/divisonPower_small; 
+		buttonSize_large = size_Bloc_Selection_Parallax/divisonPower_large; 
+		
+		button_addData.setSize(buttonSize_small, buttonSize_small);
+		button_changeData.setSize(buttonSize_small, buttonSize_small);
+		button_removeData.setSize(buttonSize_small, buttonSize_small);	
+		
+		button_switchFor.setSize(buttonSize_large, buttonSize_large);	
+		button_cancel.setSize(buttonSize_large, buttonSize_large);	
 	}
 	
 	@Override

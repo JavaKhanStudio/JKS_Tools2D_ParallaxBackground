@@ -88,13 +88,14 @@ public class Utils_LoadingImages
 				@Override
 				public void yes () 
 				{
-
+					//imageRef.
+					//allImage
 				}
 
 				@Override
 				public void no () 
 				{
-					GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
+
 				}
 
 				@Override
@@ -131,7 +132,7 @@ public class Utils_LoadingImages
 		return path.substring(path.lastIndexOf('\\') + 1, path.lastIndexOf('.')) ; 
 	}
 	
-	public static void removeFile(TextureRegion text)
+	public static void removeFile(TextureRegion text, boolean hardClean)
 	{
 
 		ArrayList<ParallaxLayer> layers = textureLink.get(text) ; 
@@ -146,36 +147,40 @@ public class Utils_LoadingImages
 			textureLink.remove(text) ;
 		}
 			
-		allImage.remove(text) ; 
-		
-		Position_Infos position = imageRef.get(text) ;
-		if(!position.fromAtlas) 
+		if(hardClean)
 		{
-			for(Outside_Source source : projectDatas.outsideInfos)
+			allImage.remove(text) ; 
+			
+			Position_Infos position = imageRef.get(text) ;
+			if(!position.fromAtlas) 
 			{
-				if(source.url.equals(position.url))
+				for(Outside_Source source : projectDatas.outsideInfos)
 				{
-					projectDatas.outsideInfos.remove(source) ; 
-					break ; 
+					if(source.url.equals(position.url))
+					{
+						projectDatas.outsideInfos.remove(source) ; 
+						break ; 
+					}
 				}
+				
 			}
 			
-		}
-	
-		
-		VE_Tab_TextureList_Adding.imageList.getItems().removeValue(text, true) ; 
-		imageRef.remove(text) ;
-			
+			VE_Tab_TextureList_Adding.imageList.getItems().removeValue(text, true) ; 
+			imageRef.remove(text) ;
+				
 
-		if(activeFileWatching.get(text) != null) 
-		{
-			activeFileWatching.get(text).cancel() ;
-			activeFileWatching.remove(text) ;
+			if(activeFileWatching.get(text) != null) 
+			{
+				activeFileWatching.get(text).cancel() ;
+				activeFileWatching.remove(text) ;
+			}
+			
+			if(currentlySelectedParallax != null && currentlySelectedParallax.getTexRegion() == text)
+			{
+				currentlySelectedParallax = null ; 
+			}
 		}
 		
-		if(currentlySelectedParallax != null && currentlySelectedParallax.getTexRegion() == text)
-		{
-			currentlySelectedParallax = null ; 
-		}
+		
 	}
 }

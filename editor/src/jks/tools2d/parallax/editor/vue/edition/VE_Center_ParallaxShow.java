@@ -12,7 +12,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.parr_Size_X;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.parr_Size_Y;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.showParallaxFullScreen;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Parallax;
-import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabControl;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
@@ -129,6 +129,7 @@ public class VE_Center_ParallaxShow extends Table
 					TextureRegion region = new TextureRegion(new Texture(new FileHandle(outsideInfos.url))) ; 
 					allImage.add(region) ;
 					imageRef.put(region, new Position_Infos(false, outsideInfos.url,0)) ;
+
 					new FileWatching_Image(outsideInfos.url,region) ; 
 					outsideTextureReserve.put(outsideInfos.url, region) ; 
 				}
@@ -154,7 +155,7 @@ public class VE_Center_ParallaxShow extends Table
 	{
 		parr_Size_X = (int)(((Gdx.graphics.getWidth()/3) * 2) - decalX * 2) ; 
 		parr_Size_Y = (parr_Size_X/16) * 9 ; 
-		parr_Pos_X = size_Bloc_Selection + (Gdx.graphics.getWidth() - size_Bloc_Selection - parr_Size_X)/2; 
+		parr_Pos_X = size_Bloc_Selection_Parallax + (Gdx.graphics.getWidth() - size_Bloc_Selection_Parallax - parr_Size_X)/2; 
 		parr_Pos_Y = size_Height_Bloc_Parallax_Controle ;
 		
 		buttonSize = size_Height_Bloc_Parallax_Controle/1.5f ; 
@@ -163,7 +164,7 @@ public class VE_Center_ParallaxShow extends Table
 	
 	public void buildOptions()
 	{
-		setBounds(size_Bloc_Selection, 1, size_Bloc_Parallax, Gdx.graphics.getHeight() - parr_Pos_Y/2 - parr_Size_Y);
+		setBounds(size_Bloc_Selection_Parallax, 1, size_Bloc_Parallax, Gdx.graphics.getHeight() - parr_Pos_Y/2 - parr_Size_Y);
 
 		// TODO Effacer et mettre dans le UISKIN
 		CheckBoxStyle checkBoxStyle = new CheckBoxStyle() ;

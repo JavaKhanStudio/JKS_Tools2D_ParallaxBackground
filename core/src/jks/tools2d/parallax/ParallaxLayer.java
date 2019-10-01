@@ -142,13 +142,7 @@ public class ParallaxLayer implements Cloneable
 	}
 	
 	public void act(float delta, float speedX, float speedY, boolean onX, boolean onY) 
-	{
-//		if(changingRegion != null)
-//		{
-//			texRegion = changingRegion ; 
-//			changingRegion = null ; 
-//		}
-		
+	{	
 		currentDistanceY += delta * -(speedYAtRest + speedY) * parallaxSpeedRatioY ; 
 		currentDistanceX += delta * -(speedXAtRest + speedX) * parallaxSpeedRatioX ; 
 		

@@ -27,7 +27,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 
 public class GVars_Vue_Edition
 {
-	public static int size_Bloc_Selection ;
+	public static int size_Bloc_Selection_Parallax ;
 	public static int size_Bloc_Parallax ;
 	public static int size_Height_Bloc_Parallax_Controle ;
 	public static int sizeTabsBar ; 
@@ -86,7 +86,7 @@ public class GVars_Vue_Edition
 	
 	public static void buildSizes()
 	{
-		size_Bloc_Selection = Gdx.graphics.getWidth()/4 ; 
+		size_Bloc_Selection_Parallax = Gdx.graphics.getWidth()/4 ; 
 		size_Bloc_Parallax = (Gdx.graphics.getWidth()/4) * 3 ;
 		size_Height_Bloc_Parallax_Controle = Gdx.graphics.getHeight()/4 ; 
 		sizeTabsBar = 30 ; 
