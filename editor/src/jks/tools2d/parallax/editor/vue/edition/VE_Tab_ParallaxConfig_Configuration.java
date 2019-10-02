@@ -106,7 +106,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 					@Override
 					public void yes () 
 					{
-						Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText());
+						Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(),true);
 						GVars_Heart_Editor.changeVue(new Vue_Selection(),true) ; 
 					}
 

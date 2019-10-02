@@ -89,7 +89,7 @@ public class Utils_Saving
 			@Override
 			public void yes () 
 			{
-				saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText());
+				saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(),true);
 				Utils_TextureAtlas.flattenProject(parallaxPath.getText(), parallaxName.getText()) ;
 				try 
 				{savingExport(where,whatName) ;} 
@@ -125,7 +125,7 @@ public class Utils_Saving
 		GVars_Serialization.objectMapper.writeValue(new File(where + "/" + whatName + "." + FVars_Extensions.JSON_PARALLAX), outputFinalModel); 
 	}
 	
-	public static void saving_Parallax_Project(String where, String whatName)
+	public static void saving_Parallax_Project(String where, String whatName, boolean showHardInfo)
 	{
 		try 
 		{
@@ -136,7 +136,8 @@ public class Utils_Saving
 		catch(Exception e)
 		{e.printStackTrace();}
 		
-		Dialogs.showOKDialog(GVars_Ui.mainUi, "Saving", "The project have been saved") ; 
+		if(showHardInfo)
+			Dialogs.showOKDialog(GVars_Ui.mainUi, "Saving", "The project have been saved") ; 
 	}
 
 	
@@ -221,7 +222,7 @@ public class Utils_Saving
 			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 			Date date = new Date();
 			String saveName = "AUTO_" + VE_Options.parallaxName.getText() + "_" + dateFormat.format(date) ; 
-			saving_Parallax_Project(relativePath, saveName) ; 
+			saving_Parallax_Project(relativePath, saveName,false) ; 
 		}
 		catch(Exception e)
 		{e.printStackTrace();}

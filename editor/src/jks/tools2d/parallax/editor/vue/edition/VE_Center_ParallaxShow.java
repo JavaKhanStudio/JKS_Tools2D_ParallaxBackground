@@ -153,9 +153,17 @@ public class VE_Center_ParallaxShow extends Table
 	
 	public void resize()
 	{
-		parr_Size_X = (int)(((Gdx.graphics.getWidth()/3) * 2) - decalX * 2) ; 
-		parr_Size_Y = (parr_Size_X/16) * 9 ; 
-		parr_Pos_X = size_Bloc_Selection_Parallax + (Gdx.graphics.getWidth() - size_Bloc_Selection_Parallax - parr_Size_X)/2; 
+		
+		float sizeRation = (float)Gdx.graphics.getHeight() / (float)Gdx.graphics.getWidth()  ; 
+		decalX = Gdx.graphics.getWidth()/30 ; 
+//		parr_Size_X = (int)(((Gdx.graphics.getWidth()/3) * 2) - decalX * 2) ; 
+		parr_Size_X = (int) (Gdx.graphics.getWidth() - size_Bloc_Selection_Parallax- (decalX * 2)) ; 
+		
+//		parr_Size_Y = (parr_Size_X/16) * 9 ; 
+		
+		parr_Size_Y = (int) (parr_Size_X * sizeRation) ;
+//		parr_Pos_X = size_Bloc_Selection_Parallax + (Gdx.graphics.getWidth() - size_Bloc_Selection_Parallax - parr_Size_X)/2; 
+		parr_Pos_X = (int) (size_Bloc_Selection_Parallax + decalX) ; 
 		parr_Pos_Y = size_Height_Bloc_Parallax_Controle ;
 		
 		buttonSize = size_Height_Bloc_Parallax_Controle/1.5f ; 

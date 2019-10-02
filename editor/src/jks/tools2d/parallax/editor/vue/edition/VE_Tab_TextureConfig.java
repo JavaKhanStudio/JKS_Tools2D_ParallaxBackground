@@ -24,7 +24,7 @@ public class VE_Tab_TextureConfig extends Tab
 		selectTable = new VE_Tab_TextureConfig_Select() ; 
 		editTable = new VE_Tab_TextureConfig_Edit() ; 
 		
-		secondTable.add(selectTable).row();
+		//secondTable.add(selectTable).row();
 		secondTable.add(editTable) ; 
 	}
 	

@@ -287,6 +287,7 @@ public class Vue_Edition extends AVue_Model
 
 	public void resize(int width, int height) 
 	{
+		GVars_Vue_Edition.buildSizes() ;
 		centerControl.resize();
 	}
 	

@@ -18,7 +18,7 @@ import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving;
 public class VE_Options extends Table
 {
 	float decal = 3 ; 
-	float size = 50 ;
+	float buttonSize = 50 ;
 	float textWidth, pathWidth,  textHeight, formatWidth ;
 	
 	public static TextField parallaxPath,parallaxName  ; 
@@ -32,7 +32,7 @@ public class VE_Options extends Table
 		pathWidth = textWidth * 2.f ; 
 		textHeight = 22 ;
 		
-		savingProject = Utils_Interface.buildSquareButton("editor/interfaces/saveProject.png",size) ; 
+		savingProject = Utils_Interface.buildSquareButton("editor/interfaces/saveProject.png",buttonSize) ; 
 		savingProject.addListener(new InputListener()
 		{
 			@Override
@@ -42,12 +42,12 @@ public class VE_Options extends Table
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{
-				Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText());
+				Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(),true);
 			}
 			
 		}) ;
 		
-		savingExport = Utils_Interface.buildSquareButton("editor/interfaces/saveParallax.png",size) ; 
+		savingExport = Utils_Interface.buildSquareButton("editor/interfaces/saveParallax.png",buttonSize) ; 
 		savingExport.addListener(new InputListener()
 		{
 			@Override
@@ -63,8 +63,8 @@ public class VE_Options extends Table
 		}) ;
 		
 		
-		savingProject.setBounds(Gdx.graphics.getWidth() - size * 3, Gdx.graphics.getHeight() - (size + decal) * 1 , size, size);
-		savingExport.setBounds(Gdx.graphics.getWidth() - size * 3, Gdx.graphics.getHeight() - (size + decal) * 2, size, size);
+		savingProject.setBounds(Gdx.graphics.getWidth() - buttonSize * 3, Gdx.graphics.getHeight() - (buttonSize + decal) * 1 , buttonSize, buttonSize);
+		savingExport.setBounds(Gdx.graphics.getWidth() - buttonSize * 3, Gdx.graphics.getHeight() - (buttonSize + decal) * 2, buttonSize, buttonSize);
 	
 		
 		formatLibGDX = new VisCheckBox("LibGDX") ;
@@ -106,7 +106,7 @@ public class VE_Options extends Table
 			{return super.getPrefWidth() * 3;}
 		}; 
 		
-		ImageButton pathSelection = Utils_Interface.buildSquareButton("editor/interfaces/open-folder.png",size - decal * 2) ; 
+		ImageButton pathSelection = Utils_Interface.buildSquareButton("editor/interfaces/open-folder.png",buttonSize - decal * 2) ; 
 		
 		
 		projectPathTable.add(new VisLabel("Project Path : "));
@@ -120,8 +120,9 @@ public class VE_Options extends Table
 		
 		
 		Table formatTable = new Table() ; 
-		formatTable.setBounds(savingExport.getWidth() +  savingExport.getX(), savingExport.getY(), 100, savingExport.getHeight());
+		formatTable.setBounds(savingExport.getWidth() +  savingExport.getX(), savingExport.getY(), 100, savingExport.getHeight() + savingProject.getHeight());
 		
+		formatTable.add(new VisLabel("Exp Format")).left().row() ; 
 		formatTable.add(formatLibGDX).left().row() ; 
 		formatTable.add(formatJson).left().row();
 		formatTable.add(forceExport).left() ;

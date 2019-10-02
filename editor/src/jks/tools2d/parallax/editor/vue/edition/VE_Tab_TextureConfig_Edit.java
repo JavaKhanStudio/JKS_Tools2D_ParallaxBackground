@@ -3,15 +3,19 @@ package jks.tools2d.parallax.editor.vue.edition;
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.currentlySelectedParallax;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValues;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValuesPosition;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import java.util.Collections;
 
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.spinner.IntSpinnerModel;
@@ -52,10 +56,118 @@ public class VE_Tab_TextureConfig_Edit extends Table
 	clone
 	; 
 	
+	IntSpinnerModel indexSelectionSpinner ; 
+	Spinner indexSelectionSpinerBody ; 
+	Image showSelect ; 
+	
+	TextButton
+	indexSelectionSpinnerQuick_First,
+	indexSelectionSpinnerQuick_Last,
+	indexSelectionSpinnerQuick_Middle ; 
+	
+	ImageButton delete, unDelete ;
+	
 	
 	public VE_Tab_TextureConfig_Edit()
 	{
 		
+		buildButtons(); 	
+	
+		buildIndex(); 
+				
+		buildImageFlip(); 
+		
+		buildSliders();
+		
+		buildLayerPosition(); 
+		
+		buildDeleteSection(); 
+		
+		showSelect = new Image() 
+		{
+			@Override
+			public float getPrefHeight()
+			{
+				return 130 ; 
+			}
+			
+		}; 
+		
+		
+		this.add(new VisLabel("SECTION SELECTION")).padTop(indexSelectionSpinerBody.getHeight()/4).padBottom(indexSelectionSpinerBody.getHeight()/4).colspan(4).row();
+		this.add(showSelect).colspan(4).row();
+		this.add(indexSelectionSpinerBody) ;
+		this.add(indexSelectionSpinnerQuick_First) ;
+		this.add(indexSelectionSpinnerQuick_Middle) ;
+		this.add(indexSelectionSpinnerQuick_Last) ;
+		this.row() ; 
+		this.add(new VisLabel("Delete : "));
+		this.add(delete) ; 
+		this.add(unDelete); 
+		this.row() ;
+		
+		this.add(clone) ; 
+		this.add(makeAsDefault).colspan(3).row();
+		this.add(indexPositionSpinerBody) ; 
+		this.add(indexPositionSpinnerQuick_First) ;
+		this.add(indexPositionSpinnerQuick_Middle) ;
+		this.add(indexPositionSpinnerQuick_Last) ;
+		this.row();
+		this.add(flipX) ; 
+		this.add(flipY) ; 
+		this.add(mirror).row() ; 
+		
+		this.add(new VisLabel("Decal X")).row();
+		this.add(decalX_Slider).colspan(2) ; 
+		this.add(decalX_Slider_Clone.cloneFromFront) ;
+		this.add(decalX_Slider_Clone.cloneFromBack) ;
+		this.row() ; 
+
+		this.add(new VisLabel("Decal Y")).row();
+		this.add(decalY_Slider).colspan(2) ; 
+		this.add(decalY_Slider_Clone.cloneFromFront) ;
+		this.add(decalY_Slider_Clone.cloneFromBack) ;
+		this.row();
+		
+		this.add(new VisLabel("Size Ratio")).row();
+		this.add(sizeRatio_Slider).colspan(2) ;
+		this.add(sizeRatio_Slider_Clone.cloneFromFront) ;
+		this.add(sizeRatio_Slider_Clone.cloneFromBack) ;
+		this.row();
+		
+		this.add(new VisLabel("At rest Speed")).row();
+		this.add(staticSpeed_Slider).colspan(2);
+		this.add(staticSpeed_Slider_Clone.cloneFromFront) ;
+		this.add(staticSpeed_Slider_Clone.cloneFromBack) ;
+		this.row();
+		
+		this.add(new VisLabel("-- Speed ratio X --")).row();
+		this.add(speedX_ration_Slider).colspan(2);
+		this.add(speedX_ration_Slider_Clone.cloneFromFront) ;
+		this.add(speedX_ration_Slider_Clone.cloneFromBack) ;
+		this.row();
+		
+		this.add(new VisLabel("-- Speed ratio Y --")).row();
+		this.add(speedY_ration_Slider).colspan(2);
+		this.add(speedY_ration_Slider_Clone.cloneFromFront) ;
+		this.add(speedY_ration_Slider_Clone.cloneFromBack) ;
+		this.row();
+		
+		this.add(new VisLabel("Pad X")).row();
+		this.add(pad_X_Slider).colspan(2) ;
+		this.add(pad_X_Slider_Clone.cloneFromFront) ;
+		this.add(pad_X_Slider_Clone.cloneFromBack) ;
+		this.row();
+		
+		this.add(new VisLabel("Pad Y")).row();
+		this.add(pad_Y_Slider).colspan(2) ;
+		this.add(pad_Y_Slider_Clone.cloneFromFront) ;
+		this.add(pad_Y_Slider_Clone.cloneFromBack) ;
+		this.row();
+
+	}
+
+	private void buildButtons() {
 		makeAsDefault = new TextButton("Set default",baseSkin) ; 
 		makeAsDefault.addListener(new InputListener()
 		{		
@@ -85,94 +197,10 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			{
 				cloneLayout() ; 
 			}
-		}) ; 	
-		
-//		cloneIncrement = new TextButton("Inc + Clone",baseSkin) ; 
-//		cloneIncrement.addListener(new InputListener()
-//		{					
-//			@Override
-//			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-//			{return true ;}
-//			
-//			@Override
-//			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-//			{
-//				getDefaults().doIncrement(true) ; 
-//				cloneLayout(); 
-//			}
-//		}) ; 	
-		
-		indexPositionSpinner = new IntSpinnerModel(0,0,0); 
-		indexPositionSpinerBody = new Spinner("Layer Position", indexPositionSpinner);
-		indexPositionSpinerBody.addListener(new InputListener()
-		{		
-			int befaureValue = 0;
-			
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{
-				befaureValue = indexPositionSpinner.getValue();
-				return true ;
-			}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				Collections.swap(parallax_Heart.parallaxReader.layers, befaureValue, indexPositionSpinner.getValue());
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
-			}
-		}) ; 
-		
-		indexPositionSpinnerQuick_First = new TextButton("-0 ", baseSkin) ; 
-		indexPositionSpinnerQuick_First.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				ParallaxLayer layer = parallax_Heart.parallaxReader.layers.remove(indexPositionSpinner.getValue()) ;
-				parallax_Heart.parallaxReader.layers.add(0, layer);
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
-			}
-		}) ; 
-		
-		indexPositionSpinnerQuick_Middle = new TextButton(" 0 ", baseSkin) ; 
-		indexPositionSpinnerQuick_Middle.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				int value = getMiddle() ;
-				ParallaxLayer layer = parallax_Heart.parallaxReader.layers.remove(indexPositionSpinner.getValue()) ;
-				parallax_Heart.parallaxReader.layers.add(value, layer);
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
-			}
-		}) ; 
-		
-		indexPositionSpinnerQuick_Last = new TextButton("0", baseSkin) ; 
-		indexPositionSpinnerQuick_Last.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				ParallaxLayer layer = parallax_Heart.parallaxReader.layers.remove(indexPositionSpinner.getValue()) ;
-				parallax_Heart.parallaxReader.layers.add(layer);
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
-			}
-		}) ; 
-		
-				
+		}) ;
+	}
+
+	private void buildImageFlip() {
 		flipX = new VisCheckBox("Flip X") ;
 		flipX.addListener(new InputListener()
 		{		
@@ -213,8 +241,10 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			{
 				currentlySelectedParallax.setMirror(mirror.isChecked());
 			}
-		}) ; 
-		
+		}) ;
+	}
+
+	private void buildSliders() {
 		decalX_Slider = new JksNumberSlider(-50, 50, 0.5f, baseSkin)
 		{	
 			@Override
@@ -369,71 +399,80 @@ public class VE_Tab_TextureConfig_Edit extends Table
 				pad_Y_Slider.setValue(layerFrom.getPadY());		
 			}
 		};
-		
-		this.add(new VisLabel("SECTION EDITION")).colspan(4).row();
-		this.add(clone) ; 
-//		this.add(cloneIncrement) ; 
-		this.add(makeAsDefault).colspan(3).row();
-		this.add(indexPositionSpinerBody) ; 
-		this.add(indexPositionSpinnerQuick_First) ;
-		this.add(indexPositionSpinnerQuick_Middle) ;
-		this.add(indexPositionSpinnerQuick_Last) ;
-		this.row();
-		this.add(flipX) ; 
-		this.add(flipY) ; 
-		this.add(mirror).row() ; 
-		
-		this.add(new VisLabel("Decal X")).row();
-		this.add(decalX_Slider).colspan(2) ; 
-		this.add(decalX_Slider_Clone.cloneFromFront) ;
-		this.add(decalX_Slider_Clone.cloneFromBack) ;
-		this.row() ; 
-
-		this.add(new VisLabel("Decal Y")).row();
-		this.add(decalY_Slider).colspan(2) ; 
-		this.add(decalY_Slider_Clone.cloneFromFront) ;
-		this.add(decalY_Slider_Clone.cloneFromBack) ;
-		this.row();
-		
-		this.add(new VisLabel("Size Ratio")).row();
-		this.add(sizeRatio_Slider).colspan(2) ;
-		this.add(sizeRatio_Slider_Clone.cloneFromFront) ;
-		this.add(sizeRatio_Slider_Clone.cloneFromBack) ;
-		this.row();
-		
-		this.add(new VisLabel("At rest Speed")).row();
-		this.add(staticSpeed_Slider).colspan(2);
-		this.add(staticSpeed_Slider_Clone.cloneFromFront) ;
-		this.add(staticSpeed_Slider_Clone.cloneFromBack) ;
-		this.row();
-		
-		this.add(new VisLabel("-- Speed ratio X --")).row();
-		this.add(speedX_ration_Slider).colspan(2);
-		this.add(speedX_ration_Slider_Clone.cloneFromFront) ;
-		this.add(speedX_ration_Slider_Clone.cloneFromBack) ;
-		this.row();
-		
-		this.add(new VisLabel("-- Speed ratio Y --")).row();
-		this.add(speedY_ration_Slider).colspan(2);
-		this.add(speedY_ration_Slider_Clone.cloneFromFront) ;
-		this.add(speedY_ration_Slider_Clone.cloneFromBack) ;
-		this.row();
-		
-		this.add(new VisLabel("Pad X")).row();
-		this.add(pad_X_Slider).colspan(2) ;
-		this.add(pad_X_Slider_Clone.cloneFromFront) ;
-		this.add(pad_X_Slider_Clone.cloneFromBack) ;
-		this.row();
-		
-		this.add(new VisLabel("Pad Y")).row();
-		this.add(pad_Y_Slider).colspan(2) ;
-		this.add(pad_Y_Slider_Clone.cloneFromFront) ;
-		this.add(pad_Y_Slider_Clone.cloneFromBack) ;
-		this.row();
-
 	}
-	
-	int colspan = 3 ; 
+
+	private void buildIndex() 
+	{
+		indexPositionSpinner = new IntSpinnerModel(0,0,0); 
+		indexPositionSpinerBody = new Spinner("Layer Position", indexPositionSpinner);
+		indexPositionSpinerBody.addListener(new InputListener()
+		{		
+			int befaureValue = 0;
+			
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				befaureValue = indexPositionSpinner.getValue();
+				return true ;
+			}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				Collections.swap(parallax_Heart.parallaxReader.layers, befaureValue, indexPositionSpinner.getValue());
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
+			}
+		}) ; 
+		
+		indexPositionSpinnerQuick_First = new TextButton("-0 ", baseSkin) ; 
+		indexPositionSpinnerQuick_First.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				ParallaxLayer layer = parallax_Heart.parallaxReader.layers.remove(indexPositionSpinner.getValue()) ;
+				parallax_Heart.parallaxReader.layers.add(0, layer);
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
+			}
+		}) ; 
+		
+		indexPositionSpinnerQuick_Middle = new TextButton(" 0 ", baseSkin) ; 
+		indexPositionSpinnerQuick_Middle.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				int value = getMiddle() ;
+				ParallaxLayer layer = parallax_Heart.parallaxReader.layers.remove(indexPositionSpinner.getValue()) ;
+				parallax_Heart.parallaxReader.layers.add(value, layer);
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
+			}
+		}) ; 
+		
+		indexPositionSpinnerQuick_Last = new TextButton("0", baseSkin) ; 
+		indexPositionSpinnerQuick_Last.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				ParallaxLayer layer = parallax_Heart.parallaxReader.layers.remove(indexPositionSpinner.getValue()) ;
+				parallax_Heart.parallaxReader.layers.add(layer);
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ;
+			}
+		}) ;
+	}
 	
 	public int getMiddle()
 	{return parallax_Heart.parallaxReader.layers.size()/2 ;}
@@ -486,7 +525,179 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		
 		pad_Y_Slider.setValue(currentlySelectedParallax.getPadY()) ; 
 		
+		indexSelectionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
+		indexSelectionSpinnerQuick_Last.setText((parallax_Heart.parallaxReader.layers.size() - 1) + "+");
+		
+		try
+		{
+			showSelect.setDrawable(null) ; 
+			indexSelectionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
+			indexSelectionSpinner.setMin(0);
+			indexSelectionSpinner.setValue(parallax_Heart.parallaxReader.layers.indexOf(currentlySelectedParallax)) ;
+		}
+		catch(Exception e)
+		{
+			indexSelectionSpinner.setValue(0); indexSelectionSpinner.setMax(0); indexSelectionSpinner.setMin(0);
+		}
+		
+		if(currentlySelectedParallax !=null)
+			showSelect.setDrawable(new TextureRegionDrawable(currentlySelectedParallax.getTexRegion()));
+		
 	}
+	
+	private void buildDeleteSection() {
+		delete = Utils_Interface.buildSquareButton("editor/interfaces/delete.png",50) ; 
+		
+		delete.addListener(new InputListener()
+		{
+			@Override
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				if(currentlySelectedParallax == null)
+					return ; 
+				
+				trashedValues.add(parallax_Heart.parallaxReader.layers.get(indexSelectionSpinner.getValue())) ; 
+				trashedValuesPosition.add(indexSelectionSpinner.getValue()) ; 
+				
+				parallax_Heart.parallaxReader.layers.remove(indexSelectionSpinner.getValue()) ;
+				
+				if(parallax_Heart.parallaxReader.layers.size() <= indexSelectionSpinner.getValue())
+					indexSelectionSpinner.decrement() ; 
+				
+				if(parallax_Heart.parallaxReader.layers.size() != 0)
+				{GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexSelectionSpinner.getValue())); }
+				else
+				{currentlySelectedParallax = null ;}
+				
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
+			}		
+		}) ;
+		
+		unDelete = Utils_Interface.buildSquareButton("editor/interfaces/cancelAction.png",50) ; 
+		
+		unDelete.addListener(new InputListener()
+		{
+			@Override
+			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				if(trashedValuesPosition.size == 0)
+					return ;
+				
+				if(parallax_Heart.parallaxReader.layers.size() > trashedValuesPosition.peek()) 
+					parallax_Heart.parallaxReader.layers.add(trashedValuesPosition.peek(), trashedValues.peek());
+				else
+					parallax_Heart.parallaxReader.layers.add(trashedValues.peek());	
+				
+				GVars_Vue_Edition.selectLayer(trashedValues.peek()); 			
+				trashedValues.removeIndex(trashedValues.size -1) ; 
+				trashedValuesPosition.removeIndex(trashedValuesPosition.size - 1) ;
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
+			}
+		}) ;
+	}
+
+
+
+
+	private void buildLayerPosition() {
+		indexSelectionSpinner = new IntSpinnerModel(0,0,0); 
+		indexSelectionSpinerBody = new Spinner("Layer Selection", indexSelectionSpinner);
+		
+		indexSelectionSpinerBody.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				if(parallax_Heart.parallaxReader.layers.size() != 0)
+					GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexSelectionSpinner.getValue())); 
+				
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_First = new TextButton("-0 ", baseSkin) ; 
+		indexSelectionSpinnerQuick_First.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(0)); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_Middle = new TextButton(" 0 ", baseSkin) ; 
+		indexSelectionSpinnerQuick_Middle.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(getMiddle())); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_Last = new TextButton("0", baseSkin) ; 
+		indexSelectionSpinnerQuick_Last.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(parallax_Heart.parallaxReader.layers.size() - 1)); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ;
+	}
+	
+	
+//	public int getMiddle()
+//	{return parallax_Heart.parallaxReader.layers.size()/2 ;}
+//	
+//	public void update()
+//	{
+//		indexSelectionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
+//		indexSelectionSpinnerQuick_Last.setText((parallax_Heart.parallaxReader.layers.size() - 1) + "+");
+//		
+//		try
+//		{
+//			showSelect.setDrawable(null) ; 
+//			indexSelectionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
+//			indexSelectionSpinner.setMin(0);
+//			indexSelectionSpinner.setValue(parallax_Heart.parallaxReader.layers.indexOf(currentlySelectedParallax)) ;
+//		}
+//		catch(Exception e)
+//		{
+//			indexSelectionSpinner.setValue(0); indexSelectionSpinner.setMax(0); indexSelectionSpinner.setMin(0);
+//		}
+//		
+//		if(currentlySelectedParallax !=null)
+//			showSelect.setDrawable(new TextureRegionDrawable(currentlySelectedParallax.getTexRegion()));
+//		
+//	}
 }
 
 abstract class CopyUpAndDown

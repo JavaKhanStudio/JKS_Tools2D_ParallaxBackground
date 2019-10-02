@@ -22,84 +22,50 @@ import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 
 public class VE_Tab_TextureConfig_Select extends Table 
 {
-	IntSpinnerModel indexPositionSpinner ; 
-	Spinner indexPositionSpinerBody ; 
+	IntSpinnerModel indexSelectionSpinner ; 
+	Spinner indexSelectionSpinerBody ; 
 	Image showSelect ; 
 	
 	TextButton
-	indexPositionSpinnerQuick_First,
-	indexPositionSpinnerQuick_Last,
-	indexPositionSpinnerQuick_Middle ; 
+	indexSelectionSpinnerQuick_First,
+	indexSelectionSpinnerQuick_Last,
+	indexSelectionSpinnerQuick_Middle ; 
 	
 	ImageButton delete, unDelete ; 
 	
 	public VE_Tab_TextureConfig_Select()
 	{
-		indexPositionSpinner = new IntSpinnerModel(0,0,0); 
-		indexPositionSpinerBody = new Spinner("Layer Selection", indexPositionSpinner);
+		buildLayerPosition(); 
 		
-		indexPositionSpinerBody.addListener(new InputListener()
-		{		
+		buildDeleteSection(); 
+		
+		showSelect = new Image() 
+		{
 			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			public float getPrefHeight()
 			{
-				if(parallax_Heart.parallaxReader.layers.size() != 0)
-					GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexPositionSpinner.getValue())); 
-				
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
+				return 130 ; 
 			}
-		}) ; 
-		
-		indexPositionSpinnerQuick_First = new TextButton("-0 ", baseSkin) ; 
-		indexPositionSpinnerQuick_First.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
 			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(0)); 			
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
-			}
-		}) ; 
-		
-		indexPositionSpinnerQuick_Middle = new TextButton(" 0 ", baseSkin) ; 
-		indexPositionSpinnerQuick_Middle.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(getMiddle())); 			
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
-			}
-		}) ; 
-		
-		indexPositionSpinnerQuick_Last = new TextButton("0", baseSkin) ; 
-		indexPositionSpinnerQuick_Last.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(parallax_Heart.parallaxReader.layers.size() - 1)); 			
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
-			}
-		}) ; 
-		
-	
+		}; 
+						
+		this.add(new VisLabel("SECTION SELECTION")).padTop(indexSelectionSpinerBody.getHeight()/4).padBottom(indexSelectionSpinerBody.getHeight()/4).colspan(4).row();
+		this.add(showSelect).colspan(4).row();
+		this.add(indexSelectionSpinerBody) ;
+		this.add(indexSelectionSpinnerQuick_First) ;
+		this.add(indexSelectionSpinnerQuick_Middle) ;
+		this.add(indexSelectionSpinnerQuick_Last) ;
+		this.row() ; 
+		this.add(new VisLabel("Delete : "));
+		this.add(delete) ; 
+		this.add(unDelete); 
+		this.row() ;
+	}
+
+
+
+
+	private void buildDeleteSection() {
 		delete = Utils_Interface.buildSquareButton("editor/interfaces/delete.png",50) ; 
 		
 		delete.addListener(new InputListener()
@@ -114,16 +80,16 @@ public class VE_Tab_TextureConfig_Select extends Table
 				if(currentlySelectedParallax == null)
 					return ; 
 				
-				trashedValues.add(parallax_Heart.parallaxReader.layers.get(indexPositionSpinner.getValue())) ; 
-				trashedValuesPosition.add(indexPositionSpinner.getValue()) ; 
+				trashedValues.add(parallax_Heart.parallaxReader.layers.get(indexSelectionSpinner.getValue())) ; 
+				trashedValuesPosition.add(indexSelectionSpinner.getValue()) ; 
 				
-				parallax_Heart.parallaxReader.layers.remove(indexPositionSpinner.getValue()) ;
+				parallax_Heart.parallaxReader.layers.remove(indexSelectionSpinner.getValue()) ;
 				
-				if(parallax_Heart.parallaxReader.layers.size() <= indexPositionSpinner.getValue())
-					indexPositionSpinner.decrement() ; 
+				if(parallax_Heart.parallaxReader.layers.size() <= indexSelectionSpinner.getValue())
+					indexSelectionSpinner.decrement() ; 
 				
 				if(parallax_Heart.parallaxReader.layers.size() != 0)
-				{GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexPositionSpinner.getValue())); }
+				{GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexSelectionSpinner.getValue())); }
 				else
 				{currentlySelectedParallax = null ;}
 				
@@ -155,31 +121,77 @@ public class VE_Tab_TextureConfig_Select extends Table
 				trashedValuesPosition.removeIndex(trashedValuesPosition.size - 1) ;
 				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
 			}
-		}) ; 
-		showSelect = new Image() 
-		{
-			@Override
-			public float getPrefHeight()
-			{
-				return 130 ; 
-			}
-			
-		}; 
-						
-		this.add(new VisLabel("SECTION SELECTION")).padTop(indexPositionSpinerBody.getHeight()/4).padBottom(indexPositionSpinerBody.getHeight()/4).colspan(4).row();
-		this.add(showSelect).colspan(4).row();
-		this.add(indexPositionSpinerBody) ;
-		this.add(indexPositionSpinnerQuick_First) ;
-		this.add(indexPositionSpinnerQuick_Middle) ;
-		this.add(indexPositionSpinnerQuick_Last) ;
-		this.row() ; 
-		this.add(new VisLabel("Delete : "));
-		this.add(delete) ; 
-		this.add(unDelete); 
-		this.row() ;
+		}) ;
 	}
-	
-	
+
+
+
+
+	private void buildLayerPosition() {
+		indexSelectionSpinner = new IntSpinnerModel(0,0,0); 
+		indexSelectionSpinerBody = new Spinner("Layer Selection", indexSelectionSpinner);
+		
+		indexSelectionSpinerBody.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				if(parallax_Heart.parallaxReader.layers.size() != 0)
+					GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexSelectionSpinner.getValue())); 
+				
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_First = new TextButton("-0 ", baseSkin) ; 
+		indexSelectionSpinnerQuick_First.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(0)); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_Middle = new TextButton(" 0 ", baseSkin) ; 
+		indexSelectionSpinnerQuick_Middle.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(getMiddle())); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_Last = new TextButton("0", baseSkin) ; 
+		indexSelectionSpinnerQuick_Last.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(parallax_Heart.parallaxReader.layers.size() - 1)); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ;
+	}
 	
 	
 	public int getMiddle()
@@ -187,19 +199,19 @@ public class VE_Tab_TextureConfig_Select extends Table
 	
 	public void update()
 	{
-		indexPositionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
-		indexPositionSpinnerQuick_Last.setText((parallax_Heart.parallaxReader.layers.size() - 1) + "+");
+		indexSelectionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
+		indexSelectionSpinnerQuick_Last.setText((parallax_Heart.parallaxReader.layers.size() - 1) + "+");
 		
 		try
 		{
 			showSelect.setDrawable(null) ; 
-			indexPositionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
-			indexPositionSpinner.setMin(0);
-			indexPositionSpinner.setValue(parallax_Heart.parallaxReader.layers.indexOf(currentlySelectedParallax)) ;
+			indexSelectionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
+			indexSelectionSpinner.setMin(0);
+			indexSelectionSpinner.setValue(parallax_Heart.parallaxReader.layers.indexOf(currentlySelectedParallax)) ;
 		}
 		catch(Exception e)
 		{
-			indexPositionSpinner.setValue(0); indexPositionSpinner.setMax(0); indexPositionSpinner.setMin(0);
+			indexSelectionSpinner.setValue(0); indexSelectionSpinner.setMax(0); indexSelectionSpinner.setMin(0);
 		}
 		
 		if(currentlySelectedParallax !=null)
