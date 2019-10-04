@@ -7,6 +7,7 @@ import java.util.List;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.esotericsoftware.kryo.DefaultSerializer;
@@ -174,7 +175,8 @@ public class WholePage_Model
 		AtlasRegion region = loadedRegion.get(parallax.getCompleteRegionName()) ;
 		if(region == null)
 		{
-			region = atlas.findRegions(parallax.regionName).get(parallax.regionPosition) ; 
+			region = atlas.findRegions(parallax.regionName).get(parallax.regionPosition) ;
+			
 			loadedRegion.put(parallax.getCompleteRegionName(), region) ; 
 		}
 		
