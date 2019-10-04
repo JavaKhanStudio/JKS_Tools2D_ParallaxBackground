@@ -7,8 +7,6 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.currentlySelec
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.textureLink;
-import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
-import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import java.util.ArrayList;
@@ -19,16 +17,14 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
-import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
+import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
-import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.VE_Tab_TextureList_Adding;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
@@ -88,8 +84,7 @@ public class Utils_LoadingImages
 				@Override
 				public void yes () 
 				{
-					imageRef.
-					allImage
+
 				}
 
 				@Override

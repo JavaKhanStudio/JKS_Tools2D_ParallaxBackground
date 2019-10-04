@@ -23,13 +23,13 @@ public class Launcher_Editor
 		
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setWindowedMode(1300, 800);
-		config.useOpenGL3(true, 1, 1);
+		config.useOpenGL3(true, 3, 2);
 		config.setTitle("Parallax");
 		config.setWindowIcon("skins/uis/parallaxIcon.png");
 
 		config.useVsync(true);
 		Vue_Edition.isVSynch = true ; 
-		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);
+		//config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);
 		GVars_Debug.inDebug = true ; 
 		
 		config.setWindowListener(new Lwjgl3WindowAdapter() 

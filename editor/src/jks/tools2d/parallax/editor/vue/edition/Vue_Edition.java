@@ -326,8 +326,9 @@ public class Vue_Edition extends AVue_Model
 			}
 			
 			GVars_Ui.mainUi.draw() ;
-		
 		}	
+		
+		
 	}
 
 	

@@ -58,8 +58,7 @@ public class Vue_Selection extends AVue_Model
 	@Override
 	public void init() 
 	{	
-		buildSelection(GVars_Ui.baseSkin) ;
-		
+		buildSelection(GVars_Ui.baseSkin) ;	
 	}
 	
 	public void buildSelection(Skin skin)

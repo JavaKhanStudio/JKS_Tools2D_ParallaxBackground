@@ -1,7 +1,7 @@
 calm.png
 size: 5020, 5160
 format: RGBA8888
-filter: Linear,Linear
+filter: MipMap,MipMap
 repeat: none
 Clouds
   rotate: false

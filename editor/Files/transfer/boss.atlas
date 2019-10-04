@@ -1,7 +1,7 @@
 boss.png
 size: 5020, 5421
 format: RGBA8888
-filter: Linear,Linear
+filter: MipMap,MipMap
 repeat: none
 Clouds
   rotate: false
