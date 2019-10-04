@@ -1,0 +1,47 @@
+calm2.png
+size: 7760, 941
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Clouds
+  rotate: false
+  xy: 2630, 10
+  size: 2500, 465
+  orig: 2500, 465
+  offset: 0, 0
+  index: -1
+Mountains_big
+  rotate: false
+  xy: 10, 10
+  size: 2500, 584
+  orig: 2500, 584
+  offset: 0, 0
+  index: -1
+Mountains_small
+  rotate: false
+  xy: 5250, 10
+  size: 2500, 426
+  orig: 2500, 426
+  offset: 0, 0
+  index: -1
+Trees_close
+  rotate: false
+  xy: 10, 714
+  size: 2500, 217
+  orig: 2500, 217
+  offset: 0, 0
+  index: -1
+Trees_far
+  rotate: false
+  xy: 5250, 556
+  size: 2500, 302
+  orig: 2500, 302
+  offset: 0, 0
+  index: -1
+Trees_fartest
+  rotate: false
+  xy: 2630, 595
+  size: 2500, 277
+  orig: 2500, 277
+  offset: 0, 0
+  index: -1

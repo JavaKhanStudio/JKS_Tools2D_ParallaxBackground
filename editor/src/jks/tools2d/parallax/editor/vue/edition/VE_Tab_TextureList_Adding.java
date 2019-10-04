@@ -195,7 +195,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 							+ "\n NO  Delete from ONLY the parallax" ;
 				
 					
-				OptionDialog deleteDialog = Dialogs.showOptionDialog(GVars_Ui.mainUi, "Delete segment", message, OptionDialogType.YES_NO, new OptionDialogAdapter() 
+				OptionDialog deleteDialog = Dialogs.showOptionDialog(GVars_Ui.mainUi, "Delete segment", message, OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
 				{
 					@Override
 					public void yes () 

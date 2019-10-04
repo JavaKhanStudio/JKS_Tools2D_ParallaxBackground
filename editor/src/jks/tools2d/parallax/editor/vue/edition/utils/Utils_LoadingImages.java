@@ -88,8 +88,8 @@ public class Utils_LoadingImages
 				@Override
 				public void yes () 
 				{
-					//imageRef.
-					//allImage
+					imageRef.
+					allImage
 				}
 
 				@Override

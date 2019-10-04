@@ -1,0 +1,47 @@
+boss.png
+size: 5020, 5421
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Clouds
+  rotate: false
+  xy: 10, 1297
+  size: 5000, 930
+  orig: 5000, 930
+  offset: 0, 0
+  index: -1
+Mountains_big
+  rotate: false
+  xy: 10, 10
+  size: 5000, 1167
+  orig: 5000, 1167
+  offset: 0, 0
+  index: -1
+Mountains_small
+  rotate: false
+  xy: 10, 2347
+  size: 5000, 888
+  orig: 5000, 888
+  offset: 0, 0
+  index: -1
+Trees_close
+  rotate: false
+  xy: 10, 3355
+  size: 5000, 659
+  orig: 5000, 659
+  offset: 0, 0
+  index: -1
+Trees_far
+  rotate: false
+  xy: 10, 4134
+  size: 5000, 604
+  orig: 5000, 604
+  offset: 0, 0
+  index: -1
+Trees_fartest
+  rotate: false
+  xy: 10, 4858
+  size: 5000, 553
+  orig: 5000, 553
+  offset: 0, 0
+  index: -1
