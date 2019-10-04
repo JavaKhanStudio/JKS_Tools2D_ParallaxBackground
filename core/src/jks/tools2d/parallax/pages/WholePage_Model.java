@@ -149,8 +149,11 @@ public class WholePage_Model
 		return layer ; 
 	}
 	
-	public AtlasRegion findInternalLayer(AtlasRegion searchingFor) 
+	public AtlasRegion findInternalLayer(AtlasRegion searchingFor)
 	{
+		if(loadedRegion == null )
+			loadedRegion = new HashMap<>() ; 
+		
 		String name = Utils_Parralax.getRegionName(searchingFor) ;
 		AtlasRegion region = loadedRegion.get(name) ;
 		if(region == null)
