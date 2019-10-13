@@ -3,6 +3,7 @@ package jks.tools2d.parallax.editor.vue.edition;
 import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.currentlySelectedParallax;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabbedPane;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValues;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValuesPosition;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
@@ -18,12 +19,18 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
+import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.spinner.IntSpinnerModel;
 import com.kotcrab.vis.ui.widget.spinner.Spinner;
+import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
+import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
+import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
+import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 
 import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.gvars.GVars_Ui;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 
 public class VE_Tab_TextureConfig_Edit extends Table
@@ -67,55 +74,73 @@ public class VE_Tab_TextureConfig_Edit extends Table
 	
 	ImageButton delete, unDelete ;
 	
+	Tab tabBasic, tabAdv, tabColorChange ;
+	
+	VisTable container ;
 	
 	public VE_Tab_TextureConfig_Edit()
 	{
 		
-		buildButtons(); 	
-	
 		buildIndex(); 
 				
+		buildButtons(); 	
+		
 		buildImageFlip(); 
+				
+		buildDeleteSection();
 		
-		buildSliders();
+		buildBasicsSliders();
 		
-		buildLayerPosition(); 
+		buildAdvSliders() ; 	
 		
-		buildDeleteSection(); 
+		buildColorChange() ; 
+		
+		container = new VisTable();
+		
+//		tabbedPane = new TabbedPane(GVars_Ui.baseSkin.get("default", TabbedPaneStyle.class));
+//		tabbedPane.setAllowTabDeselect(false);
+//		tabbedPane.addListener(new TabbedPaneAdapter()
+//		{
+//			@Override
+//			public void switchedTab(Tab tab)
+//			{
+//				container.clearChildren();
+//				container.add(tab.getContentTable()).expand().fill();
+//			}
+//		});
 		
 		showSelect = new Image() 
 		{
 			@Override
 			public float getPrefHeight()
-			{
-				return 130 ; 
-			}
-			
+			{return 130 ;}
 		}; 
 		
 		
-		this.add(new VisLabel("SECTION SELECTION")).padTop(indexSelectionSpinerBody.getHeight()/4).padBottom(indexSelectionSpinerBody.getHeight()/4).colspan(4).row();
+		this.add(new VisLabel("SECTION SELECTED")).padTop(indexSelectionSpinerBody.getHeight()/4).padBottom(indexSelectionSpinerBody.getHeight()/4).colspan(4).row();
 		this.add(showSelect).colspan(4).row();
 		this.add(indexSelectionSpinerBody) ;
 		this.add(indexSelectionSpinnerQuick_First) ;
 		this.add(indexSelectionSpinnerQuick_Middle) ;
 		this.add(indexSelectionSpinnerQuick_Last) ;
 		this.row() ; 
-		this.add(new VisLabel("Delete : "));
-		this.add(delete) ; 
-		this.add(unDelete); 
-		this.row() ;
-		
-		this.add(clone) ; 
-		this.add(makeAsDefault).colspan(3).row();
 		this.add(indexPositionSpinerBody) ; 
 		this.add(indexPositionSpinnerQuick_First) ;
 		this.add(indexPositionSpinnerQuick_Middle) ;
 		this.add(indexPositionSpinnerQuick_Last) ;
+		this.row() ;
+	
+		this.add(delete) ; 
+		this.add(unDelete); 
+		this.add(clone) ; 
+		this.add(makeAsDefault).colspan(3).row();
+		
 		this.row();
 		this.add(flipX) ; 
 		this.add(flipY) ; 
-		this.add(mirror).row() ; 
+		this.add(mirror) ; 
+		
+		this.row();
 		
 		this.add(new VisLabel("Decal X")).row();
 		this.add(decalX_Slider).colspan(2) ; 
@@ -165,6 +190,16 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		this.add(pad_Y_Slider_Clone.cloneFromBack) ;
 		this.row();
 
+	}
+
+	private void buildColorChange() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void buildAdvSliders() {
+		// TODO Auto-generated method stub
+		
 	}
 
 	private void buildButtons() {
@@ -244,7 +279,8 @@ public class VE_Tab_TextureConfig_Edit extends Table
 		}) ;
 	}
 
-	private void buildSliders() {
+	private void buildBasicsSliders() 
+	{
 		decalX_Slider = new JksNumberSlider(-50, 50, 0.5f, baseSkin)
 		{	
 			@Override
@@ -403,6 +439,70 @@ public class VE_Tab_TextureConfig_Edit extends Table
 
 	private void buildIndex() 
 	{
+		indexSelectionSpinner = new IntSpinnerModel(0,0,0); 
+		indexSelectionSpinerBody = new Spinner("Layer Selection", indexSelectionSpinner);
+		
+		indexSelectionSpinerBody.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				if(parallax_Heart.parallaxReader.layers.size() != 0)
+					GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexSelectionSpinner.getValue())); 
+				
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_First = new TextButton("-0 ", baseSkin) ; 
+		indexSelectionSpinnerQuick_First.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(0)); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_Middle = new TextButton(" 0 ", baseSkin) ; 
+		indexSelectionSpinnerQuick_Middle.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(getMiddle())); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ; 
+		
+		indexSelectionSpinnerQuick_Last = new TextButton("0", baseSkin) ; 
+		indexSelectionSpinnerQuick_Last.addListener(new InputListener()
+		{		
+			@Override
+			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{return true ;}
+			
+			@Override
+			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			{
+				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(parallax_Heart.parallaxReader.layers.size() - 1)); 			
+				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
+			}
+		}) ;
+		
 		indexPositionSpinner = new IntSpinnerModel(0,0,0); 
 		indexPositionSpinerBody = new Spinner("Layer Position", indexPositionSpinner);
 		indexPositionSpinerBody.addListener(new InputListener()
@@ -603,101 +703,7 @@ public class VE_Tab_TextureConfig_Edit extends Table
 			}
 		}) ;
 	}
-
-
-
-
-	private void buildLayerPosition() {
-		indexSelectionSpinner = new IntSpinnerModel(0,0,0); 
-		indexSelectionSpinerBody = new Spinner("Layer Selection", indexSelectionSpinner);
-		
-		indexSelectionSpinerBody.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				if(parallax_Heart.parallaxReader.layers.size() != 0)
-					GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(indexSelectionSpinner.getValue())); 
-				
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 
-			}
-		}) ; 
-		
-		indexSelectionSpinnerQuick_First = new TextButton("-0 ", baseSkin) ; 
-		indexSelectionSpinnerQuick_First.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(0)); 			
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
-			}
-		}) ; 
-		
-		indexSelectionSpinnerQuick_Middle = new TextButton(" 0 ", baseSkin) ; 
-		indexSelectionSpinnerQuick_Middle.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(getMiddle())); 			
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
-			}
-		}) ; 
-		
-		indexSelectionSpinnerQuick_Last = new TextButton("0", baseSkin) ; 
-		indexSelectionSpinnerQuick_Last.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				GVars_Vue_Edition.selectLayer(parallax_Heart.parallaxReader.layers.get(parallax_Heart.parallaxReader.layers.size() - 1)); 			
-				GVars_Vue_Edition.tabbedPane.getActiveTab().getContentTable() ; 	
-			}
-		}) ;
-	}
 	
-	
-//	public int getMiddle()
-//	{return parallax_Heart.parallaxReader.layers.size()/2 ;}
-//	
-//	public void update()
-//	{
-//		indexSelectionSpinnerQuick_Middle.setText("~" + getMiddle() + "~");
-//		indexSelectionSpinnerQuick_Last.setText((parallax_Heart.parallaxReader.layers.size() - 1) + "+");
-//		
-//		try
-//		{
-//			showSelect.setDrawable(null) ; 
-//			indexSelectionSpinner.setMax(parallax_Heart.parallaxReader.layers.size() - 1);
-//			indexSelectionSpinner.setMin(0);
-//			indexSelectionSpinner.setValue(parallax_Heart.parallaxReader.layers.indexOf(currentlySelectedParallax)) ;
-//		}
-//		catch(Exception e)
-//		{
-//			indexSelectionSpinner.setValue(0); indexSelectionSpinner.setMax(0); indexSelectionSpinner.setMin(0);
-//		}
-//		
-//		if(currentlySelectedParallax !=null)
-//			showSelect.setDrawable(new TextureRegionDrawable(currentlySelectedParallax.getTexRegion()));
-//		
-//	}
 }
 
 abstract class CopyUpAndDown

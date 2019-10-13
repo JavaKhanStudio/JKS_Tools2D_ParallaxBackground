@@ -301,7 +301,6 @@ public class Vue_Edition extends AVue_Model
 			parallax_Heart.render() ; 
 			if(GVars_Vue_Edition.hideInterfaceTimmer < hideInterfaceQuota)
 			{GVars_Ui.mainUi.draw() ;}
-			
 		}
 		else
 		{
@@ -328,9 +327,7 @@ public class Vue_Edition extends AVue_Model
 			GVars_Ui.mainUi.draw() ;
 		}	
 		
-		
 	}
-
 	
 	@Override
 	public void reciveFiles(String[] files)

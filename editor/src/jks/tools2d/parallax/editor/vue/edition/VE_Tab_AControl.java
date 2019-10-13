@@ -56,6 +56,5 @@ public class VE_Tab_AControl extends Table
 		this.add(container).expand().fill();
 		container.setZIndex(0) ; 
 	}
-	
-	
+		
 }

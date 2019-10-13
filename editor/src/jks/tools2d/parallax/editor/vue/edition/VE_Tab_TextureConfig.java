@@ -14,14 +14,12 @@ public class VE_Tab_TextureConfig extends Tab
 
 	Table secondTable ; 
 	VE_Tab_TextureConfig_Edit editTable; 
-	VE_Tab_TextureConfig_Select selectTable ; 
-	
+
 	VE_Tab_TextureConfig()
 	{
 		super(false, false);
 		secondTable = new Table() ; 
 		
-		selectTable = new VE_Tab_TextureConfig_Select() ; 
 		editTable = new VE_Tab_TextureConfig_Edit() ; 
 		
 		//secondTable.add(selectTable).row();
@@ -37,7 +35,6 @@ public class VE_Tab_TextureConfig extends Tab
 	@Override
 	public Table getContentTable()
 	{
-		selectTable.update();
 		if(currentlySelectedParallax != null)
 		{
 			editTable.update(); 
