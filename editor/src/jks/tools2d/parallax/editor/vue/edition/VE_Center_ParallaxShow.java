@@ -12,7 +12,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.parr_Size_X;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.parr_Size_Y;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.showParallaxFullScreen;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Parallax;
-import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabControl;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
@@ -157,13 +157,13 @@ public class VE_Center_ParallaxShow extends Table
 		float sizeRation = (float)Gdx.graphics.getHeight() / (float)Gdx.graphics.getWidth()  ; 
 		decalX = Gdx.graphics.getWidth()/30 ; 
 //		parr_Size_X = (int)(((Gdx.graphics.getWidth()/3) * 2) - decalX * 2) ; 
-		parr_Size_X = (int) (Gdx.graphics.getWidth() - size_Bloc_Selection_Parallax- (decalX * 2)) ; 
+		parr_Size_X = (int) (Gdx.graphics.getWidth() - size_Bloc_Selection_Parallax_Width- (decalX * 2)) ; 
 		
 //		parr_Size_Y = (parr_Size_X/16) * 9 ; 
 		
 		parr_Size_Y = (int) (parr_Size_X * sizeRation) ;
 //		parr_Pos_X = size_Bloc_Selection_Parallax + (Gdx.graphics.getWidth() - size_Bloc_Selection_Parallax - parr_Size_X)/2; 
-		parr_Pos_X = (int) (size_Bloc_Selection_Parallax + decalX) ; 
+		parr_Pos_X = (int) (size_Bloc_Selection_Parallax_Width + decalX) ; 
 		parr_Pos_Y = size_Height_Bloc_Parallax_Controle ;
 		
 		buttonSize = size_Height_Bloc_Parallax_Controle/1.5f ; 
@@ -172,7 +172,7 @@ public class VE_Center_ParallaxShow extends Table
 	
 	public void buildOptions()
 	{
-		setBounds(size_Bloc_Selection_Parallax, 1, size_Bloc_Parallax, Gdx.graphics.getHeight() - parr_Pos_Y/2 - parr_Size_Y);
+		setBounds(size_Bloc_Selection_Parallax_Width, 1, size_Bloc_Parallax, Gdx.graphics.getHeight() - parr_Pos_Y/2 - parr_Size_Y);
 
 		// TODO Effacer et mettre dans le UISKIN
 		CheckBoxStyle checkBoxStyle = new CheckBoxStyle() ;

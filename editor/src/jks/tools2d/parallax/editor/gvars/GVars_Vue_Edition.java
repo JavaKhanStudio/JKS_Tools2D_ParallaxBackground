@@ -27,7 +27,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 
 public class GVars_Vue_Edition
 {
-	public static int size_Bloc_Selection_Parallax ;
+	public static int size_Bloc_Selection_Parallax_Width ;
 	public static int size_Bloc_Parallax ;
 	public static int size_Height_Bloc_Parallax_Controle ;
 	public static int sizeTabsBar ; 
@@ -86,7 +86,7 @@ public class GVars_Vue_Edition
 	
 	public static void buildSizes()
 	{
-		size_Bloc_Selection_Parallax = Gdx.graphics.getWidth()/4 ; 
+		size_Bloc_Selection_Parallax_Width = Gdx.graphics.getWidth()/4 ; 
 		size_Bloc_Parallax = (Gdx.graphics.getWidth()/4) * 3 ;
 		size_Height_Bloc_Parallax_Controle = (int) (Gdx.graphics.getHeight()/5.5f) ; 
 		sizeTabsBar = Gdx.graphics.getWidth()/40 ; 
@@ -132,10 +132,10 @@ public class GVars_Vue_Edition
 		}
 		
 		TextureRegion[] stockArr = new TextureRegion[allImage.size()];
+		
 		for(int x=0 ; x < allImage.size() ; x++)
-		{
 			stockArr[x] = allImage.get(x) ; 
-		}
+		
 		
 		VE_Tab_TextureList_Adding.imageList.setItems(stockArr);	
 	}
@@ -143,6 +143,7 @@ public class GVars_Vue_Edition
 	public static void addToLinks(ParallaxLayer layer)
 	{
 		ArrayList<ParallaxLayer> linkList = textureLink.get(layer.getTexRegion()) ; 
+		
 		if(linkList == null)
 		{
 			linkList = new ArrayList<ParallaxLayer>() ; 

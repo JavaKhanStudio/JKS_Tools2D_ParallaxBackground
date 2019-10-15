@@ -4,7 +4,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.setItems;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.sizeTabsBar;
-import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
 
@@ -71,7 +71,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 		ScrollPane scrollPane;
 		scrollPane = new ScrollPane(imageList,baseSkin) ; 
 		scrollPane.setFadeScrollBars(false);
-		scrollPane.setWidth(size_Bloc_Selection_Parallax);
+		scrollPane.setWidth(size_Bloc_Selection_Parallax_Width);
 		scrollPane.setHeight(Gdx.graphics.getHeight() - sizeTabsBar * 2);
 		
 			
@@ -99,7 +99,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 	
 	private JksTextureList buildImageList() 
 	{
-		return new JksTextureList(baseSkin,size_Bloc_Selection_Parallax,size_Bloc_Selection_Parallax/2) 
+		return new JksTextureList(baseSkin,size_Bloc_Selection_Parallax_Width,size_Bloc_Selection_Parallax_Width/2) 
 		{
 			@Override
 			public void choiceAction(TextureRegion item)
@@ -111,7 +111,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 			@Override
 			public void drawOnSelected(Batch batch, float x, float y, float width, float itemHeight)
 			{
-				if(y > Gdx.graphics.getHeight() - size_Bloc_Selection_Parallax/2.3f)
+				if(y > Gdx.graphics.getHeight() - size_Bloc_Selection_Parallax_Width/2.3f)
 				{
 					hideAll(true) ;
 				}
@@ -121,12 +121,12 @@ public class VE_Tab_TextureList_Adding extends Tab
 				}
 					
 				
-				button_addData.setPosition(x + buttonSize_small * 0.5f, y + size_Bloc_Selection_Parallax/4 - buttonSize_small/2);
-				button_changeData.setPosition(x + buttonSize_small * 2.0f, y + size_Bloc_Selection_Parallax/4 - buttonSize_small/2);
-				button_removeData.setPosition(x + buttonSize_small * 3.5f, y + size_Bloc_Selection_Parallax/4 - buttonSize_small/2);
+				button_addData.setPosition(x + buttonSize_small * 0.5f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_small/2);
+				button_changeData.setPosition(x + buttonSize_small * 2.0f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_small/2);
+				button_removeData.setPosition(x + buttonSize_small * 3.5f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_small/2);
 				
-				button_switchFor.setPosition(x + buttonSize_large * 0.5f, y + size_Bloc_Selection_Parallax/4 - buttonSize_large/2);
-				button_cancel.setPosition(x + buttonSize_large * 2.0f, y + size_Bloc_Selection_Parallax/4 - buttonSize_large/2);
+				button_switchFor.setPosition(x + buttonSize_large * 0.5f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_large/2);
+				button_cancel.setPosition(x + buttonSize_large * 2.0f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_large/2);
 			}
 			
 		
@@ -344,8 +344,8 @@ public class VE_Tab_TextureList_Adding extends Tab
 	
 	public void resize()
 	{
-		buttonSize_small = size_Bloc_Selection_Parallax/divisonPower_small; 
-		buttonSize_large = size_Bloc_Selection_Parallax/divisonPower_large; 
+		buttonSize_small = size_Bloc_Selection_Parallax_Width/divisonPower_small; 
+		buttonSize_large = size_Bloc_Selection_Parallax_Width/divisonPower_large; 
 		
 		button_addData.setSize(buttonSize_small, buttonSize_small);
 		button_changeData.setSize(buttonSize_small, buttonSize_small);

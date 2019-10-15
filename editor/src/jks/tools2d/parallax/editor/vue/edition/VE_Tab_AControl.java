@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabbedPane;
 
 import com.badlogic.gdx.Gdx;
@@ -23,7 +23,7 @@ public class VE_Tab_AControl extends Table
 	
 	VE_Tab_AControl()
 	{
-		this.setWidth(size_Bloc_Selection_Parallax);
+		this.setWidth(size_Bloc_Selection_Parallax_Width);
 		this.setHeight(Gdx.graphics.getHeight());
 		final VisTable container = new VisTable();
 		
