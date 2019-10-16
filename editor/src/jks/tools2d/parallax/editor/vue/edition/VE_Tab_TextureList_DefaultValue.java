@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
 
 import com.badlogic.gdx.scenes.scene2d.InputEvent;

@@ -24,7 +24,7 @@ import com.kotcrab.vis.ui.widget.spinner.Spinner;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving; 
 
@@ -101,7 +101,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			@Override
 			public void changed (ChangeEvent event, Actor actor) 
 			{
-				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
+				Dialogs.showOptionDialog(GVars_UI.mainUi, "option dialog", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
 				{
 					@Override
 					public void yes () 
@@ -130,7 +130,7 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			@Override
 			public void changed (ChangeEvent event, Actor actor) 
 			{
-				Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Are you sure you want to pack ? \nTexture will be put in : \"packing_" + parallaxName.getText() + "\"" , OptionDialogType.YES_NO, new OptionDialogAdapter() 
+				Dialogs.showOptionDialog(GVars_UI.mainUi, "option dialog", "Are you sure you want to pack ? \nTexture will be put in : \"packing_" + parallaxName.getText() + "\"" , OptionDialogType.YES_NO, new OptionDialogAdapter() 
 				{
 					@Override
 					public void yes () 

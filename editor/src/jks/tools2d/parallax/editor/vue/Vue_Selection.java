@@ -4,7 +4,7 @@ import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.ATLAS;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.JSON_PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX_PROJECT;
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectInfos;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.relativePath;
@@ -32,7 +32,7 @@ import jks.tools2d.filechooser.FileChooser_Listener;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
@@ -58,7 +58,7 @@ public class Vue_Selection extends AVue_Model
 	@Override
 	public void init() 
 	{	
-		buildSelection(GVars_Ui.baseSkin) ;	
+		buildSelection(GVars_UI.baseSkin) ;	
 	}
 	
 	public void buildSelection(Skin skin)
@@ -103,9 +103,9 @@ public class Vue_Selection extends AVue_Model
 		chooser.setFileFilter(buildFileFilter());	
 		chooser.setDirectory(relative);
 		
-		GVars_Ui.mainUi.addActor(creatNew); 
-		GVars_Ui.mainUi.addActor(chooser); 
-		GVars_Ui.mainUi.addActor(title);
+		GVars_UI.mainUi.addActor(creatNew); 
+		GVars_UI.mainUi.addActor(chooser); 
+		GVars_UI.mainUi.addActor(title);
 	}
 	
 	public FileChooser_Listener buildFileChooser_Listener()
@@ -187,7 +187,7 @@ public class Vue_Selection extends AVue_Model
 	@Override
 	public void destroy() 
 	{	
-		GVars_Ui.reset();
+		GVars_UI.reset();
 	}
 
 	@Override
@@ -204,7 +204,7 @@ public class Vue_Selection extends AVue_Model
 	public void render() 
 	{
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		GVars_Ui.mainUi.draw() ;	
+		GVars_UI.mainUi.draw() ;	
 	}
 
 	@Override

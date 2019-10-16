@@ -39,9 +39,6 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 		
 		page.topHalfSize = input.readFloat() ; 
 		page.bottomHalfSize = input.readFloat() ; 
-//		input.readFloat() ;  input.readFloat() ; 
-//		page.topHalfSize = 0.5f ; 
-//		page.bottomHalfSize = 0.5f ; 
 		
 		page.repeatOnX = input.readBoolean() ; 
 		page.repeatOnY = input.readBoolean() ; 

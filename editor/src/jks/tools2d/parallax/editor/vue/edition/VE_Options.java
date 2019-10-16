@@ -12,7 +12,7 @@ import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving;
 
 public class VE_Options extends Table
@@ -99,7 +99,7 @@ public class VE_Options extends Table
 		Table projectNameTable = new Table() ; 
 		projectNameTable.setBounds(savingExport.getX() - textWidth - decal, savingExport.getY() + textHeight/2 - decal, textWidth, textHeight);
 		
-		parallaxPath = new TextField("", GVars_Ui.baseSkin)
+		parallaxPath = new TextField("", GVars_UI.baseSkin)
 		{
 			@Override
 			public float getPrefWidth()
@@ -114,7 +114,7 @@ public class VE_Options extends Table
 		projectPathTable.add(pathSelection);
 		
 	
-		parallaxName = new TextField("", GVars_Ui.baseSkin) ; 
+		parallaxName = new TextField("", GVars_UI.baseSkin) ; 
 		projectNameTable.add(new VisLabel("Project Name : "));
 		projectNameTable.add(parallaxName).right() ;
 		

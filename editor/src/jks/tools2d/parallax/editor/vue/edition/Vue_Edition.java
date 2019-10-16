@@ -39,7 +39,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
@@ -92,12 +92,12 @@ public class Vue_Edition extends AVue_Model
 		tabControl = new VE_Tab_AControl() ; 
 		optionsControl = new VE_Options() ; 
 		
-		GVars_Ui.mainUi.addActor(optionsControl) ;
-		GVars_Ui.mainUi.addActor(tabControl); 
-		GVars_Ui.mainUi.addActor(centerControl); 
+		GVars_UI.mainUi.addActor(optionsControl) ;
+		GVars_UI.mainUi.addActor(tabControl); 
+		GVars_UI.mainUi.addActor(centerControl); 
 		
 		InputProcessor input = buildClickProcessor() ; 	
-		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_Ui.mainUi, new EditorInputProcessus(),input));
+		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_UI.mainUi, new EditorInputProcessus(),input));
 	}
 	
 	private void buildImageList() 
@@ -141,7 +141,7 @@ public class Vue_Edition extends AVue_Model
 	@Override
 	public void destroy()
 	{
-		GVars_Ui.reset();
+		GVars_UI.reset();
 	}
 
 	@Override
@@ -229,7 +229,7 @@ public class Vue_Edition extends AVue_Model
 	@Override
 	public void update(float delta)
 	{
-		GVars_Ui.mainUi.act(delta);
+		GVars_UI.mainUi.act(delta);
 		
 		GVars_Inputs.updateInput(delta);
 		
@@ -300,7 +300,7 @@ public class Vue_Edition extends AVue_Model
 		{
 			parallax_Heart.render() ; 
 			if(GVars_Vue_Edition.hideInterfaceTimmer < hideInterfaceQuota)
-			{GVars_Ui.mainUi.draw() ;}
+			{GVars_UI.mainUi.draw() ;}
 		}
 		else
 		{
@@ -324,7 +324,7 @@ public class Vue_Edition extends AVue_Model
 				shapeRender.end();
 			}
 			
-			GVars_Ui.mainUi.draw() ;
+			GVars_UI.mainUi.draw() ;
 		}	
 		
 	}

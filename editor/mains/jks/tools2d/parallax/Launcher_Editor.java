@@ -2,6 +2,7 @@ package jks.tools2d.parallax;
 
 import java.net.URISyntaxException;
 
+import com.badlogic.gdx.Graphics.DisplayMode;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
@@ -28,8 +29,12 @@ public class Launcher_Editor
 		config.setWindowIcon("skins/uis/parallaxIcon.png");
 
 		config.useVsync(true);
+
+//		new DisplayMode(1920,1080,60,15)
+//		config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayModes()[Lwjgl3ApplicationConfiguration.getDisplayModes().length - 1]);
 		Vue_Edition.isVSynch = true ; 
-		//config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);
+		
+		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 0);
 		GVars_Debug.inDebug = true ; 
 		
 		config.setWindowListener(new Lwjgl3WindowAdapter() 

@@ -12,7 +12,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.libgdxutils.JksNumberSlider;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 public class Testing_TabbedPane extends UiTestModel
 {
@@ -20,7 +20,7 @@ public class Testing_TabbedPane extends UiTestModel
 	@Override
 	public void create () 
 	{
-		GVars_Ui.init();
+		GVars_UI.init();
 		buildTabbed() ; 
 		buildSlider(); 
 		buildRadio() ; 
@@ -37,13 +37,13 @@ public class Testing_TabbedPane extends UiTestModel
 		groupeRadio.add(radio,radio2);
 		
 		
-		GVars_Ui.mainUi.addActor(radio);
-		GVars_Ui.mainUi.addActor(radio2);
+		GVars_UI.mainUi.addActor(radio);
+		GVars_UI.mainUi.addActor(radio2);
 	}
 	
 	public void buildSlider()
 	{
-		JksNumberSlider slider = new JksNumberSlider(0, 100, 1, GVars_Ui.baseSkin )
+		JksNumberSlider slider = new JksNumberSlider(0, 100, 1, GVars_UI.baseSkin )
 		{		
 			@Override
 			public void actionOnSliderMovement()
@@ -52,16 +52,16 @@ public class Testing_TabbedPane extends UiTestModel
 				
 			}
 		};
-		GVars_Ui.mainUi.addActor(slider);
+		GVars_UI.mainUi.addActor(slider);
 		slider.setBounds(100, 300, 100, 100);
 	}
 	
 	public void buildTabbed()
 	{
-		Table theTable = new Table(GVars_Ui.baseSkin) ; 
+		Table theTable = new Table(GVars_UI.baseSkin) ; 
 		final VisTable container = new VisTable();
 
-		TabbedPaneStyle style = GVars_Ui.baseSkin.get("default", TabbedPaneStyle.class) ; 
+		TabbedPaneStyle style = GVars_UI.baseSkin.get("default", TabbedPaneStyle.class) ; 
 		TabbedPane tabbedPane = new TabbedPane(style);
 		tabbedPane.setAllowTabDeselect(false);
 		tabbedPane.addListener(new TabbedPaneAdapter()
@@ -86,7 +86,7 @@ public class Testing_TabbedPane extends UiTestModel
 
 //		debugAll();
 		theTable.setSize(300, 200);
-		GVars_Ui.mainUi.addActor(theTable);
+		GVars_UI.mainUi.addActor(theTable);
 	}
 	
 	public Testing_TabbedPane()

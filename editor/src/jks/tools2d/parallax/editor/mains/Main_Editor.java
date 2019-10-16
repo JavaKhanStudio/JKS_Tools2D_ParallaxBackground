@@ -9,7 +9,7 @@ import com.badlogic.gdx.graphics.GL20;
 
 import jks.tools2d.parallax.Launcher_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.vue.Vue_Selection; 
 
 public class Main_Editor extends ApplicationAdapter 
@@ -49,8 +49,8 @@ public class Main_Editor extends ApplicationAdapter
     @Override
 	public void resize(int width, int height) 
 	{
-		GVars_Ui.mainUi.getViewport().update(width, height, true);
-		if(GVars_Heart_Editor.vue !=null)
+		GVars_UI.mainUi.getViewport().update(width, height, true);
+		if(GVars_Heart_Editor.vue != null)
 			GVars_Heart_Editor.vue.resize(width,height) ; 
 	}
 

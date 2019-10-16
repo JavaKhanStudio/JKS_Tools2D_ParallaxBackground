@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.model;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.mainUi;
+import static jks.tools2d.parallax.editor.gvars.GVars_UI.mainUi;
 
 public abstract class AVue_Model implements ImportAction
 {

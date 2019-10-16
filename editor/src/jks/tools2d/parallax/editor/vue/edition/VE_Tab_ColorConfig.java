@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
 
 import com.badlogic.gdx.Gdx;
@@ -22,7 +22,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.libgdxutils.color.ColorPickerListener;
 import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.side.SquareBackground; 
 
@@ -36,7 +36,7 @@ public class VE_Tab_ColorConfig extends Tab
 		super(false, false);
 		
 		final VisTable container = new VisTable();
-		TabbedPane tabbedPane = new TabbedPane(GVars_Ui.baseSkin.get("default", TabbedPaneStyle.class));
+		TabbedPane tabbedPane = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
 		tabbedPane.setAllowTabDeselect(false);
 		tabbedPane.addListener(new TabbedPaneAdapter()
 		{

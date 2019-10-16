@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.setItems;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.sizeTabsBar;
@@ -25,7 +25,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import jks.tools2d.libgdxutils.JksTextureList;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_LoadingImages;
@@ -195,7 +195,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 							+ "\n NO  Delete from ONLY the parallax" ;
 				
 					
-				OptionDialog deleteDialog = Dialogs.showOptionDialog(GVars_Ui.mainUi, "Delete segment", message, OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
+				OptionDialog deleteDialog = Dialogs.showOptionDialog(GVars_UI.mainUi, "Delete segment", message, OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() 
 				{
 					@Override
 					public void yes () 

@@ -1,6 +1,6 @@
 package jks.tools2d.colorplay;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.mainUi;
+import static jks.tools2d.parallax.editor.gvars.GVars_UI.mainUi;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -26,7 +26,7 @@ import jks.tools2d.libgdxutils.color.grayscale.Direction;
 import jks.tools2d.libgdxutils.color.grayscale.Enum_ColorIsolation;
 import jks.tools2d.libgdxutils.color.grayscale.Utils_ColorExtractor;
 import jks.tools2d.libgdxutils.color.grayscale.Utils_ColorMerge;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 
 public class ChangeColorOnTextureTest extends ApplicationAdapter
@@ -73,7 +73,7 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 	@Override
  	public void create () 
  	{
-		GVars_Ui.init();
+		GVars_UI.init();
 		
 		batch = new SpriteBatch();
 
@@ -100,7 +100,7 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 			}
 		}) ; 
 		
-		shadowPosition = new JksNumberSlider(-100,100,1,GVars_Ui.baseSkin)
+		shadowPosition = new JksNumberSlider(-100,100,1,GVars_UI.baseSkin)
 		{
 			@Override
 			public void actionOnSliderMovement()
@@ -146,7 +146,7 @@ public class ChangeColorOnTextureTest extends ApplicationAdapter
 		table.add(topPicker).colspan(4) ;
 		table.row() ; 
 		table.add(bottomPicker).colspan(4) ;
-		GVars_Ui.mainUi.addActor(table);
+		GVars_UI.mainUi.addActor(table);
 		
 		readNewTexture(new Texture(path)) ;
  	}

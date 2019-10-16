@@ -4,7 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 public class UiTestModel extends ApplicationAdapter
 {
@@ -12,7 +12,7 @@ public class UiTestModel extends ApplicationAdapter
 	@Override
 	public void create () 
 	{
-		GVars_Ui.init();
+		GVars_UI.init();
 	}
 	
 	
@@ -21,8 +21,8 @@ public class UiTestModel extends ApplicationAdapter
 	{
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
-		GVars_Ui.mainUi.act(delta);
-		GVars_Ui.mainUi.draw();
+		GVars_UI.mainUi.act(delta);
+		GVars_UI.mainUi.draw();
 	}
 	
 	@Override

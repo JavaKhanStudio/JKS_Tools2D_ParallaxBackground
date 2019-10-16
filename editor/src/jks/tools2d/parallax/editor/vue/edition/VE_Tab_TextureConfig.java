@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.currentlySelectedParallax;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabbedPane;
@@ -30,7 +30,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 
 public class VE_Tab_TextureConfig extends Tab
@@ -76,11 +76,14 @@ public class VE_Tab_TextureConfig extends Tab
 	
 	Tab tabBasic, tabAdv, tabColorChange ;
 	TabbedPane tabChoice ; 
-	VisTable container ; 
-	VisTable innerContainer ;
+	Table container ; 
+	Table innerContainer ;
+	
+	int totalColspan = 5 ; 
 	
 	public VE_Tab_TextureConfig()
 	{
+		super(false,false) ;
 		
 		buildIndex(); 
 				
@@ -96,9 +99,9 @@ public class VE_Tab_TextureConfig extends Tab
 		
 		buildColorChange() ; 
 		
-		innerContainer = new VisTable();
+		innerContainer = new Table();
 		
-		tabChoice = new TabbedPane(GVars_Ui.baseSkin.get("default", TabbedPaneStyle.class));
+		tabChoice = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
 		tabChoice.setAllowTabDeselect(false);
 		tabChoice.addListener(new TabbedPaneAdapter()
 		{
@@ -122,7 +125,7 @@ public class VE_Tab_TextureConfig extends Tab
 			{return GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width/2 ;}
 		}; 
 		
-		
+		container = new Table() ; 
 		container.add(new VisLabel("SECTION SELECTED")).padTop(indexSelectionSpinerBody.getHeight()/4).padBottom(indexSelectionSpinerBody.getHeight()/4).colspan(4).row();
 		container.add(showSelect).colspan(5) ; 
 		container.row();
@@ -148,8 +151,9 @@ public class VE_Tab_TextureConfig extends Tab
 		container.add(mirror) ; 
 		
 		container.row();
-		container.add(tabChoice.getTable()).expandX().fillX().colspan(5);
-		container.add(innerContainer).expandX().fillX().expandY().fillY().colspan(5);
+		container.add(tabChoice.getTable()).expandX().fillX().colspan(totalColspan);
+		container.row();
+		container.add(innerContainer).expandX().fillX().expandY().fillY().colspan(totalColspan);
 	}
 
 	private Tab buildBasicTab() 
@@ -170,50 +174,66 @@ public class VE_Tab_TextureConfig extends Tab
 			}
 		};
 		
-		contentTable.add(new VisLabel("Decal X")).row();
-		contentTable.add(decalX_Slider).colspan(2) ; 
+		contentTable.add(new VisLabel("Decal X")).colspan(totalColspan);
+		contentTable.row() ;
+		contentTable.add() ;
+		contentTable.add(decalX_Slider).colspan(totalColspan - 3) ; 
 		contentTable.add(decalX_Slider_Clone.cloneFromFront) ;
 		contentTable.add(decalX_Slider_Clone.cloneFromBack) ;
 		contentTable.row() ; 
 
-		contentTable.add(new VisLabel("Decal Y")).row();
-		contentTable.add(decalY_Slider).colspan(2) ; 
+		contentTable.add(new VisLabel("Decal Y")).colspan(totalColspan);
+		contentTable.row() ;
+		contentTable.add() ;
+		contentTable.add(decalY_Slider).colspan(totalColspan - 3) ; 
 		contentTable.add(decalY_Slider_Clone.cloneFromFront) ;
 		contentTable.add(decalY_Slider_Clone.cloneFromBack) ;
 		contentTable.row();
 		
-		contentTable.add(new VisLabel("Size Ratio")).row();
-		contentTable.add(sizeRatio_Slider).colspan(2) ;
+		contentTable.add(new VisLabel("Size Ratio")).colspan(totalColspan);
+		contentTable.row() ;
+		contentTable.add() ;
+		contentTable.add(sizeRatio_Slider).colspan(totalColspan - 3) ;
 		contentTable.add(sizeRatio_Slider_Clone.cloneFromFront) ;
 		contentTable.add(sizeRatio_Slider_Clone.cloneFromBack) ;
 		contentTable.row();
 		
-		contentTable.add(new VisLabel("At rest Speed")).row();
-		contentTable.add(staticSpeed_Slider).colspan(2);
+		contentTable.add(new VisLabel("At rest Speed")).colspan(totalColspan);
+		contentTable.row() ;
+		contentTable.add() ;
+		contentTable.add(staticSpeed_Slider).colspan(totalColspan - 3);
 		contentTable.add(staticSpeed_Slider_Clone.cloneFromFront) ;
 		contentTable.add(staticSpeed_Slider_Clone.cloneFromBack) ;
 		contentTable.row();
 		
-		contentTable.add(new VisLabel("-- Speed ratio X --")).row();
-		contentTable.add(speedX_ration_Slider).colspan(2);
+		contentTable.add(new VisLabel("-- Speed ratio X --")).colspan(totalColspan);
+		contentTable.row() ;
+		contentTable.add() ;
+		contentTable.add(speedX_ration_Slider).colspan(totalColspan - 3);
 		contentTable.add(speedX_ration_Slider_Clone.cloneFromFront) ;
 		contentTable.add(speedX_ration_Slider_Clone.cloneFromBack) ;
 		contentTable.row();
 		
-		contentTable.add(new VisLabel("-- Speed ratio Y --")).row();
-		contentTable.add(speedY_ration_Slider).colspan(2);
+		contentTable.add(new VisLabel("-- Speed ratio Y --")).colspan(totalColspan);
+		contentTable.row() ;
+		contentTable.add() ;
+		contentTable.add(speedY_ration_Slider).colspan(totalColspan - 3);
 		contentTable.add(speedY_ration_Slider_Clone.cloneFromFront) ;
 		contentTable.add(speedY_ration_Slider_Clone.cloneFromBack) ;
 		contentTable.row();
 		
-		contentTable.add(new VisLabel("Pad X")).row();
-		contentTable.add(pad_X_Slider).colspan(2) ;
+		contentTable.add(new VisLabel("Pad X")).colspan(totalColspan);
+		contentTable.row() ;
+		contentTable.add() ;
+		contentTable.add(pad_X_Slider).colspan(totalColspan - 3) ;
 		contentTable.add(pad_X_Slider_Clone.cloneFromFront) ;
 		contentTable.add(pad_X_Slider_Clone.cloneFromBack) ;
 		contentTable.row();
 		
-		contentTable.add(new VisLabel("Pad Y")).row();
-		contentTable.add(pad_Y_Slider).colspan(2) ;
+		contentTable.add(new VisLabel("Pad Y")).colspan(totalColspan);
+		contentTable.row() ;
+		contentTable.add() ;
+		contentTable.add(pad_Y_Slider).colspan(totalColspan - 3) ;
 		contentTable.add(pad_Y_Slider_Clone.cloneFromFront) ;
 		contentTable.add(pad_Y_Slider_Clone.cloneFromBack) ;
 		

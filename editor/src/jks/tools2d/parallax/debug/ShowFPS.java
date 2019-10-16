@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 public class ShowFPS extends Table
 {
@@ -13,7 +13,7 @@ public class ShowFPS extends Table
 	
 	public ShowFPS(float posX, float posY,float scale)
 	{
-		fpsLabel = new Label("", GVars_Ui.baseSkin);
+		fpsLabel = new Label("", GVars_UI.baseSkin);
 		fpsLabel.setFontScale(scale);
 		this.setPosition(posX, posY);
 		this.add(fpsLabel);

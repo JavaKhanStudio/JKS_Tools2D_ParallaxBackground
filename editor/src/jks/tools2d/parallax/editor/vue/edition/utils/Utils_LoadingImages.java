@@ -23,7 +23,7 @@ import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.VE_Tab_TextureList_Adding;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
@@ -61,7 +61,7 @@ public class Utils_LoadingImages
 			
 			if(!StringUtils.isEmpty(errorMessage))
 			{
-				Dialogs.showErrorDialog(GVars_Ui.mainUi,errorMessage) ; 
+				Dialogs.showErrorDialog(GVars_UI.mainUi,errorMessage) ; 
 			}
 		}
 		catch(Exception e)
@@ -79,7 +79,7 @@ public class Utils_LoadingImages
 		try
 		{
 			atlas = new TextureAtlas(new FileHandle(path)) ;
-			Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Are you sure you want to change the atlas ?", OptionDialogType.YES_NO, new OptionDialogAdapter() 
+			Dialogs.showOptionDialog(GVars_UI.mainUi, "option dialog", "Are you sure you want to change the atlas ?", OptionDialogType.YES_NO, new OptionDialogAdapter() 
 			{
 				@Override
 				public void yes () 

@@ -12,7 +12,8 @@ public class GVars_Heart_Editor
 	
 	public static void init()
 	{
-		GVars_Ui.init();
+		GVars_UI.init();
+		GVars_UI.resize() ; 
 		GVars_Serialization_Editor.init() ; 
 	}
 
@@ -33,7 +34,7 @@ public class GVars_Heart_Editor
 		
 		if(GVars_Debug.inDebug)
 		{
-			GVars_Ui.mainUi.addActor(new ShowFPS(100, 100,4.5f));
+			GVars_UI.mainUi.addActor(new ShowFPS(100, 100,4.5f));
 		}
 	}
 }

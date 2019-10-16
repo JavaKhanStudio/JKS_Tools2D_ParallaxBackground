@@ -1,7 +1,7 @@
 package jks.tools2d.parallax.editor.vue.model;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 public class Utils_View 
 {
@@ -13,7 +13,7 @@ public class Utils_View
 	{
 		removeCurrentOverlay() ; 
 		GVars_Heart_Editor.vue.overlay = overlay ; 
-		GVars_Ui.mainUi.addActor(overlay) ;
+		GVars_UI.mainUi.addActor(overlay) ;
 //		GVars_Interface.activedInterface(GVars_Heart_Editor.vue.overlay);
 	}
 	

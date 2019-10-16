@@ -7,7 +7,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
-import jks.tools2d.parallax.editor.gvars.GVars_Ui; 
+import jks.tools2d.parallax.editor.gvars.GVars_UI; 
 
 public class VE_Tab_ParallaxConfig_AddTransfert extends Tab
 {
@@ -25,7 +25,7 @@ public class VE_Tab_ParallaxConfig_AddTransfert extends Tab
 	public void buildTextureSelector()
 	{
 		final VisTable container = new VisTable();
-		TabbedPane tabbedPane = new TabbedPane(GVars_Ui.baseSkin.get("default", TabbedPaneStyle.class));
+		TabbedPane tabbedPane = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
 		tabbedPane.setAllowTabDeselect(false);
 		tabbedPane.addListener(new TabbedPaneAdapter()
 		{

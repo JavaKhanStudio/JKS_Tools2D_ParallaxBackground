@@ -11,7 +11,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 public class VE_Tab_AControl extends Table
 {
@@ -27,7 +27,7 @@ public class VE_Tab_AControl extends Table
 		this.setHeight(Gdx.graphics.getHeight());
 		final VisTable container = new VisTable();
 		
-		tabbedPane = new TabbedPane(GVars_Ui.baseSkin.get("default", TabbedPaneStyle.class));
+		tabbedPane = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
 		tabbedPane.setAllowTabDeselect(false);
 		tabbedPane.addListener(new TabbedPaneAdapter()
 		{

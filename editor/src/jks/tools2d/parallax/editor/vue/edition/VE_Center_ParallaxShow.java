@@ -1,6 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Ui.baseSkin;
+import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.allImage;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.isPause;
@@ -44,7 +44,7 @@ import jks.tools2d.libgdxutils.JksCheckBox;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
@@ -142,7 +142,7 @@ public class VE_Center_ParallaxShow extends Table
 		
 		// TODO TODO WORK HERE TO FINISH
 		if(!StringUtils.isBlank(errors))
-			Dialogs.showErrorDialog(GVars_Ui.mainUi, "Loading not possible", errors);
+			Dialogs.showErrorDialog(GVars_UI.mainUi, "Loading not possible", errors);
 	}
 	
 	VE_Center_ParallaxShow()
@@ -228,7 +228,7 @@ public class VE_Center_ParallaxShow extends Table
 		speedSlider.setPosition(buttonSize/3, this.getHeight()/2 - speedSlider.getHeight()/2);
 		
 		
-		parallaxSpeedXSlider = new Slider(-15, 15, 0.05f, false, GVars_Ui.baseSkin) ; 
+		parallaxSpeedXSlider = new Slider(-15, 15, 0.05f, false, GVars_UI.baseSkin) ; 
 		parallaxSpeedXSlider.setValue(0) ; 
 		parallaxSpeedXSlider.addListener(new InputListener()
 		{		
@@ -256,7 +256,7 @@ public class VE_Center_ParallaxShow extends Table
 
 		}) ; 
 		
-		parallaxSpeedYSlider = new Slider(-20, 20, 0.2f, false, GVars_Ui.baseSkin) ; 
+		parallaxSpeedYSlider = new Slider(-20, 20, 0.2f, false, GVars_UI.baseSkin) ; 
 		parallaxSpeedYSlider.setValue(0) ; 
 		parallaxSpeedYSlider.addListener(new InputListener()
 		{		
@@ -296,11 +296,11 @@ public class VE_Center_ParallaxShow extends Table
 			
 		}) ; 
 		
-		speedSlider.add(new Label("Speed X",GVars_Ui.baseSkin)) ; 
+		speedSlider.add(new Label("Speed X",GVars_UI.baseSkin)) ; 
 		speedSlider.add(parallaxSpeedXSlider) ; 
 		speedSlider.add(resetSpeedX) ; 
 		speedSlider.row() ; 
-		speedSlider.add(new Label("Speed Y",GVars_Ui.baseSkin)) ; 
+		speedSlider.add(new Label("Speed Y",GVars_UI.baseSkin)) ; 
 		speedSlider.add(parallaxSpeedYSlider) ; 
 		speedSlider.add(resetSpeedY) ; 
 		speedSlider.row() ; 

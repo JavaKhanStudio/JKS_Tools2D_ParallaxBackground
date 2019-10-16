@@ -25,7 +25,7 @@ import org.apache.commons.io.FileUtils;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
-import jks.tools2d.parallax.editor.gvars.GVars_Ui;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.VE_Options;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
@@ -78,14 +78,14 @@ public class Utils_Saving
 		if(VE_Options.formatJson.isChecked())
 			saving_Parallax_JSON(where,whatName,outputFinalModel) ; 
 		
-		Dialogs.showOKDialog(GVars_Ui.mainUi, "Saving", "Successful export of " + whatName + "as a \n" +
+		Dialogs.showOKDialog(GVars_UI.mainUi, "Saving", "Successful export of " + whatName + "as a \n" +
 				(VE_Options.formatLibGDX.isChecked()? " 	.plax	\n" : "") +
 				(VE_Options.formatJson.isChecked()? " 	.jplax	" : "")) ; 
 	}
 	
 	private static void askForFlatening(String where, String whatName) 
 	{
-		Dialogs.showOptionDialog(GVars_Ui.mainUi, "option dialog", "Warning ! You have one or more texture from outside the texture atlas. \n Creating the export will flatten the current project, creating a new texture atlas. Would you like to save the project before that?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() {
+		Dialogs.showOptionDialog(GVars_UI.mainUi, "option dialog", "Warning ! You have one or more texture from outside the texture atlas. \n Creating the export will flatten the current project, creating a new texture atlas. Would you like to save the project before that?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter() {
 			@Override
 			public void yes () 
 			{
@@ -137,7 +137,7 @@ public class Utils_Saving
 		{e.printStackTrace();}
 		
 		if(showHardInfo)
-			Dialogs.showOKDialog(GVars_Ui.mainUi, "Saving", "The project have been saved") ; 
+			Dialogs.showOKDialog(GVars_UI.mainUi, "Saving", "The project have been saved") ; 
 	}
 
 	
