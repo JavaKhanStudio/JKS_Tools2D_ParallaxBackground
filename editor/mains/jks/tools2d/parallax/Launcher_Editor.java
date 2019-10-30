@@ -27,14 +27,14 @@ public class Launcher_Editor
 		config.useOpenGL3(true, 3, 2);
 		config.setTitle("Parallax");
 		config.setWindowIcon("skins/uis/parallaxIcon.png");
-
+		config.setResizable(false);
 		config.useVsync(true);
 
 //		new DisplayMode(1920,1080,60,15)
 //		config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayModes()[Lwjgl3ApplicationConfiguration.getDisplayModes().length - 1]);
 		Vue_Edition.isVSynch = true ; 
 		
-		config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 0);
+		config.setBackBufferConfig(8, 8, 8, 8, 16, 2, 0);
 		GVars_Debug.inDebug = true ; 
 		
 		config.setWindowListener(new Lwjgl3WindowAdapter() 

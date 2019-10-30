@@ -5,10 +5,18 @@ import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
+import com.badlogic.gdx.scenes.scene2d.ui.SelectBox;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
+import com.badlogic.gdx.utils.Array;
 import com.kotcrab.vis.ui.VisUI;
+import com.kotcrab.vis.ui.widget.VisCheckBox;
 
 public class GVars_UI implements Runnable 
 {
@@ -20,30 +28,80 @@ public class GVars_UI implements Runnable
 	public static FreeTypeFontParameter parameter ;
 	public static BitmapFont mainFont ; 
 	
+	public static LabelStyle labelStyle_Title ;
+	public static LabelStyle labelStyle_Second ;
+	
 	public static void init() 
 	{
+		mainUi = new Stage();
 		baseSkin = new Skin(Gdx.files.internal("skins/uis/uiskin.json"));
 		baseSkin.getFont("default-font") ; 
 		parameter = new FreeTypeFontParameter() ;
 		generator = new FreeTypeFontGenerator(Gdx.files.internal("ui/fonts/OpenSansRegular.ttf")) ;
 		resize() ;
 		VisUI.load(GVars_UI.baseSkin);
-		mainUi = new Stage();
 		Gdx.input.setInputProcessor(mainUi);
-		
-		
+	}
+	
+	public static void initFonts()
+	{
+		labelStyle_Title = new LabelStyle(baseSkin.get("default", LabelStyle.class)) ; 
+		labelStyle_Second = new LabelStyle(baseSkin.get("default", LabelStyle.class)) ;
 	}
 
 	public static void resize()
 	{
-//		BitmapFont bitmapFont = VisUI.getSkin().getFont("default-font") ;
-		System.out.println(baseSkin.getFont("default-font"));
 		parameter.size = 30 ;
 		mainFont = generator.generateFont(parameter);
 		mainFont.getRegion().getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
 		baseSkin.add("default-font", mainFont);
-		System.out.println(baseSkin.getFont("default-font"));
+		massResize(mainUi.getActors()) ; 
 	}
+	
+	public static void massResize(Array<Actor> actorList)
+	{
+		for(int i = 0 ; i < mainUi.getActors().size; i++)
+		{
+			Actor actor = mainUi.getActors().get(i) ; 
+			workOnActor(actor) ;			
+		}
+	}
+	
+	public static void workOnActor(Actor actor)
+	{
+		if(actor instanceof Label)
+		{
+			Label label = (Label)actor ;
+			label.setStyle(label.getStyle());
+		}
+		else if(actor instanceof TextButton)
+		{
+			TextButton button = (TextButton)actor ;
+			button.getLabel().setStyle(button.getLabel().getStyle());
+			button.invalidate();
+		}
+		else if(actor instanceof SelectBox)
+		{
+			SelectBox box = (SelectBox)actor ;
+//			box.getStyle().font = fontont_SelectBox ; 
+			box.invalidate();
+		}
+		else if(actor instanceof VisCheckBox)
+		{
+			VisCheckBox checkBox = (VisCheckBox)actor ;
+			checkBox.getLabel().setStyle(checkBox.getLabel().getStyle());
+			checkBox.setSize(300, 300);
+			checkBox.invalidate();
+		}
+		else if(actor instanceof WidgetGroup)
+		{
+			WidgetGroup group = (WidgetGroup)actor ;
+			Array<Actor> subGroup = group.getChildren() ; 
+			for(int i = 0 ; i < subGroup.size; i++)
+				workOnActor(subGroup.get(i)) ; 
+		}
+	}
+	
 	
 	public static void reset()
 	{

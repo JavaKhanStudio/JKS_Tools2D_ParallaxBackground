@@ -20,7 +20,6 @@ public class Main_Editor extends ApplicationAdapter
 	{
 		Gdx.graphics.setWindowedMode(1300, 800) ; 
 		GVars_Heart_Editor.init();
-		Gdx.graphics.setVSync(true);
 		
 		if(Vue_Selection.selectSingleFile
 				(new FileHandle(

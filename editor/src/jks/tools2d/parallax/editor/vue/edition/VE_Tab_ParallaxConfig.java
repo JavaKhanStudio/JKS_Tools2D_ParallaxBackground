@@ -43,7 +43,7 @@ public class VE_Tab_ParallaxConfig extends Tab
 		
 		
 		tabbedPane.add(config);
-		//tabbedPane.add(transfert); // TODO WORK IN PROGRESS
+		tabbedPane.add(transfert); // TODO WORK IN PROGRESS
 		
 		tabbedPane.switchTab(config);
 		mainTable = new Table() ; 
@@ -55,7 +55,7 @@ public class VE_Tab_ParallaxConfig extends Tab
 
 	@Override
 	public String getTabTitle()
-	{return "Parallax";}
+	{return "Configs";}
 
 	@Override
 	public Table getContentTable()
