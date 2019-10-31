@@ -99,10 +99,10 @@ public class VE_Tab_ParallaxConfig_Informations extends Tab
 		buttonSizeY = (int) (buttonSizeX/2.5f) ; 
 		
 		goTutorialEng.setSize(buttonSizeX, buttonSizeY);
-		goTutorialEng.setPosition(decalX, infos.getY());
+		goTutorialEng.setPosition(decalX, infos.getY() + buttonSizeY);
 		
 		goTutorialFr.setSize(buttonSizeX, buttonSizeY);
-		goTutorialFr.setPosition(buttonSizeX + decalX * 2,  infos.getY());
+		goTutorialFr.setPosition(buttonSizeX + decalX * 2,  infos.getY() + buttonSizeY);
 		
 		
 		
