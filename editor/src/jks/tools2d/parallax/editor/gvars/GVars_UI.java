@@ -1,6 +1,7 @@
 package jks.tools2d.parallax.editor.gvars;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -17,6 +18,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.utils.Array;
 import com.kotcrab.vis.ui.VisUI;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
+import com.kotcrab.vis.ui.widget.VisTextField;
+import com.kotcrab.vis.ui.widget.VisTextField.VisTextFieldStyle;
 
 public class GVars_UI implements Runnable 
 {
@@ -27,15 +30,18 @@ public class GVars_UI implements Runnable
 	public static FreeTypeFontGenerator generator ;
 	public static FreeTypeFontParameter parameter ;
 	public static BitmapFont mainFont ; 
+	public static BitmapFont areaTextFont ; 
 	
 	public static LabelStyle labelStyle_Title ;
 	public static LabelStyle labelStyle_Second ;
+	public static VisTextFieldStyle areaStyle ;
 	
 	public static void init() 
 	{
 		mainUi = new Stage();
 		baseSkin = new Skin(Gdx.files.internal("skins/uis/uiskin.json"));
 		baseSkin.getFont("default-font") ; 
+		initFonts() ; 
 		parameter = new FreeTypeFontParameter() ;
 		generator = new FreeTypeFontGenerator(Gdx.files.internal("ui/fonts/OpenSansRegular.ttf")) ;
 		resize() ;
@@ -47,14 +53,23 @@ public class GVars_UI implements Runnable
 	{
 		labelStyle_Title = new LabelStyle(baseSkin.get("default", LabelStyle.class)) ; 
 		labelStyle_Second = new LabelStyle(baseSkin.get("default", LabelStyle.class)) ;
+		areaStyle = new VisTextFieldStyle( baseSkin.get("default", VisTextFieldStyle.class)) ;
 	}
 
 	public static void resize()
 	{
+		parameter.color = Color.BLACK ; 
 		parameter.size = 30 ;
 		mainFont = generator.generateFont(parameter);
 		mainFont.getRegion().getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
-		baseSkin.add("default-font", mainFont);
+		
+		parameter.size = Gdx.graphics.getWidth()/70 ;
+		parameter.color = Color.WHITE ; 
+		areaTextFont = generator.generateFont(parameter);
+		areaStyle.font = areaTextFont ; 
+		areaStyle.messageFont = areaTextFont ; 
+		
+		
 		massResize(mainUi.getActors()) ; 
 	}
 	
@@ -83,7 +98,6 @@ public class GVars_UI implements Runnable
 		else if(actor instanceof SelectBox)
 		{
 			SelectBox box = (SelectBox)actor ;
-//			box.getStyle().font = fontont_SelectBox ; 
 			box.invalidate();
 		}
 		else if(actor instanceof VisCheckBox)
@@ -92,6 +106,15 @@ public class GVars_UI implements Runnable
 			checkBox.getLabel().setStyle(checkBox.getLabel().getStyle());
 			checkBox.setSize(300, 300);
 			checkBox.invalidate();
+		}
+		else if(actor instanceof VisTextField)
+		{
+			VisTextField textField = (VisTextField)actor ;
+			textField.getStyle().messageFont = areaTextFont ;
+			textField.getStyle().font = areaTextFont ;
+			textField.setStyle(textField.getStyle());
+			textField.invalidate();
+			System.out.println("resize text");
 		}
 		else if(actor instanceof WidgetGroup)
 		{

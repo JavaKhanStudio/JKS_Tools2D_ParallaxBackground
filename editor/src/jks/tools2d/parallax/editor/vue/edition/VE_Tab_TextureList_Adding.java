@@ -119,8 +119,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 				{
 					hideAll(false) ; 
 				}
-					
-				
+						
 				button_addData.setPosition(x + buttonSize_small * 0.5f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_small/2);
 				button_changeData.setPosition(x + buttonSize_small * 2.0f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_small/2);
 				button_removeData.setPosition(x + buttonSize_small * 3.5f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_small/2);
@@ -129,8 +128,6 @@ public class VE_Tab_TextureList_Adding extends Tab
 				button_cancel.setPosition(x + buttonSize_large * 2.0f, y + size_Bloc_Selection_Parallax_Width/4 - buttonSize_large/2);
 			}
 			
-		
-	
 		};			
 	}
 

@@ -98,6 +98,7 @@ public class Vue_Edition extends AVue_Model
 		
 		InputProcessor input = buildClickProcessor() ; 	
 		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_UI.mainUi, new EditorInputProcessus(),input));
+		GVars_UI.resize() ; 
 	}
 	
 	private void buildImageList() 

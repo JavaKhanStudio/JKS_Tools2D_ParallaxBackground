@@ -14,6 +14,7 @@ public class VE_Tab_ParallaxConfig extends Tab
 
 	private Table mainTable ;
 	VE_Tab_ParallaxConfig_Configuration config ; 
+	VE_Tab_ParallaxConfig_Informations infos ; 
 	VE_Tab_ParallaxConfig_AddTransfert transfert ;
 	
 	VE_Tab_ParallaxConfig()
@@ -38,14 +39,16 @@ public class VE_Tab_ParallaxConfig extends Tab
 			}
 		});
 		
+		infos = new VE_Tab_ParallaxConfig_Informations() ; 
 		config = new VE_Tab_ParallaxConfig_Configuration() ; 
 		transfert = new VE_Tab_ParallaxConfig_AddTransfert() ;
 		
 		
+		tabbedPane.add(infos);
 		tabbedPane.add(config);
 		tabbedPane.add(transfert); // TODO WORK IN PROGRESS
 		
-		tabbedPane.switchTab(config);
+		tabbedPane.switchTab(infos);
 		mainTable = new Table() ; 
 		mainTable.add(tabbedPane.getTable()).expandX().fillX();
 		mainTable.row();
