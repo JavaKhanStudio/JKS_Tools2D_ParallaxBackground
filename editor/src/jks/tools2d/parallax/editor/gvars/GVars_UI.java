@@ -32,8 +32,11 @@ public class GVars_UI implements Runnable
 	public static BitmapFont mainFont ; 
 	public static BitmapFont areaTextFont ; 
 	
+	public static BitmapFont font_Title ; 
+	
 	public static LabelStyle labelStyle_Title ;
 	public static LabelStyle labelStyle_Second ;
+	public static LabelStyle labelStyle_OptionsTitle ;
 	public static VisTextFieldStyle areaStyle ;
 	
 	public static void init() 
@@ -53,6 +56,7 @@ public class GVars_UI implements Runnable
 	{
 		labelStyle_Title = new LabelStyle(baseSkin.get("default", LabelStyle.class)) ; 
 		labelStyle_Second = new LabelStyle(baseSkin.get("default", LabelStyle.class)) ;
+		labelStyle_OptionsTitle = new LabelStyle(baseSkin.get("default", LabelStyle.class)) ; 
 		areaStyle = new VisTextFieldStyle( baseSkin.get("default", VisTextFieldStyle.class)) ;
 	}
 
@@ -68,6 +72,8 @@ public class GVars_UI implements Runnable
 		areaTextFont = generator.generateFont(parameter);
 		areaStyle.font = areaTextFont ; 
 		areaStyle.messageFont = areaTextFont ; 
+		labelStyle_OptionsTitle.font = areaTextFont ; 
+		
 		
 		
 		massResize(mainUi.getActors()) ; 

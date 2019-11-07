@@ -28,21 +28,17 @@ import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving; 
 
-public class VE_Tab_ParallaxConfig_Configuration extends Tab
+public class VE_Tab_Meta_ConfigParallax extends Tab
 {
 
 	private Table mainTable ; 
 	VisCheckBox repeatOnX, repeatOnY ; 
-	VisCheckBox vSynch ;
 	
-	public IntSpinnerModel nbSampleSpinner ; 
-	Spinner nbSampleSpinnerBody ; 
-
-	VisTextButton changeAtlas, showOptionDialog, packUpTextures ; 
+	VisTextButton changeAtlas, returnOption, packUpTextures ; 
 	VisLabel atlasNameLabel ;  
 	
 	
-	VE_Tab_ParallaxConfig_Configuration()
+	VE_Tab_Meta_ConfigParallax()
 	{
 		super(false, false);
 		mainTable = new Table() ; 
@@ -95,8 +91,8 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		});
 		
 		
-		showOptionDialog = new VisTextButton("Return to selection");
-		showOptionDialog.addListener(new ChangeListener() 
+		returnOption = new VisTextButton("Return to selection");
+		returnOption.addListener(new ChangeListener() 
 		{
 			@Override
 			public void changed (ChangeEvent event, Actor actor) 
@@ -150,39 +146,8 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			}
 		});
 		
-		vSynch = new VisCheckBox("VSynch") ;
-		vSynch.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				Vue_Edition.isVSynch = vSynch.isChecked() ;
-				Gdx.graphics.setVSync(vSynch.isChecked());
-			}
-		}) ; 
 		
-		nbSampleSpinner = new IntSpinnerModel(0,0,100); 
-		nbSampleSpinnerBody = new Spinner("Nb Sample", nbSampleSpinner);
-		nbSampleSpinnerBody.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{
-				return true ;
-			}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				System.out.println("chaning value");
-				GLFW.glfwWindowHint(GLFW.GLFW_SAMPLES, nbSampleSpinner.getValue());
-			//	Gdx.graphics.getBufferFormat().samples = nbSampleSpinner.getValue() ; 
-			}
-		}) ; 
+
 		
 		mainTable.add(new VisLabel("-- Configuration --")).colspan(2).row();
 		mainTable.add(repeatOnX) ; 
@@ -197,16 +162,8 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 		mainTable.row();
 		
 		mainTable.add(new VisLabel("-- Parameter --")).colspan(2).row();
-		mainTable.add(showOptionDialog).colspan(2) ;
+		mainTable.add(returnOption).colspan(2) ;
 		mainTable.row();
-		
-		/*// must check if it works
-		mainTable.add(new VisLabel("-- Visuel --")).colspan(2) ;
-		mainTable.row() ; 
-		mainTable.add(vSynch) ; 
-		mainTable.add(nbSampleSpinnerBody) ; 
-		*/
-
 	}
 	
 	public void update()
@@ -221,12 +178,11 @@ public class VE_Tab_ParallaxConfig_Configuration extends Tab
 			atlasName += parallax_Heart.getAtlasName() ; 
 		
 		atlasNameLabel.setText(atlasName);
-		vSynch.setChecked(Vue_Edition.isVSynch);
 	}
 
 	@Override
 	public String getTabTitle()
-	{return "Configuration";}
+	{return "Parallax";}
 
 	@Override
 	public Table getContentTable()

@@ -9,13 +9,13 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.parallax.editor.gvars.GVars_UI; 
 
-public class VE_Tab_ParallaxConfig_AddTransfert extends Tab
+public class VE_Tab_Meta_AddTransfert extends Tab
 {
 
 	// TODO
 	private Table mainTable ; 
 	
-	VE_Tab_ParallaxConfig_AddTransfert()
+	VE_Tab_Meta_AddTransfert()
 	{
 		super(false, false);
 		mainTable = new Table() ; 

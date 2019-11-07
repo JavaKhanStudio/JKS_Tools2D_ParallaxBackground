@@ -35,7 +35,7 @@ public class Launcher_Editor
 		Vue_Edition.isVSynch = true ; 
 		
 		config.setBackBufferConfig(8, 8, 8, 8, 16, 2, 0);
-		GVars_Debug.inDebug = true ; 
+		GVars_Debug.inDebug = false ; 
 		
 		config.setWindowListener(new Lwjgl3WindowAdapter() 
 		{

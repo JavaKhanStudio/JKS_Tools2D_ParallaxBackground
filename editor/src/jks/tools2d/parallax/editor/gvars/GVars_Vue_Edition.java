@@ -86,7 +86,7 @@ public class GVars_Vue_Edition
 	
 	public static void buildSizes()
 	{
-		size_Bloc_Selection_Parallax_Width = Gdx.graphics.getWidth()/4 ; 
+		size_Bloc_Selection_Parallax_Width = (int) (Gdx.graphics.getWidth()/3.9f) ; 
 		size_Bloc_Parallax = (Gdx.graphics.getWidth()/4) * 3 ;
 		size_Height_Bloc_Parallax_Controle = (int) (Gdx.graphics.getHeight()/5.5f) ; 
 		sizeTabsBar = Gdx.graphics.getWidth()/40 ; 

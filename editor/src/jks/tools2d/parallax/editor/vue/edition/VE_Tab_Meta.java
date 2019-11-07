@@ -9,15 +9,16 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.parallax.editor.gvars.GVars_UI; 
 
-public class VE_Tab_ParallaxConfig extends Tab
+public class VE_Tab_Meta extends Tab
 {
 
 	private Table mainTable ;
-	VE_Tab_ParallaxConfig_Configuration config ; 
-	VE_Tab_ParallaxConfig_Informations infos ; 
-	VE_Tab_ParallaxConfig_AddTransfert transfert ;
+	VE_Tab_Meta_ConfigParallax configParra ; 
+	VE_Tab_Meta_ConfigApplication configAppli ; 
+	VE_Tab_Meta_Informations infos ; 
+	VE_Tab_Meta_AddTransfert transfert ;
 	
-	VE_Tab_ParallaxConfig()
+	VE_Tab_Meta()
 	{
 		super(false, false);
 		mainTable = new Table() ; 
@@ -39,13 +40,15 @@ public class VE_Tab_ParallaxConfig extends Tab
 			}
 		});
 		
-		infos = new VE_Tab_ParallaxConfig_Informations() ; 
-		config = new VE_Tab_ParallaxConfig_Configuration() ; 
-		transfert = new VE_Tab_ParallaxConfig_AddTransfert() ;
+		infos = new VE_Tab_Meta_Informations() ; 
+		configParra = new VE_Tab_Meta_ConfigParallax() ; 
+		configAppli = new VE_Tab_Meta_ConfigApplication() ; 
+		transfert = new VE_Tab_Meta_AddTransfert() ;
 		
 		
 		tabbedPane.add(infos);
-		tabbedPane.add(config);
+		tabbedPane.add(configParra);
+		tabbedPane.add(configAppli);
 		tabbedPane.add(transfert); // TODO WORK IN PROGRESS
 		
 		tabbedPane.switchTab(infos);
@@ -58,7 +61,7 @@ public class VE_Tab_ParallaxConfig extends Tab
 
 	@Override
 	public String getTabTitle()
-	{return "Configs";}
+	{return "Controlles";}
 
 	@Override
 	public Table getContentTable()

@@ -16,16 +16,16 @@ import jks.tools2d.parallax.editor.gvars.GVars_UI;
 public class VE_Tab_AControl extends Table
 {
 
-	VE_Tab_ParallaxConfig parallaxConfig ;
+	VE_Tab_Meta parallaxConfig ;
 	VE_Tab_ColorConfig colorConfig ;
 	VE_Tab_TextureList textureSelection ; 
 	VE_Tab_TextureConfig textureConfig ; 
 	
 	VE_Tab_AControl()
 	{
-		this.setWidth(size_Bloc_Selection_Parallax_Width);
-		this.setHeight(Gdx.graphics.getHeight());
+		
 		final VisTable container = new VisTable();
+		container.setWidth(size_Bloc_Selection_Parallax_Width);
 		
 		tabbedPane = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
 		tabbedPane.setAllowTabDeselect(false);
@@ -39,7 +39,7 @@ public class VE_Tab_AControl extends Table
 			}
 		});
 		
-		parallaxConfig = new VE_Tab_ParallaxConfig() ; 
+		parallaxConfig = new VE_Tab_Meta() ; 
 		colorConfig = new VE_Tab_ColorConfig() ;
 		textureSelection = new VE_Tab_TextureList() ;
 		textureConfig =	new VE_Tab_TextureConfig() ;
@@ -55,6 +55,13 @@ public class VE_Tab_AControl extends Table
 		this.row();
 		this.add(container).expand().fill();
 		container.setZIndex(0) ; 
+		resize() ; 
+	}
+	
+	public void resize()
+	{
+		this.setWidth(size_Bloc_Selection_Parallax_Width);
+		this.setHeight(Gdx.graphics.getHeight());
 	}
 		
 }

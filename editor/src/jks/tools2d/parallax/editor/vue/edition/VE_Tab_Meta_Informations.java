@@ -13,20 +13,23 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextArea;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.kotcrab.vis.ui.widget.VisTextArea;
 import com.kotcrab.vis.ui.widget.VisTextButton;
-import com.kotcrab.vis.ui.widget.tabbedpane.Tab; 
+import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
-public class VE_Tab_ParallaxConfig_Informations extends Tab
+import jks.tools2d.parallax.editor.gvars.GVars_UI; 
+
+public class VE_Tab_Meta_Informations extends Tab
 {
 
 	// TODO
-	VisTextArea infos ; 
+	TextArea infos ; 
 	private Table mainTable ; 
 	VisTextButton goTutorialFr, goTutorialEng ; 
 	
-	VE_Tab_ParallaxConfig_Informations()
+	VE_Tab_Meta_Informations()
 	{
 		super(false, false);
 		mainTable = new Table() ; 
@@ -35,18 +38,25 @@ public class VE_Tab_ParallaxConfig_Informations extends Tab
 	}
 	
 	String textInforation = 
-			"Hello ! This tools was made to help you build beautiful parallax with ease"
-			+ "\n\nYou can drag and drop project or export files anywhere too open them "
-			+ "\n(." + PARALLAX + " OR ." + JSON_PARALLAX + " OR ." + PARALLAX_PROJECT + ")"
-			+ "\n\nIf you want to import a group of picture, you can use .atlas, or drag single/multiple png files, as no other format are accepted" 
-			+ "\n\nFinaly for more informations check the tutorials. Those buttons down bellow will guide you to them!"
-			+ "\n\nFor any resquest, you can contact me at JavaKhanStudio@gmail.com"
-			; 
+		"Hellow ! This tools was made to help you build beautiful parallax with ease"
+		+ "\n\nYou can drag and drop project or export files anywhere too open them "
+		+ "\n(." + PARALLAX + " OR ." + JSON_PARALLAX + " OR ." + PARALLAX_PROJECT + ")"
+		+ "\n\nIf you want to import a group of picture, you can use .atlas, or drag single/multiple png files, as no other format are accepted" 
+		+ "\n\nFinaly for more informations check the tutorials. Those buttons down bellow will guide you to them!"
+		+ "\n\nFor any resquest, you can contact me at JavaKhanStudio@gmail.com"
+		; 
 	
 	public void buildTextureSelector()
 	{
-		infos = new VisTextArea(textInforation) ;
-		//infos.setDisabled(true);
+		infos = new TextArea(textInforation,GVars_UI.baseSkin)
+		{
+			@Override
+			public float getPrefWidth() 
+			{	
+				return 100 ; // What the fuck ?! Don't work properly without it tho
+			}
+		};
+
 		infos.setTouchable(Touchable.disabled);
 		infos.setColor(new Color(0.35f,0.35f,0.35f,1));
 		
@@ -79,8 +89,6 @@ public class VE_Tab_ParallaxConfig_Informations extends Tab
 		mainTable.add(goTutorialEng) ;
 		mainTable.add(goTutorialFr) ;
 		
-	//	mainTable.add(container).expand().fill();
-		
 	}
 	
 	int decalX,decalY ;
@@ -90,22 +98,21 @@ public class VE_Tab_ParallaxConfig_Informations extends Tab
 	{
 		decalX = size_Bloc_Selection_Parallax_Width/23 ; 
 		decalY = Gdx.graphics.getHeight()/10 ; 
+		
 		mainTable.setWidth(size_Bloc_Selection_Parallax_Width);
-		infos.setWidth(size_Bloc_Selection_Parallax_Width - (decalX * 2));		
-		infos.setHeight(Gdx.graphics.getHeight()/1.5f);
+		mainTable.setColor(Color.RED);
+		infos.setWidth(mainTable.getWidth() - (decalX * 2));		
+		infos.setHeight(Gdx.graphics.getHeight()/1.9f);
 		infos.setPosition(decalX, Gdx.graphics.getHeight() - infos.getHeight() - decalY);
 		
-		buttonSizeX = (size_Bloc_Selection_Parallax_Width - decalX * 3)/2 ; 
+		buttonSizeX = (size_Bloc_Selection_Parallax_Width - (decalX * 3))/2 ; 
 		buttonSizeY = (int) (buttonSizeX/2.5f) ; 
 		
 		goTutorialEng.setSize(buttonSizeX, buttonSizeY);
-		goTutorialEng.setPosition(decalX, infos.getY() + buttonSizeY);
+		goTutorialEng.setPosition(decalX, infos.getY()  - buttonSizeY);
 		
 		goTutorialFr.setSize(buttonSizeX, buttonSizeY);
-		goTutorialFr.setPosition(buttonSizeX + decalX * 2,  infos.getY() + buttonSizeY);
-		
-		
-		
+		goTutorialFr.setPosition(buttonSizeX + decalX * 2,  infos.getY() - buttonSizeY);
 	}
 
 	@Override
