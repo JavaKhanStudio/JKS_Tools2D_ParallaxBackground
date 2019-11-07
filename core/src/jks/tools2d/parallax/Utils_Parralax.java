@@ -24,9 +24,9 @@ public class Utils_Parralax
 		
 		float result=0;
 		if(isWidth)
-    		    result = originalHeight*(oneDimen/originalWidth);
+		    result = originalHeight*(oneDimen/originalWidth);
 		else
-	    		result = originalWidth*(oneDimen/originalHeight);
+    		result = originalWidth*(oneDimen/originalHeight);
 		
 		return result;
 	}
