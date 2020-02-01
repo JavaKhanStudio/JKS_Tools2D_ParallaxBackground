@@ -1,10 +1,22 @@
 package jks.tools2d.parallax.pages;
 
+import com.badlogic.gdx.Gdx;
+import com.esotericsoftware.kryo.io.Input;
+
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.heart.GVars_Serialization;
 
 public class Utils_Page
 {
-
+	public static WholePage_Model loadPage(String internalPath)
+	{
+		GVars_Serialization.init();
+		Input input = new Input(Gdx.files.internal(internalPath).read());
+		WholePage_Model page = GVars_Serialization.kryo.readObject(input,WholePage_Model.class) ; 
+		return page ;
+	}
+	
+	
 	public static Parallax_Model buildFromPage(ParallaxLayer page,String regionName, int region_Position)
 	{
 		Parallax_Model model = new Parallax_Model() ; 
