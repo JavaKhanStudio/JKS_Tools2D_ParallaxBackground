@@ -21,8 +21,12 @@ public class GVars_Serialization
 	
 	public static void init() 
 	{
-		prepareKryo() ; 
-		prepareJson() ; 
+		if(kryo == null || objectMapper == null)
+		{
+			prepareKryo() ; 
+			prepareJson() ; 
+		}
+			
 	}
 
 	public static Kryo prepareKryo()

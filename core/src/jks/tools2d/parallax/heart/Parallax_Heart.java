@@ -1,18 +1,16 @@
 package jks.tools2d.parallax.heart;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
-import com.esotericsoftware.kryo.io.Input;
 
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parralax;
+import jks.tools2d.parallax.pages.Utils_Page;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -52,15 +50,13 @@ public class Parallax_Heart
 
 		shapeRender = new ShapeRenderer() ;
 		parallaxReader = new ParallaxPageReader();
-		Gvars_Parallax.setManager(new AssetManager()) ; 
+		Gvars_Parallax.getManager() ; 
 	}
 	
-	public Parallax_Heart(String internPath) throws FileNotFoundException 
+	public Parallax_Heart(String internalPath) throws FileNotFoundException 
 	{
 		this() ; 
-		GVars_Serialization.init();
-		Input input = new Input(new FileInputStream(internPath));
-		WholePage_Model page = GVars_Serialization.kryo.readObject(input,WholePage_Model.class) ; 
+		WholePage_Model page = Utils_Page.loadPage(internalPath) ; 
 		Parallax_Utils_Page.setPage(this,page) ; 
 	}
 	
@@ -122,7 +118,7 @@ public class Parallax_Heart
 		worldCamera.update();
 		batch.setProjectionMatrix(worldCamera.combined);
 		drawBackGround() ; 
-		
+		batch.enableBlending();
 		batch.begin() ;
 		parallaxReader.draw(worldCamera, batch);
 

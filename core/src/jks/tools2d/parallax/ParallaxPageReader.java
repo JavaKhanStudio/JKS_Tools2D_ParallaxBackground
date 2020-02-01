@@ -17,14 +17,15 @@ public class ParallaxPageReader
 	
 	public Enum_TransfertType transfertType ;
 	public ArrayList<ParallaxLayer> transferLayers;
+	public boolean inTransfer ; 
 
 	
 	private boolean repeatOnX,repeatOnY  ; 
 
 	private float drawingHeight  ;
 	
-	float newLayer_transfertLvl = 0 ;
-	float oldLayer_transfertLvl = 0 ; 
+	float newLayer_transperencyLvl = 0 ;
+	float oldLayer_transperencytLvl = 1 ; 
 	float newLayer_transfertSpeed ; 
 	float oldLayer_transfertSpeed ; 
 	
@@ -67,7 +68,7 @@ public class ParallaxPageReader
 		newLayers = pageModel.getDrawing() ; 
 		
 		newLayer_transfertSpeed = 1/inXSecondes  ;
-		oldLayer_transfertSpeed = 1/(inXSecondes * (1-transparencyPoint)) ; 
+		oldLayer_transfertSpeed = 1/(inXSecondes) ; 
 		
 		resetTransfert() ; 
 		
@@ -106,7 +107,6 @@ public class ParallaxPageReader
 		else if(repeatOnX)
 			drawOnX(worldCamera,batch) ; 
 		
-
 		batch.setColor(1,1,1,1);	
 	}
 	
@@ -151,12 +151,32 @@ public class ParallaxPageReader
 	public void drawOnX(OrthographicCamera worldCamera, Batch batch)
 	{
 		ParallaxLayer layer ; 
-		batch.setColor(oldLayer_transfertColor);
-		for(int i = 0; i < layers.size(); i++)
+
+		int transferPosition = 0; 
+		
+		if(transferLayers.size() > layers.size())
 		{
+			transferPosition = transferLayers.size() - layers.size(); 
+			batch.setColor(1,1,1,newLayer_transperencyLvl);	
+			for(int i = 0; i <= transferPosition; i++)
+			{
+				layer = transferLayers.get(i);
+				drawLayoutOnX(layer, worldCamera, batch) ;
+			}	
+		}
+		
+		for(int i = 0; i < layers.size(); i++)
+		{	
+			batch.setColor(1,1,1,oldLayer_transperencytLvl);	
 			layer = layers.get(i);
 			drawLayoutOnX(layer, worldCamera, batch) ;
-    		  		  		    
+			
+			if(transferLayers.size() > 0)
+			{
+				batch.setColor(1,1,1,newLayer_transperencyLvl);	
+				layer = transferLayers.get(i + transferPosition);
+				drawLayoutOnX(layer, worldCamera, batch) ;
+			}
 		}					  
 	}
 	
@@ -216,13 +236,12 @@ public class ParallaxPageReader
 	
 	public void compute_Color_Transfert()
 	{
-		newLayer_transfertColor.a = newLayer_transfertLvl;	
+		newLayer_transfertColor.a = newLayer_transperencyLvl;	
 		
-		if(newLayer_transfertLvl >= transparencyPoint)
+		if(newLayer_transperencyLvl >= transparencyPoint)
 		{
-			oldLayer_transfertColor.a = 1 - oldLayer_transfertLvl ;
-		}
-			
+			oldLayer_transfertColor.a = 1 - oldLayer_transperencytLvl ;
+		}			
 	}
 	
 	public void resetTransfert()
@@ -231,8 +250,8 @@ public class ParallaxPageReader
 		
 		oldLayer_transfertColor.a = 1 ; 
 		newLayer_transfertColor.a = 0 ; 
-		newLayer_transfertLvl = 0 ; 
-		oldLayer_transfertLvl = 0 ; 
+		newLayer_transperencyLvl = 0 ; 
+		oldLayer_transperencytLvl = 1 ; 
 	}
 	
 	public void resetPositions()
@@ -249,13 +268,10 @@ public class ParallaxPageReader
 		if(!Enum_TransfertType.NONE.equals(transfertType))
 		{
 	    	compute_Color_Transfert() ;
+			newLayer_transperencyLvl += delta * newLayer_transfertSpeed ; 
+			oldLayer_transperencytLvl -= delta * oldLayer_transfertSpeed ; 
 			
-			newLayer_transfertLvl += delta * newLayer_transfertSpeed ; 
-			
-			if(newLayer_transfertLvl >= transparencyPoint)
-				oldLayer_transfertLvl += delta * oldLayer_transfertSpeed ; 
-			
-			if(newLayer_transfertLvl > 1)
+			if(newLayer_transperencyLvl > 1)
 			{
 				for(int a=0; a < layers.size() ; a++) 
 				{transferLayers.get(a).setCurrentDistanceX(layers.get(a).getCurrentDistanceX());}

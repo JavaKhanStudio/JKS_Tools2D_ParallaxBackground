@@ -201,7 +201,7 @@ public class WholePage_Model
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight) 
 	{
 		Gvars_Parallax.getManager().load(pageModel.atlasName, TextureAtlas.class);
-		Gvars_Parallax.getManager().finishLoadingAsset(pageModel.atlasName);
+//		Gvars_Parallax.getManager().finishLoadingAsset(pageModel.atlasName);
 		
 		TextureAtlas atlas = new TextureAtlas(pageModel.atlasName);
 		return load(worldWidth, worldHeight, atlas) ; 
