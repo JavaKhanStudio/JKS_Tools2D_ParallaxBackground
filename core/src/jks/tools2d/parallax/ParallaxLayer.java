@@ -1,5 +1,9 @@
 package jks.tools2d.parallax;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
@@ -12,8 +16,7 @@ import jks.tools2d.parallax.pages.Parallax_Model;
 public class ParallaxLayer implements Cloneable
 {
 
-	private TextureRegion texRegion;
-	//private TextureRegion changingRegion ; 
+	private List<TextureRegion> texRegion;
 
 	private float decalPosition_X = 0, decalPercent_Y = 0 ;
 	private float region_Width,region_Height;
@@ -45,7 +48,7 @@ public class ParallaxLayer implements Cloneable
 	protected boolean isMirror ; 
 
 
-	public ParallaxLayer(TextureRegion texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
+	public ParallaxLayer(List<TextureRegion> texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
 	{
 		this.texRegion = texRegion ;
 		this.sizeRatio = sizeRatio ;
@@ -53,16 +56,21 @@ public class ParallaxLayer implements Cloneable
 		if(isWidth)
 		{
 			setRegionWidth(worldDimension);
-	    	setRegionHeight(Utils_Parralax.calculateOtherDimension(true, worldDimension, this.texRegion));	
+	    	setRegionHeight(Utils_Parralax.calculateOtherDimension(true, worldDimension, this.texRegion.get(0)));	
 		}
 		else
 		{
 	    	setRegionHeight(worldDimension);
-	    	setRegionWidth(Utils_Parralax.calculateOtherDimension(false, worldDimension, this.texRegion));
+	    	setRegionWidth(Utils_Parralax.calculateOtherDimension(false, worldDimension, this.texRegion.get(0)));
 		}
 		
 		setParallaxSpeedRatioX(parallaxScrollRatioX);
 		setParallaxSpeedRatioY(parallaxScrollRatioY);
+	}
+	
+	public ParallaxLayer(TextureRegion texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
+	{
+		this(Arrays.asList(texRegion), isWidth, worldDimension, parallaxScrollRatioX, parallaxScrollRatioY, sizeRatio) ;
 	}
 	
 	public void setUpEverything(Parallax_Model model)
@@ -94,7 +102,19 @@ public class ParallaxLayer implements Cloneable
 	{
 		batch.draw
 		(
-			texRegion, 
+			texRegion.get(0), 
+			x + (flipX ? getRegionWidth() : 0), 
+			y + (flipY ? getRegionHeight() : 0), 
+			getRegionWidth() * (flipX ? -1 : 1), 
+			getRegionHeight() * (flipY ? -1 : 1)
+		);
+	}
+	
+	public void draw(Batch batch, float x, float y, int atPos) 
+	{
+		batch.draw
+		(
+			texRegion.get(0), 
 			x + (flipX ? getRegionWidth() : 0), 
 			y + (flipY ? getRegionHeight() : 0), 
 			getRegionWidth() * (flipX ? -1 : 1), 
@@ -108,7 +128,7 @@ public class ParallaxLayer implements Cloneable
 		{
 			batch.draw
 			(
-				texRegion, 
+				texRegion.get(0), 
 				x + (flipX ? getRegionWidth() : 0), 
 				y + (!flipY ? getRegionHeight() : 0), 
 				getRegionWidth() * (flipX ? -1 : 1), 
@@ -119,7 +139,7 @@ public class ParallaxLayer implements Cloneable
 		{
 			batch.draw
 			(
-				texRegion, 
+				texRegion.get(0), 
 				x + (!flipX ? getRegionWidth() : 0), 
 				y + (flipY ? getRegionHeight() : 0), 
 				getRegionWidth() * (!flipX ? -1 : 1), 
@@ -164,9 +184,6 @@ public class ParallaxLayer implements Cloneable
 
 	public float getTotalHeight() 
 	{return getRegionHeight() + padY;}
-
-	public TextureRegion getTexRegion()
-	{return texRegion;}
 
 	public float getDecalPercentX() 
 	{return decalPosition_X;}
@@ -248,9 +265,6 @@ public class ParallaxLayer implements Cloneable
 	{this.flipY = flipY;}
 
 	
-	public void setTexRegion(TextureRegion texRegion) 
-	{this.texRegion = texRegion;}
-	
 	public float getPadX() 
 	{return padX;}
 
@@ -300,4 +314,9 @@ public class ParallaxLayer implements Cloneable
 	public void setMirror(boolean isMirror) 
 	{this.isMirror = isMirror;}
 
+	public List<TextureRegion> getTexRegion() 
+	{return texRegion;}
+
+	public void setTexRegion(ArrayList<TextureRegion> texRegion) 
+	{this.texRegion = texRegion;}
 }

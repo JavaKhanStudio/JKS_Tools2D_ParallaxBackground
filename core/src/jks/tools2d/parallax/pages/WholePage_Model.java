@@ -183,7 +183,6 @@ public class WholePage_Model
 	}
 	
 	
-	
 	// External Reading
 	private List<ParallaxLayer> load(float worldWidth, float worldHeight, String relativePath) 
 	{

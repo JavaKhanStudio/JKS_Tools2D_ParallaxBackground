@@ -36,6 +36,7 @@ public class Parallax_Heart
 	
 	public String relativePath = "";
 	
+	
 	private static int defaultWidth = 40 ;
 	
 	public Parallax_Heart() 

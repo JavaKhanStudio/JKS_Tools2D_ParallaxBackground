@@ -5,7 +5,7 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 @DefaultSerializer(Parallax_Model_Serializer.class)
 public class Parallax_Model 
 {
-	public String regionName ; 
+	public String regionName ;
 	public int regionPosition ;
 	public boolean flipX ; 
 	public boolean flipY ; 

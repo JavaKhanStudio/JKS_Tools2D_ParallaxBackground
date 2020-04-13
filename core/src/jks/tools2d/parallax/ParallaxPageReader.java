@@ -19,7 +19,6 @@ public class ParallaxPageReader
 	public ArrayList<ParallaxLayer> transferLayers;
 	public boolean inTransfer ; 
 
-	
 	private boolean repeatOnX,repeatOnY  ; 
 
 	private float drawingHeight  ;
@@ -28,6 +27,7 @@ public class ParallaxPageReader
 	float oldLayer_transperencytLvl = 1 ; 
 	float newLayer_transfertSpeed ; 
 	float oldLayer_transfertSpeed ; 
+	private int buffer = 1 ;
 	
 	private static final float transparencyPoint = 0.95f ;
 	
@@ -161,7 +161,10 @@ public class ParallaxPageReader
 			for(int i = 0; i <= transferPosition; i++)
 			{
 				layer = transferLayers.get(i);
-				drawLayoutOnX(layer, worldCamera, batch) ;
+				if(layer.getTexRegion().size() == 1)
+					drawLayoutOnX(layer, worldCamera, batch) ;
+				else
+					drawMultiLayoutOnX(layer, worldCamera, batch) ;
 			}	
 		}
 		
@@ -184,7 +187,7 @@ public class ParallaxPageReader
 	{
 		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
 		
-		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX ; a+= layer.getTotalWidth())
+		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX + (buffer * layer.getTotalWidth()); a+= layer.getTotalWidth())
 			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY); 
 		
 		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
@@ -200,6 +203,17 @@ public class ParallaxPageReader
     		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
     			layer.draw(batch, layer.currentDistanceX - (a * layer.getTotalWidth()), drawingHeight + layer.currentDistanceY + layer.padY + layer.getHeight(),true); 
     	}		
+	}
+	
+	private void drawMultiLayoutOnX(ParallaxLayer layer,OrthographicCamera worldCamera,Batch batch)
+	{
+		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
+		
+		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX + (buffer * layer.getTotalWidth()); a+= layer.getTotalWidth())
+			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY); 
+		
+		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
+			layer.draw(batch, layer.currentDistanceX - (a * layer.getTotalWidth()), drawingHeight + layer.currentDistanceY); 	
 	}
 	
 	public void drawOnY(OrthographicCamera worldCamera, Batch batch)
