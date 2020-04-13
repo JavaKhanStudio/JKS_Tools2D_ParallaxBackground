@@ -61,22 +61,13 @@ public class Utils_Texture
 	public static void changeTextureInPage(TextureRegion target, TextureRegion newTexture)
 	{
 		ArrayList<ParallaxLayer> layers = textureLink.get(target) ; 
-		
-//		System.out.println("current target " + target );
-//		for(ArrayList<ParallaxLayer> list : textureLink.values())
-//		{
-//			for(ParallaxLayer layer : list)
-//			{
-//				System.out.println("missa " + layer.getTexRegion());
-//			}
-//		}
-		
+		System.out.println("TODO changeTextureInPage repair");
 		if(layers == null)
 			return ;
 		
 		for(ParallaxLayer layer : layers)
 		{
-			layer.setTexRegion(newTexture);
+//			layer.setTexRegion(newTexture);
 		}
 		
 		textureLink.remove(target) ;

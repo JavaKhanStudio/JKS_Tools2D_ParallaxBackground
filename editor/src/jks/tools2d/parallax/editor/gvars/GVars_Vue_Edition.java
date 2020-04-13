@@ -107,14 +107,17 @@ public class GVars_Vue_Edition
 		
 		for(int x = 0 ; x < parallaxPage.preloadValue.size() ; x++)
 		{
-			TextureRegion texture = parallaxPage.preloadValue.get(x).getTexRegion() ; 
 			
-			boolean isFromAtlas = outsideTextureReserve.get(parallaxPage.pageModel.pageList.get(x).regionName) == null; 
-			
-			imageRef.put(texture,
-					new Position_Infos(isFromAtlas, parallaxPage.pageModel.atlasName,parallaxPage.pageModel.pageList.get(x))); 
-			
-			GVars_Vue_Edition.addToLinks(parallaxPage.preloadValue.get(x));
+			for(TextureRegion texture : parallaxPage.preloadValue.get(x).getTexRegion())
+			{
+				boolean isFromAtlas = outsideTextureReserve.get(parallaxPage.pageModel.pageList.get(x).regionName) == null; 
+				
+				imageRef.put(texture,
+						new Position_Infos(isFromAtlas, parallaxPage.pageModel.atlasName,parallaxPage.pageModel.pageList.get(x))); 
+				
+				GVars_Vue_Edition.addToLinks(parallaxPage.preloadValue.get(x));
+			}
+		
 		}		
 	}
 	
@@ -142,13 +145,13 @@ public class GVars_Vue_Edition
 	
 	public static void addToLinks(ParallaxLayer layer)
 	{
-		ArrayList<ParallaxLayer> linkList = textureLink.get(layer.getTexRegion()) ; 
+		ArrayList<ParallaxLayer> linkList = textureLink.get(layer.getTexRegion().get(0)) ; 
 		
 		if(linkList == null)
 		{
 			linkList = new ArrayList<ParallaxLayer>() ; 
 			linkList.add(layer) ; 
-			textureLink.put(layer.getTexRegion(), linkList) ; 
+			textureLink.put(layer.getTexRegion().get(0), linkList) ; 
 		}
 		
 		linkList.add(layer) ; 

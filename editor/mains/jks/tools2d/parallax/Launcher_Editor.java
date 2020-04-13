@@ -24,7 +24,7 @@ public class Launcher_Editor
 		
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setWindowedMode(1300, 800);
-		config.useOpenGL3(true, 3, 2);
+//		config.useOpenGL3(true, 3, 2);
 		config.setTitle("Parallax");
 		config.setWindowIcon("skins/uis/parallaxIcon.png");
 		config.setResizable(false);

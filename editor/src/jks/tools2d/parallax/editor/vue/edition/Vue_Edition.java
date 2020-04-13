@@ -253,7 +253,7 @@ public class Vue_Edition extends AVue_Model
 			{
 				for(ParallaxLayer layer : layers)
 				{
-					layer.setTexRegion(region);
+//					layer.setTexRegion(region); // TODO WORK HERE
 				}
 			}
 		

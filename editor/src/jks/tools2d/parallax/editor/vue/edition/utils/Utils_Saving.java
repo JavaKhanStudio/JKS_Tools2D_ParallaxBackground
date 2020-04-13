@@ -14,6 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.esotericsoftware.kryo.io.Output;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -51,9 +52,13 @@ public class Utils_Saving
 			
 			for(ParallaxLayer layer: parallaxs)
 			{
-				oneOutside = !GVars_Vue_Edition.imageRef.get(layer.getTexRegion()).fromAtlas ; 
-				if(oneOutside)
-					break ; 
+				for(TextureRegion region : layer.getTexRegion()) 
+				{
+					oneOutside = !GVars_Vue_Edition.imageRef.get(region).fromAtlas ; 
+					if(oneOutside)
+						break ; 
+				}
+				
 			}
 			
 			if(oneOutside || VE_Options.forceExport.isChecked())
@@ -145,14 +150,17 @@ public class Utils_Saving
 	{
 		WholePage_Model outputFinalModel = new WholePage_Model() ;
 		Page_Model outputModel = new Page_Model() ; 
-		
-		Position_Infos info ;
 		  
 		for(ParallaxLayer layer: parallaxs)
 		{
-			info = GVars_Vue_Edition.imageRef.get(layer.getTexRegion()) ; 
-			if(info.fromAtlas)
-				outputModel.pageList.add(Utils_Page.buildFromPage(layer, info.url, info.position)) ; 
+			Position_Infos info ;
+			for(TextureRegion texRegion : layer.getTexRegion())
+			{
+				info = GVars_Vue_Edition.imageRef.get(texRegion) ; 
+				if(info.fromAtlas)
+					outputModel.pageList.add(Utils_Page.buildFromPage(layer, info.url, info.position)) ; 
+			}
+			
 		}
 		
 		outputModel.atlasName =  parallax_Heart.currentPage.pageModel.atlasName ;
@@ -187,9 +195,12 @@ public class Utils_Saving
 		  
 		for(ParallaxLayer layer: parallaxs)
 		{	
-			info = GVars_Vue_Edition.imageRef.get(layer.getTexRegion()) ; 
-			outputModel.pageList.add(Utils_Page.buildFromPage(layer, info.url, info.position)) ; 
-			outputFinalModel.inside.add(info.fromAtlas) ; 
+			for(TextureRegion region : layer.getTexRegion()) 
+			{
+				info = GVars_Vue_Edition.imageRef.get(region) ; 
+				outputModel.pageList.add(Utils_Page.buildFromPage(layer, info.url, info.position)) ; 
+				outputFinalModel.inside.add(info.fromAtlas) ; 
+			}	
 		}
 		
 		outputModel.atlasName =  parallax_Heart.currentPage.pageModel.atlasName ; 
@@ -235,7 +246,7 @@ public class Utils_Saving
 		
 		String filePath = new File("").getAbsolutePath();
 		File newFolder = new File(filePath + "/" + newFilePath);
-        boolean created =  newFolder.mkdir();
+//        boolean created =  newFolder.mkdir();
 
         for(Outside_Source source : GVars_Vue_Edition.projectDatas.outsideInfos)
         {

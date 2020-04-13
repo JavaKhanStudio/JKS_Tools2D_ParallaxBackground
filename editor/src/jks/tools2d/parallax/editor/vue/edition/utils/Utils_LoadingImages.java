@@ -170,7 +170,7 @@ public class Utils_LoadingImages
 				activeFileWatching.remove(text) ;
 			}
 			
-			if(currentlySelectedParallax != null && currentlySelectedParallax.getTexRegion() == text)
+			if(currentlySelectedParallax != null && currentlySelectedParallax.getTexRegion().get(0) == text)
 			{
 				currentlySelectedParallax = null ; 
 			}

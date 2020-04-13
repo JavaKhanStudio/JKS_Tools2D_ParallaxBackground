@@ -687,8 +687,8 @@ public class VE_Tab_TextureConfig extends Tab
 		}
 		
 		if(currentlySelectedParallax !=null)
-			showSelect.setDrawable(new TextureRegionDrawable(currentlySelectedParallax.getTexRegion()));
-		
+			showSelect.setDrawable(new TextureRegionDrawable(currentlySelectedParallax.getTexRegion().get(0)));
+		// TODO WORK ON BETTER SHOW PICTURE
 	}
 	
 	private void buildDeleteSection() 

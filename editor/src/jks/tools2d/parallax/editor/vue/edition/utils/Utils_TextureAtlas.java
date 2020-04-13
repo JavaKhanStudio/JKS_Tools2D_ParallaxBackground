@@ -43,19 +43,23 @@ public class Utils_TextureAtlas
 		
 		for(ParallaxLayer layer: parrallaxLayers)
 		{
-			info = GVars_Vue_Edition.imageRef.get(layer.getTexRegion()) ; 
-			pageName = info.getPageName() ;
+			for(TextureRegion region : layer.getTexRegion())
+			{			
+				info = GVars_Vue_Edition.imageRef.get(region) ; 
+				pageName = info.getPageName() ;
+				
+				if(currentValue.contains(pageName))
+					continue ;
+				else
+					currentValue.add(pageName) ; 
 			
-			if(currentValue.contains(pageName))
-				continue ;
-			else
-				currentValue.add(pageName) ; 
-			
-			Pixmap pixels = extractRegion(layer.getTexRegion()) ;
-	
-			pixmap.pack(pageName,pixels) ;
-			info.url = pageName ; 
-			info.fromAtlas = true ; 
+				Pixmap pixels = extractRegion(region) ;
+				
+				pixmap.pack(pageName,pixels) ;
+				info.url = pageName ; 
+				info.fromAtlas = true ; 
+			}
+		
 		}
 
 		try 
@@ -80,11 +84,11 @@ public class Utils_TextureAtlas
 		
 		for(ParallaxLayer layer: parrallaxLayers)
 		{
-			if(layer.getTexRegion().getRegionWidth() > largestWidth)  
-				largestWidth = layer.getTexRegion().getRegionWidth() ; 
+			if(layer.getTexRegion().get(0).getRegionWidth() > largestWidth)  
+				largestWidth = layer.getTexRegion().get(0).getRegionWidth() ; 
 			
-			if(layer.getTexRegion().getRegionHeight() > largestHeight)  
-				largestHeight = layer.getTexRegion().getRegionHeight() ; 
+			if(layer.getTexRegion().get(0).getRegionHeight() > largestHeight)  
+				largestHeight = layer.getTexRegion().get(0).getRegionHeight() ; 
 		}
 		
 		largestWidth *= 3 ; 

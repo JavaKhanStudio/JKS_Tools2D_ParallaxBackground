@@ -227,17 +227,17 @@ jks.tools2d.filechooser.FC_List$Style: {
     }
 },
 
-jks.tools2d.filechooser.FC_Tree$Style: {
-    "default": 
-    {
-        "treeStyle": "default",
-        "scrollPaneStyle": "default",
-        "labelStyle": "default",
-        "selectButtonStyle": "default",
-        "cancelButtonStyle": "default",
-        "background": "default"
-    }
-},
+/* jks.tools2d.filechooser.FC_Tree$Style: { */
+/*     "default":  */
+/*     { */
+/*         "treeStyle": "default", */
+/*         "scrollPaneStyle": "default", */
+/*         "labelStyle": "default", */
+/*         "selectButtonStyle": "default", */
+/*         "cancelButtonStyle": "default", */
+/*         "background": "default" */
+/*     } */
+/* }, */
 jks.tools2d.libgdxutils.JksTextureList$ListStyle: {
 	default: {fontColorUnselected: white, selection: padded-list-selection, fontColorSelected: white, font: default-font }
 },
