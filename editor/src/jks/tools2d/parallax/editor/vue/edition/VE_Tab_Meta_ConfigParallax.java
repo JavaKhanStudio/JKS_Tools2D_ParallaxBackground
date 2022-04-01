@@ -172,7 +172,7 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 		repeatOnY.setChecked(parallax_Heart.parallaxReader.isRepeatOnY());
 		String atlasName = "Current atlas : " ; 
 		
-		if(StringUtils.isEmpty(parallax_Heart.getAtlasName()))
+		if(parallax_Heart.getAtlasName() != null && StringUtils.isEmpty(parallax_Heart.getAtlasName()))
 			atlasName += "none selected" ; 
 		else
 			atlasName += parallax_Heart.getAtlasName() ; 

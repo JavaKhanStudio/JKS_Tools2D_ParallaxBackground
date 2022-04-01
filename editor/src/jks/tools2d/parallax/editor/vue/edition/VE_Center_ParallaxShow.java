@@ -89,19 +89,39 @@ public class VE_Center_ParallaxShow extends Table
 		}
 		else if(ref instanceof Project_Data)
 		{
-			Project_Data project = (Project_Data)ref ; 
-			GVars_Vue_Edition.projectDatas = project ;
-			
-			buildOutsideValues() ; 
-			
-			if(project.saving.pageModel.atlasName != null)
-				atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
-			else
-				atlas = new TextureAtlas() ; 
-			
-			GVars_Vue_Edition.setPage(project.saving) ; 
+			Project_Data project = null;
+			try
+			{
+				project = (Project_Data)ref ; 
+				GVars_Vue_Edition.projectDatas = project ;
 				
-			show =  new VE_Center_ParallaxShow() ;
+				buildOutsideValues() ; 
+				
+				if(project.saving.pageModel.atlasName != null)
+					atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
+				else
+					atlas = new TextureAtlas() ; 
+				
+				GVars_Vue_Edition.setPage(project.saving) ; 
+					
+				show =  new VE_Center_ParallaxShow() ;
+			}
+			catch(Exception errors)
+			{
+				String errorMessage ;
+				
+				if(project == null)
+				{
+					
+				}
+				else
+				{
+					
+				}
+				
+				Dialogs.showErrorDialog(GVars_UI.mainUi, "Loading not possible", "Impossible de trouvé l'atlas avec le path : " 
+						+ GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName);
+			}
 		}
 		else 
 		{
@@ -140,7 +160,6 @@ public class VE_Center_ParallaxShow extends Table
 			}
 		}
 		
-		// TODO TODO WORK HERE TO FINISH
 		if(!StringUtils.isBlank(errors))
 			Dialogs.showErrorDialog(GVars_UI.mainUi, "Loading not possible", errors);
 	}
