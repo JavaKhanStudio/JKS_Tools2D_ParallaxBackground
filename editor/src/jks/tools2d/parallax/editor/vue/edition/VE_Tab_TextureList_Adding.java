@@ -6,7 +6,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.setItems;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.sizeTabsBar;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;

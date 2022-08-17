@@ -31,6 +31,7 @@ allprojects
         gdxVersion = '1.9.10'
         roboVMVersion = '2.3.5'
         visuiVersion = '1.4.2'
+        amanithsvgVersion = '1.9.9'
     }
 
     repositories 
@@ -68,6 +69,7 @@ project(":core")
      	compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
      	compile "com.esotericsoftware:kryo:5.0.0-RC1"
      	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.0.1'
+     	compile "com.mazatech.amanithsvg:amanithsvg-gdx:$amanithsvgVersion:natives-desktop"
 	}
 }
 

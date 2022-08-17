@@ -14,7 +14,8 @@ sourceSets
         {
             srcDir 'src'
             srcDir 'assets'
-            srcDir 'mains'          
+            srcDir 'mains'   
+            srcDir 'ImageCutter'          
         }
     }
 }

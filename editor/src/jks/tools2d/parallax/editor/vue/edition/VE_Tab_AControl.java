@@ -21,7 +21,7 @@ public class VE_Tab_AControl extends Table
 	VE_Tab_TextureList textureSelection ; 
 	VE_Tab_Texture textureConfig ; 
 	
-	VE_Tab_AControl()
+	public VE_Tab_AControl()
 	{
 		
 		final VisTable container = new VisTable();

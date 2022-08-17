@@ -15,9 +15,9 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Para
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabControl;
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -46,6 +46,7 @@ import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.Vue_Edition;
 import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
@@ -89,19 +90,39 @@ public class VE_Center_ParallaxShow extends Table
 		}
 		else if(ref instanceof Project_Data)
 		{
-			Project_Data project = (Project_Data)ref ; 
-			GVars_Vue_Edition.projectDatas = project ;
-			
-			buildOutsideValues() ; 
-			
-			if(project.saving.pageModel.atlasName != null)
-				atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
-			else
-				atlas = new TextureAtlas() ; 
-			
-			GVars_Vue_Edition.setPage(project.saving) ; 
+			Project_Data project = null;
+			try
+			{
+				project = (Project_Data)ref ; 
+				GVars_Vue_Edition.projectDatas = project ;
 				
-			show =  new VE_Center_ParallaxShow() ;
+				buildOutsideValues() ; 
+				
+				if(project.saving.pageModel.atlasName != null)
+					atlas = new TextureAtlas(new FileHandle(GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName));
+				else
+					atlas = new TextureAtlas() ; 
+				
+				GVars_Vue_Edition.setPage(project.saving) ; 
+					
+				show =  new VE_Center_ParallaxShow() ;
+			}
+			catch(Exception errors)
+			{
+				String errorMessage ;
+				
+				if(project == null)
+				{
+					
+				}
+				else
+				{
+					
+				}
+				
+				Dialogs.showErrorDialog(GVars_UI.mainUi, "Loading not possible", "Impossible de trouvé l'atlas avec le path : " 
+						+ GVars_Vue_Edition.relativePath + "/" + project.saving.pageModel.atlasName);
+			}
 		}
 		else 
 		{
@@ -140,7 +161,6 @@ public class VE_Center_ParallaxShow extends Table
 			}
 		}
 		
-		// TODO TODO WORK HERE TO FINISH
 		if(!StringUtils.isBlank(errors))
 			Dialogs.showErrorDialog(GVars_UI.mainUi, "Loading not possible", errors);
 	}

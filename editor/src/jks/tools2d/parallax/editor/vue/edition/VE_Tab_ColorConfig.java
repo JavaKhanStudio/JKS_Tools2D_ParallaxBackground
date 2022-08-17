@@ -1,7 +1,7 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart ;
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;

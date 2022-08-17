@@ -1,8 +1,8 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.glfw.GLFW;
@@ -172,7 +172,7 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 		repeatOnY.setChecked(parallax_Heart.parallaxReader.isRepeatOnY());
 		String atlasName = "Current atlas : " ; 
 		
-		if(StringUtils.isEmpty(parallax_Heart.getAtlasName()))
+		if(parallax_Heart.getAtlasName() != null && StringUtils.isEmpty(parallax_Heart.getAtlasName()))
 			atlasName += "none selected" ; 
 		else
 			atlasName += parallax_Heart.getAtlasName() ; 

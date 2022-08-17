@@ -7,7 +7,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.currentlySelec
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.textureLink;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 
 import java.util.ArrayList;
 

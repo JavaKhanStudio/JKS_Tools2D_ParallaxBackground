@@ -6,7 +6,12 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 
 import jks.tools2d.amains.Main_Editor_Test;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
+<<<<<<< .merge_file_a13068
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
+=======
+import jks.tools2d.parallax.editor.mains.Main_Editor_Test;
+import jks.tools2d.parallax.editor.vue.Vue_Edition;
+>>>>>>> .merge_file_a04420
 
 public class Launcher_Editor_Test_Project 
 {

@@ -36,7 +36,6 @@ public class Utils_Texture
 	
 	public static Pixmap extractPixMap(Texture texture)
 	{
-
 		if (!texture.getTextureData().isPrepared()) 
 		    texture.getTextureData().prepare();
 		
@@ -51,7 +50,6 @@ public class Utils_Texture
 	
 	public static Pixmap buildPixmapCopy(Pixmap sourcePixmap)
 	{
-
 		Pixmap newPix = new Pixmap(sourcePixmap.getWidth(),sourcePixmap.getHeight(), Format.RGBA8888) ;
 		newPix.setFilter(Pixmap.Filter.NearestNeighbour);	
 		newPix.setBlending(Blending.None);
