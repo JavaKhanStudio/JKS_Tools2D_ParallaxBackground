@@ -26,7 +26,7 @@ public class VE_Options extends Table
 	
 	ImageButton savingExport, savingProject ;
 	
-	VE_Options()
+	public VE_Options()
 	{
 		textWidth = Gdx.graphics.getWidth()/4  ;
 		pathWidth = textWidth * 2.f ; 

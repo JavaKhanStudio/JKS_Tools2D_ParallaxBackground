@@ -1,8 +1,8 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.glfw.GLFW;

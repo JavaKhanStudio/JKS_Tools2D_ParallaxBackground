@@ -15,9 +15,9 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Para
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabControl;
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -46,6 +46,7 @@ import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.Vue_Edition;
 import jks.tools2d.parallax.editor.vue.Vue_Selection;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;

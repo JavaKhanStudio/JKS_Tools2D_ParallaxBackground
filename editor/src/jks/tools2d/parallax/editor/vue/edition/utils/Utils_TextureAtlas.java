@@ -2,7 +2,7 @@ package jks.tools2d.parallax.editor.vue.edition.utils;
 
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize ;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -171,7 +171,6 @@ public class Utils_TextureAtlas
 	public static void changeAtlas(TextureAtlas atlas) 
 	{
 		GVars_Vue_Edition.atlas = atlas ; 
-//		GVars_Vue_Edition.setPage(page) ; 
 		GVars_Vue_Edition.allImage.clear(); 
 	}
 	

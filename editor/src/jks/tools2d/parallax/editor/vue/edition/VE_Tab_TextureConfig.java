@@ -6,7 +6,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabbedPane;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValues;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValuesPosition;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 
 import java.util.Collections;
 

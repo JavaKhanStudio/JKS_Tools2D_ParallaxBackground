@@ -1,4 +1,4 @@
-package jks.tools2d.parallax.editor.vue.edition;
+package jks.tools2d.parallax.editor.vue;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.allImage;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.centerControl;
@@ -43,6 +43,9 @@ import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
+import jks.tools2d.parallax.editor.vue.edition.VE_Center_ParallaxShow;
+import jks.tools2d.parallax.editor.vue.edition.VE_Options;
+import jks.tools2d.parallax.editor.vue.edition.VE_Tab_AControl;
 import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_LoadingImages;

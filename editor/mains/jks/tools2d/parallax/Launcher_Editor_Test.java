@@ -6,7 +6,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 import jks.tools2d.parallax.editor.mains.Main_Editor_Test;
-import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
+import jks.tools2d.parallax.editor.vue.Vue_Edition;
 
 public class Launcher_Editor_Test 
 {
@@ -15,7 +15,8 @@ public class Launcher_Editor_Test
 		try
 		{
 			Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
-			config.setWindowedMode(1300, 800);
+//			config.setWindowedMode(1300, 800);
+			config.setFullscreenMode() ; 
 			config.useVsync(true);
 			Vue_Edition.isVSynch = true ; 
 			config.setBackBufferConfig(8, 8, 8, 8, 32, 2, 4);	

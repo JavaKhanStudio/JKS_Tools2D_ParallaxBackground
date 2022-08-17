@@ -79,11 +79,8 @@ public class ParallaxDefaultValues
  
 	
 		defaultModel.parallaxScalingSpeedX *= (positive ? incrementValue.parallaxScalingSpeedX : 1/incrementValue.parallaxScalingSpeedX) ; 
-//		if(defaultModel.parallaxScalingSpeedX < minValueX)
-//			defaultModel.parallaxScalingSpeedX = minValueX ; 
+
 		defaultModel.parallaxScalingSpeedY *= (positive ? incrementValue.parallaxScalingSpeedY : 1/incrementValue.parallaxScalingSpeedY) ; 
-//		if(defaultModel.parallaxScalingSpeedY < minValueY)
-//			defaultModel.parallaxScalingSpeedY = minValueY ; 
 		
 		
 		defaultModel.speedXAtRest += (positive ? 1 : -1)*incrementValue.speedXAtRest ; 

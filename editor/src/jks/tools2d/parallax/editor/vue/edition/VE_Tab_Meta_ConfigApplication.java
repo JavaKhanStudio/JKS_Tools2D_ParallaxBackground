@@ -24,7 +24,8 @@ import com.kotcrab.vis.ui.widget.spinner.Spinner;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.gvars.GVars_UI; 
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
+import jks.tools2d.parallax.editor.vue.Vue_Edition; 
 
 public class VE_Tab_Meta_ConfigApplication extends Tab
 {

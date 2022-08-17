@@ -1,9 +1,9 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
+import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
-import static jks.tools2d.parallax.editor.vue.edition.Vue_Edition.parallax_Heart;
 
 import java.io.File;
 import java.io.FileNotFoundException;
