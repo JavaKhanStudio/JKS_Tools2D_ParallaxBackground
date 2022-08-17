@@ -146,7 +146,7 @@ public class Vue_Selection extends AVue_Model
                 	{return true ;}
             	}
             	else if(showFiles)
-            	{return true ;}
+            		return true ;
             	
             	return false ;
             }		

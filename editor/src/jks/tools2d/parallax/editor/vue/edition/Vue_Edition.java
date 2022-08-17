@@ -110,9 +110,7 @@ public class Vue_Edition extends AVue_Model
 		{
 			buildInsideData(parallax_Heart.currentPage.findInternalLayer(region)) ; 
 		}
-	}
-	
-	
+	}	
 	
 	public void buildInsideData(AtlasRegion region)
 	{

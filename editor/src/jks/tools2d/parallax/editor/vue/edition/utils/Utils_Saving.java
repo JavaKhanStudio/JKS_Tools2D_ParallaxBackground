@@ -191,15 +191,24 @@ public class Utils_Saving
 		WholePage_Editor outputFinalModel = new WholePage_Editor() ;
 		Page_Model outputModel = new Page_Model() ; 
 		
-		Position_Infos info ;
+		Position_Infos info = null;
 		  
 		for(ParallaxLayer layer: parallaxs)
 		{	
 			for(TextureRegion region : layer.getTexRegion()) 
 			{
-				info = GVars_Vue_Edition.imageRef.get(region) ; 
-				outputModel.pageList.add(Utils_Page.buildFromPage(layer, info.url, info.position)) ; 
-				outputFinalModel.inside.add(info.fromAtlas) ; 
+				try
+				{
+					info = GVars_Vue_Edition.imageRef.get(region) ; 
+					System.out.println(info);
+					outputModel.pageList.add(Utils_Page.buildFromPage(layer, info.url, info.position)) ; 
+					outputFinalModel.inside.add(info.fromAtlas) ;
+				}
+				catch(Exception e)
+				{
+					System.out.println("Impossible de trouver la region avec " + region + " / " + info);
+				}
+				 
 			}	
 		}
 		

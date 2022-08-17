@@ -1,0 +1,47 @@
+calmTree2.png
+size: 20721, 3018
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+4em plan M1
+  rotate: false
+  xy: 18699, 1
+  size: 2021, 1080
+  orig: 2021, 1080
+  offset: 0, 0
+  index: -1
+5em plan
+  rotate: false
+  xy: 9449, 2165
+  size: 2316, 782
+  orig: 2316, 1080
+  offset: 0, 165
+  index: -1
+6em plan
+  rotate: false
+  xy: 1, 1083
+  size: 9600, 1080
+  orig: 9600, 1080
+  offset: 0, 0
+  index: -1
+7em plan
+  rotate: false
+  xy: 1, 2165
+  size: 9446, 852
+  orig: 9600, 1080
+  offset: 37, 228
+  index: -1
+9em plan
+  rotate: false
+  xy: 9603, 1083
+  size: 9600, 1080
+  orig: 9600, 1080
+  offset: 0, 0
+  index: -1
+Work
+  rotate: false
+  xy: 1, 1
+  size: 18696, 1080
+  orig: 18696, 1080
+  offset: 0, 0
+  index: -1

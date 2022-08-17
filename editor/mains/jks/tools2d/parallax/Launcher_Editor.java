@@ -7,9 +7,9 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 
+import jks.tools2d.amains.Main_Editor;
 import jks.tools2d.parallax.debug.GVars_Debug;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-import jks.tools2d.parallax.editor.mains.Main_Editor;
 import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
 
 public class Launcher_Editor 

@@ -1,0 +1,40 @@
+calmTree.png
+size: 6310, 1866
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Parallax 4
+  rotate: false
+  xy: 4288, 1
+  size: 2021, 1080
+  orig: 2021, 1080
+  offset: 0, 0
+  index: -1
+Parallax 5
+  rotate: false
+  xy: 1, 1083
+  size: 2316, 782
+  orig: 2316, 1080
+  offset: 0, 165
+  index: -1
+Parallax 6
+  rotate: false
+  xy: 2152, 1
+  size: 2134, 1080
+  orig: 2134, 1080
+  offset: 0, 0
+  index: -1
+Parallax 7
+  rotate: false
+  xy: 2319, 1083
+  size: 1922, 631
+  orig: 2012, 1080
+  offset: 37, 449
+  index: -1
+Parallax 8
+  rotate: false
+  xy: 1, 1
+  size: 2149, 1080
+  orig: 2149, 1080
+  offset: 0, 0
+  index: -1

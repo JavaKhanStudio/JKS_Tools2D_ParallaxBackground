@@ -20,7 +20,7 @@ public class FileWatching_Image extends FileWatchingModel
 		concernTexture = texture ; 
 		
 		Timer timer = new Timer();
-        timer.schedule(this , new Date(), 1000 );
+        timer.schedule(this , new Date(), 1000);
 	}
 
 	@Override

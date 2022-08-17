@@ -19,7 +19,7 @@ public class VE_Tab_AControl extends Table
 	VE_Tab_Meta parallaxConfig ;
 	VE_Tab_ColorConfig colorConfig ;
 	VE_Tab_TextureList textureSelection ; 
-	VE_Tab_TextureConfig textureConfig ; 
+	VE_Tab_Texture textureConfig ; 
 	
 	VE_Tab_AControl()
 	{
@@ -42,7 +42,7 @@ public class VE_Tab_AControl extends Table
 		parallaxConfig = new VE_Tab_Meta() ; 
 		colorConfig = new VE_Tab_ColorConfig() ;
 		textureSelection = new VE_Tab_TextureList() ;
-		textureConfig =	new VE_Tab_TextureConfig() ;
+		textureConfig =	new VE_Tab_Texture() ;
 		
 		tabbedPane.add(parallaxConfig);
 		tabbedPane.add(textureSelection);

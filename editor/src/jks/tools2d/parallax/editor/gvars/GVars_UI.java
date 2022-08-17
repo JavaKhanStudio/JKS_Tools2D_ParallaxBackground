@@ -74,8 +74,6 @@ public class GVars_UI implements Runnable
 		areaStyle.messageFont = areaTextFont ; 
 		labelStyle_OptionsTitle.font = areaTextFont ; 
 		
-		
-		
 		massResize(mainUi.getActors()) ; 
 	}
 	
