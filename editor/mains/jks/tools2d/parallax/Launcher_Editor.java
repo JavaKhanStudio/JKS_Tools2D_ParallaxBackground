@@ -2,7 +2,6 @@ package jks.tools2d.parallax;
 
 import java.net.URISyntaxException;
 
-import com.badlogic.gdx.Graphics.DisplayMode;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
@@ -10,12 +9,8 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 import jks.tools2d.amains.Main_Editor;
 import jks.tools2d.parallax.debug.GVars_Debug;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
-<<<<<<< .merge_file_a16388
-import jks.tools2d.parallax.editor.vue.edition.Vue_Edition;
-=======
-import jks.tools2d.parallax.editor.mains.Main_Editor;
 import jks.tools2d.parallax.editor.vue.Vue_Edition;
->>>>>>> .merge_file_a14492
+
 
 public class Launcher_Editor 
 {

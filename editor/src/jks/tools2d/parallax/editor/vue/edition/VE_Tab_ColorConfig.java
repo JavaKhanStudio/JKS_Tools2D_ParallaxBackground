@@ -64,7 +64,9 @@ public class VE_Tab_ColorConfig extends Tab
 	public Tab buildColorPalette(String colorSection, boolean topSquare)
 	{
 		Table secondTable ; 
-		SquareBackground square = topSquare ? parallax_Heart.topSquare : parallax_Heart.bottomSquare ; 
+		
+		SquareBackground squareTempo = topSquare ? parallax_Heart.topSquare : parallax_Heart.bottomSquare ; ;
+		SquareBackground square = squareTempo != null ? squareTempo : new SquareBackground() ; 
 		
 		final ExtendedColorPicker topPicker = new ExtendedColorPicker() ; 
 		topPicker.setListener(buildListener(topPicker,square, true,true));
