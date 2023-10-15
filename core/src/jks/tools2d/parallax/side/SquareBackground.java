@@ -27,13 +27,21 @@ public class SquareBackground
 	float posY ; 
 	
 	
+	public SquareBackground() {
+		topColor = new Color() ;
+		bottomColor = new Color() ;
+		
+		setHeight(false,posY) ;
+		posX = 0 ; 
+		width = Gdx.graphics.getWidth() ; 
+	}
 	
-	public SquareBackground(Color Top, Color bottom, float posY,boolean top)
+	public SquareBackground(Color top, Color bottom, float posY,boolean isTop)
 	{
-		topColor = Top ; 
+		topColor = top ; 
 		bottomColor = bottom ; 
 		
-		setHeight(top,posY) ;
+		setHeight(isTop,posY) ;
 		posX = 0 ; 
 		width = Gdx.graphics.getWidth() ; 
 		
