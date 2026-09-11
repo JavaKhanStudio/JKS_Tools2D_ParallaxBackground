@@ -1,10 +1,11 @@
 plugins {
     id 'java-library'
-    id 'maven-publish'
+    id 'com.vanniktech.maven.publish' version '0.37.0'
 }
 
-java {
-    withSourcesJar()
+// The jar is named after the published artifact, not after the module folder.
+base {
+    archivesName = 'parallax-background'
 }
 
 // Runtime library used by games: keep the bytecode level low enough for Android/desktop consumers.
@@ -39,12 +40,45 @@ tasks.named('test', Test) {
     systemProperty 'parallax.repoRoot', rootDir.absolutePath
 }
 
-// ./gradlew :core:publishToMavenLocal, then in a game: implementation "jks.tools2d:parallax-background:<version>" (with mavenLocal()).
-publishing {
-    publications {
-        maven(MavenPublication) {
-            artifactId = 'parallax-background'
-            from components.java
+// Javadoc of a libGDX library: don't fail the build on missing tags.
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+/*
+ * Publishing:
+ *   ./gradlew :core:publishToMavenLocal          local testing
+ *   ./gradlew :core:publishToMavenCentral        release or snapshot (CI does this, see .github/workflows)
+ * Credentials come from the environment, see RELEASING.md.
+ */
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(project.group.toString(), 'parallax-background', project.version.toString())
+
+    pom {
+        name = 'JKS Tools2D Parallax Background'
+        description = 'Parallax background library for libGDX games, with a desktop editor to design the backgrounds.'
+        url = 'https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground'
+        inceptionYear = '2014'
+
+        licenses {
+            license {
+                name = 'The Apache License, Version 2.0'
+                url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
+        developers {
+            developer {
+                id = 'JavaKhanStudio'
+                name = 'Simon Bedard'
+                url = 'https://github.com/JavaKhanStudio'
+            }
+        }
+        scm {
+            url = 'https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground'
+            connection = 'scm:git:https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground.git'
+            developerConnection = 'scm:git:ssh://git@github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground.git'
         }
     }
 }

@@ -1,0 +1,99 @@
+name: Release
+
+# Pushing a tag like v2.1.0 releases that version:
+#   - the library goes to Maven Central
+#   - the GitHub release gets the two downloads: the library jars, and the editor (library included)
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish and package ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Read and check the version
+        id: version
+        run: |
+          FILE_VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "gradle.properties: $FILE_VERSION, tag: $TAG_VERSION"
+          if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::The tag ($TAG_VERSION) and gradle.properties ($FILE_VERSION) disagree. Bump the version on the release branch first, see RELEASING.md."
+            exit 1
+          fi
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+          case "$TAG_VERSION" in
+            *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;;   # v2.1.0-rc1, v2.1.0-beta2...
+            *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Build and test
+        run: ./gradlew build
+
+      - name: Publish the library to Maven Central
+        if: env.MAVEN_CENTRAL_USERNAME != ''
+        run: ./gradlew :core:publishToMavenCentral --no-configuration-cache
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+
+      - name: Warn when the Maven Central secrets are missing
+        if: env.MAVEN_CENTRAL_USERNAME == ''
+        run: echo "::warning::The library was not published to Maven Central, the secrets are not set. The GitHub release still gets the jars. See RELEASING.md."
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+
+      - name: Package the two downloads
+        run: |
+          ./gradlew :core:plainJavadocJar :editor:distZip
+          mkdir -p release
+          # 1. The library, to use a parallax in a game (also on Maven Central).
+          cp core/build/libs/parallax-background-*.jar release/
+          # 2. The editor with the library included, to design a parallax.
+          cp editor/build/distributions/ParallaxEditor-*.zip release/
+          ls -la release
+
+      - name: Create the GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          generate_release_notes: true
+          files: release/*
+          body: |
+            ## Downloads
+
+            **Use a parallax in your game** — `parallax-background-${{ steps.version.outputs.version }}.jar`
+            (plus sources and javadoc). Easier, from Maven Central:
+
+            ```groovy
+            implementation "io.github.javakhanstudio:parallax-background:${{ steps.version.outputs.version }}"
+            ```
+
+            **Design a parallax** — `ParallaxEditor-${{ steps.version.outputs.version }}.zip`: the editor with the
+            library included and the sample projects. Unzip it and run `bin/ParallaxEditor`
+            (`bin\ParallaxEditor.bat` on Windows). Needs Java 17 or newer.
+
+            See the [README](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground#readme) to get started.

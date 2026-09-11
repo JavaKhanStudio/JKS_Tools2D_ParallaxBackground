@@ -1,0 +1,58 @@
+name: Publish snapshot
+
+# Every push to develop publishes the library as a -SNAPSHOT, so a game can test the next version with:
+#   repositories { maven { url "https://central.sonatype.com/repository/maven-snapshots/" } }
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+concurrency:
+  group: snapshot
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish -SNAPSHOT to Maven Central
+    runs-on: ubuntu-latest
+    if: github.repository == 'JavaKhanStudio/JKS_Tools2D_ParallaxBackground'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Check the version is a snapshot
+        run: |
+          VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
+          echo "develop is on version $VERSION"
+          case "$VERSION" in
+            *-SNAPSHOT) ;;
+            *) echo "::error::develop must keep a -SNAPSHOT version (found $VERSION)"; exit 1 ;;
+          esac
+
+      - name: Build and test
+        run: ./gradlew build
+
+      - name: Publish
+        if: env.MAVEN_CENTRAL_USERNAME != ''
+        run: ./gradlew :core:publishToMavenCentral --no-configuration-cache
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+
+      - name: Tell me what to do when the secrets are missing
+        if: env.MAVEN_CENTRAL_USERNAME == ''
+        run: echo "::warning::Publishing skipped, the Maven Central secrets are not set. See RELEASING.md."
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
