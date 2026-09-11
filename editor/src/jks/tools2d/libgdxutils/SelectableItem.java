@@ -1,10 +1,9 @@
 package jks.tools2d.libgdxutils;
 
-public interface SelectableItem 
+/** A widget reacting to the mouse wheel while hovered. */
+public interface SelectableItem
 {
-	public void scrolled (int amount) ;
-	public void quit() ; 
-		
-	
-	
+	void scrolled(float amount);
+
+	void quit();
 }

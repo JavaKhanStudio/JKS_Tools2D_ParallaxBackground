@@ -3,377 +3,145 @@ package jks.tools2d.parallax.editor.vue.edition;
 import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
 
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.InputListener;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
 import jks.tools2d.libgdxutils.JksNumberSlider;
-import jks.tools2d.libgdxutils.Utils_Interface; 
+import jks.tools2d.libgdxutils.Utils_Interface;
+import jks.tools2d.parallax.pages.Parallax_Model;
 
+/**
+ * Values given to the next added layer, and how they change after each addition (speeds are multiplied by their
+ * increment, the rest is added).
+ */
 public class VE_Tab_TextureList_DefaultValue extends Tab
 {
-	JksNumberSlider 
-	decalX_Slider, decalY_Slider,
-	sizeRatio_Slider,
-	staticSpeed_Slider,
-	speedX_ration_Slider,speedY_ration_Slider; 
-	
-	JksNumberSlider 
-	decalX_SliderIncrement, decalY_SliderIncrement,
-	sizeRatio_SliderIncrement,
-	staticSpeed_SliderIncrement,
-	speedX_ration_SliderIncrement,speedY_ration_SliderIncrement; 
+	private static final int colspan = 3;
+	private static final float frontButtonSize = 70;
 
-	VisCheckBox flipX, flipY ; 
-	VisCheckBox flipXAlternate, flipYAlternate ; 
-	
-	TextButton incrementOnce , decrementOnce; 
-	
-	Table mainTable ; 
-	
-	ButtonGroup<VisCheckBox> groupeRadio ; 
-	VisCheckBox front,back,increment ; 
-	
-	ImageButton setBackToFrontButton, setFrontToBackButton ; 
-	float frontButtonSize = 70 ; 
-	
+	private final Table mainTable = new Table();
+	private final VisCheckBox increment = new VisCheckBox("Increment Each Time");
+	private final VisCheckBox front = new VisCheckBox("Add at Front"), back = new VisCheckBox("Add at Back");
+	private final VisCheckBox flipX = new VisCheckBox("Flip X"), flipY = new VisCheckBox("Flip Y");
+	private final VisCheckBox flipXAlternate = new VisCheckBox("Alternate Flip X"), flipYAlternate = new VisCheckBox("Alternate Flip Y");
+
+	/** Sliders editing the default layer (first of each pair) and its increment (second). */
+	private final List<ModelSlider> defaultSliders = new ArrayList<>();
+	private final List<ModelSlider> incrementSliders = new ArrayList<>();
+
+	private boolean updating;
+
 	public VE_Tab_TextureList_DefaultValue()
 	{
-		super(false,false) ; 
-		mainTable = new Table() ; 
-		
-		setBackToFrontButton = Utils_Interface.buildSquareButton("editor/interfaces/addInBack.png",frontButtonSize) ; 	
-		setBackToFrontButton.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				getDefaults().setIncrementBackToFront(); update();
-			}
-		}) ; 
-		
-		setFrontToBackButton = Utils_Interface.buildSquareButton("editor/interfaces/addInFront.png",frontButtonSize) ;  ;
-		setFrontToBackButton.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				getDefaults().setIncrementFrontToBack(); update();
-			}
-		}) ; 
-		
-		increment = new VisCheckBox("Increment Each Time") ;
-		increment.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				getDefaults().increment = increment.isChecked(); 
-				showIncrement(increment.isChecked()) ; 
-			}
-		}) ; 
-		
-		incrementOnce = new TextButton("increment Once +",baseSkin) ; 
-		incrementOnce.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{getDefaults().doIncrement(true) ; update() ; }
-		}) ; 
-		
-		decrementOnce = new TextButton("decrementOnce Once -",baseSkin) ; 
-		decrementOnce.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{getDefaults().doIncrement(false) ; update() ; }
-		}) ; 
+		super(false, false);
 
-		groupeRadio = new ButtonGroup<VisCheckBox>() ;
-	
-		front = new VisCheckBox("Add at Front");
-		front.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				front.setChecked(true);
-			}
-		}) ; 
-		
-		back = new VisCheckBox("Add at Back");
-		back.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				back.setChecked(true);
-			
-			}
-		}) ; 
-		
-		groupeRadio.add(front);
-		groupeRadio.add(back);
-		
-		flipX = new VisCheckBox("Flip X") ;
-		flipX.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{getDefaults().defaultModel.setFlipX(flipX.isChecked());}
-		}) ; 
-		
-		flipY = new VisCheckBox("Flip Y") ;
-		flipY.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{getDefaults().defaultModel.setFlipY(flipY.isChecked());}
-		}) ; 
-		
-		flipXAlternate = new VisCheckBox("Alternate Flip X") ;
-		flipXAlternate.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{getDefaults().setAlternateFlipX(flipXAlternate.isChecked());}
-		}) ; 
-		
-		flipYAlternate = new VisCheckBox("Alternate Flip Y") ;
-		flipYAlternate.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{getDefaults().setAlternateFlipX(flipYAlternate.isChecked());}
-		}) ; 
-			
-		decalX_Slider = new JksNumberSlider(-50, 50, 1, baseSkin)
-		{	
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().defaultModel.setDecal_X_Ratio(Float.parseFloat(decalX_Slider.textField.getText()));}
-		};
-		
-		decalX_SliderIncrement = new JksNumberSlider(-50, 50, 1, baseSkin)
+		ImageButton setBackToFrontButton = Utils_Interface.buildSquareButton("editor/interfaces/addInBack.png", frontButtonSize);
+		setBackToFrontButton.addListener(onChange(() -> getDefaults().setIncrementBackToFront()));
+		ImageButton setFrontToBackButton = Utils_Interface.buildSquareButton("editor/interfaces/addInFront.png", frontButtonSize);
+		setFrontToBackButton.addListener(onChange(() -> getDefaults().setIncrementFrontToBack()));
+
+		increment.addListener(onChange(() -> getDefaults().increment = increment.isChecked()));
+
+		TextButton incrementOnce = new TextButton("Increment once +", baseSkin);
+		incrementOnce.addListener(onChange(() -> getDefaults().doIncrement(true)));
+		TextButton decrementOnce = new TextButton("Decrement once -", baseSkin);
+		decrementOnce.addListener(onChange(() -> getDefaults().doIncrement(false)));
+
+		ButtonGroup<VisCheckBox> frontOrBack = new ButtonGroup<>(front, back);
+		frontOrBack.setMaxCheckCount(1);
+		front.addListener(onChange(() -> getDefaults().addInFront = front.isChecked()));
+
+		flipX.addListener(onChange(() -> getDefaults().defaultModel.setFlipX(flipX.isChecked())));
+		flipY.addListener(onChange(() -> getDefaults().defaultModel.setFlipY(flipY.isChecked())));
+		flipXAlternate.addListener(onChange(() -> getDefaults().setAlternateFlipX(flipXAlternate.isChecked())));
+		flipYAlternate.addListener(onChange(() -> getDefaults().setAlternateFlipY(flipYAlternate.isChecked())));
+
+		mainTable.add(setBackToFrontButton);
+		mainTable.add(setFrontToBackButton).row();
+		mainTable.add(back);
+		mainTable.add(front).row();
+		mainTable.add(increment).colspan(2).row();
+		mainTable.add(incrementOnce).padRight(10);
+		mainTable.add(decrementOnce).row();
+		mainTable.add(flipX);
+		mainTable.add(flipY).row();
+		mainTable.add(flipXAlternate);
+		mainTable.add(flipYAlternate).row();
+
+		// Default value range, then increment range (multiplicative factor for the speeds).
+		addPair("decal X", -50, 50, 1, -50, 50, 1, Parallax_Model::getDecal_X_Ratio, Parallax_Model::setDecal_X_Ratio);
+		addPair("decal Y", -150, 150, 1, -150, 150, 1, Parallax_Model::getDecal_Y_Ratio, Parallax_Model::setDecal_Y_Ratio);
+		addPair("Size Ratio", 0.01f, 3, 0.01f, -0.5f, 0.5f, 0.01f, Parallax_Model::getSizeRatio,
+				(model, value) -> model.setSizeRatio(model == getDefaults().defaultModel ? Math.max(0.01f, value) : value));
+		addPair("At rest Speed", -10, 10, 0.5f, -10, 10, 0.5f, model -> model.speedXAtRest, (model, value) -> model.speedXAtRest = value);
+		addPair("-- Speed ratio X --", 0.005f, 0.2f, 0.001f, 0.1f, 3, 0.01f, Parallax_Model::getParallaxScalingSpeedX, Parallax_Model::setParallaxScalingSpeedX);
+		addPair("-- Speed ratio Y --", 0.005f, 0.2f, 0.001f, 0.1f, 3, 0.01f, Parallax_Model::getParallaxScalingSpeedY, Parallax_Model::setParallaxScalingSpeedY);
+	}
+
+	private void addPair(String title, float min, float max, float step, float incMin, float incMax, float incStep,
+			Function<Parallax_Model, Float> getter, BiConsumer<Parallax_Model, Float> setter)
+	{
+		ModelSlider value = new ModelSlider(min, max, step, getter, setter, false);
+		ModelSlider incrementValue = new ModelSlider(incMin, incMax, incStep, getter, setter, true);
+		defaultSliders.add(value);
+		incrementSliders.add(incrementValue);
+
+		mainTable.add(new VisLabel(title)).colspan(2).row();
+		mainTable.add(value.slider).colspan(colspan).row();
+		mainTable.add(incrementValue.slider).colspan(colspan).row();
+	}
+
+	private ChangeListener onChange(Runnable action)
+	{
+		return new ChangeListener()
 		{
 			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().incrementValue.setDecal_X_Ratio(Float.parseFloat(decalX_SliderIncrement.textField.getText()));}
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				if (updating)
+					return;
+				action.run();
+				update();
+			}
 		};
-		
-			
-		decalY_Slider = new JksNumberSlider(-150, 150, 1,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().defaultModel.setDecal_Y_Ratio(decalY_Slider.getValue());}
-		} ; 
-		
-		decalY_SliderIncrement = new JksNumberSlider(-150, 150, 1,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().incrementValue.setDecal_Y_Ratio(decalY_SliderIncrement.getValue());}
-		} ; 
-			
-		sizeRatio_Slider = new JksNumberSlider(0.01f, 3, 0.01f,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().defaultModel.setSizeRatio(sizeRatio_Slider.getValue());}
-		} ; 
-		
-		sizeRatio_SliderIncrement = new JksNumberSlider(-0.5f,0.5f, 0.01f,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().incrementValue.setSizeRatio(sizeRatio_SliderIncrement.getValue());}
-		} ; 
-		
-		staticSpeed_Slider = new JksNumberSlider(-10, 10, 0.5f,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().defaultModel.setSpeed(staticSpeed_Slider.getValue());}
-		} ;
-		
-		staticSpeed_SliderIncrement = new JksNumberSlider(-10, 10, 0.5f,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().incrementValue.setSpeed(staticSpeed_SliderIncrement.getValue());}
-		} ;
-		
-		speedX_ration_Slider = new JksNumberSlider(0.005f, 0.2f, 0.001f,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().defaultModel.setParallaxScalingSpeedX(speedX_ration_Slider.getValue());}
-		} ; 
-		
-		speedX_ration_SliderIncrement = new JksNumberSlider(-0.01f, 0.01f, 0.001f,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().incrementValue.setParallaxScalingSpeedX(speedX_ration_Slider.getValue());}
-		} ; 
-		
-		speedY_ration_Slider = new JksNumberSlider(0.005f, 0.2f, 0.001f,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().defaultModel.setParallaxScalingSpeedY(speedY_ration_Slider.getValue());}
-		} ; 
-		
-		speedY_ration_SliderIncrement = new JksNumberSlider(0.005f, 0.2f, 0.001f,baseSkin)
-		{		
-			@Override
-			public void actionOnSliderMovement()
-			{getDefaults().incrementValue.setParallaxScalingSpeedY(speedY_ration_SliderIncrement.getValue());}
-		} ; 
-		
-		
-		increment.center() ; 
-		mainTable.add(setBackToFrontButton).colspan(1) ;
-		mainTable.add(setFrontToBackButton).colspan(1) ;
-		mainTable.row() ; 
-		mainTable.add(back) ; 
-		mainTable.add(front) ;
-		mainTable.row() ; 
-				
-		mainTable.add(increment).colspan(2).row()  ; 
-		mainTable.add(incrementOnce).padRight(10) ; 
-		mainTable.add(decrementOnce).row() ;
-		
-		mainTable.add(flipX) ; 
-		mainTable.add(flipY).row() ; 
-		mainTable.add(flipXAlternate) ;
-		mainTable.add(flipYAlternate).row() ;
-		
-		mainTable.add(new VisLabel("decal X")).colspan(2).row();
-		mainTable.add(decalX_Slider).colspan(colspan).row() ; 
-		mainTable.add(decalX_SliderIncrement).colspan(colspan).row() ; 
-		
-		mainTable.add(new VisLabel("decal Y")).colspan(2).row();
-		mainTable.add(decalY_Slider).colspan(colspan).row();
-		mainTable.add(decalY_SliderIncrement).colspan(colspan).row(); ; 
-		
-		mainTable.add(new VisLabel("Size Ratio")).colspan(2).row();
-		mainTable.add(sizeRatio_Slider).colspan(colspan).row();
-		mainTable.add(sizeRatio_SliderIncrement).colspan(colspan).row();
-		
-		mainTable.add(new VisLabel("At rest Speed")).colspan(2).row();
-		mainTable.add(staticSpeed_Slider).colspan(colspan).row();
-		mainTable.add(staticSpeed_SliderIncrement).colspan(colspan).row();
-		
-		mainTable.add(new VisLabel("-- Speed ratio --")).colspan(2).row();
-		mainTable.add(new VisLabel("- X -")).colspan(2).row();
-		mainTable.add(speedX_ration_Slider).colspan(colspan).row();
-		mainTable.add(speedX_ration_SliderIncrement).colspan(colspan).row();
-		
-		mainTable.add(new VisLabel("- Y -")).colspan(2).row();
-		mainTable.add(speedY_ration_Slider).colspan(colspan).row();
-		mainTable.add(speedY_ration_SliderIncrement).colspan(colspan).row();
 	}
-	
-	int colspan = 3 ; 
-	
+
 	public void update()
-	{	
+	{
+		updating = true;
+
 		increment.setChecked(getDefaults().increment);
-		
-		if(getDefaults().addInFront)
-			front.setChecked(true);
-		else
-			back.setChecked(true);
-		
+		front.setChecked(getDefaults().addInFront);
+		back.setChecked(!getDefaults().addInFront);
 		flipX.setChecked(getDefaults().defaultModel.isFlipX());
 		flipY.setChecked(getDefaults().defaultModel.isFlipY());
-		
 		flipXAlternate.setChecked(getDefaults().alternateFlipX);
 		flipYAlternate.setChecked(getDefaults().alternateFlipY);
-		
-		decalX_Slider.setValue(getDefaults().defaultModel.getDecal_X_Ratio()) ; 
-		decalX_SliderIncrement.setValue(getDefaults().incrementValue.getDecal_X_Ratio()) ; 
-		
-		decalY_Slider.setValue(getDefaults().defaultModel.getDecal_Y_Ratio()) ; 
-		decalY_SliderIncrement.setValue(getDefaults().incrementValue.getDecal_Y_Ratio()) ; 
 
-		sizeRatio_Slider.setValue(getDefaults().defaultModel.getSizeRatio()) ; 
-		sizeRatio_SliderIncrement.setValue(getDefaults().incrementValue.getSizeRatio()) ; 
-	
-		staticSpeed_Slider.setValue(getDefaults().defaultModel.getSpeed()) ; 
-		staticSpeed_SliderIncrement.setValue(getDefaults().incrementValue.getSpeed()) ; 
+		for (ModelSlider slider : defaultSliders)
+			slider.refresh();
+		for (ModelSlider slider : incrementSliders)
+		{
+			slider.refresh();
+			slider.slider.setVisible(getDefaults().increment);
+		}
+		flipXAlternate.setVisible(getDefaults().increment);
+		flipYAlternate.setVisible(getDefaults().increment);
 
-		speedX_ration_Slider.setValue(getDefaults().defaultModel.getParallaxScalingSpeedX()) ; 
-		speedX_ration_SliderIncrement.setValue(getDefaults().incrementValue.getParallaxScalingSpeedX()) ;
-	
-		speedY_ration_Slider.setValue(getDefaults().defaultModel.getParallaxScalingSpeedY()) ; 
-		speedY_ration_SliderIncrement.setValue(getDefaults().incrementValue.getParallaxScalingSpeedY()) ; 
+		updating = false;
 	}
-	
-	public void showIncrement(boolean doShow)
-	{
-		flipXAlternate.setVisible(doShow);
-		flipYAlternate.setVisible(doShow);
-		decalX_SliderIncrement.setVisible(doShow);
-		decalY_SliderIncrement.setVisible(doShow);
-		sizeRatio_SliderIncrement.setVisible(doShow);
-		staticSpeed_SliderIncrement.setVisible(doShow);
-		speedX_ration_SliderIncrement.setVisible(doShow);
-		speedY_ration_SliderIncrement.setVisible(doShow);
-	}
-	
 
 	@Override
 	public String getTabTitle()
@@ -381,6 +149,34 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 
 	@Override
 	public Table getContentTable()
-	{update() ; return mainTable;}
-	
+	{
+		update();
+		return mainTable;
+	}
+
+	/** Slider bound to a field of the default model or of the increment model. */
+	private static final class ModelSlider
+	{
+		final JksNumberSlider slider;
+		final Function<Parallax_Model, Float> getter;
+		final boolean ofIncrement;
+
+		ModelSlider(float min, float max, float step, Function<Parallax_Model, Float> getter, BiConsumer<Parallax_Model, Float> setter, boolean ofIncrement)
+		{
+			this.getter = getter;
+			this.ofIncrement = ofIncrement;
+			this.slider = new JksNumberSlider(min, max, step, baseSkin)
+			{
+				@Override
+				public void actionOnSliderMovement()
+				{setter.accept(model(), getValue());}
+			};
+		}
+
+		Parallax_Model model()
+		{return ofIncrement ? getDefaults().incrementValue : getDefaults().defaultModel;}
+
+		void refresh()
+		{slider.setValue(getter.apply(model()));}
+	}
 }

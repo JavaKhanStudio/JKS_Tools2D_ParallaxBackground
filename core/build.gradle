@@ -1,10 +1,50 @@
-apply plugin: "java"
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
 
-sourceCompatibility = 1.11
-[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+java {
+    withSourcesJar()
+}
 
-sourceSets.main.java.srcDirs = [ "src/" ]
+// Runtime library used by games: keep the bytecode level low enough for Android/desktop consumers.
+tasks.named('compileJava', JavaCompile) {
+    options.release = 11
+}
+tasks.named('compileTestJava', JavaCompile) {
+    options.release = 17
+}
 
-eclipse.project {
-    name = appName + "_Core"
+sourceSets {
+    main.java.srcDirs = ['src']
+    test.java.srcDirs = ['test']
+}
+
+dependencies {
+    api "com.badlogicgames.gdx:gdx:$gdxVersion"
+    api "com.esotericsoftware:kryo:$kryoVersion"
+    // Only the annotations: games reading .plax files never need jackson-databind at runtime.
+    api platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
+    api 'com.fasterxml.jackson.core:jackson-annotations'
+
+    testImplementation platform("org.junit:junit-bom:$junitVersion")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    testRuntimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+tasks.named('test', Test) {
+    // Tests read the sample .plax/.plaxpj files shipped with the editor and the demo.
+    systemProperty 'parallax.repoRoot', rootDir.absolutePath
+}
+
+// ./gradlew :core:publishToMavenLocal, then in a game: implementation "jks.tools2d:parallax-background:<version>" (with mavenLocal()).
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId = 'parallax-background'
+            from components.java
+        }
+    }
 }

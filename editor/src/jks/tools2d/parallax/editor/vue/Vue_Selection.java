@@ -12,214 +12,162 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.relativePath;
 import java.io.File;
 import java.io.FileFilter;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
-import com.esotericsoftware.kryo.io.Input;
+import com.badlogic.gdx.utils.ScreenUtils;
+import com.kotcrab.vis.ui.util.dialog.Dialogs;
 
 import jks.tools2d.filechooser.FC_List;
 import jks.tools2d.filechooser.FileChooser_Listener;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
-import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
+import jks.tools2d.parallax.editor.gvars.EditorPaths;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
+import jks.tools2d.parallax.editor.gvars.GVars_Serialization_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
 import jks.tools2d.parallax.editor.vue.model.AVue_Model;
-import jks.tools2d.parallax.heart.GVars_Serialization;
+import jks.tools2d.parallax.pages.Utils_Page;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
-public class Vue_Selection extends AVue_Model 
+/** Start screen: pick a project, a parallax or an atlas, or start an empty project. */
+public class Vue_Selection extends AVue_Model
 {
+	private static final float sizeMultChooser = 0.7f;
 
-	boolean showParallax = true; 
-	boolean showParallaxJson = true ;
-	boolean showAtlas = true; 
-	boolean showFiles = true ; 
-	boolean showParallaxProject = true ; 
-	
-	final float sizeMutlChooser = 0.7f ; 
-	
-	FC_List chooser ; 
-	TextButton creatNew ; 
-	int buttonSize ; 
-	
 	@Override
-	public void init() 
-	{	
-		buildSelection(GVars_UI.baseSkin) ;	
-	}
-	
-	public void buildSelection(Skin skin)
+	public void init()
 	{
-		
-		String filePath = new File("").getAbsolutePath();
-		String fileRelativePath = filePath + "/Files" ; 
-		FileHandle relative = new FileHandle(fileRelativePath); 
-		
-		chooser = new FC_List(skin,buildFileChooser_Listener()) ;
-		chooser.setSize(Gdx.graphics.getWidth() * sizeMutlChooser, Gdx.graphics.getHeight() * sizeMutlChooser);
-		chooser.setPosition(Gdx.graphics.getWidth()/2 - chooser.getWidth()/2, Gdx.graphics.getHeight()/2 - chooser.getHeight()/2);
-		
-		creatNew = new TextButton("NEW",baseSkin) ; 
-		creatNew.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{return true ;}
-			
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				projectInfos = new Project_Infos();
-				projectInfos.setPathInfo(new FileHandle(fileRelativePath + "/newProject."));
-				projectDatas = new Project_Data() ; 
-				relativePath = projectInfos.projectPath ; 	
-				GVars_Heart_Editor.changeVue(new Vue_Edition(), true);
-			}
-		}) ; 	
-		
-		buttonSize = (int) (chooser.getX() * 0.75f) ; 
-		creatNew.setBounds((chooser.getX() - buttonSize)/2, Gdx.graphics.getHeight()/2 - buttonSize/2, buttonSize, buttonSize);
-		
-		Label title = new Label("You can select a Project : (." + FVars_Extensions.PARALLAX + ")\n Paralax : (." + FVars_Extensions.PARALLAX + " / ." +  FVars_Extensions.JSON_PARALLAX + ") \n Or an atlas (." + FVars_Extensions.ATLAS + ") to creat a new project",skin) ; 
-		title.getStyle().fontColor = Color.LIGHT_GRAY ; 
+		FileHandle filesRoot = Gdx.files.absolute(EditorPaths.filesRoot().toString());
 
-		title.setAlignment(0, 0);
-		title.setSize(chooser.getWidth(), ((Gdx.graphics.getHeight() - chooser.getHeight()) / 2));
-		title.setPosition(chooser.getX(), chooser.getY() + chooser.getHeight());
-		 
-		chooser.setFileFilter(buildFileFilter());	
-		chooser.setDirectory(relative);
-		
-		GVars_UI.mainUi.addActor(creatNew); 
-		GVars_UI.mainUi.addActor(chooser); 
-		GVars_UI.mainUi.addActor(title);
-	}
-	
-	public FileChooser_Listener buildFileChooser_Listener()
-	{
-		FileChooser_Listener heyLisen = new FileChooser_Listener()
+		FC_List chooser = new FC_List(baseSkin, new FileChooser_Listener()
 		{
 			@Override
 			public void choose(FileHandle file)
-			{selectSingleFile(file) ;}
-			
+			{selectSingleFile(file);}
+
 			@Override
-			public void choose(Array<FileHandle> files) {} // NA
-			
+			public void choose(Array<FileHandle> files)
+			{}
+
 			@Override
-			public void cancel() {} // NA
-		};
-		
-		return heyLisen ; 
-	}
-	
-	public FileFilter buildFileFilter()
-	{
-		return new FileFilter() 
+			public void cancel()
+			{}
+		});
+		chooser.setSize(Gdx.graphics.getWidth() * sizeMultChooser, Gdx.graphics.getHeight() * sizeMultChooser);
+		chooser.setPosition(Gdx.graphics.getWidth() / 2f - chooser.getWidth() / 2, Gdx.graphics.getHeight() / 2f - chooser.getHeight() / 2);
+		chooser.setFileFilter(buildFileFilter());
+		chooser.setDirectory(filesRoot);
+
+		TextButton createNew = new TextButton("NEW", baseSkin);
+		createNew.addListener(new ChangeListener()
 		{
-            @Override
-            public boolean accept(File pathname) 
-            {
-            	if(pathname.isFile())
-            	{
-            		String extension = Utils_Scene2D.getExtension(pathname) ; 
-                	if(PARALLAX.equals(extension) && showParallax)
-                	{return true ;}
-                	if(ATLAS.equals(extension) && showAtlas)
-                	{return true ;}
-                	if(PARALLAX_PROJECT.equals(extension) && showParallaxProject)
-                	{return true ;}
-                	if(JSON_PARALLAX.equals(extension) && showParallaxJson)
-                	{return true ;}
-            	}
-            	else if(showFiles)
-            		return true ;
-            	
-            	return false ;
-            }		
-         };
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				projectInfos = new Project_Infos();
+				projectInfos.projectName = "newProject";
+				projectInfos.projectPath = filesRoot.path();
+				projectDatas = new Project_Data();
+				relativePath = projectInfos.projectPath;
+				GVars_Heart_Editor.changeVue(new Vue_Edition(), true);
+			}
+		});
+		int buttonSize = (int) (chooser.getX() * 0.75f);
+		createNew.setBounds((chooser.getX() - buttonSize) / 2, Gdx.graphics.getHeight() / 2f - buttonSize / 2f, buttonSize, buttonSize);
+
+		LabelStyle titleStyle = new LabelStyle(baseSkin.get(LabelStyle.class));
+		titleStyle.fontColor = Color.LIGHT_GRAY;
+		Label title = new Label("Open a project (." + PARALLAX_PROJECT + "), a parallax (." + PARALLAX + " / ." + JSON_PARALLAX + ")"
+				+ "\nor an atlas (." + ATLAS + ") to create a new project from it", titleStyle);
+		title.setAlignment(Align.center);
+		title.setSize(chooser.getWidth(), (Gdx.graphics.getHeight() - chooser.getHeight()) / 2);
+		title.setPosition(chooser.getX(), chooser.getY() + chooser.getHeight());
+
+		GVars_UI.mainUi.addActor(createNew);
+		GVars_UI.mainUi.addActor(chooser);
+		GVars_UI.mainUi.addActor(title);
 	}
-	
+
+	private static FileFilter buildFileFilter()
+	{
+		return file ->
+		{
+			if (!file.isFile())
+				return true;
+
+			String extension = Utils_Scene2D.getExtension(file);
+			return PARALLAX.equals(extension) || ATLAS.equals(extension) || PARALLAX_PROJECT.equals(extension) || JSON_PARALLAX.equals(extension);
+		};
+	}
+
+	/** Opens the edition view for a project, parallax or atlas file. Returns false if it is none of those or unreadable. */
 	public static boolean selectSingleFile(FileHandle file)
 	{
-		
-		if(StringUtils.isEmpty(file.extension()))
-			return false ; 
-		
+		String extension = file.extension();
+		if (!PARALLAX.equals(extension) && !JSON_PARALLAX.equals(extension) && !ATLAS.equals(extension) && !PARALLAX_PROJECT.equals(extension))
+			return false;
+
+		Object toOpen;
 		try
-		{	
-			projectInfos = new Project_Infos();
-			projectInfos.setPathInfo(file);
-			projectDatas = new Project_Data() ; 
-			relativePath = projectInfos.projectPath ; 
-			
-			if(PARALLAX.equals(file.extension()))
-				GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Serialization.kryo.readObject(new Input(file.read()),WholePage_Model.class)), true);
-			else if(JSON_PARALLAX.equals(file.extension()))
-				GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Serialization.objectMapper.readValue(file.file(), WholePage_Model.class)), true);
-			else if(ATLAS.equals(file.extension()))
-				GVars_Heart_Editor.changeVue(new Vue_Edition(new TextureAtlas(file)), true);
-			else if(PARALLAX_PROJECT.equals(file.extension()))
-				GVars_Heart_Editor.changeVue(new Vue_Edition(GVars_Serialization.objectMapper.readValue(file.file(), Project_Data.class)), true);
+		{
+			if (PARALLAX.equals(extension))
+				toOpen = Utils_Page.loadPage(file);
+			else if (JSON_PARALLAX.equals(extension))
+				toOpen = GVars_Serialization_Editor.objectMapper.readValue(file.file(), WholePage_Model.class);
+			else if (ATLAS.equals(extension))
+				toOpen = new TextureAtlas(file);
 			else
-				return false ; 
+				toOpen = GVars_Serialization_Editor.objectMapper.readValue(file.file(), Project_Data.class);
 		}
-		catch(Exception e)
-		{e.printStackTrace(); return false ;}
-		
-		return true ; 
+		catch (Exception e)
+		{
+			Gdx.app.error("Vue_Selection", "Cannot open " + file, e);
+			if (GVars_UI.mainUi != null)
+				Dialogs.showErrorDialog(GVars_UI.mainUi, "Cannot open " + file.name(), e);
+			return false;
+		}
+
+		projectInfos = new Project_Infos();
+		projectInfos.setPathInfo(file);
+		projectDatas = toOpen instanceof Project_Data ? (Project_Data) toOpen : new Project_Data();
+		relativePath = projectInfos.projectPath;
+		GVars_Heart_Editor.changeVue(new Vue_Edition(toOpen), true);
+		return true;
 	}
-	
 
 	@Override
-	public void destroy() 
-	{	
-		GVars_UI.reset();
-	}
-
-	@Override
-	public void restart() 
-	{	
-	}
+	public void destroy()
+	{GVars_UI.reset();}
 
 	@Override
 	public void update(float delta)
-	{	
+	{GVars_UI.mainUi.act(delta);}
+
+	@Override
+	public void render()
+	{
+		ScreenUtils.clear(0, 0, 0, 1);
+		GVars_UI.mainUi.draw();
 	}
 
 	@Override
-	public void render() 
+	public void receiveFiles(String[] files)
 	{
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		GVars_UI.mainUi.draw() ;	
+		if (files.length == 1)
+			selectSingleFile(new FileHandle(new File(files[0])));
 	}
 
 	@Override
-	public void reciveFiles(String[] files)
-	{
-		if(files.length == 1)
-		{
-			FileHandle handle = new FileHandle(files[0]); 
-	    	selectSingleFile(handle) ; 
-		}	
-	}
-
-	@Override
-	public void resize(int x, int y) 
-	{
-
-	}
-
+	public void resize(int width, int height)
+	{}
 }

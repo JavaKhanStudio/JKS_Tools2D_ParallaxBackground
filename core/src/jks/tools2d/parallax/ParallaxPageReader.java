@@ -6,329 +6,255 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.math.Vector3;
 
 import jks.tools2d.parallax.pages.WholePage_Model;
 
-
-public class ParallaxPageReader 
+/**
+ * Scrolls and draws the layers of a page, tiling them across the camera view, and cross-fades into another page
+ * ({@link #addLayersTransfert}) or tint ({@link #addColorTransfert}).
+ * <p>
+ * Layers are screen-anchored: they are laid out from the left/bottom edge of the camera view, so moving the game
+ * camera does not drag the background away.
+ */
+public class ParallaxPageReader
 {
-	public ArrayList<ParallaxLayer> layers;
-	
-	public Enum_TransfertType transfertType ;
-	public ArrayList<ParallaxLayer> transferLayers;
-	public boolean inTransfer ; 
+	public ArrayList<ParallaxLayer> layers = new ArrayList<>();
+	public ArrayList<ParallaxLayer> transferLayers = new ArrayList<>();
 
-	private boolean repeatOnX,repeatOnY  ; 
+	public Enum_TransfertType transfertType = Enum_TransfertType.NONE;
 
-	private float drawingHeight  ;
-	
-	float newLayer_transperencyLvl = 0 ;
-	float oldLayer_transperencytLvl = 1 ; 
-	float newLayer_transfertSpeed ; 
-	float oldLayer_transfertSpeed ; 
-	private int buffer = 1 ;
-	
-	private static final float transparencyPoint = 0.95f ;
-	
-	Color transfertColor_objectif = new Color(1,1,1,1);
-	Color transfertColor_speed = new Color(1,1,1,1);
-	
-	Color oldLayer_transfertColor = new Color(1,1,1,1);
-	Color newLayer_transfertColor = new Color(1,1,1,0); 
-	
-	boolean moveOnX = true; 
-	
-	private Vector3 cachedPos;
-	
-	public ParallaxPageReader()
+	private boolean repeatOnX, repeatOnY;
+	private float drawingHeight;
+
+	/** Opacity of the incoming page (0 → 1) and of the outgoing one (1 → 0) during a page transfer. */
+	private float newLayerAlpha = 0, oldLayerAlpha = 1;
+	private float newLayerFadeSpeed, oldLayerFadeSpeed;
+
+	private final Color tint = new Color(Color.WHITE);
+	private final Color tintFrom = new Color(Color.WHITE);
+	private final Color tintTo = new Color(Color.WHITE);
+	private float tintDuration, tintElapsed;
+
+	// Visible area of the camera, refreshed each draw.
+	private float viewLeft, viewBottom, viewWidth, viewHeight;
+
+	public void addLayers(List<ParallaxLayer> newLayers)
+	{layers.addAll(newLayers);}
+
+	/** Cross-fades from the current layers into the layers of {@code pageModel} over {@code inXSecondes}. */
+	public void addLayersTransfert(WholePage_Model pageModel, float inXSecondes)
 	{
-		initialize();
-		cachedPos = new Vector3() ; 
-	}
-	
-	
-    private void initialize() 
-    {
-    	layers = new ArrayList<ParallaxLayer>();
-    	transferLayers = new ArrayList<ParallaxLayer>();
-	}
-	
-	public void addLayers(List<ParallaxLayer> newLayers) 
-	{
-		for(ParallaxLayer texture : newLayers) 
-			this.layers.add(texture);
-	}
-	
-	public void addLayersTransfert(WholePage_Model pageModel, float inXSecondes) 
-	{
-		transfertType = Enum_TransfertType.EACH_FRAME ;
-		List<ParallaxLayer> newLayers ;
-		
-		newLayers = pageModel.getDrawing() ; 
-		
-		newLayer_transfertSpeed = 1/inXSecondes  ;
-		oldLayer_transfertSpeed = 1/(inXSecondes) ; 
-		
-		resetTransfert() ; 
-		
-		if(newLayers != null && !newLayers.isEmpty())
+		resetTransfert();
+
+		List<ParallaxLayer> newLayers = pageModel.getDrawing();
+		if (newLayers == null || newLayers.isEmpty())
+			return;
+
+		// Transferring into the page on screen: its layers must not be moved and drawn twice per frame.
+		for (ParallaxLayer layer : newLayers)
+			transferLayers.add(layers.contains(layer) ? layer.clone() : layer);
+		syncTransferPositions();
+
+		if (inXSecondes <= 0)
 		{
-			for(ParallaxLayer texture : newLayers) 
-				this.transferLayers.add(texture);
+			layers = transferLayers;
+			resetTransfert();
+			return;
 		}
-		else // Keep statu Quo
-		{
-			transferLayers = layers ;
-			oldLayer_transfertSpeed = 0 ;
-		}
-	}
-	
-	public void addColorTransfert(Color color, float inXSecondes) 
-	{
-		if(color == null)
-			return ; 
-		
-		transfertType = Enum_TransfertType.COLOR ;
 
-		newLayer_transfertSpeed = 1/inXSecondes ;
-		// TODO CHECK 
-		transferLayers = layers ;
-		set_newLayer_Color(color);
+		transfertType = Enum_TransfertType.EACH_FRAME;
+		newLayerFadeSpeed = oldLayerFadeSpeed = 1 / inXSecondes;
 	}
-	
+
+	/** Tints every layer toward {@code color} over {@code inXSecondes}. */
+	public void addColorTransfert(Color color, float inXSecondes)
+	{
+		if (color == null)
+			return;
+
+		tintFrom.set(tint);
+		tintTo.set(color);
+		tintElapsed = 0;
+		tintDuration = inXSecondes;
+		if (inXSecondes <= 0)
+			tint.set(color);
+	}
+
+	/**
+	 * Pages are stacked back to front and matched from the front: when the incoming page has more layers, its extra
+	 * back layers have no outgoing counterpart. Matched layers keep their own placement but take the distance their
+	 * counterpart has scrolled, so the fade is seamless.
+	 */
+	private void syncTransferPositions()
+	{
+		int total = Math.max(layers.size(), transferLayers.size());
+		int oldOffset = total - layers.size();
+		int newOffset = total - transferLayers.size();
+
+		for (int slot = Math.max(oldOffset, newOffset); slot < total; slot++)
+		{
+			ParallaxLayer from = layers.get(slot - oldOffset);
+			ParallaxLayer to = transferLayers.get(slot - newOffset);
+			to.setScrollX(from.getScrollX());
+			to.setScrollY(from.getScrollY());
+		}
+	}
+
 	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
-		
-		if(repeatOnY && repeatOnX)
-			drawOnXY(worldCamera,batch) ; 
-		else if(repeatOnY)
-			drawOnY(worldCamera,batch) ; 
-		else if(repeatOnX)
-			drawOnX(worldCamera,batch) ; 
-		
-		batch.setColor(1,1,1,1);	
-	}
-	
-	private void drawOnXY(OrthographicCamera worldCamera, Batch batch) 
-	{
-		ParallaxLayer layer ; 
-		for(int i = 0; i < layers.size(); i++)
+		viewWidth = worldCamera.viewportWidth * worldCamera.zoom;
+		viewHeight = worldCamera.viewportHeight * worldCamera.zoom;
+		viewLeft = worldCamera.position.x - viewWidth / 2;
+		viewBottom = worldCamera.position.y - viewHeight / 2;
+
+		if (transferLayers.isEmpty())
 		{
-			layer = layers.get(i);
-			batch.setColor(oldLayer_transfertColor);
-    		
-    		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
-    		
-    		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX ; a+= layer.getTotalWidth())
-    			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY); 
-    		
-    		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth() > -layer.getTotalWidth() ; a++)
-    			layer.draw(batch, layer.currentDistanceX - a * layer.getTotalWidth(), drawingHeight + layer.currentDistanceY); 
-    		
-    		for(float a = layer.getTotalHeight(); a < worldCamera.viewportHeight - layer.currentDistanceY ; a+= layer.getTotalHeight())
-    		{
-    			layer.draw(batch, layer.currentDistanceX , drawingHeight  + a + layer.currentDistanceY); 
-    			for(float b = layer.getTotalWidth(); b < worldCamera.viewportWidth - layer.currentDistanceX ; b+= layer.getTotalWidth())
-        			layer.draw(batch, layer.currentDistanceX + b, drawingHeight  + a + layer.currentDistanceY); 
-    			for(float b = 1 ; layer.currentDistanceX - b * layer.getTotalWidth() > -layer.getWidth() ; b++)
-	    			layer.draw(batch, layer.currentDistanceX - b * layer.getTotalWidth(), drawingHeight  + a + layer.currentDistanceY); 	    		
-    		}
-		
-			for(float a = 1 ; layer.currentDistanceY - (a * layer.getTotalHeight()) > -layer.getHeight() ; a++)
-			{
-				layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY - (a * layer.getTotalHeight())); 
-				for(float b = layer.getTotalWidth(); b < worldCamera.viewportWidth - layer.currentDistanceX ; b+= layer.getTotalWidth())
-	    			layer.draw(batch, layer.currentDistanceX + b, drawingHeight + layer.currentDistanceY - (a * layer.getTotalHeight())); 
-	    		
-	    		for(float b = 1 ; layer.currentDistanceX - b * layer.getTotalWidth() > -layer.getWidth() ; b++)
-	    			layer.draw(batch, layer.currentDistanceX - b * layer.getTotalWidth(), drawingHeight + layer.currentDistanceY - (a * layer.getTotalHeight())); 	    		
-			}	    
-		}	
-	}
-
-
-	public void drawOnX(OrthographicCamera worldCamera, Batch batch)
-	{
-		ParallaxLayer layer ; 
-
-		int transferPosition = 0; 
-		
-		if(transferLayers.size() > layers.size())
-		{
-			transferPosition = transferLayers.size() - layers.size(); 
-			batch.setColor(1,1,1,newLayer_transperencyLvl);	
-			for(int i = 0; i <= transferPosition; i++)
-			{
-				layer = transferLayers.get(i);
-				if(layer.getTexRegion().size() == 1)
-					drawLayoutOnX(layer, worldCamera, batch) ;
-				else
-					drawMultiLayoutOnX(layer, worldCamera, batch) ;
-			}	
+			setBatchColor(batch, 1);
+			for (int i = 0, n = layers.size(); i < n; i++)
+				drawLayer(layers.get(i), batch);
 		}
-		
-		for(int i = 0; i < layers.size(); i++)
-		{	
-			batch.setColor(1,1,1,oldLayer_transperencytLvl);	
-			layer = layers.get(i);
-			drawLayoutOnX(layer, worldCamera, batch) ;
-			
-			if(transferLayers.size() > 0)
-			{
-				batch.setColor(1,1,1,newLayer_transperencyLvl);	
-				layer = transferLayers.get(i + transferPosition);
-				drawLayoutOnX(layer, worldCamera, batch) ;
-			}
-		}					  
-	}
-	
-	private void drawLayoutOnX(ParallaxLayer layer,OrthographicCamera worldCamera,Batch batch)
-	{
-		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
-		
-		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX + (buffer * layer.getTotalWidth()); a+= layer.getTotalWidth())
-			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY); 
-		
-		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
-			layer.draw(batch, layer.currentDistanceX - (a * layer.getTotalWidth()), drawingHeight + layer.currentDistanceY); 
-		
-		if(layer.isMirror)
+		else
 		{
-			layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY + layer.padY + layer.getHeight(),true); 
-    		
-    		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX ; a+= layer.getTotalWidth())
-    			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY + layer.padY + layer.getHeight(),true); 
-    		
-    		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
-    			layer.draw(batch, layer.currentDistanceX - (a * layer.getTotalWidth()), drawingHeight + layer.currentDistanceY + layer.padY + layer.getHeight(),true); 
-    	}		
-	}
-	
-	private void drawMultiLayoutOnX(ParallaxLayer layer,OrthographicCamera worldCamera,Batch batch)
-	{
-		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
-		
-		for(float a = layer.getTotalWidth(); a < worldCamera.viewportWidth - layer.currentDistanceX + (buffer * layer.getTotalWidth()); a+= layer.getTotalWidth())
-			layer.draw(batch, layer.currentDistanceX + a, drawingHeight + layer.currentDistanceY); 
-		
-		for(float a = 1 ; layer.currentDistanceX - a * layer.getTotalWidth()  > -(layer.getWidth()) ; a++)
-			layer.draw(batch, layer.currentDistanceX - (a * layer.getTotalWidth()), drawingHeight + layer.currentDistanceY); 	
-	}
-	
-	public void drawOnY(OrthographicCamera worldCamera, Batch batch)
-	{
-		ParallaxLayer layer ; 
-		for(int i = 0; i < layers.size(); i++)
-		{
-			layer = layers.get(i);
-			batch.setColor(oldLayer_transfertColor);
-    		
-    		layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY); 
-    		
-    		for(float a = layer.getTotalHeight() ; a < worldCamera.viewportHeight - layer.currentDistanceY ; a+= layer.getTotalHeight())
-    			layer.draw(batch, layer.currentDistanceX , drawingHeight  + a + layer.currentDistanceY); 
-    		
-    		for(float a = 1 ; layer.currentDistanceY - a * layer.getTotalHeight() > -layer.getHeight() ; a++)
-    			layer.draw(batch, layer.currentDistanceX, drawingHeight + layer.currentDistanceY - a * layer.getTotalHeight()); 
-    		
-    		if(layer.isMirror)
-    		{
-    			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight + layer.currentDistanceY,false); 
-        		
-        		for(float a = layer.getTotalHeight() ; a < worldCamera.viewportHeight - layer.currentDistanceY ; a+= layer.getTotalHeight())
-        			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight  + a + layer.currentDistanceY,false); 
-        		
-        		for(float a = 1 ; layer.currentDistanceY - a * layer.getTotalHeight() > -layer.getHeight() ; a++)
-        			layer.draw(batch, layer.currentDistanceX + layer.padX + layer.getWidth(), drawingHeight + layer.currentDistanceY - a * layer.getTotalHeight(),false); 
-        	}
-    		    
-		}	
-	}
-	
+			int total = Math.max(layers.size(), transferLayers.size());
+			int oldOffset = total - layers.size();
+			int newOffset = total - transferLayers.size();
 
-	
-	public void compute_Color_Transfert()
-	{
-		newLayer_transfertColor.a = newLayer_transperencyLvl;	
-		
-		if(newLayer_transperencyLvl >= transparencyPoint)
-		{
-			oldLayer_transfertColor.a = 1 - oldLayer_transperencytLvl ;
-		}			
+			for (int slot = 0; slot < total; slot++)
+			{
+				if (slot >= oldOffset)
+				{
+					setBatchColor(batch, oldLayerAlpha);
+					drawLayer(layers.get(slot - oldOffset), batch);
+				}
+				if (slot >= newOffset)
+				{
+					setBatchColor(batch, newLayerAlpha);
+					drawLayer(transferLayers.get(slot - newOffset), batch);
+				}
+			}
+		}
+
+		batch.setColor(Color.WHITE);
 	}
-	
+
+	private void setBatchColor(Batch batch, float alpha)
+	{batch.setColor(tint.r, tint.g, tint.b, tint.a * alpha);}
+
+	private void drawLayer(ParallaxLayer layer, Batch batch)
+	{
+		float originX = viewLeft + layer.currentDistanceX;
+		float originY = viewBottom + drawingHeight + layer.currentDistanceY;
+
+		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false);
+
+		if (layer.isMirror && repeatOnX != repeatOnY)
+		{
+			// A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
+			if (repeatOnX)
+				tile(layer, batch, originX, originY + layer.padY + layer.getHeight(), true, false, true);
+			else
+				tile(layer, batch, originX + layer.padX + layer.getWidth(), originY, false, true, true);
+		}
+	}
+
+	/** Draws the layer at {@code (x, y)} plus every repetition, on the requested axes, that intersects the view. */
+	private void tile(ParallaxLayer layer, Batch batch, float x, float y, boolean onX, boolean onY, boolean mirror)
+	{
+		float width = layer.getWidth(), height = layer.getHeight();
+		if (width <= 0 || height <= 0)
+			return;
+
+		// A step <= 0 (e.g. a negative padding larger than the image) can't tile: draw the layer once.
+		float stepX = layer.getTotalWidth(), stepY = layer.getTotalHeight();
+		boolean tileX = onX && stepX > 0, tileY = onY && stepY > 0;
+
+		float startX = tileX ? x - (float) Math.ceil((x + width - viewLeft) / stepX) * stepX : x;
+		float startY = tileY ? y - (float) Math.ceil((y + height - viewBottom) / stepY) * stepY : y;
+		int countX = tileX ? (int) Math.ceil((viewLeft + viewWidth - startX) / stepX) + 1 : 1;
+		int countY = tileY ? (int) Math.ceil((viewBottom + viewHeight - startY) / stepY) + 1 : 1;
+
+		for (int row = 0; row < countY; row++)
+		{
+			float drawY = startY + row * stepY;
+			if (drawY + height <= viewBottom || drawY >= viewBottom + viewHeight)
+				continue;
+
+			for (int column = 0; column < countX; column++)
+			{
+				float drawX = startX + column * stepX;
+				if (drawX + width <= viewLeft || drawX >= viewLeft + viewWidth)
+					continue;
+
+				if (mirror)
+					layer.drawMirror(batch, drawX, drawY, onX);
+				else
+					layer.draw(batch, drawX, drawY);
+			}
+		}
+	}
+
 	public void resetTransfert()
 	{
-		transferLayers = new ArrayList<ParallaxLayer>() ;
-		
-		oldLayer_transfertColor.a = 1 ; 
-		newLayer_transfertColor.a = 0 ; 
-		newLayer_transperencyLvl = 0 ; 
-		oldLayer_transperencytLvl = 1 ; 
+		transferLayers = new ArrayList<>();
+		transfertType = Enum_TransfertType.NONE;
+		newLayerAlpha = 0;
+		oldLayerAlpha = 1;
 	}
-	
+
 	public void resetPositions()
 	{
-		layers.stream().forEach(x -> x.resetPosition()) ; 
-		
+		for (int i = 0, n = layers.size(); i < n; i++)
+			layers.get(i).resetPosition();
 	}
 
-	
-	public void act(float delta,float speedX,float speedY) 
+	public void act(float delta, float speedX, float speedY)
 	{
-		layers.stream().forEach(x -> x.act(delta,speedX,speedY,repeatOnX,repeatOnY));
+		for (int i = 0, n = layers.size(); i < n; i++)
+			layers.get(i).act(delta, speedX, speedY, repeatOnX, repeatOnY);
 
-		if(!Enum_TransfertType.NONE.equals(transfertType))
+		if (transfertType != Enum_TransfertType.NONE)
 		{
-	    	compute_Color_Transfert() ;
-			newLayer_transperencyLvl += delta * newLayer_transfertSpeed ; 
-			oldLayer_transperencytLvl -= delta * oldLayer_transfertSpeed ; 
-			
-			if(newLayer_transperencyLvl > 1)
+			for (int i = 0, n = transferLayers.size(); i < n; i++)
+				transferLayers.get(i).act(delta, speedX, speedY, repeatOnX, repeatOnY);
+
+			newLayerAlpha = Math.min(1, newLayerAlpha + delta * newLayerFadeSpeed);
+			oldLayerAlpha = Math.max(0, oldLayerAlpha - delta * oldLayerFadeSpeed);
+
+			if (newLayerAlpha >= 1)
 			{
-				for(int a=0; a < layers.size() ; a++) 
-				{transferLayers.get(a).setCurrentDistanceX(layers.get(a).getCurrentDistanceX());}
-				
-				layers = transferLayers ; 
-				oldLayer_transfertColor = newLayer_transfertColor.cpy(); 
-				transfertType = Enum_TransfertType.NONE ; 
-				resetTransfert() ; 
+				layers = transferLayers;
+				resetTransfert();
 			}
 		}
+
+		if (tintElapsed < tintDuration)
+		{
+			tintElapsed = Math.min(tintDuration, tintElapsed + delta);
+			tint.set(tintFrom).lerp(tintTo, tintElapsed / tintDuration);
+		}
 	}
-	
-	public float getDrawingHeight() 
+
+	public boolean isInTransfer()
+	{return transfertType != Enum_TransfertType.NONE;}
+
+	public float getDrawingHeight()
 	{return drawingHeight;}
 
-	public void setDrawingHeight(float drawingHeight) 
+	public void setDrawingHeight(float drawingHeight)
 	{this.drawingHeight = drawingHeight;}
 
-	public void transfertTo(ArrayList<ParallaxLayer> transferLayers)
-	{this.transferLayers = transferLayers ;}
-	
-	public Color get_newLayer_Color() 
-	{return newLayer_transfertColor;}
+	public Color getTint()
+	{return tint;}
 
-	public void set_newLayer_Color(Color color) 
-	{this.newLayer_transfertColor = color;}
-	
-	public Color get_oldLayer_Color() 
-	{return oldLayer_transfertColor;}
-
-	public void set_oldLayer_Color(Color color) 
-	{this.oldLayer_transfertColor = color;}
-	
 	public boolean isRepeatOnX()
 	{return repeatOnX;}
 
-	public void setRepeatOnX(boolean repeatOnX) 
+	public void setRepeatOnX(boolean repeatOnX)
 	{this.repeatOnX = repeatOnX;}
 
-	public boolean isRepeatOnY() 
+	public boolean isRepeatOnY()
 	{return repeatOnY;}
 
-	public void setRepeatOnY(boolean repeatOnY) 
+	public void setRepeatOnY(boolean repeatOnY)
 	{this.repeatOnY = repeatOnY;}
-
 }

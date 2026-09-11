@@ -12,10 +12,10 @@ import jks.tools2d.parallax.editor.vue.edition.pixmap.PixmapPacker.PixmapPackerR
 
 public class Page 
 {
-	OrderedMap<String, PixmapPackerRectangle> rects = new OrderedMap();
+	OrderedMap<String, PixmapPackerRectangle> rects = new OrderedMap<>();
 	Pixmap image;
 	Texture texture;
-	final Array<String> addedRects = new Array();
+	final Array<String> addedRects = new Array<>();
 	boolean dirty;
 
 	/** Creates a new page filled with the color provided by the {@link PixmapPacker#getTransparentColor()} */

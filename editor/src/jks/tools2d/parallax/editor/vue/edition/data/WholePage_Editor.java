@@ -3,6 +3,7 @@ package jks.tools2d.parallax.editor.vue.edition.data;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
@@ -11,67 +12,61 @@ import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.pages.Parallax_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
+/** Page saved in a project (.plaxpj): layers may also use loose images, flagged by {@link #inside} = false. */
 public class WholePage_Editor extends WholePage_Model
 {
-	public ArrayList<Boolean> inside ;
-	
+	/** For each layer of {@link #pageModel}: true when its image comes from the atlas. */
+	public ArrayList<Boolean> inside;
+
 	public WholePage_Editor()
 	{
-		super() ; 
-		inside = new  ArrayList<Boolean>() ; 
+		super();
+		inside = new ArrayList<>();
 	}
-	
-	@Override
-	protected List<ParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
-	{
-		List<ParallaxLayer> returningList = new ArrayList<ParallaxLayer>() ; 
-		ParallaxLayer layer = null ; 
-		
-		int inc = 0 ; 
 
-		for(Parallax_Model parallax : pageModel.pageList)
+	@Override
+	protected List<ParallaxLayer> load(float worldWidth, float worldHeight, TextureAtlas atlas)
+	{
+		List<ParallaxLayer> layers = new ArrayList<>();
+		ArrayList<Parallax_Model> models = pageModel.pageList;
+
+		for (int i = 0; i < models.size(); )
 		{
-			if(inside.get(inc))
-				layer = buildLayer(parallax,atlas,worldWidth) ; 
-			else
-				layer = buildOutsideLayer(parallax, worldWidth) ; 
-			
-			//TODO make it more fexible
-			if(layer == null)
+			Parallax_Model model = models.get(i);
+			boolean fromAtlas = i >= inside.size() || inside.get(i);
+			ParallaxLayer layer = fromAtlas ? buildLayer(model, atlas, worldWidth) : buildOutsideLayer(model, worldWidth);
+
+			if (layer == null)
 			{
-				//pageModel.pageList.remove(parallax) ; 
-				inside.remove(inc) ; 
-				continue ;
+				// Missing loose image: drop the layer from the model too, so layers and models stay aligned.
+				Gdx.app.error("WholePage_Editor", "Image not found, layer removed: " + model.regionName);
+				models.remove(i);
+				if (i < inside.size())
+					inside.remove(i);
+				continue;
 			}
-			
-			
-			returningList.add(layer) ;
-			
-			inc ++ ; 
+
+			layers.add(layer);
+			i++;
 		}
-		
-		//GVars_Vue_Edition.outsideTextureReserve = null ; 
-		return returningList;
+
+		return layers;
 	}
-	
+
 	protected ParallaxLayer buildOutsideLayer(Parallax_Model parallax, float worldWidth)
 	{
-		TextureRegion texture = GVars_Vue_Edition.outsideTextureReserve.get(parallax.regionName) ; 
-		
-		if(texture == null) {
-			GVars_Vue_Edition.outsideTextureReserve.remove(parallax.regionName) ; 
-			// TODO set as empty texture
-			return null; 
-		}
+		TextureRegion texture = GVars_Vue_Edition.outsideTextureReserve.get(parallax.regionName);
+		if (texture == null)
+			return null;
 
 		ParallaxLayer layer = new ParallaxLayer(
-			texture,
-			true, 
-			worldWidth, 
-			parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY,
-			parallax.sizeRatio) ; 
+				texture,
+				true,
+				worldWidth,
+				parallax.parallaxScalingSpeedX, parallax.parallaxScalingSpeedY,
+				parallax.sizeRatio);
 
 		layer.setUpEverything(parallax);
-		return layer ; 
+		return layer;
 	}
 }

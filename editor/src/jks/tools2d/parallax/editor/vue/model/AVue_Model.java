@@ -1,32 +1,16 @@
 package jks.tools2d.parallax.editor.vue.model;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_UI.mainUi;
-
+/** A screen of the editor: the file selection or the edition of a parallax. */
 public abstract class AVue_Model implements ImportAction
 {
+	public abstract void init();
 
-	public OverlayModel overlay ; 
-	public AView_Model_Filter filter ; 
-	
-	public abstract void init() ;
-	public abstract void destroy() ;
-	public abstract void restart() ; 
-	
-	public abstract void update (float delta) ;
-	public abstract void render () ;
-	public abstract void resize(int x, int y) ; 
-	
-	
-	public void clear()
-	{
-		
-	}
-	
-	
-	public void drawInterface()
-	{
-		mainUi.draw() ;			
-	}
+	/** Releases what {@link #init()} built; the view is not used afterwards. */
+	public abstract void destroy();
 
-	
+	public abstract void update(float delta);
+
+	public abstract void render();
+
+	public abstract void resize(int width, int height);
 }

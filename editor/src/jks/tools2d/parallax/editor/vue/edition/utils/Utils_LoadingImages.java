@@ -5,177 +5,127 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.activeFileWatc
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.allImage;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.currentlySelectedParallax;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.imageRef;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.outsideTextureReserve;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.textureLink;
 import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 
 import java.util.ArrayList;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
-import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
-import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
 
-import jks.tools2d.filewatch.FileWatching_Image;
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.VE_Tab_TextureList_Adding;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 
-public class Utils_LoadingImages 
+public final class Utils_LoadingImages
 {
-	
+	private Utils_LoadingImages()
+	{}
+
+	/** Files dropped on the edition view: PNGs become new images, anything else is reported. */
 	public static void fileReception(String[] files)
 	{
-		String errorMessage = "";
-		
-		if(projectDatas.outsideInfos == null)
+		if (projectDatas.outsideInfos == null)
+			projectDatas.outsideInfos = new ArrayList<>();
+
+		StringBuilder errors = new StringBuilder();
+		for (String path : files)
 		{
-			projectDatas.outsideInfos = new ArrayList<Outside_Source>() ; 
+			String extension = Utils_Scene2D.getExtension(path).toLowerCase();
+			if ("png".equals(extension))
+				errors.append(loadPNG(path));
+			else if (FVars_Extensions.ATLAS.equals(extension))
+				errors.append("\n").append(extractName(path)).append(".atlas: changing the atlas of an open project is not supported,")
+						.append("\n open the .atlas from the start screen to create a project from it.");
+			else
+				errors.append("\n").append(path).append(": only .png images can be added.");
 		}
-		
-		try 
-		{
-			for(String path : files)
-			{
-				if("png".equals(Utils_Scene2D.getExtension(path)))
-				{
-					loadPNG(path)	;
-				}
-				else if("atlas".equals(Utils_Scene2D.getExtension(path)))
-				{
-					loadAtlas(path) ; 
-				}
-				else
-				{
-					errorMessage += "\n Impossible to load " + path + " was expecting the .png format" ; 
-				}
-			}
-			
-			if(!StringUtils.isEmpty(errorMessage))
-			{
-				Dialogs.showErrorDialog(GVars_UI.mainUi,errorMessage) ; 
-			}
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		
+
+		if (errors.length() > 0)
+			Dialogs.showErrorDialog(GVars_UI.mainUi, errors.toString().trim());
+
 		GVars_Vue_Edition.setItems();
 	}
-	
-	private static void loadAtlas(String path) 
-	{
-		TextureAtlas atlas ; 
-		
-		try
-		{
-			atlas = new TextureAtlas(new FileHandle(path)) ;
-			Dialogs.showOptionDialog(GVars_UI.mainUi, "option dialog", "Are you sure you want to change the atlas ?", OptionDialogType.YES_NO, new OptionDialogAdapter() 
-			{
-				@Override
-				public void yes () 
-				{
 
-				}
-
-				@Override
-				public void no () 
-				{
-
-				}
-
-				@Override
-				public void cancel () 
-				{}
-			});
-			
-		}
-		catch(Exception e)
-		{
-			
-		}
-		
-	}
-
+	/** Adds a loose PNG to the project. Returns an error message, or an empty string when it worked. */
 	public static String loadPNG(String path)
 	{
-		TextureRegion textureRegion = Utils_Texture.getTextureRegionFromPath(path) ; 
-		
-		if(textureRegion.getRegionWidth() > atlasMaxSize || textureRegion.getRegionWidth()  > atlasMaxSize)
+		if (outsideTextureReserve.containsKey(path))
+			return "\n" + extractName(path) + " is already in the project.";
+
+		TextureRegion textureRegion = Utils_Texture.getTextureRegionFromPath(path);
+		if (textureRegion == null)
+			return "\nCould not read " + path;
+
+		if (textureRegion.getRegionWidth() > atlasMaxSize || textureRegion.getRegionHeight() > atlasMaxSize)
 		{
-			return "\nWarning ! This file is bigger then the limit : " + atlasMaxSize + " pixels \n" ; 
+			textureRegion.getTexture().dispose();
+			return "\n" + extractName(path) + " is bigger than the " + atlasMaxSize + " pixels limit of an atlas page.";
 		}
-		
-		activeFileWatching.put(textureRegion,new FileWatching_Image(path,textureRegion)) ; 
-		projectDatas.outsideInfos.add(new Outside_Source(path,extractName(path))) ; 
-		imageRef.put(textureRegion, new Position_Infos(false,path,0)) ; 
-		allImage.add(textureRegion) ; 		
-		return "" ; 
+
+		registerOutsideImage(path, textureRegion);
+		projectDatas.outsideInfos.add(new Outside_Source(path, extractName(path)));
+		return "";
 	}
-	
-	public static String extractName(String path)
+
+	/** Makes a loose image available in the image list and reloads it when the file changes. */
+	public static void registerOutsideImage(String path, TextureRegion region)
 	{
-		return path.substring(path.lastIndexOf('\\') + 1, path.lastIndexOf('.')) ; 
+		allImage.add(region);
+		imageRef.put(region, new Position_Infos(false, path, 0));
+		outsideTextureReserve.put(path, region);
+		activeFileWatching.put(path, new WatchedImage(path, region));
 	}
-	
+
+	/** File name without folder nor extension, whatever the platform separator. */
+	public static String extractName(String path)
+	{return new FileHandle(path).nameWithoutExtension();}
+
+	/**
+	 * Removes the layers using {@code text}; with {@code hardClean} the image also leaves the project.
+	 */
 	public static void removeFile(TextureRegion text, boolean hardClean)
 	{
+		ArrayList<ParallaxLayer> layers = textureLink.remove(text);
+		if (layers != null)
+			parallax_Heart.parallaxReader.layers.removeAll(layers);
 
-		ArrayList<ParallaxLayer> layers = textureLink.get(text) ; 
-		
-		if(layers != null)
+		if (currentlySelectedParallax != null && currentlySelectedParallax.getTexRegion().get(0) == text)
+			currentlySelectedParallax = null;
+
+		if (!hardClean)
+			return;
+
+		allImage.remove(text);
+		VE_Tab_TextureList_Adding.imageList.getItems().removeValue(text, true);
+
+		Position_Infos position = imageRef.remove(text);
+		if (position != null && !position.fromAtlas)
 		{
-			for(ParallaxLayer layer : layers)
-			{
-				parallax_Heart.parallaxReader.layers.remove(layer) ; 
-			}
-			
-			textureLink.remove(text) ;
-		}
-			
-		if(hardClean)
-		{
-			allImage.remove(text) ; 
-			
-			Position_Infos position = imageRef.get(text) ;
-			if(!position.fromAtlas) 
-			{
-				for(Outside_Source source : projectDatas.outsideInfos)
+			projectDatas.outsideInfos.removeIf(source -> source.url.equals(position.url));
+			outsideTextureReserve.remove(position.url);
+
+			WatchedImage watched = activeFileWatching.remove(position.url);
+			if (watched != null)
+				watched.cancel();
+
+			// Deleted layers waiting for "undo" must not come back with a disposed texture.
+			for (int i = GVars_Vue_Edition.trashedValues.size - 1; i >= 0; i--)
+				if (GVars_Vue_Edition.trashedValues.get(i).getTexRegion().get(0) == text)
 				{
-					if(source.url.equals(position.url))
-					{
-						projectDatas.outsideInfos.remove(source) ; 
-						break ; 
-					}
+					GVars_Vue_Edition.trashedValues.removeIndex(i);
+					GVars_Vue_Edition.trashedValuesPosition.removeIndex(i);
 				}
-				
-			}
-			
-			VE_Tab_TextureList_Adding.imageList.getItems().removeValue(text, true) ; 
-			imageRef.remove(text) ;
-				
 
-			if(activeFileWatching.get(text) != null) 
-			{
-				activeFileWatching.get(text).cancel() ;
-				activeFileWatching.remove(text) ;
-			}
-			
-			if(currentlySelectedParallax != null && currentlySelectedParallax.getTexRegion().get(0) == text)
-			{
-				currentlySelectedParallax = null ; 
-			}
+			text.getTexture().dispose();
 		}
-		
-		
 	}
 }

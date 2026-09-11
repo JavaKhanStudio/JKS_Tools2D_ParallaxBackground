@@ -5,121 +5,63 @@ import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.leftPressed;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.rightPressed;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.selectedItem;
 import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.upPressed;
-import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.zoomInPressed;
-import static jks.tools2d.parallax.editor.inputs.GVars_Inputs.zoomOutPressed;
 
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.InputAdapter;
 
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 
-import com.badlogic.gdx.InputAdapter;
-
-public class EditorInputProcessus extends InputAdapter 
+/** Keyboard scrolling of the preview (arrows/WASD, space = up) and mouse wheel on the hovered slider. */
+public class EditorInputProcessus extends InputAdapter
 {
 	@Override
-	public boolean mouseMoved (int screenX, int screenY) 
+	public boolean mouseMoved(int screenX, int screenY)
 	{
-		GVars_Vue_Edition.hideInterfaceTimmer = 0 ; 
+		GVars_Vue_Edition.hideInterfaceTimmer = 0;
+		return false;
+	}
+
+	@Override
+	public boolean scrolled(float amountX, float amountY)
+	{
+		if (selectedItem == null || amountY == 0)
+			return false;
+
+		selectedItem.scrolled(amountY);
 		return true;
 	}
-	
-	@Override
-	public boolean scrolled (int amount) 
-	{
-		if(selectedItem != null)
-		{
-			selectedItem.scrolled(amount);
-		}
 
-		return false;
-		
-	}
-	
 	@Override
-	public boolean keyDown (int keycode) 
+	public boolean keyDown(int keycode)
+	{return setDirection(keycode, true);}
+
+	@Override
+	public boolean keyUp(int keycode)
+	{return setDirection(keycode, false);}
+
+	private static boolean setDirection(int keycode, boolean pressed)
 	{
-		switch (keycode) 
+		switch (keycode)
 		{
 			case Keys.W:
 			case Keys.UP:
 			case Keys.SPACE:
-				upPressed = true ; 
+				upPressed = pressed;
 				return true;
 			case Keys.A:
 			case Keys.LEFT:
-				leftPressed = true;
+				leftPressed = pressed;
 				return true;
 			case Keys.D:
 			case Keys.RIGHT:
-				rightPressed = true;
-				return true ; 
-			case Keys.DOWN :
-			case Keys.S :
-				downPressed = true ;
+				rightPressed = pressed;
 				return true;
-			case Keys.PLUS : 
-			case Keys.Q : 
-				zoomInPressed = true ;
-				return true ; 
-			case Keys.MINUS : 
-			case Keys.E : 
-				zoomOutPressed = true ;
-				return true ; 
-			
+			case Keys.S:
+			case Keys.DOWN:
+				downPressed = pressed;
+				return true;
+			default:
+				return false;
 		}
-		return false;
-	}
-	
-	@Override
-	public boolean keyUp (int keycode) 
-	{
-		switch (keycode) 
-		{
-			case Keys.W:
-			case Keys.UP:
-			case Keys.SPACE:
-				upPressed = false ; 
-				return true;
-			case Keys.A:
-			case Keys.LEFT:
-				leftPressed = false;
-				return true;
-			case Keys.D:
-			case Keys.RIGHT:
-				rightPressed = false;
-				return true;
-			case Keys.DOWN :
-			case Keys.S :
-				downPressed = false ;
-				return true ; 
-			case Keys.PLUS : 
-			case Keys.Q : 
-				zoomInPressed = false ;
-				return true ; 
-			case Keys.MINUS : 
-			case Keys.E : 
-				zoomOutPressed = false ;
-				return true ; 
-		}
-		return false;
-	}
-	
-	
-	public boolean keyTyped (char character) {
-		switch (character) 
-		{
-			case '1' :
-				return true ;
-			case '2' :
-				return true ;
-			case '3' :
-				return true ;
-			case '4' :
-				return true ;
-			case '5' :
-				return true ;
-			case '&' : 
-		}
-		return false;
 	}
 }

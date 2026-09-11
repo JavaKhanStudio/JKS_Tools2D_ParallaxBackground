@@ -1,0 +1,31 @@
+plugins {
+    id 'application'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ['src']
+        resources.srcDirs = ['assets']
+    }
+}
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+application {
+    mainClass = 'jks.tools2d.parallax.demo.ParallaxDemo'
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        applicationDefaultJvmArgs = ['-XstartOnFirstThread']
+    }
+}
+
+tasks.named('run', JavaExec) {
+    workingDir = file('assets')
+}

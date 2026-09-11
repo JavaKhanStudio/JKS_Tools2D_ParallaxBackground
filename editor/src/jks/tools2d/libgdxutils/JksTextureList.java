@@ -19,7 +19,7 @@ import com.badlogic.gdx.utils.Array;
 public class JksTextureList extends Widget implements Cullable
 {
 	ListStyle style;
-	final Array<TextureRegion> selected = new Array<TextureRegion>();
+	final Array<TextureRegion> selected = new Array<>();
 	ArraySelection<TextureRegion> selection ;
 	private Rectangle cullingArea;
 	
@@ -141,10 +141,9 @@ public class JksTextureList extends Widget implements Cullable
 		});
 	}
 	
+	/** Called when an item gets selected. */
 	public void choiceAction(TextureRegion item)
-	{
-		System.out.println("public void choiceAction(TextureRegion item) should be implemented");
-	}
+	{}
 	
 	public void drawOnSelected(Batch batch, float x, float f, float width, float itemHeight2)
 	{
@@ -200,7 +199,10 @@ public class JksTextureList extends Widget implements Cullable
 		for (int i = 0; i < selected.size; i++)
 		{
 			itemY -= itemHeight;
-			if (itemY <= cullingArea.y + cullingArea.height)
+			// Items are laid out top to bottom: skip those above the visible area, stop below it.
+			if (cullingArea != null && itemY + itemHeight < cullingArea.y)
+				break;
+			if (cullingArea == null || itemY <= cullingArea.y + cullingArea.height)
 			{
 				TextureRegion item = selected.get(i);
 				boolean selected = selection.contains(item);
@@ -225,9 +227,7 @@ public class JksTextureList extends Widget implements Cullable
 							fontColorUnselected.a * parentAlpha);
 					drawOnSelected(batch, x, y + itemY, width, itemHeight) ; 
 				}
-			} 
-			else if (itemY < cullingArea.y)
-			{break;}
+			}
 		}
 	}
 
@@ -281,7 +281,7 @@ public class JksTextureList extends Widget implements Cullable
 	 * is selected. This can safely be called with a (modified) array returned from
 	 * {@link #getItems()}.
 	 */
-	public void setItems(Array newItems)
+	public void setItems(Array<TextureRegion> newItems)
 	{
 		if (newItems == null)
 			throw new IllegalArgumentException("newItems cannot be null.");

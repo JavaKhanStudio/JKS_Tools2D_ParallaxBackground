@@ -1,5 +1,8 @@
 package jks.tools2d.libgdxutils;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
@@ -7,37 +10,46 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
-public class Utils_Interface
+public final class Utils_Interface
 {
+	/** Icons are loaded once: the texture tab alone builds 16 copy buttons from the same two images. */
+	private static final Map<String, Texture> icons = new HashMap<>();
+
+	private Utils_Interface()
+	{}
 
 	public static TextureRegionDrawable buildDrawingRegionTexture(String texturePath)
+	{return new TextureRegionDrawable(new TextureRegion(icon(texturePath)));}
+
+	private static Texture icon(String texturePath)
 	{
-		Texture texture  = new Texture(Gdx.files.internal(texturePath),true);
-//		texture.setFilter(TextureFilter.Linear, TextureFilter.Linear) ;
-		texture.setFilter(TextureFilter.MipMap, TextureFilter.MipMap) ;
-	    TextureRegion TextureRegion = new TextureRegion(texture);
-	    return new TextureRegionDrawable(TextureRegion);
+		return icons.computeIfAbsent(texturePath, path ->
+		{
+			Texture texture = new Texture(Gdx.files.internal(path), true);
+			texture.setFilter(TextureFilter.MipMapLinearLinear, TextureFilter.Linear);
+			return texture;
+		});
 	}
-	
-	public static TextureRegion buildTextureRegion(String texturePath)
-	{
-		Texture texture  = new Texture(Gdx.files.internal(texturePath));
-	    return new TextureRegion(texture);
-	}
-	
+
+	/** An image button with a fixed square preferred size. */
 	public static ImageButton buildSquareButton(String imagePath, float size)
 	{
-		ImageButton colorSelector = new ImageButton(Utils_Interface.buildDrawingRegionTexture(imagePath)) 
+		return new ImageButton(buildDrawingRegionTexture(imagePath))
 		{
 			@Override
 			public float getPrefWidth()
-			{return size ;}
-			
+			{return size;}
+
 			@Override
 			public float getPrefHeight()
-			{return getPrefWidth() ; }
-		}; 
-		
-		return colorSelector ; 
+			{return size;}
+		};
+	}
+
+	public static void disposeTextures()
+	{
+		for (Texture texture : icons.values())
+			texture.dispose();
+		icons.clear();
 	}
 }

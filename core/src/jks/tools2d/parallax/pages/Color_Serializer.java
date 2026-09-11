@@ -6,26 +6,26 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+/** Writes colors as four floats in A, B, G, R order (historical .plax layout, keep it). */
 public class Color_Serializer extends Serializer<Color>
 {
-
 	@Override
-	public void write(Kryo kryo, Output output, Color object) 
+	public void write(Kryo kryo, Output output, Color color)
 	{
-		output.writeFloat(object.a);
-		output.writeFloat(object.b);
-		output.writeFloat(object.g);
-		output.writeFloat(object.r);	
+		output.writeFloat(color.a);
+		output.writeFloat(color.b);
+		output.writeFloat(color.g);
+		output.writeFloat(color.r);
 	}
 
 	@Override
-	public Color read(Kryo kryo, Input input, Class<? extends Color> type) 
+	public Color read(Kryo kryo, Input input, Class<? extends Color> type)
 	{
 		Color color = new Color();
-		color.a = input.readFloat() ;
-		color.b = input.readFloat() ;
-		color.g = input.readFloat() ;
-		color.r = input.readFloat() ;
+		color.a = input.readFloat();
+		color.b = input.readFloat();
+		color.g = input.readFloat();
+		color.r = input.readFloat();
 		return color;
 	}
 }

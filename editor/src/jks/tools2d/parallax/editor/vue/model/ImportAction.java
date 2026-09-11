@@ -1,23 +1,7 @@
 package jks.tools2d.parallax.editor.vue.model;
 
+/** Receives files dropped on the window. */
 public interface ImportAction
 {
-
-	public void reciveFiles(String[] files);
-
+	void receiveFiles(String[] files);
 }
-
-/*
-public static ImportAction getVueSelection()
-{
-	return new ImportAction()
-	{
-		@Override
-		public void reciveFiles(String[] files)
-		{
-			
-		}
-	};
-	
-}
-*/

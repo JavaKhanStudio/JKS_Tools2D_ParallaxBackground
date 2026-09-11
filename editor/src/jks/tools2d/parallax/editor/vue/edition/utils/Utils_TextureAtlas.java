@@ -1,14 +1,21 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
-import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize ;
+import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.atlasMaxSize;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Blending;
@@ -16,162 +23,170 @@ import com.badlogic.gdx.graphics.Pixmap.Filter;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.kotcrab.vis.ui.util.dialog.Dialogs;
 
-import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.pixmap.PixmapPacker;
 import jks.tools2d.parallax.editor.vue.edition.pixmap.PixmapPackerIO;
 
-public class Utils_TextureAtlas 
+public final class Utils_TextureAtlas
 {
-	
-	public static void flattenProject(String path,String name)
-	{			
-		FileHandle atlasPath = getFileHandle(path + "/" + name + ".atlas"); 	
-		String atlasName = atlasPath.name() ; 
-			
-		ArrayList<ParallaxLayer> parrallaxLayers = parallax_Heart.parallaxReader.layers ; 
-		PixmapPacker pixmap = findAtlasRequiredSize(parrallaxLayers) ; 
-	
-		Position_Infos info ;
-		
-		ArrayList<String> currentValue = new ArrayList<>() ; 
-		String pageName ; 
-		
-		for(ParallaxLayer layer: parrallaxLayers)
+	static final int paddingSize = 50;
+	static final int preferredPageSize = 4096;
+
+	private Utils_TextureAtlas()
+	{}
+
+	/**
+	 * Packs every image of the project (atlas regions and loose PNGs) into a new atlas next to the project, then points
+	 * the project at it. Regions keep their name; loose images are named after their file.
+	 *
+	 * @return false (after telling the user) if the atlas could not be written; the project is then unchanged.
+	 */
+	public static boolean flattenProject(String path, String name)
+	{
+		FileHandle atlasFile = nextFreeAtlasFile(path, name);
+
+		// Every distinct image, grouped under the region name it will have in the new atlas.
+		Map<String, List<TextureRegion>> groups = new LinkedHashMap<>();
+		Set<String> atlasNames = new HashSet<>();
+		for (TextureRegion region : GVars_Vue_Edition.allImage)
 		{
-			for(TextureRegion region : layer.getTexRegion())
-			{			
-				info = GVars_Vue_Edition.imageRef.get(region) ; 
-				pageName = info.getPageName() ;
-				
-				if(currentValue.contains(pageName))
-					continue ;
-				else
-					currentValue.add(pageName) ; 
-			
-				Pixmap pixels = extractRegion(region) ;
-				
-				pixmap.pack(pageName,pixels) ;
-				info.url = pageName ; 
-				info.fromAtlas = true ; 
-			}
-		
+			Position_Infos info = GVars_Vue_Edition.imageRef.get(region);
+			if (info != null && info.fromAtlas)
+				atlasNames.add(info.url);
+		}
+		for (TextureRegion region : GVars_Vue_Edition.allImage)
+		{
+			Position_Infos info = GVars_Vue_Edition.imageRef.get(region);
+			if (info == null)
+				continue;
+
+			String regionName = info.fromAtlas ? info.url : uniqueName(Utils_LoadingImages.extractName(info.url), atlasNames, groups);
+			groups.computeIfAbsent(regionName, k -> new ArrayList<>()).add(region);
 		}
 
-		try 
+		PixmapPacker packer = createPacker(GVars_Vue_Edition.allImage);
+		Map<Texture, Pixmap> sourcePixmaps = new IdentityHashMap<>();
+		Map<Pixmap, Boolean> mustDispose = new IdentityHashMap<>();
+		Map<Position_Infos, int[]> newPositions = new HashMap<>();
+		try
 		{
-			new PixmapPackerIO().save(atlasPath, pixmap);
-		} 
-		catch (IOException e) 
-		{e.printStackTrace();}
-		
-		if(projectDatas.outsideInfos != null)
+			for (Map.Entry<String, List<TextureRegion>> group : groups.entrySet())
+			{
+				List<TextureRegion> regions = group.getValue();
+				regions.sort(Comparator.comparingInt(region -> GVars_Vue_Edition.imageRef.get(region).position));
+
+				for (int index = 0; index < regions.size(); index++)
+				{
+					TextureRegion region = regions.get(index);
+					Pixmap pixels = extractRegion(region, sourcePixmaps, mustDispose);
+					packer.pack(PixmapPackerIO.packedName(group.getKey(), regions.size() == 1 ? -1 : index), pixels);
+					pixels.dispose();
+					newPositions.put(GVars_Vue_Edition.imageRef.get(region), new int[] { index });
+				}
+			}
+
+			// Layers are always drawn scaled: linear filtering is what the 50px padding and doubled borders are for.
+			PixmapPackerIO.SaveParameters parameters = new PixmapPackerIO.SaveParameters();
+			parameters.minFilter = TextureFilter.Linear;
+			parameters.magFilter = TextureFilter.Linear;
+			new PixmapPackerIO().save(atlasFile, packer, parameters);
+		}
+		catch (IOException | RuntimeException e)
+		{
+			Gdx.app.error("Utils_TextureAtlas", "Flattening failed", e);
+			Dialogs.showErrorDialog(GVars_UI.mainUi, "Could not create the atlas " + atlasFile.name(), e);
+			return false;
+		}
+		finally
+		{
+			packer.dispose();
+			for (Pixmap pixmap : sourcePixmaps.values())
+				if (mustDispose.get(pixmap))
+					pixmap.dispose();
+		}
+
+		// The project now only references the new atlas.
+		for (Map.Entry<String, List<TextureRegion>> group : groups.entrySet())
+			for (TextureRegion region : group.getValue())
+			{
+				Position_Infos info = GVars_Vue_Edition.imageRef.get(region);
+				info.url = group.getKey();
+				info.position = newPositions.get(info)[0];
+				info.fromAtlas = true;
+			}
+
+		for (WatchedImage watched : GVars_Vue_Edition.activeFileWatching.values())
+			watched.cancel();
+		GVars_Vue_Edition.activeFileWatching.clear();
+		if (projectDatas.outsideInfos != null)
 			projectDatas.outsideInfos.clear();
-		
-		parallax_Heart.currentPage.pageModel.atlasName =  atlasName ; 
-	}
-	
-	static final int paddingSize = 50 ; 
 
-	public static PixmapPacker findAtlasRequiredSize(ArrayList<ParallaxLayer> parrallaxLayers)
+		parallax_Heart.currentPage.pageModel.atlasName = atlasFile.name();
+		return true;
+	}
+
+	private static String uniqueName(String baseName, Set<String> atlasNames, Map<String, ?> taken)
 	{
-		int largestWidth = 0 ; 
-		int largestHeight = 0 ; 
-		
-		for(ParallaxLayer layer: parrallaxLayers)
+		String name = baseName;
+		for (int suffix = 2; atlasNames.contains(name) || taken.containsKey(name); suffix++)
+			name = baseName + "_" + suffix;
+		return name;
+	}
+
+	/**
+	 * 4096px pages, the texture size every GPU handles, unless an image needs more; the packer adds pages as needed.
+	 * (The 2019 version used 3x the largest image, easily a 15000px page.)
+	 */
+	private static PixmapPacker createPacker(List<TextureRegion> regions)
+	{
+		int largestWidth = 0, largestHeight = 0;
+		for (TextureRegion region : regions)
 		{
-			if(layer.getTexRegion().get(0).getRegionWidth() > largestWidth)  
-				largestWidth = layer.getTexRegion().get(0).getRegionWidth() ; 
-			
-			if(layer.getTexRegion().get(0).getRegionHeight() > largestHeight)  
-				largestHeight = layer.getTexRegion().get(0).getRegionHeight() ; 
+			largestWidth = Math.max(largestWidth, region.getRegionWidth());
+			largestHeight = Math.max(largestHeight, region.getRegionHeight());
 		}
-		
-		largestWidth *= 3 ; 
-		largestHeight *= 3 ; 
-		
-		if(largestWidth > atlasMaxSize)
-			largestWidth = atlasMaxSize ; 
-		
-		if(largestHeight > atlasMaxSize)
-			largestHeight = atlasMaxSize ; 
-		
-		PixmapPacker pixmap = new PixmapPacker(largestWidth, largestHeight, 
-				Format.RGBA8888, paddingSize, true); 
-		
-		return pixmap ; 	
+
+		// Guillotine pages keep the padding on their edges, plus the padding added to each image.
+		int border = paddingSize * 3;
+		int pageWidth = Math.min(atlasMaxSize, Math.max(preferredPageSize, largestWidth + border));
+		int pageHeight = Math.min(atlasMaxSize, Math.max(preferredPageSize, largestHeight + border));
+		return new PixmapPacker(pageWidth, pageHeight, Format.RGBA8888, paddingSize, true);
 	}
-	
-	public static Texture atlasTextureSave= null ; 
-	public static Pixmap atlasPixmapSave = null ; 
-	
-		
-	public static Pixmap extractRegion(TextureRegion textureRegion)
+
+	/** Copies the pixels of a region, reading each source texture back from its data only once. */
+	private static Pixmap extractRegion(TextureRegion region, Map<Texture, Pixmap> sourcePixmaps, Map<Pixmap, Boolean> mustDispose)
 	{
-		Texture texture = textureRegion.getTexture();
-		
-		if(atlasTextureSave == null || atlasTextureSave != texture)
+		Pixmap source = sourcePixmaps.get(region.getTexture());
+		if (source == null)
 		{
-			atlasTextureSave = texture ; 
-			if (!texture.getTextureData().isPrepared()) 
-			    texture.getTextureData().prepare();
-			
-			atlasTextureSave.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
-			
-			atlasPixmapSave = atlasTextureSave.getTextureData().consumePixmap();
-			atlasPixmapSave.setFilter(Pixmap.Filter.NearestNeighbour);	
-			atlasPixmapSave.setBlending(Blending.None);
+			TextureData data = region.getTexture().getTextureData();
+			if (!data.isPrepared())
+				data.prepare();
+			source = data.consumePixmap();
+			mustDispose.put(source, data.disposePixmap());
+			sourcePixmaps.put(region.getTexture(), source);
 		}
-		
-		Pixmap exportingPixmap = new Pixmap(textureRegion.getRegionWidth(), textureRegion.getRegionHeight(), Format.RGBA8888); 
-		exportingPixmap.setFilter(Filter.NearestNeighbour);
-		exportingPixmap.setBlending(Blending.None);
-		exportingPixmap.drawPixmap(atlasPixmapSave, textureRegion.getRegionX(), textureRegion.getRegionY(), textureRegion.getRegionWidth(), textureRegion.getRegionHeight(), 0, 0, textureRegion.getRegionWidth(), textureRegion.getRegionHeight());
-		
-		return exportingPixmap ; 
+
+		Pixmap pixels = new Pixmap(region.getRegionWidth(), region.getRegionHeight(), Format.RGBA8888);
+		pixels.setFilter(Filter.NearestNeighbour);
+		pixels.setBlending(Blending.None);
+		pixels.drawPixmap(source, region.getRegionX(), region.getRegionY(), region.getRegionWidth(), region.getRegionHeight(),
+				0, 0, region.getRegionWidth(), region.getRegionHeight());
+		return pixels;
 	}
-	
-	public static FileHandle getFileHandle(String filePath)
+
+	/** {@code name.atlas}, or {@code name1.atlas}, {@code name2.atlas}... if it already exists. */
+	public static FileHandle nextFreeAtlasFile(String path, String name)
 	{
-		FileHandle atlasPath = new FileHandle(filePath); 	
-		if(atlasPath.exists()) 
-		{
-			int lastIndex = filePath.lastIndexOf(".atlas") ; 
-			String newFilePath ; 
-			if(StringUtils.isNumeric(filePath.substring(lastIndex - 1, lastIndex)))
-			{
-				int[] currentValue = recurciveNumber(filePath,lastIndex,1) ; 
-				newFilePath = filePath.substring(0, lastIndex - currentValue[1]) + (currentValue[0] + 1) + ".atlas" ; 		
-			}
-			else
-			{
-				newFilePath = filePath.substring(0, lastIndex) + 1 + ".atlas" ; 
-			}
-			
-			return new FileHandle(newFilePath);
-		}
-		else
-		{
-			return atlasPath ; 
-		}
+		FileHandle file = new FileHandle(path + "/" + name + ".atlas");
+		for (int suffix = 1; file.exists(); suffix++)
+			file = new FileHandle(path + "/" + name + suffix + ".atlas");
+		return file;
 	}
-	
-	public static int[] recurciveNumber(String lookingAt, int from, int at)
-	{
-		if(!StringUtils.isNumeric(lookingAt.substring(from - at, from)))
-			return new int[] {Integer.parseInt(lookingAt.substring(from - at + 1, from)),from} ; 
-		else
-			return recurciveNumber(lookingAt,from,at - 1) ; 
-	}
-	
-	public static void changeAtlas(TextureAtlas atlas) 
-	{
-		GVars_Vue_Edition.atlas = atlas ; 
-		GVars_Vue_Edition.allImage.clear(); 
-	}
-	
 }

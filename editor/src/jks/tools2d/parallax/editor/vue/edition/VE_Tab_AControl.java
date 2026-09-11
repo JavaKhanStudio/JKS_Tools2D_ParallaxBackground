@@ -5,6 +5,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabbedPane;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Disposable;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
@@ -13,20 +14,16 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
-public class VE_Tab_AControl extends Table
+/** Left panel: the main tabs (controls, textures, selected layer, background). */
+public class VE_Tab_AControl extends Table implements Disposable
 {
+	private final VE_Tab_ColorConfig colorConfig;
 
-	VE_Tab_Meta parallaxConfig ;
-	VE_Tab_ColorConfig colorConfig ;
-	VE_Tab_TextureList textureSelection ; 
-	VE_Tab_Texture textureConfig ; 
-	
 	public VE_Tab_AControl()
 	{
-		
 		final VisTable container = new VisTable();
 		container.setWidth(size_Bloc_Selection_Parallax_Width);
-		
+
 		tabbedPane = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
 		tabbedPane.setAllowTabDeselect(false);
 		tabbedPane.addListener(new TabbedPaneAdapter()
@@ -38,30 +35,30 @@ public class VE_Tab_AControl extends Table
 				container.add(tab.getContentTable()).expand().fill();
 			}
 		});
-		
-		parallaxConfig = new VE_Tab_Meta() ; 
-		colorConfig = new VE_Tab_ColorConfig() ;
-		textureSelection = new VE_Tab_TextureList() ;
-		textureConfig =	new VE_Tab_Texture() ;
-		
-		tabbedPane.add(parallaxConfig);
-		tabbedPane.add(textureSelection);
-		tabbedPane.add(textureConfig);
-		tabbedPane.add(colorConfig);
 
+		VE_Tab_Meta parallaxConfig = new VE_Tab_Meta();
+		colorConfig = new VE_Tab_ColorConfig();
+
+		tabbedPane.add(parallaxConfig);
+		tabbedPane.add(new VE_Tab_TextureList());
+		tabbedPane.add(new VE_Tab_Texture());
+		tabbedPane.add(colorConfig);
 		tabbedPane.switchTab(parallaxConfig);
 
-		this.add(tabbedPane.getTable()).expandX().fillX();
-		this.row();
-		this.add(container).expand().fill();
-		container.setZIndex(0) ; 
-		resize() ; 
+		add(tabbedPane.getTable()).expandX().fillX();
+		row();
+		add(container).expand().fill();
+		container.setZIndex(0);
+		resize();
 	}
-	
+
 	public void resize()
 	{
-		this.setWidth(size_Bloc_Selection_Parallax_Width);
-		this.setHeight(Gdx.graphics.getHeight());
+		setWidth(size_Bloc_Selection_Parallax_Width);
+		setHeight(Gdx.graphics.getHeight());
 	}
-		
+
+	@Override
+	public void dispose()
+	{colorConfig.dispose();}
 }

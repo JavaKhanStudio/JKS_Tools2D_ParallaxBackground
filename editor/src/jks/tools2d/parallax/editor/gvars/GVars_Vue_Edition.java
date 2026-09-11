@@ -6,14 +6,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
+import com.kotcrab.vis.ui.widget.color.ExtendedColorPicker;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 
-import jks.tools2d.filewatch.FileWatching_Image;
-import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.vue.edition.VE_Center_ParallaxShow;
 import jks.tools2d.parallax.editor.vue.edition.VE_Options;
@@ -23,138 +21,148 @@ import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
+import jks.tools2d.parallax.editor.vue.edition.utils.WatchedImage;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
-public class GVars_Vue_Edition
+/** State of the edition view (one project open at a time). */
+public final class GVars_Vue_Edition
 {
-	public static int size_Bloc_Selection_Parallax_Width ;
-	public static int size_Bloc_Parallax ;
-	public static int size_Height_Bloc_Parallax_Controle ;
-	public static int sizeTabsBar ; 
-	public static OrthographicCamera camera ;
-	
-	public static ArrayList<TextureRegion> allImage ;
-	
-	public static HashMap<TextureRegion,Position_Infos> imageRef  = new HashMap<TextureRegion, Position_Infos>() ; 
-	public static HashMap<TextureRegion,ArrayList<ParallaxLayer>> textureLink = new HashMap<TextureRegion,ArrayList<ParallaxLayer>>() ; 
-	public static HashMap<String,TextureRegion> outsideTextureReserve = new HashMap<String, TextureRegion>(); 
-	
-	public static int parr_Size_X ; 
-	public static int parr_Size_Y ; 
-	public static int parr_Pos_X ; 
-	public static int parr_Pos_Y ; 
-	
-	public static boolean isPause = true ; 
-	
-	public static int screenSize = 40 ; 
-	
-	public static ParallaxLayer currentlySelectedParallax ;
-	
-	public static TabbedPane tabbedPane ; 
-	
-	public static boolean inTextureSelection ; 
-	public static ExtendedColorPicker colorPicked ; 
-	
-	public static Project_Infos projectInfos ;
-	public static Project_Data projectDatas ; 
-	
-	public static Array<ParallaxLayer> trashedValues = new Array<ParallaxLayer>(); 
-	public static Array<Integer> trashedValuesPosition = new Array<Integer>(); 
-	
-	public static String relativePath ;
+	public static int size_Bloc_Selection_Parallax_Width;
+	public static int size_Bloc_Parallax;
+	public static int size_Height_Bloc_Parallax_Controle;
+	public static int sizeTabsBar;
+
+	/** Every image that can be added as a layer: the atlas regions, then the loose PNG files. */
+	public static ArrayList<TextureRegion> allImage = new ArrayList<>();
+
+	/** Where each image comes from, used when saving. */
+	public static HashMap<TextureRegion, Position_Infos> imageRef = new HashMap<>();
+	/** Layers currently drawing each image. */
+	public static HashMap<TextureRegion, ArrayList<ParallaxLayer>> textureLink = new HashMap<>();
+	/** Loose PNG files of the project, by path. */
+	public static HashMap<String, TextureRegion> outsideTextureReserve = new HashMap<>();
+	/** Loose PNG files reloaded when they change on disk, by path. */
+	public static HashMap<String, WatchedImage> activeFileWatching = new HashMap<>();
+
+	public static int parr_Size_X;
+	public static int parr_Size_Y;
+	public static int parr_Pos_X;
+	public static int parr_Pos_Y;
+
+	public static boolean isPause = true;
+
+	public static ParallaxLayer currentlySelectedParallax;
+
+	public static TabbedPane tabbedPane;
+
+	/** Picker receiving the color under the mouse on the next click in the preview (eyedropper), or null. */
+	public static ExtendedColorPicker colorPicked;
+
+	public static Project_Infos projectInfos;
+	public static Project_Data projectDatas;
+
+	public static Array<ParallaxLayer> trashedValues = new Array<>();
+	public static Array<Integer> trashedValuesPosition = new Array<>();
+
+	/** Folder of the open project: atlases and relative image paths are resolved from it. */
+	public static String relativePath;
 	public static TextureAtlas atlas;
-	
-	public static HashMap<TextureRegion,FileWatching_Image> activeFileWatching = new  HashMap<TextureRegion,FileWatching_Image>();
-	public static ArrayList<FileWatching_Image> textureChange = new  ArrayList<FileWatching_Image>();
-	
-	public static boolean showParallaxFullScreen = false ; 
-	
-	public static VE_Center_ParallaxShow centerControl ;
-	public static VE_Tab_AControl tabControl ; 
-	public static VE_Options optionsControl ; 
-	
-	public static float hideInterfaceTimmer ;
-	
-	public static float timeForAutoSaveTimmer ; 
-	public static final float timeForAutoSaveAt = 300; 
-	
+
+	public static boolean showParallaxFullScreen = false;
+
+	public static VE_Center_ParallaxShow centerControl;
+	public static VE_Tab_AControl tabControl;
+	public static VE_Options optionsControl;
+
+	public static float hideInterfaceTimmer;
+
+	public static float timeForAutoSaveTimmer;
+	public static final float timeForAutoSaveAt = 300;
+
+	private GVars_Vue_Edition()
+	{}
+
+	/** Forgets everything about the previous project, releasing the watchers and loose textures it owned. */
+	public static void clear()
+	{
+		for (WatchedImage watched : activeFileWatching.values())
+			watched.cancel();
+		for (TextureRegion region : outsideTextureReserve.values())
+			region.getTexture().dispose();
+
+		allImage.clear();
+		imageRef.clear();
+		textureLink.clear();
+		outsideTextureReserve.clear();
+		activeFileWatching.clear();
+		trashedValues.clear();
+		trashedValuesPosition.clear();
+		currentlySelectedParallax = null;
+		colorPicked = null;
+		atlas = null;
+		showParallaxFullScreen = false;
+		isPause = true;
+		timeForAutoSaveTimmer = 0;
+	}
+
 	public static ParallaxDefaultValues getDefaults()
-	{return projectDatas.defaults ;}
-	
-	public static void setDefaults(ParallaxDefaultValues Defaults)
-	{projectDatas.defaults = Defaults ;} 
-	
+	{return projectDatas.defaults;}
+
+	public static void setDefaults(ParallaxDefaultValues defaults)
+	{projectDatas.defaults = defaults;}
+
 	public static void buildSizes()
 	{
-		size_Bloc_Selection_Parallax_Width = (int) (Gdx.graphics.getWidth()/3.9f) ; 
-		size_Bloc_Parallax = (Gdx.graphics.getWidth()/4) * 3 ;
-		size_Height_Bloc_Parallax_Controle = (int) (Gdx.graphics.getHeight()/5.5f) ; 
-		sizeTabsBar = Gdx.graphics.getWidth()/40 ; 
+		size_Bloc_Selection_Parallax_Width = (int) (Gdx.graphics.getWidth() / 3.9f);
+		size_Bloc_Parallax = (Gdx.graphics.getWidth() / 4) * 3;
+		size_Height_Bloc_Parallax_Controle = (int) (Gdx.graphics.getHeight() / 5.5f);
+		sizeTabsBar = Gdx.graphics.getWidth() / 40;
 	}
 
 	public static void selectLayer(ParallaxLayer layer)
 	{
-		currentlySelectedParallax = layer ; 
-		if(getDefaults().autoGoToSelected)
-		{
-			tabbedPane.switchTab(2);	
-		}
+		currentlySelectedParallax = layer;
+		if (getDefaults().autoGoToSelected)
+			tabbedPane.switchTab(2);
+	}
+
+	/** Rebuilds the content of the visible tab after the layers or the selection changed. */
+	public static void refreshActiveTab()
+	{
+		if (tabbedPane != null && tabbedPane.getActiveTab() != null)
+			tabbedPane.getActiveTab().getContentTable();
 	}
 
 	public static void setPage(WholePage_Model parallaxPage)
 	{
 		parallax_Heart.setPage(parallaxPage);
-		
-		for(int x = 0 ; x < parallaxPage.preloadValue.size() ; x++)
+		atlas = parallaxPage.getLoadedAtlas();
+
+		for (int x = 0; x < parallaxPage.preloadValue.size(); x++)
 		{
-			
-			for(TextureRegion texture : parallaxPage.preloadValue.get(x).getTexRegion())
-			{
-				boolean isFromAtlas = outsideTextureReserve.get(parallaxPage.pageModel.pageList.get(x).regionName) == null; 
-				
-				imageRef.put(texture,
-						new Position_Infos(isFromAtlas, parallaxPage.pageModel.atlasName,parallaxPage.pageModel.pageList.get(x))); 
-				
-				GVars_Vue_Edition.addToLinks(parallaxPage.preloadValue.get(x));
-			}
-		
-		}		
+			ParallaxLayer layer = parallaxPage.preloadValue.get(x);
+			String regionName = parallaxPage.pageModel.pageList.get(x).regionName;
+			boolean isFromAtlas = outsideTextureReserve.get(regionName) == null;
+
+			for (TextureRegion texture : layer.getTexRegion())
+				imageRef.put(texture, new Position_Infos(isFromAtlas, regionName, parallaxPage.pageModel.pageList.get(x).regionPosition));
+
+			addToLinks(layer);
+		}
 	}
-	
+
 	public static TextureAtlas getAtlas()
-	{
-		return atlas ;
-	}
-	
+	{return atlas;}
+
+	/** Pushes {@link #allImage} to the image list of the "Adding new" tab. */
 	public static void setItems()
 	{
-		if(VE_Tab_TextureList_Adding.imageList == null)
-		{
-			System.out.println("Set Items badly call");
-			return ;
-		}
-		
-		TextureRegion[] stockArr = new TextureRegion[allImage.size()];
-		
-		for(int x=0 ; x < allImage.size() ; x++)
-			stockArr[x] = allImage.get(x) ; 
-		
-		
-		VE_Tab_TextureList_Adding.imageList.setItems(stockArr);	
+		if (VE_Tab_TextureList_Adding.imageList == null)
+			return;
+
+		VE_Tab_TextureList_Adding.imageList.setItems(allImage.toArray(new TextureRegion[0]));
 	}
-	
+
 	public static void addToLinks(ParallaxLayer layer)
-	{
-		ArrayList<ParallaxLayer> linkList = textureLink.get(layer.getTexRegion().get(0)) ; 
-		
-		if(linkList == null)
-		{
-			linkList = new ArrayList<ParallaxLayer>() ; 
-			linkList.add(layer) ; 
-			textureLink.put(layer.getTexRegion().get(0), linkList) ; 
-		}
-		
-		linkList.add(layer) ; 
-	}
-	
+	{textureLink.computeIfAbsent(layer.getTexRegion().get(0), k -> new ArrayList<>()).add(layer);}
 }

@@ -29,7 +29,7 @@ public class PixmapPacker implements Disposable
 	boolean stripWhitespaceX, stripWhitespaceY;
 	int alphaThreshold;
 	Color transparentColor = new Color(0f, 0f, 0f, 0f);
-	final Array<Page> pages = new Array();
+	final Array<Page> pages = new Array<>();
 	PackStrategy packStrategy;
 
 	/** Uses {@link GuillotineStrategy}.
@@ -186,26 +186,11 @@ public class PixmapPacker implements Disposable
 			page.dirty = true;
 
 		page.image.setBlending(Blending.None);
-//		page.image.setBlending(Blending.SourceOver);
 
 		page.image.drawPixmap(image, rectX, rectY);
-		boolean doubleDip = true ; 
-		if (duplicateBorder) 
+		if (duplicateBorder)
 		{
-			int imageWidth = image.getWidth(), imageHeight = image.getHeight();
-			// Copy corner pixels to fill corners of the padding.
-			page.image.drawPixmap(image, 0, 0, 1, 1, rectX - 1, rectY - 1, 1, 1);
-			page.image.drawPixmap(image, imageWidth - 1, 0, 1, 1, rectX + rectWidth, rectY - 1, 1, 1);
-			page.image.drawPixmap(image, 0, imageHeight - 1, 1, 1, rectX - 1, rectY + rectHeight, 1, 1);
-			page.image.drawPixmap(image, imageWidth - 1, imageHeight - 1, 1, 1, rectX + rectWidth, rectY + rectHeight, 1, 1);
-			// Copy edge pixels into padding.
-			page.image.drawPixmap(image, 0, 0, imageWidth, 1, rectX, rectY - 1, rectWidth, 1);
-			page.image.drawPixmap(image, 0, imageHeight - 1, imageWidth, 1, rectX, rectY + rectHeight, rectWidth, 1);
-			page.image.drawPixmap(image, 0, 0, 1, imageHeight, rectX - 1, rectY, 1, rectHeight);
-			page.image.drawPixmap(image, imageWidth - 1, 0, 1, imageHeight, rectX + rectWidth, rectY, 1, rectHeight);
-		}
-		if(duplicateBorder && doubleDip) 
-		{
+			// Local change to libGDX's packer: the border is duplicated 2px wide instead of 1px, so mipmapped layers don't bleed.
 			int imageWidth = image.getWidth(), imageHeight = image.getHeight();
 			// Copy corner pixels to fill corners of the padding.
 			page.image.drawPixmap(image, 0, 0, 1, 1, rectX - 1, rectY - 2, 2, 2);
@@ -260,7 +245,7 @@ public class PixmapPacker implements Disposable
 			Rectangle rect = pages.get(i).rects.get(name);
 			if (rect != null) return i;
 		}
-		return 0;
+		return -1;
 	}
 
 	/** Disposes any pixmap pages which don't have a texture. Page pixmaps that have a texture will not be disposed until their
@@ -296,9 +281,8 @@ public class PixmapPacker implements Disposable
 					TextureAtlas.AtlasRegion region = new TextureAtlas.AtlasRegion(page.texture, (int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height);
 
 					if (rect.splits != null) {
-						region.splits = rect.splits;
-						region.pads = rect.pads;
-
+						region.names = new String[] {"split", "pad"};
+						region.values = new int[][] {rect.splits, rect.pads};
 					}
 
 					region.name = name;
@@ -430,6 +414,8 @@ public class PixmapPacker implements Disposable
 				page = new GuillotinePage(packer);
 				packer.pages.add(page);
 				node = insert(page.root, rect);
+				if (node == null) throw new GdxRuntimeException("Page size too small for a " + (int)rect.width + "x" + (int)rect.height
+					+ " image with " + padding + "px padding: " + name);
 			}
 			node.full = true;
 			rect.set(node.rect.x, node.rect.y, node.rect.width - padding, node.rect.height - padding);
@@ -569,7 +555,7 @@ public class PixmapPacker implements Disposable
 
 		static class SkylinePage extends Page 
 		{
-			Array<Row> rows = new Array();
+			Array<Row> rows = new Array<>();
 
 			public SkylinePage (PixmapPacker packer) 
 			{super(packer);}
@@ -716,7 +702,6 @@ public class PixmapPacker implements Disposable
 			rgba[3] = (int)(c.a * 255);
 			if (rgba[3] == breakA) return next;
 
-			if (!startPoint && (rgba[0] != 0 || rgba[1] != 0 || rgba[2] != 0 || rgba[3] != 255)) System.out.println(x +"  " +  y + " " + rgba + " ");
 
 			next++;
 		}

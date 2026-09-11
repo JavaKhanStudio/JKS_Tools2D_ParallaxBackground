@@ -1,76 +1,90 @@
 package jks.tools2d.parallax.editor.vue.edition.utils;
 
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.allImage;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.imageRef;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.outsideTextureReserve;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.textureLink;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValues;
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Pixmap.Blending;
-import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
+import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 
-import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.* ;
-
-import java.util.ArrayList; 
-
-public class Utils_Texture 
+public final class Utils_Texture
 {
+	private Utils_Texture()
+	{}
 
+	/** Loads a loose image file as a mipmapped texture, or returns null (and logs) if it cannot be read. */
 	public static TextureRegion getTextureRegionFromPath(String path)
 	{
 		try
 		{
-			Texture texture = new Texture(new FileHandle(path),true) ;
+			Texture texture = new Texture(new FileHandle(path), true);
 			texture.setFilter(TextureFilter.MipMap, TextureFilter.MipMap);
-			return new TextureRegion(texture) ; 
+			return new TextureRegion(texture);
 		}
-		catch(Exception e)
+		catch (RuntimeException e)
 		{
-			e.printStackTrace();
+			Gdx.app.error("Utils_Texture", "Cannot load " + path, e);
+			return null;
 		}
-		
-		return null ; 
-		
 	}
-	
-	public static Pixmap extractPixMap(Texture texture)
-	{
-		if (!texture.getTextureData().isPrepared()) 
-		    texture.getTextureData().prepare();
-		
-		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
-		
-		Pixmap atlasPixmapSave = texture.getTextureData().consumePixmap();
-		atlasPixmapSave.setFilter(Pixmap.Filter.NearestNeighbour);	
-		atlasPixmapSave.setBlending(Blending.None);
-		
-		return atlasPixmapSave ; 
-	}
-	
-	public static Pixmap buildPixmapCopy(Pixmap sourcePixmap)
-	{
-		Pixmap newPix = new Pixmap(sourcePixmap.getWidth(),sourcePixmap.getHeight(), Format.RGBA8888) ;
-		newPix.setFilter(Pixmap.Filter.NearestNeighbour);	
-		newPix.setBlending(Blending.None);
-		return newPix ; 
-	}
-	
+
+	/** Makes every layer drawing {@code target} draw {@code newTexture} instead. Both stay in the image list. */
 	public static void changeTextureInPage(TextureRegion target, TextureRegion newTexture)
 	{
-		ArrayList<ParallaxLayer> layers = textureLink.get(target) ; 
-		System.out.println("TODO changeTextureInPage repair");
-		if(layers == null)
-			return ;
-		
-		for(ParallaxLayer layer : layers)
-		{
-//			layer.setTexRegion(newTexture);
-		}
-		
-		textureLink.remove(target) ;
-		textureLink.put(newTexture, layers) ;
-		
+		if (target == null || newTexture == null || target == newTexture)
+			return;
+
+		moveLayers(target, newTexture);
+		GVars_Vue_Edition.refreshActiveTab();
 	}
-	
+
+	/**
+	 * Swaps {@code oldRegion} for {@code newRegion} everywhere (layers, image list, save info), e.g. after the file was
+	 * edited on disk.
+	 */
+	public static void replaceTexture(TextureRegion oldRegion, TextureRegion newRegion, boolean disposeOld)
+	{
+		moveLayers(oldRegion, newRegion);
+
+		for (ParallaxLayer trashed : trashedValues)
+			if (trashed.getTexRegion().get(0) == oldRegion)
+				trashed.setTexRegion(newRegion);
+
+		Position_Infos info = imageRef.remove(oldRegion);
+		if (info != null)
+			imageRef.put(newRegion, info);
+
+		Collections.replaceAll(allImage, oldRegion, newRegion);
+		outsideTextureReserve.replaceAll((path, region) -> region == oldRegion ? newRegion : region);
+
+		GVars_Vue_Edition.setItems();
+		GVars_Vue_Edition.refreshActiveTab();
+
+		if (disposeOld)
+			oldRegion.getTexture().dispose();
+	}
+
+	private static void moveLayers(TextureRegion from, TextureRegion to)
+	{
+		ArrayList<ParallaxLayer> layers = textureLink.remove(from);
+		if (layers == null)
+			return;
+
+		for (ParallaxLayer layer : layers)
+			layer.setTexRegion(to);
+
+		textureLink.computeIfAbsent(to, k -> new ArrayList<>()).addAll(layers);
+	}
 }

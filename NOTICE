@@ -1,0 +1,17 @@
+JKS Tools2D - Parallax Background
+
+This project started as a fork of ParallaxBackground-libgdx
+(https://github.com/fooble/ParallaxBackground-libgdx)
+Copyright 2014 Rahul Verma
+Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+The editor includes code adapted from:
+
+- libGDX (https://github.com/libgdx/libgdx): PixmapPacker, PixmapPackerIO
+  Copyright 2011 See AUTHORS file. Licensed under the Apache License, Version 2.0.
+
+- libgdx-utils by dermetfan (https://github.com/dermetfan/libgdx-utils): FC_List, FileChooser, Utils_Scene2D
+  Licensed under the Apache License, Version 2.0.
+
+The editor bundles the Open Sans font (editor/assets/ui/fonts/OpenSansRegular.ttf),
+Licensed under the Apache License, Version 2.0.

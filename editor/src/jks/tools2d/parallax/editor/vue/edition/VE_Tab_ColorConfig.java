@@ -3,40 +3,43 @@ package jks.tools2d.parallax.editor.vue.edition;
 import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 
-import com.badlogic.gdx.Gdx;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.utils.Disposable;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.VisTable;
+import com.kotcrab.vis.ui.widget.color.ColorPickerAdapter;
+import com.kotcrab.vis.ui.widget.color.ExtendedColorPicker;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
-import jks.tools2d.libgdxutils.color.ColorPickerListener;
-import jks.tools2d.libgdxutils.color.ExtendedColorPicker;
-import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
-import jks.tools2d.parallax.side.SquareBackground; 
+import jks.tools2d.parallax.side.SquareBackground;
 
-public class VE_Tab_ColorConfig extends Tab
+/** Background tab: size and gradient colors of the top and bottom squares drawn behind the layers. */
+public class VE_Tab_ColorConfig extends Tab implements Disposable
 {
+	private final Table mainTable;
+	private final List<ExtendedColorPicker> pickers = new ArrayList<>();
 
-	Table mainTable  ; 
-	
 	VE_Tab_ColorConfig()
 	{
 		super(false, false);
-		
+
 		final VisTable container = new VisTable();
-		TabbedPane tabbedPane = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
+		TabbedPane tabbedPane = new TabbedPane(baseSkin.get("default", TabbedPaneStyle.class));
 		tabbedPane.setAllowTabDeselect(false);
 		tabbedPane.addListener(new TabbedPaneAdapter()
 		{
@@ -47,257 +50,123 @@ public class VE_Tab_ColorConfig extends Tab
 				container.add(tab.getContentTable()).expand().fill();
 			}
 		});
-		
-		Tab topPalette = buildColorPalette("Top Square",true) ; 
-		Tab bottomPalette = buildColorPalette("Bottom Square",false) ; 
-	
+
+		Tab topPalette = buildColorPalette("Top Square", parallax_Heart.topSquare);
 		tabbedPane.add(topPalette);
-		tabbedPane.add(bottomPalette);
+		tabbedPane.add(buildColorPalette("Bottom Square", parallax_Heart.bottomSquare));
 		tabbedPane.switchTab(topPalette);
-		mainTable = new Table() ; 
+
+		mainTable = new Table();
 		mainTable.add(tabbedPane.getTable()).expandX().fillX();
 		mainTable.row();
 		mainTable.add(container).expand().fill();
-		
 	}
-	
-	public Tab buildColorPalette(String colorSection, boolean topSquare)
+
+	private Tab buildColorPalette(String title, SquareBackground square)
 	{
-		Table secondTable ; 
-		
-		SquareBackground squareTempo = topSquare ? parallax_Heart.topSquare : parallax_Heart.bottomSquare ; ;
-		SquareBackground square = squareTempo != null ? squareTempo : new SquareBackground() ; 
-		
-		final ExtendedColorPicker topPicker = new ExtendedColorPicker() ; 
-		topPicker.setListener(buildListener(topPicker,square, true,true));
-		
-		final ExtendedColorPicker bottomPicker = new ExtendedColorPicker() ; 
-		bottomPicker.setListener(buildListener(bottomPicker,square, false,true));
-		
-		ImageButton topColorSelector = buildColorSelector(topPicker) ; 
-		ImageButton bottomColorSelector =  buildColorSelector(bottomPicker) ; 
-		
-		
+		ExtendedColorPicker topPicker = buildPicker(square.topColor);
+		ExtendedColorPicker bottomPicker = buildPicker(square.bottomColor);
+
 		VisCheckBox activeBox = new VisCheckBox("Is active");
-		activeBox.setChecked(square != null);
-		activeBox.addListener(new InputListener()
-		{		
+		activeBox.setChecked(square.visible);
+		topPicker.setVisible(square.visible);
+		bottomPicker.setVisible(square.visible);
+		activeBox.addListener(new ChangeListener()
+		{
 			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			public void changed(ChangeEvent event, Actor actor)
 			{
-				return true ; 
+				square.visible = activeBox.isChecked();
+				topPicker.setVisible(square.visible);
+				bottomPicker.setVisible(square.visible);
 			}
-			
+		});
+
+		// The box size is the covered part of the screen, in percent.
+		Slider boxSize = new Slider(0, 100, 1, false, baseSkin);
+		TextField boxSizeText = new TextField("", baseSkin);
+		boxSizeText.setDisabled(true);
+		boxSize.setValue(Math.round((1 - square.getScreenPercentage()) * 100));
+		boxSizeText.setText(String.valueOf((int) boxSize.getValue()));
+		boxSize.addListener(new ChangeListener()
+		{
 			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
+			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(topSquare)
-				{
-					if(!activeBox.isChecked())
-					{
-						parallax_Heart.topSquare.visible = false ; 
-						topPicker.setVisible(false);
-						bottomPicker.setVisible(false);
-					}
-					else
-					{
-						parallax_Heart.topSquare.visible = true ; 
-//						= new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0,true) ;
-//						
-//						topPicker.setListener(buildListener(topPicker,parallax_Heart.topSquare, true,false));
-//						bottomPicker.setListener(buildListener(bottomPicker,parallax_Heart.topSquare, false,false));
-//						
-						topPicker.setVisible(true);
-						bottomPicker.setVisible(true);
-						topPicker.updateUI() ;
-						bottomPicker.updateUI();
-					}
-				}
-				else
-				{
-					if(!activeBox.isChecked())
-					{
-						parallax_Heart.bottomSquare.visible = false ; 
-						topPicker.setVisible(false);
-						bottomPicker.setVisible(false);
-					}
-					else
-					{
-						parallax_Heart.bottomSquare.visible = true ;  
-//						= new SquareBackground(topPicker.getColor(),bottomPicker.getColor(),0.5f,false) ;
-//						
-//						topPicker.setListener(buildListener(topPicker,parallax_Heart.bottomSquare, true,false));
-//						bottomPicker.setListener(buildListener(bottomPicker,parallax_Heart.bottomSquare, false,false));
-						
-						topPicker.setVisible(true);
-						bottomPicker.setVisible(true);
-						
-						topPicker.updateUI() ;
-						bottomPicker.updateUI();
-					}
-				}
+				square.setScreenPercentage(1 - boxSize.getValue() / 100);
+				boxSizeText.setText(String.valueOf((int) boxSize.getValue()));
 			}
-			
-		}) ; 
-		
-		Slider boxSize = new Slider(0, 100, 1, false,baseSkin);
-		TextField boxSize_tf = new TextField("",baseSkin) ;
-		boxSize.setValue((square.getHeight()/Gdx.graphics.getHeight()) * 100) ;
-		boxSize_tf.setText(boxSize.getValue() + "");
-		boxSize.addListener(new InputListener()
-		{		
-			@Override
-			public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-			{
-				touchDragged(event, x,y,pointer) ;
-				return true ;
-			}
-			
-			@Override
-			public void touchDragged(InputEvent event, float x, float y, int pointer)
-			{
-				float value = (Gdx.graphics.getHeight() * boxSize.getValue())/100 ; 
-				square.setHeight(topSquare, value); ; 
-				boxSize_tf.setText(boxSize.getValue() + "");
-			}
-		}) ; 
-		
-		secondTable = new Table() ; 
-		
-		secondTable.add(activeBox).row();
-		secondTable.add(boxSize) ;
-		secondTable.add(boxSize_tf).width(40).row();
-		
-		secondTable.add(new VisLabel("Top Color")).row();
-		secondTable.add(new VisLabel("Picker"));
-		secondTable.add(topColorSelector).row();
-		secondTable.add(topPicker).colspan(2).row();
-		
-		secondTable.add(new VisLabel("Bottom Color")).row();
-		secondTable.add(new VisLabel("Picker"));
-		secondTable.add(bottomColorSelector).row();
-		secondTable.add(bottomPicker).colspan(2);
-		
-		topPicker.updateUI() ;
-		bottomPicker.updateUI();
-		
-		Tab tab = new Tab(false, false)
-		{		
+		});
+
+		Table content = new Table();
+		content.add(activeBox).row();
+		content.add(boxSize);
+		content.add(boxSizeText).width(40).row();
+
+		content.add(new VisLabel("Top Color")).row();
+		content.add(new VisLabel("Picker"));
+		content.add(buildEyedropper(topPicker)).row();
+		content.add(topPicker).colspan(2).row();
+
+		content.add(new VisLabel("Bottom Color")).row();
+		content.add(new VisLabel("Picker"));
+		content.add(buildEyedropper(bottomPicker)).row();
+		content.add(bottomPicker).colspan(2);
+
+		return new Tab(false, false)
+		{
 			@Override
 			public String getTabTitle()
-			{
-				return colorSection;
-			}
-			
+			{return title;}
+
 			@Override
 			public Table getContentTable()
-			{
-				return secondTable;
-			}
-			
-			@Override 
-			public void onShow () 
-			{
-				super.onShow();
-				topPicker.updateUI() ;
-				bottomPicker.updateUI();
-			}
+			{return content;}
 		};
-		
-		return tab ; 
 	}
-	
-	public ImageButton buildColorSelector(ExtendedColorPicker picker) 
+
+	/** A picker editing {@code target} in place. */
+	private ExtendedColorPicker buildPicker(Color target)
 	{
-		ImageButton colorSelector = new ImageButton(Utils_Interface.buildDrawingRegionTexture("editor/interfaces/colorSelection.png")) 
+		ExtendedColorPicker picker = new ExtendedColorPicker();
+		picker.setColor(target);
+		picker.setListener(new ColorPickerAdapter()
 		{
-			@Override
-			public float getPrefWidth()
-			{return 50 ;}
-			
-			@Override
-			public float getPrefHeight()
-			{return getPrefWidth() ; }
-		}; 
-		
-		colorSelector.addListener(new InputListener()
-		{
-			@Override
-			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button)
-			{
-				GVars_Vue_Edition.colorPicked = picker ;  
-				return true ; 
-			}
-			@Override
-			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
-			{
-				super.touchUp(event, x, y, pointer, button);
-			}
-			
-		}) ;
-		
-		return colorSelector ; 
-	}
-	
-	public ColorPickerListener buildListener(ExtendedColorPicker picker, SquareBackground square,  boolean top, boolean resetVisu)
-	{
-		return new ColorPickerListener()
-		{
-			boolean firstTime = resetVisu ; 
-			boolean inInitTime = resetVisu ; 
-			
 			@Override
 			public void changed(Color newColor)
-			{
-				if(inInitTime)
-				{
-					inInitTime = false ; 
-					return ; 
-				}
-				if(firstTime)
-				{
-					if(top && newColor.equals(square.topColor))
-						return ; 
-					if(!top && newColor.equals(square.bottomColor))
-						return ; 
-					
-					if(top)
-						picker.setColor(square.topColor) ; 
-					else
-						picker.setColor(square.bottomColor) ; 
-					
-					firstTime = false ; 
-					return ; 
-				}
-			
-				if(top)
-					square.topColor = newColor ;
-				else
-					square.bottomColor = newColor ;					
-			}
-			
-			@Override
-			public void reset(Color previousColor, Color newColor)
-			{}
-			@Override
-			public void canceled(Color oldColor)
-			{}
-			@Override
-			public void finished(Color newColor)
-			{}
-		};
-		
+			{target.set(newColor);}
+		});
+		pickers.add(picker);
+		return picker;
 	}
-	
-	@Override
-	public String getTabTitle()
+
+	/** Button arming the eyedropper: the next click in the preview sets this picker's color. */
+	private ImageButton buildEyedropper(ExtendedColorPicker picker)
 	{
-		return "Background";
+		ImageButton eyedropper = Utils_Interface.buildSquareButton("editor/interfaces/colorSelection.png", 50);
+		eyedropper.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{GVars_Vue_Edition.colorPicked = picker;}
+		});
+		return eyedropper;
 	}
 
 	@Override
+	public String getTabTitle()
+	{return "Background";}
+
+	@Override
 	public Table getContentTable()
+	{return mainTable;}
+
+	@Override
+	public void dispose()
 	{
-		return mainTable;
+		super.dispose();
+		for (ExtendedColorPicker picker : pickers)
+			picker.dispose();
+		pickers.clear();
 	}
 }

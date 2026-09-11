@@ -4,265 +4,252 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
+import com.badlogic.gdx.utils.GdxRuntimeException;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.Utils_Parralax;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.side.SquareBackground;
 
+/** A complete parallax: the gradient background colors plus the layers. This is what .plax/.jplax files contain. */
 @DefaultSerializer(WholePage_Model_Serializer.class)
-@JsonIgnoreProperties(value = { "preloadValue" })
+@JsonIgnoreProperties(value = { "preloadValue" }, ignoreUnknown = true)
 public class WholePage_Model
-{	
-	public Color topHalf_top ; 
-	public Color topHalf_bottom ;
-	public float topHalfSize ; 
-	
-	public Color bottomHalf_top ;
-	public Color bottomHalf_bottom ;
-	public float bottomHalfSize ; 
-	
-	public boolean repeatOnX = true ; 
-	public boolean repeatOnY = false ;
-	
-	public Page_Model pageModel ;
-	
+{
+	public Color topHalf_top;
+	public Color topHalf_bottom;
+	public float topHalfSize;
+
+	public Color bottomHalf_top;
+	public Color bottomHalf_bottom;
+	public float bottomHalfSize;
+
+	public boolean repeatOnX = true;
+	public boolean repeatOnY = false;
+
+	public Page_Model pageModel;
+
 	@JsonIgnore
-	public List<ParallaxLayer> preloadValue ;
-	@JsonIgnore
-	private HashMap<String,AtlasRegion> loadedRegion;
-	
+	public List<ParallaxLayer> preloadValue;
+
+	private HashMap<String, AtlasRegion> loadedRegion;
+	private TextureAtlas loadedAtlas;
+	/** True when {@link #loadedAtlas} was created by this page rather than handed in or owned by the AssetManager. */
+	private boolean ownsAtlas;
+
 	public WholePage_Model()
 	{
-		topHalf_top = Color.WHITE ; 
-		topHalf_bottom = Color.WHITE ; 
-		bottomHalf_top = Color.WHITE ; 
-		bottomHalf_bottom = Color.WHITE ;
-		topHalfSize = 0.5f ;
-		bottomHalfSize = 0.5f ; 
-		
-		pageModel = new Page_Model() ; 
-	}
-	
-	// Testing constructor
-	public WholePage_Model(String atlasPath, Color topHalf_top, Color topHalf_bottom, Color bottomHalf_top, Color bottomHalf_bottom)
-	{
-		this.topHalf_top = topHalf_top ; 
-		this.topHalf_bottom = topHalf_bottom ; 
-		this.bottomHalf_top = bottomHalf_top ; 
-		this.bottomHalf_bottom = bottomHalf_bottom ; 
-		
-		pageModel = new Page_Model() ; 
-		pageModel.atlasName = atlasPath ; 
-		pageModel.outside = false ; 
-	}
-	
-	public WholePage_Model(String atlasPath)
-	{
-		pageModel = new Page_Model() ; 
-		pageModel.atlasName = atlasPath ; 
-		pageModel.outside = false ; 
+		topHalf_top = new Color(Color.WHITE);
+		topHalf_bottom = new Color(Color.WHITE);
+		bottomHalf_top = new Color(Color.WHITE);
+		bottomHalf_bottom = new Color(Color.WHITE);
+		topHalfSize = 0.5f;
+		bottomHalfSize = 0.5f;
+
+		pageModel = new Page_Model();
 	}
 
+	public WholePage_Model(String atlasPath, Color topHalf_top, Color topHalf_bottom, Color bottomHalf_top, Color bottomHalf_bottom)
+	{
+		this(atlasPath);
+		this.topHalf_top = topHalf_top;
+		this.topHalf_bottom = topHalf_bottom;
+		this.bottomHalf_top = bottomHalf_top;
+		this.bottomHalf_bottom = bottomHalf_bottom;
+	}
+
+	public WholePage_Model(String atlasPath)
+	{
+		this();
+		pageModel.atlasName = atlasPath;
+	}
+
+	/** Layers built from an internal atlas, loaded through {@link Gvars_Parallax#getManager()}. */
 	@JsonIgnore
 	public List<ParallaxLayer> getDrawing()
 	{
-		if(preloadValue == null)
-			preload() ;
-		
-		return preloadValue ; 
+		if (preloadValue == null)
+			preload();
+
+		return preloadValue;
 	}
-	
+
+	/** Layers built from an atlas found in {@code relativePath} (internal loading when the path is empty). */
 	@JsonIgnore
 	public List<ParallaxLayer> getDrawing(String relativePath)
 	{
-		if("".equals(relativePath))
-			return getDrawing() ;
-		
-		if(preloadValue == null)
-			preload(relativePath) ;
-		
-		return preloadValue ; 
+		if (relativePath == null || relativePath.isEmpty())
+			return getDrawing();
+
+		if (preloadValue == null)
+			preload(relativePath);
+
+		return preloadValue;
 	}
-	
-	/*
-	 * 1   = empty screen
-	 * 0.5 = half screen
-	 * 0   = full screen
-	 */
+
+	/** @see SquareBackground */
 	public SquareBackground buildTopSquareBackground(float screenPercentage)
-	{return new SquareBackground(topHalf_top.cpy(),topHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage, true) ;}
-	
+	{return new SquareBackground(topHalf_top.cpy(), topHalf_bottom.cpy(), screenPercentage, true);}
+
 	public SquareBackground buildBottomSquareBackground(float screenPercentage)
-	{return new SquareBackground(bottomHalf_top.cpy(),bottomHalf_bottom.cpy(),Gdx.graphics.getHeight() * screenPercentage, false) ;}
-	
-	
+	{return new SquareBackground(bottomHalf_top.cpy(), bottomHalf_bottom.cpy(), screenPercentage, false);}
+
 	public void preload()
 	{
-		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight()); 
+		AssetManager manager = Gvars_Parallax.getManager();
+		manager.load(pageModel.atlasName, TextureAtlas.class);
+		manager.finishLoadingAsset(pageModel.atlasName);
+		useAtlas(manager.get(pageModel.atlasName, TextureAtlas.class), false);
 	}
-	
+
 	public void preload(String relativePath)
 	{
-		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight(),relativePath); 
+		if (pageModel.atlasName != null)
+			useAtlas(new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName)), true);
+		else
+			useAtlas(new TextureAtlas(), true);
 	}
-	
+
+	/** Builds the layers from an atlas the caller keeps ownership of. */
 	@JsonIgnore
 	public void forceLoad(TextureAtlas atlas)
+	{useAtlas(atlas, false);}
+
+	private void useAtlas(TextureAtlas atlas, boolean owned)
 	{
-		preloadValue = load(Gvars_Parallax.getWorldWidth(),Gvars_Parallax.getWorldHeight(),atlas); 
+		disposeOwnedAtlas();
+		loadedAtlas = atlas;
+		ownsAtlas = owned;
+		loadedRegion = null;
+		preloadValue = load(Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight(), atlas);
 	}
 
-	
-	protected List<ParallaxLayer> load(float worldWidth, float worldHeight,TextureAtlas atlas)
+	/** The atlas the layers were built from, or null before loading. */
+	@JsonIgnore
+	public TextureAtlas getLoadedAtlas()
+	{return loadedAtlas;}
+
+	/** Disposes the atlas if this page loaded it itself (external path); AssetManager and caller atlases are left alone. */
+	public void disposeOwnedAtlas()
 	{
-		List<ParallaxLayer> returningList = new ArrayList<ParallaxLayer>() ; 
-		
-		for(Parallax_Model parallax : pageModel.pageList)
+		if (ownsAtlas && loadedAtlas != null)
 		{
-			returningList.add(buildLayer(parallax,atlas,worldWidth)) ;
+			loadedAtlas.dispose();
+			// The layers drew from it: rebuild them from disk if this page is used again.
+			preloadValue = null;
+			loadedRegion = null;
 		}
-		
-		return returningList;
+
+		loadedAtlas = null;
+		ownsAtlas = false;
 	}
 
-	protected ParallaxLayer buildLayer(Parallax_Model parallax, TextureAtlas atlas,float worldWidth)
+	protected List<ParallaxLayer> load(float worldWidth, float worldHeight, TextureAtlas atlas)
 	{
-		//Region position reserved for animation
+		List<ParallaxLayer> layers = new ArrayList<>(pageModel.pageList.size());
+
+		for (Parallax_Model parallax : pageModel.pageList)
+			layers.add(buildLayer(parallax, atlas, worldWidth));
+
+		return layers;
+	}
+
+	protected ParallaxLayer buildLayer(Parallax_Model parallax, TextureAtlas atlas, float worldWidth)
+	{
 		ParallaxLayer layer = new ParallaxLayer(
-				findLayer(parallax, atlas), 
-				true, 
-				worldWidth, 
-				parallax.parallaxScalingSpeedX,parallax.parallaxScalingSpeedY,
-				parallax.sizeRatio) ; 
+				findLayer(parallax, atlas),
+				true,
+				worldWidth,
+				parallax.parallaxScalingSpeedX, parallax.parallaxScalingSpeedY,
+				parallax.sizeRatio);
 
 		layer.setUpEverything(parallax);
-		
-		return layer ; 
-	}
-	
-	public AtlasRegion findInternalLayer(AtlasRegion searchingFor)
-	{
-		if(loadedRegion == null )
-			loadedRegion = new HashMap<>() ; 
-		
-		String name = Utils_Parralax.getRegionName(searchingFor) ;
-		AtlasRegion region = loadedRegion.get(name) ;
-		if(region == null)
-		{
-			region = searchingFor ; 
-			loadedRegion.put(name, region) ; 
-		}
-		
-		return region ; 
-	}
-	
-	protected AtlasRegion findLayer(Parallax_Model parallax,TextureAtlas atlas)
-	{
-		if(loadedRegion == null )
-			loadedRegion = new HashMap<>() ; 
-		
-		
-		AtlasRegion region = loadedRegion.get(parallax.getCompleteRegionName()) ;
-		if(region == null)
-		{
-			region = atlas.findRegions(parallax.regionName).get(parallax.regionPosition) ;
-			
-			loadedRegion.put(parallax.getCompleteRegionName(), region) ; 
-		}
-		
-		return region ; 
-	}
-	
-	
-	// External Reading
-	private List<ParallaxLayer> load(float worldWidth, float worldHeight, String relativePath) 
-	{
-		TextureAtlas atlas ; 
-		if(pageModel.atlasName != null)
-			atlas = new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName));
-		else
-			atlas = new TextureAtlas();
-			
-		
-		return load(worldWidth, worldHeight, atlas) ; 
-	}
-	
-	// Internal Reading
-	private List<ParallaxLayer> load(float worldWidth, float worldHeight) 
-	{
-		Gvars_Parallax.getManager().load(pageModel.atlasName, TextureAtlas.class);
-//		Gvars_Parallax.getManager().finishLoadingAsset(pageModel.atlasName);
-		
-		TextureAtlas atlas = new TextureAtlas(pageModel.atlasName);
-		return load(worldWidth, worldHeight, atlas) ; 
-	}
-	
-	public void cleanPath()
-	{
-		pageModel.atlasName = pageModel.atlasName.substring(pageModel.atlasName.lastIndexOf("/") + 1, pageModel.atlasName.length()) ; 
+		return layer;
 	}
 
-	public Color getTopHalf_top() 
+	/**
+	 * The atlas's own region for a layer (TextureAtlas#findRegions would return copies): the n-th region with that
+	 * name, in atlas order.
+	 */
+	protected AtlasRegion findLayer(Parallax_Model parallax, TextureAtlas atlas)
+	{
+		if (loadedRegion == null)
+		{
+			loadedRegion = new HashMap<>();
+			HashMap<String, Integer> positions = new HashMap<>();
+			for (AtlasRegion region : atlas.getRegions())
+				loadedRegion.put(region.name + positions.merge(region.name, 1, Integer::sum), region);
+		}
+
+		// Keys are 1-based ("ground1" is position 0) so they never depend on region indices.
+		AtlasRegion region = loadedRegion.get(parallax.regionName + (parallax.regionPosition + 1));
+		if (region == null)
+			throw new GdxRuntimeException("Region '" + parallax.regionName + "' #" + parallax.regionPosition
+					+ " not found in atlas " + pageModel.atlasName);
+		return region;
+	}
+
+	public void cleanPath()
+	{pageModel.atlasName = pageModel.atlasName.substring(pageModel.atlasName.lastIndexOf('/') + 1);}
+
+	public Color getTopHalf_top()
 	{return topHalf_top;}
 
-	public void setTopHalf_top(Color topHalf_top) 
+	public void setTopHalf_top(Color topHalf_top)
 	{this.topHalf_top = topHalf_top;}
 
-	public Color getTopHalf_bottom() 
+	public Color getTopHalf_bottom()
 	{return topHalf_bottom;}
 
-	public void setTopHalf_bottom(Color topHalf_bottom) 
+	public void setTopHalf_bottom(Color topHalf_bottom)
 	{this.topHalf_bottom = topHalf_bottom;}
 
-	public float getTopHalfSize() 
+	public float getTopHalfSize()
 	{return topHalfSize;}
 
-	public void setTopHalfSize(float topHalfSize) 
+	public void setTopHalfSize(float topHalfSize)
 	{this.topHalfSize = topHalfSize;}
 
-	public Color getBottomHalf_top() 
+	public Color getBottomHalf_top()
 	{return bottomHalf_top;}
 
-	public void setBottomHalf_top(Color bottomHalf_top) 
+	public void setBottomHalf_top(Color bottomHalf_top)
 	{this.bottomHalf_top = bottomHalf_top;}
 
-	public Color getBottomHalf_bottom() 
+	public Color getBottomHalf_bottom()
 	{return bottomHalf_bottom;}
 
-	public void setBottomHalf_bottom(Color bottomHalf_bottom) 
+	public void setBottomHalf_bottom(Color bottomHalf_bottom)
 	{this.bottomHalf_bottom = bottomHalf_bottom;}
 
-	public float getBottomHalfSize() 
+	public float getBottomHalfSize()
 	{return bottomHalfSize;}
 
-	public void setBottomHalfSize(float bottomHalfSize) 
+	public void setBottomHalfSize(float bottomHalfSize)
 	{this.bottomHalfSize = bottomHalfSize;}
 
-	public boolean isRepeatOnX() 
+	public boolean isRepeatOnX()
 	{return repeatOnX;}
 
-	public void setRepeatOnX(boolean repeatOnX) 
+	public void setRepeatOnX(boolean repeatOnX)
 	{this.repeatOnX = repeatOnX;}
 
 	public boolean isRepeatOnY()
 	{return repeatOnY;}
 
-	public void setRepeatOnY(boolean repeatOnY) 
+	public void setRepeatOnY(boolean repeatOnY)
 	{this.repeatOnY = repeatOnY;}
 
 	public Page_Model getPageModel()
 	{return pageModel;}
 
-	public void setPageModel(Page_Model pageModel) 
+	public void setPageModel(Page_Model pageModel)
 	{this.pageModel = pageModel;}
-
 }

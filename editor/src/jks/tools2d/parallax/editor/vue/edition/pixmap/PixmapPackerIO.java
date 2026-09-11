@@ -8,8 +8,14 @@ import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 
 
+/** Writes a {@link PixmapPacker} as a (legacy format) texture atlas. Copied from libGDX, with support for region indices. */
 public class PixmapPackerIO 
 {
+	private static final char INDEX_SEPARATOR = '#';
+
+	/** Name to pack an image under so it is written as region {@code regionName} with {@code index} (-1 for none). */
+	public static String packedName(String regionName, int index)
+	{return regionName + INDEX_SEPARATOR + index;}
 
 	/** Image formats which can be used when saving a PixmapPacker. */
 	public static enum ImageFormat {
@@ -55,7 +61,12 @@ public class PixmapPackerIO
 	 * @param parameters the SaveParameters specifying how to save the PixmapPacker
 	 * @throws IOException if the atlas file can not be written */	
 	public void save (FileHandle file, PixmapPacker packer, SaveParameters parameters) throws IOException {
-		Writer writer = file.writer(false);
+		try (Writer writer = file.writer(false)) {
+			write(file, packer, parameters, writer);
+		}
+	}
+
+	private void write (FileHandle file, PixmapPacker packer, SaveParameters parameters, Writer writer) throws IOException {
 		int index = 0;
 		for (Page page : packer.pages) {
 			if (page.rects.size > 0) {
@@ -77,7 +88,10 @@ public class PixmapPackerIO
 				writer.write("filter: " + parameters.minFilter.name() + "," + parameters.magFilter.name() + "\n");
 				writer.write("repeat: none" + "\n");
 				for (String name : page.rects.keys()) {
-					writer.write(name + "\n");
+					int separator = name.lastIndexOf(INDEX_SEPARATOR);
+					String regionName = separator < 0 ? name : name.substring(0, separator);
+					String regionIndex = separator < 0 ? "-1" : name.substring(separator + 1);
+					writer.write(regionName + "\n");
 					PixmapPacker.PixmapPackerRectangle rect = page.rects.get(name);
 					writer.write("  rotate: false" + "\n");
 					writer.write("  xy: " + (int) rect.x + "," + (int) rect.y + "\n");
@@ -91,11 +105,10 @@ public class PixmapPackerIO
 					writer.write("  orig: " + rect.originalWidth + ", " + rect.originalHeight + "\n");
 					writer.write("  offset: " + rect.offsetX + ", " + (int)(rect.originalHeight - rect.height - rect.offsetY) + "\n");
 
-					writer.write("  index: -1" + "\n");
+					writer.write("  index: " + regionIndex + "\n");
 				}
 			}
-		}		
-		writer.close();
+		}
 	}
 	
 }

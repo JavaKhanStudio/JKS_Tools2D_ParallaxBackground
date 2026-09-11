@@ -30,7 +30,6 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.Json.Serializable;
 import com.badlogic.gdx.utils.JsonValue;
-import com.badlogic.gdx.utils.Pools;
 
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 
@@ -111,15 +110,11 @@ public class FC_List extends FileChooser
 			} 
 			else
 			{
-				@SuppressWarnings("unchecked")
-				Array<FileHandle> files = Pools.obtain(Array.class);
-				files.clear();
-				
+				Array<FileHandle> files = new Array<>();
 				for (String fileName : selection)
 					files.add(directory.child(fileName));
 				
 				getListener().choose(files);
-				Pools.free(files);
 			}	
 		}
 	};
@@ -182,7 +177,7 @@ public class FC_List extends FileChooser
 			if (event.isHandled())
 				return true;
 
-			if (getStage().getKeyboardFocus() != pathField && (c == '\r' || c == 'n'))
+			if (getStage().getKeyboardFocus() != pathField && (c == '\r' || c == '\n'))
 			{
 				if (currentlySelected().isDirectory())
 					openButtonListener.clicked(null, 0, 0); // fake event
@@ -280,7 +275,7 @@ public class FC_List extends FileChooser
 				return false;
 			}
 
-			// The set disabled is keeping it from craching 
+			// Disabling the selection until touch up keeps the list from re-selecting (and crashing) after a double click.
 			@Override
 			public void touchUp(InputEvent event, float x, float y, int pointer, int button)
 			{currentlySelected.getSelection().setDisabled(false);}

@@ -3,118 +3,95 @@ package jks.tools2d.parallax.side;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector3;
 
-public class SquareBackground 
+/**
+ * Vertical gradient drawn behind the layers, covering the top or the bottom part of the screen (in screen pixels).
+ * <p>
+ * {@code screenPercentage} is the part of the screen left <em>uncovered</em>: 0 fills the whole screen, 0.5 half of
+ * it, 1 nothing. This is the value saved as {@code topHalfSize}/{@code bottomHalfSize} in page files.
+ */
+public class SquareBackground
 {
-	public Color topColor; 
-	public Color bottomColor ; 
-	
-	Vector3 bottom_ColorSpeed ; 
-	Color bottom_ColorObjectif ; 
-	
-	Vector3 top_ColorSpeed ; 
-	Color top_ColorObjectif ;
-	
-	boolean inTransfert ; 
-	public boolean visible = true; 
-	float transfertTimmer ;
-	float transfertStop ; 
-	
-	float width ; 
-	float height ; 
-	float posX ; 
-	float posY ; 
-	
-	
-	public SquareBackground() {
-		topColor = new Color() ;
-		bottomColor = new Color() ;
-		
-		setHeight(false,posY) ;
-		posX = 0 ; 
-		width = Gdx.graphics.getWidth() ; 
-	}
-	
-	public SquareBackground(Color top, Color bottom, float posY,boolean isTop)
-	{
-		topColor = top ; 
-		bottomColor = bottom ; 
-		
-		setHeight(isTop,posY) ;
-		posX = 0 ; 
-		width = Gdx.graphics.getWidth() ; 
-		
-	}
-	
-	public void setHeight(boolean top,float posY)
-	{
-		if(top)
-		{
-			height = Gdx.graphics.getHeight() - posY ; 	
-			this.posY = posY ; 
-		}
-		else
-		{
-			this.height = Gdx.graphics.getHeight() - posY ; 	
-			this.posY = 0 ; 
-		}	
-	}
-	
-	public float getHeight()
-	{return height ;}
+	public Color topColor;
+	public Color bottomColor;
+	public boolean visible = true;
 
-	
-	public void transfertInto(Color top_transfert, Color bottom_transfert, float inXSecondes)
+	private final boolean isTop;
+	private float screenPercentage;
+	private float posY, width, height;
+
+	private final Color topFrom = new Color(), bottomFrom = new Color();
+	private final Color topTarget = new Color(), bottomTarget = new Color();
+	private float transfertDuration, transfertElapsed;
+	private boolean inTransfert;
+
+	public SquareBackground(Color top, Color bottom, float screenPercentage, boolean isTop)
 	{
-		if(top_transfert == null || bottom_transfert == null)
-		{
-			inTransfert = false ; 
-			return ; 
-		}
-		
-		top_ColorObjectif = top_transfert ;
-		bottom_ColorObjectif = bottom_transfert ;
-		
-		
-		top_ColorSpeed = new Vector3(
-										(top_ColorObjectif.r-topColor.r) * (1/inXSecondes), 
-										(top_ColorObjectif.g-topColor.g) * (1/inXSecondes), 
-										(top_ColorObjectif.b-topColor.b) * (1/inXSecondes)
-									) ;
-		bottom_ColorSpeed = new Vector3(
-										(bottom_ColorObjectif.r-bottomColor.r) * (1/inXSecondes), 
-										(bottom_ColorObjectif.g-bottomColor.g) * (1/inXSecondes), 
-										(bottom_ColorObjectif.b-bottomColor.b) * (1/inXSecondes)
-										) ;
-		
-		inTransfert = true ; 
-		transfertStop = inXSecondes ;
+		this.topColor = top;
+		this.bottomColor = bottom;
+		this.isTop = isTop;
+		this.screenPercentage = screenPercentage;
+		resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 	}
-	
+
+	public void resize(float screenWidth, float screenHeight)
+	{
+		width = screenWidth;
+		float uncovered = screenHeight * screenPercentage;
+		height = screenHeight - uncovered;
+		posY = isTop ? uncovered : 0;
+	}
+
+	public float getScreenPercentage()
+	{return screenPercentage;}
+
+	public void setScreenPercentage(float screenPercentage)
+	{
+		this.screenPercentage = screenPercentage;
+		resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+	}
+
+	public boolean isTop()
+	{return isTop;}
+
+	public float getHeight()
+	{return height;}
+
+	/** Fades both gradient colors (alpha included) toward the given ones over {@code inXSecondes}. */
+	public void transfertInto(Color topTransfert, Color bottomTransfert, float inXSecondes)
+	{
+		if (topTransfert == null || bottomTransfert == null)
+			return;
+
+		topFrom.set(topColor);
+		bottomFrom.set(bottomColor);
+		topTarget.set(topTransfert);
+		bottomTarget.set(bottomTransfert);
+		transfertElapsed = 0;
+		transfertDuration = inXSecondes;
+		inTransfert = true;
+
+		if (inXSecondes <= 0)
+			act(0);
+	}
+
 	public void act(float delta)
 	{
-		if(inTransfert)
-		{		
-			topColor.add(top_ColorSpeed.x * delta,top_ColorSpeed.y * delta,top_ColorSpeed.z * delta,0) ;
-			bottomColor.add(bottom_ColorSpeed.x * delta,bottom_ColorSpeed.y * delta,bottom_ColorSpeed.z * delta,0) ;
-			transfertTimmer += delta ; 
+		if (!inTransfert)
+			return;
 
-			if(transfertTimmer >= transfertStop)
-				resetTransfert() ; 		
-		}	
+		transfertElapsed += delta;
+		float progress = transfertDuration > 0 ? Math.min(1, transfertElapsed / transfertDuration) : 1;
+		topColor.set(topFrom).lerp(topTarget, progress);
+		bottomColor.set(bottomFrom).lerp(bottomTarget, progress);
+
+		if (progress >= 1)
+			inTransfert = false;
 	}
-	
-	public void resetTransfert()
-	{
-		inTransfert = false ; 		
-		transfertTimmer = 0 ; 
-	}
-	
+
 	public void draw(ShapeRenderer render)
 	{
-		if(visible)
-			render.rect(posX, posY, width, height, bottomColor, bottomColor, topColor, topColor);
+		if (visible && height > 0)
+			render.rect(0, posY, width, height, bottomColor, bottomColor, topColor, topColor);
 	}
-	
 }
