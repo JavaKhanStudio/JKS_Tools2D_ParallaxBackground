@@ -1,11 +1,30 @@
 # JKS Tools2D - Parallax Background
 
+[![CI](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/actions/workflows/ci.yml/badge.svg)](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.javakhanstudio/parallax-background)](https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+
 A parallax background library for [libGDX](https://libgdx.com) games, and a desktop editor to build those
 backgrounds visually.
 
 You compose a parallax in the **editor** from an atlas and/or PNG images, tune each layer while it scrolls, then
 export a `.plax` file. Your game loads that file with the **core** library, which scrolls, tiles and draws the layers
 behind your game.
+
+## Get it
+
+**To use a parallax in a game**, add the library:
+
+```groovy
+dependencies {
+    implementation "io.github.javakhanstudio:parallax-background:2.0.0"
+}
+```
+
+**To design a parallax**, download `ParallaxEditor-<version>.zip` from the
+[latest release](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/releases/latest), unzip it and run
+`bin/ParallaxEditor` (`bin\ParallaxEditor.bat` on Windows). It includes the library and the sample projects, and
+needs Java 17 or newer.
 
 | Module   | What it is                                                                                  |
 |----------|---------------------------------------------------------------------------------------------|
@@ -56,18 +75,13 @@ all of it, `1` nothing.
 
 ## Using the library in a game
 
-Publish it to your local Maven repository:
-
-```bash
-./gradlew :core:publishToMavenLocal
-```
-
-Then, in the game's core module:
-
 ```groovy
-repositories { mavenLocal() }
-dependencies { implementation "jks.tools2d:parallax-background:2.0.0" }
+repositories { mavenCentral() }
+dependencies { implementation "io.github.javakhanstudio:parallax-background:2.0.0" }
 ```
+
+To try an unreleased version, see [RELEASING.md](RELEASING.md): pushes to `develop` publish a `-SNAPSHOT`, and
+`./gradlew :core:publishToMavenLocal` installs your own build locally.
 
 Put the exported `.plax` file in your assets, and the atlas it names at the root of your assets (the atlas is loaded
 through the libGDX `AssetManager` returned by `Gvars_Parallax.getManager()`):
@@ -188,6 +202,16 @@ demo/src/.../ParallaxDemo         example game
 
 The editor keeps its state in static `GVars_*` classes, one project at a time. The panels read the window size when
 they are built, so the edition screen rebuilds them after a resize.
+
+## Contributing and releases
+
+Work happens on `develop`, releases are tagged on `master`, and CI builds every push and pull request on JDK 17, 21
+and 25. [RELEASING.md](RELEASING.md) describes the branches, how to cut a release and the one-time Maven Central
+setup.
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE).
 
 ## Credits
 

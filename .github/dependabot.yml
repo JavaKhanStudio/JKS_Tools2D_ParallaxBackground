@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # libGDX, VisUI, Kryo, Jackson, JUnit and the publishing plugin.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: develop
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      libgdx:
+        patterns: ['com.badlogicgames.gdx:*']
+      test-libraries:
+        patterns: ['org.junit*']
+
+  # The actions used by the workflows.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: develop
+    labels: [dependencies]

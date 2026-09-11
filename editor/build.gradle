@@ -37,3 +37,13 @@ application {
 tasks.named('run', JavaExec) {
     workingDir = projectDir
 }
+
+// The distribution is the "editor + library" download: it carries the sample projects to open on the start screen.
+distributions {
+    main {
+        distributionBaseName = 'ParallaxEditor'
+        contents {
+            from('Files/Demos') { into 'Files/Demos' }
+        }
+    }
+}

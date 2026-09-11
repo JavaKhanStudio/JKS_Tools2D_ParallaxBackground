@@ -1,6 +1,5 @@
 subprojects {
-    group = 'jks.tools2d'
-    version = rootProject.version
+    // group and version come from gradle.properties
 
     plugins.withType(JavaPlugin).configureEach {
         tasks.withType(JavaCompile).configureEach {
