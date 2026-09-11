@@ -1,7 +1,6 @@
 package jks.tools2d.parallax;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -11,68 +10,64 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
-
+/**
+ * One scrolling plane of a parallax. Sizes are in world units: the layer is {@code worldDimension * sizeRatio} wide
+ * (or high), the other dimension follows the texture aspect ratio.
+ */
 @JsonIgnoreType
 public class ParallaxLayer implements Cloneable
 {
-
 	private List<TextureRegion> texRegion;
+	/** Cached first region, the one actually drawn. */
+	private TextureRegion region;
 
-	private float decalPosition_X = 0, decalPercent_Y = 0 ;
-	private float region_Width,region_Height;
-	private float sizeRatio =  1;
-	
+	private final boolean isWidth;
+	private final float worldDimension;
+
+	private float decalPercentX, decalPercentY;
+	private float regionWidth, regionHeight;
+	private float sizeRatio = 1;
+
 	protected float parallaxSpeedRatioX;
 	protected float parallaxSpeedRatioY;
-	
-	protected float currentDistanceX = 0, currentDistanceY = 0 ; 
 
-	protected float padX ; 
-	protected float padXFactor ; 
-	
-	protected float padY ; 
-	protected float padYFactor ; 
+	protected float currentDistanceX, currentDistanceY;
 
-	protected float speedXAtRest ; 
-	protected float speedYAtRest ; 
-	
-	protected boolean repeat_tileX = true ;
-	protected boolean repeat_tileY = false ;
-	
-	protected boolean flipX = false ;
-	protected boolean flipY = false ; 
-	
-	protected float currentX ; 
-	protected float currentY ; 
-	
-	protected boolean isMirror ; 
+	protected float padX;
+	protected float padXFactor;
 
+	protected float padY;
+	protected float padYFactor;
+
+	protected float speedXAtRest;
+
+	protected boolean flipX;
+	protected boolean flipY;
+
+	protected boolean isMirror;
 
 	public ParallaxLayer(List<TextureRegion> texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
 	{
-		this.texRegion = texRegion ;
-		this.sizeRatio = sizeRatio ;
-		
-		if(isWidth)
-		{
-			setRegionWidth(worldDimension);
-	    	setRegionHeight(Utils_Parralax.calculateOtherDimension(true, worldDimension, this.texRegion.get(0)));	
-		}
-		else
-		{
-	    	setRegionHeight(worldDimension);
-	    	setRegionWidth(Utils_Parralax.calculateOtherDimension(false, worldDimension, this.texRegion.get(0)));
-		}
-		
+		this.isWidth = isWidth;
+		this.worldDimension = worldDimension;
+		this.sizeRatio = sizeRatio;
+		setTexRegion(texRegion);
 		setParallaxSpeedRatioX(parallaxScrollRatioX);
 		setParallaxSpeedRatioY(parallaxScrollRatioY);
 	}
-	
+
 	public ParallaxLayer(TextureRegion texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
 	{
-		this(Arrays.asList(texRegion), isWidth, worldDimension, parallaxScrollRatioX, parallaxScrollRatioY, sizeRatio) ;
+		this(singletonList(texRegion), isWidth, worldDimension, parallaxScrollRatioX, parallaxScrollRatioY, sizeRatio);
 	}
-	
+
+	private static List<TextureRegion> singletonList(TextureRegion region)
+	{
+		List<TextureRegion> list = new ArrayList<>(1);
+		list.add(region);
+		return list;
+	}
+
 	public void setUpEverything(Parallax_Model model)
 	{
 		setFlipX(model.flipX);
@@ -81,171 +76,143 @@ public class ParallaxLayer implements Cloneable
 		setDecalPercentY(model.decal_Y_Ratio);
 		setSizeRatio(model.sizeRatio);
 		setSpeedAtRest(model.speedXAtRest);
-		setParallaxSpeedRatioX(model.parallaxScalingSpeedX) ; 
-		setParallaxSpeedRatioY( model.parallaxScalingSpeedY) ; 
+		setParallaxSpeedRatioX(model.parallaxScalingSpeedX);
+		setParallaxSpeedRatioY(model.parallaxScalingSpeedY);
 		setPadX(model.padX);
 		setPadXFactor(model.padXFactor);
 		setPadY(model.padY);
 		setPadYFactor(model.padYFactor);
 	}
-	
-	public void resetPosition() 
+
+	public void resetPosition()
 	{
-		currentDistanceX = 0 ; 
-		currentDistanceY = 0 ;
-		this.currentDistanceX = this.decalPosition_X * Gvars_Parallax.getWidthPercent(); 
-		this.currentDistanceY = this.decalPercent_Y * Gvars_Parallax.getHeightPercent() ; 
-		
+		currentDistanceX = decalPercentX * Gvars_Parallax.getWidthPercent();
+		currentDistanceY = decalPercentY * Gvars_Parallax.getHeightPercent();
 	}
 
-	public void draw(Batch batch, float x, float y) 
+	public void draw(Batch batch, float x, float y)
 	{
-		batch.draw
-		(
-			texRegion.get(0), 
-			x + (flipX ? getRegionWidth() : 0), 
-			y + (flipY ? getRegionHeight() : 0), 
-			getRegionWidth() * (flipX ? -1 : 1), 
-			getRegionHeight() * (flipY ? -1 : 1)
-		);
+		float width = getRegionWidth();
+		float height = getRegionHeight();
+		batch.draw(region,
+			flipX ? x + width : x,
+			flipY ? y + height : y,
+			flipX ? -width : width,
+			flipY ? -height : height);
 	}
-	
-	public void draw(Batch batch, float x, float y, int atPos) 
+
+	/** Draws the mirrored copy: flipped vertically when tiling on X, horizontally when tiling on Y. */
+	public void drawMirror(Batch batch, float x, float y, boolean onX)
 	{
-		batch.draw
-		(
-			texRegion.get(0), 
-			x + (flipX ? getRegionWidth() : 0), 
-			y + (flipY ? getRegionHeight() : 0), 
-			getRegionWidth() * (flipX ? -1 : 1), 
-			getRegionHeight() * (flipY ? -1 : 1)
-		);
+		boolean fx = onX ? flipX : !flipX;
+		boolean fy = onX ? !flipY : flipY;
+		float width = getRegionWidth();
+		float height = getRegionHeight();
+		batch.draw(region,
+			fx ? x + width : x,
+			fy ? y + height : y,
+			fx ? -width : width,
+			fy ? -height : height);
 	}
-	
-	public void draw(Batch batch, float x, float y, boolean onX) 
-	{
-		if(onX)
-		{
-			batch.draw
-			(
-				texRegion.get(0), 
-				x + (flipX ? getRegionWidth() : 0), 
-				y + (!flipY ? getRegionHeight() : 0), 
-				getRegionWidth() * (flipX ? -1 : 1), 
-				getRegionHeight() * (!flipY ? -1 : 1)
-			);
-		}
-		else
-		{
-			batch.draw
-			(
-				texRegion.get(0), 
-				x + (!flipX ? getRegionWidth() : 0), 
-				y + (flipY ? getRegionHeight() : 0), 
-				getRegionWidth() * (!flipX ? -1 : 1), 
-				getRegionHeight() * (flipY ? -1 : 1)
-			);
-		}
-		
-	}
-	
+
+	@Override
 	public ParallaxLayer clone()
 	{
-		ParallaxLayer o = null;
-		
-		try 
-		{o = (ParallaxLayer) super.clone();} 
-		catch(CloneNotSupportedException cnse) 
-		{cnse.printStackTrace(System.err);}
-	
-		return o;
-	}
-	
-	public void act(float delta, float speedX, float speedY, boolean onX, boolean onY) 
-	{	
-		currentDistanceY += delta * -(speedYAtRest + speedY) * parallaxSpeedRatioY ; 
-		currentDistanceX += delta * -(speedXAtRest + speedX) * parallaxSpeedRatioX ; 
-		
-		if(Math.abs(currentDistanceX) >= getTotalWidth() && onX) 
-			currentDistanceX -= getTotalWidth() * (currentDistanceX > 0 ? 1 : -1);
-		
-		if(Math.abs(currentDistanceY) >= getTotalHeight() && onY) 
-			currentDistanceY -= getTotalHeight() * (currentDistanceY > 0 ? 1 : -1);
+		try
+		{
+			ParallaxLayer copy = (ParallaxLayer) super.clone();
+			copy.texRegion = new ArrayList<>(texRegion);
+			return copy;
+		}
+		catch (CloneNotSupportedException e)
+		{
+			throw new AssertionError(e);
+		}
 	}
 
-	public float getWidth() 
+	public void act(float delta, float speedX, float speedY, boolean onX, boolean onY)
+	{
+		currentDistanceY -= delta * speedY * parallaxSpeedRatioY;
+		currentDistanceX -= delta * (speedXAtRest + speedX) * parallaxSpeedRatioX;
+
+		// Keep the offset within one tile so the tiling loops stay short and floats stay precise.
+		float totalWidth = getTotalWidth();
+		if (onX && totalWidth > 0)
+			currentDistanceX %= totalWidth;
+
+		float totalHeight = getTotalHeight();
+		if (onY && totalHeight > 0)
+			currentDistanceY %= totalHeight;
+	}
+
+	public float getWidth()
 	{return getRegionWidth();}
 
-	public float getHeight() 
+	public float getHeight()
 	{return getRegionHeight();}
-	
-	public float getTotalWidth() 
+
+	public float getTotalWidth()
 	{return getRegionWidth() + padX;}
 
-	public float getTotalHeight() 
+	public float getTotalHeight()
 	{return getRegionHeight() + padY;}
 
-	public float getDecalPercentX() 
-	{return decalPosition_X;}
+	public float getDecalPercentX()
+	{return decalPercentX;}
 
-	public void setDecalPercentX(float decalPercentX) 
+	public void setDecalPercentX(float decalPercentX)
 	{
-		this.currentDistanceX = this.currentDistanceX + (decalPercentX - this.decalPosition_X) * Gvars_Parallax.getWidthPercent(); 
-		this.decalPosition_X = decalPercentX;
+		currentDistanceX += (decalPercentX - this.decalPercentX) * Gvars_Parallax.getWidthPercent();
+		this.decalPercentX = decalPercentX;
 	}
-	
-	public float getDecalPercentY() 
-	{return decalPercent_Y;}
+
+	public float getDecalPercentY()
+	{return decalPercentY;}
 
 	public void setDecalPercentY(float decalPercentY)
 	{
-		this.currentDistanceY = this.currentDistanceY + (decalPercentY - this.decalPercent_Y) * Gvars_Parallax.getHeightPercent() ; 
-		this.decalPercent_Y = decalPercentY;
+		currentDistanceY += (decalPercentY - this.decalPercentY) * Gvars_Parallax.getHeightPercent();
+		this.decalPercentY = decalPercentY;
 	}
 
-	public float getRegionWidth() 
-	{return region_Width * sizeRatio;}
+	public float getRegionWidth()
+	{return regionWidth * sizeRatio;}
 
-	public float getRegionHeight() 
-	{return region_Height * sizeRatio;}
-	
-	private void setRegionWidth(float width)
-	{this.region_Width = width;}
-	
-	private void setRegionHeight(float height)
-	{this.region_Height = height;}
-	
-	
-	public boolean isRepeat_tileX() 
-	{return repeat_tileX;}
+	public float getRegionHeight()
+	{return regionHeight * sizeRatio;}
 
-	public void setRepeat_tileX(boolean repeat_tileX) 
-	{this.repeat_tileX = repeat_tileX;}
-
-	public boolean isRepeat_tileY() 
-	{return repeat_tileY;}
-
-	public void setRepeat_tileY(boolean repeat_tileY) 
-	{this.repeat_tileY = repeat_tileY;}
-	
-	public float getSpeedAtRest() 
+	public float getSpeedAtRest()
 	{return speedXAtRest;}
 
-	public void setSpeedAtRest(float speed) 
+	public void setSpeedAtRest(float speed)
 	{this.speedXAtRest = speed;}
-	
-	public float getCurrentDistanceX() 
-	{return currentDistanceX ;}
 
-	public void setCurrentDistanceX(float decalX) 
+	public float getCurrentDistanceX()
+	{return currentDistanceX;}
+
+	public void setCurrentDistanceX(float decalX)
 	{this.currentDistanceX = decalX;}
-	
+
 	public float getCurrentDistanceY()
 	{return currentDistanceY;}
 
 	public void setCurrentDistanceY(float decalY)
 	{this.currentDistanceY = decalY;}
-	
+
+	/** Distance scrolled horizontally since the layer was placed at its decal position. */
+	public float getScrollX()
+	{return currentDistanceX - decalPercentX * Gvars_Parallax.getWidthPercent();}
+
+	public void setScrollX(float scroll)
+	{currentDistanceX = decalPercentX * Gvars_Parallax.getWidthPercent() + scroll;}
+
+	/** Distance scrolled vertically since the layer was placed at its decal position. */
+	public float getScrollY()
+	{return currentDistanceY - decalPercentY * Gvars_Parallax.getHeightPercent();}
+
+	public void setScrollY(float scroll)
+	{currentDistanceY = decalPercentY * Gvars_Parallax.getHeightPercent() + scroll;}
+
 	public float getSizeRatio()
 	{return sizeRatio;}
 
@@ -257,66 +224,79 @@ public class ParallaxLayer implements Cloneable
 
 	public void setFlipX(boolean flipX)
 	{this.flipX = flipX;}
-	
+
 	public boolean isFlipY()
 	{return flipY;}
 
 	public void setFlipY(boolean flipY)
 	{this.flipY = flipY;}
 
-	
-	public float getPadX() 
+	public float getPadX()
 	{return padX;}
 
-
-	public void setPadX(float padX) 
+	public void setPadX(float padX)
 	{this.padX = padX;}
 
-
-	public float getPadXFactor() 
+	public float getPadXFactor()
 	{return padXFactor;}
 
-
-	public void setPadXFactor(float padXFactor) 
+	public void setPadXFactor(float padXFactor)
 	{this.padXFactor = padXFactor;}
 
-
-	public float getPadY() 
+	public float getPadY()
 	{return padY;}
 
-
-	public void setPadY(float padY) 
+	public void setPadY(float padY)
 	{this.padY = padY;}
 
-
-	public float getPadYFactor() 
+	public float getPadYFactor()
 	{return padYFactor;}
 
-
-	public void setPadYFactor(float padYFactor) 
+	public void setPadYFactor(float padYFactor)
 	{this.padYFactor = padYFactor;}
-	
-	public float getParallaxSpeedRatioX() 
+
+	public float getParallaxSpeedRatioX()
 	{return parallaxSpeedRatioX;}
 
-	public void setParallaxSpeedRatioX(float parallaxSpeedRatioX) 
+	public void setParallaxSpeedRatioX(float parallaxSpeedRatioX)
 	{this.parallaxSpeedRatioX = parallaxSpeedRatioX;}
 
 	public float getParallaxSpeedRatioY()
 	{return parallaxSpeedRatioY;}
 
-	public void setParallaxSpeedRatioY(float parallaxSpeedRatioY) 
+	public void setParallaxSpeedRatioY(float parallaxSpeedRatioY)
 	{this.parallaxSpeedRatioY = parallaxSpeedRatioY;}
-	
-	public boolean isMirror() 
+
+	public boolean isMirror()
 	{return isMirror;}
 
-	public void setMirror(boolean isMirror) 
+	public void setMirror(boolean isMirror)
 	{this.isMirror = isMirror;}
 
-	public List<TextureRegion> getTexRegion() 
+	public List<TextureRegion> getTexRegion()
 	{return texRegion;}
 
-	public void setTexRegion(ArrayList<TextureRegion> texRegion) 
-	{this.texRegion = texRegion;}
+	/** Swaps the texture(s) drawn by this layer, keeping its world width and recomputing its height. */
+	public void setTexRegion(List<TextureRegion> texRegion)
+	{
+		if (texRegion == null || texRegion.isEmpty())
+			throw new IllegalArgumentException("A parallax layer needs at least one texture region");
+
+		this.texRegion = texRegion;
+		this.region = texRegion.get(0);
+
+		if (isWidth)
+		{
+			regionWidth = worldDimension;
+			regionHeight = Utils_Parallax.calculateOtherDimension(true, worldDimension, region);
+		}
+		else
+		{
+			regionHeight = worldDimension;
+			regionWidth = Utils_Parallax.calculateOtherDimension(false, worldDimension, region);
+		}
+	}
+
+	public void setTexRegion(TextureRegion texRegion)
+	{setTexRegion(singletonList(texRegion));}
 }

@@ -1,0 +1,196 @@
+# JKS Tools2D - Parallax Background
+
+A parallax background library for [libGDX](https://libgdx.com) games, and a desktop editor to build those
+backgrounds visually.
+
+You compose a parallax in the **editor** from an atlas and/or PNG images, tune each layer while it scrolls, then
+export a `.plax` file. Your game loads that file with the **core** library, which scrolls, tiles and draws the layers
+behind your game.
+
+| Module   | What it is                                                                                  |
+|----------|---------------------------------------------------------------------------------------------|
+| `core`   | Runtime library for games: loads `.plax` files, scrolls, tiles and draws the layers.        |
+| `editor` | The Parallax Editor (desktop, LWJGL3 + VisUI).                                               |
+| `demo`   | A minimal game using `core`: a winter and a spring page cross-faded on demand.               |
+
+## Build and run
+
+Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
+
+```bash
+./gradlew :editor:run           # the editor, opens on the sample projects in editor/Files
+./gradlew :demo:run             # the demo: SPACE switches page, N tints, LEFT/RIGHT scroll, R resets
+./gradlew test                  # file format, tiling and cross-fade tests
+./gradlew :editor:installDist   # standalone editor in editor/build/install/ParallaxEditor
+```
+
+Versions (libGDX, VisUI, Kryo, Jackson) are set in `gradle.properties`.
+
+## Concepts
+
+A **page** (`WholePage_Model`) is one complete background:
+
+- **Layers**, stored back to front. Each layer is one image (an atlas region) with its own settings.
+- **Two gradient squares** (`SquareBackground`) drawn behind the layers, one covering the top of the screen and one
+  the bottom, each going from a bottom color to a top color.
+- **Repeat on X / Y**: whether layers are tiled horizontally, vertically, both, or drawn once.
+
+Layers live in **world units**: the world is 40 units wide and its height follows the screen aspect ratio. A layer is
+`40 x sizeRatio` units wide, and its height follows the image aspect ratio. Its settings:
+
+| Setting                  | Effect |
+|--------------------------|--------|
+| Size ratio               | Width of the layer relative to the world width. |
+| Decal X / Decal Y        | Starting offset, in percent of the world width / height. |
+| Speed ratio X / Y        | How much of the scroll speed the layer follows. Small values = far away, large values = close. |
+| At rest speed            | Horizontal speed of the layer even when the screen does not move (clouds, water). |
+| Pad X / Pad Y            | Gap between two repetitions of the layer, in world units. |
+| Flip X / Flip Y          | Mirror the image. |
+| Mirror                   | Adds a flipped copy next to the strip. Editor preview only: not saved in files yet. |
+
+Each frame, a layer moves by `delta × (screen speed + at rest speed) × speed ratio`, then is tiled to cover the
+camera view. The screen speed is set by the game, as a constant speed plus a speed consumed by the next frame.
+
+The square sizes are stored as the part of the screen they leave **uncovered**: `0.5` covers half the screen, `0`
+all of it, `1` nothing.
+
+## Using the library in a game
+
+Publish it to your local Maven repository:
+
+```bash
+./gradlew :core:publishToMavenLocal
+```
+
+Then, in the game's core module:
+
+```groovy
+repositories { mavenLocal() }
+dependencies { implementation "jks.tools2d:parallax-background:2.0.0" }
+```
+
+Put the exported `.plax` file in your assets, and the atlas it names at the root of your assets (the atlas is loaded
+through the libGDX `AssetManager` returned by `Gvars_Parallax.getManager()`):
+
+```java
+Parallax_Heart heart;
+
+public void create() {
+    heart = new Parallax_Heart("backgrounds/forest.plax");  // owns its camera and batch
+    heart.screenSpeedConstantX = 60;                        // optional: always scroll
+}
+
+public void render() {
+    heart.screenSpeedConsumableX = player.speedX;           // scroll for this frame only
+    heart.act(Gdx.graphics.getDeltaTime());
+    heart.render();                                         // draw it before your game
+}
+
+public void resize(int width, int height) { heart.resize(width, height); }
+
+public void dispose() {
+    heart.dispose();
+    Gvars_Parallax.getManager().dispose();                  // the atlases
+}
+```
+
+More:
+
+- **Change page with a cross-fade:** `heart.transfertIntoPage(Utils_Page.loadPage("backgrounds/night.plax"), 3f)`.
+  Layers are matched from the front, and matching layers keep scrolling seamlessly. This works best between variants
+  of the same scene (day/night, winter/spring).
+- **Tint every layer:** `heart.parallaxReader.addColorTransfert(color, seconds)`.
+- **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
+  The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
+  background away.
+- **Load an atlas from a folder instead of the assets:** set `heart.relativePath` before `setPage` (desktop only).
+
+The world size is global (`Gvars_Parallax`), so it is shared by all `Parallax_Heart` instances. `demo/` is a
+complete example.
+
+## Using the editor
+
+### Start screen
+
+Open a project (`.plaxpj`), an exported parallax (`.plax` or `.jplax`), or an atlas (`.atlas`) to start a project
+from it. **NEW** starts an empty project. Files can also be dragged onto the window.
+
+### Edition screen
+
+- **Center:** the live preview. Use play/pause, full screen, the X/Y speed sliders and "Reset position".
+  Arrows/WASD (and space) scroll it by hand.
+- **Top:** project folder and name. The two save buttons are **Save project** (`.plaxpj`) and **Export** (`.plax` and/or
+  `.jplax`, see the format checkboxes).
+- **Left tabs:**
+  - **Controls:** help and tutorial links; **Parallax** (repeat on X/Y, current atlas, copy loose images next to the
+    project, back to the start screen); **Application** (window size, full screen, VSync).
+  - **Add texture:** **Adding new** is the list of images. The selected image has three buttons: *add it as a layer*,
+    *make the layers of this image use another one*, and *delete it*. **Default Value** sets the settings of the
+    next added layer, and how they change after each addition (speeds are multiplied, the rest is added), which
+    quickly builds a stack of layers with depth.
+  - **Textures:** every setting of the selected layer: its position in the stack, clone, set as default, delete/undo,
+    flips, and the sliders. The arrow buttons next to a slider copy that value from the layer in front / behind.
+  - **Background:** the top and bottom squares: on/off, size, and both colors, with an eyedropper that picks a color
+    from the preview (right click cancels it).
+
+The mouse wheel changes the slider under the mouse. Over a slider's number field, it changes the digit left of the
+text cursor.
+
+### Loose images and export
+
+Drop PNG files on the edition screen to add them without an atlas. They reload automatically when you save them from
+an image editor. When you export a project that uses loose images (or with **F.Export** checked), the editor first
+**flattens** it: every image of the list is packed into a new atlas next to the project (`<name>.atlas` plus
+`<name>_1.png`, `<name>_2.png`...), and the project then uses that atlas.
+
+The project is auto-saved every 5 minutes into `Files/AutoSave` (or `~/.parallax-editor/autosave` when the editor is
+not started from its module folder). The 10 most recent auto-saves are kept.
+
+## File formats
+
+| Extension | Content                                              | Written by    | Read by                   |
+|-----------|------------------------------------------------------|---------------|---------------------------|
+| `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), editor |
+| `.jplax`  | Exported page, JSON (Jackson)                        | Export        | editor, other tools       |
+| `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor                    |
+
+A page references its atlas by file name. Layers reference an image by region name and position among the regions
+that share that name.
+
+`.plax` files carry a format version since 2.0. Format 2 also stores `flipY`, and format 1 files (written by the
+2019-2023 editor) still load. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
+exported from. Kryo registration order defines the class ids stored in the files, so `GVars_Serialization.prepareKryo`
+must only ever be appended to.
+
+## Code map
+
+```
+core/src/jks/tools2d/parallax/
+    heart/Parallax_Heart          entry point: camera, batch, squares, act/render/resize/dispose
+    heart/Parallax_Utils_Page     set a page, cross-fade into another one
+    heart/Gvars_Parallax          world size, AssetManager
+    heart/GVars_Serialization     Kryo setup for .plax
+    ParallaxPageReader            scrolling, tiling, cross-fade and tint of the layers
+    ParallaxLayer                 one layer: image, settings, scroll position
+    pages/                        saved models (WholePage_Model, Page_Model, Parallax_Model), serializers, Utils_Page
+    side/SquareBackground         the gradient squares
+
+editor/mains/.../Launcher_Editor  desktop launcher (window, file drops)
+editor/src/jks/tools2d/
+    amains/Main_Editor            application: switches between the two screens
+    parallax/editor/vue/          Vue_Selection (start screen), Vue_Edition (edition screen)
+    parallax/editor/vue/edition/  the panels (VE_*), project data, save/export/flatten utilities, atlas packer
+    parallax/editor/gvars/        editor-wide state, paths, UI skin and fonts, JSON setup
+    filechooser/ filewatch/ libgdxutils/   file browser, file watcher, small scene2d widgets
+
+demo/src/.../ParallaxDemo         example game
+```
+
+The editor keeps its state in static `GVars_*` classes, one project at a time. The panels read the window size when
+they are built, so the edition screen rebuilds them after a resize.
+
+## Credits
+
+Started in 2017 as a fork of [ParallaxBackground-libgdx](https://github.com/fooble/ParallaxBackground-libgdx) by
+**Rahul Verma**, Copyright 2014, licensed under the Apache License 2.0. See [NOTICE](NOTICE) for the other
+third-party code included in the editor.

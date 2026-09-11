@@ -1,1 +1,10 @@
-include 'core', 'editor', 'test'
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'JKS_Tools2D_ParallaxBackground'
+
+include 'core', 'editor', 'demo'
