@@ -13,21 +13,31 @@ import com.esotericsoftware.kryo.io.Output;
  * <li>version 1 (2019-2023 editor): the page starts directly with its first color, whose reference marker is always
  * {@code 0x01}. No version number, and flipY is not stored.</li>
  * <li>version 2: {@link #VERSION_MARKER} and a version number, then the version 1 layout with flipY stored.</li>
+ * <li>version 3: the version 2 layout with each layer's mirror stored after padYFactor.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 2;
+	static final int CURRENT_VERSION = 3;
 	static final String VERSION_KEY = "plaxFormatVersion";
+
+	private final int writeVersion;
+
+	public WholePage_Model_Serializer()
+	{this(CURRENT_VERSION);}
+
+	/** Writes an older format (2 or more), so tests can produce the files earlier releases wrote. */
+	WholePage_Model_Serializer(int writeVersion)
+	{this.writeVersion = writeVersion;}
 
 	@Override
 	public void write(Kryo kryo, Output output, WholePage_Model page)
 	{
 		output.writeByte(VERSION_MARKER);
-		output.writeVarInt(CURRENT_VERSION, true);
-		setVersion(kryo, CURRENT_VERSION);
+		output.writeVarInt(writeVersion, true);
+		setVersion(kryo, writeVersion);
 
 		kryo.writeObject(output, page.topHalf_top);
 		kryo.writeObject(output, page.topHalf_bottom);

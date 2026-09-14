@@ -50,6 +50,7 @@ public final class Utils_Page
 		model.padXFactor = page.getPadXFactor();
 		model.padY = page.getPadY();
 		model.padYFactor = page.getPadYFactor();
+		model.mirror = page.isMirror();
 		return model;
 	}
 }

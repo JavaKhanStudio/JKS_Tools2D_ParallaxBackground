@@ -29,6 +29,9 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		output.writeFloat(model.padY);
 		output.writeFloat(model.padYFactor);
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 3)
+			output.writeBoolean(model.mirror);
 	}
 
 	@Override
@@ -54,6 +57,9 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		model.padY = input.readFloat();
 		model.padYFactor = input.readFloat();
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 3)
+			model.mirror = input.readBoolean();
 
 		return model;
 	}
