@@ -368,6 +368,16 @@ public class FC_List extends FileChooser
 		setDirectory(dir, true);
 	}
 
+	/**
+	 * sets {@link #directory} and makes it the only entry of {@link #fileHistory}, so {@link #backButton} stops there
+	 * instead of returning to the default starting directory
+	 */
+	public void setStartDirectory(FileHandle dir)
+	{
+		fileHistory.clear();
+		setDirectory(dir, true);
+	}
+
 	/** sets {@link #directory} and updates all things that need to be udpated */
 	public void setDirectory(FileHandle dir, boolean addToHistory)
 	{

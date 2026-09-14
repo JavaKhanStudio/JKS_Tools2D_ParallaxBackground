@@ -68,7 +68,7 @@ public class Vue_Selection extends AVue_Model
 		chooser.setFileFilter(buildFileFilter());
 		// The start screen has nothing to cancel back to.
 		chooser.setCancelable(false);
-		chooser.setDirectory(filesRoot);
+		chooser.setStartDirectory(filesRoot);
 
 		TextButton createNew = new TextButton("NEW", baseSkin);
 		createNew.addListener(new ChangeListener()
