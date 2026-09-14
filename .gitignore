@@ -13,6 +13,8 @@ out/
 bin/
 .vscode/
 
+HQ/
+
 # OS / editors
 .DS_Store
 *.swp
@@ -22,3 +24,10 @@ bin/
 # Editor runtime output
 editor/Files/AutoSave/
 editor/packing_*/
+
+# Atelier board skills: absolute symlinks into the atelier checkout, broken for anyone else.
+.claude/skills/board
+.claude/skills/digest-contexts
+.claude/skills/start-worker
+.claude/skills/write-context-pack
+.claude/skills/write-lexicon
