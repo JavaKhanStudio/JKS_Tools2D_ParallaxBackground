@@ -3,10 +3,18 @@ name: Release
 # Pushing a tag like v2.1.0 releases that version:
 #   - the library goes to Maven Central
 #   - the GitHub release gets the two downloads: the library jars, and the editor (library included)
+# Without the four Maven Central secrets the workflow FAILS before building anything: the README tells games to
+# depend on the Central artifact, so a release that skipped Central must not look green. To release the GitHub
+# downloads only, run the workflow by hand on the tag with "without_central" ticked.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      without_central:
+        description: 'Release the GitHub downloads only, without publishing to Maven Central'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -46,24 +54,47 @@ jobs:
             *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
           esac
 
+      - name: Check the Maven Central secrets
+        id: central
+        run: |
+          MISSING=""
+          [ -n "$MAVEN_CENTRAL_USERNAME" ] || MISSING="$MISSING MAVEN_CENTRAL_USERNAME"
+          [ -n "$MAVEN_CENTRAL_PASSWORD" ] || MISSING="$MISSING MAVEN_CENTRAL_PASSWORD"
+          [ -n "$SIGNING_KEY" ] || MISSING="$MISSING SIGNING_KEY"
+          # SIGNING_KEY_PASSWORD may be empty: a key without a passphrase is valid.
+          if [ -z "$MISSING" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          elif [ "$WITHOUT_CENTRAL" = "true" ]; then
+            echo "::warning::NOT published to Maven Central (run with without_central, missing:$MISSING). Only the GitHub release gets the jars."
+            echo "### :warning: ${GITHUB_REF_NAME} was NOT published to Maven Central" >> "$GITHUB_STEP_SUMMARY"
+            echo "Run with \`without_central\`. Missing secrets:$MISSING. See RELEASING.md." >> "$GITHUB_STEP_SUMMARY"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Maven Central secrets missing:$MISSING. Nothing was released. Set them (RELEASING.md, one-time setup), or run this workflow by hand on the tag with without_central to release the GitHub downloads only."
+            exit 1
+          fi
+        env:
+          WITHOUT_CENTRAL: ${{ inputs.without_central }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+
       - name: Build and test
         run: ./gradlew build
 
+      # publishToMavenCentral alone only uploads a deployment that waits for a manual "Publish" in the Central Portal;
+      # publishAndReleaseToMavenCentral releases it.
       - name: Publish the library to Maven Central
-        if: env.MAVEN_CENTRAL_USERNAME != ''
-        run: ./gradlew :core:publishToMavenCentral --no-configuration-cache
+        if: steps.central.outputs.publish == 'true'
+        run: |
+          ./gradlew :core:publishAndReleaseToMavenCentral --no-configuration-cache
+          echo "### ${GITHUB_REF_NAME} released to Maven Central" >> "$GITHUB_STEP_SUMMARY"
+          echo "It can take up to an hour before \`mavenCentral()\` serves it: https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background" >> "$GITHUB_STEP_SUMMARY"
         env:
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
-
-      - name: Warn when the Maven Central secrets are missing
-        if: env.MAVEN_CENTRAL_USERNAME == ''
-        run: echo "::warning::The library was not published to Maven Central, the secrets are not set. The GitHub release still gets the jars. See RELEASING.md."
-        env:
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
 
       - name: Package the two downloads
         run: |
@@ -75,6 +106,29 @@ jobs:
           cp editor/build/distributions/ParallaxEditor-*.zip release/
           ls -la release
 
+          # The release notes only point at Maven Central when the library was published there.
+          VERSION="${{ steps.version.outputs.version }}"
+          {
+            echo "## Downloads"
+            echo
+            echo "**Use a parallax in your game** — \`parallax-background-$VERSION.jar\` (plus sources and javadoc)."
+            if [ "${{ steps.central.outputs.publish }}" = "true" ]; then
+              echo "Easier, from Maven Central:"
+              echo
+              echo '```groovy'
+              echo "implementation \"io.github.javakhanstudio:parallax-background:$VERSION\""
+              echo '```'
+            else
+              echo "This version is not on Maven Central: add the jar to your game yourself."
+            fi
+            echo
+            echo "**Design a parallax** — \`ParallaxEditor-$VERSION.zip\`: the editor with the library included and the"
+            echo "sample projects. Unzip it and run \`bin/ParallaxEditor\` (\`bin\\ParallaxEditor.bat\` on Windows). Needs"
+            echo "Java 17 or newer."
+            echo
+            echo "See the [README](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground#readme) to get started."
+          } > release-notes.md
+
       - name: Create the GitHub release
         uses: softprops/action-gh-release@v3
         with:
@@ -82,18 +136,4 @@ jobs:
           prerelease: ${{ steps.version.outputs.prerelease }}
           generate_release_notes: true
           files: release/*
-          body: |
-            ## Downloads
-
-            **Use a parallax in your game** — `parallax-background-${{ steps.version.outputs.version }}.jar`
-            (plus sources and javadoc). Easier, from Maven Central:
-
-            ```groovy
-            implementation "io.github.javakhanstudio:parallax-background:${{ steps.version.outputs.version }}"
-            ```
-
-            **Design a parallax** — `ParallaxEditor-${{ steps.version.outputs.version }}.zip`: the editor with the
-            library included and the sample projects. Unzip it and run `bin/ParallaxEditor`
-            (`bin\ParallaxEditor.bat` on Windows). Needs Java 17 or newer.
-
-            See the [README](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground#readme) to get started.
+          body_path: release-notes.md

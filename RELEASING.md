@@ -62,8 +62,15 @@ Each release publishes:
 
 ## One-time setup: Maven Central credentials
 
-Until these four secrets exist, releases still produce the GitHub downloads; only the Maven Central step is skipped
-(the workflow logs a warning).
+Until these secrets exist (`SIGNING_KEY_PASSWORD` may be empty), a tag push makes the release workflow **fail** before
+building anything, so a release can never look green without being on Maven Central. To release the GitHub downloads
+only, run the Release workflow by hand (Actions → Release → Run workflow), pick the tag, and tick `without_central`:
+the run summary and the release notes then say it is not on Maven Central. Snapshot builds on `develop` do not fail;
+they skip publishing with a warning in the run summary.
+
+The release publishes with `publishAndReleaseToMavenCentral`, which releases the deployment.
+`publishToMavenCentral` alone (as in "Publishing by hand" below) only uploads it: it then waits for a click on
+**Publish** under Deployments in the Central Portal, and nothing reaches Maven Central until then.
 
 1. **Create a Central Portal account** at https://central.sonatype.com (sign in with GitHub).
 2. **Claim the namespace** `io.github.javakhanstudio`: Namespaces → Add Namespace → `io.github.javakhanstudio`.
