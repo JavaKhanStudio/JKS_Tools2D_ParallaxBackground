@@ -1,8 +1,8 @@
 # Agent guide
 
 What README.md does not say: the rules that break silently here. Concepts, settings and file shapes are in
-README.md; branches and releases in RELEASING.md; MEMORY_LANE.md is the 2017-2023 history (its paths and line numbers
-are commit 2a7e3f6).
+README.md; branches and releases in RELEASING.md. `git show 2a7e3f6:<path>` shows the code as it was before the 2026
+repair.
 
 ## Modules
 
@@ -22,7 +22,7 @@ are commit 2a7e3f6).
 - `core/src/jks/tools2d/parallax/heart/GVars_Serialization.prepareKryo`: registration order is the class id written
   into every exported `.plax`. Append only, never reorder.
 - `kryo.setReferences(true)` stays: the 2019 files were written with references on, and with it off they decode as
-  garbage without throwing (MEMORY_LANE.md §4).
+  garbage without throwing.
 - A new stored field needs a format bump in `pages/WholePage_Model_Serializer` (`CURRENT_VERSION`), written and read
   behind `currentVersion(kryo) >= N` in its serializer. Format 1 files (no version marker) must keep loading.
 - `editor/Files/**/*.plax` and `demo/assets/**/*.plax` are the test fixtures for `core/test/.../PlaxFormatTest`.
@@ -41,8 +41,8 @@ are commit 2a7e3f6).
 ## Editor
 
 - State is static, in `editor/src/jks/tools2d/parallax/editor/gvars/GVars_*`, and there is one project at a time.
-- There are no editor tests, and a compiling control is not a working one: MEMORY_LANE.md §6 lists buttons and
-  dialogs that shipped with empty listeners. After wiring a control, run `./gradlew :editor:run` and use it.
+- There are no editor tests, and a compiling control is not a working one: the 2019 editor shipped buttons and
+  dialogs with empty listeners. After wiring a control, run `./gradlew :editor:run` and use it.
 - Panels read the window size when built; `vue/Vue_Edition` rebuilds them after a resize.
 - `GVars_UI.init` sets VisUI's global `scaleFactor`; skin styles are shared, so copy a style before changing it.
 - README.md's layer-settings table documents every setting: rename or rescale one and fix the table in the same
@@ -51,4 +51,4 @@ are commit 2a7e3f6).
 ## Words
 
 French names are kept: `vue` = a screen of the editor, `transfert` = the cross-fade between two pages, `decal` = a
-layer's starting offset in percent of the world. MEMORY_LANE.md §8 has the rest.
+layer's starting offset in percent of the world.
