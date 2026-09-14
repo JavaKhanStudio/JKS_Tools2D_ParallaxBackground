@@ -53,6 +53,9 @@ jobs:
 
       - name: Tell me what to do when the secrets are missing
         if: env.MAVEN_CENTRAL_USERNAME == ''
-        run: echo "::warning::Publishing skipped, the Maven Central secrets are not set. See RELEASING.md."
+        run: |
+          echo "::warning::Publishing skipped, the Maven Central secrets are not set. See RELEASING.md."
+          echo "### :warning: No snapshot was published: the Maven Central secrets are not set" >> "$GITHUB_STEP_SUMMARY"
+          echo "Nothing reached the snapshot repository. See RELEASING.md, one-time setup." >> "$GITHUB_STEP_SUMMARY"
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
