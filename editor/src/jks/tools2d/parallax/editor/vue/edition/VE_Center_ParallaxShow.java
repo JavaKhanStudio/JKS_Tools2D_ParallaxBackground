@@ -60,11 +60,13 @@ public class VE_Center_ParallaxShow extends Table
 			}
 			else if (ref instanceof WholePage_Model)
 			{
+				EditorPaths.locateAtlas((WholePage_Model) ref);
 				GVars_Vue_Edition.setPage((WholePage_Model) ref);
 			}
 			else if (ref instanceof Project_Data)
 			{
 				loadOutsideImages();
+				EditorPaths.locateAtlas(((Project_Data) ref).saving);
 				GVars_Vue_Edition.setPage(((Project_Data) ref).saving);
 			}
 			else

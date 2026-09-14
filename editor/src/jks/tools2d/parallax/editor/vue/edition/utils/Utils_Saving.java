@@ -22,7 +22,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.TextureAtlasData;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.esotericsoftware.kryo.io.Output;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
@@ -111,8 +113,8 @@ public final class Utils_Saving
 					@Override
 					public void yes()
 					{
-						saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false);
-						flattenAndExport(where, whatName);
+						if (saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false))
+							flattenAndExport(where, whatName);
 					}
 
 					@Override
@@ -137,23 +139,42 @@ public final class Utils_Saving
 	public static void saving_Parallax_JSON(String where, String whatName, WholePage_Model outputFinalModel) throws IOException
 	{GVars_Serialization_Editor.objectMapper.writeValue(new File(where + "/" + whatName + "." + FVars_Extensions.JSON_PARALLAX), outputFinalModel);}
 
-	public static void saving_Parallax_Project(String where, String whatName, boolean showHardInfo)
+	/**
+	 * Saves the project into {@code where}, copying its atlas there first: a project finds its atlas next to itself.
+	 * Saved away from the project folder, loose images keep working through absolute paths.
+	 *
+	 * @return false (after telling the user) if nothing was saved
+	 */
+	public static boolean saving_Parallax_Project(String where, String whatName, boolean showHardInfo)
 	{
 		try
 		{
-			projectDatas.prepareForSaving(buildWholePageAsProjectForSaving());
-			writeProject(where, whatName, projectDatas);
+			copyAtlasTo(Paths.get(where));
+			WholePage_Editor page = buildWholePageAsProjectForSaving();
+			if (isProjectFolder(where))
+			{
+				projectDatas.prepareForSaving(page);
+				writeProject(where, whatName, projectDatas);
+			}
+			else
+				writeProject(where, whatName, withAbsolutePaths(page));
+		}
+		catch (AtlasConflictException e)
+		{
+			Gdx.app.error("Utils_Saving", "Project not saved: " + e.getMessage());
+			Dialogs.showErrorDialog(GVars_UI.mainUi, "The project was not saved. " + e.getMessage());
+			return false;
 		}
 		catch (IOException | RuntimeException e)
 		{
 			Gdx.app.error("Utils_Saving", "Project save failed", e);
-			if (showHardInfo)
-				Dialogs.showErrorDialog(GVars_UI.mainUi, "Could not save the project", e);
-			return;
+			Dialogs.showErrorDialog(GVars_UI.mainUi, "Could not save the project", e);
+			return false;
 		}
 
 		if (showHardInfo)
 			Dialogs.showOKDialog(GVars_UI.mainUi, "Saving", "The project has been saved");
+		return true;
 	}
 
 	/** The parallax as games read it: only layers whose image is in the atlas. */
@@ -222,6 +243,59 @@ public final class Utils_Saving
 		page.repeatOnY = parallax_Heart.parallaxReader.isRepeatOnY();
 	}
 
+	private static boolean isProjectFolder(String where)
+	{
+		return GVars_Vue_Edition.relativePath != null
+				&& Paths.get(where).toAbsolutePath().normalize().equals(Paths.get(GVars_Vue_Edition.relativePath).toAbsolutePath().normalize());
+	}
+
+	/**
+	 * Copies the atlas and its page images into {@code folder}, keeping their layout. Files already there with the same
+	 * content are left alone; a different file of the same name (another project's atlas) stops the save before
+	 * anything is copied.
+	 */
+	private static void copyAtlasTo(Path folder) throws IOException
+	{
+		Path atlas = EditorPaths.atlasFile();
+		folder = folder.toAbsolutePath().normalize();
+		if (atlas == null || folder.equals(atlas.getParent()))
+			return;
+
+		Path source = atlas.getParent();
+		List<Path> files = new ArrayList<>();
+		files.add(atlas);
+		FileHandle atlasHandle = new FileHandle(atlas.toFile());
+		for (TextureAtlasData.Page page : new TextureAtlasData(atlasHandle, atlasHandle.parent(), false).getPages())
+			files.add(page.textureFile.file().toPath().toAbsolutePath().normalize());
+
+		List<Path> toCopy = new ArrayList<>();
+		StringBuilder conflicts = new StringBuilder();
+		for (Path file : files)
+		{
+			Path target = folder.resolve(source.relativize(file));
+			if (!Files.exists(target))
+				toCopy.add(file);
+			else if (Files.mismatch(file, target) != -1)
+				conflicts.append("\n").append(target);
+		}
+		if (conflicts.length() > 0)
+			throw new AtlasConflictException("Saving it here copies its atlas into this folder, but different files of the same name are already there:"
+					+ conflicts + "\nSave it into another folder, or move those files away.");
+
+		for (Path file : toCopy)
+		{
+			Path target = folder.resolve(source.relativize(file));
+			Files.createDirectories(target.getParent());
+			Files.copy(file, target);
+		}
+	}
+
+	private static final class AtlasConflictException extends IOException
+	{
+		AtlasConflictException(String message)
+		{super(message);}
+	}
+
 	private static void writeProject(String where, String whatName, Project_Data project) throws IOException
 	{
 		Files.createDirectories(Paths.get(where));
@@ -229,8 +303,8 @@ public final class Utils_Saving
 	}
 
 	/**
-	 * Saves a timestamped copy of the project in the auto-save folder, keeping the 10 most recent ones. Image paths
-	 * are made absolute since the copy does not sit next to the project.
+	 * Saves a timestamped copy of the project in the auto-save folder, keeping the 10 most recent ones. Image and
+	 * atlas paths are made absolute since the copy does not sit next to the project.
 	 */
 	public static void autoSave()
 	{
@@ -240,7 +314,11 @@ public final class Utils_Saving
 
 		try
 		{
-			writeProject(folder.toString(), saveName, withAbsolutePaths(buildWholePageAsProjectForSaving()));
+			Project_Data save = withAbsolutePaths(buildWholePageAsProjectForSaving());
+			Path atlas = EditorPaths.atlasFile();
+			if (atlas != null)
+				save.saving.pageModel.atlasName = atlas.toString();
+			writeProject(folder.toString(), saveName, save);
 		}
 		catch (IOException | RuntimeException e)
 		{

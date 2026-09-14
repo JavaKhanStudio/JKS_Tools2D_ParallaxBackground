@@ -64,8 +64,9 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 					@Override
 					public void yes()
 					{
-						Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false);
-						GVars_Heart_Editor.changeVue(new Vue_Selection(), true);
+						// A failed save says why and stays here, rather than leaving with the work unsaved.
+						if (Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false))
+							GVars_Heart_Editor.changeVue(new Vue_Selection(), true);
 					}
 
 					@Override

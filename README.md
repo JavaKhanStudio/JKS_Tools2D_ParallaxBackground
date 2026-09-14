@@ -168,8 +168,11 @@ not started from its module folder). The 10 most recent auto-saves are kept.
 | `.jplax`  | Exported page, JSON (Jackson)                        | Export        | editor, other tools       |
 | `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor                    |
 
-A page references its atlas by file name. Layers reference an image by region name and position among the regions
-that share that name.
+A page references its atlas by file name, and looks for it next to itself. **Save project** therefore copies the atlas
+and its page images into the project folder when they are not there yet, and refuses to save if that folder already
+holds different files of the same name. A project saved away from the folder it was opened from stores its loose
+images by absolute path; auto-saves store the atlas that way too. Layers reference an image by region name and position
+among the regions that share that name.
 
 `.plax` files carry a format version since 2.0. Format 2 also stores `flipY` and format 3 `mirror`;
 format 1 files (written by the 2019-2023 editor) and format 2 files still load. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
