@@ -284,14 +284,23 @@ public final class Utils_Saving
 	private static String absolute(String path)
 	{return EditorPaths.resolveProjectFile(path).toAbsolutePath().toString();}
 
+	public static boolean hasLooseImages()
+	{return projectDatas.outsideInfos != null && !projectDatas.outsideInfos.isEmpty();}
+
+	public static void showNoLooseImages()
+	{Dialogs.showOKDialog(GVars_UI.mainUi, "Packing", "There is nothing to copy: every image of this project comes from its atlas.");}
+
 	/**
 	 * Copies the loose images into a folder next to the project and stores them with paths relative to it, so the
 	 * project folder can be moved or shared.
 	 */
 	public static void packTextures()
 	{
-		if (projectDatas.outsideInfos == null || projectDatas.outsideInfos.isEmpty())
+		if (!hasLooseImages())
+		{
+			showNoLooseImages();
 			return;
+		}
 
 		String folderName = parallaxName.getText() + "_images";
 		Path target = Paths.get(parallaxPath.getText()).resolve(folderName);
