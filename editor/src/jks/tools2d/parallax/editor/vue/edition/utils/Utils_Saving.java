@@ -56,6 +56,14 @@ public final class Utils_Saving
 	/** Exports the parallax, first flattening loose images into a new atlas if there are any. */
 	public static void saving_Parallax(String where, String whatName)
 	{
+		// Checked before flattening too: flattening rewrites the project, and would then export nothing.
+		if (!VE_Options.formatLibGDX.isChecked() && !VE_Options.formatJson.isChecked())
+		{
+			Dialogs.showOKDialog(GVars_UI.mainUi, "Export", "Nothing exported: no format is selected."
+					+ "\nTick LibGDX (." + FVars_Extensions.PARALLAX + ") or JSON (." + FVars_Extensions.JSON_PARALLAX + ").");
+			return;
+		}
+
 		boolean oneOutside = false;
 		for (ParallaxLayer layer : parallax_Heart.parallaxReader.layers)
 			for (TextureRegion region : layer.getTexRegion())
