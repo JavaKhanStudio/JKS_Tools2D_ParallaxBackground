@@ -9,6 +9,8 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
@@ -113,6 +115,18 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 		content.add(buildEyedropper(bottomPicker)).row();
 		content.add(bottomPicker).colspan(2);
 
+		// Two pickers are taller than a small window: scroll instead of overflowing over the tab bars. No flick
+		// scrolling, so dragging in a picker changes the color rather than the scroll.
+		ScrollPaneStyle scrollStyle = new ScrollPaneStyle(baseSkin.get(ScrollPaneStyle.class)); // a copy: skin styles are shared
+		scrollStyle.background = null;
+		ScrollPane scroll = new ScrollPane(content, scrollStyle);
+		scroll.setScrollingDisabled(true, false);
+		scroll.setFlickScroll(false);
+		scroll.setFadeScrollBars(false);
+		scroll.setOverscroll(false, false);
+		Table scrolled = new Table();
+		scrolled.add(scroll).expand().fill();
+
 		return new Tab(false, false)
 		{
 			@Override
@@ -121,7 +135,7 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 
 			@Override
 			public Table getContentTable()
-			{return content;}
+			{return scrolled;}
 		};
 	}
 
