@@ -165,7 +165,9 @@ public class Parallax_Heart implements Disposable
 			worldCamera.setToOrtho(false, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());
 		}
 
+		// ShapeRenderer draws with a matrix it only rebuilds from getProjectionMatrix() when told to.
 		shapeRender.getProjectionMatrix().setToOrtho2D(0, 0, width, height);
+		shapeRender.updateMatrices();
 
 		if (topSquare != null)
 			topSquare.resize(width, height);

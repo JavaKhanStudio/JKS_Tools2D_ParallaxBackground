@@ -227,6 +227,7 @@ public class Vue_Edition extends AVue_Model
 		centerControl.resize();
 		parallax_Heart.resize(width, height);
 		shapeRender.getProjectionMatrix().setToOrtho2D(0, 0, width, height);
+		shapeRender.updateMatrices();
 
 		if (width != builtWidth || height != builtHeight)
 			rebuildCountdown = 0.2f;

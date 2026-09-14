@@ -1,6 +1,7 @@
 package jks.tools2d.parallax.heart;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.reflect.Proxy;
 import java.nio.IntBuffer;
@@ -38,6 +39,8 @@ class ParallaxHeartResizeTest
 
 	private final List<float[]> rects = new ArrayList<>();
 	private final List<Color[]> rectColors = new ArrayList<>();
+	/** The last matrix a shader received through glUniformMatrix4fv: what the GPU draws with. */
+	private static float[] uploadedMatrix;
 	private float savedWorldWidth, savedWorldHeight;
 
 	@BeforeAll
@@ -72,6 +75,8 @@ class ParallaxHeartResizeTest
 					&& ((int) args[1] == GL20.GL_COMPILE_STATUS || (int) args[1] == GL20.GL_LINK_STATUS);
 			if (status)
 				((IntBuffer) args[2]).put(0, 1);
+			if (method.getName().equals("glUniformMatrix4fv") && args[3] instanceof float[])
+				uploadedMatrix = ((float[]) args[3]).clone();
 			if (method.getReturnType() == int.class)
 				return 1; // a valid handle for glCreateShader, glCreateProgram, glGenBuffer...
 			return method.getReturnType() == String.class ? "" : defaultValue(method.getReturnType());
@@ -108,6 +113,15 @@ class ParallaxHeartResizeTest
 	{
 		windowWidth = width;
 		windowHeight = height;
+	}
+
+	/** Draws the squares with the heart's real renderer and returns the projection the shader was given. */
+	private static Matrix4 drawnProjection(Parallax_Heart heart)
+	{
+		uploadedMatrix = null;
+		heart.drawBackGround();
+		assertNotNull(uploadedMatrix, "the squares were flushed to the shader");
+		return new Matrix4(uploadedMatrix);
 	}
 
 	private ShapeRenderer recordingRenderer()
@@ -226,6 +240,20 @@ class ParallaxHeartResizeTest
 		assertEquals(2, rects.size());
 		assertRect(rects.get(0), 0, 500, 1000, 500); // top square, half uncovered
 		assertRect(rects.get(1), 0, 0, 1000, 250); // bottom square, three quarters uncovered
+	}
+
+	/** ShapeRenderer only rebuilds the matrix it draws with when told: editing getProjectionMatrix() alone was ignored. */
+	@Test
+	void resizeAfterTheFirstDrawChangesWhatTheSquaresAreDrawnWith()
+	{
+		Parallax_Heart heart = new Parallax_Heart();
+		heart.setPage(page(0, 0));
+		assertScreenProjection(drawnProjection(heart), 1600, 900);
+
+		window(1100, 680);
+		heart.resize(1100, 680);
+
+		assertScreenProjection(drawnProjection(heart), 1100, 680);
 	}
 
 	@Test
