@@ -96,6 +96,8 @@ public class Vue_Selection extends AVue_Model
 		GVars_UI.mainUi.addActor(createNew);
 		GVars_UI.mainUi.addActor(chooser);
 		GVars_UI.mainUi.addActor(title);
+		// The chooser's arrow, backspace and Enter keys only reach it while it or a child holds the focus.
+		GVars_UI.mainUi.setKeyboardFocus(chooser);
 	}
 
 	private static FileFilter buildFileFilter()

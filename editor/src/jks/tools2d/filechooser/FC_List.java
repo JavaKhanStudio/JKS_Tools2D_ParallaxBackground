@@ -167,7 +167,10 @@ public class FC_List extends FileChooser
 		}
 	};
 
-	/** key controls of {@link #currentlySelected} */
+	/**
+	 * key controls of {@link #currentlySelected}. Enter arrives as a character, so it is read in keyTyped; the
+	 * other keys have no character and Stage only gives their key code to keyDown.
+	 */
 	public final InputListener keyControlsListener = new InputListener()
 	{
 
@@ -187,7 +190,15 @@ public class FC_List extends FileChooser
 				return true;
 			}
 
-			int keyCode = event.getKeyCode();
+			return false;
+		}
+
+		@Override
+		public boolean keyDown(InputEvent event, int keyCode)
+		{
+			// The list moves its own selection on UP/DOWN when it has the focus, and the path field needs DEL and LEFT.
+			if (event.isHandled() || getStage().getKeyboardFocus() == pathField)
+				return false;
 
 			if (keyCode == Keys.DEL)
 			{
