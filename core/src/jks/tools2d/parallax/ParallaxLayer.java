@@ -82,6 +82,7 @@ public class ParallaxLayer implements Cloneable
 		setPadXFactor(model.padXFactor);
 		setPadY(model.padY);
 		setPadYFactor(model.padYFactor);
+		setMirror(model.mirror);
 	}
 
 	public void resetPosition()

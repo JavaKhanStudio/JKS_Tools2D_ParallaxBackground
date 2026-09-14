@@ -21,6 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import com.badlogic.gdx.graphics.Color;
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -106,6 +107,7 @@ class PlaxFormatTest
 	{
 		WholePage_Model original = read(Files.readAllBytes(plax));
 		original.pageModel.pageList.get(0).flipY = true;
+		original.pageModel.pageList.get(0).mirror = true;
 
 		byte[] rewritten = write(original);
 		// Byte 0 is Kryo's reference marker for the page itself.
@@ -114,6 +116,29 @@ class PlaxFormatTest
 		WholePage_Model reread = read(rewritten);
 		assertPageEquals(original, reread);
 		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
+		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
+	}
+
+	@Test
+	void format2FilesStillLoadWithoutMirror() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("demo/assets/hiver/Hiver.plax")));
+		original.pageModel.pageList.get(0).flipY = true;
+		original.pageModel.pageList.get(0).mirror = true;
+
+		Kryo format2 = GVars_Serialization.prepareKryo();
+		format2.register(WholePage_Model.class, new WholePage_Model_Serializer(2));
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try (Output output = new Output(bytes))
+		{format2.writeObject(output, original);}
+		byte[] written = bytes.toByteArray();
+		assertEquals(2, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
+		assertFalse(reread.pageModel.pageList.get(0).mirror, "format 2 has no mirror");
+		original.pageModel.pageList.get(0).mirror = false;
+		assertPageEquals(original, reread);
 	}
 
 	@Test
@@ -121,6 +146,7 @@ class PlaxFormatTest
 	{
 		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("demo/assets/hiver/Hiver.plax")));
 		original.pageModel.pageList.get(0).flipY = true;
+		original.pageModel.pageList.get(0).mirror = true;
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
@@ -160,14 +186,17 @@ class PlaxFormatTest
 			assertLayerEquals(expected.pageModel.pageList.get(i), actual.pageModel.pageList.get(i), true);
 	}
 
-	private static void assertLayerEquals(Parallax_Model expected, Parallax_Model actual, boolean checkFlipY)
+	private static void assertLayerEquals(Parallax_Model expected, Parallax_Model actual, boolean checkNewFields)
 	{
 		String name = expected.getCompleteRegionName();
 		assertEquals(expected.regionName, actual.regionName);
 		assertEquals(expected.regionPosition, actual.regionPosition, name);
 		assertEquals(expected.flipX, actual.flipX, name);
-		if (checkFlipY)
+		if (checkNewFields)
+		{
 			assertEquals(expected.flipY, actual.flipY, name);
+			assertEquals(expected.mirror, actual.mirror, name);
+		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);
 		assertEquals(expected.speedXAtRest, actual.speedXAtRest, name);

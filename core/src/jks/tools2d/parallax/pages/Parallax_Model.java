@@ -27,6 +27,9 @@ public class Parallax_Model
 	public float padY;
 	public float padYFactor;
 
+	/** Stored since format 3. */
+	public boolean mirror;
+
 	public boolean isFlipX()
 	{return flipX;}
 
@@ -38,6 +41,12 @@ public class Parallax_Model
 
 	public void setFlipY(boolean flipY)
 	{this.flipY = flipY;}
+
+	public boolean isMirror()
+	{return mirror;}
+
+	public void setMirror(boolean mirror)
+	{this.mirror = mirror;}
 
 	public float getParallaxScalingSpeedX()
 	{return parallaxScalingSpeedX;}
