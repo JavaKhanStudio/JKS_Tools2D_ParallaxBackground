@@ -61,11 +61,13 @@ public class Vue_Selection extends AVue_Model
 
 			@Override
 			public void cancel()
-			{}
+			{} // no cancel button here
 		});
 		chooser.setSize(Gdx.graphics.getWidth() * sizeMultChooser, Gdx.graphics.getHeight() * sizeMultChooser);
 		chooser.setPosition(Gdx.graphics.getWidth() / 2f - chooser.getWidth() / 2, Gdx.graphics.getHeight() / 2f - chooser.getHeight() / 2);
 		chooser.setFileFilter(buildFileFilter());
+		// The start screen has nothing to cancel back to.
+		chooser.setCancelable(false);
 		chooser.setDirectory(filesRoot);
 
 		TextButton createNew = new TextButton("NEW", baseSkin);
