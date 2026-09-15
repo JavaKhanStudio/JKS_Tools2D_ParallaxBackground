@@ -17,7 +17,7 @@ behind your game.
 
 ```groovy
 dependencies {
-    implementation "io.github.javakhanstudio:parallax-background:2.0.0"
+    implementation "io.github.javakhanstudio:parallax-background:2.1.0"
 }
 ```
 
@@ -65,7 +65,7 @@ Layers live in **world units**: the world is 40 units wide and its height follow
 | At rest speed            | Horizontal speed of the layer even when the screen does not move (clouds, water). |
 | Pad X / Pad Y            | Gap between two repetitions of the layer, in world units. |
 | Flip X / Flip Y          | Mirror the image. |
-| Mirror                   | Adds a flipped copy next to the strip. Editor preview only: not saved in files yet. |
+| Mirror                   | Adds a flipped copy next to the strip. |
 
 Each frame, a layer moves by `delta × (screen speed + at rest speed) × speed ratio`, then is tiled to cover the
 camera view. The screen speed is set by the game, as a constant speed plus a speed consumed by the next frame.
@@ -77,7 +77,7 @@ all of it, `1` nothing.
 
 ```groovy
 repositories { mavenCentral() }
-dependencies { implementation "io.github.javakhanstudio:parallax-background:2.0.0" }
+dependencies { implementation "io.github.javakhanstudio:parallax-background:2.1.0" }
 ```
 
 To try an unreleased version, see [RELEASING.md](RELEASING.md): pushes to `develop` publish a `-SNAPSHOT`, and
@@ -168,11 +168,14 @@ not started from its module folder). The 10 most recent auto-saves are kept.
 | `.jplax`  | Exported page, JSON (Jackson)                        | Export        | editor, other tools       |
 | `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor                    |
 
-A page references its atlas by file name. Layers reference an image by region name and position among the regions
-that share that name.
+A page references its atlas by file name, and looks for it next to itself. **Save project** therefore copies the atlas
+and its page images into the project folder when they are not there yet, and refuses to save if that folder already
+holds different files of the same name. A project saved away from the folder it was opened from stores its loose
+images by absolute path; auto-saves store the atlas that way too. Layers reference an image by region name and position
+among the regions that share that name.
 
-`.plax` files carry a format version since 2.0. Format 2 also stores `flipY`, and format 1 files (written by the
-2019-2023 editor) still load. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
+`.plax` files carry a format version since 2.0. Format 2 also stores `flipY` and format 3 `mirror`;
+format 1 files (written by the 2019-2023 editor) and format 2 files still load. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
 exported from. Kryo registration order defines the class ids stored in the files, so `GVars_Serialization.prepareKryo`
 must only ever be appended to.
 
