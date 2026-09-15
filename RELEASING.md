@@ -36,6 +36,7 @@ git checkout -b release/2.1                      # stabilise, only fixes from he
 
 # set the final version
 sed -i 's/^version=.*/version=2.1.0/' gradle.properties
+# and the version in README.md's "Get it" snippets (Groovy, Kotlin, Maven): it is the published front page
 git commit -am "Prepare 2.1.0"
 git push -u origin release/2.1                   # CI builds it
 
