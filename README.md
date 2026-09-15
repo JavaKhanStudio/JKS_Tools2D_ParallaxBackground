@@ -17,7 +17,7 @@ behind your game.
 
 ```groovy
 dependencies {
-    implementation "io.github.javakhanstudio:parallax-background:2.0.0"
+    implementation "io.github.javakhanstudio:parallax-background:2.1.0"
 }
 ```
 
@@ -77,7 +77,7 @@ all of it, `1` nothing.
 
 ```groovy
 repositories { mavenCentral() }
-dependencies { implementation "io.github.javakhanstudio:parallax-background:2.0.0" }
+dependencies { implementation "io.github.javakhanstudio:parallax-background:2.1.0" }
 ```
 
 To try an unreleased version, see [RELEASING.md](RELEASING.md): pushes to `develop` publish a `-SNAPSHOT`, and
