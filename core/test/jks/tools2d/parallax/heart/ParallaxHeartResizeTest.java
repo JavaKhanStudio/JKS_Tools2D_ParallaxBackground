@@ -14,16 +14,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.badlogic.gdx.Application;
+import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Graphics;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.pages.Parallax_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -91,6 +97,7 @@ class ParallaxHeartResizeTest
 		Gdx.gl = Gdx.gl20 = null;
 		Gvars_Parallax.setWorldWidth(savedWorldWidth);
 		Gvars_Parallax.setWorldHeight(savedWorldHeight);
+		Gvars_Parallax.setManager(null);
 	}
 
 	private static Object defaultValue(Class<?> type)
@@ -142,7 +149,7 @@ class ParallaxHeartResizeTest
 		WholePage_Model page = new WholePage_Model()
 		{
 			@Override
-			public List<ParallaxLayer> getDrawing()
+			public List<ParallaxLayer> getDrawing(String relativePath, float worldWidth, float worldHeight)
 			{return new ArrayList<>();}
 		};
 		page.topHalf_top = new Color(Color.RED);
@@ -319,5 +326,68 @@ class ParallaxHeartResizeTest
 		assertEquals(2, rects.size());
 		assertRect(rects.get(0), 0, 500, 2000, 500);
 		assertRect(rects.get(1), 0, 0, 2000, 500);
+	}
+
+	/** A page of one 16:9 layer, built through the AssetManager like a game's page, from an atlas made in memory. */
+	private static WholePage_Model atlasPage(float decalX, float decalY)
+	{
+		TextureAtlas atlas = new TextureAtlas();
+		atlas.addRegion("sky", new TextureRegion(new Texture(new Pixmap(192, 108, Pixmap.Format.RGBA8888))));
+		Gvars_Parallax.setManager(new AssetManager()
+		{
+			@Override
+			public synchronized <T> void load(String fileName, Class<T> type)
+			{}
+
+			@Override
+			@SuppressWarnings("unchecked")
+			public <T> T finishLoadingAsset(String fileName)
+			{return (T) atlas;}
+
+			@Override
+			@SuppressWarnings("unchecked")
+			public synchronized <T> T get(String fileName, Class<T> type)
+			{return (T) atlas;}
+		});
+
+		Parallax_Model layer = new Parallax_Model();
+		layer.regionName = "sky";
+		layer.decal_X_Ratio = decalX;
+		layer.decal_Y_Ratio = decalY;
+		WholePage_Model page = new WholePage_Model("sky.atlas");
+		page.pageModel.pageList.add(layer);
+		return page;
+	}
+
+	/** Decals are percents of the world: one heart's world size must not move another heart's layers. */
+	@Test
+	void twoHeartsKeepTheirOwnWorldSize()
+	{
+		Parallax_Heart wide = new Parallax_Heart(new OrthographicCamera(40, 22.5f), null, atlasPage(10, 20), 40, 22.5f);
+		Parallax_Heart tall = new Parallax_Heart(new OrthographicCamera(20, 40), null, atlasPage(10, 20), 20, 40);
+		ParallaxLayer wideLayer = wide.parallaxReader.layers.get(0);
+		ParallaxLayer tallLayer = tall.parallaxReader.layers.get(0);
+
+		assertEquals(40, wideLayer.getWidth(), 1e-4f, "a layer is as wide as its own heart's world");
+		assertEquals(20, tallLayer.getWidth(), 1e-4f);
+		assertEquals(2, tallLayer.getCurrentDistanceX(), 1e-4f, "10% of 20");
+		assertEquals(8, tallLayer.getCurrentDistanceY(), 1e-4f, "20% of 40");
+
+		// Built after the tall heart, a game resizing its own full-window heart.
+		Parallax_Heart owning = new Parallax_Heart();
+		window(1000, 1000);
+		owning.resize(1000, 1000);
+
+		wide.parallaxReader.resetPositions();
+		assertEquals(4, wideLayer.getCurrentDistanceX(), 1e-4f, "10% of 40");
+		assertEquals(4.5f, wideLayer.getCurrentDistanceY(), 1e-4f, "20% of 22.5");
+		wideLayer.setDecalPercentY(30);
+		assertEquals(6.75f, wideLayer.getCurrentDistanceY(), 1e-4f, "30% of 22.5");
+
+		// The incoming page is built lazily, long after the other hearts changed the default size.
+		wide.transfertIntoPage(atlasPage(0, 50), 1);
+		ParallaxLayer incoming = wide.parallaxReader.transferLayers.get(0);
+		assertEquals(40, incoming.getWidth(), 1e-4f);
+		assertEquals(11.25f, incoming.getCurrentDistanceY(), 1e-4f, "50% of 22.5");
 	}
 }

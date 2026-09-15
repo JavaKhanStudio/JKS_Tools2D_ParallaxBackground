@@ -119,8 +119,9 @@ More:
   background away.
 - **Load an atlas from a folder instead of the assets:** set `heart.relativePath` before `setPage` (desktop only).
 
-The world size is global (`Gvars_Parallax`), so it is shared by all `Parallax_Heart` instances. `demo/` is a
-complete example.
+Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
+sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
+pages built without a heart. `demo/` is a complete example.
 
 ## Using the editor
 
@@ -185,7 +186,7 @@ must only ever be appended to.
 core/src/jks/tools2d/parallax/
     heart/Parallax_Heart          entry point: camera, batch, squares, act/render/resize/dispose
     heart/Parallax_Utils_Page     set a page, cross-fade into another one
-    heart/Gvars_Parallax          world size, AssetManager
+    heart/Gvars_Parallax          default world size, AssetManager
     heart/GVars_Serialization     Kryo setup for .plax
     ParallaxPageReader            scrolling, tiling, cross-fade and tint of the layers
     ParallaxLayer                 one layer: image, settings, scroll position

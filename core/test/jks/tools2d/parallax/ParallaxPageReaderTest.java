@@ -65,7 +65,7 @@ class ParallaxPageReaderTest
 		return new WholePage_Model()
 		{
 			@Override
-			public List<ParallaxLayer> getDrawing()
+			public List<ParallaxLayer> getDrawing(String relativePath, float worldWidth, float worldHeight)
 			{return layers;}
 		};
 	}

@@ -71,25 +71,36 @@ public class WholePage_Model
 		pageModel.atlasName = atlasPath;
 	}
 
-	/** Layers built from an internal atlas, loaded through {@link Gvars_Parallax#getManager()}. */
+	/**
+	 * Layers built from an internal atlas, loaded through {@link Gvars_Parallax#getManager()}, for the default world
+	 * size.
+	 */
 	@JsonIgnore
 	public List<ParallaxLayer> getDrawing()
-	{
-		if (preloadValue == null)
-			preload();
+	{return getDrawing(null, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
 
-		return preloadValue;
-	}
-
-	/** Layers built from an atlas found in {@code relativePath} (internal loading when the path is empty). */
+	/**
+	 * Layers built from an atlas found in {@code relativePath} (internal loading when the path is empty), for the
+	 * default world size.
+	 */
 	@JsonIgnore
 	public List<ParallaxLayer> getDrawing(String relativePath)
-	{
-		if (relativePath == null || relativePath.isEmpty())
-			return getDrawing();
+	{return getDrawing(relativePath, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
 
+	/**
+	 * Layers built for a world of that size, from an atlas found in {@code relativePath} (internal loading when the path
+	 * is empty). They are built once: later calls return the same layers.
+	 */
+	@JsonIgnore
+	public List<ParallaxLayer> getDrawing(String relativePath, float worldWidth, float worldHeight)
+	{
 		if (preloadValue == null)
-			preload(relativePath);
+		{
+			if (relativePath == null || relativePath.isEmpty())
+				preload(worldWidth, worldHeight);
+			else
+				preload(relativePath, worldWidth, worldHeight);
+		}
 
 		return preloadValue;
 	}
@@ -102,33 +113,46 @@ public class WholePage_Model
 	{return new SquareBackground(bottomHalf_top.cpy(), bottomHalf_bottom.cpy(), screenPercentage, false);}
 
 	public void preload()
+	{preload(Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
+
+	public void preload(float worldWidth, float worldHeight)
 	{
 		AssetManager manager = Gvars_Parallax.getManager();
 		manager.load(pageModel.atlasName, TextureAtlas.class);
 		manager.finishLoadingAsset(pageModel.atlasName);
-		useAtlas(manager.get(pageModel.atlasName, TextureAtlas.class), false);
+		useAtlas(manager.get(pageModel.atlasName, TextureAtlas.class), false, worldWidth, worldHeight);
 	}
 
 	public void preload(String relativePath)
+	{preload(relativePath, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
+
+	public void preload(String relativePath, float worldWidth, float worldHeight)
 	{
 		if (pageModel.atlasName != null)
-			useAtlas(new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName)), true);
+			useAtlas(new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName)), true, worldWidth, worldHeight);
 		else
-			useAtlas(new TextureAtlas(), true);
+			useAtlas(new TextureAtlas(), true, worldWidth, worldHeight);
 	}
 
-	/** Builds the layers from an atlas the caller keeps ownership of. */
+	/** Builds the layers, for the default world size, from an atlas the caller keeps ownership of. */
 	@JsonIgnore
 	public void forceLoad(TextureAtlas atlas)
-	{useAtlas(atlas, false);}
+	{useAtlas(atlas, false, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
 
-	private void useAtlas(TextureAtlas atlas, boolean owned)
+	private void useAtlas(TextureAtlas atlas, boolean owned, float worldWidth, float worldHeight)
 	{
 		disposeOwnedAtlas();
 		loadedAtlas = atlas;
 		ownsAtlas = owned;
 		loadedRegion = null;
-		preloadValue = load(Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight(), atlas);
+		preloadValue = load(worldWidth, worldHeight, atlas);
+
+		// setUpEverything placed the layers in the default world.
+		for (ParallaxLayer layer : preloadValue)
+		{
+			layer.setWorldSize(worldWidth, worldHeight);
+			layer.resetPosition();
+		}
 	}
 
 	/** The atlas the layers were built from, or null before loading. */

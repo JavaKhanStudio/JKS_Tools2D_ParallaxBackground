@@ -24,6 +24,8 @@ public class ParallaxLayer implements Cloneable
 	private final boolean isWidth;
 	private final float worldDimension;
 
+	/** The world the decal percentages are taken of: the heart's, see {@link #setWorldSize}. */
+	private float worldWidth, worldHeight;
 	private float decalPercentX, decalPercentY;
 	private float regionWidth, regionHeight;
 	private float sizeRatio = 1;
@@ -50,6 +52,8 @@ public class ParallaxLayer implements Cloneable
 	{
 		this.isWidth = isWidth;
 		this.worldDimension = worldDimension;
+		this.worldWidth = Gvars_Parallax.getWorldWidth();
+		this.worldHeight = Gvars_Parallax.getWorldHeight();
 		this.sizeRatio = sizeRatio;
 		setTexRegion(texRegion);
 		setParallaxSpeedRatioX(parallaxScrollRatioX);
@@ -87,8 +91,8 @@ public class ParallaxLayer implements Cloneable
 
 	public void resetPosition()
 	{
-		currentDistanceX = decalPercentX * Gvars_Parallax.getWidthPercent();
-		currentDistanceY = decalPercentY * Gvars_Parallax.getHeightPercent();
+		currentDistanceX = decalPercentX * (worldWidth / 100);
+		currentDistanceY = decalPercentY * (worldHeight / 100);
 	}
 
 	public void draw(Batch batch, float x, float y)
@@ -158,12 +162,28 @@ public class ParallaxLayer implements Cloneable
 	public float getTotalHeight()
 	{return getRegionHeight() + padY;}
 
+	public float getWorldWidth()
+	{return worldWidth;}
+
+	public float getWorldHeight()
+	{return worldHeight;}
+
+	/**
+	 * Sets the world the decal percentages are taken of, {@link Gvars_Parallax}'s when the layer was built. Does not move
+	 * the layer: {@link #resetPosition()} places it at its decal in the new world.
+	 */
+	public void setWorldSize(float worldWidth, float worldHeight)
+	{
+		this.worldWidth = worldWidth;
+		this.worldHeight = worldHeight;
+	}
+
 	public float getDecalPercentX()
 	{return decalPercentX;}
 
 	public void setDecalPercentX(float decalPercentX)
 	{
-		currentDistanceX += (decalPercentX - this.decalPercentX) * Gvars_Parallax.getWidthPercent();
+		currentDistanceX += (decalPercentX - this.decalPercentX) * (worldWidth / 100);
 		this.decalPercentX = decalPercentX;
 	}
 
@@ -172,7 +192,7 @@ public class ParallaxLayer implements Cloneable
 
 	public void setDecalPercentY(float decalPercentY)
 	{
-		currentDistanceY += (decalPercentY - this.decalPercentY) * Gvars_Parallax.getHeightPercent();
+		currentDistanceY += (decalPercentY - this.decalPercentY) * (worldHeight / 100);
 		this.decalPercentY = decalPercentY;
 	}
 
@@ -202,17 +222,17 @@ public class ParallaxLayer implements Cloneable
 
 	/** Distance scrolled horizontally since the layer was placed at its decal position. */
 	public float getScrollX()
-	{return currentDistanceX - decalPercentX * Gvars_Parallax.getWidthPercent();}
+	{return currentDistanceX - decalPercentX * (worldWidth / 100);}
 
 	public void setScrollX(float scroll)
-	{currentDistanceX = decalPercentX * Gvars_Parallax.getWidthPercent() + scroll;}
+	{currentDistanceX = decalPercentX * (worldWidth / 100) + scroll;}
 
 	/** Distance scrolled vertically since the layer was placed at its decal position. */
 	public float getScrollY()
-	{return currentDistanceY - decalPercentY * Gvars_Parallax.getHeightPercent();}
+	{return currentDistanceY - decalPercentY * (worldHeight / 100);}
 
 	public void setScrollY(float scroll)
-	{currentDistanceY = decalPercentY * Gvars_Parallax.getHeightPercent() + scroll;}
+	{currentDistanceY = decalPercentY * (worldHeight / 100) + scroll;}
 
 	public float getSizeRatio()
 	{return sizeRatio;}
