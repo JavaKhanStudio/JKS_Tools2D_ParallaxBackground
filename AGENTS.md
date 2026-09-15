@@ -31,7 +31,9 @@ repair.
 
 ## Runtime (`core`)
 
-- `heart/Gvars_Parallax` holds the world size statically: every `Parallax_Heart` in the process shares it.
+- Each `Parallax_Heart` keeps its world size in its `ParallaxPageReader`, which hands it to the layers it takes; a layer
+  takes its decal percentages of that size. `heart/Gvars_Parallax` only holds the last heart's size, the default for
+  layers and pages built without a heart: nothing a heart runs may read it.
 - `ParallaxPageReader.act()`/`draw()` and `heart/Parallax_Heart.act()`/`render()` run every frame: no allocation, no
   streams.
 - Tiling reads the camera view, position and zoom: `tilesJustEnoughToCoverTheView` holds it.

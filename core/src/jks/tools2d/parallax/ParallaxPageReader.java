@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 
+import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
@@ -22,6 +23,9 @@ public class ParallaxPageReader
 	public ArrayList<ParallaxLayer> transferLayers = new ArrayList<>();
 
 	public Enum_TransfertType transfertType = Enum_TransfertType.NONE;
+
+	/** The world this reader's layers are placed in, see {@link #setWorldSize}. */
+	private float worldWidth = Gvars_Parallax.getWorldWidth(), worldHeight = Gvars_Parallax.getWorldHeight();
 
 	private boolean repeatOnX, repeatOnY;
 	private float drawingHeight;
@@ -39,20 +43,28 @@ public class ParallaxPageReader
 	private float viewLeft, viewBottom, viewWidth, viewHeight;
 
 	public void addLayers(List<ParallaxLayer> newLayers)
-	{layers.addAll(newLayers);}
+	{
+		for (ParallaxLayer layer : newLayers)
+			layer.setWorldSize(worldWidth, worldHeight);
+		layers.addAll(newLayers);
+	}
 
 	/** Cross-fades from the current layers into the layers of {@code pageModel} over {@code inXSecondes}. */
 	public void addLayersTransfert(WholePage_Model pageModel, float inXSecondes)
 	{
 		resetTransfert();
 
-		List<ParallaxLayer> newLayers = pageModel.getDrawing();
+		List<ParallaxLayer> newLayers = pageModel.getDrawing(null, worldWidth, worldHeight);
 		if (newLayers == null || newLayers.isEmpty())
 			return;
 
 		// Transferring into the page on screen: its layers must not be moved and drawn twice per frame.
 		for (ParallaxLayer layer : newLayers)
-			transferLayers.add(layers.contains(layer) ? layer.clone() : layer);
+		{
+			ParallaxLayer incoming = layers.contains(layer) ? layer.clone() : layer;
+			incoming.setWorldSize(worldWidth, worldHeight);
+			transferLayers.add(incoming);
+		}
 		syncTransferPositions();
 
 		if (inXSecondes <= 0)
@@ -232,6 +244,27 @@ public class ParallaxPageReader
 			tintElapsed = Math.min(tintDuration, tintElapsed + delta);
 			tint.set(tintFrom).lerp(tintTo, tintElapsed / tintDuration);
 		}
+	}
+
+	public float getWorldWidth()
+	{return worldWidth;}
+
+	public float getWorldHeight()
+	{return worldHeight;}
+
+	/**
+	 * Sets the world the layers are placed in (their decal percentages are taken of it), for this reader only: the
+	 * {@link Gvars_Parallax} size is just the default of a new reader. Moves no layer, like
+	 * {@link ParallaxLayer#setWorldSize}.
+	 */
+	public void setWorldSize(float worldWidth, float worldHeight)
+	{
+		this.worldWidth = worldWidth;
+		this.worldHeight = worldHeight;
+		for (int i = 0, n = layers.size(); i < n; i++)
+			layers.get(i).setWorldSize(worldWidth, worldHeight);
+		for (int i = 0, n = transferLayers.size(); i < n; i++)
+			transferLayers.get(i).setWorldSize(worldWidth, worldHeight);
 	}
 
 	public boolean isInTransfer()
