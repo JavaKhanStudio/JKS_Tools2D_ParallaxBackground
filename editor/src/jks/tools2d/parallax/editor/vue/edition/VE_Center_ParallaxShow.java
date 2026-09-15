@@ -60,11 +60,13 @@ public class VE_Center_ParallaxShow extends Table
 			}
 			else if (ref instanceof WholePage_Model)
 			{
+				EditorPaths.locateAtlas((WholePage_Model) ref);
 				GVars_Vue_Edition.setPage((WholePage_Model) ref);
 			}
 			else if (ref instanceof Project_Data)
 			{
 				loadOutsideImages();
+				EditorPaths.locateAtlas(((Project_Data) ref).saving);
 				GVars_Vue_Edition.setPage(((Project_Data) ref).saving);
 			}
 			else
@@ -76,6 +78,7 @@ public class VE_Center_ParallaxShow extends Table
 		{
 			Gdx.app.error("VE_Center_ParallaxShow", "Cannot load the parallax", e);
 			Dialogs.showErrorDialog(GVars_UI.mainUi, "Could not load the parallax.\nIs its atlas in the same folder?", e);
+			GVars_Vue_Edition.loadedIncompletely = true;
 			setEmptyPage();
 		}
 	}
@@ -104,7 +107,11 @@ public class VE_Center_ParallaxShow extends Table
 		}
 
 		if (errors.length() > 0)
+		{
+			// Their layers are dropped when the page loads.
+			GVars_Vue_Edition.loadedIncompletely = true;
 			Dialogs.showErrorDialog(GVars_UI.mainUi, "Loading not possible", errors.toString());
+		}
 	}
 
 	public VE_Center_ParallaxShow()

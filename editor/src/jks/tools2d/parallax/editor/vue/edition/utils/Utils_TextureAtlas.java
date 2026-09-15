@@ -128,6 +128,8 @@ public final class Utils_TextureAtlas
 			projectDatas.outsideInfos.clear();
 
 		parallax_Heart.currentPage.pageModel.atlasName = atlasFile.name();
+		// Written next to the project, which is not always the folder it was opened from.
+		parallax_Heart.relativePath = atlasFile.parent().path();
 		return true;
 	}
 

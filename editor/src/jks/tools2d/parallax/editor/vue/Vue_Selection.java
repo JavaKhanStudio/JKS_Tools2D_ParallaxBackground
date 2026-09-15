@@ -61,12 +61,14 @@ public class Vue_Selection extends AVue_Model
 
 			@Override
 			public void cancel()
-			{}
+			{} // no cancel button here
 		});
 		chooser.setSize(Gdx.graphics.getWidth() * sizeMultChooser, Gdx.graphics.getHeight() * sizeMultChooser);
 		chooser.setPosition(Gdx.graphics.getWidth() / 2f - chooser.getWidth() / 2, Gdx.graphics.getHeight() / 2f - chooser.getHeight() / 2);
 		chooser.setFileFilter(buildFileFilter());
-		chooser.setDirectory(filesRoot);
+		// The start screen has nothing to cancel back to.
+		chooser.setCancelable(false);
+		chooser.setStartDirectory(filesRoot);
 
 		TextButton createNew = new TextButton("NEW", baseSkin);
 		createNew.addListener(new ChangeListener()
@@ -96,6 +98,8 @@ public class Vue_Selection extends AVue_Model
 		GVars_UI.mainUi.addActor(createNew);
 		GVars_UI.mainUi.addActor(chooser);
 		GVars_UI.mainUi.addActor(title);
+		// The chooser's arrow, backspace and Enter keys only reach it while it or a child holds the focus.
+		GVars_UI.mainUi.setKeyboardFocus(chooser);
 	}
 
 	private static FileFilter buildFileFilter()

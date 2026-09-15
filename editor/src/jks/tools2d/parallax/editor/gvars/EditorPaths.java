@@ -4,6 +4,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import jks.tools2d.parallax.editor.vue.Vue_Edition;
+import jks.tools2d.parallax.pages.WholePage_Model;
+
 /** Where the editor looks for and writes files. */
 public final class EditorPaths
 {
@@ -37,5 +40,29 @@ public final class EditorPaths
 
 		Path inProject = Paths.get(GVars_Vue_Edition.relativePath).resolve(file);
 		return Files.exists(inProject) || !Files.exists(file) ? inProject : file.toAbsolutePath();
+	}
+
+	/**
+	 * Points the heart at the folder a loaded page's atlas is in, leaving only its file name in the page, as it is
+	 * exported. A page may name it by a path: relative to the project folder, or absolute in auto-saves.
+	 */
+	public static void locateAtlas(WholePage_Model page)
+	{
+		if (page.pageModel.atlasName == null)
+			return;
+
+		Path atlas = Paths.get(Vue_Edition.parallax_Heart.relativePath).resolve(page.pageModel.atlasName);
+		if (atlas.getParent() == null)
+			return;
+
+		Vue_Edition.parallax_Heart.relativePath = atlas.getParent().toString();
+		page.pageModel.atlasName = atlas.getFileName().toString();
+	}
+
+	/** The atlas file of the open page, or null when it has none. */
+	public static Path atlasFile()
+	{
+		String atlasName = Vue_Edition.parallax_Heart.getAtlasName();
+		return atlasName == null ? null : Paths.get(Vue_Edition.parallax_Heart.relativePath, atlasName).toAbsolutePath().normalize();
 	}
 }

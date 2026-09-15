@@ -64,8 +64,9 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 					@Override
 					public void yes()
 					{
-						Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false);
-						GVars_Heart_Editor.changeVue(new Vue_Selection(), true);
+						// Leaves only once saved: a failed or cancelled save stays here, rather than losing the work.
+						Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false,
+								() -> GVars_Heart_Editor.changeVue(new Vue_Selection(), true));
 					}
 
 					@Override
@@ -81,6 +82,12 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
+				if (!Utils_Saving.hasLooseImages())
+				{
+					Utils_Saving.showNoLooseImages();
+					return;
+				}
+
 				Dialogs.showOptionDialog(GVars_UI.mainUi, "Packing", "Copy the loose images into \"" + parallaxName.getText() + "_images\""
 						+ "\nnext to the project, so the project folder can be moved?", OptionDialogType.YES_NO, new OptionDialogAdapter()
 						{

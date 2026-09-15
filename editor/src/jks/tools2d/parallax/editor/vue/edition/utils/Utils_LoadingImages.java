@@ -18,6 +18,7 @@ import com.kotcrab.vis.ui.util.dialog.Dialogs;
 
 import jks.tools2d.libgdxutils.Utils_Scene2D;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.gvars.EditorPaths;
 import jks.tools2d.parallax.editor.gvars.FVars_Extensions;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
@@ -82,7 +83,8 @@ public final class Utils_LoadingImages
 		allImage.add(region);
 		imageRef.put(region, new Position_Infos(false, path, 0));
 		outsideTextureReserve.put(path, region);
-		activeFileWatching.put(path, new WatchedImage(path, region));
+		// Keyed by the path as saved, but a relative one is watched in the project folder, not the working directory.
+		activeFileWatching.put(path, new WatchedImage(EditorPaths.resolveProjectFile(path).toString(), region));
 	}
 
 	/** File name without folder nor extension, whatever the platform separator. */

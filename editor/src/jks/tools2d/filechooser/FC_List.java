@@ -65,6 +65,9 @@ public class FC_List extends FileChooser
 
 	private Button cancelButton;
 
+	/** whether {@link #cancelButton} is shown */
+	private boolean cancelable = true;
+
 	/**
 	 * if it exists, this open the file at the given {@link FileType#Absolute
 	 * absolute} path if it is not a folder, {@link #setDirectory(FileHandle) goes
@@ -167,7 +170,10 @@ public class FC_List extends FileChooser
 		}
 	};
 
-	/** key controls of {@link #currentlySelected} */
+	/**
+	 * key controls of {@link #currentlySelected}. Enter arrives as a character, so it is read in keyTyped; the
+	 * other keys have no character and Stage only gives their key code to keyDown.
+	 */
 	public final InputListener keyControlsListener = new InputListener()
 	{
 
@@ -187,7 +193,15 @@ public class FC_List extends FileChooser
 				return true;
 			}
 
-			int keyCode = event.getKeyCode();
+			return false;
+		}
+
+		@Override
+		public boolean keyDown(InputEvent event, int keyCode)
+		{
+			// The list moves its own selection on UP/DOWN when it has the focus, and the path field needs DEL and LEFT.
+			if (event.isHandled() || getStage().getKeyboardFocus() == pathField)
+				return false;
 
 			if (keyCode == Keys.DEL)
 			{
@@ -292,7 +306,7 @@ public class FC_List extends FileChooser
 	 * Override this if you want to adjust the {@link Table layout}. Clears this
 	 * {@link FC_List}'s children and adds {@link #backButton},
 	 * {@link #pathField}, {@link #parentButton}, {@link #contentsPane},
-	 * {@link #chooseButton}, {@link #cancelButton} and {@link #openButton} if
+	 * {@link #chooseButton}, {@link #cancelButton} if {@link #isCancelable()} and {@link #openButton} if
 	 * {@link #isDirectoriesChoosable()} is true.
 	 */
 	@Override
@@ -308,8 +322,11 @@ public class FC_List extends FileChooser
 		if (isDirectoriesChoosable())
 			add(openButton).fill().space(style.space);
 		
-		add(chooseButton).fill().colspan(isDirectoriesChoosable() ? 1 : 2).space(style.space);
-		add(cancelButton).fill().space(style.space);
+		int chooseColumns = (isDirectoriesChoosable() ? 1 : 2) + (cancelable ? 0 : 1);
+		add(chooseButton).fill().colspan(chooseColumns).space(style.space);
+		
+		if (cancelable)
+			add(cancelButton).fill().space(style.space);
 	}
 
 	/** refreshes the {@link #currentlySelected} */
@@ -348,6 +365,16 @@ public class FC_List extends FileChooser
 	 */
 	public void setDirectory(FileHandle dir)
 	{
+		setDirectory(dir, true);
+	}
+
+	/**
+	 * sets {@link #directory} and makes it the only entry of {@link #fileHistory}, so {@link #backButton} stops there
+	 * instead of returning to the default starting directory
+	 */
+	public void setStartDirectory(FileHandle dir)
+	{
+		fileHistory.clear();
 		setDirectory(dir, true);
 	}
 
@@ -392,7 +419,9 @@ public class FC_List extends FileChooser
 	public void setCancelButton(Button cancelButton)
 	{
 		cancelButton.addListener(cancelButtonListener);
-		getCell(this.cancelButton).setActor(this.cancelButton = cancelButton);
+		if (cancelable)
+			getCell(this.cancelButton).setActor(cancelButton);
+		this.cancelButton = cancelButton;
 	}
 
 	/** @return the {@link #chooseButton} */
@@ -496,6 +525,22 @@ public class FC_List extends FileChooser
 		if (isDirectoriesChoosable() != directoriesChoosable)
 		{
 			super.setDirectoriesChoosable(directoriesChoosable);
+			build();
+		}
+	}
+
+	/** @return whether the {@link #cancelButton} is shown */
+	public boolean isCancelable()
+	{
+		return cancelable;
+	}
+
+	/** shows or hides the {@link #cancelButton}, {@link #build() building} if necessary */
+	public void setCancelable(boolean cancelable)
+	{
+		if (this.cancelable != cancelable)
+		{
+			this.cancelable = cancelable;
 			build();
 		}
 	}
