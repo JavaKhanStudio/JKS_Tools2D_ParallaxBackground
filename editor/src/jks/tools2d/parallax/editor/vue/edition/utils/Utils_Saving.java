@@ -112,10 +112,7 @@ public final class Utils_Saving
 				{
 					@Override
 					public void yes()
-					{
-						if (saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false))
-							flattenAndExport(where, whatName);
-					}
+					{saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false, () -> flattenAndExport(where, whatName));}
 
 					@Override
 					public void no()
@@ -142,10 +139,41 @@ public final class Utils_Saving
 	/**
 	 * Saves the project into {@code where}, copying its atlas there first: a project finds its atlas next to itself.
 	 * Saved away from the project folder, loose images keep working through absolute paths.
-	 *
-	 * @return false (after telling the user) if nothing was saved
 	 */
-	public static boolean saving_Parallax_Project(String where, String whatName, boolean showHardInfo)
+	public static void saving_Parallax_Project(String where, String whatName, boolean showHardInfo)
+	{saving_Parallax_Project(where, whatName, showHardInfo, null);}
+
+	/**
+	 * Same, then runs {@code afterSave} once the project is really saved. A project that did not load completely would
+	 * lose layers over an existing file, so that save asks first.
+	 */
+	public static void saving_Parallax_Project(String where, String whatName, boolean showHardInfo, Runnable afterSave)
+	{
+		File target = projectFile(where, whatName);
+		if (!GVars_Vue_Edition.loadedIncompletely || !target.exists())
+		{
+			if (saveProject(where, whatName, showHardInfo) && afterSave != null)
+				afterSave.run();
+			return;
+		}
+
+		Dialogs.showOptionDialog(GVars_UI.mainUi, "Saving", "This project did not load completely: the layers that could not be loaded"
+				+ "\nare not in the editor, and saving over " + target.getName() + " removes them from it for good.",
+				OptionDialogType.YES_CANCEL, new OptionDialogAdapter()
+				{
+					@Override
+					public void yes()
+					{
+						if (!saveProject(where, whatName, showHardInfo))
+							return;
+						GVars_Vue_Edition.loadedIncompletely = false;
+						if (afterSave != null)
+							afterSave.run();
+					}
+				}).setYesButtonText("Save anyway");
+	}
+
+	private static boolean saveProject(String where, String whatName, boolean showHardInfo)
 	{
 		try
 		{
@@ -296,10 +324,13 @@ public final class Utils_Saving
 		{super(message);}
 	}
 
+	private static File projectFile(String where, String whatName)
+	{return new File(where + "/" + whatName + "." + FVars_Extensions.PARALLAX_PROJECT);}
+
 	private static void writeProject(String where, String whatName, Project_Data project) throws IOException
 	{
 		Files.createDirectories(Paths.get(where));
-		GVars_Serialization_Editor.objectMapper.writeValue(new File(where + "/" + whatName + "." + FVars_Extensions.PARALLAX_PROJECT), project);
+		GVars_Serialization_Editor.objectMapper.writeValue(projectFile(where, whatName), project);
 	}
 
 	/**

@@ -78,6 +78,7 @@ public class VE_Center_ParallaxShow extends Table
 		{
 			Gdx.app.error("VE_Center_ParallaxShow", "Cannot load the parallax", e);
 			Dialogs.showErrorDialog(GVars_UI.mainUi, "Could not load the parallax.\nIs its atlas in the same folder?", e);
+			GVars_Vue_Edition.loadedIncompletely = true;
 			setEmptyPage();
 		}
 	}
@@ -106,7 +107,11 @@ public class VE_Center_ParallaxShow extends Table
 		}
 
 		if (errors.length() > 0)
+		{
+			// Their layers are dropped when the page loads.
+			GVars_Vue_Edition.loadedIncompletely = true;
 			Dialogs.showErrorDialog(GVars_UI.mainUi, "Loading not possible", errors.toString());
+		}
 	}
 
 	public VE_Center_ParallaxShow()

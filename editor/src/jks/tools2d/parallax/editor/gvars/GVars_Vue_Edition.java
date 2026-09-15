@@ -73,6 +73,8 @@ public final class GVars_Vue_Edition
 	/** Folder of the open project: atlases and relative image paths are resolved from it. */
 	public static String relativePath;
 	public static TextureAtlas atlas;
+	/** Some layers of the opened file could not be loaded (missing atlas or loose image), so the editor lacks them. */
+	public static boolean loadedIncompletely;
 
 	public static boolean showParallaxFullScreen = false;
 
@@ -106,6 +108,7 @@ public final class GVars_Vue_Edition
 		currentlySelectedParallax = null;
 		colorPicked = null;
 		atlas = null;
+		loadedIncompletely = false;
 		showParallaxFullScreen = false;
 		isPause = true;
 		timeForAutoSaveTimmer = 0;
