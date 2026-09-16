@@ -8,7 +8,7 @@ repair.
 
 | Module    | What it is | Java | Run / check |
 |-----------|------------|------|-------------|
-| `core/`   | The runtime games depend on (`parallax-background` on Maven Central). Sources `src/`, tests `test/`. | `options.release = 11` for main, 17 for tests | `./gradlew :core:test` |
+| `core/`   | The runtime games depend on (`parallax-background` on Maven Central). Sources `src/` (GWT) and `src-jvm/`, tests `test/`. | `options.release = 11` for main, 17 for tests | `./gradlew :core:test`, `./gradlew :core:gwtCheck` |
 | `editor/` | The desktop tool that builds pages and exports `.plax`. Sources `src/` and `mains/`. | 17 | `./gradlew :editor:run` (workingDir `editor/`, finds `editor/Files`) |
 | `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): SPACE page, N tint, LEFT/RIGHT scroll, R reset |
 
@@ -19,7 +19,7 @@ repair.
 
 ## `.plax` is a file format
 
-- `core/src/jks/tools2d/parallax/heart/GVars_Serialization.prepareKryo`: registration order is the class id written
+- `core/src-jvm/jks/tools2d/parallax/heart/GVars_Serialization.prepareKryo`: registration order is the class id written
   into every exported `.plax`. Append only, never reorder.
 - `kryo.setReferences(true)` stays: the 2019 files were written with references on, and with it off they decode as
   garbage without throwing.
@@ -39,6 +39,17 @@ repair.
 - Tiling reads the camera view, position and zoom: `tilesJustEnoughToCoverTheView` holds it.
 - `ParallaxPageReaderTest` checks tiling and cross-fades without a window, by recording draw calls on a proxied
   `Batch`. Cover all four repeat modes (X, Y, XY, none).
+
+## Browser (GWT)
+
+- `core/src` is compiled to JavaScript by games. `./gradlew :core:gwtCheck` (part of `build`) proves it: no Kryo, no
+  Jackson, no reflection, no `Cloneable`/`Object.clone()`, and only the JDK GWT emulates.
+- Anything that reads or writes a file format goes in `core/src-jvm`, in the same package, and its file name in
+  `Parallax.gwt.xml`'s excludes. Jackson annotations go in `pages/Json_MixIns`, Kryo serializers in `prepareKryo`: a
+  mapper built without `Json_MixIns.MIX_INS` writes a different `.jplax`.
+- A `core/src` member that needs `src-jvm` carries `@GwtIncompatible` and names the class fully qualified: an import of
+  it fails the browser build.
+- `ParallaxLayer.clone()` copies field by field: a new field goes there too, `ParallaxLayerTest` fails otherwise.
 
 ## Editor
 

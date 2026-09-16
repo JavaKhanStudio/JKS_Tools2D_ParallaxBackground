@@ -16,9 +16,27 @@ tasks.named('compileTestJava', JavaCompile) {
     options.release = 17
 }
 
+/*
+ * src      translatable by GWT: what a browser game compiles to JavaScript (src/jks/tools2d/parallax/Parallax.gwt.xml).
+ * src-jvm  same packages, same jar, JVM only: reading and writing .plax (Kryo) and .jplax (Jackson).
+ * gwtCheck below proves the split holds.
+ */
 sourceSets {
-    main.java.srcDirs = ['src']
+    main {
+        java.srcDirs = ['src', 'src-jvm']
+        resources.srcDirs = ['src']
+        resources.includes = ['**/*.gwt.xml']
+    }
     test.java.srcDirs = ['test']
+}
+
+configurations {
+    gwtCheck
+}
+
+// The sources jar is what GWT compiles a game from: src is both a Java and a resource folder, Parallax.gwt.xml goes in once.
+tasks.withType(Jar).matching { it.name == 'sourcesJar' }.configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 dependencies {
@@ -33,11 +51,44 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'com.fasterxml.jackson.core:jackson-databind'
     testRuntimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+
+    // GWT compiles Java source: the libGDX jars come with their sources.
+    gwtCheck "org.gwtproject:gwt-dev:$gwtVersion"
+    gwtCheck "org.gwtproject:gwt-user:$gwtVersion"
+    gwtCheck "com.badlogicgames.gdx:gdx:$gdxVersion"
+    gwtCheck "com.badlogicgames.gdx:gdx:$gdxVersion:sources"
+    gwtCheck "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion"
+    gwtCheck "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion:sources"
 }
 
 tasks.named('test', Test) {
     // Tests read the sample .plax/.plaxpj files shipped with the editor and the demo.
     systemProperty 'parallax.repoRoot', rootDir.absolutePath
+}
+
+/*
+ * Compiles gwt-check/ (a game inheriting jks.tools2d.parallax.Parallax) to JavaScript. -strict fails on any unit of the
+ * module that does not translate, reached or not: a Kryo, Jackson or Java-only API in src, or a src-jvm file that
+ * Parallax.gwt.xml does not exclude. Part of `check`, so of `./gradlew build` and CI.
+ */
+def gwtCheck = tasks.register('gwtCheck', JavaExec) {
+    group = 'verification'
+    description = 'Proves core/src translates to JavaScript with GWT, the way a browser game inherits it.'
+    def war = layout.buildDirectory.dir('gwtCheck/war')
+    def work = layout.buildDirectory.dir('gwtCheck/work')
+    inputs.files(fileTree('src'), fileTree('src-jvm'), fileTree('gwt-check')).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(configurations.gwtCheck)
+    outputs.dir(war)
+    mainClass = 'com.google.gwt.dev.Compiler'
+    classpath = files('gwt-check', 'src', 'src-jvm') + configurations.gwtCheck
+    maxHeapSize = '1g'
+    argumentProviders.add({ ['-strict', '-draftCompile', '-failOnError', '-logLevel', 'ERROR',
+            '-war', war.get().asFile.absolutePath, '-workDir', work.get().asFile.absolutePath,
+            'jks.tools2d.parallax.gwtcheck.ParallaxGwtCheck'] } as CommandLineArgumentProvider)
+    doFirst { delete war, work }
+}
+tasks.named('check') {
+    dependsOn gwtCheck
 }
 
 // Javadoc of a libGDX library: don't fail the build on missing tags.

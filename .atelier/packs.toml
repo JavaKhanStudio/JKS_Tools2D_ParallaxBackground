@@ -47,8 +47,11 @@ description = ".plax / .jplax / .plaxpj, the Kryo and JSON serializers, back-com
 color = "#f2b263"
 sort = 20
 context = """
-core/src/jks/tools2d/parallax/pages/*_Serializer.java, pages/Utils_Page.java (load),
-heart/GVars_Serialization.java (the Kryo instance).
+core/src-jvm/jks/tools2d/parallax/pages/*_Serializer.java, pages/Utils_Page.java (load),
+pages/Json_MixIns.java (what Jackson skips), heart/GVars_Serialization.java (the Kryo instance).
+They live in src-jvm because core/src is translated by GWT (AGENTS.md, "Browser (GWT)"): no
+Kryo or Jackson annotation goes on a model class, a new format file is excluded by name in
+core/src/jks/tools2d/parallax/Parallax.gwt.xml, and `./gradlew :core:gwtCheck` fails if not.
 NEVER REORDER THE REGISTRATIONS in GVars_Serialization.prepareKryo. Registration order IS
 the class id written into every .plax ever exported (Color = 9, Parallax_Model = 10…).
 Append only — the javadoc says so and it is the single most expensive rule here.
@@ -210,7 +213,7 @@ context = """
 gradle.properties holds EVERY dependency version (gdx, visUi, kryo, jackson, junit) and the
 published `version`. Nothing pins a version inline; add new ones there.
 build.gradle (root: encoding, lint, JUnit platform for all modules), core/build.gradle
-(sources in src/ and test/, publishing), editor/build.gradle, demo/build.gradle,
+(sources in src/ = GWT-translatable, src-jvm/ = Kryo/Jackson, test/; publishing; gwtCheck), editor/build.gradle, demo/build.gradle,
 settings.gradle, .github/workflows/{ci,release,snapshot}.yml, RELEASING.md.
 core compiles to `options.release = 11` — games consume it, including on Android. Its tests
 and the editor and demo are 17. A Java 12+ API used in core/src fails the build with a
@@ -218,7 +221,8 @@ message about the API, never about the rule.
 `repositoriesMode = FAIL_ON_PROJECT_REPOS` in settings.gradle: declaring a repository in a
 module's build.gradle FAILS the build. Repositories go in settings.gradle only.
 Gates, exactly what CI runs on JDK 17, 21 AND 25:
-  ./gradlew build                              compile + test everything
+  ./gradlew build                              compile + test everything, and :core:gwtCheck
+                                               (GWT compiles core/src to JavaScript, ~20 s)
   ./gradlew :editor:distZip :demo:distZip      the packaged downloads
 A `run` task's workingDir matters: editor/ for the samples, demo/assets for the .plax files.
 Releases: develop (always -SNAPSHOT, every push publishes one) → release/X.Y → master, tagged

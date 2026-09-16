@@ -7,9 +7,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.utils.Disposable;
 
+import jks.tools2d.parallax.GwtIncompatible;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parallax;
-import jks.tools2d.parallax.pages.Utils_Page;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -62,10 +62,12 @@ public class Parallax_Heart implements Disposable
 		init(defaultWidth, worldHeight);
 	}
 
+	/** Loads a .plax file from the internal (assets) storage. Not in the browser build: .plax is read with Kryo. */
+	@GwtIncompatible("Kryo")
 	public Parallax_Heart(String internalPath)
 	{
 		this();
-		setPage(Utils_Page.loadPage(internalPath));
+		setPage(jks.tools2d.parallax.pages.Utils_Page.loadPage(internalPath));
 	}
 
 	public Parallax_Heart(OrthographicCamera worldCamera, SpriteBatch batch, float worldWidth, float worldHeight)

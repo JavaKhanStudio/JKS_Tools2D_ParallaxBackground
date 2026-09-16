@@ -2,10 +2,7 @@ package jks.tools2d.parallax.pages;
 
 import java.util.ArrayList;
 
-import com.esotericsoftware.kryo.DefaultSerializer;
-
 /** The layers of a page, back to front, and the atlas their regions come from. */
-@DefaultSerializer(Page_Model_Serializer.class)
 public class Page_Model
 {
 	public String atlasName;
