@@ -1,10 +1,6 @@
 package jks.tools2d.parallax.pages;
 
-import com.esotericsoftware.kryo.DefaultSerializer;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 /** Serialized description of one layer: which atlas region, and how it scrolls. */
-@DefaultSerializer(Parallax_Model_Serializer.class)
 public class Parallax_Model
 {
 	public String regionName;
@@ -61,11 +57,9 @@ public class Parallax_Model
 	{this.parallaxScalingSpeedY = parallaxScalingSpeedY;}
 
 	/** Alias of {@link #speedXAtRest}. */
-	@JsonIgnore
 	public float getSpeed()
 	{return speedXAtRest;}
 
-	@JsonIgnore
 	public void setSpeed(float speed)
 	{this.speedXAtRest = speed;}
 
@@ -87,7 +81,6 @@ public class Parallax_Model
 	public void setDecal_Y_Ratio(float decal_Y_Ratio)
 	{this.decal_Y_Ratio = decal_Y_Ratio;}
 
-	@JsonIgnore
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}
 }

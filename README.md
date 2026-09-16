@@ -155,6 +155,10 @@ More:
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
   background away.
 - **Load an atlas from a folder instead of the assets:** set `heart.relativePath` before `setPage` (desktop only).
+- **Ship to the browser (GWT):** add `<inherits name="jks.tools2d.parallax.Parallax"/>` to your html module and the
+  library's `-sources` jar to its classpath. `.plax` files are read with Kryo, which has no browser version: in a
+  browser game, build the `WholePage_Model` in Java and pass it to `setPage`. `Utils_Page` and
+  `new Parallax_Heart(path)` are not there.
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
@@ -220,15 +224,18 @@ must only ever be appended to.
 ## Code map
 
 ```
-core/src/jks/tools2d/parallax/
+core/src/jks/tools2d/parallax/       translatable by GWT (Parallax.gwt.xml)
     heart/Parallax_Heart          entry point: camera, batch, squares, act/render/resize/dispose
     heart/Parallax_Utils_Page     set a page, cross-fade into another one
     heart/Gvars_Parallax          default world size, AssetManager
-    heart/GVars_Serialization     Kryo setup for .plax
     ParallaxPageReader            scrolling, tiling, cross-fade and tint of the layers
     ParallaxLayer                 one layer: image, settings, scroll position
-    pages/                        saved models (WholePage_Model, Page_Model, Parallax_Model), serializers, Utils_Page
+    pages/                        saved models (WholePage_Model, Page_Model, Parallax_Model)
     side/SquareBackground         the gradient squares
+core/src-jvm/jks/tools2d/parallax/   same packages and jar, JVM only
+    heart/GVars_Serialization     Kryo setup for .plax
+    pages/                        Kryo serializers, Utils_Page (load a .plax), Json_MixIns (Jackson setup)
+core/gwt-check/                   what :core:gwtCheck compiles to JavaScript
 
 editor/mains/.../Launcher_Editor  desktop launcher (window, file drops)
 editor/src/jks/tools2d/

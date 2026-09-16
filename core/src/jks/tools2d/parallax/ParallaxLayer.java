@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.Parallax_Model;
@@ -14,8 +13,7 @@ import jks.tools2d.parallax.pages.Parallax_Model;
  * One scrolling plane of a parallax. Sizes are in world units: the layer is {@code worldDimension * sizeRatio} wide
  * (or high), the other dimension follows the texture aspect ratio.
  */
-@JsonIgnoreType
-public class ParallaxLayer implements Cloneable
+public class ParallaxLayer
 {
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
@@ -120,19 +118,31 @@ public class ParallaxLayer implements Cloneable
 			fy ? -height : height);
 	}
 
-	@Override
+	/**
+	 * A copy drawing the same regions from the same place. Field by field, and without {@code @Override}: GWT emulates
+	 * neither {@link Cloneable} nor {@code Object.clone()}. A field added to this class must be copied here,
+	 * ParallaxLayerTest checks it.
+	 */
 	public ParallaxLayer clone()
 	{
-		try
-		{
-			ParallaxLayer copy = (ParallaxLayer) super.clone();
-			copy.texRegion = new ArrayList<>(texRegion);
-			return copy;
-		}
-		catch (CloneNotSupportedException e)
-		{
-			throw new AssertionError(e);
-		}
+		ParallaxLayer copy = new ParallaxLayer(new ArrayList<>(texRegion), isWidth, worldDimension, parallaxSpeedRatioX, parallaxSpeedRatioY, sizeRatio);
+		copy.worldWidth = worldWidth;
+		copy.worldHeight = worldHeight;
+		copy.decalPercentX = decalPercentX;
+		copy.decalPercentY = decalPercentY;
+		copy.regionWidth = regionWidth;
+		copy.regionHeight = regionHeight;
+		copy.currentDistanceX = currentDistanceX;
+		copy.currentDistanceY = currentDistanceY;
+		copy.padX = padX;
+		copy.padXFactor = padXFactor;
+		copy.padY = padY;
+		copy.padYFactor = padYFactor;
+		copy.speedXAtRest = speedXAtRest;
+		copy.flipX = flipX;
+		copy.flipY = flipY;
+		copy.isMirror = isMirror;
+		return copy;
 	}
 
 	public void act(float delta, float speedX, float speedY, boolean onX, boolean onY)

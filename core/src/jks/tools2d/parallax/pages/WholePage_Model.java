@@ -10,17 +10,16 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.utils.GdxRuntimeException;
-import com.esotericsoftware.kryo.DefaultSerializer;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.side.SquareBackground;
 
-/** A complete parallax: the gradient background colors plus the layers. This is what .plax/.jplax files contain. */
-@DefaultSerializer(WholePage_Model_Serializer.class)
-@JsonIgnoreProperties(value = { "preloadValue" }, ignoreUnknown = true)
+/**
+ * A complete parallax: the gradient background colors plus the layers. This is what .plax/.jplax files contain.
+ * <p>
+ * Translatable by GWT: how it is written lives in {@code WholePage_Model_Serializer} and {@code Json_MixIns}.
+ */
 public class WholePage_Model
 {
 	public Color topHalf_top;
@@ -36,7 +35,6 @@ public class WholePage_Model
 
 	public Page_Model pageModel;
 
-	@JsonIgnore
 	public List<ParallaxLayer> preloadValue;
 
 	private HashMap<String, AtlasRegion> loadedRegion;
@@ -75,7 +73,6 @@ public class WholePage_Model
 	 * Layers built from an internal atlas, loaded through {@link Gvars_Parallax#getManager()}, for the default world
 	 * size.
 	 */
-	@JsonIgnore
 	public List<ParallaxLayer> getDrawing()
 	{return getDrawing(null, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
 
@@ -83,7 +80,6 @@ public class WholePage_Model
 	 * Layers built from an atlas found in {@code relativePath} (internal loading when the path is empty), for the
 	 * default world size.
 	 */
-	@JsonIgnore
 	public List<ParallaxLayer> getDrawing(String relativePath)
 	{return getDrawing(relativePath, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
 
@@ -91,7 +87,6 @@ public class WholePage_Model
 	 * Layers built for a world of that size, from an atlas found in {@code relativePath} (internal loading when the path
 	 * is empty). They are built once: later calls return the same layers.
 	 */
-	@JsonIgnore
 	public List<ParallaxLayer> getDrawing(String relativePath, float worldWidth, float worldHeight)
 	{
 		if (preloadValue == null)
@@ -135,7 +130,6 @@ public class WholePage_Model
 	}
 
 	/** Builds the layers, for the default world size, from an atlas the caller keeps ownership of. */
-	@JsonIgnore
 	public void forceLoad(TextureAtlas atlas)
 	{useAtlas(atlas, false, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
 
@@ -156,7 +150,6 @@ public class WholePage_Model
 	}
 
 	/** The atlas the layers were built from, or null before loading. */
-	@JsonIgnore
 	public TextureAtlas getLoadedAtlas()
 	{return loadedAtlas;}
 
