@@ -1,0 +1,240 @@
+# parallax's TAGS AND THEIR CONTEXT PACKS — read by Atelier (projects/parallax.toml says
+# packs = ".atelier/packs.toml"). A pack is what a session reads BEFORE the code it describes, so
+# when a change makes one wrong, fix it here IN THE SAME COMMIT. Only [tags.<slug>]
+# tables belong in this file: label, description, context, color, sort.
+
+[tags.runtime]
+label = "Runtime"
+description = "core: scrolling, tiling, cross-fade, the gradient squares"
+color = "#8fd0ff"
+sort = 10
+context = """
+core/src/jks/tools2d/parallax/: ParallaxPageReader (scroll, tile, fade, tint), ParallaxLayer
+(one layer's settings + position), heart/Parallax_Heart (camera, batch, act/render/resize/
+dispose), heart/Parallax_Utils_Page (cross-fade), side/SquareBackground (the two gradients).
+World units: the world is 40 wide (heart/Gvars_Parallax), height follows the screen aspect.
+A layer is `40 * sizeRatio` wide and its height follows the image aspect.
+Gvars_Parallax's world size is STATIC — shared by every Parallax_Heart in the process.
+Gate: `./gradlew :core:test`. ParallaxPageReaderTest needs NO window: it proxies Batch with
+java.lang.reflect.Proxy and records the draw calls, with GdxNativesLoader.load() in
+@BeforeAll. Assert tiling by counting and placing draws — that is the tool, use it.
+TILING MUST READ THE CAMERA VIEW (position AND zoom). The old code ignored zoom and drew one
+extra tile past the right edge of every row: 39% of draw calls off-screen, no error anywhere.
+`tilesJustEnoughToCoverTheView` is the test that holds that; keep it honest.
+TEST EVERY REPEAT MODE, not just X. Only repeatOnX used the transfer opacity once; repeatOnY
+and XY used an alpha that became `1 - alpha` near the end of a fade, and a page repeating on
+NEITHER axis drew nothing at all.
+Cross-fade edges, all of them already shipped broken: a target page with MORE layers looped
+`i <= transferPosition` and drew one layer twice at double opacity; with FEWER it threw
+IndexOutOfBounds; incoming layers did not scroll during the fade and jumped when it ended.
+`!Enum_TransfertType.NONE.equals(null)` is TRUE — a null transfertType ran the transfer math
+every frame forever. Ask `== null` deliberately.
+act() and render() run every frame: no allocation, no streams. `layers.stream().forEach` in
+act() is in MEMORY_LANE.md §5 as a defect, not as a style note.
+See it: `./gradlew :demo:run` — SPACE switches page, N tints, LEFT/RIGHT scroll, R resets.
+README.md's layer-settings table IS the documented meaning of these fields, and it is what a
+game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
+the table in the SAME commit.
+MEMORY_LANE.md §5 is the recorded history here — HISTORY, not a backlog. Its paths and
+line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
+anything you fix that it still lists as broken MOVES into its §10 then/now table rather
+than being deleted.
+"""
+
+[tags.format]
+label = "File format"
+description = ".plax / .jplax / .plaxpj, the Kryo and JSON serializers, back-compat"
+color = "#f2b263"
+sort = 20
+context = """
+core/src/jks/tools2d/parallax/pages/*_Serializer.java, pages/Utils_Page.java (load),
+heart/GVars_Serialization.java (the Kryo instance).
+NEVER REORDER THE REGISTRATIONS in GVars_Serialization.prepareKryo. Registration order IS
+the class id written into every .plax ever exported (Color = 9, Parallax_Model = 10…).
+Append only — the javadoc says so and it is the single most expensive rule here.
+`kryo.setReferences(true)` MUST STAY. The files were written by Kryo 5.0.0-RC1, whose
+default was on; Kryo 5.0 final turned it off. With it off, every existing .plax decodes as
+garbage and throws NOTHING: the atlas name comes back "??????Hiver.atlas" and the layer list
+empty. MEMORY_LANE.md §4 is the whole story — and it is HISTORY, not a backlog: its paths and
+line numbers are commit 2a7e3f6, and anything you fix that it still lists as broken MOVES into
+its §10 then/now table rather than being deleted.
+New fields go behind a version bump, written AND read on the same branch, exactly like
+flipY: `if (WholePage_Model_Serializer.currentVersion(kryo) >= 2)`. Format 1 files (the
+2019-2023 editor) must keep loading — Parallax_Model_Serializer wrote flipX and never flipY,
+so every vertically flipped layer came back unflipped.
+Color_Serializer writes channels in A, B, G, R order. That is deliberate now; leave it.
+Gate: `./gradlew :core:test`. PlaxFormatTest walks every .plax under editor/Files and
+demo/assets and checks it against the .plaxpj saved in the same 2019 session. It reads the
+`parallax.repoRoot` system property, which core/build.gradle sets — run the class straight
+from an IDE without it and it hunts for samples in the wrong folder.
+README.md's table of the three file formats mirrors these shapes; change what one holds and
+fix the table in the SAME commit.
+THE SAMPLE FILES ARE THE FIXTURES. Never re-export or overwrite editor/Files/*.plax to make
+a test pass: they are the 2019 evidence and the only proof the legacy path still works.
+Shapes: .plax = Kryo binary (what games load), .jplax = JSON (tooling), .plaxpj = the editor
+project. A page names its atlas BY FILE NAME; a layer names an image by region name AND its
+position among the regions sharing that name — never by name alone.
+"""
+
+[tags.editor]
+label = "Editor UI"
+description = "The VisUI screens, panels, tabs and sliders"
+color = "#c3a6f0"
+sort = 30
+context = """
+editor/src/jks/tools2d/parallax/editor/: vue/Vue_Selection (start screen), vue/Vue_Edition
+(edition screen), vue/edition/VE_*.java (the panels), gvars/GVars_UI (skin, fonts, stage),
+gvars/GVars_Vue_Edition (editor state). Run it: `./gradlew :editor:run` — workingDir is
+editor/, which is how it finds the samples in editor/Files.
+COMPILING PROVES NOTHING IN THIS PACKAGE. Its recorded history is controls that do nothing:
+a "change the atlas?" dialog with empty YES *and* NO handlers, a "Change Atlas" button with
+an empty listener, a folder button with no listener at all, Add at Front/Back radios that
+only checked themselves, a VSync checkbox created twice where the displayed one had no
+listener. After wiring a control, START THE EDITOR AND USE IT.
+State is static GVars_* and there is one project at a time. Panels read the window size when
+they are BUILT, so Vue_Edition rebuilds them after a resize — anything that caches a size
+outside that rebuild goes stale with no symptom but a wrong layout.
+`VisUI.getSizes().scaleFactor = 0.6f` in GVars_UI.init mutates VisUI's GLOBAL sizes and the
+whole layout is built around it. Never set it from inside a widget: the 2019 code did it in a
+copied color picker, so every spinner's size depended on whether a picker had been built yet.
+NEVER MUTATE A SHARED SKIN STYLE. `title.getStyle().fontColor = LIGHT_GRAY` on the shared
+default style turned every label in the application gray. Copy it first — GVars_UI's
+labelStyle_Second exists for exactly that.
+GVars_UI.resize() regenerates the size-dependent FreeType font: dispose the previous one. It
+leaked two fonts per call and is called twice at startup. Same for icon textures and the
+color pickers (they hold shaders) — nothing in scene2d disposes itself.
+Sliders are libgdxutils/JksNumberSlider: the wheel changes the digit left of the text cursor.
+The speed "increment" defaults are MULTIPLIERS (0.75, 1.25) while the rest are additive — a
+range that suits one is nonsense for the other (a -0.01..0.01 range multiplied new layers'
+speed by 0.005).
+README.md's layer-settings table is the documented meaning of every control in this package:
+rename or rescale one and fix the table in the SAME commit.
+MEMORY_LANE.md §6 is the recorded history here — HISTORY, not a backlog. Its paths and
+line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
+anything you fix that it still lists as broken MOVES into its §10 then/now table rather
+than being deleted. It sorts this package by how it failed.
+"""
+
+[tags.assets]
+label = "Images & atlas"
+description = "Atlases, packing, flatten, loose PNGs, filtering"
+color = "#7fd6a6"
+sort = 40
+context = """
+editor/src/jks/tools2d/parallax/editor/vue/edition/utils/: Utils_TextureAtlas (flatten +
+packing), Utils_LoadingImages (dropped PNGs), Utils_Texture (load, swap, dispose). Also
+vue/edition/pixmap/PixmapPacker + PixmapPackerIO.
+Image state is the static maps in gvars/GVars_Vue_Edition — allImage, imageRef (region ->
+Position_Infos), outsideTextureReserve (path -> region), textureLink (region -> layers).
+Update one and not the others and it goes wrong later, never at the call site;
+Utils_Texture.replaceTexture is the one place that does all of them together.
+FILTERING IS LINEAR ON PURPOSE. The 50px paddingSize and the tripled border in
+Utils_TextureAtlas exist FOR Linear and mipmaps — flipping to Nearest to "fix" bleeding
+deletes the reason the padding is there. The 2019 flatten did exactly that, with pages at 3x
+the largest image: 15000px, which many GPUs simply refuse to upload, and the packer reports
+nothing. Keep preferredPageSize 4096, capped at FVars_Extensions.atlasMaxSize 16384.
+A layer names a region by NAME + POSITION among same-named regions, and PixmapPackerIO
+.packedName writes index -1 when a name is used once. TexturePacker numbers files from 1
+(ground_1, ground_2), so "ground"+index and "ground"+position are two different keys — mixing
+them listed ground #2 twice and ground #1 never. Flatten must pack EVERY region of a name, or
+the .plax written next asks for a region the atlas it just produced does not contain.
+PIXMAPS ARE NATIVE MEMORY AND NOTHING FREES THEM FOR YOU. The eyedropper allocated one per
+frame while armed and disposed none. Reading an atlas's pixels also changes the LIVE texture's
+filter as a side effect — export used to leave the editor's own preview on Nearest.
+TWO SEAMS WITH #project-io, and a ticket that crosses either needs BOTH tags: export triggers
+flatten (Utils_Saving.flattenAndExport), and flatten then rewrites every Position_Infos to
+fromAtlas=true, which is what the saver writes out; and hot reload swaps textures through
+Utils_Texture.replaceTexture while #project-io owns the watcher itself.
+Compiling proves nothing here. `./gradlew :editor:run`, flatten a sample from editor/Files and
+look at the atlas it wrote.
+MEMORY_LANE.md §6 is the recorded history here — HISTORY, not a backlog. Its paths and
+line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
+anything you fix that it still lists as broken MOVES into its §10 then/now table rather
+than being deleted.
+"""
+
+# Split off from `assets` on 2026-09-12 (doubt d1, decision B). The seam between the two is
+# real and runs through Utils_Saving.flattenAndExport -> Utils_TextureAtlas.flattenProject:
+# tag a ticket that crosses it with BOTH, which is why each pack names the other.
+[tags.project-io]
+label = "Project files"
+description = "Save, export, autosave, paths, the file chooser, hot reload"
+color = "#5ec8c0"
+sort = 45
+context = """
+utils/Utils_Saving.java (under editor/src/jks/tools2d/parallax/editor/vue/edition/) is all of
+save, export, autosave and "pack textures". Also gvars/EditorPaths (every path decision),
+gvars/FVars_Extensions (plax / jplax / plaxpj), vue/edition/data/ (Project_Data,
+WholePage_Editor, Outside_Source, Position_Infos), filechooser/, filewatch/FileWatchService +
+utils/WatchedImage, and Vue_Selection's open-by-extension dispatch.
+TWO MODELS, AND THEY ARE NOT THE SAME FILE. buildWholePageForExport keeps ONLY layers whose
+image is in the atlas — that is the .plax/.jplax a game reads. buildWholePageAsProjectForSaving
+keeps EVERY layer, loose PNGs included, marking which was which in WholePage_Editor.inside.
+Write one where the other belongs and layers vanish from the export with no error anywhere.
+SEAM WITH #assets, needing both tags: exporting while any image is loose asks to flatten
+first, and on a FAILED flatten savingExport is deliberately not called — the images are still
+loose, and exporting anyway would silently drop their layers.
+NEVER RESOLVE A SAVED IMAGE PATH BY HAND. EditorPaths.resolveProjectFile does it: absolute
+as-is, relative against GVars_Vue_Edition.relativePath, falling back to the working directory
+where 2019 projects put their "packing_" folders. The 2019 "pack for moving" also rewrote
+every ATLAS region's path, and wrote files relative to wherever the editor happened to start.
+Autosave goes to EditorPaths.autoSaveFolder() — editor/Files/AutoSave from the module,
+~/.parallax-editor/autosave otherwise — stores ABSOLUTE image paths because the copy does not
+sit beside the project, and prunes by a regex anchored on this project's own prefix, so
+AUTO_<name>_night_* is not one of ours. 10 kept, every 300s of RENDERED time: the timer is
+accumulated delta in Vue_Edition.render, so it does not tick while the window is not drawing.
+packTextures and renameOutsideImage move LIVE state as well as files (imageRef urls,
+outsideTextureReserve, activeFileWatching) and cancel the old WatchedImage: miss one and the
+image hot-reloads onto a dead key. Hot reload is ONE FileWatchService thread for every watched
+image — cancel on each path change and on project close, or a queued reload fires on a
+disposed texture. Test that for real: save a PNG the open editor uses, watch the layer change.
+Every failure here is reported by a Dialogs call and nothing else; a silent return means you
+swallowed one. Gates: `./gradlew :editor:run`, export a sample from editor/Files and REOPEN
+the result, plus `./gradlew :core:test` — PlaxFormatTest reads those same samples. Never
+overwrite editor/Files/*.plax to make something pass; they are the 2019 evidence (see #format).
+MEMORY_LANE.md §6 is the recorded history here — HISTORY, not a backlog. Its paths and
+line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
+anything you fix that it still lists as broken MOVES into its §10 then/now table rather
+than being deleted.
+"""
+
+# No `docs` tag (doubt d2, decision B, 2026-09-14): documentation work carries the tag of the
+# area it documents. What the old pack said about README, MEMORY_LANE, RELEASING, NOTICE and
+# javadoc now lives in the pack of the area each part mirrors — runtime, format, editor, build.
+[tags.build]
+label = "Build & release"
+description = "Gradle, CI, dependency versions, Maven Central"
+color = "#e8938f"
+sort = 50
+context = """
+gradle.properties holds EVERY dependency version (gdx, visUi, kryo, jackson, junit) and the
+published `version`. Nothing pins a version inline; add new ones there.
+build.gradle (root: encoding, lint, JUnit platform for all modules), core/build.gradle
+(sources in src/ and test/, publishing), editor/build.gradle, demo/build.gradle,
+settings.gradle, .github/workflows/{ci,release,snapshot}.yml, RELEASING.md.
+core compiles to `options.release = 11` — games consume it, including on Android. Its tests
+and the editor and demo are 17. A Java 12+ API used in core/src fails the build with a
+message about the API, never about the rule.
+`repositoriesMode = FAIL_ON_PROJECT_REPOS` in settings.gradle: declaring a repository in a
+module's build.gradle FAILS the build. Repositories go in settings.gradle only.
+Gates, exactly what CI runs on JDK 17, 21 AND 25:
+  ./gradlew build                              compile + test everything
+  ./gradlew :editor:distZip :demo:distZip      the packaged downloads
+A `run` task's workingDir matters: editor/ for the samples, demo/assets for the .plax files.
+Releases: develop (always -SNAPSHOT, every push publishes one) → release/X.Y → master, tagged
+vX.Y.Z. RELEASING.md is the procedure; follow it rather than inventing one. The release
+workflow REFUSES to run when the tag and gradle.properties disagree.
+Maven Central needs four repository secrets (MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD,
+SIGNING_KEY, SIGNING_KEY_PASSWORD). Without them a release still succeeds and still builds
+the GitHub downloads — it just SKIPS Central with a warning in the log. A green release is
+therefore not proof anything reached Central; read the log or check the artifact page.
+README.md IS THE PUBLISHED FRONT PAGE and it is accurate today — keep it that way. Its module
+map and the code map at the end mirror this build: move a class or a module and fix both in the
+SAME commit. Its badges point at the CI workflow FILE PATH and at the Central artifact
+coordinates, so renaming either breaks a badge silently, visible only on the GitHub page.
+NOTICE and the README's Credits section exist because "Cleaning house" (f29c6e3, 2019-04-28)
+deleted the credit to Rahul Verma's ParallaxBackground-libgdx, which Apache-2.0 REQUIRES. Never
+trim them, and keep the 2014 inceptionYear in core/build.gradle's pom.
+Javadoc runs with `Xdoclint:none` (core/build.gradle), so a broken or missing tag will NOT fail
+the build. Read what you wrote; nothing else will.
+"""
