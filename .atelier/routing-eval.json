@@ -1,0 +1,251 @@
+{
+ "board": "parallax",
+ "built_at": "2026-09-18 15:55:55",
+ "tags": [
+  "assets",
+  "build",
+  "context",
+  "coordinator",
+  "editor",
+  "format",
+  "project-io",
+  "runtime"
+ ],
+ "tickets": [
+  {
+   "ref": "r26",
+   "title": "Apply d8: B",
+   "detail": "Simon settled doubt d8, and it needs writing.\n\nTHE DOUBT: r16's question also asked (yes/no) for a guard, and the answer was only 'C'. Opening a project whose atlas cannot be loaded shows 'Could not load the parallax' and an EMPTY page; Save project, or Yes to 'save before leaving', then overwrites the .plaxpj with 0 layers. r16's fix makes that much rarer (projects and autosaves now find their atlas), but it can still happen if an atlas is moved or deleted. Not done.\nTHE QUESTION: Guard against saving an empty page over a project that failed to load? A = yes: after a failed load, Save project refuses to write over the file it was opened from (saving to another name/folder still works)  B = yes, but as a warning with Save anyway / Cancel  C = no guard\nHIS DECISION: B\nRAISED FROM: r16\n\nWrite what the decision asks for, and check it where it lives. Closing this with `atelier done` marks d8 applied. If it turns out to need no change, say why in the note. If you cannot tell what it asks, `atelier ask` this task rather than guessing.\nNote (fedora1-parallax-8): Plan for B: GVars_Vue_Edition.loadedIncompletely, set when loadPreview falls back to an empty page and when loose images fail to load (their layers are dropped). While set, any save whose .plaxpj already exists asks 'Save anyway / Cancel' first; a save to a new file does not ask (nothing to lose). Save anyway clears it. Applies to the Save button, 'save before leaving' and 'save before flattening' (those continue only after ",
+   "tags": [
+    "editor",
+    "project-io"
+   ]
+  },
+  {
+   "ref": "r21",
+   "title": "Apply d5: A",
+   "detail": "Simon settled doubt d5, and it needs writing.\n\nTHE DOUBT: r11 was created by 'atelier request' off notice n1, and its line reads 'probe: does request work at all' — a test of the board tooling, not of this repo. The ticket says his line wins, so I tagged it #coordinator and left it open rather than acting on n1.\n\nWhat that leaves undone, if the probe is all it is: I verified n1 is accurate today. In this checkout .gitignore is modified but uncommitted, and it is the ONLY modified file. HEAD's .gitignore has no 'HQ/' line, so a fresh clone would not ignore HQ/settings.txt; the file is untracked right now, so nothing is exposed in git history, but the protection is one uncommitted line. The same uncommitted diff also adds the five .claude/skills/* board symlinks. I have not committed it — a coordinator session publishes what work sessions commit, it does not commit for them — and I have not opened HQ/settings.txt.\n\nSecond loose end: n1 suggests that file may already hold the Sonatype token d3/r8 assume does not exist. Nobody has checked, and r8 is now routed to #build assuming setup is still to be done.\nTHE QUESTION: A = r11 is only the probe; it can be closed as soon as someone confirms the request arrived, and I raise a separate ticket for the .gitignore line  B = r11 also covers the substance of n1 — commit the HQ/ ignore line and check whether HQ/settings.txt holds a live Central token before generating a new one  C = the probe is answered, drop r11 and act on n1 nowhere\nHI",
+   "tags": [
+    "coordinator"
+   ]
+  },
+  {
+   "ref": "r28",
+   "title": "Now that the project is on the maven central, we should update the read me to make it clear how to dowload it",
+   "detail": "Note (fedora1-parallax-11): Routed #build. Verified: 2.1.0 is on repo1.maven.org (pom pulls gdx 1.14.2, kryo 5.6.2, jackson-annotations); GitHub release v2.1.0 has ParallaxEditor-2.1.0.zip. README's 'Get it' snippet omits repositories and only shows Groovy; rewriting it as a full install section (Groovy, Kotlin DSL, Maven, where in a libGDX project, what it pulls in) and pointing the later section at it.\n\ncc596ed. Checked first: 2.1.0 is on repo1.maven.org (its pom pulls gdx 1.14.2, kryo 5.6.2, jackson-annotations) and GitHub release v2.1.0 has ParallaxEditor-2.1.0.zip. README 'Get it' is now two subsections. Library: Maven Central coordinates, goes in core/build.gradle of a gdx-liftoff project with mavenCentral(), Groovy + Kotlin DSL + Maven snippets, what it pulls in, compiled for Java 11, jars also on the GitHub release. Editor: the zip download, unchanged. The duplicate snippet in 'Using the library in a game' now links to Get it; module table moved under 'Build and run'. RELEASING.md's release step now says to bump the version in README's snippets too, since three places pin 2.1.0. Snippets not built in a throwaway project; coordinates checked against Central. Left the untracked docs/MIGRATING.md alone (not mine).",
+   "tags": [
+    "build"
+   ]
+  },
+  {
+   "ref": "r27",
+   "title": "Keep the world size per Parallax_Heart, not in Gvars_Parallax statics",
+   "detail": "Request from LaChasseGalerie (d1/r9 there). Not blocking: the game works on 2.1.0 today.\n\nThe game draws a page IN FRONT of its sprites by using two Parallax_Hearts (background + foreground) that share one camera and batch (LaChasseGalerie core/src/jks/parralax/GVars_Parralax.java). The 2019 snapshot it replaced had a built-in second page; two hearts made that unnecessary, so nothing else was missing.\n\nThe fragile part: every Parallax_Heart constructor calls Gvars_Parallax.setWorldWidth/Height, and ParallaxLayer.resetPosition/setDecalPercentX/Y read Gvars_Parallax.getWidthPercent/getHeightPercent. The world size is one static for the whole JVM. Two hearts only work while they are built with the same size; a second heart with another size, or resize() on a heart that owns its batch, silently moves the decal_X/Y of every other heart's layers.\n\nAsk: store worldWidth/worldHeight on the heart (or the page reader) and pass them to the layers, keeping the static getters as a default for single-heart games. Check: two hearts with different world sizes in one app keep their own decal placement.\nNote (fedora1-parallax-10): Read the code. Statics are read in 3 places: ParallaxLayer decal math (resetPosition, setDecalPercentX/Y, get/setScrollX/Y), WholePage_Model.useAtlas (layer width AND the decal applied by setUpEverything at build), and the reader's addLayersTransfert via pageModel.getDrawing(). So a transfert page is built lazily with whatever size the last-built heart left in the st",
+   "tags": [
+    "runtime"
+   ]
+  },
+  {
+   "ref": "r29",
+   "title": "Make the core library translatable by GWT, so a libGDX game using it can ship to the browser (for 2.2.0)",
+   "detail": "FROM the La chasse-galerie board (lachassegalerie r54, parent r46 'browser players'). That game's r20 spike compiled it to JavaScript and ran it in Chrome: commit 8eee3f1 in /home/simon/Documents/GitHub/LaChasseGalerie, write-up in docs/browser-target.md section 10. To get there, tools/browser-spike/build.sh in that repo patches a COPY of parallax-background 2.1.0's published sources. Those patches are the change this library needs. build.sh holds every one of them, so read it first.\n\nWHAT GWT REFUSES in core/, checked against develop at cc596ed (not just 2.1.0):\n\n1. CLONEABLE. ParallaxLayer implements Cloneable and its clone() calls super.clone() (ParallaxLayer.java:128). GWT emulates neither. This is live code: ParallaxPageReader.java:64 clones a layer when a page transfers into itself. The fix is a field-by-field copy (texRegion into a new ArrayList, then the scalar fields). The spike wrote that copy against 2.1.0. 68e513c has since changed ParallaxLayer (world size per heart), so rebuild the field list from develop and do not paste the spike's. The editor also calls clone() (VE_Tab_Texture.java:174), and it must keep working.\n\n2. KRYO AND JACKSON ANNOTATIONS on the model classes a game touches: WholePage_Model, Parallax_Model, Page_Model, ParallaxLayer (@DefaultSerializer, @JsonIgnore, @JsonIgnoreType, @JsonIgnoreProperties and their imports). Kryo is reflection plus Unsafe and has no browser story at all.\n\n3. THE SERIALIZERS must be out of the translatable sources: heart",
+   "tags": [
+    "format"
+   ]
+  },
+  {
+   "ref": "r25",
+   "title": "Loose images stored by relative path do not hot-reload after the project is reopened",
+   "detail": "Seen while testing r16 (fedora1-parallax-8). Reopening a .plaxpj whose loose image is stored relative (e.g. 'OneNight_images/grass.png', as 'Copy loose images next to the project' writes it) logs '[FileWatchService] Cannot watch <WORKING DIR>/OneNight_images/grass.png ... NoSuchFileException'. Cause by reading: VE_Center_ParallaxShow.loadOutsideImages loads the texture through EditorPaths.resolveProjectFile(source.url), but then calls Utils_LoadingImages.registerOutsideImage(source.url, region), which does new WatchedImage(path, region) with the UNRESOLVED relative url, so the watcher looks in the editor's working directory. The image displays, but saving it from an image editor no longer updates the layer. Fix: watch the resolved file, keep the url as the key. Test for real: reopen, save the PNG, watch the layer change.\n\n7a15e00 (develop, unpushed). Utils_LoadingImages.registerOutsideImage now watches EditorPaths.resolveProjectFile(path) (the same resolution the texture was loaded with); activeFileWatching/outsideTextureReserve stay keyed by the saved path, so renameOutsideImage/removeFile are unaffected. Dropped PNGs are absolute: unchanged. VERIFIED in the hidden editor (script /tmp/r16h/src/r5/R25.java): a .plaxpj with loose 'rel_images/red.png' reopened, the PNG overwritten with a 128x32 blue one -> layer texture 64x32 -> 128x32 and the preview turns blue; the SAME script on the unfixed code stays 64x32 red with '[FileWatchService] Cannot watch /tmp/r16work/rel_images/re",
+   "tags": [
+    "editor",
+    "project-io"
+   ]
+  },
+  {
+   "ref": "r11",
+   "title": "probe: does request work at all",
+   "detail": "Simon read notice n1 and asked for this.\n\nWHAT HE ASKED: probe: does request work at all\n\nTHE NOTICE (n1): HQ/settings.txt in the parallax checkout holds a plaintext username and password in a Maven <server> block — the exact shape of a Sonatype Central user token. Two things worth knowing, and I have deliberately not copied the values anywhere.\n1. It may be the answer to d3. If that token is a live Central token, the Maven Central setup is further along than `gh secret list` suggests (which is empty) — the credential exists, it has just never been put into the repository secrets. Worth checking before generating a new one.\n2. Its ignore rule is NOT committed. `HQ/` is in .gitignore in the working tree but not in .gitignore at HEAD, so a fresh clone does not ignore it. The file is untracked today and safe, but the protection travels with an uncommitted line. Committing that one line would make it durable.\nI added the board's skill symlinks to the same .gitignore (they are absolute paths into the atelier checkout and would be broken for anyone else), so .gitignore is now modified in that working tree with both changes, uncommitted.\n\nThe notice is the finding; the line above is what he wants done about it. If the two do not agree, his line wins. If you cannot tell what it asks, `atelier ask` this task rather than guessing.\n\nPROBE ANSWERED: yes, request works from start to finish. r11 was created on 2026-09-12 11:15 with parent_id 5810, which is n1's id, so the request turned n1",
+   "tags": [
+    "coordinator"
+   ]
+  },
+  {
+   "ref": "r24",
+   "title": "Commit the .gitignore line that keeps HQ/ (Maven Central credentials) out of git",
+   "detail": "From notice n1, split out by d5 (A). HEAD's .gitignore has no HQ/ line, so in a fresh clone HQ/settings.txt, which holds a plaintext Maven <server> username and password, would NOT be ignored, and one 'git add .' would put it in history. The file is untracked today (git ls-files HQ = 0) and only ignored because of an uncommitted edit in this checkout.\n\nThe edit is already in the working tree of the parallax checkout (git diff .gitignore, 9 added lines, and it is the only modified file). It makes two changes:\n  1. 'HQ/' after the Editor runtime output block. This is the change this ticket is for.\n  2. A '# Atelier board skills' block that ignores the five .claude/skills/* entries (board, digest-contexts, start-worker, write-context-pack, write-lexicon). They are absolute symlinks into /home/simon/Documents/GitHub/atelier and would be broken in anyone else's clone. They are untracked (git ls-files .claude = 0).\nCommit .gitignore on its own on develop, both changes in one commit (they came from the same notice).\n\nDO NOT open, cat, stage or copy HQ/settings.txt. Before committing, check: git diff --cached --name-only shows only .gitignore. After: git ls-files HQ .claude prints nothing, and git check-ignore HQ/settings.txt still matches.\n\nOUT OF SCOPE: whether that file holds a live Sonatype Central token (n1 point 1). d5 chose A over B, and B was the option that included that check.\n\nCommitted 1fd6148 on develop (unpushed): .gitignore only, with both changes exactly as they were ",
+   "tags": [
+    "build"
+   ]
+  },
+  {
+   "ref": "r4",
+   "title": "No test covers resize or the gradient squares",
+   "detail": "The suite is two classes: PlaxFormatTest (the file format) and ParallaxPageReaderTest (tiling and cross-fade). Nothing exercises Parallax_Heart.resize or side/SquareBackground.\nThat is the area with the worst history: MEMORY_LANE.md §5 — 'Resizing was never handled: the gradient squares kept the window size from startup, and the ShapeRenderer projection was never set', and the launcher had setResizable(false) while the git log has commits named 'Work on resize' and 'Travail resize'. It is fixed; nothing stops it regressing.\nNote the square size inversion when asserting: the stored size is the part of the screen left UNCOVERED — 0.5 covers half, 0 covers all of it, 1 covers nothing.\nParallaxPageReaderTest shows how to test this headless: java.lang.reflect.Proxy over Batch recording the draw calls, GdxNativesLoader.load() in @BeforeAll, no GL context. A ShapeRenderer may need the same treatment.\nGate: ./gradlew :core:test\n\nCommit 1fce249: core/test/jks/tools2d/parallax/heart/ParallaxHeartResizeTest.java, 8 tests, headless. It runs the REAL Parallax_Heart and ShapeRenderer: Gdx.graphics is a Proxy reporting a settable window size, Gdx.app a no-op Proxy, and Gdx.gl/gl20 a Proxy that returns 1 for int calls (handles) and writes 1 for GL_COMPILE_STATUS/GL_LINK_STATUS. A ShapeRenderer subclass records rect() calls. @AfterEach nulls the Gdx statics and restores Gvars_Parallax's world size. Covered: uncovered-part semantics (top 0.25 on 1600x900 -> y=225 h=675, bottom -> y=0 h=675, 0 ",
+   "tags": [
+    "runtime"
+   ]
+  },
+  {
+   "ref": "r1",
+   "title": "Mirror is silently dropped on export",
+   "detail": "ParallaxLayer.isMirror exists, ParallaxPageReader:150 draws it, and VE_Tab_Texture:101 has a checkbox that sets it — but Parallax_Model has no mirror field and Parallax_Model_Serializer never writes one. So: tick Mirror in the editor, see it in the preview, export, and it is gone. No warning anywhere. README.md's layer settings table already admits it ('Editor preview only: not saved in files yet').\nThe fix is a format 3 field added exactly the way flipY was: appended to Parallax_Model, written AND read behind currentVersion(kryo) >= 3 in Parallax_Model_Serializer, with format 1 and 2 files still loading. Never reorder the Kryo registrations. Then drop the README caveat and cover it in PlaxFormatTest.\nGate: ./gradlew :core:test\n\nCommit cb9950a. Parallax_Model.mirror added (appended, with isMirror/setMirror); Parallax_Model_Serializer writes AND reads it after padYFactor behind currentVersion(kryo) >= 3; WholePage_Model_Serializer.CURRENT_VERSION = 3 with javadoc for format 3. Also wired Utils_Page.buildFromPage (layer->model on export) and ParallaxLayer.setUpEverything (model->layer on load) — without these the field would never be filled or applied. Kryo registrations untouched, no sample file touched. Tests: rewriting/JSON round-trip now set and check mirror; new format2FilesStillLoadWithoutMirror writes a real format 2 file via a new package-private WholePage_Model_Serializer(int writeVersion) ctor and proves it loads (flipY kept, mirror false). Gate ./gradlew :core:test: ",
+   "tags": [
+    "format"
+   ]
+  },
+  {
+   "ref": "r16",
+   "title": "Save project into a folder without its atlas silently makes a project that reopens empty",
+   "detail": "Found by the r5 sweep. Open Files/Demos/OneNight.plaxpj, set Project Path to another folder, Save project: 'The project has been saved'. Reopening that .plaxpj shows 'Could not load the parallax. Is its atlas in the same folder?' (GdxRuntimeException: <folder>/OneNight.atlas not found) and opens with 0 layers (screenshot 70_reopened_project on r5). A page names its atlas by file name only, so saving anywhere else breaks it, and saving again from the empty view would overwrite the project with nothing. Needs a decision: warn at save time, copy the atlas, or store a relative path. The last one touches #format.\nNote (fedora1-parallax-6): Investigated. Cause: .plaxpj stores pageModel.atlasName bare ('OneNight.atlas'); WholePage_Model.preload(relativePath) opens relativePath + '/' + atlasName, relativePath = the folder the .plaxpj was opened from. Found, run in the harness: EVERY autosave of an atlas project has the same bug - autoSave() makes loose image paths absolute but leaves atlasName bare, and Files/AutoSave has no atlas, so autosaves reopen with 0 layers (render attached). Also by reading: saving elsewhere breaks RELATIVE loose-image paths the same way (resolved against the new folder on reopen). Note .plaxpj is the editor's Jackson JSON, not the Kryo .plax format, and preload already accepts a path in atlasName ('../Demos/OneNight.atlas' would load) - so a relative/absolute atlas path in the PROJECT file needs no .plax format bump, as long as the export keeps the bare nam",
+   "tags": [
+    "editor",
+    "project-io"
+   ]
+  },
+  {
+   "ref": "r9",
+   "title": "Apply d4: a",
+   "detail": "Simon settled doubt d4, and it needs writing.\n\nTHE DOUBT: This project parks no session handoffs, so I gave it no `sessions_dir`, no `context` tag and no `contexts` upkeep routine. Shadow parks its handoffs in docs/sessions. A board worker running here would have nowhere to leave one.\nTHE QUESTION: A = add sessions_dir (say where — docs/sessions?), the `context` tag and the contexts routine now  B = leave it out until a session actually needs to park something\nHIS DECISION: a\n\nWrite what the decision asks for, and check it where it lives. Closing this with `atelier done` marks d4 applied. If it turns out to need no change, say why in the note. If you cannot tell what it asks, `atelier ask` this task rather than guessing.\n\nd4/A applied, in two places.\n\nBOARD CONFIG (projects/parallax.toml, atelier checkout): I put sessions_dir = \"docs/sessions\" with the other top-level keys, above the first table, so it can't get trapped under a [table]. That is the folder the doubt suggested, and shadow and atelier use the same one. I added [maintenance.contexts] every_days = 14 (atelier uses 14, shadow 7; this repo sees less traffic than either), and replaced the two comments that said contexts were left out. I did NOT write a [tags.context] block. db.py's CONTEXT_TAG gives that tag to any board with a sessions_dir, and a copy in this file would only drift from it. After 'atelier --project parallax init', 'atelier tags' lists 'context', 'atelier upkeep' shows contexts DUE / never run, and 'a",
+   "tags": [
+    "coordinator"
+   ]
+  },
+  {
+   "ref": "r23",
+   "title": "Apply d7: A",
+   "detail": "Simon settled doubt d7, and it needs writing.\n\nTHE DOUBT: master is on version=2.0.0 (ecb3162) and has no v2.0.0 tag (only 0.1/0.2), so the README's 2.0.0 is a promise that can still be kept. But a tag push runs the release.yml of the TAGGED commit. On master that is the old workflow: it skips Central with only a warning when the secrets are missing, and runs publishToMavenCentral without release. The r2 fix (5f6d12e) is only on develop.\nTHE QUESTION: How does 2.0.0, the version the README promises, get released? A = bring 5f6d12e's release.yml onto master, then tag v2.0.0 there  B = skip 2.0.0: the first Central release is 2.1.0 from develop, and the README snippets move to 2.1.0 at that release  C = tag master's ecb3162 as it is (skips Central without failing, and even with secrets it never presses Publish)\nHIS DECISION: A\nRAISED FROM: r8\n\nWrite what the decision asks for, and check it where it lives. Closing this with `atelier done` marks d7 applied. If it turns out to need no change, say why in the note. If you cannot tell what it asks, `atelier ask` this task rather than guessing.\nNote (fedora1-parallax-10): Plan: cherry-pick 5f6d12e onto local master in a worktree (/tmp/r23-master), leaving the shared develop checkout untouched. master and 5f6d12e^ have the same .github/ and RELEASING.md, and the same build files apart from version.\n\nBrought the r2 release workflow onto master: commit 8601795 on LOCAL master (a cherry-pick of 5f6d12e: release.yml, snapshot.yml, RELEASIN",
+   "tags": [
+    "build"
+   ]
+  },
+  {
+   "ref": "r20",
+   "title": "After a window resize, the preview draws layers outside its frame",
+   "detail": "Found while checking r17, and present BEFORE the r17 change too (compare /tmp renders attached to r17: 1100_Textures before/after). After Gdx.graphics.setWindowedMode(1152x720 or 1100x680) on OneNight.plaxpj, clouds and trees draw above and right of the preview frame, and a lighter inner rectangle shows where the old frame was. Seen in the hidden-window harness (60 frames after the resize, persisting across tab switches); not checked whether the editor STARTED at that size shows it, nor on a real window drag. Likely the camera/viewport or the squares keep the pre-resize size (Vue_Edition.resize vs rebuildInterface).\nNote (fedora1-parallax-7): Reading r17's 1100 render: layers are inside the new frame; the lighter rectangle is the gradient squares at 85% of the frame (1100/1300, 680/800), so square size vs ShapeRenderer projection are out of step. Instrumenting in the harness.\nNote (fedora1-parallax-7): ROOT CAUSE: Parallax_Heart.resize (core) and Vue_Edition.resize edit shapeRender.getProjectionMatrix() in place without updateMatrices(); libGDX ShapeRenderer recomputes its combined matrix only when dirty, so after the first begin() the resize is ignored: squares get the new pixel size but draw with the startup projection. Runtime bug too (any game that resizes). Fix + test in core.\n\n62a64f5. Not layers out of frame: layers were inside it; the gradient SQUARES drew at the pre-resize projection (smaller rect after shrinking). Cause in CORE: Parallax_Heart.resize set shapeRender",
+   "tags": [
+    "editor"
+   ]
+  },
+  {
+   "ref": "r7",
+   "title": "Apply d2: B",
+   "detail": "Simon settled doubt d2, and it needs writing.\n\nTHE DOUBT: `docs` is the one tag cut by KIND of work rather than by area of the codebase, which is the thing the rule says not to do. I kept it because README.md is this project's front page for a library people actually install, and RELEASING.md and MEMORY_LANE.md are substantial documents in their own right — not just comments near code.\nTHE QUESTION: A = keep `docs` as its own tag  B = drop it and tag documentation work with the area it documents (a README settings-table fix becomes #runtime, a RELEASING fix becomes #build)\nHIS DECISION: B\n\nWrite what the decision asks for, and check it where it lives. Closing this with `atelier done` marks d2 applied. If it turns out to need no change, say why in the note. If you cannot tell what it asks, `atelier ask` this task rather than guessing.\nNote (fedora1-parallax-1): Routing note for whoever applies this: dropping the 'docs' tag orphans r3 ('Write the agent guide this repo has never had'), the only ticket carrying it — retag it in the same pass or it becomes unroutable. Its content is a repo-wide agent guide, so it may not land cleanly in one area; that is the hard part here, not the config edit. Note also that r6 (apply d1: split assets into assets + project-io) edits the same tag vocabulary — doing the two together avoids writing the tag file twice, and the 'docs' pack's paragraphs on RELEASING.md, README and MEMORY_LANE need rehoming into build/runtime rather than deleting.\n\nd2/B",
+   "tags": [
+    "coordinator"
+   ]
+  },
+  {
+   "ref": "r22",
+   "title": "Apply d6: A",
+   "detail": "Simon settled doubt d6, and it needs writing.\n\nTHE DOUBT: r3 named no file; I picked AGENTS.md (tool-neutral) with CLAUDE.md importing it so Claude Code loads it too.\nTHE QUESTION: Guide file name: A = AGENTS.md + one-line CLAUDE.md '@AGENTS.md' (done in 241d161) B = CLAUDE.md only C = AGENTS.md only\nHIS DECISION: A\nRAISED FROM: r3\n\nWrite what the decision asks for, and check it where it lives. Closing this with `atelier done` marks d6 applied. If it turns out to need no change, say why in the note. If you cannot tell what it asks, `atelier ask` this task rather than guessing.\n\nNo change needed: decision A is what r3 already committed. Checked on develop: AGENTS.md holds the guide; CLAUDE.md is exactly the one line '@AGENTS.md' (241d161, with 02dcf6c removing the MEMORY_LANE refs). Both are tracked by git, neither is matched by .gitignore (including the uncommitted .gitignore edit, which only adds HQ/ and .claude/skills links), and this session's Claude Code loaded AGENTS.md through the import. No commit, since nothing changed. Both commits are still unpushed; squashing them (n5) is still up to the coordinator.",
+   "tags": [
+    "build"
+   ]
+  },
+  {
+   "ref": "r19",
+   "title": "Background tab content is taller than a 1100x680 window and covers its own tab bars",
+   "detail": "Found while checking r17. At the minimum window 1100x680, Controls > Background (two color pickers) is taller than the window: the Top Square / Bottom Square bar is pushed up over the main tab bar and 'Is active' is cut (render 1100_Background on r17 is at /tmp/r17after/1100_Background.png, attached as below). Fine at 1152x720. Probably the VE_Tab_ColorConfig layout needs to fit the height or scroll.\n\nCommit 8e17e22 (develop, unpushed). VE_Tab_ColorConfig.buildColorPalette wraps each square's content in a ScrollPane: vertical only, flickScroll off (else dragging a picker scrolls), overscroll off, bars always shown, style = COPY of the skin ScrollPaneStyle with background=null (the default draws a blue frame round the whole panel). Verified in the hidden-window editor with OneNight.plaxpj: at 1100x680 the Top Square tab sits 630..655 and 'Is active' tops out at 630 (before: overlapping the main bar); click + wheel scrolls to maxY (22 px); dragging the top picker's hue bar changed topSquare.topColor 12537cca -> 627d13ca with scrollY unchanged. At 1300x800 it fits, no scrolling. Wheel needs a click in the pane first (libGDX gives scroll focus on touchDown) - same as the texture list. Seen, not touched: the picker's number/hex fields clip their text at every size (e.g. '37CCA' for 537CCA at 1300; also in r17's renders).",
+   "tags": [
+    "editor"
+   ]
+  },
+  {
+   "ref": "r6",
+   "title": "Apply d1: B",
+   "detail": "Simon settled doubt d1, and it needs writing.\n\nTHE DOUBT: The `assets` tag merges two things I hesitated over: the image pipeline (atlas, packing, flatten, loose PNGs, filtering) and the editor's file I/O (save, export, autosave, path resolution, the file chooser, hot reload). I merged them because flatten IS triggered by export, so a session touching one lands in the other. But they are arguably two bodies of knowledge.\nTHE QUESTION: A = keep them merged as `assets`  B = split into `assets` (images/atlas) and `project-io` (save/export/paths)\nHIS DECISION: B\n\nWrite what the decision asks for, and check it where it lives. Closing this with `atelier done` marks d1 applied. If it turns out to need no change, say why in the note. If you cannot tell what it asks, `atelier ask` this task rather than guessing.\n\nSplit done and live. 'assets' is now Images & atlas (sort 40), 'project-io' is Project files (sort 45, colour #5ec8c0). Edited [tags.assets] in /home/simon/Documents/GitHub/atelier/projects/parallax.toml into two blocks and ran 'atelier --project parallax init' — the board now serves 7 tags and both packs read back clean through 'atelier tags --json'.\n\nI wrote both packs from the code, not from the old pack. Read in full: Utils_TextureAtlas, Utils_Saving, Utils_LoadingImages, Utils_Texture, WatchedImage, EditorPaths, FVars_Extensions, Vue_Selection's open dispatch, Vue_Edition's autosave loop, and MEMORY_LANE.md §6.\n\nWHERE THE LINE FELL, and the one judgement call. d1's own f",
+   "tags": [
+    "coordinator"
+   ]
+  },
+  {
+   "ref": "r8",
+   "title": "Apply d3: A",
+   "detail": "Simon settled doubt d3, and it needs writing.\n\nTHE DOUBT: Maven Central setup needs a human. RELEASING.md steps 1-4 cannot be done by an agent: create a Sonatype Central account, claim the io.github.javakhanstudio namespace, generate a user token, and create + publish a GPG signing key. Until those four secrets exist, every release silently skips Central (see r2). Nothing is published today.\nTHE QUESTION: A = you will do the Central setup, leave r2's README as a promise of what is coming  B = not publishing for now — an agent should make the README honest (remove the install snippet and the badge, or mark it unreleased)  C = do the setup now, together, and I will walk you through it\nHIS DECISION: A\n\nWrite what the decision asks for, and check it where it lives. Closing this with `atelier done` marks d3 applied. If it turns out to need no change, say why in the note. If you cannot tell what it asks, `atelier ask` this task rather than guessing.\n\nd3 = A needs no file change, and none was made. What I checked: README.md still carries the Maven Central badge (line 4) and both 2.0.0 install snippets (lines 20, 80), untouched by r1/r2/r3. RELEASING.md's one-time setup (steps 1-5) is still there for Simon to follow. r2 (5f6d12e) made the release workflow fail rather than skip Central silently, so once the secrets are set, a release makes the promise true or goes red. The promise is keepable: master's gradle.properties is version=2.0.0 and no v2.0.0 tag exists yet. Raised a doubt for",
+   "tags": [
+    "build"
+   ]
+  },
+  {
+   "ref": "r18",
+   "title": "'Copy loose images next to the project' asks, then silently does nothing when there are no loose images",
+   "detail": "Found by the r5 sweep. On a project with no loose PNG (OneNight.plaxpj), the button opens 'Copy the loose images into \"<name>_images\"...?' Yes/No, and Yes returns immediately (Utils_Saving.packTextures exits when outsideInfos is empty), with no message. Disable the button or say there is nothing to copy.\n\nCommit 754f211 (develop, unpushed). Chose the message over disabling the button (disabling would have to track every add/remove/flatten of an image). VE_Tab_Meta_ConfigParallax's button checks Utils_Saving.hasLooseImages() first and shows 'There is nothing to copy: every image of this project comes from its atlas.' (Dialogs OK, title Packing); packTextures' own early return shows the same message instead of returning silently. Verified in the hidden-window editor: OneNight.plaxpj -> message, no Yes/No, output folder empty; after dropping a PNG -> the question is asked, Yes -> 'Images copied to /tmp/r18out/r18_images' containing loose.png. Renders + log attached.",
+   "tags": [
+    "editor",
+    "project-io"
+   ]
+  },
+  {
+   "ref": "r2",
+   "title": "Nothing has ever been published to Maven Central, but the README tells users to depend on 2.0.0",
+   "detail": "README.md says twice: implementation \"io.github.javakhanstudio:parallax-background:2.0.0\", and carries a Maven Central badge. Checked 2026-09-12:\n  https://repo1.maven.org/maven2/io/github/javakhanstudio/                 -> 404\n  .../io/github/javakhanstudio/parallax-background/2.0.0/...pom            -> 404\nThe whole namespace is absent — nobody can follow the README's first instruction. `gh secret list` is empty, so none of the four secrets RELEASING.md requires (MAVEN_CENTRAL_USERNAME/PASSWORD, SIGNING_KEY, SIGNING_KEY_PASSWORD) are set, and the release workflow SKIPS Central with only a log warning when they are missing — so a release can go green having published nothing. The only GitHub release is 'TestPublich 0.2' from 2017.\nSteps 1-4 of RELEASING.md's one-time setup need a human (Sonatype account, namespace claim, GPG key) — see the doubt on this board. What an agent can do now: make the README honest about what is actually installable, and check whether the release workflow can be made to FAIL, or at least announce loudly, when the Central step is skipped.\n\nCommit 5f6d12e. README NOT changed: d3 was decided A (Simon does the Central setup, the README stays as a promise), so the snippet and badge stay; r8 (Apply d3: A) is left to whoever takes it. Workflow fixes: (1) release.yml now checks MAVEN_CENTRAL_USERNAME/PASSWORD/SIGNING_KEY before building and FAILS naming the missing ones (SIGNING_KEY_PASSWORD may be empty). A manual workflow_dispatch on the tag with without",
+   "tags": [
+    "build"
+   ]
+  },
+  {
+   "ref": "r17",
+   "title": "At 1152x720 the tab bars wrap and overlap the INFOS text",
+   "detail": "Found by the r5 sweep. Controls > Application > Window size offers 1152x720 (the minimum window is 1100x680). After Apply at 1152x720, the main tab bar wraps 'Background' onto a second row, and the INFOS/Parallax/Application sub-tab bar overlaps the top of the help text (screenshot 71_after_apply_1152x720 on r5). The panel width is Gdx.graphics.getWidth()/3.9, too narrow for the four tab titles.\n\nCommit 0ccce66 (develop, unpushed). GVars_Vue_Edition.buildSizes: left panel = max(width/3.9, MIN_LEFT_PANEL_WIDTH=320) - measured: the four main tab titles take 314 px in the (unscaled) skin font, so it wrapped below a 1225 px window. Also size_Bloc_Parallax = width - panel instead of width/4*3: with the floor, 320+825 overran 1100 px and hid the full screen button (it already overhung 8 px at 1300; now fully inside). Verified in the hidden-window editor with OneNight.plaxpj, resizing to 1152x720 and 1100x680 and clicking all four main tabs: every tab bar rows=1 (before: main bar rows=2 at both sizes), INFOS text clear, full screen button inside. Renders before/after + log attached. At 1100x680 the preview is 38 px narrower than before. Filed two things seen along the way, both NOT caused by this change: r19 Background tab taller than a 680 px window (covers its tab bars; fine at 720), r20 preview draws layers outside its frame after a resize (visible in the BEFORE render too).",
+   "tags": [
+    "editor"
+   ]
+  },
+  {
+   "ref": "r3",
+   "title": "Write the agent guide this repo has never had",
+   "detail": "There is no CLAUDE.md, no AGENTS.md, no .cursorrules. Every trap an agent needs is real but scattered: MEMORY_LANE.md (history, sections 4/5/6), README.md (concepts and the settings tables), RELEASING.md (branches), and the board's own context packs.\nA guide here should be short and should NOT restate the README. What it must carry: the module split (core = runtime, editor = the tool, demo = the example), the rule that Kryo registration order is a file format (GVars_Serialization), that core is release=11 while everything else is 17, that the editor's state is static GVars_* with one project at a time, that compiling proves nothing in the editor package (run it), and the gates — ./gradlew build, ./gradlew :core:test, ./gradlew :editor:run, ./gradlew :demo:run.\nSame standard as the context packs: name files and commands, never advice. If a line would be true in any repo, cut it.\nNote (fedora1-parallax-4): Retagged from #docs (dropped by d2/B) to #runtime #format #editor #build. Each thing this guide must carry comes out of one of those packs: module split, release=11 vs 17 and the Gradle gates (build); Kryo registration order (format); static GVars_* and 'compiling proves nothing, run it' (editor); core = runtime, :core:test and :demo:run (runtime). The guide condenses those packs, so whoever writes it needs all four loaded — that is the gate, deliberately. #assets and #project-io are left off because r3 asks for nothing from them; add them if the guide grows to cover flatten/",
+   "tags": [
+    "build",
+    "editor",
+    "format",
+    "runtime"
+   ]
+  },
+  {
+   "ref": "r15",
+   "title": "Export with LibGDX and JSON both unticked reports success and writes nothing",
+   "detail": "Found by the r5 sweep. Utils_Saving.savingExport writes nothing when both VE_Options.formatLibGDX and formatJson are unchecked, but still shows 'Successful export of <name> as' with an empty format list (screenshot 33_export_no_format on r5). It should refuse, or say no format is selected.\n\nCommit 247d53e (develop, unpushed). Utils_Saving.saving_Parallax (the export button's entry) now returns with Dialogs.showOKDialog 'Export' / 'Nothing exported: no format is selected. Tick LibGDX (.plax) or JSON (.jplax).' when both are unticked. Placed BEFORE the flatten decision, not in savingExport: with F.Export or a loose image, the flatten would pack a new atlas and rewrite the project, then export nothing. savingExport itself is unchanged (its only callers go through saving_Parallax). Verified in the hidden-window editor on a copy of OneNight.plaxpj: both off -> message, output dir empty; both off + F.Export -> same message, no flatten dialog, dir empty; LibGDX on -> 'Successful export of r15plax as .plax' and r15plax.plax written. Renders + log attached. Did not reopen the .plax (export path itself untouched).",
+   "tags": [
+    "editor",
+    "project-io"
+   ]
+  },
+  {
+   "ref": "r14",
+   "title": "Start screen 'back' from the first folder jumps to the home directory",
+   "detail": "Found by the r5 sweep. FC_List seeds fileHistory with Gdx.files.getExternalStoragePath() (the user home) before Vue_Selection calls setDirectory(Files). So 'back' right after startup leaves editor/Files for the home folder instead of doing nothing. Reproduced: path /tmp/r5work/Files -> back -> /home/<user>.\n\nCommit f9be29e (develop, unpushed). New FC_List.setStartDirectory(dir): clears fileHistory, then setDirectory(dir) - so the history is [Files] instead of [home, Files]. Vue_Selection calls it instead of setDirectory. Kept the home seed in FC_List's field initialiser (a chooser nobody positions still has somewhere to show). Verified in the hidden-window editor: back at startup stays in Files; Files -> Demos -> Day then back x3 goes Demos, Files, Files. Noticed, not fixed: setDirectory pushes onto the history even when re-entering the current folder, and pushes the FILE rather than its folder when given a file (back then re-lists the same folder) - harmless on the start screen.",
+   "tags": [
+    "editor",
+    "project-io"
+   ]
+  },
+  {
+   "ref": "r13",
+   "title": "Start screen 'cancel' button does nothing",
+   "detail": "Found by the r5 sweep. The FC_List under the start screen shows a 'cancel' button whose listener calls FileChooser_Listener.cancel(), and Vue_Selection's cancel() is empty. Clicking it changes nothing (screenshot attached to r5: 05_start_after_cancel). Decide what it should do (clear the selection? go back to Files?) or remove the button.\nNote (fedora1-parallax-6): Decision: remove the button from the start screen. There is nothing to cancel there (no dialog to close, no previous screen); clear-selection or go-to-Files duplicate back/up/path. Adding an FC_List 'cancelable' switch like setDirectoriesChoosable, off in Vue_Selection; FileChooser_Listener.cancel stays for other users.\n\nCommit e78a573 (develop, unpushed). Decided to REMOVE the button rather than give it a job: on the start screen there is nothing to cancel back to, and 'clear selection' / 'go to Files' would duplicate back, up and the path field. FC_List gained setCancelable/isCancelable (default true, rebuilds like setDirectoriesChoosable; select takes the freed column; setCancelButton no longer NPEs when hidden). Vue_Selection sets it false; its empty cancel() stays, commented. Verified in the hidden-window editor: 0 cancel buttons shown, select opens Demos/ and City.atlas (-> Vue_Edition). Side effect seen in the render: the top row's back/path/up columns shift a few px because the bottom row changed. If Simon wants cancel to do something instead (e.g. quit the editor), it's a one-line switch back plus the canc",
+   "tags": [
+    "editor",
+    "project-io"
+   ]
+  },
+  {
+   "ref": "r12",
+   "title": "Start screen file chooser: Up/Down/Backspace/Left keys do nothing",
+   "detail": "Found by the r5 sweep. editor/src/jks/tools2d/filechooser/FC_List.java keyControlsListener handles DEL (back), LEFT (up) and UP/DOWN (move the selection) inside keyTyped() through event.getKeyCode(). Stage.keyTyped only sets the character, never a key code, so those branches never run: in the sweep, DOWN/UP left the selection unchanged, and DEL/LEFT left the folder unchanged. Only Enter works, because it is tested on the character. Fix: handle those keys in keyDown(), then run the editor and use them.\nNote (fedora1-parallax-6): keyDown handler written (skips when the event is handled or the path field has focus, so the List's own UP/DOWN and typing in the path are untouched). Also focusing the chooser in Vue_Selection.init: before, nothing held focus on the start screen so no key reached it until a row was clicked. Next: drive it in the /tmp/r5h harness.\n\nCommit a0c6f69 (develop, unpushed). FC_List: DEL/LEFT/UP/DOWN moved from keyTyped to keyDown (Enter stays in keyTyped, it is a character). keyDown skips when the path field has focus (else backspace in the path would go Back) and when the event is already handled (the libGDX List moves its own selection on UP/DOWN when it holds focus, which would otherwise move 2 rows). Also Vue_Selection.init now focuses the chooser: before, nothing held focus on the start screen, so for a real user no key worked until a row was clicked (the r5 sweep forced the focus by hand). Verified in a hidden-window editor run (harness /tmp/r12 over /t",
+   "tags": [
+    "editor",
+    "project-io"
+   ]
+  },
+  {
+   "ref": "r5",
+   "title": "Sweep the editor for controls that still do nothing",
+   "detail": "MEMORY_LANE.md §6 has a whole section titled 'Things that did nothing': a 'change the atlas?' dialog with empty YES and NO handlers, a 'Change Atlas' button with an empty listener, a Project Path folder button with no listener at all, Add at Front/Back radios that only checked themselves, a VSync checkbox created twice where the displayed one had no listener, an Application tab whose Full screen and Apply threw NPE, and a 'Transfert' tab that was an empty placeholder shown to users. Most were fixed in the 2026 modernization; nobody has since gone through the UI control by control and confirmed it.\nThis is a LOOKING task, not a reading one: ./gradlew :editor:run (workingDir is editor/, so the samples in editor/Files open), then exercise every control on both screens — start screen, Controls, Add texture, Textures, Background — and record which ones do nothing, do the wrong thing, or throw. Attach screenshots.\nClose it with the list. Anything found becomes its own ticket; do not fix them all in here.\n\nSwept every control on both screens by RUNNING the editor, not by reading it. How: no Xvfb/xdotool/ydotool on this Wayland desktop, so a throwaway harness (/tmp/r5h, not committed) starts the real Main_Editor in a hidden Lwjgl3 window, working dir a COPY of editor/ (/tmp/r5work, so editor/Files was never touched). It clicks, drags, types, presses keys and scrolls through Gdx.input's real InputMultiplexer (stage hit-testing included), captures framebuffer PNGs, logs state before/af",
+   "tags": [
+    "editor"
+   ]
+  }
+ ]
+}
