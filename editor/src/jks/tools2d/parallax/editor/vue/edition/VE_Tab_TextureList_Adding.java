@@ -64,6 +64,12 @@ public class VE_Tab_TextureList_Adding extends Tab
 		button_switchFor = squareButton("editor/interfaces/button_transform.png", buttonSize_large);
 		button_cancel = squareButton("editor/interfaces/delete.png", buttonSize_large);
 
+		button_addData.setName("adding.add");
+		button_changeData.setName("adding.change");
+		button_removeData.setName("adding.remove");
+		button_switchFor.setName("adding.switchFor");
+		button_cancel.setName("adding.cancel");
+
 		button_addData.addListener(onChange(this::addSelectedAsLayer));
 		button_changeData.addListener(onChange(() ->
 		{
@@ -88,6 +94,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 		showSwitchButton(false);
 
 		imageList = buildImageList();
+		imageList.setName("adding.imageList");
 		GVars_Vue_Edition.setItems();
 
 		ScrollPane scrollPane = new ScrollPane(imageList, baseSkin);

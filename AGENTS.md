@@ -58,6 +58,8 @@ repair.
   dialogs with empty listeners. After wiring a control, run `./gradlew :editor:run` and use it.
 - Panels read the window size when built; `vue/Vue_Edition` rebuilds them after a resize.
 - `GVars_UI.init` sets VisUI's global `scaleFactor`; skin styles are shared, so copy a style before changing it.
+- Every control has a `setName` (`driver/Names`): `--driver-port` and the presenter's scripts find controls by it. Name a
+  new control, and treat a rename as breaking those scripts.
 - README.md's layer-settings table documents every setting: rename or rescale one and fix the table in the same
   commit.
 

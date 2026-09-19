@@ -147,6 +147,7 @@ public class VE_Center_ParallaxShow extends Table
 		fullScreenStyle.font = baseSkin.getFont("default-font");
 
 		JksCheckBox startStop = new JksCheckBox("", playStyle, false);
+		startStop.setName("preview.play");
 		startStop.setChecked(!isPause);
 		startStop.addListener(new ChangeListener()
 		{
@@ -158,6 +159,7 @@ public class VE_Center_ParallaxShow extends Table
 		startStop.setPosition(parr_Size_X / 2f, size_Height_Bloc_Parallax_Controle / 2f - buttonSize / 2);
 
 		JksCheckBox fullScreen = new JksCheckBox("", fullScreenStyle, false);
+		fullScreen.setName("preview.fullScreen");
 		fullScreen.addListener(new ChangeListener()
 		{
 			@Override
@@ -172,6 +174,7 @@ public class VE_Center_ParallaxShow extends Table
 		fullScreen.setPosition(getWidth() - fullScreen.getWidth(), getHeight() - fullScreen.getHeight() / 2);
 
 		parallaxSpeedXSlider = new Slider(-15, 15, 0.05f, false, baseSkin);
+		parallaxSpeedXSlider.setName("preview.speedX");
 		parallaxSpeedXSlider.setValue(parallax_Heart.screenSpeedConstantX / 100);
 		parallaxSpeedXSlider.addListener(new ChangeListener()
 		{
@@ -181,6 +184,7 @@ public class VE_Center_ParallaxShow extends Table
 		});
 
 		parallaxSpeedYSlider = new Slider(-20, 20, 0.2f, false, baseSkin);
+		parallaxSpeedYSlider.setName("preview.speedY");
 		parallaxSpeedYSlider.setValue(parallax_Heart.screenSpeedConstantY / 100);
 		parallaxSpeedYSlider.addListener(new ChangeListener()
 		{
@@ -190,6 +194,7 @@ public class VE_Center_ParallaxShow extends Table
 		});
 
 		VisTextButton resetSpeedX = new VisTextButton("X = 0");
+		resetSpeedX.setName("preview.speedX.reset");
 		resetSpeedX.addListener(new ChangeListener()
 		{
 			@Override
@@ -198,6 +203,7 @@ public class VE_Center_ParallaxShow extends Table
 		});
 
 		VisTextButton resetSpeedY = new VisTextButton("Y = 0");
+		resetSpeedY.setName("preview.speedY.reset");
 		resetSpeedY.addListener(new ChangeListener()
 		{
 			@Override
@@ -206,6 +212,7 @@ public class VE_Center_ParallaxShow extends Table
 		});
 
 		VisTextButton resetPosition = new VisTextButton("Reset position");
+		resetPosition.setName("preview.resetPosition");
 		resetPosition.addListener(new ChangeListener()
 		{
 			@Override

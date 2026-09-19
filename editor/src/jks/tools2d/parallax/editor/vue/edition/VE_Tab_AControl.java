@@ -12,6 +12,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 /** Left panel: the main tabs (controls, textures, selected layer, background). */
@@ -44,6 +45,7 @@ public class VE_Tab_AControl extends Table implements Disposable
 		tabbedPane.add(new VE_Tab_Texture());
 		tabbedPane.add(colorConfig);
 		tabbedPane.switchTab(parallaxConfig);
+		Names.tabs(tabbedPane, "tab");
 
 		add(tabbedPane.getTable()).expandX().fillX();
 		row();

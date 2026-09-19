@@ -27,6 +27,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 
 /** Settings of the selected layer: position in the stack, flips, offsets, size, speeds, padding. */
@@ -71,22 +72,36 @@ public class VE_Tab_Texture extends Tab
 	{
 		super(false, false);
 
+		indexSelectionSpinner.setName("texture.selection");
+		indexPositionSpinner.setName("texture.position");
+		selectMiddle.setName("texture.selectMiddle");
+		selectLast.setName("texture.selectLast");
+		moveMiddle.setName("texture.moveMiddle");
+		moveLast.setName("texture.moveLast");
+		flipX.setName("texture.flipX");
+		flipY.setName("texture.flipY");
+		mirror.setName("texture.mirror");
+		showSelect.setName("texture.preview");
+
 		indexSelectionSpinner.setProgrammaticChangeEvents(false);
 		indexPositionSpinner.setProgrammaticChangeEvents(false);
 		indexSelectionSpinner.addListener(onChange(() -> select(indexSelectionModel.getValue())));
 		indexPositionSpinner.addListener(onChange(() -> moveSelectedTo(indexPositionModel.getValue())));
 
 		TextButton selectFirst = new TextButton("-0 ", baseSkin);
+		selectFirst.setName("texture.selectFirst");
 		selectFirst.addListener(onChange(() -> select(0)));
 		selectMiddle.addListener(onChange(() -> select(layers().size() / 2)));
 		selectLast.addListener(onChange(() -> select(layers().size() - 1)));
 
 		TextButton moveFirst = new TextButton("-0 ", baseSkin);
+		moveFirst.setName("texture.moveFirst");
 		moveFirst.addListener(onChange(() -> moveSelectedTo(0)));
 		moveMiddle.addListener(onChange(() -> moveSelectedTo(layers().size() / 2)));
 		moveLast.addListener(onChange(() -> moveSelectedTo(layers().size() - 1)));
 
 		TextButton makeAsDefault = new TextButton("Set default", baseSkin);
+		makeAsDefault.setName("texture.setDefault");
 		makeAsDefault.addListener(onChange(() ->
 		{
 			getDefaults().copyValue(currentlySelectedParallax);
@@ -94,6 +109,7 @@ public class VE_Tab_Texture extends Tab
 		}));
 
 		TextButton clone = new TextButton("Clone", baseSkin);
+		clone.setName("texture.clone");
 		clone.addListener(onChange(this::cloneLayout));
 
 		flipX.addListener(onChange(() -> currentlySelectedParallax.setFlipX(flipX.isChecked())));
@@ -101,8 +117,10 @@ public class VE_Tab_Texture extends Tab
 		mirror.addListener(onChange(() -> currentlySelectedParallax.setMirror(mirror.isChecked())));
 
 		ImageButton delete = Utils_Interface.buildSquareButton("editor/interfaces/delete.png", 50);
+		delete.setName("texture.delete");
 		delete.addListener(onChange(this::deleteSelected));
 		ImageButton unDelete = Utils_Interface.buildSquareButton("editor/interfaces/cancelAction.png", 50);
+		unDelete.setName("texture.undelete");
 		unDelete.addListener(onChange(this::restoreDeleted));
 
 		for (LayerSlider slider : layerSliders)
@@ -273,6 +291,11 @@ public class VE_Tab_Texture extends Tab
 						setter.accept(currentlySelectedParallax, getValue());
 				}
 			};
+
+			String name = "texture." + Names.slug(title);
+			slider.setName(name);
+			copyFromFront.setName(name + ".fromFront");
+			copyFromBack.setName(name + ".fromBack");
 
 			copyFromFront.addListener(copyFrom(+1, setter));
 			copyFromBack.addListener(copyFrom(-1, setter));

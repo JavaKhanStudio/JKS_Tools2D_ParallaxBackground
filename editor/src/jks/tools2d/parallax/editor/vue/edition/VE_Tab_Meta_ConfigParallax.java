@@ -32,6 +32,7 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 		super(false, false);
 
 		repeatOnX = new VisCheckBox("Repeat On X");
+		repeatOnX.setName("parallax.repeatX");
 		repeatOnX.addListener(new ChangeListener()
 		{
 			@Override
@@ -43,6 +44,7 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 		});
 
 		repeatOnY = new VisCheckBox("Repeat On Y");
+		repeatOnY.setName("parallax.repeatY");
 		repeatOnY.addListener(new ChangeListener()
 		{
 			@Override
@@ -54,6 +56,7 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 		});
 
 		VisTextButton returnOption = new VisTextButton("Return to selection");
+		returnOption.setName("parallax.returnToSelection");
 		returnOption.addListener(new ChangeListener()
 		{
 			@Override
@@ -77,6 +80,7 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 		});
 
 		VisTextButton packUpTextures = new VisTextButton("Copy loose images next to the project");
+		packUpTextures.setName("parallax.copyLooseImages");
 		packUpTextures.addListener(new ChangeListener()
 		{
 			@Override
@@ -101,6 +105,7 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 		mainTable.add(new VisLabel("-- Configuration --")).colspan(2).row();
 		mainTable.add(repeatOnX);
 		mainTable.add(repeatOnY).row();
+		atlasNameLabel.setName("parallax.atlasName");
 		mainTable.add(atlasNameLabel).colspan(2).row();
 		mainTable.add(packUpTextures).colspan(2).row();
 		mainTable.add(new VisLabel("-- Parameter --")).colspan(2).row();

@@ -5,9 +5,13 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 
 import jks.tools2d.amains.Main_Editor;
+import jks.tools2d.parallax.editor.driver.EditorDriver;
 import jks.tools2d.parallax.editor.gvars.GVars_Heart_Editor;
 
-/** Desktop entry point. An optional argument opens that .plax/.jplax/.plaxpj/.atlas file directly. */
+/**
+ * Desktop entry point. An optional argument opens that .plax/.jplax/.plaxpj/.atlas file directly;
+ * {@code --driver-port=N} lets another program drive the editor (see {@link EditorDriver}).
+ */
 public class Launcher_Editor
 {
 	public static void main(String[] args)
@@ -29,6 +33,11 @@ public class Launcher_Editor
 			}
 		});
 
-		new Lwjgl3Application(new Main_Editor(args.length > 0 ? args[0] : null), config);
+		String fileToOpen = null;
+		for (String arg : args)
+			if (!arg.startsWith("--"))
+				fileToOpen = arg;
+
+		new Lwjgl3Application(new Main_Editor(fileToOpen, EditorDriver.portFrom(args)), config);
 	}
 }

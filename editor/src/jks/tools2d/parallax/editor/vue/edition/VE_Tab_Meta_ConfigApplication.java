@@ -32,6 +32,7 @@ public class VE_Tab_Meta_ConfigApplication extends Tab
 		super(false, false);
 
 		vSynchCheckBox = new VisCheckBox("VSync");
+		vSynchCheckBox.setName("application.vsync");
 		vSynchCheckBox.addListener(new ChangeListener()
 		{
 			@Override
@@ -43,10 +44,12 @@ public class VE_Tab_Meta_ConfigApplication extends Tab
 		});
 
 		resolutionBox = new SelectBox<>(GVars_UI.baseSkin);
+		resolutionBox.setName("application.windowSize");
 		resolutionBox.setItems(windowSizes());
 		resolutionBox.setSelected(Gdx.graphics.getWidth() + "x" + Gdx.graphics.getHeight());
 
 		fullScreenCheckBox = new VisCheckBox("Full screen");
+		fullScreenCheckBox.setName("application.fullScreen");
 		fullScreenCheckBox.setChecked(Gdx.graphics.isFullscreen());
 		resolutionBox.setDisabled(fullScreenCheckBox.isChecked());
 		fullScreenCheckBox.addListener(new ChangeListener()
@@ -57,6 +60,7 @@ public class VE_Tab_Meta_ConfigApplication extends Tab
 		});
 
 		VisTextButton apply = new VisTextButton("Apply");
+		apply.setName("application.apply");
 		apply.getLabel().setStyle(GVars_UI.labelStyle_OptionsTitle);
 		apply.addListener(new ChangeListener()
 		{

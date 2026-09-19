@@ -7,6 +7,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 /** "Add texture" tab: the image list and the values given to new layers. */
@@ -36,6 +37,7 @@ public class VE_Tab_TextureList extends Tab
 		tabbedPane.add(add);
 		tabbedPane.add(setDefault);
 		tabbedPane.switchTab(add);
+		Names.tabs(tabbedPane, "tab.addTexture");
 
 		mainTable.add(tabbedPane.getTable()).expandX().fillX();
 		mainTable.row();

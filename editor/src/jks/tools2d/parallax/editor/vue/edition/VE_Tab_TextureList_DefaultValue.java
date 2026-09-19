@@ -20,6 +20,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
 import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.libgdxutils.Utils_Interface;
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
 /**
@@ -47,16 +48,28 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 	{
 		super(false, false);
 
+		increment.setName("defaults.increment");
+		front.setName("defaults.front");
+		back.setName("defaults.back");
+		flipX.setName("defaults.flipX");
+		flipY.setName("defaults.flipY");
+		flipXAlternate.setName("defaults.alternateFlipX");
+		flipYAlternate.setName("defaults.alternateFlipY");
+
 		ImageButton setBackToFrontButton = Utils_Interface.buildSquareButton("editor/interfaces/addInBack.png", frontButtonSize);
+		setBackToFrontButton.setName("defaults.backToFront");
 		setBackToFrontButton.addListener(onChange(() -> getDefaults().setIncrementBackToFront()));
 		ImageButton setFrontToBackButton = Utils_Interface.buildSquareButton("editor/interfaces/addInFront.png", frontButtonSize);
+		setFrontToBackButton.setName("defaults.frontToBack");
 		setFrontToBackButton.addListener(onChange(() -> getDefaults().setIncrementFrontToBack()));
 
 		increment.addListener(onChange(() -> getDefaults().increment = increment.isChecked()));
 
 		TextButton incrementOnce = new TextButton("Increment once +", baseSkin);
+		incrementOnce.setName("defaults.incrementOnce");
 		incrementOnce.addListener(onChange(() -> getDefaults().doIncrement(true)));
 		TextButton decrementOnce = new TextButton("Decrement once -", baseSkin);
+		decrementOnce.setName("defaults.decrementOnce");
 		decrementOnce.addListener(onChange(() -> getDefaults().doIncrement(false)));
 
 		ButtonGroup<VisCheckBox> frontOrBack = new ButtonGroup<>(front, back);
@@ -95,6 +108,8 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 	{
 		ModelSlider value = new ModelSlider(min, max, step, getter, setter, false);
 		ModelSlider incrementValue = new ModelSlider(incMin, incMax, incStep, getter, setter, true);
+		value.slider.setName("defaults." + Names.slug(title));
+		incrementValue.slider.setName("defaults." + Names.slug(title) + ".increment");
 		defaultSliders.add(value);
 		incrementSliders.add(incrementValue);
 

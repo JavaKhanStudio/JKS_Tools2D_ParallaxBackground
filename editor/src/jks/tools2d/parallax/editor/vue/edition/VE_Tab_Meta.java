@@ -7,6 +7,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 /** "Controls" tab: help, parallax settings and application settings. */
@@ -36,6 +37,7 @@ public class VE_Tab_Meta extends Tab
 		tabbedPane.add(new VE_Tab_Meta_ConfigParallax());
 		tabbedPane.add(new VE_Tab_Meta_ConfigApplication());
 		tabbedPane.switchTab(infos);
+		Names.tabs(tabbedPane, "tab.controls");
 
 		mainTable = new Table();
 		mainTable.add(tabbedPane.getTable()).expandX().fillX();

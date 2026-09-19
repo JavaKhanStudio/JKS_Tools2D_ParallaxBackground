@@ -27,6 +27,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -57,6 +58,7 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 		tabbedPane.add(topPalette);
 		tabbedPane.add(buildColorPalette("Bottom Square", parallax_Heart.bottomSquare));
 		tabbedPane.switchTab(topPalette);
+		Names.tabs(tabbedPane, "tab.background");
 
 		mainTable = new Table();
 		mainTable.add(tabbedPane.getTable()).expandX().fillX();
@@ -66,10 +68,14 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 
 	private Tab buildColorPalette(String title, SquareBackground square)
 	{
+		String name = "background." + Names.slug(title) + ".";
 		ExtendedColorPicker topPicker = buildPicker(square.topColor);
 		ExtendedColorPicker bottomPicker = buildPicker(square.bottomColor);
+		topPicker.setName(name + "topColor");
+		bottomPicker.setName(name + "bottomColor");
 
 		VisCheckBox activeBox = new VisCheckBox("Is active");
+		activeBox.setName(name + "active");
 		activeBox.setChecked(square.visible);
 		topPicker.setVisible(square.visible);
 		bottomPicker.setVisible(square.visible);
@@ -88,6 +94,7 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 		Slider boxSize = new Slider(0, 100, 1, false, baseSkin);
 		TextField boxSizeText = new TextField("", baseSkin);
 		boxSizeText.setDisabled(true);
+		boxSize.setName(name + "size");
 		boxSize.setValue(Math.round((1 - square.getScreenPercentage()) * 100));
 		boxSizeText.setText(String.valueOf((int) boxSize.getValue()));
 		boxSize.addListener(new ChangeListener()
@@ -107,12 +114,12 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 
 		content.add(new VisLabel("Top Color")).row();
 		content.add(new VisLabel("Picker"));
-		content.add(buildEyedropper(topPicker)).row();
+		content.add(buildEyedropper(topPicker, name + "topEyedropper")).row();
 		content.add(topPicker).colspan(2).row();
 
 		content.add(new VisLabel("Bottom Color")).row();
 		content.add(new VisLabel("Picker"));
-		content.add(buildEyedropper(bottomPicker)).row();
+		content.add(buildEyedropper(bottomPicker, name + "bottomEyedropper")).row();
 		content.add(bottomPicker).colspan(2);
 
 		// Two pickers are taller than a small window: scroll instead of overflowing over the tab bars. No flick
@@ -155,9 +162,10 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 	}
 
 	/** Button arming the eyedropper: the next click in the preview sets this picker's color. */
-	private ImageButton buildEyedropper(ExtendedColorPicker picker)
+	private ImageButton buildEyedropper(ExtendedColorPicker picker, String name)
 	{
 		ImageButton eyedropper = Utils_Interface.buildSquareButton("editor/interfaces/colorSelection.png", 50);
+		eyedropper.setName(name);
 		eyedropper.addListener(new ChangeListener()
 		{
 			@Override

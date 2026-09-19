@@ -42,6 +42,9 @@ public class VE_Tab_Meta_Informations extends Tab
 
 		goTutorialEng = linkButton("Tutorial (ENG)", "https://www.youtube.com/watch?v=FVxGCaReshc");
 		goTutorialFr = linkButton("Tutoriel (FR)", "https://www.youtube.com/watch?v=AkKpn8qj_pA");
+		infos.setName("infos.text");
+		goTutorialEng.setName("infos.tutorialEng");
+		goTutorialFr.setName("infos.tutorialFr");
 
 		mainTable.addActor(infos);
 		mainTable.addActor(goTutorialEng);
