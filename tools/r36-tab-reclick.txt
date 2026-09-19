@@ -1,0 +1,24 @@
+sleep 4
+bounds tab.controls
+click tab.textures
+bounds tab.textures
+click tab.controls
+bounds tab.textures
+click tab.textures
+bounds tab.controls
+list
+click tab.controls
+click tab.controls.application
+click tab.controls.infos
+bounds tab.controls.application
+list
+shot build/r36/controls.png
+click tab.background
+click tab.background.bottomSquare
+click tab.background.topSquare
+bounds tab.background.bottomSquare
+list
+click tab.addTexture
+list
+click tab.textures
+list
