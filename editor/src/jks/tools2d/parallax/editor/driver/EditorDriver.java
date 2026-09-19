@@ -52,6 +52,7 @@ import jks.tools2d.parallax.editor.vue.Vue_Selection;
  * list                  "ok N", then N lines "name type x y w h": the named controls on screen
  * bounds TARGET         "ok x y w h": window pixels, origin at the top left; "preview.view" is the parallax preview
  * click TARGET          presses and releases the left button at the control's center
+ * wheel TARGET N        moves the mouse to the control's center and turns the wheel N notches (negative: up)
  * set TARGET VALUE      slider, number slider, text field, check box (true/false), select box, spinner,
  *                       image list (index), color picker (#rrggbb)
  * open FILE             opens a .plaxpj/.plax/.jplax/.atlas as the start screen would (relative to editor/)
@@ -240,10 +241,11 @@ public final class EditorDriver
 			case "bounds":
 			case "click":
 			case "set":
+			case "wheel":
 				if (target == null)
 					return "err usage: " + command + " TARGET";
-				// A text:LABEL target may hold spaces; only "set" has a value after it.
-				if (!command.equals("set"))
+				// A text:LABEL target may hold spaces; only "set" and "wheel" have a value after it.
+				if (!command.equals("set") && !command.equals("wheel"))
 					target = line.substring(command.length()).trim();
 				if (command.equals("bounds") && target.equals(PREVIEW_VIEW))
 					return "ok " + format(previewBounds());
@@ -254,6 +256,8 @@ public final class EditorDriver
 					return "ok " + format(screenBounds(actor));
 				if (command.equals("click"))
 					return click(actor);
+				if (command.equals("wheel"))
+					return value == null ? "err usage: wheel TARGET N" : wheel(actor, Integer.parseInt(value.trim()), reply);
 				if (value == null)
 					return "err usage: set TARGET VALUE";
 				return set(actor, value);
@@ -366,6 +370,29 @@ public final class EditorDriver
 		input.touchDown(x, y, 0, Buttons.LEFT);
 		input.touchUp(x, y, 0, Buttons.LEFT);
 		return "ok " + x + " " + y;
+	}
+
+	/**
+	 * A real turn of the wheel over the control, through the same input processors as the mouse. The wheel turns a
+	 * frame after the mouse arrives: the stage fires enter (which gives a slider the wheel) only when it acts.
+	 */
+	private static String wheel(Actor actor, int notches, CompletableFuture<String> reply)
+	{
+		float[] bounds = screenBounds(actor);
+		int x = Math.round(bounds[0] + bounds[2] / 2), y = Math.round(bounds[1] + bounds[3] / 2);
+
+		if (x < 0 || y < 0 || x >= Gdx.graphics.getWidth() || y >= Gdx.graphics.getHeight())
+			return "err off screen at " + x + " " + y;
+
+		InputProcessor input = Gdx.input.getInputProcessor();
+		input.mouseMoved(x, y);
+		Gdx.app.postRunnable(() ->
+		{
+			for (int i = 0; i < Math.abs(notches); i++)
+				input.scrolled(0, Math.signum(notches));
+			reply.complete("ok " + x + " " + y);
+		});
+		return null;
 	}
 
 	private static String describe(Actor actor)

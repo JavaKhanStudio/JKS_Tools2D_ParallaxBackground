@@ -111,7 +111,7 @@ EVERY CONTROL HAS A NAME (setName; tab buttons via driver/Names.tabs). `--driver
 (driver/EditorDriver) finds controls by those names, and the presenter board's scripts
 (~/Documents/GitHub/presenter) do too. Name a new control. A rename breaks those scripts.
 See it headless: `./gradlew :editor:installDist`, then `tools/driver-probe.sh <project>` reads
-commands on stdin (list, click, set, shot x.png) and runs the editor in cage, off Simon's screen.
+commands on stdin (list, click, set, wheel, shot x.png) and runs the editor in cage, off Simon's screen.
 The speed "increment" defaults are MULTIPLIERS (0.75, 1.25) while the rest are additive — a
 range that suits one is nonsense for the other (a -0.01..0.01 range multiplied new layers'
 speed by 0.005).

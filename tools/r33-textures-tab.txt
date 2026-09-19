@@ -1,0 +1,10 @@
+click tab.textures
+list
+shot build/r33/top.png
+wheel texture.decalX 1
+sleep 1
+bounds texture.decalX
+wheel texture.selectFirst 10
+sleep 1
+list
+shot build/r33/scrolled.png
