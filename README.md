@@ -213,7 +213,7 @@ echo "click tab.textures" | nc 127.0.0.1 47777
 ```
 
 It reads one command per line and answers each one with `ok ...` or `err ...`. `list` gives the named controls on screen
-with their bounds, `bounds`, `click` and `set` act on one control, `open` loads a file, and `shot` writes the next
+with their bounds, `bounds`, `click`, `set` and `wheel` act on one control, `open` loads a file, and `shot` writes the next
 frame to a PNG. A control is found by its name (`texture.sizeRatio`, `tab.background.topSquare`), or by its text with
 `text:Yes`. The full list is in `EditorDriver`'s javadoc. A resize rebuilds the panels and puts every tab back on its
 first, so commands wait for that rebuild. Set the window size before the demo, not during it. `tools/driver-probe.sh`
