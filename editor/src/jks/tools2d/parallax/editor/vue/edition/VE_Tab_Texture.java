@@ -12,12 +12,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
-import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
-import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
@@ -33,7 +29,6 @@ import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
-import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
 
 /** Settings of the selected layer: position in the stack, flips, offsets, size, speeds, padding. */
 public class VE_Tab_Texture extends Tab
@@ -160,44 +155,8 @@ public class VE_Tab_Texture extends Tab
 		container.add(mirror).row();
 		container.add(sliders).expand().fill().colspan(totalColspan);
 
-		// The tab is taller than a 720-pixel window: scroll instead of pushing the tab bar off the top. No flick
-		// scrolling, so dragging a slider moves the slider rather than the scroll.
-		ScrollPaneStyle scrollStyle = new ScrollPaneStyle(baseSkin.get(ScrollPaneStyle.class)); // a copy: skin styles are shared
-		scrollStyle.background = null;
-		ScrollPane scroll = new ScrollPane(container, scrollStyle);
-		scroll.setScrollingDisabled(true, false);
-		scroll.setFlickScroll(false);
-		scroll.setFadeScrollBars(false);
-		scroll.setOverscroll(false, false);
-		// A scroll pane takes the wheel only once clicked: take it on hover, and give it back on leaving. The wheel
-		// over a slider changes its value (EditorInputProcessus, after the stage): stopped here and left unhandled,
-		// it reaches it instead of scrolling the tab.
-		scroll.addCaptureListener(new InputListener()
-		{
-			@Override
-			public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor)
-			{
-				if (pointer == -1 && event.getStage() != null)
-					event.getStage().setScrollFocus(scroll);
-			}
-
-			@Override
-			public void exit(InputEvent event, float x, float y, int pointer, Actor toActor)
-			{
-				if (pointer == -1 && event.getStage() != null && (toActor == null || !toActor.isDescendantOf(scroll))
-						&& event.getStage().getScrollFocus() == scroll)
-					event.getStage().setScrollFocus(null);
-			}
-
-			@Override
-			public boolean scrolled(InputEvent event, float x, float y, float amountX, float amountY)
-			{
-				if (GVars_Inputs.selectedItem != null)
-					event.stop();
-				return false;
-			}
-		});
-		scrolled.add(scroll).expand().fill();
+		// The tab is taller than a 720-pixel window: scroll instead of pushing the tab bar off the top.
+		scrolled.add(Utils_Interface.buildVerticalScroll(container, baseSkin)).expand().fill();
 	}
 
 	private ChangeListener onChange(Runnable action)
