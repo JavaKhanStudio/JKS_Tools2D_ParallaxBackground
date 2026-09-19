@@ -202,6 +202,23 @@ an image editor. When you export a project that uses loose images (or with **F.E
 The project is auto-saved every 5 minutes into `Files/AutoSave` (or `~/.parallax-editor/autosave` when the editor is
 not started from its module folder). The 10 most recent auto-saves are kept.
 
+### Driving the editor from another program
+
+`--driver-port=N` lets a script drive the editor, for demos and narrated videos. It is off unless you pass the flag,
+and it listens on `127.0.0.1` only:
+
+```bash
+./gradlew :editor:run --args="--driver-port=47777 Files/Demos/OneNight.plaxpj"
+echo "click tab.textures" | nc 127.0.0.1 47777
+```
+
+It reads one command per line and answers each one with `ok ...` or `err ...`. `list` gives the named controls on screen
+with their bounds, `bounds`, `click` and `set` act on one control, `open` loads a file, and `shot` writes the next
+frame to a PNG. A control is found by its name (`texture.sizeRatio`, `tab.background.topSquare`), or by its text with
+`text:Yes`. The full list is in `EditorDriver`'s javadoc. A resize rebuilds the panels and puts every tab back on its
+first, so commands wait for that rebuild. Set the window size before the demo, not during it. `tools/driver-probe.sh`
+starts the editor off screen, sends it the commands it reads, and stops it.
+
 ## File formats
 
 | Extension | Content                                              | Written by    | Read by                   |
@@ -243,6 +260,7 @@ editor/src/jks/tools2d/
     parallax/editor/vue/          Vue_Selection (start screen), Vue_Edition (edition screen)
     parallax/editor/vue/edition/  the panels (VE_*), project data, save/export/flatten utilities, atlas packer
     parallax/editor/gvars/        editor-wide state, paths, UI skin and fonts, JSON setup
+    parallax/editor/driver/       EditorDriver (--driver-port), Names (the controls' names)
     filechooser/ filewatch/ libgdxutils/   file browser, file watcher, small scene2d widgets
 
 demo/src/.../ParallaxDemo         example game
