@@ -7,7 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle;
@@ -19,6 +22,8 @@ import com.badlogic.gdx.utils.Disposable;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.VisTable;
+import com.kotcrab.vis.ui.widget.VisTextField;
+import com.kotcrab.vis.ui.widget.VisTextField.VisTextFieldStyle;
 import com.kotcrab.vis.ui.widget.color.ColorPickerAdapter;
 import com.kotcrab.vis.ui.widget.color.ExtendedColorPicker;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
@@ -158,7 +163,40 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 			{target.set(newColor);}
 		});
 		pickers.add(picker);
+		fitFields(picker);
+		picker.invalidateHierarchy();
 		return picker;
+	}
+
+	/**
+	 * VisUI sizes the picker's text fields by its scaleFactor (0.6 here, GVars_UI.init) but not their font, so they
+	 * showed the end of their value: "800FF" for FF8800FF, "55" for 255. Widens each field to its longest value.
+	 */
+	private static void fitFields(Group group)
+	{
+		GlyphLayout layout = new GlyphLayout();
+		for (Actor child : group.getChildren())
+		{
+			if (child instanceof VisTextField && child.getParent() instanceof Table)
+			{
+				VisTextField field = (VisTextField) child;
+				VisTextFieldStyle style = field.getStyle();
+				BitmapFont font = style.font;
+				// The hex field holds 8 digits (its text) though it accepts 6; the channel fields accept 3.
+				int length = Math.max(field.getMaxLength(), field.getText().length());
+				float digit = 0;
+				for (char c : "0123456789ABCDEF".toCharArray())
+				{
+					layout.setText(font, String.valueOf(c));
+					digit = Math.max(digit, layout.width);
+				}
+				float padding = style.background == null ? 0 : style.background.getLeftWidth() + style.background.getRightWidth();
+				float width = digit * length + padding + 2; // + the cursor
+				((Table) child.getParent()).getCell(field).width(width);
+			}
+			else if (child instanceof Group)
+				fitFields((Group) child);
+		}
 	}
 
 	/** Button arming the eyedropper: the next click in the preview sets this picker's color. */
