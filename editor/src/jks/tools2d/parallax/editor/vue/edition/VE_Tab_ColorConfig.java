@@ -26,7 +26,6 @@ import com.kotcrab.vis.ui.widget.color.ColorPickerAdapter;
 import com.kotcrab.vis.ui.widget.color.ExtendedColorPicker;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
-import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
@@ -45,8 +44,7 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 		super(false, false);
 
 		final VisTable container = new VisTable();
-		TabbedPane tabbedPane = new TabbedPane(baseSkin.get("default", TabbedPaneStyle.class));
-		tabbedPane.setAllowTabDeselect(false);
+		TabbedPane tabbedPane = Utils_Interface.buildTabbedPane(baseSkin);
 		tabbedPane.addListener(new TabbedPaneAdapter()
 		{
 			@Override

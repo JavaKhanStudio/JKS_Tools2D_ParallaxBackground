@@ -15,6 +15,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
+import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
 
@@ -96,6 +98,20 @@ public final class Utils_Interface
 			}
 		});
 		return scroll;
+	}
+
+	/**
+	 * A tabbed pane whose tabs cannot be dragged. VisUI's are draggable by default, and a press hides the real tab
+	 * button behind a dragged copy until it is restored: the driver lost the tab just clicked, and nothing here needs to
+	 * reorder tabs.
+	 */
+	public static TabbedPane buildTabbedPane(Skin skin)
+	{
+		TabbedPaneStyle style = new TabbedPaneStyle(skin.get("default", TabbedPaneStyle.class)); // a copy: skin styles are shared
+		style.draggable = false;
+		TabbedPane pane = new TabbedPane(style);
+		pane.setAllowTabDeselect(false);
+		return pane;
 	}
 
 	public static void disposeTextures()
