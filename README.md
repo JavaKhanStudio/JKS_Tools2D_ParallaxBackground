@@ -81,7 +81,8 @@ Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
 ```bash
 ./gradlew :editor:run           # the editor, opens on the sample projects in editor/Files
 ./gradlew :demo:run             # the demo: SPACE switches page, N tints, LEFT/RIGHT scroll, R resets
-./gradlew test                  # file format, tiling and cross-fade tests
+./gradlew test                  # file format, tiling, cross-fade and no-allocation-per-frame tests
+./gradlew :demo:stress --args="--layers 400 --repeat xy"   # frame time of generated pages, see ParallaxStress
 ./gradlew :editor:installDist   # standalone editor in editor/build/install/ParallaxEditor
 ```
 
@@ -161,6 +162,12 @@ More:
   library's `-sources` jar to its classpath. `.plax` files are read with Kryo, which has no browser version: in a
   browser game, build the `WholePage_Model` in Java and pass it to `setPage`. `Utils_Page` and
   `new Parallax_Heart(path)` are not there.
+- **Performance:** `act` and `render` allocate nothing, and the game thread spends under a millisecond on 400 layers.
+  What costs is the GPU filling pixels: every layer is blended over the ones behind it, and a cross-fade draws both
+  pages. Fewer and smaller layers are what counts. An atlas whose `filter:` line is `MipMapLinearLinear,Linear` loads with
+  mipmaps and draws 200 screen-wide layers a third faster (24.6 ms to 16.5 ms on an Intel iGPU), on desktop: OpenGL ES 2
+  and WebGL 1 cannot mipmap a texture whose sides are not powers of two, and the editor's pages are not. A cross-fade between
+  pages on two different atlases also flushes the batch once per layer.
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and

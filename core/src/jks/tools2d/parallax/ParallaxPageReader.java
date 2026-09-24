@@ -119,11 +119,12 @@ public class ParallaxPageReader
 		viewLeft = worldCamera.position.x - viewWidth / 2;
 		viewBottom = worldCamera.position.y - viewHeight / 2;
 
+		// A layer at alpha 0 still costs its pixels on the GPU, and during a transfer a flush when the pages' atlases differ.
 		if (transferLayers.isEmpty())
 		{
-			setBatchColor(batch, 1);
-			for (int i = 0, n = layers.size(); i < n; i++)
-				drawLayer(layers.get(i), batch);
+			if (setBatchColor(batch, 1))
+				for (int i = 0, n = layers.size(); i < n; i++)
+					drawLayer(layers.get(i), batch);
 		}
 		else
 		{
@@ -133,24 +134,23 @@ public class ParallaxPageReader
 
 			for (int slot = 0; slot < total; slot++)
 			{
-				if (slot >= oldOffset)
-				{
-					setBatchColor(batch, oldLayerAlpha);
+				if (slot >= oldOffset && setBatchColor(batch, oldLayerAlpha))
 					drawLayer(layers.get(slot - oldOffset), batch);
-				}
-				if (slot >= newOffset)
-				{
-					setBatchColor(batch, newLayerAlpha);
+				if (slot >= newOffset && setBatchColor(batch, newLayerAlpha))
 					drawLayer(transferLayers.get(slot - newOffset), batch);
-				}
 			}
 		}
 
 		batch.setColor(Color.WHITE);
 	}
 
-	private void setBatchColor(Batch batch, float alpha)
-	{batch.setColor(tint.r, tint.g, tint.b, tint.a * alpha);}
+	/** Sets the tint at that opacity, and says whether anything drawn with it would show. */
+	private boolean setBatchColor(Batch batch, float alpha)
+	{
+		float a = tint.a * alpha;
+		batch.setColor(tint.r, tint.g, tint.b, a);
+		return a > 0;
+	}
 
 	private void drawLayer(ParallaxLayer layer, Batch batch)
 	{

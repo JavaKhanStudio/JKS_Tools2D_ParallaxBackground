@@ -35,7 +35,8 @@ repair.
   takes its decal percentages of that size. `heart/Gvars_Parallax` only holds the last heart's size, the default for
   layers and pages built without a heart: nothing a heart runs may read it.
 - `ParallaxPageReader.act()`/`draw()` and `heart/Parallax_Heart.act()`/`render()` run every frame: no allocation, no
-  streams.
+  streams. `FrameAllocationTest` counts the reader's bytes over 2000 frames and fails on any. `./gradlew :demo:stress`
+  measures a change on the GPU: the runtime is fill-rate bound, so time pixels, not code.
 - Tiling reads the camera view, position and zoom: `tilesJustEnoughToCoverTheView` holds it.
 - `ParallaxPageReaderTest` checks tiling and cross-fades without a window, by recording draw calls on a proxied
   `Batch`. Cover all four repeat modes (X, Y, XY, none).
