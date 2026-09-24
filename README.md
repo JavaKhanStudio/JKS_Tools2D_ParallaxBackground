@@ -164,10 +164,11 @@ More:
   `new Parallax_Heart(path)` are not there.
 - **Performance:** `act` and `render` allocate nothing, and the game thread spends under a millisecond on 400 layers.
   What costs is the GPU filling pixels: every layer is blended over the ones behind it, and a cross-fade draws both
-  pages. Fewer and smaller layers are what counts. An atlas whose `filter:` line is `MipMapLinearLinear,Linear` loads with
-  mipmaps and draws 200 screen-wide layers a third faster (24.6 ms to 16.5 ms on an Intel iGPU), on desktop: OpenGL ES 2
-  and WebGL 1 cannot mipmap a texture whose sides are not powers of two, and the editor's pages are not. A cross-fade between
-  pages on two different atlases also flushes the batch once per layer.
+  pages. Fewer and smaller layers are what counts. The editor exports atlases with mipmaps (`filter:
+  MipMapLinearLinear,Linear`) on pages whose sides are powers of two: 200 screen-wide layers draw a third faster (24.7 ms
+  to 17.0 ms on an Intel iGPU). An atlas you pack yourself gets the same by setting that filter, but only on
+  power-of-two pages if the game runs on OpenGL ES 2 or WebGL 1 (Android, the browser): those draw any other mipmapped
+  texture black. A cross-fade between pages on two different atlases also flushes the batch once per layer.
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and

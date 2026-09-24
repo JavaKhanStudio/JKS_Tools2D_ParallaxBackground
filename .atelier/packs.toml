@@ -141,6 +141,9 @@ Utils_TextureAtlas exist FOR Linear and mipmaps — flipping to Nearest to "fix"
 deletes the reason the padding is there. The 2019 flatten did exactly that, with pages at 3x
 the largest image: 15000px, which many GPUs simply refuse to upload, and the packer reports
 nothing. Keep preferredPageSize 4096, capped at FVars_Extensions.atlasMaxSize 16384.
+Export writes MipMapLinearLinear,Linear (r40: 200 layers 24.7 -> 17.0 ms), so createPacker rounds
+page sides UP TO A POWER OF TWO: GLES2/WebGL1 (Android, the GWT build) draw a mipmapped NPOT
+page black, and desktop shows nothing wrong. tools/r40-mipmap-stress.sh re-measures it.
 A layer names a region by NAME + POSITION among same-named regions, and PixmapPackerIO
 .packedName writes index -1 when a name is used once. TexturePacker numbers files from 1
 (ground_1, ground_2), so "ground"+index and "ground"+position are two different keys — mixing
