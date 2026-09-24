@@ -7,12 +7,14 @@
 # One command per line (see EditorDriver's javadoc); each reply is printed after "> command".
 # A line "sleep N" waits N seconds instead. "shot x.png" paths are relative to editor/.
 # The editor runs in cage's headless display (WLR_BACKENDS=headless), from the installDist build:
-# run `./gradlew :editor:installDist` first. ATELIER_NO_OFFSCREEN=1 shows the window instead.
+# run `./gradlew :editor:installDist` first (EDITOR_BIN runs another copy). ATELIER_NO_OFFSCREEN=1 shows the window instead.
+# PROBE_TIMES=1 appends each reply's round trip in ms: a command runs between two frames, so this is the wait for the
+# next frame plus the command's own work. JAVA_OPTS reaches the editor's JVM (e.g. -XX:StartFlightRecording=...).
 set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 PORT=${DRIVER_PORT:-47777}
-BIN="$ROOT/editor/build/install/ParallaxEditor/bin/ParallaxEditor"
+BIN=${EDITOR_BIN:-"$ROOT/editor/build/install/ParallaxEditor/bin/ParallaxEditor"}
 [[ -x "$BIN" ]] || { echo "missing $BIN: run ./gradlew :editor:installDist" >&2; exit 2; }
 
 cd "$ROOT/editor"
@@ -32,12 +34,13 @@ done
 
 exec 3<>/dev/tcp/127.0.0.1/$PORT || { echo "the editor never opened port $PORT; see editor/build/driver-probe.log" >&2; exit 1; }
 while IFS= read -r line; do
-	[[ -z "$line" ]] && continue
+	[[ -z "$line" || "$line" == \#* ]] && continue
 	if [[ "$line" == sleep\ * ]]; then sleep "${line#sleep }"; continue; fi
 	echo "> $line"
+	start=$(date +%s%N)
 	echo "$line" >&3
 	IFS= read -r reply <&3
-	echo "$reply"
+	if [[ "${PROBE_TIMES:-0}" == "1" ]]; then echo "$reply ($(( ($(date +%s%N) - start) / 1000000 )) ms)"; else echo "$reply"; fi
 	# "list" answers "ok N" then N lines.
 	if [[ "$line" == list && "$reply" == ok\ * ]]; then
 		for _ in $(seq "${reply#ok }"); do IFS= read -r more <&3; echo "$more"; done
