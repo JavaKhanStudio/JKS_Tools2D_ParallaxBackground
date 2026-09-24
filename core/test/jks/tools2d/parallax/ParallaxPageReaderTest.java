@@ -15,6 +15,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -153,5 +154,26 @@ class ParallaxPageReaderTest
 
 		for (int i = 0; i < layers.size(); i++)
 			assertNotSame(reader.layers.get(i), reader.transferLayers.get(i));
+	}
+
+	@Test
+	void layersAtAlphaZeroAreNotDrawn()
+	{
+		ParallaxPageReader reader = reader(false, false);
+		reader.addLayers(List.of(layer(0)));
+		reader.addLayersTransfert(page(List.of(layer(0))), 1);
+
+		reader.draw(camera, batch);
+		assertEquals(1, draws.size(), "the incoming page starts at alpha 0");
+
+		reader.act(0.5f, 0, 0);
+		draws.clear();
+		reader.draw(camera, batch);
+		assertEquals(2, draws.size(), "both pages show mid-transfer");
+
+		reader.addColorTransfert(new Color(1, 1, 1, 0), 0);
+		draws.clear();
+		reader.draw(camera, batch);
+		assertEquals(0, draws.size(), "a fully transparent tint hides every layer");
 	}
 }
