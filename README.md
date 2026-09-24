@@ -224,10 +224,17 @@ echo "click tab.textures" | nc 127.0.0.1 47777
 
 It reads one command per line and answers each one with `ok ...` or `err ...`. `list` gives the named controls on screen
 with their bounds, `bounds`, `click`, `set` and `wheel` act on one control, `open` loads a file, and `shot` writes the next
-frame to a PNG. A control is found by its name (`texture.sizeRatio`, `tab.background.topSquare`), or by its text with
+frame to a PNG. `fps` gives the frame rate and render-thread time over the last 120 frames. A control is found by its name (`texture.sizeRatio`, `tab.background.topSquare`), or by its text with
 `text:Yes`. The full list is in `EditorDriver`'s javadoc. A resize rebuilds the panels and puts every tab back on its
 first, so commands wait for that rebuild. Set the window size before the demo, not during it. `tools/driver-probe.sh`
 starts the editor off screen, sends it the commands it reads, and stops it.
+
+To profile the editor on a heavy page, `tools/stress-project.py 300` writes a 300-layer project in
+`editor/build/stress`, and `tools/editor-stress.txt` is a session of edits, save and export to replay on it:
+
+```bash
+(echo "open build/stress/Stress300.plaxpj"; cat tools/editor-stress.txt) | PROBE_TIMES=1 tools/driver-probe.sh
+```
 
 ## File formats
 

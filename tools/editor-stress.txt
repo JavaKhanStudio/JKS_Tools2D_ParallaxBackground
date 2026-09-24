@@ -1,0 +1,51 @@
+# A session of edits to replay on a generated project (tools/stress-project.py), see README "Driving the editor".
+# Its first command is the open, sent before this file: (echo "open build/stress/Stress300.plaxpj"; cat tools/editor-stress.txt)
+sleep 3
+click tab.textures
+set texture.selection 150
+set texture.selection 1
+set texture.selection 299
+set texture.sizeRatio 0.8
+set texture.sizeRatio 0.9
+set texture.sizeRatio 1.0
+set texture.decalX 20
+set texture.decalX 30
+set texture.decalY 40
+set texture.speedRatioX 0.03
+set texture.padX 2
+click texture.flipX
+click texture.mirror
+click texture.sizeRatio.fromFront
+click texture.moveFirst
+click texture.moveLast
+click texture.clone
+click texture.delete
+click texture.undelete
+bounds preview.view
+bounds preview.view
+bounds preview.view
+bounds preview.view
+bounds preview.view
+click preview.play
+sleep 3
+bounds preview.view
+bounds preview.view
+bounds preview.view
+bounds preview.view
+bounds preview.view
+click options.saveProject
+sleep 2
+click text:Ok
+sleep 1
+click options.export
+sleep 2
+click text:Ok
+sleep 1
+sleep 2
+shot build/stress/after.png
+fps
+click tab.controls
+click tab.controls.application
+set application.vsync false
+sleep 3
+fps

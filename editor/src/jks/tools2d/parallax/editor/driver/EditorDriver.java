@@ -57,6 +57,8 @@ import jks.tools2d.parallax.editor.vue.Vue_Selection;
  *                       image list (index), color picker (#rrggbb)
  * open FILE             opens a .plaxpj/.plax/.jplax/.atlas as the start screen would (relative to editor/)
  * shot FILE.png         writes the next rendered frame
+ * fps                   "ok FPS period AVG MAX work AVG MAX": over the last 120 frames, the ms from one frame to the
+ *                       next (vsync and GPU included) and the ms the render thread spent issuing a frame
  * </pre>
  *
  * A TARGET is a control's name ({@code texture.sizeRatio}), or {@code text:LABEL} for a button found by its text: the
@@ -72,6 +74,12 @@ public final class EditorDriver
 	/** A screenshot waiting for the end of the next frame, with the future its reply goes to. */
 	private volatile String pendingShot;
 	private volatile CompletableFuture<String> pendingShotReply;
+
+	/** Nanoseconds of the last FRAMES frames: start to start, and start to the end of render(), for "fps". */
+	private static final int FRAMES = 120;
+	private final long[] framePeriods = new long[FRAMES], frameWork = new long[FRAMES];
+	private long frameStart;
+	private int frameCount;
 
 	private EditorDriver(int port) throws IOException
 	{server = new ServerSocket(port, 4, InetAddress.getLoopbackAddress());}
@@ -114,9 +122,20 @@ public final class EditorDriver
 		}
 	}
 
+	/** Called at the start of every frame. */
+	public void beforeRender()
+	{
+		long now = System.nanoTime();
+		if (frameStart != 0)
+			framePeriods[frameCount % FRAMES] = now - frameStart;
+		frameStart = now;
+	}
+
 	/** Called at the end of every frame, before the buffers are swapped: the only moment the frame can be read. */
 	public void afterRender()
 	{
+		frameWork[frameCount++ % FRAMES] = System.nanoTime() - frameStart;
+
 		String file = pendingShot;
 		if (file == null)
 			return;
@@ -138,6 +157,25 @@ public final class EditorDriver
 		}
 		catch (RuntimeException e)
 		{reply.complete("err " + e);}
+	}
+
+	private String fps()
+	{
+		int count = Math.min(frameCount, FRAMES) - 1;
+		if (count <= 0)
+			return "err no frame yet";
+		long periodSum = 0, periodMax = 0, workSum = 0, workMax = 0;
+		// The newest period belongs to the frame running this command: its work is not done yet.
+		for (int i = 1; i <= count; i++)
+		{
+			int slot = Math.floorMod(frameCount - i, FRAMES);
+			periodSum += framePeriods[slot];
+			periodMax = Math.max(periodMax, framePeriods[slot]);
+			workSum += frameWork[slot];
+			workMax = Math.max(workMax, frameWork[slot]);
+		}
+		return String.format(Locale.ROOT, "ok %.1f period %.2f %.2f work %.2f %.2f", 1e9 * count / periodSum,
+				periodSum / 1e6 / count, periodMax / 1e6, workSum / 1e6 / count, workMax / 1e6);
 	}
 
 	private void acceptLoop()
@@ -232,6 +270,8 @@ public final class EditorDriver
 					return "err usage: open FILE";
 				String file = line.substring("open ".length()).trim();
 				return Vue_Selection.selectSingleFile(Gdx.files.absolute(new java.io.File(file).getAbsolutePath())) ? "ok" : "err cannot open " + file;
+			case "fps":
+				return fps();
 			case "shot":
 				if (target == null)
 					return "err usage: shot FILE.png";

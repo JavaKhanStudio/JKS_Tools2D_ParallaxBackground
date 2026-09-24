@@ -50,6 +50,8 @@ public class Main_Editor extends ApplicationAdapter
 	{
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
 
+		if (driver != null)
+			driver.beforeRender();
 		GVars_Heart_Editor.vue.update(delta);
 		GVars_Heart_Editor.vue.render();
 		if (driver != null)
