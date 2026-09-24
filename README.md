@@ -1,3 +1,5 @@
+<img src="editor/assets/skins/uis/parallaxIcon.png" alt="Parallax Background logo: layers of sky, mountains and clouds standing one behind the other" width="128" align="right">
+
 # JKS Tools2D - Parallax Background
 
 [![CI](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/actions/workflows/ci.yml/badge.svg)](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/actions/workflows/ci.yml)
