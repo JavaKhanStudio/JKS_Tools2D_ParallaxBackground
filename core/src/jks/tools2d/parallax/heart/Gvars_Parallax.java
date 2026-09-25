@@ -2,6 +2,11 @@ package jks.tools2d.parallax.heart;
 
 import com.badlogic.gdx.assets.AssetManager;
 
+/**
+ * The shared AssetManager, and the default world size: the one set by the last {@link Parallax_Heart} built, used by
+ * layers and pages built without a heart. Each heart keeps its own world size, see
+ * {@link Parallax_Heart#getWorldWidth()}.
+ */
 public class Gvars_Parallax
 {
 	private static AssetManager manager ;

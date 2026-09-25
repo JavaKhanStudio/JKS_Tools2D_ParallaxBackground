@@ -27,6 +27,7 @@ import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import jks.tools2d.libgdxutils.JksNumberSlider;
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 
 /** Settings of the selected layer: position in the stack, flips, offsets, size, speeds, padding. */
@@ -35,6 +36,7 @@ public class VE_Tab_Texture extends Tab
 	private static final int totalColspan = 5;
 
 	private final Table container = new Table();
+	private final Table scrolled = new Table();
 	private final Table sliders = new Table();
 
 	private final IntSpinnerModel indexSelectionModel = new IntSpinnerModel(0, 0, 0);
@@ -71,22 +73,36 @@ public class VE_Tab_Texture extends Tab
 	{
 		super(false, false);
 
+		indexSelectionSpinner.setName("texture.selection");
+		indexPositionSpinner.setName("texture.position");
+		selectMiddle.setName("texture.selectMiddle");
+		selectLast.setName("texture.selectLast");
+		moveMiddle.setName("texture.moveMiddle");
+		moveLast.setName("texture.moveLast");
+		flipX.setName("texture.flipX");
+		flipY.setName("texture.flipY");
+		mirror.setName("texture.mirror");
+		showSelect.setName("texture.preview");
+
 		indexSelectionSpinner.setProgrammaticChangeEvents(false);
 		indexPositionSpinner.setProgrammaticChangeEvents(false);
 		indexSelectionSpinner.addListener(onChange(() -> select(indexSelectionModel.getValue())));
 		indexPositionSpinner.addListener(onChange(() -> moveSelectedTo(indexPositionModel.getValue())));
 
 		TextButton selectFirst = new TextButton("-0 ", baseSkin);
+		selectFirst.setName("texture.selectFirst");
 		selectFirst.addListener(onChange(() -> select(0)));
 		selectMiddle.addListener(onChange(() -> select(layers().size() / 2)));
 		selectLast.addListener(onChange(() -> select(layers().size() - 1)));
 
 		TextButton moveFirst = new TextButton("-0 ", baseSkin);
+		moveFirst.setName("texture.moveFirst");
 		moveFirst.addListener(onChange(() -> moveSelectedTo(0)));
 		moveMiddle.addListener(onChange(() -> moveSelectedTo(layers().size() / 2)));
 		moveLast.addListener(onChange(() -> moveSelectedTo(layers().size() - 1)));
 
 		TextButton makeAsDefault = new TextButton("Set default", baseSkin);
+		makeAsDefault.setName("texture.setDefault");
 		makeAsDefault.addListener(onChange(() ->
 		{
 			getDefaults().copyValue(currentlySelectedParallax);
@@ -94,6 +110,7 @@ public class VE_Tab_Texture extends Tab
 		}));
 
 		TextButton clone = new TextButton("Clone", baseSkin);
+		clone.setName("texture.clone");
 		clone.addListener(onChange(this::cloneLayout));
 
 		flipX.addListener(onChange(() -> currentlySelectedParallax.setFlipX(flipX.isChecked())));
@@ -101,17 +118,22 @@ public class VE_Tab_Texture extends Tab
 		mirror.addListener(onChange(() -> currentlySelectedParallax.setMirror(mirror.isChecked())));
 
 		ImageButton delete = Utils_Interface.buildSquareButton("editor/interfaces/delete.png", 50);
+		delete.setName("texture.delete");
 		delete.addListener(onChange(this::deleteSelected));
 		ImageButton unDelete = Utils_Interface.buildSquareButton("editor/interfaces/cancelAction.png", 50);
+		unDelete.setName("texture.undelete");
 		unDelete.addListener(onChange(this::restoreDeleted));
 
 		for (LayerSlider slider : layerSliders)
 		{
-			sliders.add(new VisLabel(slider.title)).colspan(totalColspan).row();
-			sliders.add();
-			sliders.add(slider.slider).colspan(totalColspan - 3);
-			sliders.add(slider.copyFromFront);
-			sliders.add(slider.copyFromBack).row();
+			// A table per row, and sized buttons (an image button is at least as wide as its texture): the rows used to
+			// be wider than the panel.
+			Table row = new Table();
+			row.add(slider.slider);
+			row.add(slider.copyFromFront).size(30).padLeft(8);
+			row.add(slider.copyFromBack).size(30).padLeft(8);
+			sliders.add(new VisLabel(slider.title)).row();
+			sliders.add(row).row();
 		}
 
 		container.add(new VisLabel("SECTION SELECTED")).pad(6).colspan(totalColspan).row();
@@ -132,6 +154,9 @@ public class VE_Tab_Texture extends Tab
 		container.add(flipY);
 		container.add(mirror).row();
 		container.add(sliders).expand().fill().colspan(totalColspan);
+
+		// The tab is taller than a 720-pixel window: scroll instead of pushing the tab bar off the top.
+		scrolled.add(Utils_Interface.buildVerticalScroll(container, baseSkin)).expand().fill();
 	}
 
 	private ChangeListener onChange(Runnable action)
@@ -248,7 +273,7 @@ public class VE_Tab_Texture extends Tab
 		if (currentlySelectedParallax != null)
 			update();
 
-		return container;
+		return scrolled;
 	}
 
 	/** A layer property: its slider, and buttons copying the value from the layer in front of / behind the selected one. */
@@ -273,6 +298,11 @@ public class VE_Tab_Texture extends Tab
 						setter.accept(currentlySelectedParallax, getValue());
 				}
 			};
+
+			String name = "texture." + Names.slug(title);
+			slider.setName(name);
+			copyFromFront.setName(name + ".fromFront");
+			copyFromBack.setName(name + ".fromBack");
 
 			copyFromFront.addListener(copyFrom(+1, setter));
 			copyFromBack.addListener(copyFrom(-1, setter));

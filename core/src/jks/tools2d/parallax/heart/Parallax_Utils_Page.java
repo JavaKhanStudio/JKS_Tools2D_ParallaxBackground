@@ -15,7 +15,7 @@ public final class Parallax_Utils_Page
 		ref.currentPage = pageModel;
 		ref.parallaxReader.layers.clear();
 		ref.parallaxReader.resetTransfert();
-		ref.parallaxReader.addLayers(pageModel.getDrawing(ref.relativePath));
+		ref.parallaxReader.addLayers(pageModel.getDrawing(ref.relativePath, ref.getWorldWidth(), ref.getWorldHeight()));
 		ref.parallaxReader.setRepeatOnX(pageModel.repeatOnX);
 		ref.parallaxReader.setRepeatOnY(pageModel.repeatOnY);
 

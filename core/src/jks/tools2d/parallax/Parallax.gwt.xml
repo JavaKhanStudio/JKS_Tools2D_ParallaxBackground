@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.11.0//EN" "https://www.gwtproject.org/doctype/2.11.0/gwt-module.dtd">
+<!--
+	The parallax runtime for a libGDX game compiled to JavaScript: <inherits name="jks.tools2d.parallax.Parallax"/>.
+	Everything in core/src is translatable. core/src-jvm shares its packages and its jar, and reads and writes .plax
+	(Kryo) and .jplax (Jackson): a browser game builds its pages in Java instead. Every file of core/src-jvm is excluded
+	here by name; `./gradlew :core:gwtCheck` fails when one is missing.
+-->
+<module>
+	<inherits name="com.badlogic.gdx" />
+
+	<source path="">
+		<exclude name="heart/GVars_Serialization.java" />
+		<exclude name="pages/*_Serializer.java" />
+		<exclude name="pages/Json_MixIns.java" />
+		<exclude name="pages/Utils_Page.java" />
+	</source>
+</module>

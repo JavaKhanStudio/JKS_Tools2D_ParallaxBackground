@@ -111,6 +111,10 @@ public class Vue_Edition extends AVue_Model
 		GVars_UI.mainUi.addActor(centerControl);
 	}
 
+	/** True between a resize and the rebuild of the widgets it causes: they still have the previous size. */
+	public boolean isRebuildPending()
+	{return rebuildCountdown >= 0;}
+
 	private void rebuildInterface()
 	{
 		String path = VE_Options.parallaxPath.getText(), name = VE_Options.parallaxName.getText();

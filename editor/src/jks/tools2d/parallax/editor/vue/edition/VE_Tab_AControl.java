@@ -9,9 +9,10 @@ import com.badlogic.gdx.utils.Disposable;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
-import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
+import jks.tools2d.libgdxutils.Utils_Interface;
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 /** Left panel: the main tabs (controls, textures, selected layer, background). */
@@ -24,8 +25,7 @@ public class VE_Tab_AControl extends Table implements Disposable
 		final VisTable container = new VisTable();
 		container.setWidth(size_Bloc_Selection_Parallax_Width);
 
-		tabbedPane = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
-		tabbedPane.setAllowTabDeselect(false);
+		tabbedPane = Utils_Interface.buildTabbedPane(GVars_UI.baseSkin);
 		tabbedPane.addListener(new TabbedPaneAdapter()
 		{
 			@Override
@@ -44,6 +44,7 @@ public class VE_Tab_AControl extends Table implements Disposable
 		tabbedPane.add(new VE_Tab_Texture());
 		tabbedPane.add(colorConfig);
 		tabbedPane.switchTab(parallaxConfig);
+		Names.tabs(tabbedPane, "tab");
 
 		add(tabbedPane.getTable()).expandX().fillX();
 		row();

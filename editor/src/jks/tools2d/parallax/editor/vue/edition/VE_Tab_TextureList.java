@@ -4,9 +4,10 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
-import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
+import jks.tools2d.libgdxutils.Utils_Interface;
+import jks.tools2d.parallax.editor.driver.Names;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 
 /** "Add texture" tab: the image list and the values given to new layers. */
@@ -21,8 +22,7 @@ public class VE_Tab_TextureList extends Tab
 		super(false, false);
 
 		final VisTable container = new VisTable();
-		TabbedPane tabbedPane = new TabbedPane(GVars_UI.baseSkin.get("default", TabbedPaneStyle.class));
-		tabbedPane.setAllowTabDeselect(false);
+		TabbedPane tabbedPane = Utils_Interface.buildTabbedPane(GVars_UI.baseSkin);
 		tabbedPane.addListener(new TabbedPaneAdapter()
 		{
 			@Override
@@ -36,6 +36,7 @@ public class VE_Tab_TextureList extends Tab
 		tabbedPane.add(add);
 		tabbedPane.add(setDefault);
 		tabbedPane.switchTab(add);
+		Names.tabs(tabbedPane, "tab.addTexture");
 
 		mainTable.add(tabbedPane.getTable()).expandX().fillX();
 		mainTable.row();

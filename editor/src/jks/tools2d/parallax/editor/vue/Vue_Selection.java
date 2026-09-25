@@ -70,7 +70,10 @@ public class Vue_Selection extends AVue_Model
 		chooser.setCancelable(false);
 		chooser.setStartDirectory(filesRoot);
 
+		chooser.setName("selection.chooser");
+
 		TextButton createNew = new TextButton("NEW", baseSkin);
+		createNew.setName("selection.new");
 		createNew.addListener(new ChangeListener()
 		{
 			@Override

@@ -46,6 +46,8 @@ public class VE_Options extends Table
 			{Utils_Saving.saving_Parallax(parallaxPath.getText(), parallaxName.getText());}
 		});
 
+		savingProject.setName("options.saveProject");
+		savingExport.setName("options.export");
 		savingProject.setBounds(Gdx.graphics.getWidth() - buttonSize * 3, Gdx.graphics.getHeight() - (buttonSize + decal), buttonSize, buttonSize);
 		savingExport.setBounds(Gdx.graphics.getWidth() - buttonSize * 3, Gdx.graphics.getHeight() - (buttonSize + decal) * 2, buttonSize, buttonSize);
 
@@ -53,6 +55,9 @@ public class VE_Options extends Table
 		formatLibGDX.setChecked(true);
 		formatJson = new VisCheckBox("JSON");
 		forceExport = new VisCheckBox("F.Export");
+		formatLibGDX.setName("options.formatLibgdx");
+		formatJson.setName("options.formatJson");
+		forceExport.setName("options.forceExport");
 
 		parallaxPath = new TextField("", GVars_UI.baseSkin)
 		{
@@ -61,6 +66,8 @@ public class VE_Options extends Table
 			{return super.getPrefWidth() * 3;}
 		};
 		parallaxName = new TextField("", GVars_UI.baseSkin);
+		parallaxPath.setName("options.path");
+		parallaxName.setName("options.name");
 
 		Table projectPathTable = new Table();
 		projectPathTable.setBounds(savingProject.getX() - pathWidth - decal, savingProject.getY() + textHeight / 2 - decal, pathWidth, textHeight);

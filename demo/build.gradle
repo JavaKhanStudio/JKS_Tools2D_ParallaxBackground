@@ -29,3 +29,15 @@ application {
 tasks.named('run', JavaExec) {
     workingDir = file('assets')
 }
+
+// ./gradlew :demo:stress --args="--layers 400 --repeat xy": frame time and GL counts of generated pages, see ParallaxStress.
+tasks.register('stress', JavaExec) {
+    group = 'application'
+    description = 'Runs ParallaxStress: hundreds of generated layers, cross-faded, timed without vsync.'
+    mainClass = 'jks.tools2d.parallax.demo.ParallaxStress'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = file('assets')
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        jvmArgs '-XstartOnFirstThread'
+    }
+}
