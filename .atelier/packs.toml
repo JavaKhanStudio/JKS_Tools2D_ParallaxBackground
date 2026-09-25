@@ -237,9 +237,11 @@ Releases: develop (always -SNAPSHOT, every push publishes one) → release/X.Y �
 vX.Y.Z. RELEASING.md is the procedure; follow it rather than inventing one. The release
 workflow REFUSES to run when the tag and gradle.properties disagree.
 Maven Central needs four repository secrets (MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD,
-SIGNING_KEY, SIGNING_KEY_PASSWORD). Without them a release still succeeds and still builds
-the GitHub downloads — it just SKIPS Central with a warning in the log. A green release is
-therefore not proof anything reached Central; read the log or check the artifact page.
+SIGNING_KEY, SIGNING_KEY_PASSWORD; all four are set). Without them a tag push FAILS before
+building anything; only a hand-run Release with `without_central` ticked skips Central, and
+says so in the run summary. Central then takes minutes to an hour: done means
+https://repo1.maven.org/maven2/io/github/javakhanstudio/parallax-background/maven-metadata.xml
+lists the version, not a green run.
 README.md IS THE PUBLISHED FRONT PAGE and it is accurate today — keep it that way. Its module
 map and the code map at the end mirror this build: move a class or a module and fix both in the
 SAME commit. Its badges point at the CI workflow FILE PATH and at the Central artifact
