@@ -1,0 +1,7 @@
+click tab.background
+list
+shot build/r35/top.png
+wheel background.topSquare.topEyedropper 10
+sleep 1
+list
+shot build/r35/scrolled.png

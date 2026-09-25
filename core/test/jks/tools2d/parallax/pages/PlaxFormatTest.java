@@ -34,6 +34,8 @@ class PlaxFormatTest
 {
 	private static final Path ROOT = Path.of(System.getProperty("parallax.repoRoot", ".."));
 	private static final ObjectMapper JSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	static
+	{Json_MixIns.MIX_INS.forEach(JSON::addMixIn);}
 
 	static List<Path> legacyPlaxFiles() throws IOException
 	{

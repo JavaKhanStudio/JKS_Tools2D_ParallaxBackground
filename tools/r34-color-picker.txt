@@ -1,0 +1,4 @@
+click tab.background
+set background.topSquare.topColor #ff8800
+list
+shot build/r34/picker.png

@@ -7,9 +7,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.utils.Disposable;
 
+import jks.tools2d.parallax.GwtIncompatible;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parallax;
-import jks.tools2d.parallax.pages.Utils_Page;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -52,30 +52,29 @@ public class Parallax_Heart implements Disposable
 
 	public Parallax_Heart()
 	{
-		Gvars_Parallax.setWorldWidth(defaultWidth);
-		Gvars_Parallax.setWorldHeight(Utils_Parallax.calculateOtherDimension(true, defaultWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
+		float worldHeight = Utils_Parallax.calculateOtherDimension(true, defaultWidth, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
 		worldCamera = new OrthographicCamera();
-		worldCamera.setToOrtho(false, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());
+		worldCamera.setToOrtho(false, defaultWidth, worldHeight);
 
 		batch = new SpriteBatch();
 		ownsBatch = true;
-		init();
+		init(defaultWidth, worldHeight);
 	}
 
+	/** Loads a .plax file from the internal (assets) storage. Not in the browser build: .plax is read with Kryo. */
+	@GwtIncompatible("Kryo")
 	public Parallax_Heart(String internalPath)
 	{
 		this();
-		setPage(Utils_Page.loadPage(internalPath));
+		setPage(jks.tools2d.parallax.pages.Utils_Page.loadPage(internalPath));
 	}
 
 	public Parallax_Heart(OrthographicCamera worldCamera, SpriteBatch batch, float worldWidth, float worldHeight)
 	{
 		this.worldCamera = worldCamera;
 		this.batch = batch;
-		Gvars_Parallax.setWorldWidth(worldWidth);
-		Gvars_Parallax.setWorldHeight(worldHeight);
-		init();
+		init(worldWidth, worldHeight);
 	}
 
 	public Parallax_Heart(OrthographicCamera worldCamera, SpriteBatch batch, WholePage_Model pageModel, float worldWidth, float worldHeight)
@@ -94,11 +93,16 @@ public class Parallax_Heart implements Disposable
 	public Parallax_Heart(OrthographicCamera worldCamera, OrthographicCamera staticCamera, SpriteBatch batch, WholePage_Model pageModel, float worldWidth, float worldHeight)
 	{this(worldCamera, batch, pageModel, worldWidth, worldHeight);}
 
-	private void init()
+	private void init(float worldWidth, float worldHeight)
 	{
+		// This heart's layers only use its own world size; the last heart built still sets the default one.
+		Gvars_Parallax.setWorldWidth(worldWidth);
+		Gvars_Parallax.setWorldHeight(worldHeight);
+
 		shapeRender = new ShapeRenderer();
 		shapeRender.getProjectionMatrix().setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		parallaxReader = new ParallaxPageReader();
+		parallaxReader.setWorldSize(worldWidth, worldHeight);
 	}
 
 	public void setPage(WholePage_Model model)
@@ -161,8 +165,11 @@ public class Parallax_Heart implements Disposable
 
 		if (ownsBatch)
 		{
-			Gvars_Parallax.setWorldHeight(Utils_Parallax.calculateOtherDimension(true, Gvars_Parallax.getWorldWidth(), width, height));
-			worldCamera.setToOrtho(false, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());
+			float worldWidth = getWorldWidth();
+			float worldHeight = Utils_Parallax.calculateOtherDimension(true, worldWidth, width, height);
+			Gvars_Parallax.setWorldHeight(worldHeight);
+			parallaxReader.setWorldSize(worldWidth, worldHeight);
+			worldCamera.setToOrtho(false, worldWidth, worldHeight);
 		}
 
 		// ShapeRenderer draws with a matrix it only rebuilds from getProjectionMatrix() when told to.
@@ -174,6 +181,14 @@ public class Parallax_Heart implements Disposable
 		if (bottomSquare != null)
 			bottomSquare.resize(width, height);
 	}
+
+	/** Width of this heart's world, in world units. */
+	public float getWorldWidth()
+	{return parallaxReader.getWorldWidth();}
+
+	/** Height of this heart's world, in world units. */
+	public float getWorldHeight()
+	{return parallaxReader.getWorldHeight();}
 
 	public String getAtlasName()
 	{return currentPage == null ? null : currentPage.pageModel.getAtlasName();}

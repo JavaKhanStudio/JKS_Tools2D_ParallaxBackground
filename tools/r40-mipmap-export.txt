@@ -1,0 +1,17 @@
+sleep 4
+shot build/r40/before.png
+open Files/Demos/OneNight.plaxpj
+sleep 3
+click tab.controls
+set options.path ../editor/build/r40
+set options.name r40
+set options.forceExport true
+click options.export
+sleep 1
+click text:No
+sleep 8
+shot build/r40/after-export.png
+click text:OK
+open build/r40/r40.plax
+sleep 3
+shot build/r40/reloaded.png
