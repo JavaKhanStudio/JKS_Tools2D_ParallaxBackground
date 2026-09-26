@@ -26,6 +26,24 @@ dependencies {
 }
 ```
 
+This is how a fix reaches a game: push it to `develop`, and the game takes the snapshot. A release is for a version
+that should stay on Maven Central for good, not for each fix.
+
+`X.Y.Z-SNAPSHOT` moves with every push, so a game built twice can get two different libraries. To keep a game's build
+reproducible, pin one snapshot build instead, by its timestamped version:
+
+```groovy
+implementation "io.github.javakhanstudio:parallax-background:2.5.0-20260926.092334-1"
+```
+
+The builds of a snapshot are listed in
+`https://central.sonatype.com/repository/maven-snapshots/io/github/javakhanstudio/parallax-background/X.Y.Z-SNAPSHOT/maven-metadata.xml`
+(the `<value>` entries), and the Publish snapshot run of the push that made one is in the Actions tab. Central deletes
+snapshot builds after 90 days: a game still on one then needs a newer snapshot or a release.
+
+`./gradlew -p tools/snapshot-probe resolve` resolves the current snapshot from Central the way a game does
+(`-Pparallax=<version>` for one pinned build).
+
 To try a change without publishing anything, `./gradlew :core:publishToMavenLocal` and add `mavenLocal()` to the
 game's repositories.
 

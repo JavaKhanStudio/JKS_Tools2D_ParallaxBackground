@@ -1,0 +1,10 @@
+// Resolves parallax-background from Central's snapshot repository the way a game would.
+//   ./gradlew -p tools/snapshot-probe resolve                       (the latest X.Y.Z-SNAPSHOT of develop)
+//   ./gradlew -p tools/snapshot-probe resolve -Pparallax=2.5.0-20260926.092334-1   (one pinned build)
+rootProject.name = 'snapshot-probe'
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
+    }
+}
