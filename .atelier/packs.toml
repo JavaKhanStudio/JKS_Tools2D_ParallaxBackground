@@ -65,16 +65,23 @@ New fields go behind a version bump, written AND read on the same branch, exactl
 flipY: `if (WholePage_Model_Serializer.currentVersion(kryo) >= 2)`. Format 1 files (the
 2019-2023 editor) must keep loading — Parallax_Model_Serializer wrote flipX and never flipY,
 so every vertically flipped layer came back unflipped.
+A new stored field is ALSO read in core/src pages/Utils_Page_Json, the browser build's
+loader (.jplax/.plaxpj through libGDX's JsonReader). It maps every field by hand, no
+reflection: a field it does not name loads as its default in a browser game and throws
+nothing. JsonPageTest compares it with the Kryo read through PlaxFormatTest.assertPageEquals,
+so add the field there too.
 Color_Serializer writes channels in A, B, G, R order. That is deliberate now; leave it.
 Gate: `./gradlew :core:test`. PlaxFormatTest walks every .plax under editor/Files and
-demo/assets and checks it against the .plaxpj saved in the same 2019 session. It reads the
+demo/assets and checks it against the .plaxpj saved in the same 2019 session; core/test-data/
+onboard holds copies of On Board's four pages for JsonPageTest. It reads the
 `parallax.repoRoot` system property, which core/build.gradle sets — run the class straight
 from an IDE without it and it hunts for samples in the wrong folder.
 README.md's table of the three file formats mirrors these shapes; change what one holds and
 fix the table in the SAME commit.
 THE SAMPLE FILES ARE THE FIXTURES. Never re-export or overwrite editor/Files/*.plax to make
 a test pass: they are the 2019 evidence and the only proof the legacy path still works.
-Shapes: .plax = Kryo binary (what games load), .jplax = JSON (tooling), .plaxpj = the editor
+Shapes: .plax = Kryo binary (what games load), .jplax = JSON (what browser games load, and
+tooling), .plaxpj = the editor
 project. A page names its atlas BY FILE NAME; a layer names an image by region name AND its
 position among the regions sharing that name — never by name alone.
 """

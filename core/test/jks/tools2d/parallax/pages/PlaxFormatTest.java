@@ -33,7 +33,7 @@ import jks.tools2d.parallax.heart.GVars_Serialization;
 class PlaxFormatTest
 {
 	private static final Path ROOT = Path.of(System.getProperty("parallax.repoRoot", ".."));
-	private static final ObjectMapper JSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	static final ObjectMapper JSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	static
 	{Json_MixIns.MIX_INS.forEach(JSON::addMixIn);}
 
@@ -156,7 +156,7 @@ class PlaxFormatTest
 		assertPageEquals(original, JSON.readValue(json, WholePage_Model.class));
 	}
 
-	private static WholePage_Model read(byte[] bytes)
+	static WholePage_Model read(byte[] bytes)
 	{
 		InputStream stream = new ByteArrayInputStream(bytes);
 		return Utils_Page.loadPage(stream);
@@ -174,7 +174,7 @@ class PlaxFormatTest
 	private static List<Color> colors(WholePage_Model page)
 	{return List.of(page.topHalf_top, page.topHalf_bottom, page.bottomHalf_top, page.bottomHalf_bottom);}
 
-	private static void assertPageEquals(WholePage_Model expected, WholePage_Model actual)
+	static void assertPageEquals(WholePage_Model expected, WholePage_Model actual)
 	{
 		assertEquals(colors(expected), colors(actual));
 		assertEquals(expected.topHalfSize, actual.topHalfSize);
