@@ -39,7 +39,8 @@ copies act(), tile(), drawRegion() and the gradients line for line (r87), and th
 syncTransferPositions and the tint (r94). Change how a page scrolls, tiles, fades or draws here and
 change it there, or a Godot game shows a different picture: `tools/godot-parallax-shots.sh`
 renders both off screen and fails past a mean 2/255 apart; engines/godot/tests/transfer is its
-cross-fade round.
+cross-fade round. CI runs it too (ci.yml job godot-frames, Xvfb + llvmpipe): a push that
+desynchronises the port fails the build, so run it before pushing, not after.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.

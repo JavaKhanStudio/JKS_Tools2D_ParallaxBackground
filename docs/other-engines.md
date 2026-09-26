@@ -71,7 +71,8 @@ On 2026-09-26 (Godot 4.6.3, Compatibility renderer): worst mean difference **0.2
 more than 32, on the edges of clouds in an atlas filtered `MipMap` (Godot and the GL driver build mipmaps differently).
 Comparing a Godot frame with the libGDX frame 12 s later scores 6.5 to 25, so the 2 / 255 threshold catches a real
 error. The transfer round: worst **0.52 / 255**; with the scroll sync left out it scores 24.6, with the tint left out
-73.8.
+73.8. CI runs the three rounds on every push (`.github/workflows/ci.yml`, job `godot-frames`: Xvfb and Mesa llvmpipe,
+no GPU), where round 1 and the conformance round scored 0.18 and 0.17.
 
 **Not ported yet:** atlas regions packed rotated (the editor's packer does not rotate; a TexturePacker atlas may).
 **Not checked:** a cross-fade started during another one, vertical scrolling (the lab only scrolls X), resizing the
