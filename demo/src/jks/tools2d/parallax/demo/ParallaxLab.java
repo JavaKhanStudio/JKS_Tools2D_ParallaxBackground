@@ -52,7 +52,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * </pre>
  *
  * A scene may also cross-fade or tint, in --shots only (r94): {@code "transfer": {"at": 4, "seconds": 4, "page": ...,
- * "atlasDir": ...}} fades into that page (no page: into the page on screen) and {@code "tint": {"at": 4, "seconds": 4,
+ * "atlasDir": ...}} fades into that page (no page: into the page on screen; a list of them: one after the other, r98) and {@code "tint": {"at": 4, "seconds": 4,
  * "color": [r, g, b, a]}} tints, both started {@code at} seconds into the scroll. engines/godot/tests/transfer uses them.
  * {@code "speedY": 30} also scrolls the scene up, and {@code "resize": {"at": 3, "size": [720, 1280]}} (--shots only, r95)
  * resizes the window mid-scroll: engines/godot/tests/conformance uses them.
@@ -82,11 +82,17 @@ public class ParallaxLab extends ApplicationAdapter
 	private static final class Scene
 	{
 		String id, page, atlasDir, about;
-		/** Seconds into the scroll the cross-fade starts at; negative: none. transferPage null: the page on screen. */
-		float transferAt = -1, transferSeconds, tintAt = -1, tintSeconds, speedY, resizeAt = -1;
+		final List<Transfer> transfers = new ArrayList<>();
+		float tintAt = -1, tintSeconds, speedY, resizeAt = -1;
 		int resizeWidth, resizeHeight;
-		String transferPage, transferAtlasDir;
 		Color tint;
+	}
+
+	/** A cross-fade {@code at} seconds into the scroll; {@code page} null: into the page on screen. */
+	private static final class Transfer
+	{
+		float at, seconds;
+		String page, atlasDir;
 	}
 
 	public ParallaxLab(Path roundDir, Path shotsDir)
@@ -144,14 +150,17 @@ public class ParallaxLab extends ApplicationAdapter
 				scene.resizeWidth = resize.get("size").getInt(0);
 				scene.resizeHeight = resize.get("size").getInt(1);
 			}
-			JsonValue transfer = s.get("transfer");
-			if (transfer != null)
-			{
-				scene.transferAt = transfer.getFloat("at");
-				scene.transferSeconds = transfer.getFloat("seconds");
-				scene.transferPage = transfer.getString("page", null);
-				scene.transferAtlasDir = transfer.getString("atlasDir", scene.atlasDir);
-			}
+			JsonValue transfers = s.get("transfer");
+			if (transfers != null)
+				for (JsonValue t = transfers.isArray() ? transfers.child : transfers; t != null; t = transfers.isArray() ? t.next : null)
+				{
+					Transfer transfer = new Transfer();
+					transfer.at = t.getFloat("at");
+					transfer.seconds = t.getFloat("seconds");
+					transfer.page = t.getString("page", null);
+					transfer.atlasDir = t.getString("atlasDir", scene.atlasDir);
+					scene.transfers.add(transfer);
+				}
 			JsonValue tint = s.get("tint");
 			if (tint != null)
 			{
@@ -350,21 +359,22 @@ public class ParallaxLab extends ApplicationAdapter
 			show(i);
 			heart.screenSpeedConstantY = scene.speedY;
 			float time = 0;
-			boolean transferred = false, tinted = false, resized = false;
+			int transferred = 0;
+			boolean tinted = false, resized = false;
 			for (float at : SHOT_TIMES)
 			{
 				for (; time < at; time += step)
 				{
-					if (!transferred && scene.transferAt >= 0 && time >= scene.transferAt)
+					while (transferred < scene.transfers.size() && time >= scene.transfers.get(transferred).at)
 					{
-						transferred = true;
+						Transfer transfer = scene.transfers.get(transferred++);
 						WholePage_Model into = heart.currentPage;
-						if (scene.transferPage != null)
+						if (transfer.page != null)
 						{
-							into = Utils_Page_Json.loadPage(new FileHandle(Paths.get(scene.transferPage).toFile()));
-							heart.relativePath = Paths.get(scene.transferAtlasDir).toAbsolutePath().toString();
+							into = Utils_Page_Json.loadPage(new FileHandle(Paths.get(transfer.page).toFile()));
+							heart.relativePath = Paths.get(transfer.atlasDir).toAbsolutePath().toString();
 						}
-						heart.transfertIntoPage(into, scene.transferSeconds);
+						heart.transfertIntoPage(into, transfer.seconds);
 					}
 					if (!resized && scene.resizeAt >= 0 && time >= scene.resizeAt)
 					{

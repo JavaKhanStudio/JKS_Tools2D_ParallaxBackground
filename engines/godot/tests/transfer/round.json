@@ -1,6 +1,6 @@
 {
  "round": "transfer",
- "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it. Read by ParallaxLab --shots and engines/godot/tests/shots.gd.",
+ "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it; t06 starts a second at 5 s (r98). Read by ParallaxLab --shots and engines/godot/tests/shots.gd.",
  "scenes": [
   {
    "id": "t01",
@@ -42,6 +42,17 @@
    "name": "tint-translucent",
    "about": "repeat Y, mirrored: a tint only, to a half-transparent night blue",
    "tint": {"at": 4, "seconds": 4, "color": [0.35, 0.4, 0.8, 0.5]}
+  },
+  {
+   "id": "t06",
+   "page": "demo/lab/round1/s03.jplax",
+   "atlasDir": "demo/assets",
+   "name": "interrupted",
+   "about": "Hiver (7 layers) starts fading into Calm (9) at 4 s, then into OneNight (6) at 5 s: Calm is dropped, Hiver pops back to full opacity and fades again; the gradients restart from where they were",
+   "transfer": [
+    {"at": 4, "seconds": 4, "page": "demo/lab/round1/s10.jplax", "atlasDir": "editor/Files/transfer"},
+    {"at": 5, "seconds": 4, "page": "demo/lab/round1/s06.jplax", "atlasDir": "editor/Files/Demos"}
+   ]
   }
  ]
 }
