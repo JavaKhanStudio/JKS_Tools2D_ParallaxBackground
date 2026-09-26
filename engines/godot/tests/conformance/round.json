@@ -1,0 +1,54 @@
+{
+ "round": "conformance",
+ "scenes": [
+  {
+   "id": "c01",
+   "page": "engines/godot/tests/conformance/c01.jplax",
+   "atlasDir": "demo/assets",
+   "name": "trimmed",
+   "about": "useOriginalSize on Hiver: regions packed with offsets (913 px left, 82 px bottom) keep their original size"
+  },
+  {
+   "id": "c02",
+   "page": "engines/godot/tests/conformance/c02.jplax",
+   "atlasDir": "demo/assets",
+   "name": "repeat-XY-padded",
+   "about": "repeat on X and Y, positive padX/padY, layers under one world wide"
+  },
+  {
+   "id": "c03",
+   "page": "engines/godot/tests/conformance/c03.jplax",
+   "atlasDir": "demo/assets",
+   "name": "repeat-Y-mirror",
+   "about": "repeat on Y only, mirrored copies to the right of every other layer, flips"
+  },
+  {
+   "id": "c04",
+   "page": "engines/godot/tests/conformance/c04.jplax",
+   "atlasDir": "demo/assets",
+   "name": "repeat-X-mirror-negpad",
+   "about": "repeat on X, every layer mirrored above its strip, negative and positive padX, a flipY"
+  },
+  {
+   "id": "c05",
+   "page": "engines/godot/tests/conformance/c05.jplax",
+   "atlasDir": "demo/assets",
+   "name": "no-repeat",
+   "about": "no repeat at all: each layer drawn once, scrolling off, flipX on odd layers"
+  },
+  {
+   "id": "c06",
+   "page": "engines/godot/tests/conformance/c06.jplax",
+   "atlasDir": "demo/assets",
+   "name": "gradients-overlap",
+   "about": "both gradients overlapping (top covers 70%, bottom 25%), a half-transparent colour, speed at rest"
+  },
+  {
+   "id": "c07",
+   "page": "engines/godot/tests/conformance/c07.plaxpj",
+   "atlasDir": "editor/Files/Demos",
+   "name": "project-inside",
+   "about": "a .plaxpj read as a page, two layers flagged as loose images (inside false) left out"
+  }
+ ]
+}
