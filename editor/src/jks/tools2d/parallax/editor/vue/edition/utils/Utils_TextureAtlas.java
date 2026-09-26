@@ -95,9 +95,11 @@ public final class Utils_TextureAtlas
 
 			// Layers are always drawn scaled: linear filtering is what the 50px padding and tripled borders are for.
 			// Mipmaps: a screen-wide layer is drawn smaller than its page, 200 of them draw a third faster with them.
+			// Their levels average whole blocks: without bleeding, the black of transparent pixels outlines every shape.
 			PixmapPackerIO.SaveParameters parameters = new PixmapPackerIO.SaveParameters();
 			parameters.minFilter = TextureFilter.MipMapLinearLinear;
 			parameters.magFilter = TextureFilter.Linear;
+			parameters.bleed = true;
 			new PixmapPackerIO().save(atlasFile, packer, parameters);
 		}
 		catch (IOException | RuntimeException e)

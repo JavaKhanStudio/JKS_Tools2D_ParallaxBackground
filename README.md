@@ -175,7 +175,10 @@ More:
   MipMapLinearLinear,Linear`) on pages whose sides are powers of two: 200 screen-wide layers draw a third faster (24.7 ms
   to 17.0 ms on an Intel iGPU). An atlas you pack yourself gets the same by setting that filter, but only on
   power-of-two pages if the game runs on OpenGL ES 2 or WebGL 1 (Android, the browser): those draw any other mipmapped
-  texture black. A cross-fade between pages on two different atlases also flushes the batch once per layer.
+  texture black. Pack it with TexturePacker's `bleed` and `duplicatePadding` on and a wide `paddingX`/`paddingY`
+  (the editor uses 50 px): mipmap levels average blocks of pixels, so without them the black of transparent pixels
+  outlines every shape, and a tiled layer shows a seam at every join. A cross-fade between pages on two different
+  atlases also flushes the batch once per layer.
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and

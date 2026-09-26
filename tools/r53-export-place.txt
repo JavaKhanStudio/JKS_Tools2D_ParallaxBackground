@@ -1,0 +1,31 @@
+# r53: a flattened export must reopen with its layers where the preview showed them.
+# DRIVER_PORT=47853 EDITOR_BIN=<copy of the install> tools/driver-probe.sh < tools/r53-export-place.txt
+# then compare build/r53/out/before.png with reopened.png (tools/r53-seam.py: no seam at the tile join, x=456).
+sleep 4
+open ../demo/assets/Hiver.atlas
+sleep 3
+set preview.play false
+set preview.speedX 0
+click tab.addTexture
+set adding.imageList 0
+click adding.add
+set adding.imageList 2
+click adding.add
+sleep 1
+shot build/r53/out/before.png
+click tab.controls
+set options.path ../editor/build/r53/out
+set options.name r53
+set options.forceExport true
+click options.export
+sleep 1
+click text:No
+sleep 8
+shot build/r53/out/after-export.png
+click text:OK
+open build/r53/out/r53.plax
+sleep 3
+set preview.play false
+set preview.speedX 0
+sleep 1
+shot build/r53/out/reopened.png

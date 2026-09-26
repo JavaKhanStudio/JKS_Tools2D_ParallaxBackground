@@ -41,6 +41,8 @@ public class PixmapPackerIO
 		public ImageFormat format = ImageFormat.PNG;
 		public TextureFilter minFilter = TextureFilter.Nearest;
 		public TextureFilter magFilter = TextureFilter.Nearest;
+		/** Gives transparent pixels the colour of their visible neighbours before writing, see {@link ColorBleed}. */
+		public boolean bleed;
 	}
 
 	/** Saves the provided PixmapPacker to the provided file. The resulting file will use the standard TextureAtlas file format and
@@ -71,6 +73,8 @@ public class PixmapPackerIO
 		for (Page page : packer.pages) {
 			if (page.rects.size > 0) {
 				FileHandle pageFile = file.sibling(file.nameWithoutExtension() + "_" + (++index) + parameters.format.getExtension());
+				if (parameters.bleed)
+					ColorBleed.bleed(page.image);
 				switch (parameters.format) {
 					case CIM:{
 						PixmapIO.writeCIM(pageFile, page.image);
