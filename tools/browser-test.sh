@@ -38,8 +38,17 @@ for _ in $(seq 50); do python3 -c "import urllib.request; urllib.request.urlopen
 # SwiftShader is Chrome's software WebGL: the page is a libGDX app and needs a GL context, with or without a GPU.
 FLAGS=(--user-data-dir="$PROFILE" --no-first-run --no-default-browser-check --enable-unsafe-swiftshader)
 if [ $MODE = open ]; then
+	# The board's server has neither DISPLAY nor WAYLAND_DISPLAY: GLFW (the demo, the editor) falls back to wayland-0
+	# by itself, Chrome exits with "Missing X server". Point it at the session's Wayland socket.
+	if [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/wayland-0" ]; then
+		export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY=wayland-0
+		FLAGS+=(--ozone-platform=wayland)
+	fi
 	echo "serving $URL until the Chrome window closes"
-	"$CHROME" "${FLAGS[@]}" --new-window "$URL" >/dev/null 2>&1
+	START=$SECONDS
+	"$CHROME" "${FLAGS[@]}" --new-window "$URL" 2>&1 | grep -E 'ERROR|FATAL' >&2
+	# A window Simon looked at stays open for more than a few seconds; one that never came up does not.
+	[ $((SECONDS - START)) -ge 5 ] || { echo "Chrome closed at once: no window (see its errors above)" >&2; exit 1; }
 	exit 0
 fi
 
