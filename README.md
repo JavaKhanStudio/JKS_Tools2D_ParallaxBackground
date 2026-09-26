@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    implementation "io.github.javakhanstudio:parallax-background:2.2.0"
+    implementation "io.github.javakhanstudio:parallax-background:2.3.0"
 }
 ```
 
@@ -38,7 +38,7 @@ Gradle Kotlin DSL (`build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("io.github.javakhanstudio:parallax-background:2.2.0")
+    implementation("io.github.javakhanstudio:parallax-background:2.3.0")
 }
 ```
 
@@ -48,7 +48,7 @@ Maven (`pom.xml`):
 <dependency>
     <groupId>io.github.javakhanstudio</groupId>
     <artifactId>parallax-background</artifactId>
-    <version>2.2.0</version>
+    <version>2.3.0</version>
 </dependency>
 ```
 
