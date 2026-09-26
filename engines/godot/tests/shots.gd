@@ -1,7 +1,7 @@
 extends Node
 ## Stills of every scene of a lab round, as demo/.../ParallaxLab --shots takes them with libGDX: the same page, the
 ## same 60 units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. tools/godot-parallax-shots.sh runs it and
-## compares the two sets. A scene's "transfer" and "tint" start a cross-fade or a tint at the same step as the lab,
+## compares the two sets. A scene's "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same step as the lab,
 ## its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll.
 ##   godot --path engines/godot res://tests/shots.tscn -- <repo root> <round dir> <out dir>
 
@@ -27,15 +27,16 @@ func _ready() -> void:
 		bg.speed_constant_x = SPEED
 		bg.speed_constant_y = scene.get("speedY", 0.0)
 		var resize: Dictionary = scene.get("resize", {})
-		var transfer: Dictionary = scene.get("transfer", {})
+		# One transfer, or a list of them started one after the other.
+		var transfers = scene.get("transfer", [])
+		transfers = [transfers] if transfers is Dictionary else transfers.duplicate()
 		var tint: Dictionary = scene.get("tint", {})
 		# The libGDX loop adds a float step to a float time: count its steps the same way, in float32.
 		var time := PackedFloat32Array([0.0])
 		for at in SHOT_TIMES:
 			while time[0] < at:
-				if not transfer.is_empty() and time[0] >= transfer.at:
-					_transfer(bg, root, scene, transfer)
-					transfer = {}
+				while not transfers.is_empty() and time[0] >= transfers[0].at:
+					_transfer(bg, root, scene, transfers.pop_front())
 				if not resize.is_empty() and time[0] >= resize.at:
 					await _resize_window(Vector2i(resize.size[0], resize.size[1]))
 					resize = {}
