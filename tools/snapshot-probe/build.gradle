@@ -1,0 +1,17 @@
+plugins { id 'java-library' }
+
+def parallax = findProperty('parallax') ?: file('../../gradle.properties').readLines()
+        .find { it.startsWith('version=') }.substring('version='.length())
+
+dependencies {
+    implementation "io.github.javakhanstudio:parallax-background:$parallax"
+}
+
+tasks.register('resolve') {
+    def classpath = configurations.runtimeClasspath
+    doLast {
+        def jar = classpath.resolvedConfiguration.resolvedArtifacts
+                .find { it.moduleVersion.id.name == 'parallax-background' }
+        println "resolved ${jar.moduleVersion.id} -> ${jar.file.name}"
+    }
+}
