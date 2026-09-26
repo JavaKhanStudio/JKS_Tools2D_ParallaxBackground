@@ -47,3 +47,55 @@ jobs:
           name: test-results-jdk${{ matrix.java }}
           path: '**/build/reports/tests/'
           retention-days: 7
+
+  godot-frames:
+    # engines/godot draws what core draws: tools/godot-parallax-shots.sh renders both rounds with libGDX and Godot and
+    # fails on a frame that differs (r96). Here on Xvfb and Mesa llvmpipe instead of cage and a GPU.
+    name: Godot frames against libGDX
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.6.3-stable
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Install Xvfb, Mesa and Pillow
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-pil
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        run: |
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/$GODOT_VERSION/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Compare the frames
+        env:
+          ATELIER_NO_OFFSCREEN: '1'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          ALSOFT_DRIVERS: 'null'
+        run: |
+          xvfb-run -a -s "-screen 0 1920x1080x24" tools/godot-parallax-shots.sh
+          grep -h "Using Device" demo/build/godot/*/godot.log
+
+      - name: Upload the frames
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: godot-frames
+          path: |
+            demo/build/godot/*/compare.png
+            demo/build/godot/*/report.txt
+            demo/build/godot/*/*.log
+            demo/build/godot/*/gdx/lab.log
+          retention-days: 7
