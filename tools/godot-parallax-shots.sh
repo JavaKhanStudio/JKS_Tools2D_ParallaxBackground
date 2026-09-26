@@ -9,7 +9,8 @@
 # Xwayland, then compares them pixel by pixel. Writes demo/build/godot/<round>/: the libGDX stills in gdx/, Godot's
 # in godot/, compare.png (libGDX | Godot | difference x4, per still) and report.txt. Fails when a still differs
 # by more than THRESHOLD (mean absolute difference per channel, 0-255; default 2). Needs godot 4.x, cage, Xwayland,
-# python3 with Pillow.
+# python3 with Pillow. ATELIER_NO_OFFSCREEN=1 draws both on $DISPLAY instead of cage: CI (ci.yml, "Godot frames")
+# runs it so under xvfb-run, on Mesa llvmpipe.
 set -u
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
@@ -24,8 +25,12 @@ for ROUND in "${ROUNDS[@]}"; do
 	tools/parallax-lab-shots.sh "$ROUND" "$OUT/gdx" >/dev/null || { echo "libGDX shots failed: $OUT/gdx/lab.log"; exit 1; }
 	"$GODOT" --headless --path engines/godot --import >/dev/null 2>&1
 	RUN="$GODOT --path \"$ROOT/engines/godot\" --resolution 1280x720 res://tests/shots.tscn -- \"$ROOT\" \"$ROUND\" \"$OUT/godot\" >\"$OUT/godot.log\" 2>&1"
-	inner="Xwayland :9 -geometry 1280x720 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
-	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- bash -c "$inner" >"$OUT/cage.log" 2>&1
+	if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
+		timeout 300 bash -c "$RUN"
+	else
+		inner="Xwayland :9 -geometry 1280x720 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
+		WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- bash -c "$inner" >"$OUT/cage.log" 2>&1
+	fi
 	python3 - "$ROUND" "$OUT" "$THRESHOLD" <<'PY' || status=1
 import json, os, sys
 from PIL import Image, ImageChops, ImageDraw, ImageStat
