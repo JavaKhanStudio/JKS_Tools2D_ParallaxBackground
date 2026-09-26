@@ -11,7 +11,7 @@
 # compare.png (libGDX | Godot | difference x4, per still) and report.txt. Fails when a still differs by more than
 # THRESHOLD (mean absolute difference per channel, 0-255; default 2). Needs godot 4.x, cage, Xwayland, python3 with
 # Pillow. ATELIER_NO_OFFSCREEN=1 draws both on $DISPLAY instead of cage: CI's "Godot frames against libGDX" job runs it
-# so under xvfb-run on Mesa llvmpipe, where the worst still was 0.55 / 255 (r96), so the threshold holds there too.
+# so under xvfb-run on Mesa llvmpipe, where the worst still was 0.75 / 255 (r96), so the threshold holds there too.
 # Its screen is 1920x1440: a "resize" scene asks for a window up to 1280 tall.
 set -u
 cd "$(dirname "$0")/.."
