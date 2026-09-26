@@ -12,9 +12,11 @@ context = """
 core/src/jks/tools2d/parallax/: ParallaxPageReader (scroll, tile, fade, tint), ParallaxLayer
 (one layer's settings + position), heart/Parallax_Heart (camera, batch, act/render/resize/
 dispose), heart/Parallax_Utils_Page (cross-fade), side/SquareBackground (the two gradients).
-World units: the world is 40 wide (heart/Gvars_Parallax), height follows the screen aspect.
-A layer is `40 * sizeRatio` wide and its height follows the image aspect.
-Gvars_Parallax's world size is STATIC — shared by every Parallax_Heart in the process.
+World size is PER HEART: each Parallax_Heart's ParallaxPageReader holds it and pushes it into
+every layer it takes (setWorldSize). heart/Gvars_Parallax only holds the last heart's size, the
+default (40 wide) for pages built without a heart: nothing a heart runs may read it.
+ParallaxHeartResizeTest.twoHeartsKeepTheirOwnWorldSize holds that. A layer is worldWidth *
+sizeRatio wide. Hearts call only getDrawing(relativePath, w, h): a stub overriding getDrawing() is ignored.
 Gate: `./gradlew :core:test`. ParallaxPageReaderTest needs NO window: it proxies Batch with
 java.lang.reflect.Proxy and records the draw calls, with GdxNativesLoader.load() in
 @BeforeAll. Assert tiling by counting and placing draws — that is the tool, use it.
