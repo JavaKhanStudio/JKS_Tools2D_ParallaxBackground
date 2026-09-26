@@ -10,7 +10,7 @@ repair.
 |-----------|------------|------|-------------|
 | `core/`   | The runtime games depend on (`parallax-background` on Maven Central). Sources `src/` (GWT) and `src-jvm/`, tests `test/`. | `options.release = 11` for main, 17 for tests | `./gradlew :core:test`, `./gradlew :core:gwtCheck` |
 | `editor/` | The desktop tool that builds pages and exports `.plax`. Sources `src/` and `mains/`. | 17 | `./gradlew :editor:run` (workingDir `editor/`, finds `editor/Files`) |
-| `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): SPACE page, N tint, LEFT/RIGHT scroll, R reset. `./gradlew :demo:lab` (workingDir the root): the grading lab, `demo/lab` |
+| `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): SPACE page, N tint, LEFT/RIGHT scroll, R reset. `./gradlew :demo:lab` (workingDir the root): the grading lab, `demo/lab`. The board's Actions tab starts it, and the Godot demo, through `tools/start-demo.sh` |
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `tools/godot-parallax-shots.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared |
 
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
