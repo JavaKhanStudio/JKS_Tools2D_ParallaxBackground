@@ -71,14 +71,50 @@ git commit -am "Start 2.2.0"
 git push
 ```
 
+Once the release is out, update the Godot Asset Library listing to it (below, "Godot Asset Library").
+
 The release workflow refuses to run if the tag and `gradle.properties` disagree, so the version in the repository
 always matches what was published. A tag with a suffix (`v2.1.0-rc1`) is published as a GitHub pre-release.
 
 Each release publishes:
 
 - the library to Maven Central: `io.github.javakhanstudio:parallax-background`;
-- a GitHub release with the two downloads, the library jars (+ sources, + javadoc) and
-  `ParallaxEditor-X.Y.Z.zip` (the editor with the library and the sample projects).
+- a GitHub release with the downloads: the library jars (+ sources, + javadoc),
+  `ParallaxEditor-X.Y.Z.zip` (the editor with the library and the sample projects) and `jks-parallax-godot-X.Y.Z.zip`
+  (the Godot reader, `addons/jks_parallax/` at its root, made by `tools/godot-addon-zip.sh`).
+
+## Godot Asset Library
+
+The Godot reader (`engines/godot/addons/jks_parallax`) is published on the Godot Asset Library
+(https://godotengine.org/asset-library), versioned with the Maven release: listing version X.Y.Z is the
+`jks-parallax-godot-X.Y.Z.zip` of GitHub release `vX.Y.Z` (atelier d11). The listing downloads that zip rather than
+the repository, because the repository's addon sits under `engines/godot/` next to the Java code, and a game would get
+all of it.
+
+**Each release**, after the Release workflow has attached the zip: sign in, open the asset → *Edit*, and set
+
+| Field | Value |
+|-------|-------|
+| Version string | `X.Y.Z` |
+| Godot version | the lowest 4.x the reader was checked with (`GODOT_VERSION` in `ci.yml`'s `godot-frames` job) |
+| Download commit | `https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/releases/download/vX.Y.Z/jks-parallax-godot-X.Y.Z.zip` |
+
+With the *Custom* repository host, the *Download commit* field is the download URL itself: the whole zip URL, not a
+hash or a tag. If the form shows a separate download URL field, put the URL there too.
+
+The edit waits for a moderator before the new version shows. Skip a pre-release (`v2.1.0-rc1`): the listing only takes
+releases.
+
+**Once, to create the listing** (the Godot account is Simon's): *Submit Assets* with
+
+- Title `JKS Parallax`, category *2D Tools*, license *Apache-2.0*;
+- Repository host *Custom*, browse URL `https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground`, issues URL
+  its `/issues`, and the fields of the table above;
+- Icon URL `https://raw.githubusercontent.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/master/editor/assets/skins/uis/parallaxIcon.png`;
+- the description: the README's *In Godot 4* section, and screenshots of a page in Godot.
+
+`tools/godot-addon-zip-check.sh` installs the zip into a blank Godot project, loads a page from `res://` and saves a
+frame (`build/godot-addon/check.png`): run it before a first submission, or after the addon's files change.
 
 ## One-time setup: Maven Central credentials
 
