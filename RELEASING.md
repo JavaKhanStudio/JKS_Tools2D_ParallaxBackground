@@ -99,8 +99,9 @@ all of it.
 | Godot version | the lowest 4.x the reader was checked with (`GODOT_VERSION` in `ci.yml`'s `godot-frames` job) |
 | Download commit | `https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/releases/download/vX.Y.Z/jks-parallax-godot-X.Y.Z.zip` |
 
-With the *Custom* repository host, the *Download commit* field is the download URL itself: the whole zip URL, not a
-hash or a tag. If the form shows a separate download URL field, put the URL there too.
+With the *Custom* repository host, the *Download commit* field is the download URL itself: the whole zip URL, ending
+in `.zip`, not a hash or a tag (the Asset Library's `Utils::getComputedDownloadUrl` returns it as is, and suggests
+Custom for GitHub Releases downloads).
 
 The edit waits for a moderator before the new version shows. Skip a pre-release (`v2.1.0-rc1`): the listing only takes
 releases.
