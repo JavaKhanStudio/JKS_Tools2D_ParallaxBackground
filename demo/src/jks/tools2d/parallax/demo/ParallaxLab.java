@@ -30,6 +30,8 @@ import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import org.lwjgl.glfw.GLFW;
+
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
@@ -52,6 +54,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * A scene may also cross-fade or tint, in --shots only (r94): {@code "transfer": {"at": 4, "seconds": 4, "page": ...,
  * "atlasDir": ...}} fades into that page (no page: into the page on screen) and {@code "tint": {"at": 4, "seconds": 4,
  * "color": [r, g, b, a]}} tints, both started {@code at} seconds into the scroll. engines/godot/tests/transfer uses them.
+ * {@code "speedY": 30} also scrolls the scene up, and {@code "resize": {"at": 3, "size": [720, 1280]}} (--shots only, r95)
+ * resizes the window mid-scroll: engines/godot/tests/conformance uses them.
  * <p>
  * Keys: 1-5 grade (5 = best) and go on, ENTER/BACKSPACE next/previous, SPACE pause, LEFT/RIGHT scroll by hand, UP/DOWN
  * scroll speed, R restart the scene, H show what the scene tests.
@@ -79,7 +83,8 @@ public class ParallaxLab extends ApplicationAdapter
 	{
 		String id, page, atlasDir, about;
 		/** Seconds into the scroll the cross-fade starts at; negative: none. transferPage null: the page on screen. */
-		float transferAt = -1, transferSeconds, tintAt = -1, tintSeconds;
+		float transferAt = -1, transferSeconds, tintAt = -1, tintSeconds, speedY, resizeAt = -1;
+		int resizeWidth, resizeHeight;
 		String transferPage, transferAtlasDir;
 		Color tint;
 	}
@@ -131,6 +136,14 @@ public class ParallaxLab extends ApplicationAdapter
 			scene.page = s.getString("page");
 			scene.atlasDir = s.getString("atlasDir");
 			scene.about = s.getString("about", "");
+			scene.speedY = s.getFloat("speedY", 0);
+			JsonValue resize = s.get("resize");
+			if (resize != null)
+			{
+				scene.resizeAt = resize.getFloat("at");
+				scene.resizeWidth = resize.get("size").getInt(0);
+				scene.resizeHeight = resize.get("size").getInt(1);
+			}
 			JsonValue transfer = s.get("transfer");
 			if (transfer != null)
 			{
@@ -245,6 +258,7 @@ public class ParallaxLab extends ApplicationAdapter
 		if (current < scenes.size())
 		{
 			heart.screenSpeedConstantX = paused ? 0 : SPEED * speedFactor;
+			heart.screenSpeedConstantY = paused ? 0 : scenes.get(current).speedY * speedFactor;
 			if (Gdx.input.isKeyPressed(Keys.LEFT))
 				heart.screenSpeedConsumableX = -MANUAL_SPEED;
 			if (Gdx.input.isKeyPressed(Keys.RIGHT))
@@ -332,9 +346,11 @@ public class ParallaxLab extends ApplicationAdapter
 		for (int i = 0; i < scenes.size(); i++)
 		{
 			Scene scene = scenes.get(i);
+			resizeWindow(1280, 720);
 			show(i);
+			heart.screenSpeedConstantY = scene.speedY;
 			float time = 0;
-			boolean transferred = false, tinted = false;
+			boolean transferred = false, tinted = false, resized = false;
 			for (float at : SHOT_TIMES)
 			{
 				for (; time < at; time += step)
@@ -350,6 +366,11 @@ public class ParallaxLab extends ApplicationAdapter
 						}
 						heart.transfertIntoPage(into, scene.transferSeconds);
 					}
+					if (!resized && scene.resizeAt >= 0 && time >= scene.resizeAt)
+					{
+						resized = true;
+						resizeWindow(scene.resizeWidth, scene.resizeHeight);
+					}
 					if (!tinted && scene.tintAt >= 0 && time >= scene.tintAt)
 					{
 						tinted = true;
@@ -364,6 +385,31 @@ public class ParallaxLab extends ApplicationAdapter
 				pixmap.dispose();
 			}
 		}
+	}
+
+	/**
+	 * Resizes the window from inside create(): GLFW only reports the new size when its events are polled, and it does not
+	 * call resize() on a listener still in create(), so this waits for the size and calls it.
+	 */
+	private void resizeWindow(int width, int height)
+	{
+		if (Gdx.graphics.getBackBufferWidth() == width && Gdx.graphics.getBackBufferHeight() == height)
+			return;
+		Gdx.graphics.setWindowedMode(width, height);
+		long giveUp = System.nanoTime() + 5_000_000_000L;
+		while ((Gdx.graphics.getBackBufferWidth() != width || Gdx.graphics.getBackBufferHeight() != height) && System.nanoTime() < giveUp)
+		{
+			GLFW.glfwPollEvents();
+			try
+			{Thread.sleep(10);}
+			catch (InterruptedException e)
+			{Thread.currentThread().interrupt();}
+		}
+		if (Gdx.graphics.getBackBufferWidth() != width || Gdx.graphics.getBackBufferHeight() != height)
+			throw new IllegalStateException("the window stayed " + Gdx.graphics.getBackBufferWidth() + "x" + Gdx.graphics.getBackBufferHeight()
+					+ ", not " + width + "x" + height);
+		Gdx.gl.glViewport(0, 0, width, height);
+		resize(width, height);
 	}
 
 	private void readGrades()

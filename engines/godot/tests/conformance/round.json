@@ -13,14 +13,17 @@
    "page": "engines/godot/tests/conformance/c02.jplax",
    "atlasDir": "demo/assets",
    "name": "repeat-XY-padded",
-   "about": "repeat on X and Y, positive padX/padY, layers under one world wide"
+   "about": "repeat on X and Y, positive padX/padY, layers under one world wide; scrolls up at 30 units/s too, and the window turns 720x1280 (phone portrait) 3 s in",
+   "speedY": 30,
+   "resize": {"at": 3, "size": [720, 1280]}
   },
   {
    "id": "c03",
    "page": "engines/godot/tests/conformance/c03.jplax",
    "atlasDir": "demo/assets",
    "name": "repeat-Y-mirror",
-   "about": "repeat on Y only, mirrored copies to the right of every other layer, flips"
+   "about": "repeat on Y only, mirrored copies to the right of every other layer, flips; scrolls up at 30 units/s too",
+   "speedY": 30
   },
   {
    "id": "c04",
@@ -34,14 +37,16 @@
    "page": "engines/godot/tests/conformance/c05.jplax",
    "atlasDir": "demo/assets",
    "name": "no-repeat",
-   "about": "no repeat at all: each layer drawn once, scrolling off, flipX on odd layers"
+   "about": "no repeat at all: each layer drawn once, scrolling off, flipX on odd layers; scrolls down at 30 units/s too",
+   "speedY": -30
   },
   {
    "id": "c06",
    "page": "engines/godot/tests/conformance/c06.jplax",
    "atlasDir": "demo/assets",
    "name": "gradients-overlap",
-   "about": "both gradients overlapping (top covers 70%, bottom 25%), a half-transparent colour, speed at rest"
+   "about": "both gradients overlapping (top covers 70%, bottom 25%), a half-transparent colour, speed at rest; the window turns 1280x1000 3 s in: the gradients follow the screen",
+   "resize": {"at": 3, "size": [1280, 1000]}
   },
   {
    "id": "c07",

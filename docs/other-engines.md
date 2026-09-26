@@ -62,22 +62,24 @@ and in Godot (`engines/godot/tests/shots.gd`), with the same 60 units/s scroll s
 off screen, and compares them pixel by pixel. It runs three rounds: the lab's `demo/lab/round1` (18 pages from four
 atlases), `engines/godot/tests/conformance` (7 pages for what round 1 lacks: trimmed regions with
 `useOriginalSize`, X+Y tiling with padding, Y tiling with mirrors, X tiling with mirrors and negative padding, no
-tiling, overlapping gradients with a translucent colour, and a `.plaxpj` with loose layers) and
+tiling, overlapping gradients with a translucent colour, and a `.plaxpj` with loose layers; three of them also scroll
+on Y at ±30 units/s, and two resize the window 3 s in, to 720x1280 and to 1280x1000) and
 `engines/godot/tests/transfer` (5 scenes that cross-fade or tint 4 s in over 4 s, so t6 is mid-fade: into a page with
 more layers and another atlas, into one with fewer, into the page on screen while tinting, with no repeat into other
-gradients, and a translucent tint alone). A scene's `transfer` and `tint` entries in `round.json` drive both sides.
+gradients, and a translucent tint alone). A scene's `speedY`, `resize`, `transfer` and `tint` entries in `round.json`
+drive both sides.
 
 On 2026-09-26 (Godot 4.6.3, Compatibility renderer): worst mean difference **0.28 / 255**, and 0.03 % of pixels off by
 more than 32, on the edges of clouds in an atlas filtered `MipMap` (Godot and the GL driver build mipmaps differently).
 Comparing a Godot frame with the libGDX frame 12 s later scores 6.5 to 25, so the 2 / 255 threshold catches a real
 error. The transfer round: worst **0.52 / 255**; with the scroll sync left out it scores 24.6, with the tint left out
-73.8. CI runs the three rounds on every push (`.github/workflows/ci.yml`, job `godot-frames`: Xvfb and Mesa llvmpipe,
+73.8. The conformance round with Y scrolling and resizes: worst 0.25; with the Y scroll reversed it scores 31.5, with
+the world height left as it was before a resize 41.8. CI runs the three rounds on every push (`.github/workflows/ci.yml`, job `godot-frames`: Xvfb and Mesa llvmpipe,
 no GPU), where round 1 and the conformance round scored 0.18 and 0.17.
 
 **Not ported yet:** atlas regions packed rotated (the editor's packer does not rotate; a TexturePacker atlas may).
-**Not checked:** a cross-fade started during another one, vertical scrolling (the lab only scrolls X), resizing the
-window, and an exported Godot game (only the editor/runner has been tried: `res://` pages load, with the PNG
-imported).
+**Not checked:** a cross-fade started during another one, and an exported Godot game (only the editor/runner has been
+tried: `res://` pages load, with the PNG imported).
 
 ## Unity and Unreal: what they would take
 
