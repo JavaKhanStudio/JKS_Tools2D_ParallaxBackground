@@ -182,13 +182,15 @@ bg.load_page("res://backgrounds/forest.jplax")
 bg.speed_constant_x = 60                   # optional: always scroll
 add_child(bg)
 # each frame: bg.speed_consumable_x = player_speed_x
+bg.transfert_into(PlaxPage.load_page(path), PlaxAtlas.load_atlas(atlas_path), 3.0)   # cross-fade into another page
+bg.tint_to(Color(0.5, 0.55, 0.8), 3.0)                                                 # tint every layer
 ```
 
 It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
 `world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the
 export preset lists them under *Filters to export non-resource files* (`*.jplax, *.atlas`); for an atlas written with
-`filter: MipMap`, tick *Mipmaps > Generate* on its `.png` in the Import dock. Not there yet: cross-fading into another page, tinting, and
-atlas regions packed rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md).
+`filter: MipMap`, tick *Mipmaps > Generate* on its `.png` in the Import dock. Not there yet: atlas regions packed
+rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md).
 - **Performance:** `act` and `render` allocate nothing, and the game thread spends under a millisecond on 400 layers.
   What costs is the GPU filling pixels: every layer is blended over the ones behind it, and a cross-fade draws both
   pages. Fewer and smaller layers are what counts. The editor exports atlases with mipmaps (`filter:

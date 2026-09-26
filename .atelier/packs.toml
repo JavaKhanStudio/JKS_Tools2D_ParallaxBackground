@@ -35,9 +35,11 @@ act() and render() run every frame: no allocation, no streams. `layers.stream().
 act() is in MEMORY_LANE.md §5 as a defect, not as a style note.
 See it: `./gradlew :demo:run` — SPACE switches page, N tints, LEFT/RIGHT scroll, R resets.
 THE GODOT PORT DRAWS THE SAME PAGE: engines/godot/addons/jks_parallax/plax_background.gd
-copies act(), tile(), drawRegion() and the gradients line for line (r87). Change how a page
-scrolls, tiles or draws here and change it there, or a Godot game shows a different picture:
-`tools/godot-parallax-shots.sh` renders both off screen and fails past a mean 2/255 apart.
+copies act(), tile(), drawRegion() and the gradients line for line (r87), and the cross-fade,
+syncTransferPositions and the tint (r94). Change how a page scrolls, tiles, fades or draws here and
+change it there, or a Godot game shows a different picture: `tools/godot-parallax-shots.sh`
+renders both off screen and fails past a mean 2/255 apart; engines/godot/tests/transfer is its
+cross-fade round.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.

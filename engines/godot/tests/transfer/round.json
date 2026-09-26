@@ -1,0 +1,47 @@
+{
+ "round": "transfer",
+ "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it. Read by ParallaxLab --shots and engines/godot/tests/shots.gd.",
+ "scenes": [
+  {
+   "id": "t01",
+   "page": "engines/godot/tests/conformance/c04.jplax",
+   "atlasDir": "demo/assets",
+   "name": "into-more-layers",
+   "about": "Hiver (7 layers, repeat X, mirrored) into Calm (9 layers, another atlas): the 2 back layers of Calm have no counterpart",
+   "transfer": {"at": 4, "seconds": 4, "page": "demo/lab/round1/s10.jplax", "atlasDir": "editor/Files/transfer"}
+  },
+  {
+   "id": "t02",
+   "page": "demo/lab/round1/s10.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "into-fewer-layers",
+   "about": "Calm (9 layers) into OneNight (6 layers, useOriginalSize, dark gradients): the 3 back layers of Calm fade out alone",
+   "transfer": {"at": 4, "seconds": 4, "page": "demo/lab/round1/s06.jplax", "atlasDir": "editor/Files/Demos"}
+  },
+  {
+   "id": "t03",
+   "page": "engines/godot/tests/conformance/c02.jplax",
+   "atlasDir": "demo/assets",
+   "name": "into-itself-tinted",
+   "about": "repeat XY: a cross-fade into the page on screen (its layers cloned), while tinting orange",
+   "transfer": {"at": 4, "seconds": 4},
+   "tint": {"at": 4, "seconds": 4, "color": [1.0, 0.55, 0.3, 1.0]}
+  },
+  {
+   "id": "t04",
+   "page": "engines/godot/tests/conformance/c05.jplax",
+   "atlasDir": "demo/assets",
+   "name": "no-repeat-into-gradients",
+   "about": "no repeat, white gradients into c06's coloured ones: the colours fade, the sizes stay c05's",
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/conformance/c06.jplax"}
+  },
+  {
+   "id": "t05",
+   "page": "engines/godot/tests/conformance/c03.jplax",
+   "atlasDir": "demo/assets",
+   "name": "tint-translucent",
+   "about": "repeat Y, mirrored: a tint only, to a half-transparent night blue",
+   "tint": {"at": 4, "seconds": 4, "color": [0.35, 0.4, 0.8, 0.5]}
+  }
+ ]
+}

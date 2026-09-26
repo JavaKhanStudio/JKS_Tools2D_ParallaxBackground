@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
 # godot-parallax-shots.sh [ROUND_DIR] — the Godot reader (engines/godot) against the libGDX runtime, frame by frame (r87).
 #
-#   tools/godot-parallax-shots.sh                          demo/lab/round1 and engines/godot/tests/conformance
+#   tools/godot-parallax-shots.sh                          demo/lab/round1, engines/godot/tests/conformance and /transfer
 #   tools/godot-parallax-shots.sh demo/lab/round1
 #
 # For each round: renders its scenes with libGDX (tools/parallax-lab-shots.sh, 0, 6 and 12 s into the lab's scroll)
 # and with Godot (engines/godot/tests/shots.gd, the same scroll), off screen in cage's headless display on a nested
-# Xwayland, then compares them pixel by pixel. Writes demo/build/godot/<round>/: the libGDX stills in gdx/, Godot's
-# in godot/, compare.png (libGDX | Godot | difference x4, per still) and report.txt. Fails when a still differs
-# by more than THRESHOLD (mean absolute difference per channel, 0-255; default 2). Needs godot 4.x, cage, Xwayland,
-# python3 with Pillow.
+# Xwayland, then compares them pixel by pixel. The transfer round starts a cross-fade or a tint 4 s in, so t6 is
+# mid-fade and t12 after it. Writes demo/build/godot/<round>/: the libGDX stills in gdx/, Godot's in godot/,
+# compare.png (libGDX | Godot | difference x4, per still) and report.txt. Fails when a still differs by more than
+# THRESHOLD (mean absolute difference per channel, 0-255; default 2). Needs godot 4.x, cage, Xwayland, python3 with
+# Pillow.
 set -u
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(demo/lab/round1 engines/godot/tests/conformance)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(demo/lab/round1 engines/godot/tests/conformance engines/godot/tests/transfer)
 GODOT="${GODOT:-godot}"
 status=0
 for ROUND in "${ROUNDS[@]}"; do

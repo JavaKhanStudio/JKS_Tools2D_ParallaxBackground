@@ -37,6 +37,12 @@ A reader is three pieces, and the third is where the work is:
    - The two gradients are in screen fractions (`topHalfSize` is the part left *uncovered*), drawn opaque (libGDX
      draws them without blending, so their alpha is ignored), the bottom one over the top one.
    - The page is anchored to the screen, not to the game camera.
+   - A cross-fade matches the two pages from their FRONT layer: each incoming layer takes the distance its outgoing
+     counterpart has scrolled from its decal; an incoming page with more layers has back layers with no counterpart,
+     one with fewer leaves the outgoing back layers fading out alone. Slot by slot, back to front, the outgoing layer is
+     drawn at `1 - t`, then the incoming one at `t`. The repeat and the gradients' sizes stay those of the first page;
+     the gradients' colours fade. A tint lerps from the current one and is multiplied into every layer, not the
+     gradients.
 
 ## Godot 4: done
 
@@ -46,26 +52,31 @@ A reader is three pieces, and the third is where the work is:
   and straight from disk otherwise.
 - `plax_page.gd` (`PlaxPage`): `.jplax` and `.plaxpj`.
 - `plax_background.gd` (`PlaxBackground`): a `CanvasLayer` (layer −100) that scrolls and draws the page. It mirrors
-  `Parallax_Heart`: `speed_constant_x/y`, `speed_consumable_x/y`, `act(delta)`, `reset_positions()`.
+  `Parallax_Heart`: `speed_constant_x/y`, `speed_consumable_x/y`, `act(delta)`, `reset_positions()`,
+  `transfert_into(page, atlas, seconds)` (`transfertIntoPage`) and `tint_to(color, seconds)` (`addColorTransfert`).
 
 Usage is in the README (*In Godot 4*). `godot --path engines/godot` scrolls Hiver.
 
 **How it is checked.** `tools/godot-parallax-shots.sh` renders the same pages in libGDX (the grading lab's `--shots`)
 and in Godot (`engines/godot/tests/shots.gd`), with the same 60 units/s scroll stepped at 1/60 s, 0, 6 and 12 s in,
-off screen, and compares them pixel by pixel. It runs two rounds: the lab's `demo/lab/round1` (18 pages from four
-atlases) and `engines/godot/tests/conformance` (7 pages for what round 1 lacks: trimmed regions with
+off screen, and compares them pixel by pixel. It runs three rounds: the lab's `demo/lab/round1` (18 pages from four
+atlases), `engines/godot/tests/conformance` (7 pages for what round 1 lacks: trimmed regions with
 `useOriginalSize`, X+Y tiling with padding, Y tiling with mirrors, X tiling with mirrors and negative padding, no
-tiling, overlapping gradients with a translucent colour, and a `.plaxpj` with loose layers).
+tiling, overlapping gradients with a translucent colour, and a `.plaxpj` with loose layers) and
+`engines/godot/tests/transfer` (5 scenes that cross-fade or tint 4 s in over 4 s, so t6 is mid-fade: into a page with
+more layers and another atlas, into one with fewer, into the page on screen while tinting, with no repeat into other
+gradients, and a translucent tint alone). A scene's `transfer` and `tint` entries in `round.json` drive both sides.
 
 On 2026-09-26 (Godot 4.6.3, Compatibility renderer): worst mean difference **0.28 / 255**, and 0.03 % of pixels off by
 more than 32, on the edges of clouds in an atlas filtered `MipMap` (Godot and the GL driver build mipmaps differently).
 Comparing a Godot frame with the libGDX frame 12 s later scores 6.5 to 25, so the 2 / 255 threshold catches a real
-error.
+error. The transfer round: worst **0.52 / 255**; with the scroll sync left out it scores 24.6, with the tint left out
+73.8.
 
-**Not ported yet:** cross-fading into another page and tinting (`addLayersTransfert`, `addColorTransfert`), and atlas
-regions packed rotated (the editor's packer does not rotate; a TexturePacker atlas may). **Not checked:** vertical
-scrolling (the lab only scrolls X), resizing the window, and an exported Godot game (only the editor/runner has been
-tried: `res://` pages load, with the PNG imported).
+**Not ported yet:** atlas regions packed rotated (the editor's packer does not rotate; a TexturePacker atlas may).
+**Not checked:** a cross-fade started during another one, vertical scrolling (the lab only scrolls X), resizing the
+window, and an exported Godot game (only the editor/runner has been tried: `res://` pages load, with the PNG
+imported).
 
 ## Unity and Unreal: what they would take
 
