@@ -59,6 +59,7 @@ public final class Utils_Page_Json
 		page.bottomHalfSize = json.getFloat("bottomHalfSize", page.bottomHalfSize);
 		page.repeatOnX = json.getBoolean("repeatOnX", page.repeatOnX);
 		page.repeatOnY = json.getBoolean("repeatOnY", page.repeatOnY);
+		page.useOriginalSize = json.getBoolean("useOriginalSize", page.useOriginalSize);
 
 		JsonValue pageModel = json.get("pageModel");
 		if (pageModel == null || pageModel.isNull())

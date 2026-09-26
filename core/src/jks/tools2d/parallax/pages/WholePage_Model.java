@@ -33,6 +33,14 @@ public class WholePage_Model
 	public boolean repeatOnX = true;
 	public boolean repeatOnY = false;
 
+	/**
+	 * True: a layer whose atlas region was packed with its whitespace stripped keeps the region's original size, and
+	 * draws the packed image at its offset inside it, as libGDX's AtlasSprite does. False, the default and what every
+	 * page saved before .plax format 4 holds: the packed image is stretched over the whole layer. The editor sets it on
+	 * the pages it creates; a page keeps the value it was saved with, so its look never changes.
+	 */
+	public boolean useOriginalSize;
+
 	public Page_Model pageModel;
 
 	public List<ParallaxLayer> preloadValue;
@@ -187,6 +195,7 @@ public class WholePage_Model
 				parallax.parallaxScalingSpeedX, parallax.parallaxScalingSpeedY,
 				parallax.sizeRatio);
 
+		layer.setUseOriginalSize(useOriginalSize);
 		layer.setUpEverything(parallax);
 		return layer;
 	}

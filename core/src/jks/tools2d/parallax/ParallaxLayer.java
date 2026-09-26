@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
@@ -27,6 +28,15 @@ public class ParallaxLayer
 	private float decalPercentX, decalPercentY;
 	private float regionWidth, regionHeight;
 	private float sizeRatio = 1;
+
+	/**
+	 * True: an {@link AtlasRegion} packed with its whitespace stripped keeps its original size, and its packed image is
+	 * drawn at its offset inside it. False: the packed image is stretched over the whole layer, as pages saved before
+	 * format 4 were designed. See {@link jks.tools2d.parallax.pages.WholePage_Model#useOriginalSize}.
+	 */
+	private boolean useOriginalSize;
+	/** Where the packed image sits in the layer, in fractions of it: 0, 0, 1, 1 when nothing was stripped. */
+	private float trimLeft, trimBottom, packedWidthRatio = 1, packedHeightRatio = 1;
 
 	protected float parallaxSpeedRatioX;
 	protected float parallaxSpeedRatioY;
@@ -94,28 +104,30 @@ public class ParallaxLayer
 	}
 
 	public void draw(Batch batch, float x, float y)
-	{
-		float width = getRegionWidth();
-		float height = getRegionHeight();
-		batch.draw(region,
-			flipX ? x + width : x,
-			flipY ? y + height : y,
-			flipX ? -width : width,
-			flipY ? -height : height);
-	}
+	{drawRegion(batch, x, y, flipX, flipY);}
 
 	/** Draws the mirrored copy: flipped vertically when tiling on X, horizontally when tiling on Y. */
 	public void drawMirror(Batch batch, float x, float y, boolean onX)
 	{
 		boolean fx = onX ? flipX : !flipX;
 		boolean fy = onX ? !flipY : flipY;
+		drawRegion(batch, x, y, fx, fy);
+	}
+
+	/** Draws the packed image in the layer's box at (x, y); a flip mirrors where it sits in the box too. */
+	private void drawRegion(Batch batch, float x, float y, boolean fx, boolean fy)
+	{
 		float width = getRegionWidth();
 		float height = getRegionHeight();
+		float drawWidth = width * packedWidthRatio;
+		float drawHeight = height * packedHeightRatio;
+		float left = x + width * (fx ? 1 - trimLeft - packedWidthRatio : trimLeft);
+		float bottom = y + height * (fy ? 1 - trimBottom - packedHeightRatio : trimBottom);
 		batch.draw(region,
-			fx ? x + width : x,
-			fy ? y + height : y,
-			fx ? -width : width,
-			fy ? -height : height);
+			fx ? left + drawWidth : left,
+			fy ? bottom + drawHeight : bottom,
+			fx ? -drawWidth : drawWidth,
+			fy ? -drawHeight : drawHeight);
 	}
 
 	/**
@@ -132,6 +144,11 @@ public class ParallaxLayer
 		copy.decalPercentY = decalPercentY;
 		copy.regionWidth = regionWidth;
 		copy.regionHeight = regionHeight;
+		copy.useOriginalSize = useOriginalSize;
+		copy.trimLeft = trimLeft;
+		copy.trimBottom = trimBottom;
+		copy.packedWidthRatio = packedWidthRatio;
+		copy.packedHeightRatio = packedHeightRatio;
 		copy.currentDistanceX = currentDistanceX;
 		copy.currentDistanceY = currentDistanceY;
 		copy.padX = padX;
@@ -307,6 +324,16 @@ public class ParallaxLayer
 	public List<TextureRegion> getTexRegion()
 	{return texRegion;}
 
+	public boolean isUseOriginalSize()
+	{return useOriginalSize;}
+
+	/** Resizes the layer: from the region's original size when true, from its packed size when false. */
+	public void setUseOriginalSize(boolean useOriginalSize)
+	{
+		this.useOriginalSize = useOriginalSize;
+		setTexRegion(texRegion);
+	}
+
 	/** Swaps the texture(s) drawn by this layer, keeping its world width and recomputing its height. */
 	public void setTexRegion(List<TextureRegion> texRegion)
 	{
@@ -316,15 +343,33 @@ public class ParallaxLayer
 		this.texRegion = texRegion;
 		this.region = texRegion.get(0);
 
+		float imageWidth = region.getRegionWidth();
+		float imageHeight = region.getRegionHeight();
+		trimLeft = trimBottom = 0;
+		packedWidthRatio = packedHeightRatio = 1;
+		if (useOriginalSize && region instanceof AtlasRegion)
+		{
+			AtlasRegion atlasRegion = (AtlasRegion) region;
+			if (atlasRegion.originalWidth > 0 && atlasRegion.originalHeight > 0)
+			{
+				trimLeft = atlasRegion.offsetX / atlasRegion.originalWidth;
+				trimBottom = atlasRegion.offsetY / atlasRegion.originalHeight;
+				packedWidthRatio = (float) atlasRegion.packedWidth / atlasRegion.originalWidth;
+				packedHeightRatio = (float) atlasRegion.packedHeight / atlasRegion.originalHeight;
+				imageWidth = atlasRegion.originalWidth;
+				imageHeight = atlasRegion.originalHeight;
+			}
+		}
+
 		if (isWidth)
 		{
 			regionWidth = worldDimension;
-			regionHeight = Utils_Parallax.calculateOtherDimension(true, worldDimension, region);
+			regionHeight = Utils_Parallax.calculateOtherDimension(true, worldDimension, imageWidth, imageHeight);
 		}
 		else
 		{
 			regionHeight = worldDimension;
-			regionWidth = Utils_Parallax.calculateOtherDimension(false, worldDimension, region);
+			regionWidth = Utils_Parallax.calculateOtherDimension(false, worldDimension, imageWidth, imageHeight);
 		}
 	}
 
