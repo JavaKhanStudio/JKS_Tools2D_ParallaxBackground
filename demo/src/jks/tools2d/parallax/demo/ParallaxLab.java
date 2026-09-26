@@ -18,6 +18,7 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -399,7 +400,8 @@ public class ParallaxLab extends ApplicationAdapter
 
 	/**
 	 * Resizes the window from inside create(): GLFW only reports the new size when its events are polled, and it does not
-	 * call resize() on a listener still in create(), so this waits for the size and calls it.
+	 * call resize() on a listener still in create(), so this waits for the size and calls it. Mesa's software X11 drawable
+	 * (llvmpipe under Xvfb, CI) keeps its old size until a buffer swap: without one, the rows past it read back black (r96).
 	 */
 	private void resizeWindow(int width, int height)
 	{
@@ -418,6 +420,7 @@ public class ParallaxLab extends ApplicationAdapter
 		if (Gdx.graphics.getBackBufferWidth() != width || Gdx.graphics.getBackBufferHeight() != height)
 			throw new IllegalStateException("the window stayed " + Gdx.graphics.getBackBufferWidth() + "x" + Gdx.graphics.getBackBufferHeight()
 					+ ", not " + width + "x" + height);
+		GLFW.glfwSwapBuffers(((Lwjgl3Graphics) Gdx.graphics).getWindow().getWindowHandle());
 		Gdx.gl.glViewport(0, 0, width, height);
 		resize(width, height);
 	}
