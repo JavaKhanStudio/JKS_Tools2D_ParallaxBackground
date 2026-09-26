@@ -85,7 +85,7 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
           ALSOFT_DRIVERS: 'null'
         run: |
-          xvfb-run -a -s "-screen 0 1920x1080x24" tools/godot-parallax-shots.sh
+          xvfb-run -a -s "-screen 0 1920x1440x24" tools/godot-parallax-shots.sh
           grep -h "Using Device" demo/build/godot/*/godot.log
 
       - name: Upload the frames

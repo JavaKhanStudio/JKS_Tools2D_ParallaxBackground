@@ -75,7 +75,7 @@ Comparing a Godot frame with the libGDX frame 12 s later scores 6.5 to 25, so th
 error. The transfer round: worst **0.52 / 255**; with the scroll sync left out it scores 24.6, with the tint left out
 73.8. The conformance round with Y scrolling and resizes: worst 0.25; with the Y scroll reversed it scores 31.5, with
 the world height left as it was before a resize 41.8. CI runs the three rounds on every push (`.github/workflows/ci.yml`, job `godot-frames`: Xvfb and Mesa llvmpipe,
-no GPU), where round 1 and the conformance round scored 0.18 and 0.17.
+no GPU), where round 1, the conformance round and the transfer round scored 0.18, 0.17 and 0.55.
 
 **Not ported yet:** atlas regions packed rotated (the editor's packer does not rotate; a TexturePacker atlas may).
 **Not checked:** a cross-fade started during another one, and an exported Godot game (only the editor/runner has been
