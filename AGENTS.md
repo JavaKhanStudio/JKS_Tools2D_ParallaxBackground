@@ -11,6 +11,7 @@ repair.
 | `core/`   | The runtime games depend on (`parallax-background` on Maven Central). Sources `src/` (GWT) and `src-jvm/`, tests `test/`. | `options.release = 11` for main, 17 for tests | `./gradlew :core:test`, `./gradlew :core:gwtCheck` |
 | `editor/` | The desktop tool that builds pages and exports `.plax`. Sources `src/` and `mains/`. | 17 | `./gradlew :editor:run` (workingDir `editor/`, finds `editor/Files`) |
 | `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): SPACE page, N tint, LEFT/RIGHT scroll, R reset. `./gradlew :demo:lab` (workingDir the root): the grading lab, `demo/lab` |
+| `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `tools/godot-parallax-shots.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared |
 
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
@@ -29,6 +30,8 @@ repair.
 - A new stored field is also read in `core/src/.../pages/Utils_Page_Json`, the browser build's JSON loader: it maps
   fields by hand, and one it misses loads as its default without an error. Add it to `PlaxFormatTest.assertPageEquals`,
   which `JsonPageTest` uses.
+- A new stored field is read a third time in `engines/godot/addons/jks_parallax/plax_page.gd` (`LAYER_DEFAULTS` for a
+  layer's): one it misses loads as its default in a Godot game.
 - `editor/Files/**/*.plax`, `demo/assets/**/*.plax` and `core/test-data/**` are the test fixtures for `core/test/.../PlaxFormatTest`.
   Never re-export or overwrite them.
 - Change what a file holds and update README.md's "File formats" section in the same commit.
@@ -42,6 +45,9 @@ repair.
   streams. `FrameAllocationTest` counts the reader's bytes over 2000 frames and fails on any. `./gradlew :demo:stress`
   measures a change on the GPU: the runtime is fill-rate bound, so time pixels, not code.
 - Tiling reads the camera view, position and zoom: `tilesJustEnoughToCoverTheView` holds it.
+- `engines/godot/addons/jks_parallax/plax_background.gd` ports `ParallaxLayer.act`, `ParallaxPageReader.tile`/`drawRegion`
+  and the gradients line for line: change how a page scrolls or draws, change it there, and run
+  `tools/godot-parallax-shots.sh`.
 - `ParallaxPageReaderTest` checks tiling and cross-fades without a window, by recording draw calls on a proxied
   `Batch`. Cover all four repeat modes (X, Y, XY, none).
 

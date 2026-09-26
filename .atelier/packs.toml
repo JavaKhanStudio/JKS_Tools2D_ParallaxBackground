@@ -34,6 +34,10 @@ every frame forever. Ask `== null` deliberately.
 act() and render() run every frame: no allocation, no streams. `layers.stream().forEach` in
 act() is in MEMORY_LANE.md §5 as a defect, not as a style note.
 See it: `./gradlew :demo:run` — SPACE switches page, N tints, LEFT/RIGHT scroll, R resets.
+THE GODOT PORT DRAWS THE SAME PAGE: engines/godot/addons/jks_parallax/plax_background.gd
+copies act(), tile(), drawRegion() and the gradients line for line (r87). Change how a page
+scrolls, tiles or draws here and change it there, or a Godot game shows a different picture:
+`tools/godot-parallax-shots.sh` renders both off screen and fails past a mean 2/255 apart.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.
@@ -72,6 +76,10 @@ loader (.jplax/.plaxpj through libGDX's JsonReader). It maps every field by hand
 reflection: a field it does not name loads as its default in a browser game and throws
 nothing. JsonPageTest compares it with the Kryo read through PlaxFormatTest.assertPageEquals,
 so add the field there too.
+A THIRD reader has the same blind spot: engines/godot/addons/jks_parallax/plax_page.gd (the
+Godot port, r87) lists the layer fields in LAYER_DEFAULTS and reads the page's by hand. A
+field missing there loads as its default in a Godot game. Add it, and a scene using it to
+engines/godot/tests/conformance; `tools/godot-parallax-shots.sh` is the gate.
 Color_Serializer writes channels in A, B, G, R order. That is deliberate now; leave it.
 Gate: `./gradlew :core:test`. PlaxFormatTest walks every .plax under editor/Files and
 demo/assets and checks it against the .plaxpj saved in the same 2019 session; core/test-data/

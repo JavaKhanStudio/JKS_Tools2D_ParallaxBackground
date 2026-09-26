@@ -170,6 +170,25 @@ More:
   browser game, load the page's JSON with `Parallax_Heart.fromJson("page.jplax")` (a `.plaxpj` works too, see "File
   formats"), or build the `WholePage_Model` in Java and pass it to `setPage`. `Utils_Page` and
   `new Parallax_Heart(path)` are not there.
+
+### In Godot 4
+
+Export the page as JSON (**Export** with `.jplax` ticked), and copy `engines/godot/addons/jks_parallax` into your
+project's `addons/`. Put the `.jplax`, its `.atlas` and the atlas's `.png` in one folder:
+
+```gdscript
+var bg := PlaxBackground.new()             # a CanvasLayer drawn behind the game (layer -100)
+bg.load_page("res://backgrounds/forest.jplax")
+bg.speed_constant_x = 60                   # optional: always scroll
+add_child(bg)
+# each frame: bg.speed_consumable_x = player_speed_x
+```
+
+It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
+`world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the
+export preset lists them under *Filters to export non-resource files* (`*.jplax, *.atlas`); for an atlas written with
+`filter: MipMap`, tick *Mipmaps > Generate* on its `.png` in the Import dock. Not there yet: cross-fading into another page, tinting, and
+atlas regions packed rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md).
 - **Performance:** `act` and `render` allocate nothing, and the game thread spends under a millisecond on 400 layers.
   What costs is the GPU filling pixels: every layer is blended over the ones behind it, and a cross-fade draws both
   pages. Fewer and smaller layers are what counts. The editor exports atlases with mipmaps (`filter:
@@ -252,8 +271,8 @@ To profile the editor on a heavy page, `tools/stress-project.py 300` writes a 30
 | Extension | Content                                              | Written by    | Read by                   |
 |-----------|------------------------------------------------------|---------------|---------------------------|
 | `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), editor |
-| `.jplax`  | Exported page, JSON (Jackson)                        | Export        | browser games (`Utils_Page_Json`), editor, other tools |
-| `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor, browser games (`Utils_Page_Json`) |
+| `.jplax`  | Exported page, JSON (Jackson)                        | Export        | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), editor, other tools |
+| `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor, browser games (`Utils_Page_Json`), Godot games |
 
 A page references its atlas by file name, and looks for it next to itself. **Save project** therefore copies the atlas
 and its page images into the project folder when they are not there yet, and refuses to save if that folder already

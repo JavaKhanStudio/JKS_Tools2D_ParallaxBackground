@@ -1,0 +1,22 @@
+; Engine configuration file.
+; A Godot 4 project holding the JKS parallax reader (addons/jks_parallax) and what proves it (tests/).
+
+config_version=5
+
+[application]
+
+config/name="JKS Parallax for Godot"
+run/main_scene="res://demo.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/vsync/vsync_mode=0
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)
