@@ -173,7 +173,9 @@ More:
 
 ### In Godot 4
 
-Export the page as JSON (**Export** with `.jplax` ticked), and copy `engines/godot/addons/jks_parallax` into your
+Export the page as JSON (**Export** with `.jplax` ticked), and add the reader to your project: install *JKS Parallax*
+from the Godot Asset Library (once listed, see RELEASING.md), unzip a release's `jks-parallax-godot-X.Y.Z.zip` at
+your project's root (from 2.5.0 on), or copy `engines/godot/addons/jks_parallax` into your
 project's `addons/`. Put the `.jplax`, its `.atlas` and the atlas's `.png` in one folder:
 
 ```gdscript

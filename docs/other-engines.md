@@ -85,6 +85,10 @@ imported).
 
 ## Unity and Unreal: what they would take
 
+**Unity is next** (Simon, atelier d11, 2026-09-27): `JsonUtility` reads the page as it is, the colour space is its one
+trap, and its 2D audience is the bigger one. Unreal comes after it. The Godot reader is published on the Godot Asset
+Library, versioned with the Maven release (RELEASING.md, "Godot Asset Library").
+
 The same three pieces. What changes is how each engine draws a 2D screen-space background:
 
 | | Unity | Unreal |

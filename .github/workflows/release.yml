@@ -2,7 +2,8 @@ name: Release
 
 # Pushing a tag like v2.1.0 releases that version:
 #   - the library goes to Maven Central
-#   - the GitHub release gets the two downloads: the library jars, and the editor (library included)
+#   - the GitHub release gets the downloads: the library jars, the editor (library included), and the Godot reader
+#     (jks-parallax-godot-X.Y.Z.zip, which the Godot Asset Library listing downloads: RELEASING.md)
 # Without the four Maven Central secrets the workflow FAILS before building anything: the README tells games to
 # depend on the Central artifact, so a release that skipped Central must not look green. To release the GitHub
 # downloads only, run the workflow by hand on the tag with "without_central" ticked.
@@ -96,7 +97,7 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
 
-      - name: Package the two downloads
+      - name: Package the downloads
         run: |
           ./gradlew :core:plainJavadocJar :editor:distZip
           mkdir -p release
@@ -104,6 +105,8 @@ jobs:
           cp core/build/libs/parallax-background-*.jar release/
           # 2. The editor with the library included, to design a parallax.
           cp editor/build/distributions/ParallaxEditor-*.zip release/
+          # 3. The Godot reader, addons/jks_parallax at the zip's root.
+          tools/godot-addon-zip.sh release
           ls -la release
 
           # The release notes only point at Maven Central when the library was published there.
@@ -125,6 +128,9 @@ jobs:
             echo "**Design a parallax** — \`ParallaxEditor-$VERSION.zip\`: the editor with the library included and the"
             echo "sample projects. Unzip it and run \`bin/ParallaxEditor\` (\`bin\\ParallaxEditor.bat\` on Windows). Needs"
             echo "Java 17 or newer."
+            echo
+            echo "**Use a parallax in a Godot 4 game** — \`jks-parallax-godot-$VERSION.zip\`: unzip it at the root of your"
+            echo "project (it holds \`addons/jks_parallax/\`)."
             echo
             echo "See the [README](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground#readme) to get started."
           } > release-notes.md
