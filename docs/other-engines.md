@@ -77,7 +77,7 @@ catches a real error. The transfer round: worst **0.69 / 255**; with the scroll 
 tint left out 73.8, with the interrupted fade keeping its opacities 27.0. The conformance round with Y scrolling and
 resizes: worst 0.25; with the Y scroll reversed it scores 31.5, with the world height left as it was before a resize
 41.8. CI runs the three rounds on every push (`.github/workflows/ci.yml`, job `godot-frames`: Xvfb and Mesa llvmpipe,
-no GPU), where round 1, the conformance round and the transfer round scored 0.18, 0.17 and 0.55.
+no GPU), where round 1, the conformance round and the transfer round scored 0.17, 0.24 and 0.75.
 
 **Not ported yet:** atlas regions packed rotated (the editor's packer does not rotate; a TexturePacker atlas may).
 **Not checked:** an exported Godot game (only the editor/runner has been tried: `res://` pages load, with the PNG
