@@ -34,6 +34,7 @@ public class ParallaxDemo extends ApplicationAdapter
 	{
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setTitle("Parallax demo");
+		config.setWindowIcon("parallaxIcon.png");
 		config.setWindowedMode(1280, 720);
 		config.useVsync(true);
 		new Lwjgl3Application(new ParallaxDemo(), config);
