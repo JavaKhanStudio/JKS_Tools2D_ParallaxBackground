@@ -30,7 +30,7 @@ public final class Parallax_Utils_Page
 			release(ref, ref.currentTransfertPage, pageModel);
 		ref.currentTransfertPage = pageModel;
 
-		ref.parallaxReader.addLayersTransfert(pageModel, inXSecondes);
+		ref.parallaxReader.addLayersTransfert(pageModel, ref.relativePath, inXSecondes);
 		if (ref.topSquare != null)
 			ref.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes);
 		if (ref.bottomSquare != null)

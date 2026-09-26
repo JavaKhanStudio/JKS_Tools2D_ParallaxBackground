@@ -163,7 +163,7 @@ More:
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
   background away.
-- **Load an atlas from a folder instead of the assets:** set `heart.relativePath` before `setPage` (desktop only).
+- **Load an atlas from a folder instead of the assets:** set `heart.relativePath` before `setPage` or `transfertIntoPage` (desktop only).
 - **Ship to the browser (GWT):** add `<inherits name="jks.tools2d.parallax.Parallax"/>` to your html module and the
   library's `-sources` jar to its classpath. `.plax` files are read with Kryo, which has no browser version: in a
   browser game, load the page's JSON with `Parallax_Heart.fromJson("page.jplax")` (a `.plaxpj` works too, see "File

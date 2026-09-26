@@ -49,12 +49,22 @@ public class ParallaxPageReader
 		layers.addAll(newLayers);
 	}
 
-	/** Cross-fades from the current layers into the layers of {@code pageModel} over {@code inXSecondes}. */
+	/**
+	 * Cross-fades from the current layers into the layers of {@code pageModel} over {@code inXSecondes}. A page not
+	 * built yet takes its atlas from the internal assets.
+	 */
 	public void addLayersTransfert(WholePage_Model pageModel, float inXSecondes)
+	{addLayersTransfert(pageModel, null, inXSecondes);}
+
+	/**
+	 * Cross-fades into the layers of {@code pageModel}. A page not built yet takes its atlas from {@code relativePath},
+	 * or from the internal assets when it is null or empty (see {@link WholePage_Model#getDrawing(String, float, float)}).
+	 */
+	public void addLayersTransfert(WholePage_Model pageModel, String relativePath, float inXSecondes)
 	{
 		resetTransfert();
 
-		List<ParallaxLayer> newLayers = pageModel.getDrawing(null, worldWidth, worldHeight);
+		List<ParallaxLayer> newLayers = pageModel.getDrawing(relativePath, worldWidth, worldHeight);
 		if (newLayers == null || newLayers.isEmpty())
 			return;
 
