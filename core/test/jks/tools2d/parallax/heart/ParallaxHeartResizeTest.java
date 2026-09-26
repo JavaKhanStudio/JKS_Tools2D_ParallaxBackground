@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.reflect.Proxy;
+import java.io.IOException;
 import java.nio.IntBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +15,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.assets.AssetManager;
@@ -21,11 +25,13 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
 import jks.tools2d.parallax.ParallaxLayer;
@@ -389,5 +395,36 @@ class ParallaxHeartResizeTest
 		ParallaxLayer incoming = wide.parallaxReader.transferLayers.get(0);
 		assertEquals(40, incoming.getWidth(), 1e-4f);
 		assertEquals(11.25f, incoming.getCurrentDistanceY(), 1e-4f, "50% of 22.5");
+	}
+
+	/** A game loading its atlases from a folder: the page it cross-fades into is built from that folder too. */
+	@Test
+	void crossFadeLoadsTheIncomingAtlasFromTheHeartsFolder(@TempDir Path folder) throws IOException
+	{
+		Pixmap pixels = new Pixmap(16, 9, Pixmap.Format.RGBA8888);
+		PixmapIO.writePNG(new FileHandle(folder.resolve("night.png").toFile()), pixels);
+		pixels.dispose();
+		Files.writeString(folder.resolve("night.atlas"), "night.png\nsize:16,9\nformat:RGBA8888\nfilter:Nearest,Nearest\nrepeat:none\n"
+				+ "stars\n  bounds:0,0,16,9\n");
+
+		Parallax_Heart heart = new Parallax_Heart(new OrthographicCamera(40, 22.5f), null, page(0.5f, 0.5f), 40, 22.5f);
+		heart.relativePath = folder.toString();
+		Gvars_Parallax.setManager(new AssetManager()
+		{
+			@Override
+			public synchronized <T> void load(String fileName, Class<T> type)
+			{throw new AssertionError("looked for " + fileName + " in the internal assets");}
+		});
+
+		Parallax_Model layer = new Parallax_Model();
+		layer.regionName = "stars";
+		WholePage_Model night = new WholePage_Model("night.atlas");
+		night.pageModel.pageList.add(layer);
+		heart.transfertIntoPage(night, 1);
+
+		assertEquals(1, heart.parallaxReader.transferLayers.size());
+		assertEquals("stars", ((TextureAtlas.AtlasRegion) heart.parallaxReader.transferLayers.get(0).getTexRegion().get(0)).name);
+		assertNotNull(night.getLoadedAtlas().findRegion("stars"), "the page owns the atlas it read from the folder");
+		heart.dispose();
 	}
 }
