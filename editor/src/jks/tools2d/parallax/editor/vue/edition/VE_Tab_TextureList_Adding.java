@@ -163,6 +163,7 @@ public class VE_Tab_TextureList_Adding extends Tab
 			return;
 
 		ParallaxLayer layer = new ParallaxLayer(region, true, Gvars_Parallax.getWorldWidth(), .01f, .01f, 1);
+		layer.setUseOriginalSize(parallax_Heart.currentPage.useOriginalSize);
 		layer.setUpEverything(getDefaults().defaultModel);
 		addItem(layer);
 	}

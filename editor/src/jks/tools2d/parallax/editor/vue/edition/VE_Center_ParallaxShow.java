@@ -54,6 +54,8 @@ public class VE_Center_ParallaxShow extends Table
 			if (ref instanceof TextureAtlas)
 			{
 				WholePage_Model page = new WholePage_Model();
+				// A new page: stripped atlas regions keep their original size. Opened pages keep what they were saved with.
+				page.useOriginalSize = true;
 				page.pageModel.atlasName = GVars_Vue_Edition.projectInfos.projectName + "." + FVars_Extensions.ATLAS;
 				page.forceLoad((TextureAtlas) ref);
 				GVars_Vue_Edition.setPage(page);
@@ -86,6 +88,7 @@ public class VE_Center_ParallaxShow extends Table
 	private static void setEmptyPage()
 	{
 		WholePage_Model page = new WholePage_Model();
+		page.useOriginalSize = true;
 		page.pageModel.atlasName = null;
 		GVars_Vue_Edition.setPage(page);
 	}

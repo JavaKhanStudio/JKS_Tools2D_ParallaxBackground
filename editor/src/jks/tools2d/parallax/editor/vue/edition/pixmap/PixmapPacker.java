@@ -149,6 +149,12 @@ public class PixmapPacker implements Disposable
 					}
 				}
 
+				// Nothing opaque: kept whole, a 0px pixmap cannot be created.
+				if (right <= left || bottom <= top) {
+					left = top = 0;
+					right = image.getWidth();
+					bottom = image.getHeight();
+				}
 				int newWidth = right - left;
 				int newHeight = bottom - top;
 
