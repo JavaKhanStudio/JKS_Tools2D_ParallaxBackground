@@ -1,0 +1,175 @@
+{
+ "note": "Round 1 (r73): Simon's pages, one rule broken each, and two pages written from the rules. Grade 1-5 on how good the scene feels as a game background.",
+ "seed": 73,
+ "scenes": [
+  {
+   "id": "s01",
+   "page": "demo/lab/round1/s01.jplax",
+   "atlasDir": "demo/assets",
+   "name": "Hiver-flat",
+   "about": "Hiver-flat: every layer at the same speed: no depth from motion",
+   "lint": [
+    "speed span 1.0x (front/back): under ~3x the scene reads as one flat plane",
+    "layers [1, 2, 3, 4, 5, 6] move at the speed of the one behind: they fuse into one plane"
+   ]
+  },
+  {
+   "id": "s02",
+   "page": "demo/lab/round1/s02.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm-whitesky",
+   "about": "Calm-whitesky: sky gradient removed (white)",
+   "lint": []
+  },
+  {
+   "id": "s03",
+   "page": "demo/lab/round1/s03.jplax",
+   "atlasDir": "demo/assets",
+   "name": "Hiver",
+   "about": "Hiver: original (control)",
+   "lint": []
+  },
+  {
+   "id": "s04",
+   "page": "demo/lab/round1/s04.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm-agent",
+   "about": "Calm-agent: written from the rules alone (not from Simon's page)",
+   "lint": []
+  },
+  {
+   "id": "s05",
+   "page": "demo/lab/round1/s05.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "PurpleFairy-exaggerated",
+   "about": "PurpleFairy-exaggerated: speed span x2.2 in log (5.6x -> 45x): back frozen, front whips",
+   "lint": [
+    "speed span 45x: past ~15x the back looks painted on and the front whips"
+   ]
+  },
+  {
+   "id": "s06",
+   "page": "demo/lab/round1/s06.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "OneNight-agent",
+   "about": "OneNight-agent: written from the rules alone (not from Simon's page)",
+   "lint": []
+  },
+  {
+   "id": "s07",
+   "page": "demo/lab/round1/s07.jplax",
+   "atlasDir": "demo/assets",
+   "name": "Hiver-linear",
+   "about": "Hiver-linear: same back/front speeds, evenly spaced instead of a constant ratio",
+   "lint": []
+  },
+  {
+   "id": "s08",
+   "page": "demo/lab/round1/s08.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm-flat",
+   "about": "Calm-flat: every layer at the same speed: no depth from motion",
+   "lint": [
+    "speed span 1.0x (front/back): under ~3x the scene reads as one flat plane",
+    "layers [1, 2, 3, 4, 5, 6, 7, 8] move at the speed of the one behind: they fuse into one plane"
+   ]
+  },
+  {
+   "id": "s09",
+   "page": "demo/lab/round1/s09.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "OneNight-small",
+   "about": "OneNight-small: every layer half as wide: repeats show",
+   "lint": [
+    "speeds go DOWN toward the front at layer(s) [1]: layers are stored back to front, a front layer slower than the one behind it reads as behind it ([1] drift on their own: fine only if they do not overlap)",
+    "layer 0 is 0.32 worlds wide and tiled: its repeat shows 3 times a screen",
+    "layer 1 is 0.38 worlds wide and tiled: its repeat shows 3 times a screen",
+    "layer 2 is 0.27 worlds wide and tiled: its repeat shows 4 times a screen",
+    "layer 3 is 0.26 worlds wide and tiled: its repeat shows 4 times a screen",
+    "layer 4 is 0.39 worlds wide and tiled: its repeat shows 3 times a screen"
+   ]
+  },
+  {
+   "id": "s10",
+   "page": "demo/lab/round1/s10.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm",
+   "about": "Calm: original (control)",
+   "lint": []
+  },
+  {
+   "id": "s11",
+   "page": "demo/lab/round1/s11.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "OneNight-wrongsky",
+   "about": "OneNight-wrongsky: gradients of a sunny day behind a night scene",
+   "lint": [
+    "speeds go DOWN toward the front at layer(s) [1]: layers are stored back to front, a front layer slower than the one behind it reads as behind it ([1] drift on their own: fine only if they do not overlap)"
+   ]
+  },
+  {
+   "id": "s12",
+   "page": "demo/lab/round1/s12.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "CalmLag",
+   "about": "CalmLag: original: the editor's default layout, no art direction",
+   "lint": []
+  },
+  {
+   "id": "s13",
+   "page": "demo/lab/round1/s13.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "PurpleFairy-inverted",
+   "about": "PurpleFairy-inverted: speeds reversed: the back moves fastest",
+   "lint": [
+    "speeds go DOWN toward the front at layer(s) [1, 2, 3, 4, 5, 6]: layers are stored back to front, a front layer slower than the one behind it reads as behind it"
+   ]
+  },
+  {
+   "id": "s14",
+   "page": "demo/lab/round1/s14.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "OneNight",
+   "about": "OneNight: original (control)",
+   "lint": [
+    "speeds go DOWN toward the front at layer(s) [1]: layers are stored back to front, a front layer slower than the one behind it reads as behind it ([1] drift on their own: fine only if they do not overlap)"
+   ]
+  },
+  {
+   "id": "s15",
+   "page": "demo/lab/round1/s15.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm-compressed",
+   "about": "Calm-compressed: speed span cut to a third (5.6x -> 1.8x): shallow",
+   "lint": [
+    "speed span 2.2x (front/back): under ~3x the scene reads as one flat plane"
+   ]
+  },
+  {
+   "id": "s16",
+   "page": "demo/lab/round1/s16.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "PurpleFairy-aligned",
+   "about": "PurpleFairy-aligned: every layer starts at decal X 0: joins line up at the start",
+   "lint": []
+  },
+  {
+   "id": "s17",
+   "page": "demo/lab/round1/s17.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "PurpleFairy",
+   "about": "PurpleFairy: original (control)",
+   "lint": []
+  },
+  {
+   "id": "s18",
+   "page": "demo/lab/round1/s18.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "OneNight-shuffled",
+   "about": "OneNight-shuffled: speeds shuffled: depth order broken",
+   "lint": [
+    "speeds go DOWN toward the front at layer(s) [2, 4, 6]: layers are stored back to front, a front layer slower than the one behind it reads as behind it ([6] drift on their own: fine only if they do not overlap)"
+   ]
+  }
+ ]
+}

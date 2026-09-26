@@ -10,7 +10,7 @@ repair.
 |-----------|------------|------|-------------|
 | `core/`   | The runtime games depend on (`parallax-background` on Maven Central). Sources `src/` (GWT) and `src-jvm/`, tests `test/`. | `options.release = 11` for main, 17 for tests | `./gradlew :core:test`, `./gradlew :core:gwtCheck` |
 | `editor/` | The desktop tool that builds pages and exports `.plax`. Sources `src/` and `mains/`. | 17 | `./gradlew :editor:run` (workingDir `editor/`, finds `editor/Files`) |
-| `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): SPACE page, N tint, LEFT/RIGHT scroll, R reset |
+| `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): SPACE page, N tint, LEFT/RIGHT scroll, R reset. `./gradlew :demo:lab` (workingDir the root): the grading lab, `demo/lab` |
 
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.

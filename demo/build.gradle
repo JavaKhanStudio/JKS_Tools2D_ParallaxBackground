@@ -46,3 +46,15 @@ tasks.register('stress', JavaExec) {
         jvmArgs '-XstartOnFirstThread'
     }
 }
+
+// ./gradlew :demo:lab: the grading lab, the scenes of a round under demo/lab shown blind and graded 1-5, see ParallaxLab.
+tasks.register('lab', JavaExec) {
+    group = 'application'
+    description = 'Runs ParallaxLab: grade the scenes of a round of demo/lab (the latest, or --args="demo/lab/roundN").'
+    mainClass = 'jks.tools2d.parallax.demo.ParallaxLab'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootDir
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        jvmArgs '-XstartOnFirstThread'
+    }
+}

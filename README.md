@@ -83,6 +83,7 @@ Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
 ./gradlew :demo:run             # the demo: SPACE switches page, N tints, LEFT/RIGHT scroll, R resets
 ./gradlew test                  # file format, tiling, cross-fade and no-allocation-per-frame tests
 ./gradlew :demo:stress --args="--layers 400 --repeat xy"   # frame time of generated pages, see ParallaxStress
+./gradlew :demo:lab               # grade parallax scenes blind, 1-5: see docs/parallax-design.md
 ./gradlew :editor:installDist   # standalone editor in editor/build/install/ParallaxEditor
 ```
 
