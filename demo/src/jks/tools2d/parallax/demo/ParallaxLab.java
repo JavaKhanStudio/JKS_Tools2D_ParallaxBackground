@@ -49,6 +49,10 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * ./gradlew :demo:lab --args="demo/lab/round1 --shots demo/build/lab/round1"   stills of every scene, then exits
  * </pre>
  *
+ * A scene may also cross-fade or tint, in --shots only (r94): {@code "transfer": {"at": 4, "seconds": 4, "page": ...,
+ * "atlasDir": ...}} fades into that page (no page: into the page on screen) and {@code "tint": {"at": 4, "seconds": 4,
+ * "color": [r, g, b, a]}} tints, both started {@code at} seconds into the scroll. engines/godot/tests/transfer uses them.
+ * <p>
  * Keys: 1-5 grade (5 = best) and go on, ENTER/BACKSPACE next/previous, SPACE pause, LEFT/RIGHT scroll by hand, UP/DOWN
  * scroll speed, R restart the scene, H show what the scene tests.
  */
@@ -74,6 +78,10 @@ public class ParallaxLab extends ApplicationAdapter
 	private static final class Scene
 	{
 		String id, page, atlasDir, about;
+		/** Seconds into the scroll the cross-fade starts at; negative: none. transferPage null: the page on screen. */
+		float transferAt = -1, transferSeconds, tintAt = -1, tintSeconds;
+		String transferPage, transferAtlasDir;
+		Color tint;
 	}
 
 	public ParallaxLab(Path roundDir, Path shotsDir)
@@ -123,6 +131,22 @@ public class ParallaxLab extends ApplicationAdapter
 			scene.page = s.getString("page");
 			scene.atlasDir = s.getString("atlasDir");
 			scene.about = s.getString("about", "");
+			JsonValue transfer = s.get("transfer");
+			if (transfer != null)
+			{
+				scene.transferAt = transfer.getFloat("at");
+				scene.transferSeconds = transfer.getFloat("seconds");
+				scene.transferPage = transfer.getString("page", null);
+				scene.transferAtlasDir = transfer.getString("atlasDir", scene.atlasDir);
+			}
+			JsonValue tint = s.get("tint");
+			if (tint != null)
+			{
+				scene.tintAt = tint.getFloat("at");
+				scene.tintSeconds = tint.getFloat("seconds");
+				float[] c = tint.get("color").asFloatArray();
+				scene.tint = new Color(c[0], c[1], c[2], c[3]);
+			}
 			scenes.add(scene);
 		}
 		readGrades();
@@ -184,6 +208,8 @@ public class ParallaxLab extends ApplicationAdapter
 		heart.relativePath = Paths.get(scene.atlasDir).toAbsolutePath().toString();
 		heart.setPage(page);
 		heart.parallaxReader.resetPositions();
+		// A tint outlives setPage: the scene before may have left one.
+		heart.parallaxReader.addColorTransfert(Color.WHITE, 0);
 	}
 
 	private void grade(int value)
@@ -305,12 +331,32 @@ public class ParallaxLab extends ApplicationAdapter
 		heart.screenSpeedConstantX = SPEED;
 		for (int i = 0; i < scenes.size(); i++)
 		{
+			Scene scene = scenes.get(i);
 			show(i);
 			float time = 0;
+			boolean transferred = false, tinted = false;
 			for (float at : SHOT_TIMES)
 			{
 				for (; time < at; time += step)
+				{
+					if (!transferred && scene.transferAt >= 0 && time >= scene.transferAt)
+					{
+						transferred = true;
+						WholePage_Model into = heart.currentPage;
+						if (scene.transferPage != null)
+						{
+							into = Utils_Page_Json.loadPage(new FileHandle(Paths.get(scene.transferPage).toFile()));
+							heart.relativePath = Paths.get(scene.transferAtlasDir).toAbsolutePath().toString();
+						}
+						heart.transfertIntoPage(into, scene.transferSeconds);
+					}
+					if (!tinted && scene.tintAt >= 0 && time >= scene.tintAt)
+					{
+						tinted = true;
+						heart.parallaxReader.addColorTransfert(scene.tint, scene.tintSeconds);
+					}
 					heart.act(step);
+				}
 				ScreenUtils.clear(Color.BLACK);
 				heart.render();
 				Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());

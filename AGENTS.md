@@ -45,9 +45,9 @@ repair.
   streams. `FrameAllocationTest` counts the reader's bytes over 2000 frames and fails on any. `./gradlew :demo:stress`
   measures a change on the GPU: the runtime is fill-rate bound, so time pixels, not code.
 - Tiling reads the camera view, position and zoom: `tilesJustEnoughToCoverTheView` holds it.
-- `engines/godot/addons/jks_parallax/plax_background.gd` ports `ParallaxLayer.act`, `ParallaxPageReader.tile`/`drawRegion`
-  and the gradients line for line: change how a page scrolls or draws, change it there, and run
-  `tools/godot-parallax-shots.sh`.
+- `engines/godot/addons/jks_parallax/plax_background.gd` ports `ParallaxLayer.act`, `ParallaxPageReader.tile`/`drawRegion`,
+  the cross-fade, the tint and the gradients line for line: change how a page scrolls, fades or draws, change it there,
+  and run `tools/godot-parallax-shots.sh` (`engines/godot/tests/transfer` is its cross-fade round).
 - `ParallaxPageReaderTest` checks tiling and cross-fades without a window, by recording draw calls on a proxied
   `Batch`. Cover all four repeat modes (X, Y, XY, none).
 
