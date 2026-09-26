@@ -4,8 +4,9 @@
 #   tools/parallax-lab-shots.sh demo/lab/round1 demo/build/lab/round1
 #
 # Runs ParallaxLab --shots in cage's headless display on a nested Xwayland (needs cage and Xwayland), from the demo's
-# installDist (built first). Writes <scene>-t0/-t6/-t12.png (1280x720, 0, 6 and 12 s into the same scroll) and, with
-# python3 and Pillow, contact.png: one row per scene. ATELIER_NO_OFFSCREEN=1 runs it in a window instead.
+# installDist (built first). Writes <scene>-t0/-t6/-t12.png (1280x720, or the size a scene's "resize" gives; 0, 6 and
+# 12 s into the same scroll) and, with python3 and Pillow, contact.png: one row per scene. ATELIER_NO_OFFSCREEN=1 runs
+# it in a window instead.
 set -u
 cd "$(dirname "$0")/.."
 ROUND="$1" OUT="$(realpath -m "$2")"
@@ -16,7 +17,7 @@ RUN="java -cp \"$CP\" jks.tools2d.parallax.demo.ParallaxLab \"$ROUND\" --shots \
 if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
 	bash -c "$RUN"
 else
-	inner="Xwayland :9 -geometry 1280x720 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
+	inner="Xwayland :9 -geometry 1280x1280 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
 	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- bash -c "$inner" >"$OUT/cage.log" 2>&1
 fi
 ls "$OUT"/*-t0.png >/dev/null 2>&1 || { echo "no shots:"; tail -20 "$OUT/lab.log"; exit 1; }

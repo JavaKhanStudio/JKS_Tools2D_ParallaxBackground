@@ -29,7 +29,7 @@ for ROUND in "${ROUNDS[@]}"; do
 	if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
 		timeout 300 bash -c "$RUN"
 	else
-		inner="Xwayland :9 -geometry 1280x720 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
+		inner="Xwayland :9 -geometry 1280x1280 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
 		WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- bash -c "$inner" >"$OUT/cage.log" 2>&1
 	fi
 	python3 - "$ROUND" "$OUT" "$THRESHOLD" <<'PY' || status=1
@@ -57,9 +57,10 @@ for s in scenes:
         lines.append('%s  mean diff %.2f / 255   pixels off by >32: %.2f%%   %s' % (name, mean, big, s.get('name', s.get('about', ''))))
         y = row * (h + label)
         draw.text((6, y + 5), '%s  %s   mean diff %.2f   (libGDX | Godot | difference x4)' % (name, s.get('name', ''), mean), fill='white')
-        sheet.paste(gdx.resize((w, h)), (0, y + label))
-        sheet.paste(godot.resize((w, h)), (w, y + label))
-        sheet.paste(diff.point(lambda v: min(255, v * 4)).resize((w, h)), (2 * w, y + label))
+        # A still shot after a resize (portrait) keeps its aspect ratio in its cell.
+        for col, im in enumerate((gdx, godot, diff.point(lambda v: min(255, v * 4)))):
+            im = im.copy(); im.thumbnail((w, h))
+            sheet.paste(im, (col * w + (w - im.width) // 2, y + label + (h - im.height) // 2))
         row += 1
 sheet.save(os.path.join(out, 'compare.png'))
 verdict = 'PASS' if worst <= threshold else 'FAIL'

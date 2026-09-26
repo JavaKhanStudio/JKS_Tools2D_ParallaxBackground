@@ -1,7 +1,8 @@
 extends Node
 ## Stills of every scene of a lab round, as demo/.../ParallaxLab --shots takes them with libGDX: the same page, the
 ## same 60 units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. tools/godot-parallax-shots.sh runs it and
-## compares the two sets. A scene's "transfer" and "tint" start a cross-fade or a tint at the same step as the lab.
+## compares the two sets. A scene's "transfer" and "tint" start a cross-fade or a tint at the same step as the lab,
+## its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll.
 ##   godot --path engines/godot res://tests/shots.tscn -- <repo root> <round dir> <out dir>
 
 const SPEED := 60.0
@@ -20,9 +21,12 @@ func _ready() -> void:
 	add_child(bg)
 	var step := _f32(1.0 / 60.0)
 	for scene in round.scenes:
+		await _resize_window(Vector2i(1280, 720))
 		bg.load_page(root.path_join(scene.page), root.path_join(scene.atlasDir))
 		bg.tint_to(Color.WHITE, 0)
 		bg.speed_constant_x = SPEED
+		bg.speed_constant_y = scene.get("speedY", 0.0)
+		var resize: Dictionary = scene.get("resize", {})
 		var transfer: Dictionary = scene.get("transfer", {})
 		var tint: Dictionary = scene.get("tint", {})
 		# The libGDX loop adds a float step to a float time: count its steps the same way, in float32.
@@ -32,6 +36,9 @@ func _ready() -> void:
 				if not transfer.is_empty() and time[0] >= transfer.at:
 					_transfer(bg, root, scene, transfer)
 					transfer = {}
+				if not resize.is_empty() and time[0] >= resize.at:
+					await _resize_window(Vector2i(resize.size[0], resize.size[1]))
+					resize = {}
 				if not tint.is_empty() and time[0] >= tint.at:
 					var c: Array = tint.color
 					bg.tint_to(Color(c[0], c[1], c[2], c[3]), tint.seconds)
@@ -44,6 +51,18 @@ func _ready() -> void:
 			image.save_png(out.path_join("%s-t%d.png" % [scene.id, at]))
 		print("shots: ", scene.id)
 	get_tree().quit()
+
+
+## Resizes the window, and waits until the viewport has the new size (PlaxBackground follows it on size_changed).
+func _resize_window(size: Vector2i) -> void:
+	if get_window().size == size:
+		return
+	get_window().size = size
+	for i in 300:
+		await RenderingServer.frame_post_draw
+		if Vector2i(get_viewport().get_visible_rect().size) == size:
+			return
+	push_error("shots: the window stayed %s, not %s" % [get_viewport().get_visible_rect().size, size])
 
 
 ## Into the scene's transfer page, or into the page on screen when it names none.
