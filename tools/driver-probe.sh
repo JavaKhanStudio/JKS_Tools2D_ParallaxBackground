@@ -10,8 +10,9 @@
 # run `./gradlew :editor:installDist` first (EDITOR_BIN runs another copy). ATELIER_NO_OFFSCREEN=1 shows the window instead.
 # PROBE_TIMES=1 appends each reply's round trip in ms: a command runs between two frames, so this is the wait for the
 # next frame plus the command's own work. JAVA_OPTS reaches the editor's JVM (e.g. -XX:StartFlightRecording=...).
-# The port must be free: if another editor already listens on it, the script exits 3 and sends nothing (else every
-# command would drive that other editor). Run two probes at once with different DRIVER_PORT values.
+# The port must be free: if another editor already listens on it, or takes it before ours binds (ours then logs
+# "cannot listen"), the script exits 3 and sends nothing (else every command would drive that other editor). Run two
+# probes at once with different DRIVER_PORT values. tools/r74-probe-race.sh proves the second case.
 set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -35,15 +36,21 @@ EDITOR_PID=$!
 trap 'kill $EDITOR_PID 2>/dev/null; wait $EDITOR_PID 2>/dev/null' EXIT
 trap 'exit 130' INT TERM
 
+# Wait for OUR editor to say whether it bound the port: an open port alone may be another editor that took it between
+# the check above and our bind, and that one answers at once, long before our JVM could log its BindException.
+LOG="$ROOT/editor/build/driver-probe.log"
 for _ in $(seq 60); do
-	port_open && break
+	grep -q "\[EditorDriver\] listening on 127.0.0.1:$PORT\|\[EditorDriver\] cannot listen on port $PORT" "$LOG" 2>/dev/null && break
 	kill -0 $EDITOR_PID 2>/dev/null || break
 	sleep 1
 done
-# Someone may have taken the port between the check above and our editor's bind.
-if grep -q 'BindException' "$ROOT/editor/build/driver-probe.log" 2>/dev/null; then
-	echo "the editor could not bind port $PORT (see editor/build/driver-probe.log): refusing to drive another editor." >&2
-	exit 3
+if ! grep -q "\[EditorDriver\] listening on 127.0.0.1:$PORT" "$LOG" 2>/dev/null; then
+	if grep -q "\[EditorDriver\] cannot listen on port $PORT" "$LOG" 2>/dev/null; then
+		echo "the editor could not bind port $PORT (see editor/build/driver-probe.log): refusing to drive another editor." >&2
+		exit 3
+	fi
+	echo "the editor never opened port $PORT; see editor/build/driver-probe.log" >&2
+	exit 1
 fi
 
 exec 3<>/dev/tcp/127.0.0.1/$PORT || { echo "the editor never opened port $PORT; see editor/build/driver-probe.log" >&2; exit 1; }
