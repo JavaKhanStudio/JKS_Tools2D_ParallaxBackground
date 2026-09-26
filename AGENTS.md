@@ -15,7 +15,8 @@ repair.
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
 - Repositories go in `settings.gradle` only: `FAIL_ON_PROJECT_REPOS` fails the build on a module-level one.
-- CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build` then `./gradlew :editor:distZip :demo:distZip`.
+- CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`, then
+  `./gradlew :editor:distZip :demo:distZip`.
 
 ## `.plax` is a file format
 
