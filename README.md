@@ -285,6 +285,7 @@ core/src-jvm/jks/tools2d/parallax/   same packages and jar, JVM only
     heart/GVars_Serialization     Kryo setup for .plax
     pages/                        Kryo serializers, Utils_Page (load a .plax), Json_MixIns (Jackson setup)
 core/gwt-check/                   what :core:gwtCheck compiles to JavaScript
+core/browser-test/                the core tests that translate, run in Chrome by tools/browser-test.sh
 
 editor/mains/.../Launcher_Editor  desktop launcher (window, file drops)
 editor/src/jks/tools2d/
