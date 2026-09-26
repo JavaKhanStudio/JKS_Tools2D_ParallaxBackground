@@ -25,7 +25,10 @@ repair.
   garbage without throwing.
 - A new stored field needs a format bump in `pages/WholePage_Model_Serializer` (`CURRENT_VERSION`), written and read
   behind `currentVersion(kryo) >= N` in its serializer. Format 1 files (no version marker) must keep loading.
-- `editor/Files/**/*.plax` and `demo/assets/**/*.plax` are the test fixtures for `core/test/.../PlaxFormatTest`.
+- A new stored field is also read in `core/src/.../pages/Utils_Page_Json`, the browser build's JSON loader: it maps
+  fields by hand, and one it misses loads as its default without an error. Add it to `PlaxFormatTest.assertPageEquals`,
+  which `JsonPageTest` uses.
+- `editor/Files/**/*.plax`, `demo/assets/**/*.plax` and `core/test-data/**` are the test fixtures for `core/test/.../PlaxFormatTest`.
   Never re-export or overwrite them.
 - Change what a file holds and update README.md's "File formats" section in the same commit.
 

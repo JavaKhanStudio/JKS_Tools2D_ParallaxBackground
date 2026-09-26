@@ -13,6 +13,11 @@ sourceSets {
     }
 }
 
+// The window icon is the editor's logo, the one README.md shows: one file, found on the classpath.
+tasks.named('processResources', ProcessResources) {
+    from('../editor/assets/skins/uis/parallaxIcon.png')
+}
+
 dependencies {
     implementation project(':core')
     implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"

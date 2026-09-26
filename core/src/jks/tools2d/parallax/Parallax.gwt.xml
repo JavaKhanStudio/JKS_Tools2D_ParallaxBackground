@@ -3,7 +3,8 @@
 <!--
 	The parallax runtime for a libGDX game compiled to JavaScript: <inherits name="jks.tools2d.parallax.Parallax"/>.
 	Everything in core/src is translatable. core/src-jvm shares its packages and its jar, and reads and writes .plax
-	(Kryo) and .jplax (Jackson): a browser game builds its pages in Java instead. Every file of core/src-jvm is excluded
+	(Kryo) and .jplax (Jackson): a browser game loads a .jplax or .plaxpj with pages/Utils_Page_Json (libGDX's
+	JsonReader, in src), or builds its pages in Java. Every file of core/src-jvm is excluded
 	here by name; `./gradlew :core:gwtCheck` fails when one is missing.
 -->
 <module>

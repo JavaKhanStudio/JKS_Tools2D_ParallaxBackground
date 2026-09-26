@@ -13,7 +13,8 @@ every push and pull request on JDK 17, 21 and 25.
 
 ## Test versions (snapshots)
 
-Every push to `develop` publishes the library as a snapshot. A game can use it with:
+Every push to `develop` publishes the library as a snapshot, under the `version` in `develop`'s `gradle.properties`
+(`X.Y.Z-SNAPSHOT`). A game can use it with:
 
 ```groovy
 repositories {
@@ -21,7 +22,7 @@ repositories {
     maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
 }
 dependencies {
-    implementation "io.github.javakhanstudio:parallax-background:2.1.0-SNAPSHOT"
+    implementation "io.github.javakhanstudio:parallax-background:X.Y.Z-SNAPSHOT"
 }
 ```
 

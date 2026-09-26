@@ -10,13 +10,14 @@ import com.badlogic.gdx.utils.Disposable;
 import jks.tools2d.parallax.GwtIncompatible;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parallax;
+import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
 
 /**
  * Entry point for games: owns the camera, batch and background, loads a page and scrolls/draws it.
  * <pre>
- * heart = new Parallax_Heart("myParallax.plax");   // in create()
+ * heart = new Parallax_Heart("myParallax.plax");   // in create(); in a browser game: Parallax_Heart.fromJson("myParallax.jplax")
  * heart.screenSpeedConstantX = 100;                // optional auto-scroll
  * heart.act(delta); heart.render();                // in render()
  * heart.resize(width, height);                     // in resize()
@@ -68,6 +69,17 @@ public class Parallax_Heart implements Disposable
 	{
 		this();
 		setPage(jks.tools2d.parallax.pages.Utils_Page.loadPage(internalPath));
+	}
+
+	/**
+	 * Loads a .jplax (JSON export) or .plaxpj (editor project) file from the internal (assets) storage: the way a browser
+	 * game loads a saved page. See {@link Utils_Page_Json}.
+	 */
+	public static Parallax_Heart fromJson(String internalPath)
+	{
+		Parallax_Heart heart = new Parallax_Heart();
+		heart.setPage(Utils_Page_Json.loadPage(internalPath));
+		return heart;
 	}
 
 	public Parallax_Heart(OrthographicCamera worldCamera, SpriteBatch batch, float worldWidth, float worldHeight)
