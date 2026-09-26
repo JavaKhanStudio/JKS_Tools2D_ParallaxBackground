@@ -65,16 +65,23 @@ New fields go behind a version bump, written AND read on the same branch, exactl
 flipY: `if (WholePage_Model_Serializer.currentVersion(kryo) >= 2)`. Format 1 files (the
 2019-2023 editor) must keep loading — Parallax_Model_Serializer wrote flipX and never flipY,
 so every vertically flipped layer came back unflipped.
+A new stored field is ALSO read in core/src pages/Utils_Page_Json, the browser build's
+loader (.jplax/.plaxpj through libGDX's JsonReader). It maps every field by hand, no
+reflection: a field it does not name loads as its default in a browser game and throws
+nothing. JsonPageTest compares it with the Kryo read through PlaxFormatTest.assertPageEquals,
+so add the field there too.
 Color_Serializer writes channels in A, B, G, R order. That is deliberate now; leave it.
 Gate: `./gradlew :core:test`. PlaxFormatTest walks every .plax under editor/Files and
-demo/assets and checks it against the .plaxpj saved in the same 2019 session. It reads the
+demo/assets and checks it against the .plaxpj saved in the same 2019 session; core/test-data/
+onboard holds copies of On Board's four pages for JsonPageTest. It reads the
 `parallax.repoRoot` system property, which core/build.gradle sets — run the class straight
 from an IDE without it and it hunts for samples in the wrong folder.
 README.md's table of the three file formats mirrors these shapes; change what one holds and
 fix the table in the SAME commit.
 THE SAMPLE FILES ARE THE FIXTURES. Never re-export or overwrite editor/Files/*.plax to make
 a test pass: they are the 2019 evidence and the only proof the legacy path still works.
-Shapes: .plax = Kryo binary (what games load), .jplax = JSON (tooling), .plaxpj = the editor
+Shapes: .plax = Kryo binary (what games load), .jplax = JSON (what browser games load, and
+tooling), .plaxpj = the editor
 project. A page names its atlas BY FILE NAME; a layer names an image by region name AND its
 position among the regions sharing that name — never by name alone.
 """
@@ -237,9 +244,11 @@ Releases: develop (always -SNAPSHOT, every push publishes one) → release/X.Y �
 vX.Y.Z. RELEASING.md is the procedure; follow it rather than inventing one. The release
 workflow REFUSES to run when the tag and gradle.properties disagree.
 Maven Central needs four repository secrets (MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD,
-SIGNING_KEY, SIGNING_KEY_PASSWORD). Without them a release still succeeds and still builds
-the GitHub downloads — it just SKIPS Central with a warning in the log. A green release is
-therefore not proof anything reached Central; read the log or check the artifact page.
+SIGNING_KEY, SIGNING_KEY_PASSWORD; all four are set). Without them a tag push FAILS before
+building anything; only a hand-run Release with `without_central` ticked skips Central, and
+says so in the run summary. Central then takes minutes to an hour: done means
+https://repo1.maven.org/maven2/io/github/javakhanstudio/parallax-background/maven-metadata.xml
+lists the version, not a green run.
 README.md IS THE PUBLISHED FRONT PAGE and it is accurate today — keep it that way. Its module
 map and the code map at the end mirror this build: move a class or a module and fix both in the
 SAME commit. Its badges point at the CI workflow FILE PATH and at the Central artifact

@@ -11,6 +11,7 @@ import com.google.gwt.core.client.EntryPoint;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.Parallax_Model;
+import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /** Never run: it only has to reach what a browser game calls, so the GWT compiler translates it. */
@@ -34,5 +35,8 @@ public class ParallaxGwtCheck implements EntryPoint
 		for (ParallaxLayer drawn : page.getDrawing())
 			drawn.clone().resetPosition();
 		heart.dispose();
+
+		WholePage_Model saved = Utils_Page_Json.readPage("{\"pageModel\":{\"atlasName\":\"page.atlas\",\"pageList\":[]}}");
+		Parallax_Heart.fromJson("page.jplax").setPage(saved);
 	}
 }

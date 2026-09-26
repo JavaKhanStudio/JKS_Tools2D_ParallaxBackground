@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    implementation "io.github.javakhanstudio:parallax-background:2.2.0"
+    implementation "io.github.javakhanstudio:parallax-background:2.3.0"
 }
 ```
 
@@ -38,7 +38,7 @@ Gradle Kotlin DSL (`build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("io.github.javakhanstudio:parallax-background:2.2.0")
+    implementation("io.github.javakhanstudio:parallax-background:2.3.0")
 }
 ```
 
@@ -48,7 +48,7 @@ Maven (`pom.xml`):
 <dependency>
     <groupId>io.github.javakhanstudio</groupId>
     <artifactId>parallax-background</artifactId>
-    <version>2.2.0</version>
+    <version>2.3.0</version>
 </dependency>
 ```
 
@@ -160,7 +160,8 @@ More:
 - **Load an atlas from a folder instead of the assets:** set `heart.relativePath` before `setPage` (desktop only).
 - **Ship to the browser (GWT):** add `<inherits name="jks.tools2d.parallax.Parallax"/>` to your html module and the
   library's `-sources` jar to its classpath. `.plax` files are read with Kryo, which has no browser version: in a
-  browser game, build the `WholePage_Model` in Java and pass it to `setPage`. `Utils_Page` and
+  browser game, load the page's JSON with `Parallax_Heart.fromJson("page.jplax")` (a `.plaxpj` works too, see "File
+  formats"), or build the `WholePage_Model` in Java and pass it to `setPage`. `Utils_Page` and
   `new Parallax_Heart(path)` are not there.
 - **Performance:** `act` and `render` allocate nothing, and the game thread spends under a millisecond on 400 layers.
   What costs is the GPU filling pixels: every layer is blended over the ones behind it, and a cross-fade draws both
@@ -241,14 +242,18 @@ To profile the editor on a heavy page, `tools/stress-project.py 300` writes a 30
 | Extension | Content                                              | Written by    | Read by                   |
 |-----------|------------------------------------------------------|---------------|---------------------------|
 | `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), editor |
-| `.jplax`  | Exported page, JSON (Jackson)                        | Export        | editor, other tools       |
-| `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor                    |
+| `.jplax`  | Exported page, JSON (Jackson)                        | Export        | browser games (`Utils_Page_Json`), editor, other tools |
+| `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor, browser games (`Utils_Page_Json`) |
 
 A page references its atlas by file name, and looks for it next to itself. **Save project** therefore copies the atlas
 and its page images into the project folder when they are not there yet, and refuses to save if that folder already
 holds different files of the same name. A project saved away from the folder it was opened from stores its loose
 images by absolute path; auto-saves store the atlas that way too. Layers reference an image by region name and position
 among the regions that share that name.
+
+A browser (GWT) game cannot read `.plax` (Kryo): it loads the JSON of a page instead, with
+`Parallax_Heart.fromJson("page.jplax")` or `Utils_Page_Json.loadPage(file)`. That reader takes a `.jplax` or a
+`.plaxpj`; of a project it keeps the layers an export would keep, the ones drawn from the atlas.
 
 `.plax` files carry a format version since 2.0. Format 2 also stores `flipY` and format 3 `mirror`;
 format 1 files (written by the 2019-2023 editor) and format 2 files still load. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
@@ -264,7 +269,7 @@ core/src/jks/tools2d/parallax/       translatable by GWT (Parallax.gwt.xml)
     heart/Gvars_Parallax          default world size, AssetManager
     ParallaxPageReader            scrolling, tiling, cross-fade and tint of the layers
     ParallaxLayer                 one layer: image, settings, scroll position
-    pages/                        saved models (WholePage_Model, Page_Model, Parallax_Model)
+    pages/                        saved models (WholePage_Model, Page_Model, Parallax_Model), Utils_Page_Json (load JSON)
     side/SquareBackground         the gradient squares
 core/src-jvm/jks/tools2d/parallax/   same packages and jar, JVM only
     heart/GVars_Serialization     Kryo setup for .plax
