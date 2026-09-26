@@ -110,6 +110,8 @@ class PlaxFormatTest
 		WholePage_Model original = read(Files.readAllBytes(plax));
 		original.pageModel.pageList.get(0).flipY = true;
 		original.pageModel.pageList.get(0).mirror = true;
+		assertFalse(original.useOriginalSize, "files older than format 4 stretch stripped regions");
+		original.useOriginalSize = true;
 
 		byte[] rewritten = write(original);
 		// Byte 0 is Kryo's reference marker for the page itself.
@@ -119,6 +121,38 @@ class PlaxFormatTest
 		assertPageEquals(original, reread);
 		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
 		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
+		assertTrue(reread.useOriginalSize, "useOriginalSize is stored since format 4");
+	}
+
+	@Test
+	void format3FilesStillLoadStretched() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("demo/assets/hiver/Hiver.plax")));
+		original.pageModel.pageList.get(0).mirror = true;
+		original.useOriginalSize = true;
+
+		Kryo format3 = GVars_Serialization.prepareKryo();
+		format3.register(WholePage_Model.class, new WholePage_Model_Serializer(3));
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try (Output output = new Output(bytes))
+		{format3.writeObject(output, original);}
+		byte[] written = bytes.toByteArray();
+		assertEquals(3, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
+		assertFalse(reread.useOriginalSize, "format 3 has no useOriginalSize");
+		original.useOriginalSize = false;
+		assertPageEquals(original, reread);
+	}
+
+	/** .jplax and .plaxpj written before the field existed: Jackson leaves it at its default. */
+	@Test
+	void jsonWithoutUseOriginalSizeLoadsStretched() throws IOException
+	{
+		JsonNode saving = JSON.readTree(ROOT.resolve("demo/assets/hiver/Hiver.plaxpj").toFile()).get("saving");
+		assertFalse(saving.has("useOriginalSize"));
+		assertFalse(JSON.treeToValue(saving, WholePage_Model.class).useOriginalSize);
 	}
 
 	@Test
@@ -149,6 +183,7 @@ class PlaxFormatTest
 		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("demo/assets/hiver/Hiver.plax")));
 		original.pageModel.pageList.get(0).flipY = true;
 		original.pageModel.pageList.get(0).mirror = true;
+		original.useOriginalSize = true;
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
@@ -181,6 +216,7 @@ class PlaxFormatTest
 		assertEquals(expected.bottomHalfSize, actual.bottomHalfSize);
 		assertEquals(expected.repeatOnX, actual.repeatOnX);
 		assertEquals(expected.repeatOnY, actual.repeatOnY);
+		assertEquals(expected.useOriginalSize, actual.useOriginalSize);
 		assertEquals(expected.pageModel.atlasName, actual.pageModel.atlasName);
 		assertEquals(expected.pageModel.outside, actual.pageModel.outside);
 		assertEquals(expected.pageModel.pageList.size(), actual.pageModel.pageList.size());

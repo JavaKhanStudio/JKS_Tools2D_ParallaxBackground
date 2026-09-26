@@ -14,13 +14,15 @@ import com.esotericsoftware.kryo.io.Output;
  * {@code 0x01}. No version number, and flipY is not stored.</li>
  * <li>version 2: {@link #VERSION_MARKER} and a version number, then the version 1 layout with flipY stored.</li>
  * <li>version 3: the version 2 layout with each layer's mirror stored after padYFactor.</li>
+ * <li>version 4: the version 3 layout with the page's useOriginalSize stored after repeatOnY. Older files read it as
+ * false.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 3;
+	static final int CURRENT_VERSION = 4;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;
@@ -49,6 +51,8 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 
 		output.writeBoolean(page.repeatOnX);
 		output.writeBoolean(page.repeatOnY);
+		if (writeVersion >= 4)
+			output.writeBoolean(page.useOriginalSize);
 
 		kryo.writeObject(output, page.pageModel);
 	}
@@ -82,6 +86,8 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 
 		page.repeatOnX = input.readBoolean();
 		page.repeatOnY = input.readBoolean();
+		if (version >= 4)
+			page.useOriginalSize = input.readBoolean();
 
 		page.pageModel = kryo.readObject(input, Page_Model.class);
 		return page;
