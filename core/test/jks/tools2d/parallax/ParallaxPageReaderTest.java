@@ -17,7 +17,9 @@ import org.junit.jupiter.api.Test;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
@@ -52,6 +54,30 @@ class ParallaxPageReaderTest
 			public int getRegionHeight()
 			{return height;}
 		};
+	}
+
+	/**
+	 * An atlas region packed with its whitespace stripped, on a 4096px page that has no GL texture behind it: the
+	 * packed image is {@code width x height} of an {@code originalWidth x originalHeight} image, at that offset.
+	 */
+	private static AtlasRegion strippedRegion(int width, int height, int originalWidth, int originalHeight, int offsetX, int offsetY)
+	{
+		Texture page = new Texture()
+		{
+			@Override
+			public int getWidth()
+			{return 4096;}
+
+			@Override
+			public int getHeight()
+			{return 4096;}
+		};
+		AtlasRegion region = new AtlasRegion(page, 0, 0, width, height);
+		region.originalWidth = originalWidth;
+		region.originalHeight = originalHeight;
+		region.offsetX = offsetX;
+		region.offsetY = offsetY;
+		return region;
 	}
 
 	private static ParallaxLayer layer(float decalY)
@@ -96,6 +122,76 @@ class ParallaxPageReaderTest
 		for (float[] draw : draws)
 			assertTrue(draw[0] + draw[2] > 0 && draw[0] < 40, "off-screen draw at x=" + draw[0]);
 		assertTrue(draws.size() >= 4 && draws.size() <= 5, draws.size() + " draws");
+	}
+
+	/** demo/assets Hiver.atlas parallax4 #1: 3403x580 packed out of 4559x580, 913px stripped on its left. */
+	@Test
+	void strippedRegionKeepsItsOriginalWidthAndOffset()
+	{
+		float unit = 40f / 4559; // world units per pixel of the original image
+		ParallaxPageReader reader = reader(false, false);
+		ParallaxLayer layer = new ParallaxLayer(strippedRegion(3403, 580, 4559, 580, 913, 0), true, 40, 0.02f, 0.02f, 1);
+		layer.setUseOriginalSize(true);
+		reader.addLayers(List.of(layer));
+
+		assertEquals(580 * unit, layer.getHeight(), 1e-4f, "the layer is as high as the original image");
+		reader.draw(camera, batch);
+		assertEquals(1, draws.size());
+		float[] draw = draws.get(0);
+		float layerX = draw[0] - 913 * unit;
+		assertEquals(3403 * unit, draw[2], 1e-4f, "the packed image keeps its pixel scale");
+		assertEquals(580 * unit, draw[3], 1e-4f);
+
+		// Flipped, the stripped margin moves to the right: the image ends 913px before the layer does.
+		layer.setFlipX(true);
+		draws.clear();
+		reader.draw(camera, batch);
+		draw = draws.get(0);
+		assertEquals(-3403 * unit, draw[2], 1e-4f);
+		assertEquals(layerX + (4559 - 913) * unit, draw[0], 1e-4f, "a negative width draws leftwards from x");
+	}
+
+	/** demo/assets Printemps.atlas parallax1 #4: 3645x335 packed out of 3645x580, 142px stripped below it. */
+	@Test
+	void strippedRegionKeepsItsOriginalHeightWhenTilingOnY()
+	{
+		float unit = 40f / 3645;
+		ParallaxPageReader reader = reader(false, true);
+		ParallaxLayer layer = new ParallaxLayer(strippedRegion(3645, 335, 3645, 580, 0, 142), true, 40, 0.02f, 0.02f, 1);
+		layer.setUseOriginalSize(true);
+		reader.addLayers(List.of(layer));
+
+		assertEquals(580 * unit, layer.getTotalHeight(), 1e-4f, "the Y tiling step is the original height");
+		reader.draw(camera, batch);
+		assertTrue(draws.size() >= 2, draws.size() + " draws");
+		for (float[] draw : draws)
+		{
+			assertEquals(40, draw[2], 1e-4f);
+			assertEquals(335 * unit, draw[3], 1e-4f);
+		}
+		for (int i = 1; i < draws.size(); i++)
+			assertEquals(580 * unit, draws.get(i)[1] - draws.get(i - 1)[1], 1e-3f, "tiles are one original height apart");
+	}
+
+	/** Pages saved before .plax format 4 were designed on the packed image stretched over the whole layer. */
+	@Test
+	void strippedRegionIsStretchedWhenThePageSaysSo()
+	{
+		ParallaxPageReader reader = reader(false, false);
+		ParallaxLayer layer = new ParallaxLayer(strippedRegion(3403, 580, 4559, 580, 913, 0), true, 40, 0.02f, 0.02f, 1);
+		reader.addLayers(List.of(layer));
+
+		assertFalse(layer.isUseOriginalSize(), "off by default");
+		assertEquals(580 * 40f / 3403, layer.getHeight(), 1e-4f);
+		reader.draw(camera, batch);
+		assertEquals(40, draws.get(0)[2], 1e-4f);
+		assertEquals(580 * 40f / 3403, draws.get(0)[3], 1e-4f);
+
+		// Switching back and forth resizes the layer, and a copy keeps the setting.
+		layer.setUseOriginalSize(true);
+		assertEquals(580 * 40f / 4559, layer.clone().getHeight(), 1e-4f);
+		layer.setUseOriginalSize(false);
+		assertEquals(580 * 40f / 3403, layer.getHeight(), 1e-4f);
 	}
 
 	@Test

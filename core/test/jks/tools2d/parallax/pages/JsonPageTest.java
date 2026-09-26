@@ -66,6 +66,7 @@ class JsonPageTest
 		WholePage_Model kryo = PlaxFormatTest.read(Files.readAllBytes(plax));
 		kryo.pageModel.pageList.get(0).flipY = true;
 		kryo.pageModel.pageList.get(0).mirror = true;
+		kryo.useOriginalSize = true;
 		kryo.topHalf_top = new Color(0.1f, 0.2f, 0.3f, 0.4f);
 
 		PlaxFormatTest.assertPageEquals(kryo, Utils_Page_Json.readPage(PlaxFormatTest.JSON.writeValueAsString(kryo)));

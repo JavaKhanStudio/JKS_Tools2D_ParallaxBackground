@@ -66,6 +66,7 @@ public class WholePage_Editor extends WholePage_Model
 				parallax.parallaxScalingSpeedX, parallax.parallaxScalingSpeedY,
 				parallax.sizeRatio);
 
+		layer.setUseOriginalSize(useOriginalSize);
 		layer.setUpEverything(parallax);
 		return layer;
 	}

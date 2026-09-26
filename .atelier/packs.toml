@@ -151,6 +151,12 @@ nothing. Keep preferredPageSize 4096, capped at FVars_Extensions.atlasMaxSize 16
 Export writes MipMapLinearLinear,Linear (r40: 200 layers 24.7 -> 17.0 ms), so createPacker rounds
 page sides UP TO A POWER OF TWO: GLES2/WebGL1 (Android, the GWT build) draw a mipmapped NPOT
 page black, and desktop shows nothing wrong. tools/r40-mipmap-stress.sh re-measures it.
+Mipmap levels average 2^n-pixel blocks, so PixmapPacker duplicates each image's border over HALF
+the padding (25px), and export writes pages through PixmapPackerIO with bleed = true (ColorBleed:
+transparent pixels take their neighbours' colour). A 2px border tiled layers with a seam at every
+join, and unbled black outlined every silhouette in grey (r53: tools/r53-export-place.txt, then
+tools/r53-seam.py). An export is NOT pixel-identical to the preview of a Linear source atlas:
+mipmaps smooth it, by design.
 A layer names a region by NAME + POSITION among same-named regions, and PixmapPackerIO
 .packedName writes index -1 when a name is used once. TexturePacker numbers files from 1
 (ground_1, ground_2), so "ground"+index and "ground"+position are two different keys — mixing

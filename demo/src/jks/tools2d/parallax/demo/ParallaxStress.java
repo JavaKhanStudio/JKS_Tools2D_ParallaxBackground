@@ -20,6 +20,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.Parallax_Model;
+import jks.tools2d.parallax.pages.Utils_Page;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
@@ -33,6 +34,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * {@code --repeat x|y|xy|none}, {@code --size min,max} (layer width in worlds), {@code --seed n},
  * {@code --shot file.png} saves the last frame, {@code --atlases a.atlas,b.atlas} (assets-relative) replaces the two
  * sample atlases. "cpu" is act + render before glFinish: the time the game thread spends issuing the frame.
+ * {@code --plax page.plax} (assets-relative, its atlas too) shows that saved page instead, still, and
+ * {@code --original-size true|false} overrides the pages' {@link WholePage_Model#useOriginalSize}: with {@code --shot},
+ * a before/after of stripped atlas regions (tools/r41-stripped-shot.sh).
  */
 public class ParallaxStress extends ApplicationAdapter
 {
@@ -42,6 +46,8 @@ public class ParallaxStress extends ApplicationAdapter
 	private final long seed;
 	private final String shot;
 	private final String[] atlases;
+	private final String plax;
+	private final Boolean originalSize;
 
 	private Parallax_Heart heart;
 	private WholePage_Model[] pages;
@@ -56,7 +62,7 @@ public class ParallaxStress extends ApplicationAdapter
 	public ParallaxStress(String[] args)
 	{
 		int layers = 200;
-		String repeat = "x", size = "0.3,1.5", shotFile = null, atlasNames = "Hiver.atlas,Printemps.atlas";
+		String repeat = "x", size = "0.3,1.5", shotFile = null, atlasNames = "Hiver.atlas,Printemps.atlas", plaxFile = null, original = null;
 		float secs = 10, transferEvery = 2;
 		long s = 42;
 		for (int i = 0; i + 1 < args.length; i += 2)
@@ -71,6 +77,8 @@ public class ParallaxStress extends ApplicationAdapter
 				case "--seed": s = Long.parseLong(args[i + 1]); break;
 				case "--shot": shotFile = args[i + 1]; break;
 				case "--atlases": atlasNames = args[i + 1]; break;
+				case "--plax": plaxFile = args[i + 1]; break;
+				case "--original-size": original = args[i + 1]; break;
 				default: throw new IllegalArgumentException("Unknown option " + args[i]);
 			}
 		}
@@ -85,6 +93,8 @@ public class ParallaxStress extends ApplicationAdapter
 		seed = s;
 		shot = shotFile;
 		atlases = atlasNames.split(",");
+		plax = plaxFile;
+		originalSize = original == null ? null : Boolean.valueOf(original);
 	}
 
 	public static void main(String[] args)
@@ -102,10 +112,19 @@ public class ParallaxStress extends ApplicationAdapter
 	{
 		heart = new Parallax_Heart();
 		Random random = new Random(seed);
-		pages = new WholePage_Model[] { page(atlases[0], random), page(atlases[atlases.length - 1], random) };
+		if (plax != null)
+		{
+			WholePage_Model page = Utils_Page.loadPage(plax);
+			pages = new WholePage_Model[] { page, page };
+		}
+		else
+			pages = new WholePage_Model[] { page(atlases[0], random), page(atlases[atlases.length - 1], random) };
+		if (originalSize != null)
+			for (WholePage_Model page : pages)
+				page.useOriginalSize = originalSize;
 		heart.setPage(pages[0]);
-		heart.screenSpeedConstantX = 80;
-		heart.screenSpeedConstantY = repeatY ? 40 : 0;
+		heart.screenSpeedConstantX = plax != null ? 0 : 80;
+		heart.screenSpeedConstantY = repeatY && plax == null ? 40 : 0;
 
 		profiler = new GLProfiler(Gdx.graphics);
 		profiler.enable();
@@ -162,7 +181,7 @@ public class ParallaxStress extends ApplicationAdapter
 		float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f);
 		elapsed += delta;
 		sinceTransfer += delta;
-		if (every > 0 && sinceTransfer >= every)
+		if (every > 0 && plax == null && sinceTransfer >= every)
 		{
 			sinceTransfer = 0;
 			shown = 1 - shown;

@@ -267,6 +267,7 @@ public final class Utils_Saving
 			page.bottomHalfSize = bottom.getScreenPercentage();
 		}
 
+		page.useOriginalSize = parallax_Heart.currentPage.useOriginalSize;
 		page.repeatOnX = parallax_Heart.parallaxReader.isRepeatOnX();
 		page.repeatOnY = parallax_Heart.parallaxReader.isRepeatOnY();
 	}

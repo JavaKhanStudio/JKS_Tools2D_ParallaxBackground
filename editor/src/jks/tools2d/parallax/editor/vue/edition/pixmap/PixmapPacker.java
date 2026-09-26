@@ -149,6 +149,12 @@ public class PixmapPacker implements Disposable
 					}
 				}
 
+				// Nothing opaque: kept whole, a 0px pixmap cannot be created.
+				if (right <= left || bottom <= top) {
+					left = top = 0;
+					right = image.getWidth();
+					bottom = image.getHeight();
+				}
 				int newWidth = right - left;
 				int newHeight = bottom - top;
 
@@ -190,18 +196,21 @@ public class PixmapPacker implements Disposable
 		page.image.drawPixmap(image, rectX, rectY);
 		if (duplicateBorder)
 		{
-			// Local change to libGDX's packer: the border is duplicated 2px wide instead of 1px, so mipmapped layers don't bleed.
+			// Local change to libGDX's packer: the border fills half the padding, the most it can without reaching a
+			// neighbour, instead of 1px. Mipmap levels average blocks of 2^n pixels: a thinner border lets them blend in the
+			// transparent padding, and a tiled layer shows a seam at every join and along its edges (r53).
+			int b = Math.max(1, padding / 2);
 			int imageWidth = image.getWidth(), imageHeight = image.getHeight();
 			// Copy corner pixels to fill corners of the padding.
-			page.image.drawPixmap(image, 0, 0, 1, 1, rectX - 1, rectY - 2, 2, 2);
-			page.image.drawPixmap(image, imageWidth - 1, 0, 1, 1, rectX + rectWidth, rectY - 2, 2, 2);
-			page.image.drawPixmap(image, 0, imageHeight - 1, 1, 1, rectX - 2, rectY + rectHeight, 2, 2);
-			page.image.drawPixmap(image, imageWidth - 1, imageHeight - 1, 1, 1, rectX + rectWidth, rectY + rectHeight, 2, 2);
+			page.image.drawPixmap(image, 0, 0, 1, 1, rectX - b, rectY - b, b, b);
+			page.image.drawPixmap(image, imageWidth - 1, 0, 1, 1, rectX + rectWidth, rectY - b, b, b);
+			page.image.drawPixmap(image, 0, imageHeight - 1, 1, 1, rectX - b, rectY + rectHeight, b, b);
+			page.image.drawPixmap(image, imageWidth - 1, imageHeight - 1, 1, 1, rectX + rectWidth, rectY + rectHeight, b, b);
 			// Copy edge pixels into padding.
-			page.image.drawPixmap(image, 0, 0, imageWidth, 1, rectX, rectY - 2, rectWidth, 2);
-			page.image.drawPixmap(image, 0, imageHeight - 1, imageWidth, 1, rectX, rectY + rectHeight, rectWidth, 2);
-			page.image.drawPixmap(image, 0, 0, 1, imageHeight, rectX - 2, rectY, 2, rectHeight);
-			page.image.drawPixmap(image, imageWidth - 1, 0, 1, imageHeight, rectX + rectWidth, rectY, 2, rectHeight);	
+			page.image.drawPixmap(image, 0, 0, imageWidth, 1, rectX, rectY - b, rectWidth, b);
+			page.image.drawPixmap(image, 0, imageHeight - 1, imageWidth, 1, rectX, rectY + rectHeight, rectWidth, b);
+			page.image.drawPixmap(image, 0, 0, 1, imageHeight, rectX - b, rectY, b, rectHeight);
+			page.image.drawPixmap(image, imageWidth - 1, 0, 1, imageHeight, rectX + rectWidth, rectY, b, rectHeight);	
 		}
 
 		if (pixmapToDispose != null) {

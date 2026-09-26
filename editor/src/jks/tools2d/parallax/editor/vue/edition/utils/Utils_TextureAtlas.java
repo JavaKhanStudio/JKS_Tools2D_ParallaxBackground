@@ -24,6 +24,7 @@ import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.TextureData;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
@@ -94,9 +95,11 @@ public final class Utils_TextureAtlas
 
 			// Layers are always drawn scaled: linear filtering is what the 50px padding and tripled borders are for.
 			// Mipmaps: a screen-wide layer is drawn smaller than its page, 200 of them draw a third faster with them.
+			// Their levels average whole blocks: without bleeding, the black of transparent pixels outlines every shape.
 			PixmapPackerIO.SaveParameters parameters = new PixmapPackerIO.SaveParameters();
 			parameters.minFilter = TextureFilter.MipMapLinearLinear;
 			parameters.magFilter = TextureFilter.Linear;
+			parameters.bleed = true;
 			new PixmapPackerIO().save(atlasFile, packer, parameters);
 		}
 		catch (IOException | RuntimeException e)
@@ -161,10 +164,42 @@ public final class Utils_TextureAtlas
 		int border = paddingSize * 3;
 		int pageWidth = Math.min(atlasMaxSize, MathUtils.nextPowerOfTwo(Math.max(preferredPageSize, largestWidth + border)));
 		int pageHeight = Math.min(atlasMaxSize, MathUtils.nextPowerOfTwo(Math.max(preferredPageSize, largestHeight + border)));
-		return new PixmapPacker(pageWidth, pageHeight, Format.RGBA8888, paddingSize, true);
+		// A page drawing regions at their original size keeps the fill-rate win of stripping: the packer strips each
+		// image and stores its original size and offset. Other pages stretch whatever is packed, so nothing is stripped.
+		boolean strip = parallax_Heart.currentPage.useOriginalSize;
+		return new PixmapPacker(pageWidth, pageHeight, Format.RGBA8888, paddingSize, true, strip, strip, new PixmapPacker.GuillotineStrategy());
 	}
 
-	/** Copies the pixels of a region, reading each source texture back from its data only once. */
+	/**
+	 * A page drawing regions at their original size (WholePage_Model.useOriginalSize) gets back the whitespace an
+	 * external packer stripped, so {@link #createPacker}'s packer strips it again and records the original size and
+	 * offset. Copied as packed, the image would have no offset left and be drawn over the whole layer.
+	 */
+	private static AtlasRegion strippedRegion(TextureRegion region)
+	{
+		if (!parallax_Heart.currentPage.useOriginalSize || !(region instanceof AtlasRegion))
+			return null;
+		AtlasRegion atlasRegion = (AtlasRegion) region;
+		boolean stripped = atlasRegion.originalWidth != atlasRegion.packedWidth || atlasRegion.originalHeight != atlasRegion.packedHeight;
+		return stripped ? atlasRegion : null;
+	}
+
+	private static int flattenedWidth(TextureRegion region)
+	{
+		AtlasRegion stripped = strippedRegion(region);
+		return stripped != null ? stripped.originalWidth : region.getRegionWidth();
+	}
+
+	private static int flattenedHeight(TextureRegion region)
+	{
+		AtlasRegion stripped = strippedRegion(region);
+		return stripped != null ? stripped.originalHeight : region.getRegionHeight();
+	}
+
+	/**
+	 * Copies the pixels of a region, with its stripped whitespace back when {@link #strippedRegion} says so, reading
+	 * each source texture back from its data only once.
+	 */
 	private static Pixmap extractRegion(TextureRegion region, Map<Texture, Pixmap> sourcePixmaps, Map<Pixmap, Boolean> mustDispose)
 	{
 		Pixmap source = sourcePixmaps.get(region.getTexture());
@@ -178,11 +213,16 @@ public final class Utils_TextureAtlas
 			sourcePixmaps.put(region.getTexture(), source);
 		}
 
-		Pixmap pixels = new Pixmap(region.getRegionWidth(), region.getRegionHeight(), Format.RGBA8888);
+		// offsetY counts from the bottom of the original image, pixmap rows from its top.
+		AtlasRegion stripped = strippedRegion(region);
+		int left = stripped == null ? 0 : (int) stripped.offsetX;
+		int top = stripped == null ? 0 : stripped.originalHeight - (int) stripped.offsetY - region.getRegionHeight();
+
+		Pixmap pixels = new Pixmap(flattenedWidth(region), flattenedHeight(region), Format.RGBA8888);
 		pixels.setFilter(Filter.NearestNeighbour);
 		pixels.setBlending(Blending.None);
 		pixels.drawPixmap(source, region.getRegionX(), region.getRegionY(), region.getRegionWidth(), region.getRegionHeight(),
-				0, 0, region.getRegionWidth(), region.getRegionHeight());
+				left, top, region.getRegionWidth(), region.getRegionHeight());
 		return pixels;
 	}
 

@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    implementation "io.github.javakhanstudio:parallax-background:2.3.0"
+    implementation "io.github.javakhanstudio:parallax-background:2.4.0"
 }
 ```
 
@@ -38,7 +38,7 @@ Gradle Kotlin DSL (`build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("io.github.javakhanstudio:parallax-background:2.3.0")
+    implementation("io.github.javakhanstudio:parallax-background:2.4.0")
 }
 ```
 
@@ -48,7 +48,7 @@ Maven (`pom.xml`):
 <dependency>
     <groupId>io.github.javakhanstudio</groupId>
     <artifactId>parallax-background</artifactId>
-    <version>2.3.0</version>
+    <version>2.4.0</version>
 </dependency>
 ```
 
@@ -96,6 +96,12 @@ A **page** (`WholePage_Model`) is one complete background:
 - **Two gradient squares** (`SquareBackground`) drawn behind the layers, one covering the top of the screen and one
   the bottom, each going from a bottom color to a top color.
 - **Repeat on X / Y**: whether layers are tiled horizontally, vertically, both, or drawn once.
+- **Original size** (`useOriginalSize`): for an atlas packed with its whitespace stripped (TexturePacker's default),
+  whether a layer takes the region's original size and draws the packed image at its offset inside it, as libGDX's
+  `AtlasSprite` does. Pages the editor creates have it on. Pages saved before `.plax` format 4 have it off: their
+  stripped regions are stretched over the whole layer, the look they were designed with, and they keep it when
+  re-saved. The editor's own export (flatten) strips whitespace only on pages that have it on, and packs the others
+  whole.
 
 Layers live in **world units**: the world is 40 units wide and its height follows the screen aspect ratio. A layer is
 `40 x sizeRatio` units wide, and its height follows the image aspect ratio. Its settings:
@@ -169,7 +175,10 @@ More:
   MipMapLinearLinear,Linear`) on pages whose sides are powers of two: 200 screen-wide layers draw a third faster (24.7 ms
   to 17.0 ms on an Intel iGPU). An atlas you pack yourself gets the same by setting that filter, but only on
   power-of-two pages if the game runs on OpenGL ES 2 or WebGL 1 (Android, the browser): those draw any other mipmapped
-  texture black. A cross-fade between pages on two different atlases also flushes the batch once per layer.
+  texture black. Pack it with TexturePacker's `bleed` and `duplicatePadding` on and a wide `paddingX`/`paddingY`
+  (the editor uses 50 px): mipmap levels average blocks of pixels, so without them the black of transparent pixels
+  outlines every shape, and a tiled layer shows a seam at every join. A cross-fade between pages on two different
+  atlases also flushes the batch once per layer.
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
@@ -255,8 +264,9 @@ A browser (GWT) game cannot read `.plax` (Kryo): it loads the JSON of a page ins
 `Parallax_Heart.fromJson("page.jplax")` or `Utils_Page_Json.loadPage(file)`. That reader takes a `.jplax` or a
 `.plaxpj`; of a project it keeps the layers an export would keep, the ones drawn from the atlas.
 
-`.plax` files carry a format version since 2.0. Format 2 also stores `flipY` and format 3 `mirror`;
-format 1 files (written by the 2019-2023 editor) and format 2 files still load. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
+`.plax` files carry a format version since 2.0. Format 2 also stores `flipY`, format 3 `mirror` and format 4 the
+page's `useOriginalSize`; format 1 files (written by the 2019-2023 editor) and formats 2 and 3 still load, with
+`useOriginalSize` off, as do `.jplax` and `.plaxpj` files without it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
 exported from. Kryo registration order defines the class ids stored in the files, so `GVars_Serialization.prepareKryo`
 must only ever be appended to.
 
