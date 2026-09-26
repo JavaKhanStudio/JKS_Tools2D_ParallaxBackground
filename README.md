@@ -81,6 +81,7 @@ Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
 ```bash
 ./gradlew :editor:run           # the editor, opens on the sample projects in editor/Files
 ./gradlew :demo:run             # the demo: SPACE switches page, N tints, LEFT/RIGHT scroll, R resets
+godot --path engines/godot      # the same demo through the Godot reader (Godot 4)
 ./gradlew test                  # file format, tiling, cross-fade and no-allocation-per-frame tests
 ./gradlew :demo:stress --args="--layers 400 --repeat xy"   # frame time of generated pages, see ParallaxStress
 ./gradlew :demo:lab               # grade parallax scenes blind, 1-5: see docs/parallax-design.md

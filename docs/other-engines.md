@@ -55,7 +55,8 @@ A reader is three pieces, and the third is where the work is:
   `Parallax_Heart`: `speed_constant_x/y`, `speed_consumable_x/y`, `act(delta)`, `reset_positions()`,
   `transfert_into(page, atlas, seconds)` (`transfertIntoPage`) and `tint_to(color, seconds)` (`addColorTransfert`).
 
-Usage is in the README (*In Godot 4*). `godot --path engines/godot` scrolls Hiver.
+Usage is in the README (*In Godot 4*). `godot --path engines/godot` is the demo/ game in Godot: Hiver and Printemps, SPACE cross-fades, N tints, LEFT/RIGHT
+scroll, R resets (`tools/start-demo-check.sh` presses SPACE and N off screen).
 
 **How it is checked.** `tools/godot-parallax-shots.sh` renders the same pages in libGDX (the grading lab's `--shots`)
 and in Godot (`engines/godot/tests/shots.gd`), with the same 60 units/s scroll stepped at 1/60 s, 0, 6 and 12 s in,
