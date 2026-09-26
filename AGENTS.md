@@ -54,6 +54,10 @@ repair.
 - A `core/src` member that needs `src-jvm` carries `@GwtIncompatible` and names the class fully qualified: an import of
   it fails the browser build.
 - `ParallaxLayer.clone()` copies field by field: a new field goes there too, `ParallaxLayerTest` fails otherwise.
+- `tools/browser-test.sh` runs `core/browser-test/cases` in headless Chrome (`--open`: in a window, the
+  `browser-tests` lab). Those cases are GWT-safe code, no JUnit, no reflection; `BrowserSuiteTest` runs the same ones on
+  the JVM. A test of what a browser game calls goes there; GWT floats are JavaScript doubles, so compare floats by
+  `Float.floatToIntBits`, never by their printed text.
 
 ## Editor
 

@@ -27,7 +27,8 @@ sourceSets {
         resources.srcDirs = ['src']
         resources.includes = ['**/*.gwt.xml']
     }
-    test.java.srcDirs = ['test']
+    // browser-test/cases is the browser suite (tools/browser-test.sh): its JVM run, BrowserSuiteTest, keeps it honest.
+    test.java.srcDirs = ['test', 'browser-test/cases']
 }
 
 configurations {
@@ -89,6 +90,50 @@ def gwtCheck = tasks.register('gwtCheck', JavaExec) {
 }
 tasks.named('check') {
     dependsOn gwtCheck
+}
+
+/*
+ * The browser suite (browser-test/): the cases of core/test that translate, compiled with GWT into a libGDX browser app
+ * in build/browserTest/war. Not part of `build`: it takes a minute. tools/browser-test.sh builds it, serves it and runs it
+ * in Chrome, headless (the gate) or in a window (--open, the lab).
+ */
+def browserTestAssets = layout.buildDirectory.dir('browserTest/assets')
+def browserTestWar = layout.buildDirectory.dir('browserTest/war')
+def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
+    description = 'Writes the saved pages the browser suite loads, with what Kryo reads of each (JvmFixtures).'
+    mainClass = 'jks.tools2d.parallax.browsertest.JvmFixtures'
+    classpath = sourceSets.test.runtimeClasspath
+    inputs.files(fileTree('test-data'), fileTree('../editor/Files') { include '**/*.plax*' }, fileTree('../demo/assets') { include '**/*.plax*' })
+    outputs.dir(browserTestAssets)
+    argumentProviders.add({ [rootDir.absolutePath, browserTestAssets.get().asFile.absolutePath] } as CommandLineArgumentProvider)
+    doFirst { delete browserTestAssets }
+}
+tasks.register('browserTestWar', JavaExec) {
+    group = 'verification'
+    description = 'Compiles the browser suite to JavaScript: build/browserTest/war, run it with tools/browser-test.sh.'
+    dependsOn browserTestFixtures
+    mainClass = 'com.google.gwt.dev.Compiler'
+    classpath = files('browser-test/launcher', 'browser-test/cases', 'src', 'src-jvm') + configurations.gwtCheck
+    // BrowserTests.gwt.xml's asset paths are relative to core/.
+    workingDir = projectDir
+    maxHeapSize = '2g'
+    // The asset preloader is a generator, and it does not run again while its output is in the persistent unit cache.
+    systemProperty 'gwt.persistentunitcache', 'false'
+    inputs.files(fileTree('browser-test'), fileTree('src'), browserTestAssets).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(configurations.gwtCheck)
+    outputs.dir(browserTestWar)
+    argumentProviders.add({ ['-failOnError', '-logLevel', 'ERROR',
+            '-war', browserTestWar.get().asFile.absolutePath,
+            '-workDir', layout.buildDirectory.dir('browserTest/work').get().asFile.absolutePath,
+            'jks.tools2d.parallax.browsertest.BrowserTests'] } as CommandLineArgumentProvider)
+    def war = browserTestWar.get().asFile
+    def webapp = file('browser-test/webapp')
+    doFirst { delete war }
+    doLast {
+        if (!new File(war, 'assets/assets.txt').exists())
+            throw new GradleException("the asset preloader did not run: $war has no assets.txt and the page would never start")
+        project.copy { from webapp; into war }
+    }
 }
 
 // Javadoc of a libGDX library: don't fail the build on missing tags.

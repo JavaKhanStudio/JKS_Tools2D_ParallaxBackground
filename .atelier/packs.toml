@@ -254,6 +254,9 @@ workflow REFUSES to run when the tag and gradle.properties disagree.
 A fix reaches a game as a snapshot, not a release (Simon, r57): push develop, and the game pins
 the timestamped build (X.Y.Z-yyyyMMdd.HHmmss-N, RELEASING.md "Test versions"). Do not raise a
 release to ship one fix. `./gradlew -p tools/snapshot-probe resolve` proves a snapshot resolves.
+Browser suite (r68): tools/browser-test.sh builds :core:browserTestWar (GWT, ~20 s, not part of
+`build`), serves it with python3 and runs it in headless Chrome; exit 1 unless every case passes.
+Its cases (core/browser-test/cases) also run on the JVM in :core:test (BrowserSuiteTest).
 Maven Central needs four repository secrets (MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD,
 SIGNING_KEY, SIGNING_KEY_PASSWORD; all four are set). Without them a tag push FAILS before
 building anything; only a hand-run Release with `without_central` ticked skips Central, and
