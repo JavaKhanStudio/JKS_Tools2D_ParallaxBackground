@@ -1,0 +1,46 @@
+# r126 (d14): the per-project "Pixel art" switch. Opens City (pixel art, Linear atlas), shoots the preview soft, ticks
+# the switch (the preview must turn sharp at once), unticks it (soft again), ticks it, saves the project, exports WITHOUT
+# F.Export (pixel art alone must ask to flatten), then reopens the export and the saved project.
+# ./gradlew :editor:installDist, copy editor/build/install/ParallaxEditor to editor/build/r126/install, then
+# DRIVER_PORT=47926 EDITOR_BIN=$PWD/editor/build/r126/install/bin/ParallaxEditor tools/driver-probe.sh < tools/r126-pixel-art.txt
+# python3 tools/r126-pixel-art-check.py editor/build/r126/out
+sleep 4
+open Files/Demos/City.plax
+sleep 3
+set preview.play false
+set preview.speedX 0
+sleep 1
+shot build/r126/out/1-soft.png
+click tab.controls
+set options.pixelArt true
+sleep 1
+shot build/r126/out/2-sharp.png
+set options.pixelArt false
+sleep 1
+shot build/r126/out/3-untick.png
+set options.pixelArt true
+set options.path ../editor/build/r126/out
+set options.name city
+click options.saveProject
+sleep 2
+click text:OK
+sleep 1
+click options.export
+sleep 1
+shot build/r126/out/4-dialog.png
+click text:No
+sleep 6
+click text:OK
+open build/r126/out/city.plax
+sleep 3
+set preview.play false
+set preview.speedX 0
+sleep 1
+shot build/r126/out/5-export-reopened.png
+open build/r126/out/city.plaxpj
+sleep 3
+set preview.play false
+set preview.speedX 0
+click tab.controls
+sleep 1
+shot build/r126/out/6-project-reopened.png

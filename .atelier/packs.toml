@@ -171,6 +171,13 @@ nothing. Keep preferredPageSize 4096, capped at FVars_Extensions.atlasMaxSize 16
 Export writes MipMapLinearLinear,Linear (r40: 200 layers 24.7 -> 17.0 ms), so createPacker rounds
 page sides UP TO A POWER OF TWO: GLES2/WebGL1 (Android, the GWT build) draw a mipmapped NPOT
 page black, and desktop shows nothing wrong. tools/r40-mipmap-stress.sh re-measures it.
+EXCEPT a pixel-art project (Project_Data.pixelArt, the VE_Options "Pixel art" box, d14/r126): it
+writes Nearest,Nearest, no mipmaps, pages cropped without POT rounding (writtenSize's powerOfTwo
+follows the filter). Ticked, Utils_Texture.applyPixelArt sets every project texture Nearest in the
+live preview and gives the saved filters back on untick: a texture the project gains while it is on
+must go through applyPixelArt too (registerOutsideImage, replaceTexture and Vue_Edition do). Export
+decides to flatten from the atlas FILE's filter, never the live texture's, which the preview changed.
+tools/r126-pixel-art.txt drives it end to end.
 Pages are ALLOCATED at that size but WRITTEN cropped (PixmapPackerIO.trimmed, r114): each to its
 regions' extent plus padding, rounded up to a power of two. Before, 4 small images exported as a
 4096x4096 page, 85 MiB of video memory. tools/r114-flatten-export.txt + r114-atlas-check.py measure it.
