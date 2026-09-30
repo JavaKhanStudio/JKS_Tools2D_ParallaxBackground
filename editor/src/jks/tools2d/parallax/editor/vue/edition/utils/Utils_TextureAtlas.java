@@ -113,6 +113,7 @@ public final class Utils_TextureAtlas
 			parameters.minFilter = projectDatas.pixelArt ? TextureFilter.Nearest : TextureFilter.MipMapLinearLinear;
 			parameters.magFilter = projectDatas.pixelArt ? TextureFilter.Nearest : TextureFilter.Linear;
 			parameters.bleed = true;
+			parameters.etc2 = projectDatas.etc2;
 			new PixmapPackerIO().save(atlasFile, packer, parameters);
 		}
 		catch (IOException | RuntimeException e)

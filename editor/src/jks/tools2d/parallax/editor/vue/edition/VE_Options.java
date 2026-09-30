@@ -26,7 +26,7 @@ public class VE_Options extends Table
 	private static final float textHeight = 22;
 
 	public static TextField parallaxPath, parallaxName;
-	public static VisCheckBox formatLibGDX, formatJson, forceExport, pixelArt;
+	public static VisCheckBox formatLibGDX, formatJson, forceExport, pixelArt, etc2;
 
 	public VE_Options()
 	{
@@ -76,6 +76,18 @@ public class VE_Options extends Table
 			}
 		});
 
+		// Stored in the project, as Pixel art.
+		etc2 = new VisCheckBox("ETC2");
+		etc2.setName("options.etc2");
+		etc2.setChecked(projectDatas.etc2);
+		new Tooltip.Builder("Also export the atlas as ETC2 (name.etc2.atlas):\na quarter of the video memory on OpenGL ES 3 phones.").target(etc2).build();
+		etc2.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{projectDatas.etc2 = etc2.isChecked();}
+		});
+
 		parallaxPath = new TextField("", GVars_UI.baseSkin)
 		{
 			@Override
@@ -98,10 +110,11 @@ public class VE_Options extends Table
 
 		Table formatTable = new Table();
 		formatTable.setBounds(savingExport.getWidth() + savingExport.getX(), savingExport.getY(), 100, savingExport.getHeight() + savingProject.getHeight());
-		// Five rows in the two buttons' height: at their natural height the last one ran over the preview.
-		formatTable.top().defaults().height(textHeight * 0.9f);
+		// Six rows in the two buttons' height: at their natural height the last one ran over the preview.
+		formatTable.top().defaults().height(textHeight * 0.75f);
 		formatTable.add(new VisLabel("Exp Format")).left().row();
 		formatTable.add(formatLibGDX).left().row();
+		formatTable.add(etc2).left().row();
 		formatTable.add(formatJson).left().row();
 		formatTable.add(forceExport).left().row();
 		formatTable.add(pixelArt).left();

@@ -121,9 +121,12 @@ public class WholePage_Model
 	public void preload(float worldWidth, float worldHeight)
 	{
 		AssetManager manager = Gvars_Parallax.getManager();
-		manager.load(pageModel.atlasName, TextureAtlas.class);
-		manager.finishLoadingAsset(pageModel.atlasName);
-		useAtlas(manager.get(pageModel.atlasName, TextureAtlas.class), false, worldWidth, worldHeight);
+		String atlas = Gvars_Parallax.atlasFile(pageModel.atlasName);
+		if (!atlas.equals(pageModel.atlasName) && !manager.getFileHandleResolver().resolve(atlas).exists())
+			atlas = pageModel.atlasName;
+		manager.load(atlas, TextureAtlas.class);
+		manager.finishLoadingAsset(atlas);
+		useAtlas(manager.get(atlas, TextureAtlas.class), false, worldWidth, worldHeight);
 	}
 
 	public void preload(String relativePath)
@@ -132,7 +135,12 @@ public class WholePage_Model
 	public void preload(String relativePath, float worldWidth, float worldHeight)
 	{
 		if (pageModel.atlasName != null)
-			useAtlas(new TextureAtlas(new FileHandle(relativePath + "/" + pageModel.atlasName)), true, worldWidth, worldHeight);
+		{
+			FileHandle atlas = new FileHandle(relativePath + "/" + Gvars_Parallax.atlasFile(pageModel.atlasName));
+			if (!atlas.exists())
+				atlas = new FileHandle(relativePath + "/" + pageModel.atlasName);
+			useAtlas(new TextureAtlas(atlas), true, worldWidth, worldHeight);
+		}
 		else
 			useAtlas(new TextureAtlas(), true, worldWidth, worldHeight);
 	}

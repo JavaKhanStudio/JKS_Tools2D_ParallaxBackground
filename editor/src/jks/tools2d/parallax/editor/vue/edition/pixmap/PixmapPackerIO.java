@@ -1,7 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition.pixmap;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.util.zip.Deflater;
 
 import com.badlogic.gdx.files.FileHandle;
@@ -47,6 +46,16 @@ public class PixmapPackerIO
 		public TextureFilter magFilter = TextureFilter.Nearest;
 		/** Gives transparent pixels the colour of their visible neighbours before writing, see {@link ColorBleed}. */
 		public boolean bleed;
+		/**
+		 * Also writes every page as ETC2 ({@link Etc2}, {@code <atlas>_N.zktx}) and {@link #etc2AtlasFile} naming those
+		 * pages, region for region the same atlas: a game on an OpenGL ES 3 GPU loads it for a quarter of the memory (d13).
+		 */
+		public boolean etc2;
+	}
+
+	/** {@code name.etc2.atlas}: the ETC2 copy of the atlas {@code name.atlas}. */
+	public static FileHandle etc2AtlasFile (FileHandle atlasFile) {
+		return atlasFile.sibling(atlasFile.nameWithoutExtension() + ".etc2." + atlasFile.extension());
 	}
 
 	/** Saves the provided PixmapPacker to the provided file. The resulting file will use the standard TextureAtlas file format and
@@ -67,9 +76,11 @@ public class PixmapPackerIO
 	 * @param parameters the SaveParameters specifying how to save the PixmapPacker
 	 * @throws IOException if the atlas file can not be written */	
 	public void save (FileHandle file, PixmapPacker packer, SaveParameters parameters) throws IOException {
-		try (Writer writer = file.writer(false)) {
-			write(file, packer, parameters, writer);
-		}
+		StringBuilder atlas = new StringBuilder(), etc2Atlas = new StringBuilder();
+		write(file, packer, parameters, atlas, etc2Atlas);
+		file.writeString(atlas.toString(), false, "UTF-8");
+		if (parameters.etc2)
+			etc2AtlasFile(file).writeString(etc2Atlas.toString(), false, "UTF-8");
 	}
 
 	/**
@@ -105,12 +116,16 @@ public class PixmapPackerIO
 		return new int[] { Math.min(width, packer.pageWidth), Math.min(height, packer.pageHeight) };
 	}
 
-	private void write (FileHandle file, PixmapPacker packer, SaveParameters parameters, Writer writer) throws IOException {
+	private void write (FileHandle file, PixmapPacker packer, SaveParameters parameters, StringBuilder atlas, StringBuilder etc2Atlas)
+		throws IOException {
 		int index = 0;
 		for (Page page : packer.pages) {
 			if (page.rects.size > 0) {
-				FileHandle pageFile = file.sibling(file.nameWithoutExtension() + "_" + (++index) + parameters.format.getExtension());
+				String pageName = file.nameWithoutExtension() + "_" + (++index);
+				FileHandle pageFile = file.sibling(pageName + parameters.format.getExtension());
+				FileHandle etc2File = file.sibling(pageName + ".zktx");
 				Pixmap image = trimmed(packer, page, parameters.minFilter.isMipMap());
+				int width = image.getWidth(), height = image.getHeight();
 				try {
 					if (parameters.bleed)
 						ColorBleed.bleed(image);
@@ -124,37 +139,45 @@ public class PixmapPackerIO
 							break;
 						}
 					}
+					if (parameters.etc2)
+						Etc2.writeZktx(etc2File, image, parameters.minFilter.isMipMap());
 				} finally {
 					if (image != page.image) image.dispose();
 				}
-				writer.write("\n");
-				writer.write(pageFile.name() + "\n");
-				writer.write("size: " + image.getWidth() + "," + image.getHeight() + "\n");
-				writer.write("format: " + packer.pageFormat.name()  + "\n");
-				writer.write("filter: " + parameters.minFilter.name() + "," + parameters.magFilter.name() + "\n");
-				writer.write("repeat: none" + "\n");
-				for (String name : page.rects.keys()) {
-					int separator = name.lastIndexOf(INDEX_SEPARATOR);
-					String regionName = separator < 0 ? name : name.substring(0, separator);
-					String regionIndex = separator < 0 ? "-1" : name.substring(separator + 1);
-					writer.write(regionName + "\n");
-					PixmapPacker.PixmapPackerRectangle rect = page.rects.get(name);
-					writer.write("  rotate: false" + "\n");
-					writer.write("  xy: " + (int) rect.x + "," + (int) rect.y + "\n");
-					writer.write("  size: " + (int) rect.width + "," + (int) rect.height + "\n");
-					if (rect.splits != null) {
-						writer.write("  split: " + rect.splits[0] + ", " + rect.splits[1] + ", " + rect.splits[2] + ", " + rect.splits[3] + "\n");
-						if (rect.pads != null) {
-							writer.write("  pad: " + rect.pads[0] + ", " + rect.pads[1] + ", " + rect.pads[2] + ", " + rect.pads[3] + "\n");
-						}
-					}
-					writer.write("  orig: " + rect.originalWidth + ", " + rect.originalHeight + "\n");
-					writer.write("  offset: " + rect.offsetX + ", " + (int)(rect.originalHeight - rect.height - rect.offsetY) + "\n");
-
-					writer.write("  index: " + regionIndex + "\n");
-				}
+				String body = pageBody(packer, page, parameters, width, height);
+				atlas.append("\n").append(pageFile.name()).append("\n").append(body);
+				etc2Atlas.append("\n").append(etc2File.name()).append("\n").append(body);
 			}
 		}
 	}
-	
+
+	/** Everything the atlas says of a page after its file name. */
+	private static String pageBody (PixmapPacker packer, Page page, SaveParameters parameters, int width, int height) {
+		StringBuilder writer = new StringBuilder();
+		writer.append("size: " + width + "," + height + "\n");
+		writer.append("format: " + packer.pageFormat.name()  + "\n");
+		writer.append("filter: " + parameters.minFilter.name() + "," + parameters.magFilter.name() + "\n");
+		writer.append("repeat: none" + "\n");
+		for (String name : page.rects.keys()) {
+			int separator = name.lastIndexOf(INDEX_SEPARATOR);
+			String regionName = separator < 0 ? name : name.substring(0, separator);
+			String regionIndex = separator < 0 ? "-1" : name.substring(separator + 1);
+			writer.append(regionName + "\n");
+			PixmapPacker.PixmapPackerRectangle rect = page.rects.get(name);
+			writer.append("  rotate: false" + "\n");
+			writer.append("  xy: " + (int) rect.x + "," + (int) rect.y + "\n");
+			writer.append("  size: " + (int) rect.width + "," + (int) rect.height + "\n");
+			if (rect.splits != null) {
+				writer.append("  split: " + rect.splits[0] + ", " + rect.splits[1] + ", " + rect.splits[2] + ", " + rect.splits[3] + "\n");
+				if (rect.pads != null) {
+					writer.append("  pad: " + rect.pads[0] + ", " + rect.pads[1] + ", " + rect.pads[2] + ", " + rect.pads[3] + "\n");
+				}
+			}
+			writer.append("  orig: " + rect.originalWidth + ", " + rect.originalHeight + "\n");
+			writer.append("  offset: " + rect.offsetX + ", " + (int)(rect.originalHeight - rect.height - rect.offsetY) + "\n");
+			writer.append("  index: " + regionIndex + "\n");
+		}
+		return writer.toString();
+	}
+
 }

@@ -39,6 +39,7 @@ import jks.tools2d.parallax.editor.gvars.GVars_Serialization_Editor;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.vue.edition.VE_Options;
+import jks.tools2d.parallax.editor.vue.edition.pixmap.PixmapPackerIO;
 import jks.tools2d.parallax.editor.vue.edition.data.Outside_Source;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
@@ -79,6 +80,8 @@ public final class Utils_Saving
 			askForFlatening(where, whatName, "One or more images are not part of the texture atlas.");
 		else if (projectDatas.pixelArt && !atlasIsSharp())
 			askForFlatening(where, whatName, "Pixel art is on, and the texture atlas is not filtered sharp.");
+		else if (projectDatas.etc2 && !hasEtc2Copy())
+			askForFlatening(where, whatName, "ETC2 is on, and the texture atlas has no ETC2 copy.");
 		else
 			savingExport(where, whatName);
 	}
@@ -94,6 +97,13 @@ public final class Utils_Saving
 			if (page.minFilter != TextureFilter.Nearest || page.magFilter != TextureFilter.Nearest)
 				return false;
 		return true;
+	}
+
+	/** Whether the project's atlas has the ETC2 copy an export with ETC2 on wrote next to it (name.etc2.atlas). */
+	private static boolean hasEtc2Copy()
+	{
+		Path atlas = EditorPaths.atlasFile();
+		return atlas != null && PixmapPackerIO.etc2AtlasFile(new FileHandle(atlas.toFile())).exists();
 	}
 
 	public static void savingExport(String where, String whatName)
@@ -401,6 +411,7 @@ public final class Utils_Saving
 		copy.saving = page;
 		copy.defaults = projectDatas.defaults;
 		copy.pixelArt = projectDatas.pixelArt;
+		copy.etc2 = projectDatas.etc2;
 		copy.outsideInfos = new ArrayList<>();
 		if (projectDatas.outsideInfos != null)
 			for (Outside_Source source : projectDatas.outsideInfos)
