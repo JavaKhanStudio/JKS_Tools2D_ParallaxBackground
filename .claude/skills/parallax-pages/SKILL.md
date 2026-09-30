@@ -21,7 +21,8 @@ them. The world is 40 units wide; its height follows the screen (22.5 at 16:9). 
 | `decal_X_Ratio`, `decal_Y_Ratio` | Start offset in % of the world width / height. Y is where the layer's **bottom edge** sits, 0 = screen bottom. |
 | `parallaxScalingSpeedX/Y` | Share of the screen scroll the layer follows. Far = small. |
 | `speedXAtRest` | Own movement even when the screen is still: clouds, water. |
-| `padX`, `padY`, `flipX`, `flipY`, `mirror` | Gap between repeats, mirrored image, flipped copy beside each repeat. |
+| `padX`, `padY`, `flipX`, `flipY` | Gap between repeats (world units), and the image flipped left-right / upside down. |
+| `mirror` | Only on a page repeating on ONE axis: repeating on X, a second row stacked on top of the strip, upside down; on Y, a second column to its right, reversed. Nothing on XY or none. A reflection that doubles the band (clouds, water), never a seam fix: on a foreground layer it draws the ground upside down above itself. |
 
 Page: `topHalf_top/bottom`, `bottomHalf_top/bottom` (RGBA 0-1), `topHalfSize`/`bottomHalfSize` (share of the screen
 left **uncovered**: 0.5 = half), `repeatOnX/Y`, `useOriginalSize` (true for new pages on atlases packed with

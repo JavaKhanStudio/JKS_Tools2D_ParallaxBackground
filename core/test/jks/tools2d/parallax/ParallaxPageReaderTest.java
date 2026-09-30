@@ -194,6 +194,59 @@ class ParallaxPageReaderTest
 		assertEquals(580 * 40f / 3403, layer.getHeight(), 1e-4f);
 	}
 
+	/**
+	 * Mirror adds a second strip flipped across the first one's far edge: above it, upside down, when the page tiles on X;
+	 * to its right, reversed, when it tiles on Y; nothing when it tiles on both axes or neither (README, r127).
+	 */
+	@Test
+	void mirrorStacksAFlippedStripAcrossTheTiledOne()
+	{
+		for (boolean onX : new boolean[] { true, false })
+		{
+			draws.clear();
+			ParallaxPageReader reader = reader(onX, !onX);
+			ParallaxLayer layer = layer(0);
+			layer.setSizeRatio(0.3f); // 12 x 6.75 world units, the view is 40 x 22.5
+			layer.setMirror(true);
+			reader.addLayers(List.of(layer));
+			reader.draw(camera, batch);
+
+			float width = layer.getWidth(), height = layer.getHeight();
+			int flipped = 0;
+			for (float[] draw : draws)
+			{
+				if (onX && draw[3] < 0)
+				{
+					flipped++;
+					assertEquals(2 * height, draw[1], 1e-4f, "upside down, its top on the strip's top edge");
+					assertTrue(draw[2] > 0, "not reversed on X");
+				}
+				else if (!onX && draw[2] < 0)
+				{
+					flipped++;
+					assertEquals(2 * width, draw[0], 1e-4f, "reversed, its right side on the column's right edge");
+					assertTrue(draw[3] > 0, "not upside down on Y");
+				}
+				else
+					assertEquals(0, onX ? draw[1] : draw[0], 1e-4f, "the tiled strip itself");
+			}
+			assertEquals(draws.size() / 2, flipped, (onX ? "X" : "Y") + ": one mirrored copy per repeat, " + draws.size() + " draws");
+		}
+
+		for (boolean both : new boolean[] { true, false })
+		{
+			draws.clear();
+			ParallaxPageReader reader = reader(both, both);
+			ParallaxLayer layer = layer(0);
+			layer.setSizeRatio(0.3f);
+			layer.setMirror(true);
+			reader.addLayers(List.of(layer));
+			reader.draw(camera, batch);
+			for (float[] draw : draws)
+				assertTrue(draw[2] > 0 && draw[3] > 0, "no mirrored copy when tiling on " + (both ? "both axes" : "neither"));
+		}
+	}
+
 	@Test
 	void negativePaddingLargerThanTheImageDoesNotHang()
 	{

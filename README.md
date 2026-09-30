@@ -118,7 +118,7 @@ Layers live in **world units**: the world is 40 units wide and its height follow
 | At rest speed            | Horizontal speed of the layer even when the screen does not move (clouds, water). |
 | Pad X / Pad Y            | Gap between two repetitions of the layer, in world units. |
 | Flip X / Flip Y          | Mirror the image. |
-| Mirror                   | Adds a flipped copy next to the strip. |
+| Mirror                   | Doubles the strip with a reflection of it, on a page that repeats on one axis only. Repeating on X, a second row is drawn on top of the strip, upside down (the strip's top edge is the axis); on Y, a second column to its right, reversed left to right. Repeating on both axes or neither, it draws nothing. Use it for a band that reads the same reflected (clouds, water, foliage); it does not hide the seams between repeats: an upside-down copy of a foreground layer shows. |
 
 Each frame, a layer moves by `delta × (screen speed + at rest speed) × speed ratio`, then is tiled to cover the
 camera view. The screen speed is set by the game, as a constant speed plus a speed consumed by the next frame.
