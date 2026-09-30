@@ -53,9 +53,23 @@ public final class Utils_TextureAtlas
 	public static boolean flattenProject(String path, String name)
 	{
 		FileHandle atlasFile = nextFreeAtlasFile(path, name);
+		Map<String, List<TextureRegion>> groups = groupByRegionName();
+		List<String> packedNames = new ArrayList<>();
+		List<TextureRegion> packedRegions = new ArrayList<>();
+		Map<Position_Infos, int[]> newPositions = new HashMap<>();
+		packingOrder(groups, packedNames, packedRegions, newPositions);
+		if (!packAndSave(atlasFile, packedNames, packedRegions))
+			return false;
+		pointProjectAt(atlasFile, groups, newPositions);
+		return true;
+	}
 
-		// Every distinct image, grouped under the region name it will have in the new atlas. Used by a layer or not, on
-		// purpose (d12): after flatten the project points at this atlas alone, so an image left out leaves its library.
+	/**
+	 * Every distinct image, grouped under the region name it will have in the new atlas. Used by a layer or not, on
+	 * purpose (d12): after flatten the project points at this atlas alone, so an image left out leaves its library.
+	 */
+	private static Map<String, List<TextureRegion>> groupByRegionName()
+	{
 		Map<String, List<TextureRegion>> groups = new LinkedHashMap<>();
 		Set<String> atlasNames = new HashSet<>();
 		for (TextureRegion region : GVars_Vue_Edition.allImage)
@@ -73,12 +87,17 @@ public final class Utils_TextureAtlas
 			String regionName = info.fromAtlas ? info.url : uniqueName(Utils_LoadingImages.extractName(info.url), atlasNames, groups);
 			groups.computeIfAbsent(regionName, k -> new ArrayList<>()).add(region);
 		}
+		return groups;
+	}
 
-		// Packing order: group by group, each by position. The guillotine packer only fills its last page, so the regions
-		// of a name reach the atlas in that order, which is how a layer finds its region again (findLayer).
-		List<String> packedNames = new ArrayList<>();
-		List<TextureRegion> packedRegions = new ArrayList<>();
-		Map<Position_Infos, int[]> newPositions = new HashMap<>();
+	/**
+	 * Packing order: group by group, each by position. The guillotine packer only fills its last page, so the regions
+	 * of a name reach the atlas in that order, which is how a layer finds its region again (findLayer). Fills the names
+	 * and regions to pack, in that order, and each image's position among its name's.
+	 */
+	private static void packingOrder(Map<String, List<TextureRegion>> groups, List<String> packedNames,
+			List<TextureRegion> packedRegions, Map<Position_Infos, int[]> newPositions)
+	{
 		for (Map.Entry<String, List<TextureRegion>> group : groups.entrySet())
 		{
 			List<TextureRegion> regions = group.getValue();
@@ -90,7 +109,11 @@ public final class Utils_TextureAtlas
 				newPositions.put(GVars_Vue_Edition.imageRef.get(regions.get(index)), new int[] { index });
 			}
 		}
+	}
 
+	/** Packs the regions under their names and writes the atlas. @return false (after telling the user) if it failed. */
+	private static boolean packAndSave(FileHandle atlasFile, List<String> packedNames, List<TextureRegion> packedRegions)
+	{
 		PixmapPacker packer = null;
 		Map<Texture, Pixmap> sourcePixmaps = new IdentityHashMap<>();
 		Map<Pixmap, Boolean> mustDispose = new IdentityHashMap<>();
@@ -115,6 +138,7 @@ public final class Utils_TextureAtlas
 			parameters.bleed = true;
 			parameters.etc2 = projectDatas.etc2;
 			new PixmapPackerIO().save(atlasFile, packer, parameters);
+			return true;
 		}
 		catch (IOException | RuntimeException e)
 		{
@@ -130,8 +154,12 @@ public final class Utils_TextureAtlas
 				if (mustDispose.get(pixmap))
 					pixmap.dispose();
 		}
+	}
 
-		// The project now only references the new atlas.
+	/** The project now only references the new atlas. */
+	private static void pointProjectAt(FileHandle atlasFile, Map<String, List<TextureRegion>> groups,
+			Map<Position_Infos, int[]> newPositions)
+	{
 		for (Map.Entry<String, List<TextureRegion>> group : groups.entrySet())
 			for (TextureRegion region : group.getValue())
 			{
@@ -150,7 +178,6 @@ public final class Utils_TextureAtlas
 		parallax_Heart.currentPage.pageModel.atlasName = atlasFile.name();
 		// Written next to the project, which is not always the folder it was opened from.
 		parallax_Heart.relativePath = atlasFile.parent().path();
-		return true;
 	}
 
 	private static String uniqueName(String baseName, Set<String> atlasNames, Map<String, ?> taken)
