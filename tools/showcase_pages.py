@@ -17,7 +17,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from parallax_lab import ROOT, layer, layers, lint, load, page_of, set_speeds  # noqa: E402
+from parallax_lab import (ROOT, hiver_from_art, layer, layers, lint, load, natural_size, page_of)  # noqa: E402
 
 
 def first_of_each(layer_list):
@@ -83,28 +83,49 @@ def forest():
 	return load('editor/Files/Aa new/calmTree.plaxpj'), 'editor/Files/Aa new'
 
 
-def lowered(path, shift, sky, ground, span=None):
-	"""A page whose layers leave the lower part white (a game draws its ground there), moved down to fill the screen."""
-	page = load(path)
-	for l in layers(page):
-		l['decal_Y_Ratio'] -= shift
-	if span:
-		set_speeds(page, [layers(page)[0]['parallaxScalingSpeedX'] * span ** i for i in range(len(layers(page)))])
-	colours = page_of('', [], sky=sky, ground=ground)
-	for key in ('topHalf_top', 'topHalf_bottom', 'bottomHalf_top', 'bottomHalf_bottom'):
-		page[key] = colours[key]
-	return page
-
-
 def winter():
-	"""Simon's Hiver (round 1: 1), moved down to fill the screen under a winter sky."""
-	return lowered('demo/assets/hiver/Hiver.plaxpj', 45, ('8e8aa6', 'dcdbe6'), ('e8eef0', 'e8eef0')), 'demo/assets'
+	"""Hiver as the parallax-pages skill lays it out from the art (parallax_lab.hiver_from_art, r92): Simon's Hiver moved
+	down showed the firs and the mountains cut flat by their strips' top edges, and the hills' bottom edge over the
+	snow (r138)."""
+	page = hiver_from_art()
+	# There the sky's and the mountains' top edges sit at 22.4 of the screen's 22.5 units, and 3 rows of the top
+	# gradient show above them. Raised 1% (0.2 units); the hills' band still covers the mountains' bottom edge.
+	for l in layers(page)[:2]:
+		l['decal_Y_Ratio'] += 1
+	return page, 'demo/assets'
 
 
 def spring():
-	"""Simon's Printemps, moved down, its speeds stretched to a x1.35 ratio (its span was 2x, under the skill's 3x)."""
-	return lowered('demo/assets/printemps/Printemps.plaxpj', 52, ('f2b89c', 'eecab7'), ('efcab8', 'efcab8'), 1.35), \
-		'demo/assets'
+	"""Printemps, laid out from the art (r138; moved down, Simon's page showed the trees and poles ending in the air).
+	Its five strips, 3645x580 each, are one picture cut in planes: p4 the peach sky (solid), p3 far hills (floating at
+	24-82%), p2 the near hills and their pink trees (solid to 44%), p1 telegraph poles and their wires (bottom to
+	top), p0 grass and flowers. Sky, poles and grass at their natural size, one screen tall and decal Y 0: the poles
+	and the flowers stand on the screen's bottom edge and their wires leave by its top.
+	The hills cannot keep theirs: tiled, p2's left and right edges differ over its lower 45% (a cut every repeat,
+	seen in the render), and p3's over its lower 44%. Both are sunk until those rows are below the screen, and scaled
+	up so their bands stay tall: p2 two screens tall, p3 one and a half. Speeds from the drawn sizes: the poles are
+	drawn about twice the size of p2's trees at this scale; the far hills have nothing to compare, so a sixth."""
+	front = 0.08
+	n = natural_size(3645, 580)
+	L = [
+		layer('parallax1', 4, speed=front / 14, size=n, dx=0, dy=0),
+		layer('parallax1', 3, speed=front / 6, size=5.3, dx=31, dy=-67.5),
+		layer('parallax1', 2, speed=front / 2.5, size=7.08, dx=67, dy=-90),
+		layer('parallax1', 1, speed=front / 1.3, size=n, dx=13, dy=0),
+		layer('parallax1', 0, speed=front, size=n, dx=41, dy=0),
+	]
+	# p4 covers the whole screen: the gradients only show if a game draws the page on a taller screen.
+	return page_of('Printemps.atlas', L, sky=('eec9b6', 'eec9b6'), ground=('eec9b6', 'eec9b6'),
+	               original_size=True), 'demo/assets'
+
+
+# Lint faults a page keeps, and why: round.json's about says them (r138).
+ARGUED = {
+	'spring': 'Lint (e) on layer 2 is kept: sunk, p2 shows only its top rows, whose edges differ in alpha (236 against '
+	          '255, about 3/255 over the sky) and by one row where the hilltop meets the edge. At full size its join is '
+	          'a 1 px line and a 2 px step in the contour; the whole band was cut before. Only repainted art tiles '
+	          'cleanly.',
+}
 
 
 def city():
@@ -126,8 +147,8 @@ PAGES = [
 	('one-night', one_night, 'One night: pines, mountains and moving water (Simon\'s page)'),
 	('purple-fairy', purple_fairy, 'Purple fairy: a glowing forest (Simon\'s page)'),
 	('forest', forest, 'Forest: painted trees and mist (Simon\'s calmTree)'),
-	('winter', winter, 'Winter: Hiver filling the screen under a winter sky'),
-	('spring', spring, 'Spring: Printemps filling the screen, deeper speed span'),
+	('winter', winter, 'Winter: Hiver laid out from the art, firs in front, snow hills, the ski lift\'s mountains'),
+	('spring', spring, 'Spring: Printemps, poles and flowers in front of pink-tree hills under a peach sky'),
 	('city', city, 'City: pixel-art buildings at night'),
 ]
 
@@ -142,6 +163,8 @@ def main(argv):
 		with open(os.path.join(ROOT, path), 'w', encoding='utf-8') as f:
 			json.dump(page, f, indent=1)
 			f.write('\n')
+		if name in ARGUED:
+			about += '. ' + ARGUED[name]
 		scenes.append({'id': name, 'page': path, 'atlasDir': atlas_dir, 'name': name, 'about': about,
 		               'lint': lint(page)})
 	with open(os.path.join(ROOT, out, 'round.json'), 'w', encoding='utf-8') as f:
