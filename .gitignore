@@ -21,6 +21,10 @@ HQ/
 *.tmp
 *.bak
 
+# JVM crash logs and core dumps, written to the working directory (e.g. demo/assets under :demo:run)
+hs_err_pid*.log
+core.[0-9]*
+
 # Editor runtime output
 editor/Files/AutoSave/
 editor/packing_*/
