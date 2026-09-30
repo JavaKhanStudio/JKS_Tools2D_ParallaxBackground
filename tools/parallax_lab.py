@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """The parallax lab's scene maker and page linter (r73). Plain Python 3, no dependency.
 
-  tools/parallax_lab.py lint PAGE...            the numbers of a page (.jplax/.plaxpj) and the rules it breaks
+  tools/parallax_lab.py lint [--atlas DIR] PAGE...  the numbers of a page (.jplax/.plaxpj) and the rules it breaks,
+                                                its layout too when its atlas is found (next to it, in its round.json
+                                                or the sample folders) or given; the layout needs Pillow
   tools/parallax_lab.py survey OUT_DIR          every sample page as it is, as a round (to render or grade)
   tools/parallax_lab.py round2 [OUT_DIR]        round 2: those pages next to Simon's, and brackets of speed ratio,
                                                 span and width, shuffled blind (default demo/lab/round2)
@@ -110,8 +112,9 @@ def set_speeds(page, values):
 
 # ---------------------------------------------------------------- lint
 
-def lint(page):
-    """The rules a page breaks, as short sentences. The rules are the skill's (.claude/skills/parallax-pages)."""
+def lint(page, atlas_dir=None):
+    """The rules a page breaks, as short sentences. The rules are the skill's (.claude/skills/parallax-pages). With the
+    folder of the page's atlas, its layout too: see layout()."""
     problems = []
     s = speeds(page)
     n = len(s)
@@ -140,6 +143,136 @@ def lint(page):
         if l['sizeRatio'] < 0.5 and page.get('repeatOnX', True) and l['padX'] == 0:
             problems.append('layer %d is %.2f worlds wide and tiled: its repeat shows %.0f times a screen'
                             % (i, l['sizeRatio'], 1 / l['sizeRatio']))
+    if atlas_dir is not None:
+        problems += layout(page, atlas_dir)
+    return problems
+
+
+SCREEN_W, SCREEN_H = 40.0, 22.5  # the lab's world at 1280x720, the camera's view before any scroll
+SOLID, SEAM = 0.99, 20
+COVERED = 0.9  # a layer edge behind nearer layers this opaque at its height does not show
+EDGE = SCREEN_H / 200  # an edge within half a percent of the screen's top or bottom is off it
+
+
+def gradient_set(page, key_top, key_bottom):
+    """A gradient the page chose: the editor starts both at white, and a transparent one draws nothing."""
+    colours = [page.get(key_top), page.get(key_bottom)]
+    if any(c is None or c.get('a', 1) <= 0 for c in colours):
+        return False
+    return any(hex_of(c) != 'ffffff' for c in colours)
+
+
+def layout(page, atlas_dir):
+    """What the page puts where, read from its atlas (tools/parallax_regions.py, needs Pillow), on the 40 x 22.5 world
+    of a 16:9 screen before any scroll. The faults r92 only found by looking at full-size renders (r129):
+      (a) a layer's art touches its top edge without filling it (cropped by the painter) and that edge is on screen,
+          not behind a nearer layer's solid band: the art shows cut flat;
+      (b) a layer's art reaches its bottom edge, that edge is on screen and no nearer layer's solid band covers it;
+      (c) a band of the screen that no layer and no gradient covers (a white gradient is the editor's default: unset);
+      (d) regions packed with their whitespace stripped and useOriginalSize off: they are stretched over the layer;
+      (e) a layer tiled on X whose left and right edges differ (seam > 20): a cut every repeat.
+    A layer counts as covering a band only if it spans the screen's width: tiled on X without padding, or 1 world
+    wide or more."""
+    try:
+        import parallax_regions as regions_tool
+    except ImportError:  # no Pillow
+        return ['layout not checked: tools/parallax_regions.py needs Pillow']
+    atlas = os.path.join(ROOT, atlas_dir, page['pageModel']['atlasName'])
+    if not os.path.exists(atlas):
+        return ['layout not checked: no %s' % os.path.relpath(atlas, ROOT)]
+    regions = {(r['name'], r['pos']): r for r in regions_tool.read_atlas(atlas)}
+    original = page.get('useOriginalSize', False)
+    sheets, placed, problems, stripped = {}, [], [], []
+    for i, l in enumerate(layers(page)):
+        r = regions.get((l['regionName'], l['regionPosition']))
+        if r is None:
+            problems.append('layer %d: no region %s#%d in %s' % (i, l['regionName'], l['regionPosition'],
+                                                                 page['pageModel']['atlasName']))
+            continue
+        img = regions_tool.image_of(r, sheets)
+        (w, h), (ow, oh), (ox, oy) = r['size'], r['orig'], r['offset']
+        if (w, h) != (ow, oh) or (ox, oy) != (0, 0):
+            stripped.append(i)
+            if not original:  # the packed image alone, stretched over the whole layer
+                img = img.crop((ox, oh - oy - h, ox + w, oh - oy))
+        if l.get('flipY'):
+            img = img.transpose(regions_tool.Image.FLIP_TOP_BOTTOM)
+        small = img.resize((min(img.width, 400), min(img.height, 200)))
+        alpha = small.getchannel('A').load()
+        rows = [sum(1 for x in range(small.width) if alpha[x, y] > 16) / small.width
+                for y in range(small.height - 1, -1, -1)]  # rows[0] is the bottom row
+        full = img.getchannel('A').load()
+
+        def opaque(y):
+            return sum(1 for x in range(0, img.width, 2) if full[x, y] > 16) / len(range(0, img.width, 2))
+
+        # Art cut by the painter goes on at the edge as wide as just inside it; a crest that touches it narrows fast.
+        top, inside = opaque(0), opaque(round(0.02 * (img.height - 1)))
+        cut_top = top > 0.002 and top >= 0.7 * inside
+        width = SCREEN_W * l['sizeRatio']
+        bottom = l['decal_Y_Ratio'] * SCREEN_H / 100
+        spans = page.get('repeatOnX', True) and l['padX'] <= 0 or width >= SCREEN_W
+        placed.append((i, l, rows, bottom, width * img.height / img.width, spans, cut_top))
+        if page.get('repeatOnX', True):
+            seam = regions_tool.measure(img)['seam']
+            if seam > SEAM:
+                problems.append('(e) layer %d (%s#%d) is tiled on X but its left and right edges differ (seam %d > '
+                                '%d): a cut shows every repeat' % (i, l['regionName'], l['regionPosition'], seam, SEAM))
+    if stripped and not original:
+        problems.append('(d) layers %s use regions packed with their whitespace stripped, and useOriginalSize is off: '
+                        'each is stretched over its whole layer' % stripped)
+
+    def row_at(entry, y):
+        """The share of the layer's row at world height y that is opaque, None off the layer."""
+        _, _, rows, bottom, height = entry[:5]
+        if not bottom <= y < bottom + height:
+            return None
+        return rows[min(len(rows) - 1, int((y - bottom) / height * len(rows)))]
+
+    def covered_by_nearer(k, y):
+        """The nearer layers together hide that row: each one's opaque share, as if they overlapped at random."""
+        clear = 1.0
+        for e in placed[k + 1:]:
+            if e[5]:
+                clear *= 1 - (row_at(e, y) or 0)
+        return clear <= 1 - COVERED
+
+    def on_screen(y):
+        return EDGE < y < SCREEN_H - EDGE
+
+    def pct(y):
+        return round(100 * y / SCREEN_H)
+
+    for k, e in enumerate(placed):
+        i, l, rows, bottom, height, _, cut_top = e
+        name = '%s#%d' % (l['regionName'], l['regionPosition'])
+        top = bottom + height
+        eps = height / len(rows) / 2
+        if cut_top and rows[-1] < SOLID and on_screen(top) and not covered_by_nearer(k, top - eps):
+            problems.append('(a) layer %d (%s): its art touches its top edge without filling it, and that edge is on '
+                            'screen at %d%% of its height: the art shows cut flat' % (i, name, pct(top)))
+        if rows[0] > 0 and on_screen(bottom) and not covered_by_nearer(k, bottom + eps):
+            problems.append('(b) layer %d (%s): its art reaches its bottom edge, on screen at %d%% of its height, and '
+                            'no nearer layer covers that edge' % (i, name, pct(bottom)))
+
+    sky_from = page.get('topHalfSize', 0.5) * SCREEN_H if gradient_set(page, 'topHalf_top', 'topHalf_bottom') else None
+    ground_to = (1 - page.get('bottomHalfSize', 0.5)) * SCREEN_H \
+        if gradient_set(page, 'bottomHalf_top', 'bottomHalf_bottom') else None
+    empty, steps = [], 225
+    for j in range(steps):
+        y = (j + 0.5) * SCREEN_H / steps
+        if sky_from is not None and y >= sky_from or ground_to is not None and y <= ground_to:
+            continue
+        if any(e[5] and (row_at(e, y) or 0) > 0 for e in placed):
+            continue
+        if empty and empty[-1][1] == j:
+            empty[-1][1] = j + 1
+        else:
+            empty.append([j, j + 1])
+    for a, b in empty:
+        if b - a >= 2:  # a band thinner than a hundredth of the screen is a row rounding, not a hole
+            problems.append('(c) the screen from %d%% to %d%% of its height (from the bottom) is covered by no layer '
+                            'and no gradient' % (round(100 * a / steps), round(100 * b / steps)))
     return problems
 
 
@@ -418,7 +551,7 @@ def write_round(out_dir, scenes, seed, note):
             json.dump(page, f, indent=1)
             f.write('\n')
         listed.append({'id': sid, 'page': path, 'atlasDir': atlas_dir, 'name': name, 'about': name + ': ' + about,
-                       'lint': lint(page)})
+                       'lint': lint(page, atlas_dir)})
     with open(os.path.join(out, 'round.json'), 'w', encoding='utf-8') as f:
         json.dump({'note': note, 'seed': seed, 'scenes': listed}, f, indent=1)
         f.write('\n')
@@ -492,6 +625,24 @@ def round2(out_dir):
                                      'background.')
 
 
+def find_atlas_dir(path, page):
+    """The folder of a page's atlas: next to the page, else the one a round.json beside it names, else the one sample
+    folder that holds an atlas of that name. None when it is not found once."""
+    name = page['pageModel']['atlasName']
+    here = os.path.dirname(path)
+    if os.path.exists(os.path.join(ROOT, here, name)):
+        return here
+    round_json = os.path.join(ROOT, here, 'round.json')
+    if os.path.exists(round_json):
+        with open(round_json, encoding='utf-8') as f:
+            for scene in json.load(f)['scenes']:
+                if os.path.normpath(scene['page']) == os.path.normpath(os.path.relpath(os.path.join(ROOT, path), ROOT)):
+                    return scene['atlasDir']
+    found = {os.path.relpath(os.path.dirname(a), ROOT)
+             for d in ('editor/Files', 'demo/assets') for a in glob.glob(os.path.join(ROOT, d, '**', name), recursive=True)}
+    return found.pop() if len(found) == 1 else None
+
+
 def main(argv):
     if len(argv) < 2 or argv[1] in ('-h', '--help'):
         print(__doc__)
@@ -499,11 +650,15 @@ def main(argv):
     cmd = argv[1]
     if cmd == 'lint':
         bad = 0
-        for path in argv[2:]:
+        paths = argv[2:]
+        atlas_dir = None
+        if len(paths) > 1 and paths[0] == '--atlas':
+            atlas_dir, paths = paths[1], paths[2:]
+        for path in paths:
             page = load(path)
             print(path)
             print(describe(page))
-            problems = lint(page)
+            problems = lint(page, atlas_dir or find_atlas_dir(path, page))
             bad += bool(problems)
             print('\n'.join('  ! ' + p for p in problems) or '  ok')
         return 1 if bad else 0
