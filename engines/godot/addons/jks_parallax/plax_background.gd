@@ -28,11 +28,11 @@ extends CanvasLayer
 ## Scroll speed, as Parallax_Heart.screenSpeedConstantX/Y.
 @export var speed_constant_x := 0.0
 @export var speed_constant_y := 0.0
+## False: nothing moves unless act() is called (to step it yourself, at a fixed rate).
+@export var auto_act := true
 ## Scroll speed for the next frame only, then reset (e.g. from the player's movement).
 var speed_consumable_x := 0.0
 var speed_consumable_y := 0.0
-## False: nothing moves unless act() is called (to step it yourself, at a fixed rate).
-@export var auto_act := true
 
 ## The page on screen; during a cross-fade, the one fading out. It becomes the incoming page when the fade ends.
 var page: PlaxPage
@@ -70,6 +70,10 @@ var _bottom_half_size := 0.5
 
 var _canvas := Node2D.new()
 var _world_height := 22.5
+# Set by _draw_page each frame: pixels per page unit, the screen height, the color the next layer is drawn with.
+var _ppu := 1.0
+var _screen_h := 0.0
+var _modulate := Color.WHITE
 
 
 func _init() -> void:
@@ -130,7 +134,9 @@ func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float) ->
 			_finish_transfert()
 		else:
 			_fade_speed = 1.0 / seconds
-	_fade_gradients([new_page.top_half_top, new_page.top_half_bottom, new_page.bottom_half_top, new_page.bottom_half_bottom], seconds)
+	_fade_gradients(
+		[new_page.top_half_top, new_page.top_half_bottom, new_page.bottom_half_top, new_page.bottom_half_bottom],
+		seconds)
 	_update_filter()
 	_canvas.queue_redraw()
 
@@ -155,7 +161,8 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 	for model in from_page.layers:
 		var region := from_atlas.find_region(model.regionName, model.regionPosition) if from_atlas else {}
 		if region.is_empty():
-			push_error("PlaxBackground: region '%s' #%d not found in %s" % [model.regionName, model.regionPosition, from_page.atlas_name])
+			push_error("PlaxBackground: region '%s' #%d not found in %s"
+					% [model.regionName, model.regionPosition, from_page.atlas_name])
 			continue
 		if region.rotate:
 			push_warning("PlaxBackground: region '%s' is packed rotated, which is not supported: drawn as is" % model.regionName)
@@ -174,8 +181,10 @@ func _sync_transfer_positions() -> void:
 	for slot in range(maxi(old_offset, new_offset), total):
 		var from: Dictionary = layers[slot - old_offset]
 		var to: Dictionary = transfer_layers[slot - new_offset]
-		to.distance_x = to.model.decal_X_Ratio * (world_width / 100.0) + from.distance_x - from.model.decal_X_Ratio * (world_width / 100.0)
-		to.distance_y = to.model.decal_Y_Ratio * (_world_height / 100.0) + from.distance_y - from.model.decal_Y_Ratio * (_world_height / 100.0)
+		to.distance_x = (to.model.decal_X_Ratio * (world_width / 100.0) + from.distance_x
+				- from.model.decal_X_Ratio * (world_width / 100.0))
+		to.distance_y = (to.model.decal_Y_Ratio * (_world_height / 100.0) + from.distance_y
+				- from.model.decal_Y_Ratio * (_world_height / 100.0))
 
 
 func _finish_transfert() -> void:
@@ -324,11 +333,6 @@ func _screen_size() -> Vector2:
 
 # --- drawing (ParallaxPageReader.draw), in the page's units, y up, converted to pixels at the last moment ----------
 
-var _ppu := 1.0
-var _screen_h := 0.0
-var _modulate := Color.WHITE
-
-
 func _draw_page() -> void:
 	if page == null:
 		return
@@ -388,12 +392,16 @@ func _draw_gradient(rect: Rect2, top: Color, bottom: Color) -> void:
 	top.a = 1
 	bottom.a = 1
 	_canvas.draw_polygon(
-		PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]),
+		PackedVector2Array(
+			[rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]),
 		PackedColorArray([top, top, bottom, bottom]))
 
 
-## The layer at (x, y) plus every repetition, on the requested axes, that intersects the view (x 0..view_w, y 0..view_h).
-func _tile(l: Dictionary, x: float, y: float, on_x: bool, on_y: bool, mirror: bool, view_w: float, view_h: float) -> void:
+## The layer at (x, y) plus every repetition, on the requested axes, that intersects the view
+## (x 0..view_w, y 0..view_h).
+func _tile(
+		l: Dictionary, x: float, y: float, on_x: bool, on_y: bool, mirror: bool, view_w: float, view_h: float
+) -> void:
 	var width: float = l.width
 	var height: float = l.height
 	if width <= 0 or height <= 0:
@@ -439,7 +447,8 @@ func _draw_region(l: Dictionary, x: float, y: float, fx: bool, fy: bool) -> void
 	var px := Vector2(draw_w, draw_h) * _ppu
 	var origin := Vector2(left * _ppu, _screen_h - (bottom + draw_h) * _ppu)
 	if fx or fy:
-		_canvas.draw_set_transform(origin + Vector2(px.x if fx else 0.0, px.y if fy else 0.0), 0, Vector2(-1 if fx else 1, -1 if fy else 1))
+		_canvas.draw_set_transform(
+			origin + Vector2(px.x if fx else 0.0, px.y if fy else 0.0), 0, Vector2(-1 if fx else 1, -1 if fy else 1))
 		_canvas.draw_texture_rect_region(r.texture, Rect2(Vector2.ZERO, px), src, _modulate)
 		_canvas.draw_set_transform(Vector2.ZERO)
 	else:

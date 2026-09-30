@@ -4,6 +4,13 @@ extends RefCounted
 ## core/src/.../pages/Utils_Page_Json does. A field missing from the file keeps its default. The Kryo export (.plax)
 ## is not read here: its class ids only mean something to the JVM library.
 
+const LAYER_DEFAULTS := {
+	"regionName": "", "regionPosition": 0, "flipX": false, "flipY": false,
+	"parallaxScalingSpeedX": 0.0, "parallaxScalingSpeedY": 0.0, "speedXAtRest": 0.0, "sizeRatio": 1.0,
+	"decal_X_Ratio": 0.0, "decal_Y_Ratio": 0.0, "padX": 0.0, "padXFactor": 0.0, "padY": 0.0, "padYFactor": 0.0,
+	"mirror": false,
+}
+
 var top_half_top := Color.WHITE
 var top_half_bottom := Color.WHITE
 var bottom_half_top := Color.WHITE
@@ -17,13 +24,6 @@ var use_original_size := false
 var atlas_name := ""
 ## Back to front. Each is a Dictionary with the keys of Parallax_Model (regionName, regionPosition, flipX, ...).
 var layers: Array[Dictionary] = []
-
-const LAYER_DEFAULTS := {
-	"regionName": "", "regionPosition": 0, "flipX": false, "flipY": false,
-	"parallaxScalingSpeedX": 0.0, "parallaxScalingSpeedY": 0.0, "speedXAtRest": 0.0, "sizeRatio": 1.0,
-	"decal_X_Ratio": 0.0, "decal_Y_Ratio": 0.0, "padX": 0.0, "padXFactor": 0.0, "padY": 0.0, "padYFactor": 0.0,
-	"mirror": false,
-}
 
 
 static func load_page(path: String) -> PlaxPage:
