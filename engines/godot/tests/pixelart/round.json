@@ -1,0 +1,39 @@
+{
+ "round": "pixelart",
+ "about": "A pixel-art export (r126, d14: the atlas written filter: Nearest,Nearest) drawn sharp, and cross-faded with the same page on its Linear source atlas (r136). city.atlas and city_1.png are copied from tools/r126-pixel-art.txt's export (editor/build/r126/out), never re-exported over.",
+ "scenes": [
+  {
+   "id": "p01",
+   "page": "engines/godot/tests/pixelart/city.jplax",
+   "atlasDir": "engines/godot/tests/pixelart",
+   "name": "nearest",
+   "about": "City exported with Pixel art ticked: layers of 213 to 272 px drawn ~5x, sharp"
+  },
+  {
+   "id": "p02",
+   "page": "engines/godot/tests/pixelart/city.jplax",
+   "atlasDir": "engines/godot/tests/pixelart",
+   "name": "nearest-into-linear",
+   "about": "the Nearest page cross-fades into the same page on the Linear source atlas (editor/Files/Demos/City.atlas): mid-fade each keeps its own filter, as libGDX's textures do",
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/godot/tests/pixelart/city-linear.jplax",
+    "atlasDir": "editor/Files/Demos"
+   }
+  },
+  {
+   "id": "p03",
+   "page": "engines/godot/tests/pixelart/city-linear.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "linear-into-nearest",
+   "about": "the other way: Linear into Nearest; after the fade it is sharp",
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/godot/tests/pixelart/city.jplax",
+    "atlasDir": "engines/godot/tests/pixelart"
+   }
+  }
+ ]
+}
