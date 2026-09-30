@@ -13,7 +13,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import parallax_lab as lab  # noqa: E402
+import parallax_lab as lab
 
 
 def rules(problems):
