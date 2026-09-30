@@ -9,6 +9,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -58,6 +59,8 @@ public class ParallaxStress extends ApplicationAdapter
 	private final float[] frameMs = new float[1 << 16];
 	private final float[] cpuMs = new float[frameMs.length];
 	private int frames, drawCalls, textureBindings, vertices;
+	// The GPU the frames were timed on: an agent's run is in cage, on another GPU than a desktop window (r118).
+	private String renderer;
 
 	public ParallaxStress(String[] args)
 	{
@@ -110,6 +113,7 @@ public class ParallaxStress extends ApplicationAdapter
 	@Override
 	public void create()
 	{
+		renderer = Gdx.gl.glGetString(GL20.GL_RENDERER);
 		heart = new Parallax_Heart();
 		Random random = new Random(seed);
 		if (plax != null)
@@ -228,10 +232,10 @@ public class ParallaxStress extends ApplicationAdapter
 			sum += sorted[i];
 			cpu += cpuMs[i];
 		}
-		System.out.printf("stress layers=%d repeat=%s%s size=%.2f..%.2f frames=%d | frame ms avg=%.2f p50=%.2f p99=%.2f max=%.2f (cpu avg %.2f) | per frame: draw calls %.1f, texture binds %.1f, vertices %.0f%n",
+		System.out.printf("stress layers=%d repeat=%s%s size=%.2f..%.2f frames=%d | frame ms avg=%.2f p50=%.2f p99=%.2f max=%.2f (cpu avg %.2f) | per frame: draw calls %.1f, texture binds %.1f, vertices %.0f | gpu %s%n",
 				layerCount, repeatX ? "x" : "", repeatY ? "y" : "", minSize, maxSize, frames,
 				sum / frames, sorted[frames / 2], sorted[(int) (frames * 0.99)], sorted[frames - 1], cpu / frames,
-				drawCalls / (float) frames, textureBindings / (float) frames, vertices / (float) frames);
+				drawCalls / (float) frames, textureBindings / (float) frames, vertices / (float) frames, renderer);
 	}
 
 	private void saveShot()

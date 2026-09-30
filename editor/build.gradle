@@ -36,6 +36,7 @@ application {
 // The editor browses and auto-saves projects under ./Files, so run it from the module directory.
 tasks.named('run', JavaExec) {
     workingDir = projectDir
+    rootProject.offscreen(it)
 }
 
 // The distribution is the "editor + library" download: it carries the sample projects to open on the start screen.

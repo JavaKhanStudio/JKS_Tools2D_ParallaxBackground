@@ -1,3 +1,6 @@
+// offscreen(task): a window a board agent opens goes to a headless display, see gradle/offscreen.gradle.
+apply from: 'gradle/offscreen.gradle'
+
 subprojects {
     // group and version come from gradle.properties
 

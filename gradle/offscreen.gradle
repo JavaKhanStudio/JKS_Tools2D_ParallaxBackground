@@ -1,0 +1,107 @@
+// Offscreen for a board agent: the windows nobody is meant to watch get a display of their own (r118, after
+// ~/Documents/GitHub/onboard's gradle/offscreen.gradle).
+//
+// An agent checking its work runs :editor:run, :demo:run, :demo:lab, :demo:stress or :jme:run, and each opened a
+// window on Simon's desktop, in front of whatever he was doing. tools/*-shots.sh and tools/driver-probe.sh already ran
+// in cage, a headless wlroots compositor; the Gradle tasks did not.
+//
+//   offscreen(task)   offscreen when ATELIER_AGENT is set (a board session); on the screen for anyone else, including
+//                     the board's "Start the demo" buttons (tools/start-demo.sh does not go through these tasks)
+//
+// ATELIER_NO_OFFSCREEN=1 puts the window back when you want to watch (the tools/ scripts read the same variable);
+// ATELIER_OFFSCREEN=1 sends it offscreen for you too. Without cage (Windows, macOS, a Linux machine that lacks it) the
+// window opens on the screen as it always did.
+//
+// cage's headless display renders on another GPU than the desktop on Simon's laptop (NVIDIA, the desktop's windows
+// Intel): :demo:stress prints the GL renderer it measured, compare numbers of the same one.
+//
+// Nothing here is a test: core's tests draw nothing (a proxied Batch) and tools/browser-test.sh is headless Chrome.
+
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+
+import org.gradle.api.services.BuildService
+import org.gradle.api.services.BuildServiceParameters
+
+abstract class OffscreenDisplay implements BuildService<BuildServiceParameters.None>, AutoCloseable
+{
+	private Process cage
+	private Map<String, String> display
+	private String failure
+
+	/**
+	 * WAYLAND_DISPLAY and DISPLAY of a headless cage, started on first use and closed when the build ends. Null when
+	 * there is no cage; throws when cage exists but will not come up, rather than fall back to Simon's screen.
+	 */
+	synchronized Map<String, String> display()
+	{
+		if (failure != null) throw new GradleException(failure)
+		if (cage != null) return display
+
+		// cage runs one client and exits with it: this one prints the display cage made for it and waits on stdin, so
+		// cage lives until close() hangs up, or until the Gradle daemon dies and the pipe closes the same way.
+		ProcessBuilder pb = new ProcessBuilder('cage', '--', 'sh', '-c',
+			'printf "%s|%s\\n" "$WAYLAND_DISPLAY" "$DISPLAY"; exec cat >/dev/null')
+		pb.environment().put('WLR_BACKENDS', 'headless')
+		pb.redirectError(ProcessBuilder.Redirect.DISCARD)
+		try
+		{
+			cage = pb.start()
+		}
+		catch (IOException ignored)
+		{
+			return null
+		}
+
+		BufferedReader out = new BufferedReader(new InputStreamReader(cage.inputStream))
+		String line = null
+		try
+		{
+			line = CompletableFuture.supplyAsync { out.readLine() }.get(15, TimeUnit.SECONDS)
+		}
+		catch (Exception ignored) {}
+
+		String[] parts = line?.split('\\|', -1)
+		if (parts == null || parts.length != 2 || !parts[0] || !parts[1])
+		{
+			close()
+			failure = 'cage is installed but did not start a headless display (got ' + line + '). ' +
+				'Set ATELIER_NO_OFFSCREEN=1 to open the window on your screen instead.'
+			throw new GradleException(failure)
+		}
+		display = [WAYLAND_DISPLAY: parts[0], DISPLAY: parts[1]]
+		return display
+	}
+
+	@Override
+	void close()
+	{
+		if (cage == null) return
+		try { cage.outputStream.close() } catch (IOException ignored) {}
+		if (!cage.waitFor(5, TimeUnit.SECONDS)) cage.destroyForcibly()
+	}
+}
+
+def offscreenDisplay = gradle.sharedServices.registerIfAbsent('parallaxOffscreenDisplay', OffscreenDisplay) {}
+
+ext.offscreen = { JavaExec task ->
+	task.usesService(offscreenDisplay)
+	task.doFirst {
+		def env = System.getenv()
+		if (env.ATELIER_NO_OFFSCREEN == '1') return
+		if (!env.ATELIER_AGENT && env.ATELIER_OFFSCREEN != '1') return
+		if (!System.getProperty('os.name').toLowerCase().contains('linux')) return
+
+		Map<String, String> display = offscreenDisplay.get().display()
+		if (display == null)
+		{
+			task.logger.warn("offscreen: cage not found, so ${task.path} opens its window on your screen")
+			return
+		}
+		// Both: GLFW picks Wayland or X11 (cage's Xwayland) by itself.
+		task.environment(display)
+		task.environment(ALSOFT_DRIVERS: 'null')
+		task.logger.lifecycle("offscreen: ${task.path} renders to a headless display " +
+			"(cage, ${display.WAYLAND_DISPLAY} / ${display.DISPLAY}); ATELIER_NO_OFFSCREEN=1 to watch")
+	}
+}
