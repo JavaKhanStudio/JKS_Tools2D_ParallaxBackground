@@ -299,7 +299,9 @@ NO WINDOW ON SIMON'S SCREEN (r118, r144): every JavaExec task calls rootProject.
 opens a window: an agent's, ATELIER_AGENT or CLAUDECODE=1, goes to a headless cage, and fails
 without cage) or rootProject.headless(it) (it opens none); gradle/offscreen.gradle stops the build
 on one that does neither. A new module's `application` plugin makes a `run` task: wire it. A
-script that opens a window runs it in cage (WLR_BACKENDS=headless) or through tools/offscreen.sh.
+script that opens a window runs it in cage (WLR_BACKENDS=headless) or through tools/offscreen.sh;
+a nested X server inside cage comes from tools/nested-x.sh (a free display: a fixed :9 broke
+two runs at once, r142).
 settings.gradle includes editor and demo only when their folder exists (r130, repo split): the
 library's gates (build, browser-test, the Godot and jME frame checks) read core/test-data/samples
 and draw their libGDX frames with :shots (shots/, ParallaxShots), never with editor/ or demo/.

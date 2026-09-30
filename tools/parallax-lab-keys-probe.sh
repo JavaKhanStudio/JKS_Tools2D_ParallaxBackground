@@ -17,19 +17,19 @@ cp "$ROUND/round.json" "$OUT/round/"
 CP="$PWD/demo/build/install/demo/lib/*"
 
 cat >"$OUT/keys.py" <<'PY'
-import ctypes, subprocess, sys, time
+import ctypes, os, subprocess, sys, time
 out, steps = sys.argv[1], sys.argv[2].split()
 x11, xtst = ctypes.CDLL('libX11.so.6'), ctypes.CDLL('libXtst.so.6')
 x11.XOpenDisplay.restype = ctypes.c_void_p
 x11.XStringToKeysym.restype = ctypes.c_ulong
-d = ctypes.c_void_p(x11.XOpenDisplay(b':9'))
+d = ctypes.c_void_p(x11.XOpenDisplay(None))  # $DISPLAY, the one tools/nested-x.sh made
 def key(name):
     code = x11.XKeysymToKeycode(d, ctypes.c_ulong(x11.XStringToKeysym(name.encode())))
     xtst.XTestFakeKeyEvent(d, code, True, 0); x11.XFlush(d); time.sleep(0.05)
     xtst.XTestFakeKeyEvent(d, code, False, 0); x11.XFlush(d)
 for i, step in enumerate(steps):
     if step.startswith('shot:'):
-        subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-f', 'x11grab', '-video_size', '1280x720', '-i', ':9',
+        subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-f', 'x11grab', '-video_size', '1280x720', '-i', os.environ['DISPLAY'],
                         '-frames:v', '1', '%s/%s.png' % (out, step[5:])])
     elif step.startswith('wait:'):
         time.sleep(float(step[5:]))
@@ -39,15 +39,13 @@ PY
 
 run() {  # $1 = key steps
 	inner=$(cat <<SH
-Xwayland :9 -geometry 1280x720 & X=\$!
-sleep 2
-DISPLAY=:9 java -cp "$CP" jks.tools2d.parallax.demo.ParallaxLab "$OUT/round" >>"$OUT/lab.log" 2>&1 & L=\$!
+java -cp "$CP" jks.tools2d.parallax.demo.ParallaxLab "$OUT/round" >>"$OUT/lab.log" 2>&1 & L=\$!
 sleep 6
 python3 "$OUT/keys.py" "$OUT" "$1"
-kill \$L 2>/dev/null; wait \$L 2>/dev/null; kill \$X 2>/dev/null
+kill \$L 2>/dev/null; wait \$L 2>/dev/null
 SH
 )
-	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 120 cage -- bash -c "$inner" >>"$OUT/cage.log" 2>&1
+	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 120 cage -- tools/nested-x.sh 1280x720 bash -c "$inner" >>"$OUT/cage.log" 2>&1
 }
 
 run "shot:1-start 4 wait:1.2 shot:2-after-grade-4 2 wait:1.2 BackSpace BackSpace shot:3-back-to-s01 h shot:4-revealed 5 wait:1.2 Return Return Return Return Return Return Return Return Return Return Return Return Return Return Return Return Return Return shot:5-summary"

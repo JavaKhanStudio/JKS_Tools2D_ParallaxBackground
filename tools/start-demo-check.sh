@@ -22,8 +22,7 @@ case "$ENGINE" in
 		echo "usage: tools/start-demo-check.sh [godot|jme]" >&2
 		exit 2 ;;
 esac
-inner="Xwayland :9 -geometry 1280x720 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
-WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 120 cage -- bash -c "$inner" >/dev/null 2>&1
+WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 120 cage -- tools/nested-x.sh 1280x720 bash -c "$RUN" >/dev/null 2>&1
 grep -E "SEVERE|Exception|ERROR" "$OUT/$ENGINE-keys.log" && { echo "FAIL: $OUT/$ENGINE-keys.log"; exit 1; }
 [ -f "$OUT/$ENGINE-keys.png" ] || { echo "FAIL: no frame"; exit 1; }
 echo "$OUT/$ENGINE-keys.png"
