@@ -22,20 +22,22 @@ draw = ImageDraw.Draw(sheet)
 lines, worst, row = [], 0.0, 0
 for s in scenes:
     for t in (0, 6, 12):
-        name = '%s-t%d.png' % (s['id'], t)
+        name = f"{s['id']}-t{t}.png"
         gdx_path, other_path = os.path.join(out, 'gdx', name), os.path.join(out, engine, name)
         if not os.path.exists(other_path):
-            lines.append('%s  MISSING from %s' % (name, label_of)); worst = 999; continue
+            lines.append(f'{name}  MISSING from {label_of}'); worst = 999; continue
         gdx, other = Image.open(gdx_path).convert('RGB'), Image.open(other_path).convert('RGB')
         if gdx.size != other.size:
-            lines.append('%s  size %s vs %s' % (name, gdx.size, other.size)); worst = 999; continue
+            lines.append(f'{name}  size {gdx.size} vs {other.size}'); worst = 999; continue
         diff = ImageChops.difference(gdx, other)
         mean = sum(ImageStat.Stat(diff).mean) / 3
         big = sum(1 for p in diff.convert('L').getdata() if p > 32) / (gdx.width * gdx.height) * 100
         worst = max(worst, mean)
-        lines.append('%s  mean diff %.2f / 255   pixels off by >32: %.2f%%   %s' % (name, mean, big, s.get('name', s.get('about', ''))))
+        lines.append(f"{name}  mean diff {mean:.2f} / 255   pixels off by >32: {big:.2f}%"
+                     f"   {s.get('name', s.get('about', ''))}")
         y = row * (h + label)
-        draw.text((6, y + 5), '%s  %s   mean diff %.2f   (libGDX | %s | difference x4)' % (name, s.get('name', ''), mean, label_of), fill='white')
+        caption = f"{name}  {s.get('name', '')}   mean diff {mean:.2f}   (libGDX | {label_of} | difference x4)"
+        draw.text((6, y + 5), caption, fill='white')
         # A still shot after a resize (portrait) keeps its aspect ratio in its cell.
         for col, im in enumerate((gdx, other, diff.point(lambda v: min(255, v * 4)))):
             im = im.copy(); im.thumbnail((w, h))
@@ -43,7 +45,7 @@ for s in scenes:
         row += 1
 sheet.save(os.path.join(out, 'compare.png'))
 verdict = 'PASS' if worst <= threshold else 'FAIL'
-lines.append('%s: worst mean diff %.2f (threshold %.1f)' % (verdict, worst, threshold))
+lines.append(f'{verdict}: worst mean diff {worst:.2f} (threshold {threshold:.1f})')
 with open(os.path.join(out, 'report.txt'), 'w') as f:
     f.write('\n'.join(lines) + '\n')
 print('\n'.join(lines))

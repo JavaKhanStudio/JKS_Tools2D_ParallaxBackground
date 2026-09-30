@@ -35,10 +35,11 @@ def claim(ok, what):
     print(("PASS " if ok else "FAIL ") + what)
 
 
-claim(changed("1-soft.png", "2-sharp.png") > 10000, "ticking Pixel art changes the preview (%d px)" % changed("1-soft.png", "2-sharp.png"))
+sharp_px = changed("1-soft.png", "2-sharp.png")
+claim(sharp_px > 10000, f"ticking Pixel art changes the preview ({sharp_px} px)")
 claim(changed("1-soft.png", "3-untick.png") == 0, "unticking gives the soft preview back exactly")
 filters = [l.split(":", 1)[1].strip() for l in (out / "city.atlas").read_text().splitlines() if l.startswith("filter:")]
-claim(filters and all(f == "Nearest,Nearest" for f in filters), "the export is written Nearest,Nearest: %s" % filters)
+claim(filters and all(f == "Nearest,Nearest" for f in filters), f"the export is written Nearest,Nearest: {filters}")
 claim(changed("2-sharp.png", "5-export-reopened.png") == 0, "the reopened export draws as the sharp preview did")
 claim(json.loads((out / "city.plaxpj").read_text()).get("pixelArt") is True, "the saved project keeps pixelArt")
 claim(changed("2-sharp.png", "6-project-reopened.png") == 0, "the reopened project draws sharp")
