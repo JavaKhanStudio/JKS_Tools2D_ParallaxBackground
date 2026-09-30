@@ -20,7 +20,9 @@ repair.
 - CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`, then
   `./gradlew :editor:distZip :demo:distZip`.
   Its `godot-frames` job runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
-  (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), and fails on a FAIL.
+  (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), then
+  `tools/jme-parallax-shots.sh` the same way, and fails on a FAIL. A manual run's `break` input sets `BREAK` for the
+  jME step: `gh workflow run ci.yml --ref <branch> -f break=scroll` must fail it.
 
 ## `.plax` is a file format
 
