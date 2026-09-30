@@ -12,6 +12,7 @@ repair.
 | `editor/` | The desktop tool that builds pages and exports `.plax`. Sources `src/` and `mains/`. | 17 | `./gradlew :editor:run` (workingDir `editor/`, finds `editor/Files`) |
 | `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): SPACE page, N tint, LEFT/RIGHT scroll, R reset. `./gradlew :demo:lab` (workingDir the root): the grading lab, `demo/lab`. The board's Actions tab starts it, and the Godot demo, through `tools/start-demo.sh` |
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `tools/godot-parallax-shots.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared |
+| `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is what a game copies, `tests/` the frame runner and demo. | 17 | `tools/jme-parallax-shots.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
@@ -50,6 +51,10 @@ repair.
 - `engines/godot/addons/jks_parallax/plax_background.gd` ports `ParallaxLayer.act`, `ParallaxPageReader.tile`/`drawRegion`,
   the cross-fade, the tint and the gradients line for line: change how a page scrolls, fades or draws, change it there,
   and run `tools/godot-parallax-shots.sh` (`engines/godot/tests/transfer` is its cross-fade round).
+- `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
+  `draw(region, x, y, width, height)`, and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
+  method, change the gradients, or make `ParallaxPageReader` or `ParallaxLayer` reach a libGDX native (`OrthographicCamera.update` does), and
+  run `tools/jme-parallax-shots.sh`.
 - `ParallaxPageReaderTest` checks tiling and cross-fades without a window, by recording draw calls on a proxied
   `Batch`. Cover all four repeat modes (X, Y, XY, none).
 

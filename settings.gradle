@@ -8,3 +8,7 @@ dependencyResolutionManagement {
 rootProject.name = 'JKS_Tools2D_ParallaxBackground'
 
 include 'core', 'editor', 'demo'
+
+// The jMonkeyEngine reader (r112): a Java engine, so it draws pages with core itself.
+include 'jme'
+project(':jme').projectDir = file('engines/jme')

@@ -82,6 +82,7 @@ Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
 ./gradlew :editor:run           # the editor, opens on the sample projects in editor/Files
 ./gradlew :demo:run             # the demo: SPACE switches page, N tints, LEFT/RIGHT scroll, R resets
 godot --path engines/godot      # the same demo through the Godot reader (Godot 4)
+./gradlew :jme:run              # the same demo through the jMonkeyEngine reader, behind a jME cube
 ./gradlew test                  # file format, tiling, cross-fade and no-allocation-per-frame tests
 ./gradlew :demo:stress --args="--layers 400 --repeat xy"   # frame time of generated pages, see ParallaxStress
 ./gradlew :demo:lab               # grade parallax scenes blind, 1-5: see docs/parallax-design.md
@@ -194,6 +195,28 @@ It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares
 export preset lists them under *Filters to export non-resource files* (`*.jplax, *.atlas`); for an atlas written with
 `filter: MipMap`, tick *Mipmaps > Generate* on its `.png` in the Import dock. Not there yet: atlas regions packed
 rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md).
+
+### In jMonkeyEngine 3
+
+jME is a Java engine, so it reads pages with this library itself, `.plax` included: add the `parallax-background`
+dependency (it brings libGDX's core jar, for its model classes only: no libGDX backend, no second GL context), and copy
+`engines/jme/src/jks/tools2d/parallax/jme` into your game (4 classes, jME 3.9). The page, its `.atlas` and the atlas's
+`.png` are jME assets:
+
+```java
+PlaxBackground bg = new PlaxBackground();   // an AppState: its viewport is drawn before the game's
+stateManager.attach(bg);
+WholePage_Model page = PlaxBackground.loadPage(assetManager, "Backgrounds/forest.plax");   // or a .jplax / .plaxpj
+bg.setPage(page, JmeAtlas.load(assetManager, "Backgrounds/" + page.pageModel.atlasName));
+bg.speedConstantX = 60;                     // optional: always scroll; each frame: bg.speedConsumableX = playerSpeedX
+bg.transfertIntoPage(other, otherAtlas, 3); // cross-fade into another page
+bg.tintTo(new Color(0.5f, 0.55f, 0.8f, 1), 3);
+```
+
+The scrolling, tiling, cross-fade and tint are this library's own `ParallaxPageReader`; jME only draws the quads, and
+`tools/jme-parallax-shots.sh` compares its frames with libGDX's. The background clears the screen, so the game's main
+viewport stops clearing its colour. Keep the application's gamma correction off (`settings.setGammaCorrection(false)`)
+to get libGDX's colours.
 - **Performance:** `act` and `render` allocate nothing, and the game thread spends under a millisecond on 400 layers.
   What costs is the GPU filling pixels: every layer is blended over the ones behind it, and a cross-fade draws both
   pages. Fewer and smaller layers are what counts. The editor exports atlases with mipmaps (`filter:
@@ -275,9 +298,9 @@ To profile the editor on a heavy page, `tools/stress-project.py 300` writes a 30
 
 | Extension | Content                                              | Written by    | Read by                   |
 |-----------|------------------------------------------------------|---------------|---------------------------|
-| `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), editor |
-| `.jplax`  | Exported page, JSON (Jackson)                        | Export        | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), editor, other tools |
-| `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor, browser games (`Utils_Page_Json`), Godot games |
+| `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), jME games (`engines/jme`), editor |
+| `.jplax`  | Exported page, JSON (Jackson)                        | Export        | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), jME games, editor, other tools |
+| `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor, browser games (`Utils_Page_Json`), Godot games, jME games |
 
 A page references its atlas by file name, and looks for it next to itself. **Save project** therefore copies the atlas
 and its page images into the project folder when they are not there yet, and refuses to save if that folder already
