@@ -22,7 +22,7 @@ exec "$REAL_BIN" "\$@"
 EOF
 chmod +x "$WORK/editor"
 
-echo "list" | timeout 90 env DRIVER_PORT=$PORT EDITOR_BIN="$WORK/editor" "$ROOT/tools/driver-probe.sh" >"$WORK/out" 2>&1
+echo "list" | timeout 90 env DRIVER_PORT="$PORT" EDITOR_BIN="$WORK/editor" "$ROOT/tools/driver-probe.sh" >"$WORK/out" 2>&1
 code=$?
 cat "$WORK/out"
 received=$(cat "$WORK/stub-received" 2>/dev/null)

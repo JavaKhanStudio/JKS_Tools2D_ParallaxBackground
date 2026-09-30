@@ -53,7 +53,7 @@ if ! grep -q "\[EditorDriver\] listening on 127.0.0.1:$PORT" "$LOG" 2>/dev/null;
 	exit 1
 fi
 
-exec 3<>/dev/tcp/127.0.0.1/$PORT || { echo "the editor never opened port $PORT; see editor/build/driver-probe.log" >&2; exit 1; }
+exec 3<>"/dev/tcp/127.0.0.1/$PORT" || { echo "the editor never opened port $PORT; see editor/build/driver-probe.log" >&2; exit 1; }
 while IFS= read -r line; do
 	[[ -z "$line" || "$line" == \#* ]] && continue
 	if [[ "$line" == sleep\ * ]]; then sleep "${line#sleep }"; continue; fi

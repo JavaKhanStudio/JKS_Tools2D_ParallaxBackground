@@ -19,7 +19,18 @@ git clone -q --no-hardlinks "$PWD" "$DIR" && git -C "$DIR" checkout -q --detach 
 cd "$DIR"
 [ "${KEEP_APPS:-0}" = 1 ] || rm -rf editor demo
 status=0
-gate() { echo "== $*"; "$@" >"$DIR/$(basename "$1").log" 2>&1 && echo "   ok" || { echo "   FAILED: $DIR/$(basename "$1").log"; tail -5 "$DIR/$(basename "$1").log"; status=1; }; }
+gate() {
+	local log
+	log="$DIR/$(basename "$1").log"
+	echo "== $*"
+	if "$@" >"$log" 2>&1; then
+		echo "   ok"
+	else
+		echo "   FAILED: $log"
+		tail -5 "$log"
+		status=1
+	fi
+}
 gate ./gradlew build
 gate tools/browser-test.sh
 gate tools/godot-parallax-shots.sh
