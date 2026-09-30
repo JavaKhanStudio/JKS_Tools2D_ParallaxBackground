@@ -120,5 +120,12 @@ So moving `demo/` and `editor/` out as they are leaves `core`'s tests and both f
    stills are byte for byte those `ParallaxLab --shots` drew.
 2. The editor repository: `git filter-repo` keeps the history of `editor/`, `demo/` and their tools; its build takes
    `core` from Central or the sibling checkout; its CI builds and zips the editor.
+   **Done (r132):** [JavaKhanStudio/JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor),
+   default branch `develop`: 134 commits of history, made by `tools/r132-editor-split.sh`, then its own build, CI,
+   README, RELEASING.md and AGENTS.md on top. It takes `parallax-background:$parallaxVersion` from Central (the snapshot
+   repository on `develop`), or builds `core` from `../JKS_Tools2D_ParallaxBackground` when that checkout is there;
+   its `tools/sibling-core-check.sh` proves a change to that `core` shows in `:editor:run`, and `-PparallaxFromCentral`
+   takes the artifact instead. Its version went on from 2.5.0 on a line of its own. Until phase 3, `editor/` and
+   `demo/` are in both repositories: a change to one of them goes to the editor repository.
 3. Here: delete `editor/` and `demo/`; `release.yml` stops attaching the editor zip; README (module map, code map,
    downloads), AGENTS.md, RELEASING.md and the board's context packs follow.

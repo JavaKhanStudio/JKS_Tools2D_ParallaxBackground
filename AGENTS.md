@@ -27,6 +27,9 @@ repair.
 - The library checks itself without `editor/` and `demo/` (r130, docs/repo-split.md): `settings.gradle` includes them
   only when their folder exists, and nothing `core`, `engines/`, `shots/` or their gates read may point into them.
   `tools/library-alone-check.sh` runs the gates on a clone with both deleted.
+- `editor/` and `demo/` have their own repository since r132,
+  [JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), and leave this one in
+  phase 3 (r133): change them there, not here, or the change is lost.
 - CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`, then
   `./gradlew :editor:distZip :demo:distZip`.
   Its `godot-frames` job runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
