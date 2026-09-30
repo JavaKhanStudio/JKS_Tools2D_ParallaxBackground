@@ -66,8 +66,8 @@ repair.
   `draw(region, x, y, width, height)`, and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
   method, change the gradients, or make `ParallaxPageReader` or `ParallaxLayer` reach a libGDX native (`OrthographicCamera.update` does), and
   run `tools/jme-parallax-shots.sh`.
-- `ParallaxPageReaderTest` checks tiling and cross-fades without a window, by recording draw calls on a proxied
-  `Batch`. Cover all four repeat modes (X, Y, XY, none).
+- The browser suite's `ReaderCases` checks tiling and cross-fades without a window, by recording draw calls on a
+  `RecordingBatch`; `BrowserSuiteTest` runs it in `:core:test`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)
 

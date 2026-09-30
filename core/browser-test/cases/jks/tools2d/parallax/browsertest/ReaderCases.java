@@ -21,7 +21,11 @@ import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
-/** core/test ParallaxPageReaderTest, case for case, in code GWT translates: tiling, stripped regions and cross-fades. */
+/**
+ * ParallaxPageReader's tests, in code GWT translates: tiling, stripped regions, mirror and cross-fades. They record the
+ * reader's draws on a {@link RecordingBatch}, without a window; core/test BrowserSuiteTest runs them on the JVM and
+ * `tools/browser-test.sh` in Chrome. Cover all four repeat modes (X, Y, XY, none).
+ */
 final class ReaderCases
 {
 	private final RecordingBatch batch = new RecordingBatch();
@@ -35,6 +39,7 @@ final class ReaderCases
 				new BrowserCase("reader: strippedRegionKeepsItsOriginalWidthAndOffset", () -> new ReaderCases().strippedRegionKeepsItsOriginalWidthAndOffset()),
 				new BrowserCase("reader: strippedRegionKeepsItsOriginalHeightWhenTilingOnY", () -> new ReaderCases().strippedRegionKeepsItsOriginalHeightWhenTilingOnY()),
 				new BrowserCase("reader: strippedRegionIsStretchedWhenThePageSaysSo", () -> new ReaderCases().strippedRegionIsStretchedWhenThePageSaysSo()),
+				new BrowserCase("reader: mirrorStacksAFlippedStripAcrossTheTiledOne", () -> new ReaderCases().mirrorStacksAFlippedStripAcrossTheTiledOne()),
 				new BrowserCase("reader: negativePaddingLargerThanTheImageDoesNotHang", () -> new ReaderCases().negativePaddingLargerThanTheImageDoesNotHang()),
 				new BrowserCase("reader: zeroSecondTransferSwapsImmediately", () -> new ReaderCases().zeroSecondTransferSwapsImmediately()),
 				new BrowserCase("reader: transferKeepsTheNewLayoutAndTheScrolledDistance", () -> new ReaderCases().transferKeepsTheNewLayoutAndTheScrolledDistance()),
@@ -191,7 +196,59 @@ final class ReaderCases
 		equal(580 * 40f / 3403, layer.getHeight(), 1e-4f, "height");
 	}
 
-	/** The JVM test bounds it with assertTimeoutPreemptively; here a hang freezes the page and the gate times out. */
+	/**
+	 * Mirror adds a second strip flipped across the first one's far edge: above it, upside down, when the page tiles on X;
+	 * to its right, reversed, when it tiles on Y; nothing when it tiles on both axes or neither (README, r127).
+	 */
+	void mirrorStacksAFlippedStripAcrossTheTiledOne()
+	{
+		for (boolean onX : new boolean[] { true, false })
+		{
+			draws.clear();
+			ParallaxPageReader reader = reader(onX, !onX);
+			ParallaxLayer layer = layer(0);
+			layer.setSizeRatio(0.3f); // 12 x 6.75 world units, the view is 40 x 22.5
+			layer.setMirror(true);
+			reader.addLayers(list(layer));
+			reader.draw(camera, batch);
+
+			float width = layer.getWidth(), height = layer.getHeight();
+			int flipped = 0;
+			for (float[] draw : draws)
+			{
+				if (onX && draw[3] < 0)
+				{
+					flipped++;
+					equal(2 * height, draw[1], 1e-4f, "upside down, its top on the strip's top edge");
+					isTrue(draw[2] > 0, "not reversed on X");
+				}
+				else if (!onX && draw[2] < 0)
+				{
+					flipped++;
+					equal(2 * width, draw[0], 1e-4f, "reversed, its right side on the column's right edge");
+					isTrue(draw[3] > 0, "not upside down on Y");
+				}
+				else
+					equal(0, onX ? draw[1] : draw[0], 1e-4f, "the tiled strip itself");
+			}
+			equal(draws.size() / 2, flipped, (onX ? "X" : "Y") + ": one mirrored copy per repeat, " + draws.size() + " draws");
+		}
+
+		for (boolean both : new boolean[] { true, false })
+		{
+			draws.clear();
+			ParallaxPageReader reader = reader(both, both);
+			ParallaxLayer layer = layer(0);
+			layer.setSizeRatio(0.3f);
+			layer.setMirror(true);
+			reader.addLayers(list(layer));
+			reader.draw(camera, batch);
+			for (float[] draw : draws)
+				isTrue(draw[2] > 0 && draw[3] > 0, "no mirrored copy when tiling on " + (both ? "both axes" : "neither"));
+		}
+	}
+
+	/** BrowserSuiteTest bounds every case with assertTimeoutPreemptively; in Chrome a hang freezes the page and the gate times out. */
 	void negativePaddingLargerThanTheImageDoesNotHang()
 	{
 		ParallaxPageReader reader = reader(true, true);

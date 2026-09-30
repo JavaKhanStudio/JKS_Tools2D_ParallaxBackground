@@ -13,7 +13,7 @@ import com.badlogic.gdx.math.Matrix4;
 
 /**
  * A {@link Batch} that draws nothing and records the x, y, width and height of every 5-argument draw, the ones the
- * reader makes. ParallaxPageReaderTest does the same with a java.lang.reflect.Proxy, which GWT does not have.
+ * reader makes. ReaderCases records the reader on it: a java.lang.reflect.Proxy would too, but GWT does not have one.
  */
 public class RecordingBatch implements Batch
 {
