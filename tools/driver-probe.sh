@@ -7,7 +7,8 @@
 # One command per line (see EditorDriver's javadoc); each reply is printed after "> command".
 # A line "sleep N" waits N seconds instead. "shot x.png" paths are relative to editor/.
 # The editor runs in cage's headless display (WLR_BACKENDS=headless), from the installDist build:
-# run `./gradlew :editor:installDist` first (EDITOR_BIN runs another copy). ATELIER_NO_OFFSCREEN=1 shows the window instead.
+# run `./gradlew :editor:installDist` first (EDITOR_BIN runs another copy). ATELIER_NO_OFFSCREEN=1 shows the window instead;
+# without cage the probe stops (exit 2) rather than open the editor on the screen (r144).
 # PROBE_TIMES=1 appends each reply's round trip in ms: a command runs between two frames, so this is the wait for the
 # next frame plus the command's own work. JAVA_OPTS reaches the editor's JVM (e.g. -XX:StartFlightRecording=...).
 # The port must be free: if another editor already listens on it, or takes it before ours binds (ours then logs
@@ -27,7 +28,11 @@ if port_open; then
 fi
 
 cd "$ROOT/editor" || exit 1
-if [[ "${ATELIER_NO_OFFSCREEN:-0}" != "1" ]] && command -v cage >/dev/null; then
+if [[ "${ATELIER_NO_OFFSCREEN:-0}" != "1" ]] && ! command -v cage >/dev/null; then
+	echo "cage not found: the editor would open on your screen. Install cage, or set ATELIER_NO_OFFSCREEN=1 to watch it." >&2
+	exit 2
+fi
+if [[ "${ATELIER_NO_OFFSCREEN:-0}" != "1" ]]; then
 	WLR_BACKENDS=headless ALSOFT_DRIVERS=null cage -- "$BIN" --driver-port="$PORT" "$@" >"$ROOT/editor/build/driver-probe.log" 2>&1 &
 else
 	"$BIN" --driver-port="$PORT" "$@" >"$ROOT/editor/build/driver-probe.log" 2>&1 &
