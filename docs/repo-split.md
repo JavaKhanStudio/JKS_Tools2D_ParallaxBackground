@@ -81,3 +81,38 @@ and Unity would make a fourth. This splits what has to move together. Not recomm
 audiences, and A separates the audiences in a day without splitting the five commits in forty that change both. B is
 the right shape when the editor ships on a store or gets its own contributors: the layout above is how to do it then,
 and nothing in A stands in its way.
+
+## Decision (Simon, 2026-09-30): B, with the demo in the editor's repository
+
+"B but demo should be kept in the editor. Core should be as light as possible."
+
+**What that runs into.** The demo is not only a game: its files are how the readers are proved.
+
+- `demo/assets` (`Hiver`, `Printemps`: 1.2 MB of atlases and pages) is read by `PlaxFormatTest`, `JvmFixtures`,
+  `ParallaxPageReaderTest` and the browser suite's `ReaderCases`, and is the atlas of 14 scenes of the reader rounds.
+- The reader rounds (`demo/lab/round1`, `engines/godot/tests/conformance` and `/transfer`) also take their atlases from
+  `editor/Files/Demos` (10 scenes) and `editor/Files/transfer` (6).
+- The libGDX frames the Godot and jME frames are compared with are drawn by the demo's `ParallaxLab --shots`
+  (`tools/parallax-lab-shots.sh`).
+
+So moving `demo/` and `editor/` out as they are leaves `core`'s tests and both frame comparisons without their files.
+
+**The layout proposed**, which keeps the published `core` jar as it is (none of this ships in it):
+
+| Library repository (this one) | Editor repository (new) |
+|---|---|
+| `core`, `engines/godot`, `engines/jme` | `editor`, `editor/Files` |
+| the fixtures the tests and rounds read, gathered in one test-data directory: `demo/assets`, the atlases of `editor/Files/Demos` and `/transfer` the rounds name, `editor/Files`' six `.plax` | `demo`: `ParallaxDemo`, the grading lab, `ParallaxStress`, `demo/assets` (a copy) |
+| the reader rounds, and a headless reference renderer: `ParallaxLab --shots` split out as a small unpublished module | `tools/driver-probe.sh`, `stress-project.py`, the lab probes, `start-demo.sh libgdx` |
+| `tools/godot-*`, `tools/jme-*`, `tools/browser-test.sh` | its own CI, `RELEASING.md` (editor zip), `AGENTS.md` |
+| Maven Central, the Godot zip, `vX.Y.Z` | depends on `io.github.javakhanstudio:parallax-background`; `includeBuild` of a sibling checkout of this repository (with a `dependencySubstitution` to `project(':core')`) for quick iteration |
+
+**Phases**, each one leaving both builds green:
+
+1. Here, before any split: gather the fixtures, point the tests and the rounds' `atlasDir` at them, split the
+   reference renderer out of `ParallaxLab`. Done when a scratch clone with `editor/` and `demo/` deleted passes
+   `./gradlew build`, `tools/browser-test.sh` and both frame comparisons.
+2. The editor repository: `git filter-repo` keeps the history of `editor/`, `demo/` and their tools; its build takes
+   `core` from Central or the sibling checkout; its CI builds and zips the editor.
+3. Here: delete `editor/` and `demo/`; `release.yml` stops attaching the editor zip; README (module map, code map,
+   downloads), AGENTS.md, RELEASING.md and the board's context packs follow.
