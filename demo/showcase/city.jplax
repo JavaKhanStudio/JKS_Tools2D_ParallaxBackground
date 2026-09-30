@@ -1,0 +1,104 @@
+{
+ "topHalf_top": {
+  "r": 0.0627451,
+  "g": 0.1490196,
+  "b": 0.1215686,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 0.1843137,
+  "g": 0.4784314,
+  "b": 0.3411765,
+  "a": 1.0
+ },
+ "topHalfSize": 0.5,
+ "bottomHalf_top": {
+  "r": 0.0509804,
+  "g": 0.0823529,
+  "b": 0.0705882,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 0.0509804,
+  "g": 0.0823529,
+  "b": 0.0705882,
+  "a": 1.0
+ },
+ "bottomHalfSize": 0.5,
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "pageModel": {
+  "atlasName": "City.atlas",
+  "outside": false,
+  "pageList": [
+   {
+    "regionName": "skill-desc_0003_bg",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.012,
+    "parallaxScalingSpeedY": 0.0072,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "skill-desc_0002_far-buildings",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.018000000000000002,
+    "parallaxScalingSpeedY": 0.0108,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.8,
+    "decal_X_Ratio": 20,
+    "decal_Y_Ratio": 10,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "skill-desc_0001_buildings",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.027,
+    "parallaxScalingSpeedY": 0.0162,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 40,
+    "decal_Y_Ratio": 0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "skill-desc_0000_foreground",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.0405,
+    "parallaxScalingSpeedY": 0.0243,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 10,
+    "decal_Y_Ratio": -2,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   }
+  ]
+ }
+}
