@@ -43,8 +43,9 @@ A 2D background gets its depth from three cues, strongest first:
   over dark red). Hiver and Printemps leave the lower ~40% white on purpose: the game's ground goes there.
 - **CalmLag is the editor's default layout** (every layer 1.0 wide, decal X +10, decal Y -8, speed x1.25). It is what
   a page looks like with no art direction: mountains and clouds stacked below the trees.
-  `lint` passes it: the numbers are right and the picture is wrong. Numbers catch motion faults; only a render
-  catches layout, so the skill renders every page it writes.
+  `lint` passes it: the numbers are right and the picture is wrong. Numbers catch motion faults, and since r129 the
+  layout faults the atlas can tell (cut edges, empty bands, stretched regions, seams); only a render catches
+  composition, so the skill renders every page it writes.
 
 ## 3. Rules, and what backs them
 
