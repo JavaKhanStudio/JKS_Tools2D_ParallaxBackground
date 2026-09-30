@@ -51,6 +51,15 @@ scrolls a demo page with it (no pixels: jME's null renderer), then prints OK.
 
 ## Releasing X.Y.Z
 
+A library is refactored before it is released (Simon, atelier d40): the last refacto day must be at most 2 days old.
+Check it first:
+
+```bash
+atelier --project parallax upkeep release        # exit 0: go on; exit 1 prints why (never run, or ran N days ago)
+```
+
+On a refusal, run a refacto day (`atelier upkeep run refacto`), and release once its tickets are closed.
+
 ```bash
 git checkout develop && git pull
 git checkout -b release/2.1                      # stabilise, only fixes from here
