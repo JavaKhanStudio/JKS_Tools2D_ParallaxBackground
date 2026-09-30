@@ -54,7 +54,8 @@ public final class Utils_TextureAtlas
 	{
 		FileHandle atlasFile = nextFreeAtlasFile(path, name);
 
-		// Every distinct image, grouped under the region name it will have in the new atlas.
+		// Every distinct image, grouped under the region name it will have in the new atlas. Used by a layer or not, on
+		// purpose (d12): after flatten the project points at this atlas alone, so an image left out leaves its library.
 		Map<String, List<TextureRegion>> groups = new LinkedHashMap<>();
 		Set<String> atlasNames = new HashSet<>();
 		for (TextureRegion region : GVars_Vue_Edition.allImage)
