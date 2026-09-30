@@ -112,6 +112,12 @@ So moving `demo/` and `editor/` out as they are leaves `core`'s tests and both f
 1. Here, before any split: gather the fixtures, point the tests and the rounds' `atlasDir` at them, split the
    reference renderer out of `ParallaxLab`. Done when a scratch clone with `editor/` and `demo/` deleted passes
    `./gradlew build`, `tools/browser-test.sh` and both frame comparisons.
+   **Done (r130, 6804c5c):** `core/test-data/samples` holds the fixtures, `shots/` (`:shots`, `ParallaxShots`) the
+   reference renderer, `engines/godot/tests/round1` a copy of the lab's round 1 (the lab keeps its own, and its
+   grades), and `settings.gradle` includes `editor` and `demo` only when their folder exists.
+   `tools/library-alone-check.sh` runs the four gates on a clone with both deleted: all pass, and the 202 lines of
+   scores (every still of the Godot and jME rounds) are the same as the checkout's before the change, whose libGDX
+   stills are byte for byte those `ParallaxLab --shots` drew.
 2. The editor repository: `git filter-repo` keeps the history of `editor/`, `demo/` and their tools; its build takes
    `core` from Central or the sibling checkout; its CI builds and zips the editor.
 3. Here: delete `editor/` and `demo/`; `release.yml` stops attaching the editor zip; README (module map, code map,
