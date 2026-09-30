@@ -2,6 +2,7 @@ package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
+import static jks.tools2d.libgdxutils.Utils_Interface.onChange;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Disposable;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
@@ -70,15 +70,11 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 		activeBox.setChecked(square.visible);
 		topPicker.setVisible(square.visible);
 		bottomPicker.setVisible(square.visible);
-		activeBox.addListener(new ChangeListener()
+		onChange(activeBox, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				square.visible = activeBox.isChecked();
-				topPicker.setVisible(square.visible);
-				bottomPicker.setVisible(square.visible);
-			}
+			square.visible = activeBox.isChecked();
+			topPicker.setVisible(square.visible);
+			bottomPicker.setVisible(square.visible);
 		});
 
 		// The box size is the covered part of the screen, in percent.
@@ -88,14 +84,10 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 		boxSize.setName(name + "size");
 		boxSize.setValue(Math.round((1 - square.getScreenPercentage()) * 100));
 		boxSizeText.setText(String.valueOf((int) boxSize.getValue()));
-		boxSize.addListener(new ChangeListener()
+		onChange(boxSize, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				square.setScreenPercentage(1 - boxSize.getValue() / 100);
-				boxSizeText.setText(String.valueOf((int) boxSize.getValue()));
-			}
+			square.setScreenPercentage(1 - boxSize.getValue() / 100);
+			boxSizeText.setText(String.valueOf((int) boxSize.getValue()));
 		});
 
 		Table content = new Table();
@@ -182,12 +174,7 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 	{
 		ImageButton eyedropper = Utils_Interface.buildSquareButton("editor/interfaces/colorSelection.png", 50);
 		eyedropper.setName(name);
-		eyedropper.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{GVars_Vue_Edition.colorPicked = picker;}
-		});
+		onChange(eyedropper, () -> GVars_Vue_Edition.colorPicked = picker);
 		return eyedropper;
 	}
 

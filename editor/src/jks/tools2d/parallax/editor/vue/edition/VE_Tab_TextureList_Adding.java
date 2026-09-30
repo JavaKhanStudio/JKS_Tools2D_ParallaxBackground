@@ -5,15 +5,14 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.getDefaults;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.sizeTabsBar;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width;
 import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
+import static jks.tools2d.libgdxutils.Utils_Interface.onChange;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
 import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
 import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
@@ -70,25 +69,25 @@ public class VE_Tab_TextureList_Adding extends Tab
 		button_switchFor.setName("adding.switchFor");
 		button_cancel.setName("adding.cancel");
 
-		button_addData.addListener(onChange(this::addSelectedAsLayer));
-		button_changeData.addListener(onChange(() ->
+		onChange(button_addData, this::addSelectedAsLayer);
+		onChange(button_changeData, () ->
 		{
 			changingRegion = imageList.getSelected();
 			showBaseButton(false);
 			showSwitchButton(true);
-		}));
-		button_removeData.addListener(onChange(this::askRemoveSelected));
-		button_switchFor.addListener(onChange(() ->
+		});
+		onChange(button_removeData, this::askRemoveSelected);
+		onChange(button_switchFor, () ->
 		{
 			Utils_Texture.changeTextureInPage(changingRegion, imageList.getSelected());
 			showBaseButton(true);
 			showSwitchButton(false);
-		}));
-		button_cancel.addListener(onChange(() ->
+		});
+		onChange(button_cancel, () ->
 		{
 			showBaseButton(true);
 			showSwitchButton(false);
-		}));
+		});
 
 		showBaseButton(false);
 		showSwitchButton(false);
@@ -116,16 +115,6 @@ public class VE_Tab_TextureList_Adding extends Tab
 		ImageButton button = Utils_Interface.buildSquareButton(image, size);
 		button.setSize(size, size);
 		return button;
-	}
-
-	private static ChangeListener onChange(Runnable action)
-	{
-		return new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{action.run();}
-		};
 	}
 
 	private JksTextureList buildImageList()

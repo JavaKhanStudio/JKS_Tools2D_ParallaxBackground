@@ -2,13 +2,12 @@ package jks.tools2d.parallax.editor.vue.edition;
 
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectInfos;
+import static jks.tools2d.libgdxutils.Utils_Interface.onChange;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.kotcrab.vis.ui.widget.Tooltip;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
@@ -34,20 +33,10 @@ public class VE_Options extends Table
 		float pathWidth = textWidth * 2;
 
 		ImageButton savingProject = Utils_Interface.buildSquareButton("editor/interfaces/saveProject.png", buttonSize);
-		savingProject.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), true);}
-		});
+		onChange(savingProject, () -> Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), true));
 
 		ImageButton savingExport = Utils_Interface.buildSquareButton("editor/interfaces/saveParallax.png", buttonSize);
-		savingExport.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{Utils_Saving.saving_Parallax(parallaxPath.getText(), parallaxName.getText());}
-		});
+		onChange(savingExport, () -> Utils_Saving.saving_Parallax(parallaxPath.getText(), parallaxName.getText()));
 
 		savingProject.setName("options.saveProject");
 		savingExport.setName("options.export");
@@ -66,14 +55,10 @@ public class VE_Options extends Table
 		pixelArt.setName("options.pixelArt");
 		pixelArt.setChecked(projectDatas.pixelArt);
 		new Tooltip.Builder("Export sharp: Nearest filtering, no mipmaps.\nThe preview shows it as soon as it is ticked.").target(pixelArt).build();
-		pixelArt.addListener(new ChangeListener()
+		onChange(pixelArt, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				projectDatas.pixelArt = pixelArt.isChecked();
-				Utils_Texture.applyPixelArt();
-			}
+			projectDatas.pixelArt = pixelArt.isChecked();
+			Utils_Texture.applyPixelArt();
 		});
 
 		// Stored in the project, as Pixel art.
@@ -81,12 +66,7 @@ public class VE_Options extends Table
 		etc2.setName("options.etc2");
 		etc2.setChecked(projectDatas.etc2);
 		new Tooltip.Builder("Also export the atlas as ETC2 (name.etc2.atlas):\na quarter of the video memory on OpenGL ES 3 phones.").target(etc2).build();
-		etc2.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{projectDatas.etc2 = etc2.isChecked();}
-		});
+		onChange(etc2, () -> projectDatas.etc2 = etc2.isChecked());
 
 		parallaxPath = new TextField("", GVars_UI.baseSkin)
 		{

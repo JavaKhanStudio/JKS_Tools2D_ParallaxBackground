@@ -3,10 +3,9 @@ package jks.tools2d.parallax.editor.vue.edition;
 import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxName;
 import static jks.tools2d.parallax.editor.vue.edition.VE_Options.parallaxPath;
+import static jks.tools2d.libgdxutils.Utils_Interface.onChange;
 
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
 import com.kotcrab.vis.ui.util.dialog.Dialogs.OptionDialogType;
 import com.kotcrab.vis.ui.util.dialog.OptionDialogAdapter;
@@ -33,73 +32,57 @@ public class VE_Tab_Meta_ConfigParallax extends Tab
 
 		repeatOnX = new VisCheckBox("Repeat On X");
 		repeatOnX.setName("parallax.repeatX");
-		repeatOnX.addListener(new ChangeListener()
+		onChange(repeatOnX, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				parallax_Heart.parallaxReader.setRepeatOnX(repeatOnX.isChecked());
-				parallax_Heart.parallaxReader.resetPositions();
-			}
+			parallax_Heart.parallaxReader.setRepeatOnX(repeatOnX.isChecked());
+			parallax_Heart.parallaxReader.resetPositions();
 		});
 
 		repeatOnY = new VisCheckBox("Repeat On Y");
 		repeatOnY.setName("parallax.repeatY");
-		repeatOnY.addListener(new ChangeListener()
+		onChange(repeatOnY, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				parallax_Heart.parallaxReader.setRepeatOnY(repeatOnY.isChecked());
-				parallax_Heart.parallaxReader.resetPositions();
-			}
+			parallax_Heart.parallaxReader.setRepeatOnY(repeatOnY.isChecked());
+			parallax_Heart.parallaxReader.resetPositions();
 		});
 
 		VisTextButton returnOption = new VisTextButton("Return to selection");
 		returnOption.setName("parallax.returnToSelection");
-		returnOption.addListener(new ChangeListener()
+		onChange(returnOption, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
+			Dialogs.showOptionDialog(GVars_UI.mainUi, "Leaving", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter()
 			{
-				Dialogs.showOptionDialog(GVars_UI.mainUi, "Leaving", "Do you want to save the project before leaving?", OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter()
+				@Override
+				public void yes()
 				{
-					@Override
-					public void yes()
-					{
-						// Leaves only once saved: a failed or cancelled save stays here, rather than losing the work.
-						Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false,
-								() -> GVars_Heart_Editor.changeVue(new Vue_Selection(), true));
-					}
+					// Leaves only once saved: a failed or cancelled save stays here, rather than losing the work.
+					Utils_Saving.saving_Parallax_Project(parallaxPath.getText(), parallaxName.getText(), false,
+							() -> GVars_Heart_Editor.changeVue(new Vue_Selection(), true));
+				}
 
-					@Override
-					public void no()
-					{GVars_Heart_Editor.changeVue(new Vue_Selection(), true);}
-				});
-			}
+				@Override
+				public void no()
+				{GVars_Heart_Editor.changeVue(new Vue_Selection(), true);}
+			});
 		});
 
 		VisTextButton packUpTextures = new VisTextButton("Copy loose images next to the project");
 		packUpTextures.setName("parallax.copyLooseImages");
-		packUpTextures.addListener(new ChangeListener()
+		onChange(packUpTextures, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
+			if (!Utils_Saving.hasLooseImages())
 			{
-				if (!Utils_Saving.hasLooseImages())
-				{
-					Utils_Saving.showNoLooseImages();
-					return;
-				}
-
-				Dialogs.showOptionDialog(GVars_UI.mainUi, "Packing", "Copy the loose images into \"" + parallaxName.getText() + "_images\""
-						+ "\nnext to the project, so the project folder can be moved?", OptionDialogType.YES_NO, new OptionDialogAdapter()
-						{
-							@Override
-							public void yes()
-							{Utils_Saving.packTextures();}
-						});
+				Utils_Saving.showNoLooseImages();
+				return;
 			}
+
+			Dialogs.showOptionDialog(GVars_UI.mainUi, "Packing", "Copy the loose images into \"" + parallaxName.getText() + "_images\""
+					+ "\nnext to the project, so the project folder can be moved?", OptionDialogType.YES_NO, new OptionDialogAdapter()
+					{
+						@Override
+						public void yes()
+						{Utils_Saving.packTextures();}
+					});
 		});
 
 		mainTable.add(new VisLabel("-- Configuration --")).colspan(2).row();

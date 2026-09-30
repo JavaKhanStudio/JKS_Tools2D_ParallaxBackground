@@ -1,13 +1,13 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
+import static jks.tools2d.libgdxutils.Utils_Interface.onChange;
+
 import java.util.TreeSet;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Graphics.DisplayMode;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
@@ -33,14 +33,10 @@ public class VE_Tab_Meta_ConfigApplication extends Tab
 
 		vSynchCheckBox = new VisCheckBox("VSync");
 		vSynchCheckBox.setName("application.vsync");
-		vSynchCheckBox.addListener(new ChangeListener()
+		onChange(vSynchCheckBox, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				Vue_Edition.isVSynch = vSynchCheckBox.isChecked();
-				Gdx.graphics.setVSync(Vue_Edition.isVSynch);
-			}
+			Vue_Edition.isVSynch = vSynchCheckBox.isChecked();
+			Gdx.graphics.setVSync(Vue_Edition.isVSynch);
 		});
 
 		resolutionBox = new SelectBox<>(GVars_UI.baseSkin);
@@ -52,22 +48,12 @@ public class VE_Tab_Meta_ConfigApplication extends Tab
 		fullScreenCheckBox.setName("application.fullScreen");
 		fullScreenCheckBox.setChecked(Gdx.graphics.isFullscreen());
 		resolutionBox.setDisabled(fullScreenCheckBox.isChecked());
-		fullScreenCheckBox.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{resolutionBox.setDisabled(fullScreenCheckBox.isChecked());}
-		});
+		onChange(fullScreenCheckBox, () -> resolutionBox.setDisabled(fullScreenCheckBox.isChecked()));
 
 		VisTextButton apply = new VisTextButton("Apply");
 		apply.setName("application.apply");
 		apply.getLabel().setStyle(GVars_UI.labelStyle_OptionsTitle);
-		apply.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{applyWindowMode();}
-		});
+		onChange(apply, () -> applyWindowMode());
 
 		mainTable.add(new VisLabel("Window size")).align(Align.left).padRight(10);
 		mainTable.add(resolutionBox).align(Align.left).row();

@@ -12,16 +12,15 @@ import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Sele
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Height_Bloc_Parallax_Controle;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.tabControl;
 import static jks.tools2d.parallax.editor.vue.Vue_Edition.parallax_Heart;
+import static jks.tools2d.libgdxutils.Utils_Interface.onChange;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.CheckBox.CheckBoxStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
 import com.kotcrab.vis.ui.widget.VisTextButton;
 
@@ -152,26 +151,17 @@ public class VE_Center_ParallaxShow extends Table
 		JksCheckBox startStop = new JksCheckBox("", playStyle, false);
 		startStop.setName("preview.play");
 		startStop.setChecked(!isPause);
-		startStop.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{isPause = !startStop.isChecked();}
-		});
+		onChange(startStop, () -> isPause = !startStop.isChecked());
 		startStop.setSize(buttonSize, buttonSize);
 		startStop.setPosition(parr_Size_X / 2f, size_Height_Bloc_Parallax_Controle / 2f - buttonSize / 2);
 
 		JksCheckBox fullScreen = new JksCheckBox("", fullScreenStyle, false);
 		fullScreen.setName("preview.fullScreen");
-		fullScreen.addListener(new ChangeListener()
+		onChange(fullScreen, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				GVars_Vue_Edition.showParallaxFullScreen = fullScreen.isChecked();
-				tabControl.setVisible(!fullScreen.isChecked());
-				optionsControl.setVisible(!fullScreen.isChecked());
-			}
+			GVars_Vue_Edition.showParallaxFullScreen = fullScreen.isChecked();
+			tabControl.setVisible(!fullScreen.isChecked());
+			optionsControl.setVisible(!fullScreen.isChecked());
 		});
 		fullScreen.setSize(buttonSize, buttonSize);
 		fullScreen.setPosition(getWidth() - fullScreen.getWidth(), getHeight() - fullScreen.getHeight() / 2);
@@ -179,49 +169,24 @@ public class VE_Center_ParallaxShow extends Table
 		parallaxSpeedXSlider = new Slider(-15, 15, 0.05f, false, baseSkin);
 		parallaxSpeedXSlider.setName("preview.speedX");
 		parallaxSpeedXSlider.setValue(parallax_Heart.screenSpeedConstantX / 100);
-		parallaxSpeedXSlider.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{parallax_Heart.screenSpeedConstantX = parallaxSpeedXSlider.getValue() * 100;}
-		});
+		onChange(parallaxSpeedXSlider, () -> parallax_Heart.screenSpeedConstantX = parallaxSpeedXSlider.getValue() * 100);
 
 		parallaxSpeedYSlider = new Slider(-20, 20, 0.2f, false, baseSkin);
 		parallaxSpeedYSlider.setName("preview.speedY");
 		parallaxSpeedYSlider.setValue(parallax_Heart.screenSpeedConstantY / 100);
-		parallaxSpeedYSlider.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{parallax_Heart.screenSpeedConstantY = parallaxSpeedYSlider.getValue() * 100;}
-		});
+		onChange(parallaxSpeedYSlider, () -> parallax_Heart.screenSpeedConstantY = parallaxSpeedYSlider.getValue() * 100);
 
 		VisTextButton resetSpeedX = new VisTextButton("X = 0");
 		resetSpeedX.setName("preview.speedX.reset");
-		resetSpeedX.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{parallaxSpeedXSlider.setValue(0);}
-		});
+		onChange(resetSpeedX, () -> parallaxSpeedXSlider.setValue(0));
 
 		VisTextButton resetSpeedY = new VisTextButton("Y = 0");
 		resetSpeedY.setName("preview.speedY.reset");
-		resetSpeedY.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{parallaxSpeedYSlider.setValue(0);}
-		});
+		onChange(resetSpeedY, () -> parallaxSpeedYSlider.setValue(0));
 
 		VisTextButton resetPosition = new VisTextButton("Reset position");
 		resetPosition.setName("preview.resetPosition");
-		resetPosition.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{parallax_Heart.parallaxReader.resetPositions();}
-		});
+		onChange(resetPosition, () -> parallax_Heart.parallaxReader.resetPositions());
 
 		Table speedSlider = new Table();
 		speedSlider.setSize(getWidth() / 2 - buttonSize, buttonSize);

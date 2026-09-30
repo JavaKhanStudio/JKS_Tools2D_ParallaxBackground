@@ -14,6 +14,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
@@ -132,6 +133,21 @@ public final class Utils_Interface
 		});
 		return pane;
 	}
+
+	/** A ChangeListener that runs {@code action}: the lambda form of scene2d's abstract listener. */
+	public static ChangeListener changeListener(final Runnable action)
+	{
+		return new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{action.run();}
+		};
+	}
+
+	/** Runs {@code action} each time {@code actor} fires a ChangeEvent (a button clicked, a box checked, a slider moved). */
+	public static void onChange(Actor actor, Runnable action)
+	{actor.addListener(changeListener(action));}
 
 	public static void disposeTextures()
 	{

@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -161,15 +160,11 @@ public class VE_Tab_Texture extends Tab
 
 	private ChangeListener onChange(Runnable action)
 	{
-		return new ChangeListener()
+		return Utils_Interface.changeListener(() ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				if (!updating)
-					action.run();
-			}
-		};
+			if (!updating)
+				action.run();
+		});
 	}
 
 	private static List<ParallaxLayer> layers()
@@ -310,21 +305,17 @@ public class VE_Tab_Texture extends Tab
 
 		private ChangeListener copyFrom(int offset, BiConsumer<ParallaxLayer, Float> setter)
 		{
-			return new ChangeListener()
+			return Utils_Interface.changeListener(() ->
 			{
-				@Override
-				public void changed(ChangeEvent event, Actor actor)
-				{
-					List<ParallaxLayer> layers = layers();
-					int other = layers.indexOf(currentlySelectedParallax) + offset;
-					if (currentlySelectedParallax == null || other < 0 || other >= layers.size())
-						return;
+				List<ParallaxLayer> layers = layers();
+				int other = layers.indexOf(currentlySelectedParallax) + offset;
+				if (currentlySelectedParallax == null || other < 0 || other >= layers.size())
+					return;
 
-					float value = getter.apply(layers.get(other));
-					setter.accept(currentlySelectedParallax, value);
-					slider.setValue(value);
-				}
-			};
+				float value = getter.apply(layers.get(other));
+				setter.accept(currentlySelectedParallax, value);
+				slider.setValue(value);
+			});
 		}
 	}
 }

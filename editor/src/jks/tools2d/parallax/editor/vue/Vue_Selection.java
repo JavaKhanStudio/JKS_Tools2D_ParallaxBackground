@@ -8,6 +8,7 @@ import static jks.tools2d.parallax.editor.gvars.GVars_UI.baseSkin;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectInfos;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.relativePath;
+import static jks.tools2d.libgdxutils.Utils_Interface.onChange;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -16,11 +17,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -74,18 +73,14 @@ public class Vue_Selection extends AVue_Model
 
 		TextButton createNew = new TextButton("NEW", baseSkin);
 		createNew.setName("selection.new");
-		createNew.addListener(new ChangeListener()
+		onChange(createNew, () ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				projectInfos = new Project_Infos();
-				projectInfos.projectName = "newProject";
-				projectInfos.projectPath = filesRoot.path();
-				projectDatas = new Project_Data();
-				relativePath = projectInfos.projectPath;
-				GVars_Heart_Editor.changeVue(new Vue_Edition(), true);
-			}
+			projectInfos = new Project_Infos();
+			projectInfos.projectName = "newProject";
+			projectInfos.projectPath = filesRoot.path();
+			projectDatas = new Project_Data();
+			relativePath = projectInfos.projectPath;
+			GVars_Heart_Editor.changeVue(new Vue_Edition(), true);
 		});
 		int buttonSize = (int) (chooser.getX() * 0.75f);
 		createNew.setBounds((chooser.getX() - buttonSize) / 2, Gdx.graphics.getHeight() / 2f - buttonSize / 2f, buttonSize, buttonSize);

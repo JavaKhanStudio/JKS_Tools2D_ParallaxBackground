@@ -4,14 +4,13 @@ import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.JSON_PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX;
 import static jks.tools2d.parallax.editor.gvars.FVars_Extensions.PARALLAX_PROJECT;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.size_Bloc_Selection_Parallax_Width;
+import static jks.tools2d.libgdxutils.Utils_Interface.onChange;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextArea;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.kotcrab.vis.ui.widget.VisTextButton;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 
@@ -54,12 +53,7 @@ public class VE_Tab_Meta_Informations extends Tab
 	private static VisTextButton linkButton(String text, String url)
 	{
 		VisTextButton button = new VisTextButton(text);
-		button.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{Gdx.net.openURI(url);}
-		});
+		onChange(button, () -> Gdx.net.openURI(url));
 		return button;
 	}
 

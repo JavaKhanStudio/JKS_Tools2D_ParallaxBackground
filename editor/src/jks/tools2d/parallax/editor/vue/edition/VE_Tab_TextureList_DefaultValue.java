@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -120,17 +119,13 @@ public class VE_Tab_TextureList_DefaultValue extends Tab
 
 	private ChangeListener onChange(Runnable action)
 	{
-		return new ChangeListener()
+		return Utils_Interface.changeListener(() ->
 		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				if (updating)
-					return;
-				action.run();
-				update();
-			}
-		};
+			if (updating)
+				return;
+			action.run();
+			update();
+		});
 	}
 
 	public void update()
