@@ -58,7 +58,7 @@
    "page": "demo/showcase/winter.jplax",
    "atlasDir": "demo/assets",
    "name": "winter",
-   "about": "Winter: Hiver filling the screen under a winter sky",
+   "about": "Winter: Hiver laid out from the art, firs in front, snow hills, the ski lift's mountains",
    "lint": []
   },
   {
@@ -66,7 +66,7 @@
    "page": "demo/showcase/spring.jplax",
    "atlasDir": "demo/assets",
    "name": "spring",
-   "about": "Spring: Printemps filling the screen, deeper speed span",
+   "about": "Spring: Printemps, poles and flowers in front of pink-tree hills under a peach sky. Lint (e) on layer 2 is kept: sunk, p2 shows only its top rows, whose edges differ in alpha (236 against 255, about 3/255 over the sky) and by one row where the hilltop meets the edge. At full size its join is a 1 px line and a 2 px step in the contour; the whole band was cut before. Only repainted art tiles cleanly.",
    "lint": []
   },
   {

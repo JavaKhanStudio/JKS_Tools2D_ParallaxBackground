@@ -170,7 +170,7 @@ def layout(page, atlas_dir):
       (b) a layer's art reaches its bottom edge, that edge is on screen and no nearer layer's solid band covers it;
       (c) a band of the screen that no layer and no gradient covers (a white gradient is the editor's default: unset);
       (d) regions packed with their whitespace stripped and useOriginalSize off: they are stretched over the layer;
-      (e) a layer tiled on X whose left and right edges differ (seam > 20): a cut every repeat.
+      (e) a layer tiled on X whose left and right edges differ (seam > 20) in the rows on screen: a cut every repeat.
     A layer counts as covering a band only if it spans the screen's width: tiled on X without padding, or 1 world
     wide or more."""
     try:
@@ -214,7 +214,11 @@ def layout(page, atlas_dir):
         spans = page.get('repeatOnX', True) and l['padX'] <= 0 or width >= SCREEN_W
         placed.append((i, l, rows, bottom, width * img.height / img.width, spans, cut_top))
         if page.get('repeatOnX', True):
-            seam = regions_tool.measure(img)['seam']
+            # Only the rows on screen: a layer sunk below it hides a mismatch in its lower rows (r138, spring's hills).
+            height = width * img.height / img.width
+            low, high = max(0.0, -bottom / height), min(1.0, (SCREEN_H - bottom) / height)
+            rows_on_screen = img.crop((0, round((1 - high) * img.height), img.width, round((1 - low) * img.height)))
+            seam = regions_tool.measure(rows_on_screen)['seam'] if high > low and rows_on_screen.height else 0
             if seam > SEAM:
                 problems.append('(e) layer %d (%s#%d) is tiled on X but its left and right edges differ (seam %d > '
                                 '%d): a cut shows every repeat' % (i, l['regionName'], l['regionPosition'], seam, SEAM))
