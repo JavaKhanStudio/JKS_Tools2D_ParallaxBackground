@@ -16,7 +16,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from parallax_lab import (  # noqa: E402
+from parallax_lab import (
 	ROOT,
 	hiver_from_art,
 	layer,
