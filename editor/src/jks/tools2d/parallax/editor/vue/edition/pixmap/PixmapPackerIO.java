@@ -2,10 +2,14 @@ package jks.tools2d.parallax.editor.vue.edition.pixmap;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.zip.Deflater;
 
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Pixmap.Blending;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
+import com.badlogic.gdx.math.MathUtils;
 
 
 /** Writes a {@link PixmapPacker} as a (legacy format) texture atlas. Copied from libGDX, with support for region indices. */
@@ -68,26 +72,59 @@ public class PixmapPackerIO
 		}
 	}
 
+	/**
+	 * The part of a page its regions use, from its top-left corner, with the packer's padding kept on the right and
+	 * bottom edges too. Every page is allocated at the packer's page size, 4096px or more: written whole, a project of
+	 * two small images became a 4096x4096 texture, 64 MB of video memory on every device that loads it. Sides stay
+	 * powers of two when the atlas is mipmapped (OpenGL ES 2 and WebGL 1 draw a mipmapped NPOT texture black). Returns
+	 * the page's own pixmap when nothing can be cut.
+	 */
+	static Pixmap trimmed (PixmapPacker packer, Page page, boolean powerOfTwo) {
+		int width = 0, height = 0;
+		for (PixmapPacker.PixmapPackerRectangle rect : page.rects.values()) {
+			width = Math.max(width, (int)(rect.x + rect.width) + packer.padding);
+			height = Math.max(height, (int)(rect.y + rect.height) + packer.padding);
+		}
+		if (powerOfTwo) {
+			width = MathUtils.nextPowerOfTwo(width);
+			height = MathUtils.nextPowerOfTwo(height);
+		}
+		width = Math.min(width, page.image.getWidth());
+		height = Math.min(height, page.image.getHeight());
+		if (width == page.image.getWidth() && height == page.image.getHeight())
+			return page.image;
+
+		Pixmap image = new Pixmap(width, height, page.image.getFormat());
+		image.setBlending(Blending.None);
+		image.drawPixmap(page.image, 0, 0, 0, 0, width, height);
+		return image;
+	}
+
 	private void write (FileHandle file, PixmapPacker packer, SaveParameters parameters, Writer writer) throws IOException {
 		int index = 0;
 		for (Page page : packer.pages) {
 			if (page.rects.size > 0) {
 				FileHandle pageFile = file.sibling(file.nameWithoutExtension() + "_" + (++index) + parameters.format.getExtension());
-				if (parameters.bleed)
-					ColorBleed.bleed(page.image);
-				switch (parameters.format) {
-					case CIM:{
-						PixmapIO.writeCIM(pageFile, page.image);
-						break;
+				Pixmap image = trimmed(packer, page, parameters.minFilter.isMipMap());
+				try {
+					if (parameters.bleed)
+						ColorBleed.bleed(image);
+					switch (parameters.format) {
+						case CIM:{
+							PixmapIO.writeCIM(pageFile, image);
+							break;
+						}
+						case PNG: {
+							PixmapIO.writePNG(pageFile, image, Deflater.BEST_COMPRESSION, false);
+							break;
+						}
 					}
-					case PNG: {
-						PixmapIO.writePNG(pageFile, page.image);
-						break;
-					}
+				} finally {
+					if (image != page.image) image.dispose();
 				}
 				writer.write("\n");
 				writer.write(pageFile.name() + "\n");
-				writer.write("size: " + page.image.getWidth() + "," + page.image.getHeight() + "\n");
+				writer.write("size: " + image.getWidth() + "," + image.getHeight() + "\n");
 				writer.write("format: " + packer.pageFormat.name()  + "\n");
 				writer.write("filter: " + parameters.minFilter.name() + "," + parameters.magFilter.name() + "\n");
 				writer.write("repeat: none" + "\n");

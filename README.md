@@ -265,7 +265,8 @@ text cursor.
 Drop PNG files on the edition screen to add them without an atlas. They reload automatically when you save them from
 an image editor. When you export a project that uses loose images (or with **F.Export** checked), the editor first
 **flattens** it: every image of the list is packed into a new atlas next to the project (`<name>.atlas` plus
-`<name>_1.png`, `<name>_2.png`...), and the project then uses that atlas.
+`<name>_1.png`, `<name>_2.png`...), and the project then uses that atlas. Each page is written only as large as the
+images it holds, rounded up to a power of two: a few small images make a 512 px page, not a 4096 px one.
 
 The project is auto-saved every 5 minutes into `Files/AutoSave` (or `~/.parallax-editor/autosave` when the editor is
 not started from its module folder). The 10 most recent auto-saves are kept.
