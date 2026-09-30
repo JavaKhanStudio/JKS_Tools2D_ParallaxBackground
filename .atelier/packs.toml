@@ -285,10 +285,13 @@ and the editor and demo are 17. A Java 12+ API used in core/src fails the build 
 message about the API, never about the rule.
 `repositoriesMode = FAIL_ON_PROJECT_REPOS` in settings.gradle: declaring a repository in a
 module's build.gradle FAILS the build. Repositories go in settings.gradle only.
-Gates, exactly what CI runs on JDK 17, 21 AND 25:
+Gates, exactly what CI runs on JDK 17, 21 AND 25 (.github/workflows/ci.yml, job build):
   ./gradlew build                              compile + test everything, and :core:gwtCheck
                                                (GWT compiles core/src to JavaScript, ~20 s)
+  tools/browser-test.sh                        the browser suite in headless Chrome (below)
   ./gradlew :editor:distZip :demo:distZip      the packaged downloads
+and once, on JDK 17 (job godot-frames, xvfb-run + Mesa): tools/godot-parallax-shots.sh then
+tools/jme-parallax-shots.sh, failing on a FAIL.
 A `run` task's workingDir matters: editor/ for the samples, demo/assets for the .plax files.
 settings.gradle includes editor and demo only when their folder exists (r130, repo split): the
 library's gates (build, browser-test, the Godot and jME frame checks) read core/test-data/samples
