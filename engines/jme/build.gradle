@@ -42,6 +42,7 @@ tasks.register('run', JavaExec) {
     mainClass = 'jks.tools2d.parallax.jme.JmeParallaxDemo'
     classpath = sourceSets.shots.runtimeClasspath
     workingDir = rootDir
+    rootProject.offscreen(it)
 }
 
 // The runner's classpath, for tools/jme-parallax-shots.sh to start it without Gradle inside cage.
