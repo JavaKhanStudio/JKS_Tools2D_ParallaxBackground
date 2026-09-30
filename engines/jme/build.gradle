@@ -1,0 +1,60 @@
+plugins {
+    id 'java'
+}
+
+// The jMonkeyEngine reader (r112). jME is a Java engine: it reads and draws a page with core itself (Kryo .plax,
+// .jplax, the libGDX atlas parser, ParallaxPageReader), and only its Batch is jME's. See docs/other-engines.md.
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ['src']
+        resources.srcDirs = []
+    }
+    // The frame runner of tools/jme-parallax-shots.sh, and a demo: not part of what a game copies.
+    shots {
+        java.srcDirs = ['tests']
+        resources.srcDirs = []
+        compileClasspath += main.output + main.compileClasspath
+        runtimeClasspath += main.output + main.runtimeClasspath
+    }
+}
+
+configurations {
+    shotsImplementation.extendsFrom implementation
+    shotsRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    // Only gdx core, for its model classes (Color, TextureAtlas, Batch): no libGDX backend, no GL, no natives.
+    implementation project(':core')
+    implementation "org.jmonkeyengine:jme3-core:$jmeVersion"
+    shotsImplementation "org.jmonkeyengine:jme3-desktop:$jmeVersion"
+    shotsImplementation "org.jmonkeyengine:jme3-lwjgl3:$jmeVersion"
+}
+
+// ./gradlew :jme:run: Hiver and Printemps behind a jME cube, see JmeParallaxDemo.
+tasks.register('run', JavaExec) {
+    group = 'application'
+    description = 'Runs JmeParallaxDemo: the demo pages drawn by the jMonkeyEngine reader.'
+    mainClass = 'jks.tools2d.parallax.jme.JmeParallaxDemo'
+    classpath = sourceSets.shots.runtimeClasspath
+    workingDir = rootDir
+}
+
+// The runner's classpath, for tools/jme-parallax-shots.sh to start it without Gradle inside cage.
+tasks.register('shotsClasspath') {
+    def out = layout.buildDirectory.file('shots.classpath')
+    def files = sourceSets.shots.runtimeClasspath
+    dependsOn sourceSets.shots.runtimeClasspath
+    outputs.file(out)
+    doLast { out.get().asFile.text = files.files.join(File.pathSeparator) }
+}
+
+
+// ./gradlew build compiles the runner and the demo too: CI then catches one broken by a change in core.
+tasks.named('check') {
+    dependsOn 'shotsClasses'
+}

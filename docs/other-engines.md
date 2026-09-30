@@ -2,7 +2,8 @@
 
 Can a page made with the editor run in Godot, Unity or Unreal? (atelier r87, 2026-09-26.) **Yes, without changing the
 file format.** Godot is done and checked frame by frame against the libGDX runtime. Unity and Unreal need the same
-three pieces, in C# and C++.
+three pieces, in C# and C++. jMonkeyEngine is done too (r112, 2026-09-30), and needs far less: it is a Java engine, so
+it runs `core` itself, `.plax` included (see "jMonkeyEngine 3: done").
 
 ## What an engine has to read
 
@@ -83,6 +84,44 @@ no GPU), where round 1, the conformance round and the transfer round scored 0.17
 **Not ported yet:** atlas regions packed rotated (the editor's packer does not rotate; a TexturePacker atlas may).
 **Not checked:** an exported Godot game (only the editor/runner has been tried: `res://` pages load, with the PNG
 imported).
+
+## jMonkeyEngine 3: done
+
+jME runs on the JVM, so it needs none of the three pieces above: `core` (the `parallax-background` jar) reads the page
+and the atlas and computes every draw, and jME only puts the quads on screen. `engines/jme` is a Gradle module
+(`:jme`, jME 3.9.0-stable); `src/jks/tools2d/parallax/jme` is what a game copies:
+
+- **The page:** core's own loaders: `Utils_Page` (Kryo) reads the `.plax`, which no other engine can; `Utils_Page_Json`
+  reads the `.jplax` and `.plaxpj`. `PlaxBackground.loadPage` picks by extension, through jME's AssetManager.
+- **The atlas** (`JmeAtlas`): libGDX's own parser, `TextureAtlas.TextureAtlasData`, which touches no GL, so the regions come
+  in libGDX's order. Each atlas page is a jME `Texture2D` (loaded unflipped, as libGDX uploads it, so the regions' u/v
+  need no conversion, with the atlas's filters), carried by `PageTexture`, a GL-free stand-in for libGDX's `Texture`.
+  `new TextureAtlas(data)` then builds the `AtlasRegion`s as a libGDX game gets them.
+- **The drawing:** core's `ParallaxPageReader`, unchanged: `act` scrolls, fades and tints, `draw` tiles. It draws into
+  `JmeBatch`, libGDX's `Batch` interface implemented with jME meshes: one mesh per run of the same texture, in draw order,
+  as SpriteBatch flushes, with its vertex colour packed to 8 bits (the alpha's lowest bit dropped, as `toFloatBits`
+  does) and its blending. `PlaxBackground` is the `Parallax_Heart`: a `BaseAppState` that draws in a pre-view viewport,
+  in its Gui bucket, before the game's.
+
+Two pieces of `core` cannot run without a libGDX backend, and are worked around rather than changed:
+`OrthographicCamera.setToOrtho` updates its frustum through a libGDX native (`Matrix4.prj`), so `PlaxBackground` sets
+the view fields the reader reads; and `SquareBackground` reads the screen size from `Gdx.graphics`, so `JmeGradient`
+ports its 60 lines (opaque, colours packed as ShapeRenderer packs them). `JmeBatch` implements the one draw the reader
+calls, `draw(region, x, y, width, height)`, and throws on every other: a reader that starts calling another fails
+there, loudly.
+
+**How it is checked.** `tools/jme-parallax-shots.sh` renders the same three rounds as the Godot check (the lab's
+`demo/lab/round1`, `engines/godot/tests/conformance` and `engines/godot/tests/transfer`, with their Y scroll, resizes,
+cross-fades and tints) with libGDX and with `JmeParallaxShots`, off screen in cage, and compares them with the same
+`tools/compare-parallax-frames.py`. On 2026-09-30 (jME 3.9.0, LWJGL 3.3.6, NVIDIA): worst mean difference **0.25 /
+255** (round 1), 0.13 (conformance), 0.23 (transfer). A port with a scroll 10 % too fast (`BREAK=scroll`) scores
+4.3 to 39 on every still taken after the scroll started, and a jME frame compared with the libGDX frame 12 s later
+scores 6.4 to 160, so the 2 / 255 threshold catches both. `tools/start-demo-check.sh jme` runs `JmeParallaxDemo`
+(`./gradlew :jme:run`: the demo's Hiver and Printemps `.plax` behind a jME cube) off screen, with SPACE and N pressed.
+
+**Not there yet:** atlas regions packed rotated (as in Godot), and assets in an Android jME game (tried on the desktop
+only). **Not checked in CI:** the frame comparison runs here; `./gradlew build` only compiles the module, runner and
+demo.
 
 ## Unity and Unreal: what they would take
 

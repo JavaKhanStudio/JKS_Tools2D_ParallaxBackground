@@ -41,6 +41,13 @@ change it there, or a Godot game shows a different picture: `tools/godot-paralla
 renders both off screen and fails past a mean 2/255 apart; engines/godot/tests/transfer is its
 cross-fade round. CI runs it too (ci.yml job godot-frames, Xvfb + llvmpipe): a push that
 desynchronises the port fails the build, so run it before pushing, not after.
+THE jME READER (engines/jme, r112) RUNS THIS CODE AS IS: PlaxBackground drives ParallaxPageReader
+and draws through JmeBatch, a libGDX Batch in jME meshes that implements ONLY
+draw(region, x, y, width, height) and throws on every other draw. Make the reader call another
+Batch method, or change SquareBackground (ported in JmeGradient: it reads Gdx.graphics), and run
+`tools/jme-parallax-shots.sh` (not in CI). No libGDX backend there: a core call that reaches a gdx
+native from ParallaxPageReader or ParallaxLayer (OrthographicCamera.update -> Matrix4.prj does) throws
+UnsatisfiedLinkError in a jME game.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.
