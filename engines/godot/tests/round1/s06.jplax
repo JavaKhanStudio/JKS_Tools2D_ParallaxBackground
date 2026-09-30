@@ -1,0 +1,139 @@
+{
+ "topHalf_top": {
+  "r": 0.0431373,
+  "g": 0.1137255,
+  "b": 0.227451,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 0.3529412,
+  "g": 0.4352941,
+  "b": 0.6588235,
+  "a": 1.0
+ },
+ "topHalfSize": 0.5,
+ "bottomHalf_top": {
+  "r": 0.1019608,
+  "g": 0.0784314,
+  "b": 0.1254902,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 0.0392157,
+  "g": 0.0313725,
+  "b": 0.0627451,
+  "a": 1.0
+ },
+ "bottomHalfSize": 0.5,
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "pageModel": {
+  "atlasName": "OneNight.atlas",
+  "outside": false,
+  "pageList": [
+   {
+    "regionName": "clouds",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.018,
+    "parallaxScalingSpeedY": 0.010799999999999999,
+    "speedXAtRest": 25,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 20,
+    "decal_Y_Ratio": 40,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "rocks",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.0243,
+    "parallaxScalingSpeedY": 0.01458,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0,
+    "decal_Y_Ratio": 24,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "ground",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.032805,
+    "parallaxScalingSpeedY": 0.019683,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 40,
+    "decal_Y_Ratio": 16,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "ground",
+    "regionPosition": 1,
+    "flipX": true,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.04428675000000001,
+    "parallaxScalingSpeedY": 0.026572050000000003,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 10,
+    "decal_Y_Ratio": 8,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "ground",
+    "regionPosition": 2,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.05978711250000001,
+    "parallaxScalingSpeedY": 0.035872267500000006,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.1,
+    "decal_X_Ratio": 65,
+    "decal_Y_Ratio": 0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "waterDark",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.08071260187500003,
+    "parallaxScalingSpeedY": 0.04842756112500001,
+    "speedXAtRest": -15,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0,
+    "decal_Y_Ratio": -2,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   }
+  ]
+ },
+ "useOriginalSize": true
+}

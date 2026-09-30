@@ -1,0 +1,61 @@
+OneNight.png
+size: 4036, 2205
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+clouds
+  rotate: false
+  xy: 1923, 1760
+  size: 1658, 444
+  orig: 1920, 1080
+  offset: 205, 524
+  index: 1
+clouds
+  rotate: false
+  xy: 3583, 1760
+  size: 452, 123
+  orig: 1920, 1080
+  offset: 1018, 502
+  index: 2
+ground
+  rotate: false
+  xy: 1923, 1037
+  size: 1920, 721
+  orig: 1920, 1080
+  offset: 0, 0
+  index: 1
+ground
+  rotate: false
+  xy: 2051, 1
+  size: 1920, 1034
+  orig: 1920, 1080
+  offset: 0, 0
+  index: 2
+ground
+  rotate: false
+  xy: 1, 517
+  size: 1920, 963
+  orig: 1920, 1080
+  offset: 0, 0
+  index: 3
+rocks
+  rotate: false
+  xy: 1, 1482
+  size: 1920, 675
+  orig: 1920, 1080
+  offset: 0, 0
+  index: -1
+water
+  rotate: false
+  xy: 1, 259
+  size: 2046, 256
+  orig: 2046, 256
+  offset: 0, 0
+  index: -1
+waterDark
+  rotate: false
+  xy: 1, 1
+  size: 2048, 256
+  orig: 2048, 256
+  offset: 0, 0
+  index: -1

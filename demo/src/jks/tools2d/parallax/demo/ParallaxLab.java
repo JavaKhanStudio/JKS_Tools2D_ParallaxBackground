@@ -57,6 +57,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * "color": [r, g, b, a]}} tints, both started {@code at} seconds into the scroll. engines/godot/tests/transfer uses them.
  * {@code "speedY": 30} also scrolls the scene up, and {@code "resize": {"at": 3, "size": [720, 1280]}} (--shots only, r95)
  * resizes the window mid-scroll: engines/godot/tests/conformance uses them.
+ * The readers' frame checks do not run this mode: they run its copy, shots/.../ParallaxShots (r130), so that the
+ * library checks them without the demo. Change how a scene is shot, change it there too.
  * <p>
  * Keys: 1-5 grade (5 = best) and go on, ENTER/BACKSPACE next/previous, SPACE pause, LEFT/RIGHT scroll by hand, UP/DOWN
  * scroll speed, R restart the scene, H show what the scene tests.

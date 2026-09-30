@@ -7,7 +7,14 @@ dependencyResolutionManagement {
 
 rootProject.name = 'JKS_Tools2D_ParallaxBackground'
 
-include 'core', 'editor', 'demo'
+include 'core'
+
+// The editor and the demo leave for their own repository (docs/repo-split.md): this build, and the library's checks,
+// run without them (r130).
+['editor', 'demo'].each { if (file(it).isDirectory()) include it }
+
+// The reference renderer (r130): the libGDX frames tools/parallax-lab-shots.sh draws for the reader rounds.
+include 'shots'
 
 // The jMonkeyEngine reader (r112): a Java engine, so it draws pages with core itself.
 include 'jme'

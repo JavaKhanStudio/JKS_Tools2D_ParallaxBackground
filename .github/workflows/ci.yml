@@ -92,7 +92,7 @@ jobs:
           ALSOFT_DRIVERS: 'null'
         run: |
           xvfb-run -a -s "-screen 0 1920x1440x24" tools/godot-parallax-shots.sh
-          grep -h "Using Device" demo/build/godot/*/godot.log
+          grep -h "Using Device" build/godot/*/godot.log
 
       - name: Compare the jME frames
         if: success() || failure()
@@ -103,7 +103,7 @@ jobs:
           BREAK: ${{ inputs.break }}
         run: |
           xvfb-run -a -s "-screen 0 1920x1440x24" tools/jme-parallax-shots.sh
-          grep -h -i "renderer" demo/build/jme/*/jme.log | sort -u || true
+          grep -h -i "renderer" build/jme/*/jme.log | sort -u || true
 
       - name: Upload the frames
         if: always()
@@ -111,12 +111,12 @@ jobs:
         with:
           name: godot-frames
           path: |
-            demo/build/godot/*/compare.png
-            demo/build/godot/*/report.txt
-            demo/build/godot/*/*.log
-            demo/build/godot/*/gdx/lab.log
-            demo/build/jme/*/compare.png
-            demo/build/jme/*/report.txt
-            demo/build/jme/*/*.log
-            demo/build/jme/*/gdx/lab.log
+            build/godot/*/compare.png
+            build/godot/*/report.txt
+            build/godot/*/*.log
+            build/godot/*/gdx/lab.log
+            build/jme/*/compare.png
+            build/jme/*/report.txt
+            build/jme/*/*.log
+            build/jme/*/gdx/lab.log
           retention-days: 7

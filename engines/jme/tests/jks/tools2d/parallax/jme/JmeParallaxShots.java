@@ -21,7 +21,7 @@ import com.jme3.system.lwjgl.LwjglWindow;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
- * Stills of every scene of a lab round drawn by jME, as {@code ParallaxLab --shots} takes them with libGDX: the same
+ * Stills of every scene of a lab round drawn by jME, as {@code ParallaxShots} (shots/) takes them with libGDX: the same
  * page, the same 60 units/s scroll stepped at 1/60 s (in float, as the lab counts it), grabbed 0, 6 and 12 s in. A
  * scene's "transfer" (one or a list), "tint", "speedY" and "resize" are played at the same steps.
  * tools/jme-parallax-shots.sh runs it and compares the two sets.

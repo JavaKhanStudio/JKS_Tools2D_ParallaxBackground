@@ -1,0 +1,31 @@
+plugins {
+    id 'application'
+}
+
+// The reference renderer (r130): stills of a round's scenes drawn by core through libGDX, the frames the Godot and jME
+// readers are compared with (tools/parallax-lab-shots.sh). Split out of the demo's ParallaxLab --shots so that this
+// repository checks its readers without demo/ (docs/repo-split.md). Not published.
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ['src']
+        resources.srcDirs = []
+    }
+}
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+application {
+    mainClass = 'jks.tools2d.parallax.shots.ParallaxShots'
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        applicationDefaultJvmArgs = ['-XstartOnFirstThread']
+    }
+}

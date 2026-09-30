@@ -17,8 +17,8 @@ application {
 }
 
 tasks.named('run') {
-    // demo/assets holds the Hiver page and its atlas.
-    workingDir = file('../../demo/assets')
+    // core/test-data/samples holds the Hiver page and its atlas.
+    workingDir = file('../../core/test-data/samples')
     doFirst {
         def jar = sourceSets.main.runtimeClasspath.find { it.name.startsWith('parallax-background-jme-') }
         println "parallax-background-jme -> ${jar?.name}"

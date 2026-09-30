@@ -21,7 +21,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 /**
  * The jME twin of demo/ (ParallaxDemo): Hiver and Printemps, read from their .plax files, behind a spinning cube.
  * SPACE winter/spring, N night tint, LEFT / RIGHT scroll, R reset. {@code ./gradlew :jme:run} (from the repository
- * root: it reads demo/assets). {@code -Dparallax.jme.demoShot=out.png} presses SPACE and N, saves the frame once both
+ * root: it reads core/test-data/samples). {@code -Dparallax.jme.demoShot=out.png} presses SPACE and N, saves the frame once both
  * fades are over, and quits (tools/start-demo-check.sh).
  */
 public class JmeParallaxDemo extends SimpleApplication implements ActionListener
@@ -58,7 +58,7 @@ public class JmeParallaxDemo extends SimpleApplication implements ActionListener
 	{
 		setDisplayStatView(false);
 		flyCam.setEnabled(false);
-		assetManager.registerLocator(Paths.get("demo/assets").toAbsolutePath().toString(), FileLocator.class);
+		assetManager.registerLocator(Paths.get("core/test-data/samples").toAbsolutePath().toString(), FileLocator.class);
 
 		winter = PlaxBackground.loadPage(assetManager, "hiver/Hiver.plax");
 		spring = PlaxBackground.loadPage(assetManager, "printemps/Printemps.plax");

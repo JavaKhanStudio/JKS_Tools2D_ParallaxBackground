@@ -59,7 +59,7 @@ public final class JvmFixtures implements Fixtures
 	private static List<Path> plaxWithProject(Path root) throws IOException
 	{
 		List<Path> pages = new ArrayList<>();
-		for (String dir : new String[] { "core/test-data/onboard", "editor/Files", "demo/assets" })
+		for (String dir : new String[] { "core/test-data/onboard", "core/test-data/samples" })
 			try (Stream<Path> walk = Files.walk(root.resolve(dir)))
 			{
 				pages.addAll(walk.filter(p -> p.toString().endsWith(".plax") && Files.exists(Path.of(p + "pj")))

@@ -63,7 +63,7 @@ dependencies {
 }
 
 tasks.named('test', Test) {
-    // Tests read the sample .plax/.plaxpj files shipped with the editor and the demo.
+    // Tests read the sample .plax/.plaxpj files in test-data (copies of the editor's and the demo's, r130).
     systemProperty 'parallax.repoRoot', rootDir.absolutePath
 }
 
@@ -103,7 +103,7 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     description = 'Writes the saved pages the browser suite loads, with what Kryo reads of each (JvmFixtures).'
     mainClass = 'jks.tools2d.parallax.browsertest.JvmFixtures'
     classpath = sourceSets.test.runtimeClasspath
-    inputs.files(fileTree('test-data'), fileTree('../editor/Files') { include '**/*.plax*' }, fileTree('../demo/assets') { include '**/*.plax*' })
+    inputs.files(fileTree('test-data') { include '**/*.plax*' })
     outputs.dir(browserTestAssets)
     argumentProviders.add({ [rootDir.absolutePath, browserTestAssets.get().asFile.absolutePath] } as CommandLineArgumentProvider)
     doFirst { delete browserTestAssets }

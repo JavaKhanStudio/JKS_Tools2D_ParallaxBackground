@@ -1,0 +1,40 @@
+Printemps.png
+size: 3647, 2296
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+parallax1
+  rotate: false
+  xy: 1, 715
+  size: 3361, 416
+  orig: 3645, 580
+  offset: 80, 0
+  index: 1
+parallax1
+  rotate: false
+  xy: 1, 1133
+  size: 3214, 580
+  orig: 3645, 580
+  offset: 66, 0
+  index: 2
+parallax1
+  rotate: false
+  xy: 1, 338
+  size: 3645, 375
+  orig: 3645, 580
+  offset: 0, 0
+  index: 3
+parallax1
+  rotate: false
+  xy: 1, 1
+  size: 3645, 335
+  orig: 3645, 580
+  offset: 0, 142
+  index: 4
+parallax1
+  rotate: false
+  xy: 1, 1715
+  size: 3645, 580
+  orig: 3645, 580
+  offset: 0, 0
+  index: 5

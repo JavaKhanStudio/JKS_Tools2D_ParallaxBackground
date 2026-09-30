@@ -69,13 +69,15 @@ needs Java 17 or newer.
 
 ## Build and run
 
-To build from source instead, the repository has three Gradle modules:
+To build from source instead, the repository has these Gradle modules:
 
 | Module   | What it is                                                                                  |
 |----------|---------------------------------------------------------------------------------------------|
 | `core`   | Runtime library for games: loads `.plax` files, scrolls, tiles and draws the layers.        |
 | `editor` | The Parallax Editor (desktop, LWJGL3 + VisUI).                                               |
 | `demo`   | A minimal game using `core`: a winter and a spring page cross-faded on demand.               |
+| `jme`    | The jMonkeyEngine reader (`engines/jme`), published as `parallax-background-jme`.            |
+| `shots`  | Not published: draws a round of pages with `core`, the frames the other engines are checked against. |
 
 Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
 
@@ -384,6 +386,9 @@ engines/jme/src/.../jme/          the jMonkeyEngine reader, published as paralla
                                   AppState), JmeAtlas, JmeBatch (libGDX's Batch in jME meshes), JmeGradient
 engines/jme/tests/                its frame runner (tools/jme-parallax-shots.sh) and demo (:jme:run)
 engines/godot/addons/jks_parallax the Godot 4 reader
+engines/godot/tests/              the reader rounds: round1, conformance, transfer, pixelart
+shots/src/.../ParallaxShots       libGDX stills of a round, what the Godot and jME frames are compared with
+core/test-data/samples/           the sample pages and atlases the tests and the rounds read (copies, never re-exported)
 ```
 
 The editor keeps its state in static `GVars_*` classes, one project at a time. The panels read the window size when

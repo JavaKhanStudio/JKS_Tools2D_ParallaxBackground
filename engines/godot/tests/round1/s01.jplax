@@ -1,0 +1,148 @@
+{
+ "topHalf_top": {
+  "r": 1.0,
+  "g": 1.0,
+  "b": 1.0,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 1.0,
+  "g": 1.0,
+  "b": 1.0,
+  "a": 1.0
+ },
+ "topHalfSize": 0.5,
+ "bottomHalf_top": {
+  "r": 1.0,
+  "g": 1.0,
+  "b": 1.0,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 1.0,
+  "g": 1.0,
+  "b": 1.0,
+  "a": 1.0
+ },
+ "bottomHalfSize": 0.5,
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "pageModel": {
+  "atlasName": "Hiver.atlas",
+  "outside": false,
+  "pageList": [
+   {
+    "regionName": "parallax4",
+    "regionPosition": 3,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.019531248,
+    "parallaxScalingSpeedY": 0.019531248,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 2.04,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 67.5,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "parallax4",
+    "regionPosition": 1,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.019531248,
+    "parallaxScalingSpeedY": 0.019531248,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.18,
+    "decal_X_Ratio": 10.0,
+    "decal_Y_Ratio": 70.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "parallax4",
+    "regionPosition": 2,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.019531248,
+    "parallaxScalingSpeedY": 0.019531248,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.18,
+    "decal_X_Ratio": 20.0,
+    "decal_Y_Ratio": 63.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "parallax4",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.019531248,
+    "parallaxScalingSpeedY": 0.019531248,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.58,
+    "decal_X_Ratio": 30.0,
+    "decal_Y_Ratio": 63.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "parallax4",
+    "regionPosition": 2,
+    "flipX": true,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.019531248,
+    "parallaxScalingSpeedY": 0.012715655436198,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.81,
+    "decal_X_Ratio": 20.0,
+    "decal_Y_Ratio": 58.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "parallax4",
+    "regionPosition": 0,
+    "flipX": true,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.019531248,
+    "parallaxScalingSpeedY": 0.01568542889890951,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 2.155,
+    "decal_X_Ratio": -23.5,
+    "decal_Y_Ratio": 56.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "parallax4",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.019531248,
+    "parallaxScalingSpeedY": 0.014537715736947513,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 2.155,
+    "decal_X_Ratio": 50.0,
+    "decal_Y_Ratio": 45.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   }
+  ]
+ }
+}
