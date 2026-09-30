@@ -124,6 +124,8 @@ public class WholePage_Model
 		String atlas = Gvars_Parallax.atlasFile(pageModel.atlasName);
 		if (!atlas.equals(pageModel.atlasName) && !manager.getFileHandleResolver().resolve(atlas).exists())
 			atlas = pageModel.atlasName;
+		if (Utils_Etc2_Atlas.isEtc2Atlas(atlas))
+			Utils_Etc2_Atlas.register(manager);
 		manager.load(atlas, TextureAtlas.class);
 		manager.finishLoadingAsset(atlas);
 		useAtlas(manager.get(atlas, TextureAtlas.class), false, worldWidth, worldHeight);
@@ -139,7 +141,7 @@ public class WholePage_Model
 			FileHandle atlas = new FileHandle(relativePath + "/" + Gvars_Parallax.atlasFile(pageModel.atlasName));
 			if (!atlas.exists())
 				atlas = new FileHandle(relativePath + "/" + pageModel.atlasName);
-			useAtlas(new TextureAtlas(atlas), true, worldWidth, worldHeight);
+			useAtlas(Utils_Etc2_Atlas.load(atlas), true, worldWidth, worldHeight);
 		}
 		else
 			useAtlas(new TextureAtlas(), true, worldWidth, worldHeight);
