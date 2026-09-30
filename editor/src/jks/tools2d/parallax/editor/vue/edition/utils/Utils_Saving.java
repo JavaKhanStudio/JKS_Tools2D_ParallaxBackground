@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.TextureAtlasData;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.esotericsoftware.kryo.io.Output;
@@ -75,9 +76,24 @@ public final class Utils_Saving
 			}
 
 		if (oneOutside || VE_Options.forceExport.isChecked())
-			askForFlatening(where, whatName);
+			askForFlatening(where, whatName, "One or more images are not part of the texture atlas.");
+		else if (projectDatas.pixelArt && !atlasIsSharp())
+			askForFlatening(where, whatName, "Pixel art is on, and the texture atlas is not filtered sharp.");
 		else
 			savingExport(where, whatName);
+	}
+
+	/** Whether the project's atlas file says Nearest,Nearest on every page: its textures, the preview may have changed. */
+	private static boolean atlasIsSharp()
+	{
+		Path atlas = EditorPaths.atlasFile();
+		if (atlas == null || !Files.exists(atlas))
+			return false;
+		FileHandle atlasHandle = new FileHandle(atlas.toFile());
+		for (TextureAtlasData.Page page : new TextureAtlasData(atlasHandle, atlasHandle.parent(), false).getPages())
+			if (page.minFilter != TextureFilter.Nearest || page.magFilter != TextureFilter.Nearest)
+				return false;
+		return true;
 	}
 
 	public static void savingExport(String where, String whatName)
@@ -104,9 +120,9 @@ public final class Utils_Saving
 				(VE_Options.formatJson.isChecked() ? " ." + FVars_Extensions.JSON_PARALLAX : ""));
 	}
 
-	private static void askForFlatening(String where, String whatName)
+	private static void askForFlatening(String where, String whatName, String why)
 	{
-		Dialogs.showOptionDialog(GVars_UI.mainUi, "Export", "Warning! One or more images are not part of the texture atlas."
+		Dialogs.showOptionDialog(GVars_UI.mainUi, "Export", "Warning! " + why
 				+ "\nExporting will flatten the project into a new texture atlas. Save the project before that?",
 				OptionDialogType.YES_NO_CANCEL, new OptionDialogAdapter()
 				{
@@ -384,6 +400,7 @@ public final class Utils_Saving
 		Project_Data copy = new Project_Data();
 		copy.saving = page;
 		copy.defaults = projectDatas.defaults;
+		copy.pixelArt = projectDatas.pixelArt;
 		copy.outsideInfos = new ArrayList<>();
 		if (projectDatas.outsideInfos != null)
 			for (Outside_Source source : projectDatas.outsideInfos)

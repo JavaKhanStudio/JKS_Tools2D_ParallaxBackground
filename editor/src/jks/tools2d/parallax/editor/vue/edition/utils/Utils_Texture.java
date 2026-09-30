@@ -3,11 +3,14 @@ package jks.tools2d.parallax.editor.vue.edition.utils;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.allImage;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.imageRef;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.outsideTextureReserve;
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.textureLink;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.trashedValues;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
@@ -21,8 +24,41 @@ import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 
 public final class Utils_Texture
 {
+	/** The filters the textures had before pixel art turned them Nearest, given back when it is turned off. */
+	private static final Map<Texture, TextureFilter[]> smoothFilters = new IdentityHashMap<>();
+
 	private Utils_Texture()
 	{}
+
+	/**
+	 * Draws every image of the project as the export will (Project_Data.pixelArt): Nearest when it is on, the texture's
+	 * own filters when it is off. Called again for every texture the project gains while it is on.
+	 */
+	public static void applyPixelArt()
+	{
+		boolean pixelArt = projectDatas != null && projectDatas.pixelArt;
+		for (TextureRegion region : allImage)
+		{
+			Texture texture = region.getTexture();
+			if (pixelArt)
+			{
+				smoothFilters.computeIfAbsent(texture, t -> new TextureFilter[] { t.getMinFilter(), t.getMagFilter() });
+				texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+			}
+			else
+			{
+				TextureFilter[] smooth = smoothFilters.get(texture);
+				if (smooth != null)
+					texture.setFilter(smooth[0], smooth[1]);
+			}
+		}
+		if (!pixelArt)
+			smoothFilters.clear();
+	}
+
+	/** Forgets the textures of the project being closed. */
+	public static void forgetPixelArt()
+	{smoothFilters.clear();}
 
 	/** Loads a loose image file as a mipmapped texture, or returns null (and logs) if it cannot be read. */
 	public static TextureRegion getTextureRegionFromPath(String path)
@@ -73,7 +109,11 @@ public final class Utils_Texture
 		GVars_Vue_Edition.refreshActiveTab();
 
 		if (disposeOld)
+		{
+			smoothFilters.remove(oldRegion.getTexture());
 			oldRegion.getTexture().dispose();
+		}
+		applyPixelArt();
 	}
 
 	private static void moveLayers(TextureRegion from, TextureRegion to)

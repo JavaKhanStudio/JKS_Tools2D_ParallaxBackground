@@ -1,5 +1,6 @@
 package jks.tools2d.parallax.editor.vue.edition;
 
+import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectDatas;
 import static jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition.projectInfos;
 
 import com.badlogic.gdx.Gdx;
@@ -8,12 +9,14 @@ import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.kotcrab.vis.ui.widget.Tooltip;
 import com.kotcrab.vis.ui.widget.VisCheckBox;
 import com.kotcrab.vis.ui.widget.VisLabel;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Saving;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 
 /** Top bar: project folder and name, save project / export buttons and export formats. */
 public class VE_Options extends Table
@@ -23,7 +26,7 @@ public class VE_Options extends Table
 	private static final float textHeight = 22;
 
 	public static TextField parallaxPath, parallaxName;
-	public static VisCheckBox formatLibGDX, formatJson, forceExport;
+	public static VisCheckBox formatLibGDX, formatJson, forceExport, pixelArt;
 
 	public VE_Options()
 	{
@@ -58,6 +61,20 @@ public class VE_Options extends Table
 		formatLibGDX.setName("options.formatLibgdx");
 		formatJson.setName("options.formatJson");
 		forceExport.setName("options.forceExport");
+		// Stored in the project: rebuilt after a resize, the box reads it back.
+		pixelArt = new VisCheckBox("Pixel art");
+		pixelArt.setName("options.pixelArt");
+		pixelArt.setChecked(projectDatas.pixelArt);
+		new Tooltip.Builder("Export sharp: Nearest filtering, no mipmaps.\nThe preview shows it as soon as it is ticked.").target(pixelArt).build();
+		pixelArt.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				projectDatas.pixelArt = pixelArt.isChecked();
+				Utils_Texture.applyPixelArt();
+			}
+		});
 
 		parallaxPath = new TextField("", GVars_UI.baseSkin)
 		{
@@ -81,10 +98,13 @@ public class VE_Options extends Table
 
 		Table formatTable = new Table();
 		formatTable.setBounds(savingExport.getWidth() + savingExport.getX(), savingExport.getY(), 100, savingExport.getHeight() + savingProject.getHeight());
+		// Five rows in the two buttons' height: at their natural height the last one ran over the preview.
+		formatTable.top().defaults().height(textHeight * 0.9f);
 		formatTable.add(new VisLabel("Exp Format")).left().row();
 		formatTable.add(formatLibGDX).left().row();
 		formatTable.add(formatJson).left().row();
-		formatTable.add(forceExport).left();
+		formatTable.add(forceExport).left().row();
+		formatTable.add(pixelArt).left();
 
 		setInfos();
 

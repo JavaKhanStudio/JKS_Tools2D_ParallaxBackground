@@ -21,6 +21,7 @@ import jks.tools2d.parallax.editor.vue.edition.data.ParallaxDefaultValues;
 import jks.tools2d.parallax.editor.vue.edition.data.Position_Infos;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Data;
 import jks.tools2d.parallax.editor.vue.edition.data.Project_Infos;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 import jks.tools2d.parallax.editor.vue.edition.utils.WatchedImage;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
@@ -98,6 +99,7 @@ public final class GVars_Vue_Edition
 		for (TextureRegion region : outsideTextureReserve.values())
 			region.getTexture().dispose();
 
+		Utils_Texture.forgetPixelArt();
 		allImage.clear();
 		imageRef.clear();
 		textureLink.clear();

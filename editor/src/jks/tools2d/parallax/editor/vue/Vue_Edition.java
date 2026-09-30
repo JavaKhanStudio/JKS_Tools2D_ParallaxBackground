@@ -35,6 +35,7 @@ import jks.tools2d.parallax.editor.gvars.GVars_UI;
 import jks.tools2d.parallax.editor.gvars.GVars_Vue_Edition;
 import jks.tools2d.parallax.editor.inputs.EditorInputProcessus;
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
+import jks.tools2d.parallax.editor.vue.edition.utils.Utils_Texture;
 import jks.tools2d.parallax.editor.vue.edition.VE_Center_ParallaxShow;
 import jks.tools2d.parallax.editor.vue.edition.VE_Options;
 import jks.tools2d.parallax.editor.vue.edition.VE_Tab_AControl;
@@ -91,6 +92,7 @@ public class Vue_Edition extends AVue_Model
 		if (projectDatas.defaults == null)
 			GVars_Vue_Edition.setDefaults(new ParallaxDefaultValues());
 		addAtlasImages();
+		Utils_Texture.applyPixelArt();
 
 		buildInterface();
 		Gdx.input.setInputProcessor(new InputMultiplexer(GVars_UI.mainUi, new EditorInputProcessus(), buildClickProcessor()));

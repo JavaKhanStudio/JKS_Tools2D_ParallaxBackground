@@ -85,6 +85,7 @@ public final class Utils_LoadingImages
 		outsideTextureReserve.put(path, region);
 		// Keyed by the path as saved, but a relative one is watched in the project folder, not the working directory.
 		activeFileWatching.put(path, new WatchedImage(EditorPaths.resolveProjectFile(path).toString(), region));
+		Utils_Texture.applyPixelArt();
 	}
 
 	/** File name without folder nor extension, whatever the platform separator. */

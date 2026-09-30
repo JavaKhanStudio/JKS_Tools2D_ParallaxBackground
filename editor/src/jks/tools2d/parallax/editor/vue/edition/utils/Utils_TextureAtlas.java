@@ -108,9 +108,10 @@ public final class Utils_TextureAtlas
 			// Layers are always drawn scaled: linear filtering is what the 50px padding and tripled borders are for.
 			// Mipmaps: a screen-wide layer is drawn smaller than its page, 200 of them draw a third faster with them.
 			// Their levels average whole blocks: without bleeding, the black of transparent pixels outlines every shape.
+			// Pixel art gives both up to stay sharp (d14).
 			PixmapPackerIO.SaveParameters parameters = new PixmapPackerIO.SaveParameters();
-			parameters.minFilter = TextureFilter.MipMapLinearLinear;
-			parameters.magFilter = TextureFilter.Linear;
+			parameters.minFilter = projectDatas.pixelArt ? TextureFilter.Nearest : TextureFilter.MipMapLinearLinear;
+			parameters.magFilter = projectDatas.pixelArt ? TextureFilter.Nearest : TextureFilter.Linear;
 			parameters.bleed = true;
 			new PixmapPackerIO().save(atlasFile, packer, parameters);
 		}
@@ -166,8 +167,8 @@ public final class Utils_TextureAtlas
 	 * strips 2350px high in all fill a 4096x4096 page; 4096x2048 pages hold them in 4096x2048 + 4096x1024, a quarter
 	 * less video memory.
 	 * <p>
-	 * (The 2019 version used 3x the largest image, easily a 15000px page.) Sides are powers of two: OpenGL ES 2 and WebGL
-	 * 1 cannot mipmap any other texture, and draw it black.
+	 * (The 2019 version used 3x the largest image, easily a 15000px page.) Sides are powers of two when mipmapped, which
+	 * pixel art is not: OpenGL ES 2 and WebGL 1 cannot mipmap any other texture, and draw it black.
 	 */
 	private static int[] pageSize(List<String> names, List<TextureRegion> regions, Map<Texture, Pixmap> sourcePixmaps,
 			Map<Pixmap, Boolean> mustDispose)
@@ -212,7 +213,7 @@ public final class Utils_TextureAtlas
 				long area = 0;
 				for (jks.tools2d.parallax.editor.vue.edition.pixmap.Page page : layout.getPages())
 				{
-					int[] written = PixmapPackerIO.writtenSize(layout, page, true);
+					int[] written = PixmapPackerIO.writtenSize(layout, page, !projectDatas.pixelArt);
 					area += (long) written[0] * written[1];
 				}
 				int pages = layout.getPages().size;

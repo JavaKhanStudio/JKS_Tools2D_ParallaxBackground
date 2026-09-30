@@ -237,7 +237,8 @@ to get libGDX's colours.
   texture black. Pack it with TexturePacker's `bleed` and `duplicatePadding` on and a wide `paddingX`/`paddingY`
   (the editor uses 50 px): mipmap levels average blocks of pixels, so without them the black of transparent pixels
   outlines every shape, and a tiled layer shows a seam at every join. A cross-fade between pages on two different
-  atlases also flushes the batch once per layer.
+  atlases also flushes the batch once per layer. A project with **Pixel art** ticked exports `filter: Nearest,Nearest`
+  instead, without mipmaps: sharp, and without that speed-up.
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
@@ -255,7 +256,8 @@ from it. **NEW** starts an empty project. Files can also be dragged onto the win
 - **Center:** the live preview. Use play/pause, full screen, the X/Y speed sliders and "Reset position".
   Arrows/WASD (and space) scroll it by hand.
 - **Top:** project folder and name. The two save buttons are **Save project** (`.plaxpj`) and **Export** (`.plax` and/or
-  `.jplax`, see the format checkboxes).
+  `.jplax`, see the format checkboxes). **Pixel art**, under them, is saved with the project: see "Loose images and
+  export".
 - **Left tabs:**
   - **Controls:** help and tutorial links; **Parallax** (repeat on X/Y, current atlas, copy loose images next to the
     project, back to the start screen); **Application** (window size, full screen, VSync).
@@ -279,6 +281,12 @@ an image editor. When you export a project that uses loose images (or with **F.E
 `<name>_1.png`, `<name>_2.png`...), and the project then uses that atlas. Each page is written only as large as the
 images it holds, rounded up to a power of two: a few small images make a 512 px page, not a 4096 px one. The page
 shape (4096x4096, 4096x2048...) is the one that writes the fewest pixels.
+
+The atlas is written `filter: MipMapLinearLinear,Linear`, which softens pixel art (City differs from its preview by up
+to 33/255 per channel). Tick **Pixel art** and it is written `filter: Nearest,Nearest`, without mipmaps, its pages no
+longer rounded to a power of two. The preview switches to Nearest as soon as the box is ticked, and back when it is
+unticked, so you see the difference before exporting. Export flattens a pixel-art project whose atlas is not already
+`Nearest,Nearest`. The game reads the filter from the atlas; the Godot reader still draws it linear.
 
 The project is auto-saved every 5 minutes into `Files/AutoSave` (or `~/.parallax-editor/autosave` when the editor is
 not started from its module folder). The 10 most recent auto-saves are kept.
@@ -313,7 +321,7 @@ To profile the editor on a heavy page, `tools/stress-project.py 300` writes a 30
 |-----------|------------------------------------------------------|---------------|---------------------------|
 | `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), jME games (`engines/jme`), editor |
 | `.jplax`  | Exported page, JSON (Jackson)                        | Export        | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), jME games, editor, other tools |
-| `.plaxpj` | Project: page, loose images, default values (JSON)   | Save project  | editor, browser games (`Utils_Page_Json`), Godot games, jME games |
+| `.plaxpj` | Project: page, loose images, default values, pixel art (JSON) | Save project  | editor, browser games (`Utils_Page_Json`), Godot games, jME games |
 
 A page references its atlas by file name, and looks for it next to itself. **Save project** therefore copies the atlas
 and its page images into the project folder when they are not there yet, and refuses to save if that folder already
