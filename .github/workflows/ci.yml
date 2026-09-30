@@ -5,6 +5,11 @@ on:
     branches: [master, develop, 'release/**']
   pull_request:
   workflow_dispatch:
+    inputs:
+      break:
+        description: 'BREAK for the jME frames (scroll: its negative control, must fail)'
+        required: false
+        default: ''
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -50,8 +55,9 @@ jobs:
 
   godot-frames:
     # engines/godot draws what core draws: tools/godot-parallax-shots.sh renders both rounds with libGDX and Godot and
-    # fails on a frame that differs (r96). Here on Xvfb and Mesa llvmpipe instead of cage and a GPU.
-    name: Godot frames against libGDX
+    # fails on a frame that differs (r96). engines/jme too, with tools/jme-parallax-shots.sh (r115). Here on Xvfb and
+    # Mesa llvmpipe instead of cage and a GPU.
+    name: Godot and jME frames against libGDX
     runs-on: ubuntu-latest
     env:
       GODOT_VERSION: 4.6.3-stable
@@ -88,6 +94,17 @@ jobs:
           xvfb-run -a -s "-screen 0 1920x1440x24" tools/godot-parallax-shots.sh
           grep -h "Using Device" demo/build/godot/*/godot.log
 
+      - name: Compare the jME frames
+        if: success() || failure()
+        env:
+          ATELIER_NO_OFFSCREEN: '1'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          ALSOFT_DRIVERS: 'null'
+          BREAK: ${{ inputs.break }}
+        run: |
+          xvfb-run -a -s "-screen 0 1920x1440x24" tools/jme-parallax-shots.sh
+          grep -h -i "renderer" demo/build/jme/*/jme.log | sort -u || true
+
       - name: Upload the frames
         if: always()
         uses: actions/upload-artifact@v7
@@ -98,4 +115,8 @@ jobs:
             demo/build/godot/*/report.txt
             demo/build/godot/*/*.log
             demo/build/godot/*/gdx/lab.log
+            demo/build/jme/*/compare.png
+            demo/build/jme/*/report.txt
+            demo/build/jme/*/*.log
+            demo/build/jme/*/gdx/lab.log
           retention-days: 7
