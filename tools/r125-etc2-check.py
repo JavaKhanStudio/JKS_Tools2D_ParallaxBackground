@@ -30,7 +30,7 @@ EAC_TABLES = [
 
 
 def clamp(v):
-	return 0 if v < 0 else 255 if v > 255 else v
+	return 0 if v < 0 else min(v, 255)
 
 
 def ext4(v):

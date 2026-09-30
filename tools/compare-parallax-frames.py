@@ -6,7 +6,10 @@ OUT_DIR/compare.png (libGDX | engine | difference x4, per still) and OUT_DIR/rep
 mean absolute difference per channel (0-255) is over THRESHOLD. tools/godot-parallax-shots.sh (ENGINE godot) and
 tools/jme-parallax-shots.sh (ENGINE jme) run it. Needs Pillow.
 """
-import json, os, sys
+import json
+import os
+import sys
+
 from PIL import Image, ImageChops, ImageDraw, ImageStat
 
 round_dir, out, threshold, engine = sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4]

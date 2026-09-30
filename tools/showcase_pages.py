@@ -11,13 +11,21 @@ Built from the round 1 grades (demo/lab/round1): Simon's pages that graded 3-4 a
 white lower half filled, a flat speed span stretched); the atlases no page used get a page written with the
 parallax-pages skill.
 """
-import copy
 import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from parallax_lab import (ROOT, hiver_from_art, layer, layers, lint, load, natural_size, page_of)  # noqa: E402
+from parallax_lab import (  # noqa: E402
+	ROOT,
+	hiver_from_art,
+	layer,
+	layers,
+	lint,
+	load,
+	natural_size,
+	page_of,
+)
 
 
 def first_of_each(layer_list):

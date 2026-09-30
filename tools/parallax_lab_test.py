@@ -39,8 +39,8 @@ class LayoutLint(unittest.TestCase):
             with self.subTest(name):
                 problems = lab.layout(page, atlas_dir)
                 if name == 'PurpleFairy-art':
-                    self.assertEqual(['(e) layer 4 (3#0) is tiled on X but its left and right edges differ (seam 117 '
-                                      '> 20): a cut shows every repeat'], problems)
+                    self.assertEqual([('(e) layer 4 (3#0) is tiled on X but its left and right edges differ (seam 117 '
+                                       '> 20): a cut shows every repeat')], problems)
                 else:
                     self.assertEqual([], problems)
 

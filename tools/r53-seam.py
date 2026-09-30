@@ -3,6 +3,7 @@
 The layer's tiles meet at x=456 in that flow. A seam is a column much darker or lighter than both its neighbours over most rows. Prints the worst columns.
   tools/r53-seam.py editor/build/r53/out/reopened.png [top bottom]"""
 import sys
+
 import numpy as np
 from PIL import Image
 
