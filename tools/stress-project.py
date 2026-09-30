@@ -8,7 +8,13 @@ SOURCE's layers with shuffled sizes, speeds and decals (seeded: the same LAYERS 
 Defaults: demo/assets/hiver/Hiver.plaxpj, editor/build/stress. Open it with `open build/stress/Stress300.plaxpj`
 through tools/driver-probe.sh.
 """
-import copy, json, os, random, re, shutil, sys
+import copy
+import json
+import os
+import random
+import re
+import shutil
+import sys
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 count = int(sys.argv[1])
@@ -22,7 +28,7 @@ atlas = page['atlasName']
 src_dir = os.path.dirname(source)
 atlas_path = next(p for p in (os.path.join(src_dir, atlas), os.path.join(src_dir, '..', atlas)) if os.path.exists(p))
 shutil.copy(atlas_path, out)
-for image in re.findall(r'^(\S+\.png)$', open(atlas_path).read(), re.M):
+for image in re.findall(r'^(\S+\.png)$', open(atlas_path).read(), re.MULTILINE):
     shutil.copy(os.path.join(os.path.dirname(atlas_path), image), out)
 
 rng = random.Random(count)
