@@ -5,9 +5,9 @@ description: Design or improve a parallax background page for the JKS parallax l
 
 # Parallax pages
 
-**Version 0 (r73, round 1).** The rules below come from the physics of motion parallax and from measuring Simon's own
-pages; the grading lab's rounds are testing them. A rule marked *(hypothesis)* is not backed by grades yet. Research
-notes and the numbers behind every rule: `docs/parallax-design.md`.
+**Version 1 (r92, after round 1's grades).** Round 1 graded pages placed from rules as "random values": they did not
+start from what each region shows. This version starts from the art. Rules marked *(open)* are still being graded;
+what round 1 backed and dropped, and the layer study behind this version: `docs/parallax-design.md` §3, §5, §6.
 
 ## What a page is
 
@@ -30,24 +30,43 @@ whitespace stripped), `pageModel.atlasName` (file name; the atlas sits next to t
 
 ## How to build one
 
-1. **Look at every region before placing it.** Render or crop each region (Pillow on the atlas PNG, using the
-   `xy`/`size` lines of the .atlas). Write down for each: what it shows, how hazy/pale it is, whether it is a full-width
-   strip or a single object, and whether its left and right edges join (a hard cut shows a seam at every repeat).
-2. **Order by haze, not by name.** Palest, lowest contrast, closest to the sky colour = farthest = first in the list.
-   Region names lie: in `calm.atlas`, `Trees_close` is the farthest strip.
-3. **Speeds: a constant ratio.** Choose the back speed (samples: 0.01-0.018) and a ratio of x1.25-x1.4, and give layer
-   *i* `back * ratio^i`. Speeds must strictly increase toward the front. Keep front/back between ~3x and ~15x
-   *(hypothesis for the limits)*. Speed Y ~0.6 x speed X.
-4. **Heights: stack so nothing's bottom edge shows.** For each layer compute its height in world units
-   (`40 * sizeRatio * imageHeight / imageWidth`) and set `decal_Y_Ratio` so the layer in front (or the screen bottom)
-   hides its bottom edge. Farther layers sit higher. The front layer usually sits at 0 or just below.
-5. **Width and stagger.** A tiled layer at least ~0.8 worlds wide *(hypothesis)*. Stagger `decal_X_Ratio` (0, 10, 25,
-   40…) so no two layers start their repeat together; the same image reused at two depths gets a different size, a
-   different offset and often `flipX`.
-6. **Sky and ground.** Set the top gradient to the light of the art: its bottom colour close to the farthest layer's
-   haze, its top colour deeper. A night scene gets a night sky. Leave the lower part white only when the game draws
-   its own ground there (Hiver, Printemps).
-7. **Things that move by themselves** get `speedXAtRest`: far clouds 25-90, near water -12 to -20.
+1. **Look at every region first.** `python3 tools/parallax_regions.py path/to.atlas /tmp/regions.png` draws each
+   region on a checkerboard at its original size and prints: `pos` (its `regionPosition`), `aspect`, `art` (the rows
+   holding art, % from the bottom), `solid` (rows opaque across the whole width, from the bottom), `bottom` (how much
+   of the bottom row is opaque), `seam` (left/right edge mismatch: past ~20 the repeat shows a cut) and the colours
+   at the top and bottom of the art. Open the image. For each region write down what it shows and how near it is.
+2. **Say what kind of atlas it is.** It decides the layout:
+   - **Full-frame planes** (1920x1080, or 1080-tall panoramas, art already at its height, farther planes' art
+     higher up): every layer at its **natural size**, `sizeRatio = aspect x 9/16` (1.0 for 16:9), and decal Y 0.
+     They compose as the painter drew them. Don't rescale or shift them one by one.
+   - **Pieces on a full-frame canvas** (each piece starts at the bottom of its canvas, like OneNight's grounds):
+     stack them like strips, keeping them 0.8 wide or more.
+   - **Strips** (5:1 and wider): stack them. The front strip at the bottom (decal Y 0 or below), each farther strip
+     higher, with its bottom edge under the **solid** band of the one in front. Height of a layer in world units =
+     `40 x sizeRatio / aspect`; screen = 40 x 22.5.
+3. **Hide every cut edge.** Bottom edges under a nearer layer's solid band or below the screen. A region whose art
+   touches its top edge (`art` reaches 100% and it is not solid there: the painter cropped a peak or a tree) needs
+   its top edge above the screen: make it bigger or raise it. Nothing may leave an empty band: what no layer covers,
+   a gradient covers, in the colour of the art next to it.
+4. **Order by the art, not the name.** Palest, lowest contrast, closest to the sky colour = farthest = first in the
+   list. Region names lie: in `calm.atlas`, `Trees_close` is the farthest strip.
+5. **Speeds from the art.** Speed is proportional to 1/distance, and so is the size the painter drew things at: a
+   tree drawn half as big is twice as far and moves half as fast. Set the front layer (0.07-0.1), then each layer
+   `front / (how many times smaller its things are)`. Sky and far mountains, with nothing to compare: 1/10 to 1/20
+   of the front. With no size to read, a constant ratio x1.25-x1.4 a layer *(open: round 2 brackets x1.15/x1.6)*.
+   Speeds must strictly increase toward the front, and the front/back span stay between ~3x and ~15x (both backed
+   by round 1). Speed Y ~0.6 x speed X *(open)*.
+6. **Gradients cover, in the art's colours.** Set them to what they must blend with: the sky behind the farthest
+   layer, the ground under the nearest one (Hiver's snow is the bottom gradient in the hills' `e0e8dd`). A layer
+   with translucent parts shows the gradient boundary through it: use one gradient for the whole screen
+   (`topHalfSize` 0, `bottomHalfSize` 1). Round 1 did not back sky colour as a matter of taste.
+7. **`useOriginalSize: true`** when the .atlas has `offset:` lines with non-zero values (packed with whitespace
+   stripped): without it the region's art is stretched over the layer and its transparent part is lost.
+8. **Things that move by themselves** get `speedXAtRest`: far clouds 25-90, mist -10, near water -12 to -20.
+   Starting offsets (`decal_X_Ratio`) may be staggered; round 1 found it makes no difference.
+
+`tools/parallax_lab.py` `fairy_from_art`, `hiver_from_art`, `calm_tree_from_art`, `night_from_art` and
+`calm_from_art` are worked examples of each kind, each explaining its choices.
 
 ## Check it
 
@@ -63,7 +82,8 @@ Lint catches motion faults, not layout: the editor's default layout (`calmLag.pl
 tools/parallax-lab-shots.sh demo/lab/<round> demo/build/lab/<round>   # stills at 0, 6, 12 s + contact.png
 ```
 
-Look for: a bottom edge or gap showing, a seam at the tile joins, the same shape repeating in view, layers whose
+Look at every frame, full size, not only the contact sheet. Look for: a bottom or top edge cut flat, an empty band,
+a gradient's edge showing through a gap or a translucent layer, a bottom edge or gap showing, a seam at the tile joins, the same shape repeating in view, layers whose
 order in the picture contradicts their speed, a sky that does not belong to the art.
 
 ## Getting it graded

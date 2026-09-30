@@ -1,0 +1,142 @@
+{
+ "note": "Round 2 (r92): pages written from the art next to Simon's, and brackets of speed ratio, span and width. Grade 1-5 on how good the scene feels as a game background.",
+ "seed": 92,
+ "scenes": [
+  {
+   "id": "s01",
+   "page": "demo/lab/round2/s01.jplax",
+   "atlasDir": "demo/assets",
+   "name": "Hiver-art",
+   "about": "Hiver-art: from the art: strips stacked, snow ground, big trees",
+   "lint": []
+  },
+  {
+   "id": "s02",
+   "page": "demo/lab/round2/s02.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm",
+   "about": "Calm: Simon's page (control, graded 3 in round 1)",
+   "lint": []
+  },
+  {
+   "id": "s03",
+   "page": "demo/lab/round2/s03.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "PurpleFairy-art",
+   "about": "PurpleFairy-art: from the art: full-frame layers at size 1, x1.33 a layer",
+   "lint": []
+  },
+  {
+   "id": "s04",
+   "page": "demo/lab/round2/s04.jplax",
+   "atlasDir": "editor/Files/Aa new",
+   "name": "CalmTree3",
+   "about": "CalmTree3: Simon's page (control)",
+   "lint": [
+    "speeds go DOWN toward the front at layer(s) [1, 3]: layers are stored back to front, a front layer slower than the one behind it reads as behind it ([1] drift on their own: fine only if they do not overlap)"
+   ]
+  },
+  {
+   "id": "s05",
+   "page": "demo/lab/round2/s05.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "PurpleFairy-art-x1.15",
+   "about": "PurpleFairy-art-x1.15: speed ratio x1.15 a layer (span 2.3x)",
+   "lint": [
+    "speed span 2.3x (front/back): under ~3x the scene reads as one flat plane"
+   ]
+  },
+  {
+   "id": "s06",
+   "page": "demo/lab/round2/s06.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "PurpleFairy",
+   "about": "PurpleFairy: Simon's page (control)",
+   "lint": []
+  },
+  {
+   "id": "s07",
+   "page": "demo/lab/round2/s07.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "PurpleFairy-art-x1.6",
+   "about": "PurpleFairy-art-x1.6: speed ratio x1.6 a layer (span 17x)",
+   "lint": []
+  },
+  {
+   "id": "s08",
+   "page": "demo/lab/round2/s08.jplax",
+   "atlasDir": "editor/Files/Aa new",
+   "name": "CalmTree3-art",
+   "about": "CalmTree3-art: from the art: 1080-tall layers at natural size",
+   "lint": []
+  },
+  {
+   "id": "s09",
+   "page": "demo/lab/round2/s09.jplax",
+   "atlasDir": "demo/assets",
+   "name": "Hiver",
+   "about": "Hiver: Simon's page (control)",
+   "lint": []
+  },
+  {
+   "id": "s10",
+   "page": "demo/lab/round2/s10.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "OneNight",
+   "about": "OneNight: Simon's page (control, graded 3 in round 1)",
+   "lint": [
+    "speeds go DOWN toward the front at layer(s) [1]: layers are stored back to front, a front layer slower than the one behind it reads as behind it ([1] drift on their own: fine only if they do not overlap)"
+   ]
+  },
+  {
+   "id": "s11",
+   "page": "demo/lab/round2/s11.jplax",
+   "atlasDir": "editor/Files/Aa new",
+   "name": "CalmTree3-art-narrow",
+   "about": "CalmTree3-art-narrow: every layer 0.75 as wide: the forest shrinks, its bottom shows",
+   "lint": []
+  },
+  {
+   "id": "s12",
+   "page": "demo/lab/round2/s12.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm-art-shallow",
+   "about": "Calm-art-shallow: speed span 12x -> 4.5x",
+   "lint": []
+  },
+  {
+   "id": "s13",
+   "page": "demo/lab/round2/s13.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm-art-narrow",
+   "about": "Calm-art-narrow: every layer 0.7 as wide: repeats closer",
+   "lint": []
+  },
+  {
+   "id": "s14",
+   "page": "demo/lab/round2/s14.jplax",
+   "atlasDir": "editor/Files/Demos",
+   "name": "OneNight-art",
+   "about": "OneNight-art: from the art: grounds stacked, one sky gradient",
+   "lint": []
+  },
+  {
+   "id": "s15",
+   "page": "demo/lab/round2/s15.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm-art",
+   "about": "Calm-art: from the art: strips stacked by haze",
+   "lint": []
+  },
+  {
+   "id": "s16",
+   "page": "demo/lab/round2/s16.jplax",
+   "atlasDir": "editor/Files/transfer",
+   "name": "Calm-art-deep",
+   "about": "Calm-art-deep: speed span 12x -> 41x",
+   "lint": [
+    "speed span 42x: past ~15x the back looks painted on and the front whips"
+   ]
+  }
+ ]
+}

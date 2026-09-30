@@ -1,0 +1,24 @@
+{
+  "round": "round1",
+  "updated": "2026-09-27T00:47:57.233222739+02:00",
+  "grades": {
+    "s01": {"grade": 1},
+    "s02": {"grade": 4},
+    "s03": {"grade": 1},
+    "s04": {"grade": 3},
+    "s05": {"grade": 2},
+    "s06": {"grade": 2},
+    "s07": {"grade": 1},
+    "s08": {"grade": 2},
+    "s09": {"grade": 3},
+    "s10": {"grade": 3},
+    "s11": {"grade": 3},
+    "s12": {"grade": 3},
+    "s13": {"grade": 2},
+    "s14": {"grade": 3},
+    "s15": {"grade": 2},
+    "s16": {"grade": 3},
+    "s17": {"grade": 3},
+    "s18": {"grade": 1}
+  }
+}
