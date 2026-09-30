@@ -31,7 +31,7 @@ for s in scenes:
             lines.append(f'{name}  size {gdx.size} vs {other.size}'); worst = 999; continue
         diff = ImageChops.difference(gdx, other)
         mean = sum(ImageStat.Stat(diff).mean) / 3
-        big = sum(1 for p in diff.convert('L').getdata() if p > 32) / (gdx.width * gdx.height) * 100
+        big = sum(diff.convert('L').histogram()[33:]) / (gdx.width * gdx.height) * 100
         worst = max(worst, mean)
         lines.append(f"{name}  mean diff {mean:.2f} / 255   pixels off by >32: {big:.2f}%"
                      f"   {s.get('name', s.get('about', ''))}")
