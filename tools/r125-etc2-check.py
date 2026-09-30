@@ -181,7 +181,7 @@ def check(atlas):
 	pngs, etcs = atlas_pages(atlas), atlas_pages(etc2_atlas)
 	strip = lambda pages: [(p['header'], [r for r in p['regions']]) for p in pages]
 	if strip(pngs) != strip(etcs):
-		print('FAIL %s: its pages or regions differ from %s' % (etc2_atlas, atlas))
+		print(f'FAIL {etc2_atlas}: its pages or regions differ from {atlas}')
 		return True
 	for png_page, etc_page in zip(pngs, etcs):
 		internal, width, height, levels = read_zktx(os.path.join(folder, etc_page['file']))
@@ -190,11 +190,11 @@ def check(atlas):
 		png = Image.open(os.path.join(folder, png_page['file'])).convert('RGBA')
 		etc_bytes = sum(len(level) for level in levels)
 		png_bytes = width * height * 4 * (4 / 3 if mipmapped else 1)
-		print('%s: %dx%d, %d levels, %.1f MiB video memory (the PNG page: %.1f MiB)'
-		      % (etc_page['file'], width, height, len(levels), etc_bytes / 2 ** 20, png_bytes / 2 ** 20))
+		print(f"{etc_page['file']}: {width}x{height}, {len(levels)} levels, {etc_bytes / 2 ** 20:.1f} MiB video memory"
+		      f" (the PNG page: {png_bytes / 2 ** 20:.1f} MiB)")
 		if internal != 0x9278 or (width, height) != png.size or len(levels) != want_levels:
-			print('  FAIL: format 0x%x, %dx%d, %d levels; wanted 0x9278, %dx%d, %d'
-			      % (internal, width, height, len(levels), png.size[0], png.size[1], want_levels))
+			print(f'  FAIL: format 0x{internal:x}, {width}x{height}, {len(levels)} levels;'
+			      f' wanted 0x9278, {png.size[0]}x{png.size[1]}, {want_levels}')
 			failed = True
 			continue
 		decoded = decode_level(levels[0], width, height)
@@ -214,8 +214,9 @@ def check(atlas):
 			alpha_psnr = 99.0 if alpha_squared == 0 else 10 * math.log10(255 ** 2 * (len(a) // 4) / alpha_squared)
 			verdict = 'ok' if psnr >= 30 and alpha_psnr >= 40 else 'FAIL'
 			failed |= verdict == 'FAIL'
-			print('  %-24s %4dx%-4d colour PSNR %5.1f dB, alpha PSNR %5.1f dB (off by %3d at most)  %s'
-			      % (region['name'] + '#' + region.get('index', ''), w, h, psnr, alpha_psnr, worst_alpha, verdict))
+			label = region['name'] + '#' + region.get('index', '')
+			print(f'  {label:<24} {w:4d}x{h:<4d} colour PSNR {psnr:5.1f} dB, alpha PSNR {alpha_psnr:5.1f} dB'
+			      f' (off by {worst_alpha:3d} at most)  {verdict}')
 	return failed
 
 

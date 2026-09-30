@@ -99,7 +99,7 @@ def measure(img):
 
     def mean(y):
         cs = [px[x, y][:3] for x in range(sw) if alpha[x, y] > 16]
-        return '%02x%02x%02x' % tuple(sum(c[i] for c in cs) // len(cs) for i in range(3)) if cs else '------'
+        return ''.join(f'{sum(c[i] for c in cs) // len(cs):02x}' for i in range(3)) if cs else '------'
 
     full = img.load()
     edge = []
@@ -140,8 +140,9 @@ def main(argv):
     d = ImageDraw.Draw(sheet)
     y = 0
     for (m, img), h in zip(rows, heights):
-        text = '%s pos %d  %dx%d  aspect %.2f  art %s%%  solid %d%%  bottom %d%%  seam %d  top/bottom colour %s' % (
-            m['name'], m['pos'], m['orig'][0], m['orig'][1], m['aspect'], m['art'], m['solid'], m['bottom'], m['seam'], m['colour'])
+        text = (f"{m['name']} pos {m['pos']:d}  {m['orig'][0]:d}x{m['orig'][1]:d}  aspect {m['aspect']:.2f}"
+                f"  art {m['art']}%  solid {m['solid']:d}%  bottom {m['bottom']:d}%  seam {m['seam']:d}"
+                f"  top/bottom colour {m['colour']}")
         print(text)
         d.text((4, y + 4), text, fill='white')
         cell = checker(width, h)

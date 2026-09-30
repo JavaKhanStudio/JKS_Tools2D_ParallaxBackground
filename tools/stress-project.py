@@ -48,7 +48,7 @@ for i in range(count):
 page['pageList'] = layers
 project['saving']['inside'] = [True] * count
 
-target = os.path.join(out, 'Stress%d.plaxpj' % count)
+target = os.path.join(out, f'Stress{count}.plaxpj')
 with open(target, 'w') as f:
     json.dump(project, f)
 print(target)

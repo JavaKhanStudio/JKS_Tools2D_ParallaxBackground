@@ -183,7 +183,7 @@ def main(argv):
 		json.dump({'note': 'Showcase bank (r108): the pages the store listings and videos show.', 'scenes': scenes},
 		          f, indent=1)
 		f.write('\n')
-	print('%d pages in %s' % (len(scenes), out))
+	print(f'{len(scenes)} pages in {out}')
 
 
 if __name__ == '__main__':

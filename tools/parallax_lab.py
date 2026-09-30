@@ -73,7 +73,7 @@ def color(hex_rgb, alpha=1.0):
 
 
 def hex_of(c):
-    return '%02x%02x%02x' % tuple(round(c[k] * 255) for k in 'rgb') if c else '------'
+    return ''.join(f'{round(c[k] * 255):02x}' for k in 'rgb') if c else '------'
 
 
 def layer(region, position=0, speed=0.02, size=1.0, dx=0.0, dy=0.0, speed_y=None, rest=0.0, flip_x=False,
@@ -119,30 +119,29 @@ def lint(page, atlas_dir=None):
     s = speeds(page)
     n = len(s)
     if n < 3:
-        problems.append('%d layers: under 3 reads as flat' % n)
+        problems.append(f'{n} layers: under 3 reads as flat')
     if n > 12:
-        problems.append('%d layers: past ~10 the depth steps blur and every layer costs fill rate' % n)
+        problems.append(f'{n} layers: past ~10 the depth steps blur and every layer costs fill rate')
     drops = [i for i in range(1, n) if s[i] < s[i - 1] * 0.98]
     if drops:
         drifting = [i for i in drops if layers(page)[i - 1]['speedXAtRest'] or layers(page)[i]['speedXAtRest']]
-        problems.append('speeds go DOWN toward the front at layer(s) %s: layers are stored back to front, a front '
-                        'layer slower than the one behind it reads as behind it%s' % (
-                            drops, ' (%s drift on their own: fine only if they do not overlap)' % drifting
-                            if drifting else ''))
+        drift = f' ({drifting} drift on their own: fine only if they do not overlap)' if drifting else ''
+        problems.append(f'speeds go DOWN toward the front at layer(s) {drops}: layers are stored back to front,'
+                        f' a front layer slower than the one behind it reads as behind it{drift}')
     if n >= 2 and s[0] > 0:
         span = max(s) / min(x for x in s if x > 0)
         if span < 2.5:
-            problems.append('speed span %.1fx (front/back): under ~3x the scene reads as one flat plane' % span)
+            problems.append(f'speed span {span:.1f}x (front/back): under ~3x the scene reads as one flat plane')
         if span > 20:
-            problems.append('speed span %.0fx: past ~15x the back looks painted on and the front whips' % span)
+            problems.append(f'speed span {span:.0f}x: past ~15x the back looks painted on and the front whips')
         steps = [s[i] / s[i - 1] for i in range(1, n) if s[i - 1] > 0 and s[i] > 0]
         flat = [i + 1 for i, r in enumerate(steps) if r < 1.02]
         if flat and not drops:
-            problems.append('layers %s move at the speed of the one behind: they fuse into one plane' % flat)
+            problems.append(f'layers {flat} move at the speed of the one behind: they fuse into one plane')
     for i, l in enumerate(layers(page)):
         if l['sizeRatio'] < 0.5 and page.get('repeatOnX', True) and l['padX'] == 0:
-            problems.append('layer %d is %.2f worlds wide and tiled: its repeat shows %.0f times a screen'
-                            % (i, l['sizeRatio'], 1 / l['sizeRatio']))
+            problems.append(f"layer {i} is {l['sizeRatio']:.2f} worlds wide and tiled: its repeat shows"
+                            f" {1 / l['sizeRatio']:.0f} times a screen")
     if atlas_dir is not None:
         problems += layout(page, atlas_dir)
     return problems
@@ -179,15 +178,15 @@ def layout(page, atlas_dir):
         return ['layout not checked: tools/parallax_regions.py needs Pillow']
     atlas = os.path.join(ROOT, atlas_dir, page['pageModel']['atlasName'])
     if not os.path.exists(atlas):
-        return ['layout not checked: no %s' % os.path.relpath(atlas, ROOT)]
+        return [f'layout not checked: no {os.path.relpath(atlas, ROOT)}']
     regions = {(r['name'], r['pos']): r for r in regions_tool.read_atlas(atlas)}
     original = page.get('useOriginalSize', False)
     sheets, placed, problems, stripped = {}, [], [], []
     for i, l in enumerate(layers(page)):
         r = regions.get((l['regionName'], l['regionPosition']))
         if r is None:
-            problems.append('layer %d: no region %s#%d in %s' % (i, l['regionName'], l['regionPosition'],
-                                                                 page['pageModel']['atlasName']))
+            problems.append(f"layer {i}: no region {l['regionName']}#{l['regionPosition']}"
+                            f" in {page['pageModel']['atlasName']}")
             continue
         img = regions_tool.image_of(r, sheets)
         (w, h), (ow, oh), (ox, oy) = r['size'], r['orig'], r['offset']
@@ -220,11 +219,11 @@ def layout(page, atlas_dir):
             rows_on_screen = img.crop((0, round((1 - high) * img.height), img.width, round((1 - low) * img.height)))
             seam = regions_tool.measure(rows_on_screen)['seam'] if high > low and rows_on_screen.height else 0
             if seam > SEAM:
-                problems.append('(e) layer %d (%s#%d) is tiled on X but its left and right edges differ (seam %d > '
-                                '%d): a cut shows every repeat' % (i, l['regionName'], l['regionPosition'], seam, SEAM))
+                problems.append(f"(e) layer {i} ({l['regionName']}#{l['regionPosition']}) is tiled on X but its left"
+                                f" and right edges differ (seam {seam} > {SEAM}): a cut shows every repeat")
     if stripped and not original:
-        problems.append('(d) layers %s use regions packed with their whitespace stripped, and useOriginalSize is off: '
-                        'each is stretched over its whole layer' % stripped)
+        problems.append(f'(d) layers {stripped} use regions packed with their whitespace stripped, and useOriginalSize'
+                        ' is off: each is stretched over its whole layer')
 
     def row_at(entry, y):
         """The share of the layer's row at world height y that is opaque, None off the layer."""
@@ -249,15 +248,15 @@ def layout(page, atlas_dir):
 
     for k, e in enumerate(placed):
         i, l, rows, bottom, height, _, cut_top = e
-        name = '%s#%d' % (l['regionName'], l['regionPosition'])
+        name = f"{l['regionName']}#{l['regionPosition']}"
         top = bottom + height
         eps = height / len(rows) / 2
         if cut_top and rows[-1] < SOLID and on_screen(top) and not covered_by_nearer(k, top - eps):
-            problems.append('(a) layer %d (%s): its art touches its top edge without filling it, and that edge is on '
-                            'screen at %d%% of its height: the art shows cut flat' % (i, name, pct(top)))
+            problems.append(f'(a) layer {i} ({name}): its art touches its top edge without filling it, and that edge'
+                            f' is on screen at {pct(top)}% of its height: the art shows cut flat')
         if rows[0] > 0 and on_screen(bottom) and not covered_by_nearer(k, bottom + eps):
-            problems.append('(b) layer %d (%s): its art reaches its bottom edge, on screen at %d%% of its height, and '
-                            'no nearer layer covers that edge' % (i, name, pct(bottom)))
+            problems.append(f'(b) layer {i} ({name}): its art reaches its bottom edge, on screen at {pct(bottom)}%'
+                            ' of its height, and no nearer layer covers that edge')
 
     sky_from = page.get('topHalfSize', 0.5) * SCREEN_H if gradient_set(page, 'topHalf_top', 'topHalf_bottom') else None
     ground_to = (1 - page.get('bottomHalfSize', 0.5)) * SCREEN_H \
@@ -275,26 +274,29 @@ def layout(page, atlas_dir):
             empty.append([j, j + 1])
     for a, b in empty:
         if b - a >= 2:  # a band thinner than a hundredth of the screen is a row rounding, not a hole
-            problems.append('(c) the screen from %d%% to %d%% of its height (from the bottom) is covered by no layer '
-                            'and no gradient' % (round(100 * a / steps), round(100 * b / steps)))
+            problems.append(f'(c) the screen from {round(100 * a / steps)}% to {round(100 * b / steps)}% of its height'
+                            ' (from the bottom) is covered by no layer and no gradient')
     return problems
 
 
 def describe(page):
     out = []
-    out.append('  atlas %s  repeat X=%s Y=%s  sky %s->%s (%.2f uncovered)  ground %s->%s (%.2f uncovered)' % (
-        page['pageModel']['atlasName'], page.get('repeatOnX'), page.get('repeatOnY'),
-        hex_of(page.get('topHalf_bottom')), hex_of(page.get('topHalf_top')), page.get('topHalfSize', 0.5),
-        hex_of(page.get('bottomHalf_top')), hex_of(page.get('bottomHalf_bottom')), page.get('bottomHalfSize', 0.5)))
+    sky = (f"{hex_of(page.get('topHalf_bottom'))}->{hex_of(page.get('topHalf_top'))}"
+           f" ({page.get('topHalfSize', 0.5):.2f} uncovered)")
+    ground = (f"{hex_of(page.get('bottomHalf_top'))}->{hex_of(page.get('bottomHalf_bottom'))}"
+              f" ({page.get('bottomHalfSize', 0.5):.2f} uncovered)")
+    out.append(f"  atlas {page['pageModel']['atlasName']}  repeat X={page.get('repeatOnX')} Y={page.get('repeatOnY')}"
+               f"  sky {sky}  ground {ground}")
     prev = None
     for i, l in enumerate(layers(page)):
         sx = l['parallaxScalingSpeedX']
-        step = '' if not prev else 'x%.2f' % (sx / prev)
+        step = '' if not prev else f'x{sx / prev:.2f}'
         prev = sx or prev
-        out.append('  %2d %-16s speed %.4f %-6s y/x %.2f rest %6.1f size %5.2f decal %6.1f,%6.1f%s' % (
-            i, '%s#%d' % (l['regionName'], l['regionPosition']), sx, step,
-            l['parallaxScalingSpeedY'] / sx if sx else 0, l['speedXAtRest'], l['sizeRatio'], l['decal_X_Ratio'],
-            l['decal_Y_Ratio'], (' flip' if l['flipX'] else '') + (' mirror' if l.get('mirror') else '')))
+        region = f"{l['regionName']}#{l['regionPosition']}"
+        y_over_x = l['parallaxScalingSpeedY'] / sx if sx else 0
+        marks = (' flip' if l['flipX'] else '') + (' mirror' if l.get('mirror') else '')
+        out.append(f"  {i:2d} {region:<16} speed {sx:.4f} {step:<6} y/x {y_over_x:.2f} rest {l['speedXAtRest']:6.1f}"
+                   f" size {l['sizeRatio']:5.2f} decal {l['decal_X_Ratio']:6.1f},{l['decal_Y_Ratio']:6.1f}{marks}")
     return '\n'.join(out)
 
 
@@ -549,7 +551,7 @@ def write_round(out_dir, scenes, seed, note):
         random.Random(seed).shuffle(order)
     listed = []
     for i, (name, page, atlas_dir, about) in enumerate(order, 1):
-        sid = 's%02d' % i
+        sid = f's{i:02d}'
         path = os.path.join(out_dir, sid + '.jplax')
         with open(os.path.join(ROOT, path), 'w', encoding='utf-8') as f:
             json.dump(page, f, indent=1)
@@ -559,7 +561,7 @@ def write_round(out_dir, scenes, seed, note):
     with open(os.path.join(out, 'round.json'), 'w', encoding='utf-8') as f:
         json.dump({'note': note, 'seed': seed, 'scenes': listed}, f, indent=1)
         f.write('\n')
-    print('%d scenes in %s' % (len(listed), out_dir))
+    print(f'{len(listed)} scenes in {out_dir}')
 
 
 def survey(out_dir):
