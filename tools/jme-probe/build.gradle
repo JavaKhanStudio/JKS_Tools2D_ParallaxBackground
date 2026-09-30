@@ -1,0 +1,26 @@
+plugins { id 'application' }
+
+def props = file('../../gradle.properties').readLines()
+def parallax = findProperty('parallax') ?: props.find { it.startsWith('version=') }.substring('version='.length())
+def jme = props.find { it.startsWith('jmeVersion=') }.substring('jmeVersion='.length())
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+
+dependencies {
+    implementation "io.github.javakhanstudio:parallax-background-jme:$parallax"
+    // What any jME desktop game declares: the PNG loader and the headless context are in jme3-desktop.
+    implementation "org.jmonkeyengine:jme3-desktop:$jme"
+}
+
+application {
+    mainClass = 'probe.JmeProbe'
+}
+
+tasks.named('run') {
+    // demo/assets holds the Hiver page and its atlas.
+    workingDir = file('../../demo/assets')
+    doFirst {
+        def jar = sourceSets.main.runtimeClasspath.find { it.name.startsWith('parallax-background-jme-') }
+        println "parallax-background-jme -> ${jar?.name}"
+    }
+}

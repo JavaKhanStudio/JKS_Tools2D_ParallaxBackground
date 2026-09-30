@@ -57,7 +57,8 @@ own libGDX backend (LWJGL3, Android...) as usual. The jar, its sources and its j
 [GitHub release](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/releases/latest), but then you have
 to add those dependencies yourself.
 
-Then see [Using the library in a game](#using-the-library-in-a-game).
+Then see [Using the library in a game](#using-the-library-in-a-game). A jMonkeyEngine game depends on
+`parallax-background-jme` instead, see [In jMonkeyEngine 3](#in-jmonkeyengine-3).
 
 ### The editor, to design a parallax
 
@@ -198,10 +199,20 @@ rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md).
 
 ### In jMonkeyEngine 3
 
-jME is a Java engine, so it reads pages with this library itself, `.plax` included: add the `parallax-background`
-dependency (it brings libGDX's core jar, for its model classes only: no libGDX backend, no second GL context), and copy
-`engines/jme/src/jks/tools2d/parallax/jme` into your game (4 classes, jME 3.9). The page, its `.atlas` and the atlas's
-`.png` are jME assets:
+jME is a Java engine, so it reads pages with this library itself, `.plax` included. The jME reader is on Maven Central
+as `io.github.javakhanstudio:parallax-background-jme`, released with the library under the same version from 2.5.0 on
+(before 2.5.0 is out, as `2.5.0-SNAPSHOT` in the snapshot repository, see
+[RELEASING.md](RELEASING.md#test-versions-snapshots)):
+
+```groovy
+dependencies {
+    implementation "io.github.javakhanstudio:parallax-background-jme:2.5.0"
+}
+```
+
+It brings in `parallax-background` (and with it libGDX's core jar, for its model classes only: no libGDX backend, no
+second GL context) and `jme3-core` 3.9. Your game still declares its own jME backend (`jme3-lwjgl3`, `jme3-desktop` for
+the PNG loader...) as usual. The page, its `.atlas` and the atlas's `.png` are jME assets:
 
 ```java
 PlaxBackground bg = new PlaxBackground();   // an AppState: its viewport is drawn before the game's
@@ -347,6 +358,11 @@ editor/src/jks/tools2d/
     filechooser/ filewatch/ libgdxutils/   file browser, file watcher, small scene2d widgets
 
 demo/src/.../ParallaxDemo         example game
+
+engines/jme/src/.../jme/          the jMonkeyEngine reader, published as parallax-background-jme: PlaxBackground (an
+                                  AppState), JmeAtlas, JmeBatch (libGDX's Batch in jME meshes), JmeGradient
+engines/jme/tests/                its frame runner (tools/jme-parallax-shots.sh) and demo (:jme:run)
+engines/godot/addons/jks_parallax the Godot 4 reader
 ```
 
 The editor keeps its state in static `GVars_*` classes, one project at a time. The panels read the window size when

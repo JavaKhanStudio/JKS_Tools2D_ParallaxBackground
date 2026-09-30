@@ -1,9 +1,9 @@
 name: Release
 
 # Pushing a tag like v2.1.0 releases that version:
-#   - the library goes to Maven Central
-#   - the GitHub release gets the downloads: the library jars, the editor (library included), and the Godot reader
-#     (jks-parallax-godot-X.Y.Z.zip, which the Godot Asset Library listing downloads: RELEASING.md)
+#   - the library and the jMonkeyEngine reader go to Maven Central (parallax-background, parallax-background-jme)
+#   - the GitHub release gets the downloads: the library jars, the jME reader's jars, the editor (library included),
+#     and the Godot reader (jks-parallax-godot-X.Y.Z.zip, which the Godot Asset Library listing downloads: RELEASING.md)
 # Without the four Maven Central secrets the workflow FAILS before building anything: the README tells games to
 # depend on the Central artifact, so a release that skipped Central must not look green. To release the GitHub
 # downloads only, run the workflow by hand on the tag with "without_central" ticked.
@@ -85,12 +85,12 @@ jobs:
 
       # publishToMavenCentral alone only uploads a deployment that waits for a manual "Publish" in the Central Portal;
       # publishAndReleaseToMavenCentral releases it.
-      - name: Publish the library to Maven Central
+      - name: Publish the library and the jME reader to Maven Central
         if: steps.central.outputs.publish == 'true'
         run: |
-          ./gradlew :core:publishAndReleaseToMavenCentral --no-configuration-cache
+          ./gradlew :core:publishAndReleaseToMavenCentral :jme:publishAndReleaseToMavenCentral --no-configuration-cache
           echo "### ${GITHUB_REF_NAME} released to Maven Central" >> "$GITHUB_STEP_SUMMARY"
-          echo "It can take up to an hour before \`mavenCentral()\` serves it: https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background" >> "$GITHUB_STEP_SUMMARY"
+          echo "It can take up to an hour before \`mavenCentral()\` serves it: https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background and https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background-jme" >> "$GITHUB_STEP_SUMMARY"
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
@@ -99,10 +99,12 @@ jobs:
 
       - name: Package the downloads
         run: |
-          ./gradlew :core:plainJavadocJar :editor:distZip
+          ./gradlew :core:plainJavadocJar :jme:plainJavadocJar :editor:distZip
           mkdir -p release
           # 1. The library, to use a parallax in a game (also on Maven Central).
           cp core/build/libs/parallax-background-*.jar release/
+          # 1b. The jMonkeyEngine reader (also on Maven Central).
+          cp engines/jme/build/libs/parallax-background-jme-*.jar release/
           # 2. The editor with the library included, to design a parallax.
           cp editor/build/distributions/ParallaxEditor-*.zip release/
           # 3. The Godot reader, addons/jks_parallax at the zip's root.
@@ -121,6 +123,9 @@ jobs:
               echo '```groovy'
               echo "implementation \"io.github.javakhanstudio:parallax-background:$VERSION\""
               echo '```'
+              echo
+              echo "In a jMonkeyEngine 3 game: \`implementation \"io.github.javakhanstudio:parallax-background-jme:$VERSION\"\`"
+              echo "(\`parallax-background-jme-$VERSION.jar\`), which brings the library in."
             else
               echo "This version is not on Maven Central: add the jar to your game yourself."
             fi

@@ -1,0 +1,12 @@
+// A fresh jMonkeyEngine game that depends on parallax-background-jme the way README's "In jMonkeyEngine 3" says (r116):
+//   ./gradlew :core:publishToMavenLocal :jme:publishToMavenLocal && ./gradlew -p tools/jme-probe run
+//   ./gradlew -p tools/jme-probe run -Pparallax=2.5.0-SNAPSHOT     (another version; Central's snapshots are searched too)
+// It shares nothing with the build: no project(':jme'), only the published artifacts.
+rootProject.name = 'jme-probe'
+dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
+    }
+}

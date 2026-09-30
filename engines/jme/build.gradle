@@ -1,9 +1,15 @@
 plugins {
-    id 'java'
+    id 'java-library'
+    id 'com.vanniktech.maven.publish' version '0.37.0'
 }
 
 // The jMonkeyEngine reader (r112). jME is a Java engine: it reads and draws a page with core itself (Kryo .plax,
 // .jplax, the libGDX atlas parser, ParallaxPageReader), and only its Batch is jME's. See docs/other-engines.md.
+// Published as parallax-background-jme, released with core under the same version (r116): src/ is public API.
+
+base {
+    archivesName = 'parallax-background-jme'
+}
 tasks.withType(JavaCompile).configureEach {
     options.release = 17
 }
@@ -29,8 +35,10 @@ configurations {
 
 dependencies {
     // Only gdx core, for its model classes (Color, TextureAtlas, Batch): no libGDX backend, no GL, no natives.
-    implementation project(':core')
-    implementation "org.jmonkeyengine:jme3-core:$jmeVersion"
+    // api: a game calls PlaxBackground with core's WholePage_Model and gdx's Color, inside jME's AppState. In the
+    // POM, project(':core') is io.github.javakhanstudio:parallax-background of the same version.
+    api project(':core')
+    api "org.jmonkeyengine:jme3-core:$jmeVersion"
     shotsImplementation "org.jmonkeyengine:jme3-desktop:$jmeVersion"
     shotsImplementation "org.jmonkeyengine:jme3-lwjgl3:$jmeVersion"
 }
@@ -58,4 +66,46 @@ tasks.register('shotsClasspath') {
 // ./gradlew build compiles the runner and the demo too: CI then catches one broken by a change in core.
 tasks.named('check') {
     dependsOn 'shotsClasses'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+/*
+ * Publishing, with core (RELEASING.md):
+ *   ./gradlew :jme:publishToMavenLocal          local testing, see tools/jme-probe
+ *   ./gradlew :jme:publishToMavenCentral        CI does this, beside :core's
+ * The shots source set (runner, demo) is not published.
+ */
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(project.group.toString(), 'parallax-background-jme', project.version.toString())
+
+    pom {
+        name = 'JKS Tools2D Parallax Background for jMonkeyEngine'
+        description = 'Draws parallax-background pages (.plax, .jplax, .plaxpj) in a jMonkeyEngine 3 game.'
+        url = 'https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground'
+        inceptionYear = '2026'
+
+        licenses {
+            license {
+                name = 'The Apache License, Version 2.0'
+                url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
+        developers {
+            developer {
+                id = 'JavaKhanStudio'
+                name = 'Simon Bedard'
+                url = 'https://github.com/JavaKhanStudio'
+            }
+        }
+        scm {
+            url = 'https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground'
+            connection = 'scm:git:https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground.git'
+            developerConnection = 'scm:git:ssh://git@github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground.git'
+        }
+    }
 }

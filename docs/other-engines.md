@@ -89,7 +89,8 @@ imported).
 
 jME runs on the JVM, so it needs none of the three pieces above: `core` (the `parallax-background` jar) reads the page
 and the atlas and computes every draw, and jME only puts the quads on screen. `engines/jme` is a Gradle module
-(`:jme`, jME 3.9.0-stable); `src/jks/tools2d/parallax/jme` is what a game copies:
+(`:jme`, jME 3.9.0-stable); `src/jks/tools2d/parallax/jme` is what a game gets, published as
+`io.github.javakhanstudio:parallax-background-jme` (r116):
 
 - **The page:** core's own loaders: `Utils_Page` (Kryo) reads the `.plax`, which no other engine can; `Utils_Page_Json`
   reads the `.jplax` and `.plaxpj`. `PlaxBackground.loadPage` picks by extension, through jME's AssetManager.
