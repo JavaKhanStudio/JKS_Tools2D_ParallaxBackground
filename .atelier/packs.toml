@@ -45,7 +45,7 @@ THE jME READER (engines/jme, r112) RUNS THIS CODE AS IS: PlaxBackground drives P
 and draws through JmeBatch, a libGDX Batch in jME meshes that implements ONLY
 draw(region, x, y, width, height) and throws on every other draw. Make the reader call another
 Batch method, or change SquareBackground (ported in JmeGradient: it reads Gdx.graphics), and run
-`tools/jme-parallax-shots.sh` (not in CI). No libGDX backend there: a core call that reaches a gdx
+`tools/jme-parallax-shots.sh` (CI runs it after the Godot rounds, job godot-frames). No libGDX backend there: a core call that reaches a gdx
 native from ParallaxPageReader or ParallaxLayer (OrthographicCamera.update -> Matrix4.prj does) throws
 UnsatisfiedLinkError in a jME game.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a

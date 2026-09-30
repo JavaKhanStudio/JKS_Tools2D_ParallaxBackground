@@ -120,8 +120,10 @@ scores 6.4 to 160, so the 2 / 255 threshold catches both. `tools/start-demo-chec
 (`./gradlew :jme:run`: the demo's Hiver and Printemps `.plax` behind a jME cube) off screen, with SPACE and N pressed.
 
 **Not there yet:** atlas regions packed rotated (as in Godot), and assets in an Android jME game (tried on the desktop
-only). **Not checked in CI:** the frame comparison runs here; `./gradlew build` only compiles the module, runner and
-demo.
+only). **In CI** (r115): the `godot-frames` job of `.github/workflows/ci.yml` runs `tools/jme-parallax-shots.sh` after the
+Godot rounds, on the same Xvfb and Mesa llvmpipe, and fails on a FAIL. There, on 2026-09-30 (llvmpipe, LLVM 20.1.2),
+round 1, the conformance round and the transfer round scored 0.40, 0.21 and 0.33; a run with `BREAK=scroll` (the
+workflow's `break` input) failed all three, at 39.1, 32.8 and 22.1.
 
 ## Unity and Unreal: what they would take
 
