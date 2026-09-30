@@ -17,8 +17,7 @@ RUN="java -cp \"$CP\" jks.tools2d.parallax.shots.ParallaxShots \"$ROUND\" \"$OUT
 if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
 	bash -c "$RUN"
 else
-	inner="Xwayland :9 -geometry 1280x1280 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
-	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- bash -c "$inner" >"$OUT/cage.log" 2>&1
+	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- tools/nested-x.sh 1280x1280 bash -c "$RUN" >"$OUT/cage.log" 2>&1
 fi
 ls "$OUT"/*-t0.png >/dev/null 2>&1 || { echo "no shots:"; tail -20 "$OUT/lab.log"; exit 1; }
 python3 - "$ROUND" "$OUT" <<'PY' || echo "no contact sheet (python3 + Pillow)"

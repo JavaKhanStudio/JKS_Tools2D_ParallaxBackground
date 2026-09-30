@@ -48,8 +48,7 @@ RUN="$GODOT --path \"$P\" --resolution 1280x720 -- \"$OUT/check.png\" >\"$OUT/ch
 if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
 	timeout 120 bash -c "$RUN"
 else
-	inner="Xwayland :9 -geometry 1280x720 & X=\$!; sleep 2; DISPLAY=:9 $RUN; kill \$X 2>/dev/null"
-	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 120 cage -- bash -c "$inner" >/dev/null 2>&1
+	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 120 cage -- tools/nested-x.sh 1280x720 bash -c "$RUN" >/dev/null 2>&1
 fi
 grep -i "error" "$OUT/check.log" && { echo "FAIL: Godot reported errors, $OUT/check.log"; exit 1; }
 python3 - "$OUT/check.png" <<'PY'

@@ -17,8 +17,7 @@ RUN="cd demo/assets && ../build/install/demo/bin/demo --shots \"$OUT\" >\"$OUT/d
 if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
 	bash -c "$RUN"
 else
-	inner="Xwayland :9 -geometry 1280x720 & X=\$!; sleep 2; DISPLAY=:9 bash -c '$RUN'; kill \$X 2>/dev/null"
-	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- bash -c "$inner" >"$OUT/cage.log" 2>&1
+	WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- tools/nested-x.sh 1280x720 bash -c "$RUN" >"$OUT/cage.log" 2>&1
 fi
 ls "$OUT"/purple-fairy.png >/dev/null 2>&1 || { echo "no shots:"; tail -20 "$OUT/demo.log"; exit 1; }
 python3 - "$OUT" <<'PY' || echo "no contact sheet (python3 + Pillow)"

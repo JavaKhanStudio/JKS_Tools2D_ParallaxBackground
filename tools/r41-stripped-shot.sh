@@ -16,13 +16,10 @@ for page in hiver/Hiver printemps/Printemps; do
 	name=$(basename "$page")
 	for mode in stretched:false original:true; do
 		inner=$(cat <<SH
-Xwayland :9 -geometry 1280x720 & X=\$!
-sleep 2
-cd demo/assets && DISPLAY=:9 java -cp "$CP" jks.tools2d.parallax.demo.ParallaxStress --plax $page.plax --seconds 0.5 --original-size ${mode#*:} --shot "$OUT/$name-${mode%%:*}.png" >"$OUT/$name-${mode%%:*}.log" 2>&1
-kill \$X 2>/dev/null
+cd demo/assets && java -cp "$CP" jks.tools2d.parallax.demo.ParallaxStress --plax $page.plax --seconds 0.5 --original-size ${mode#*:} --shot "$OUT/$name-${mode%%:*}.png" >"$OUT/$name-${mode%%:*}.log" 2>&1
 SH
 )
-		WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 60 cage -- bash -c "$inner" >"$OUT/cage.log" 2>&1
+		WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 60 cage -- tools/nested-x.sh 1280x720 bash -c "$inner" >"$OUT/cage.log" 2>&1
 		ls "$OUT/$name-${mode%%:*}.png" 2>/dev/null || { echo "no shot for $name ${mode%%:*}:"; tail -20 "$OUT/$name-${mode%%:*}.log"; }
 	done
 done
