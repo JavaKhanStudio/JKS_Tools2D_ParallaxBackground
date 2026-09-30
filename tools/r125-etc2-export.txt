@@ -1,0 +1,51 @@
+# r125 (d13): an export with ETC2 ticked writes name.etc2.atlas and .zktx pages next to name.atlas.
+# Exports City and Hiver: ETC2 forces the flatten, then tools/r125-etc2-check.py decodes each page and compares it with the PNG.
+# ./gradlew :editor:jar, copy the install with that jar to editor/build/r125/install, then
+# DRIVER_PORT=47914 EDITOR_BIN=$PWD/editor/build/r125/install/bin/ParallaxEditor tools/driver-probe.sh < tools/r125-etc2-export.txt
+# python3 tools/r125-etc2-check.py editor/build/r125/out/city.atlas editor/build/r125/out/hiver.atlas
+sleep 4
+open Files/Demos/City.plax
+sleep 3
+set preview.play false
+set preview.speedX 0
+sleep 1
+shot build/r125/out/city-before.png
+click tab.controls
+set options.path ../editor/build/r125/out
+set options.name city
+set options.etc2 true
+click options.export
+sleep 1
+click text:No
+sleep 6
+click text:OK
+open build/r125/out/city.plax
+sleep 3
+set preview.play false
+set preview.speedX 0
+sleep 1
+shot build/r125/out/city-reopened.png
+open ../demo/assets/Hiver.atlas
+sleep 3
+click tab.addTexture
+set adding.imageList 0
+click adding.add
+set adding.imageList 2
+click adding.add
+sleep 1
+shot build/r125/out/hiver-before.png
+click tab.controls
+set options.path ../editor/build/r125/out
+set options.name hiver
+set options.etc2 true
+click options.export
+sleep 1
+click text:No
+sleep 8
+click text:OK
+open build/r125/out/hiver.plax
+sleep 3
+set preview.play false
+set preview.speedX 0
+sleep 1
+shot build/r125/out/hiver-reopened.png

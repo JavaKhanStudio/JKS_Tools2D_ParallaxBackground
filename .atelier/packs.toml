@@ -186,6 +186,14 @@ every POT shape from 2048 to 4096 and keeps the one writing the fewest pixels, f
 (r121: Hiver 4096x4096 -> 4096x2048 + 4096x1024, 85 -> 64 MiB). Same-name regions stay in position
 order across pages only because the guillotine strategy fills its LAST page alone: a packer that
 back-fills earlier pages would break findLayer's atlas-order lookup.
+ETC2 (d13, r125: Project_Data.etc2, the "ETC2" box): PixmapPackerIO also writes each page, bled
+and cropped, through pixmap/Etc2 (our own encoder, ETC1 modes + EAC alpha, parallel, mip chain
+averaged 2x2 because a compressed texture cannot glGenerateMipmap) as <name>_N.zktx, and
+<name>.etc2.atlas with the SAME page bodies. A change to what the atlas says of a page goes through
+pageBody, or the two atlases disagree. core picks the copy in Gvars_Parallax.atlasFile when
+setCompressedAtlases is on (falls back to the PNG atlas when the copy is missing). Proof:
+tools/r125-etc2-export.txt, then tools/r125-etc2-check.py (independent decoder, all ETC2 modes:
+PSNR per region, colour >= 30 dB, alpha >= 40) — and render both atlases on a GPU.
 Mipmap levels average 2^n-pixel blocks, so PixmapPacker duplicates each image's border over HALF
 the padding (25px), and export writes pages through PixmapPackerIO with bleed = true (ColorBleed:
 transparent pixels take their neighbours' colour). A 2px border tiled layers with a seam at every

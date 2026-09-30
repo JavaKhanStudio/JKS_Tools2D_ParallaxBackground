@@ -240,6 +240,14 @@ to get libGDX's colours.
   atlases also flushes the batch once per layer. A project with **Pixel art** ticked exports `filter: Nearest,Nearest`
   instead, without mipmaps: sharp, and without that speed-up.
 
+**Phones: ETC2 atlases.** A project exported with **ETC2** ticked also writes `<name>.etc2.atlas`, the same atlas
+with its pages as ETC2 (`<name>_1.zktx`...): a quarter of the video memory of the PNG pages (Hiver: 16 MiB instead of
+64). Ship both atlases and call `Gvars_Parallax.setCompressedAtlases(Gvars_Parallax.supportsEtc2())` before loading a
+page: on an OpenGL ES 3 phone (Android, iOS) pages then load the `.etc2.atlas`, elsewhere the PNG one; a page whose
+atlas has no ETC2 copy loads the PNG one either way. Desktops are left on PNG, their drivers unpack ETC2 into RGBA,
+and so are browsers, where libGDX cannot read the gzipped pages. ETC2 is lossy: about 40 dB on painted art, and pixel
+art shifts its colours slightly. The Godot and jME readers load the PNG atlas; Godot compresses it on import itself.
+
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
 pages built without a heart. `demo/` is a complete example.
@@ -256,8 +264,8 @@ from it. **NEW** starts an empty project. Files can also be dragged onto the win
 - **Center:** the live preview. Use play/pause, full screen, the X/Y speed sliders and "Reset position".
   Arrows/WASD (and space) scroll it by hand.
 - **Top:** project folder and name. The two save buttons are **Save project** (`.plaxpj`) and **Export** (`.plax` and/or
-  `.jplax`, see the format checkboxes). **Pixel art**, under them, is saved with the project: see "Loose images and
-  export".
+  `.jplax`, see the format checkboxes). **ETC2** and **Pixel art**, with them, are saved with the project: see "Loose
+  images and export".
 - **Left tabs:**
   - **Controls:** help and tutorial links; **Parallax** (repeat on X/Y, current atlas, copy loose images next to the
     project, back to the start screen); **Application** (window size, full screen, VSync).
@@ -287,6 +295,10 @@ to 33/255 per channel). Tick **Pixel art** and it is written `filter: Nearest,Ne
 longer rounded to a power of two. The preview switches to Nearest as soon as the box is ticked, and back when it is
 unticked, so you see the difference before exporting. Export flattens a pixel-art project whose atlas is not already
 `Nearest,Nearest`. The game reads the filter from the atlas; the Godot reader still draws it linear.
+
+Tick **ETC2** and the flattened atlas is also written as `<name>.etc2.atlas`, whose pages are ETC2 RGBA8
+(`GL_COMPRESSED_RGBA8_ETC2_EAC`) with their mip chain, in gzipped KTX files (`<name>_1.zktx`...): see "Using the library
+in a game" for loading it. Export flattens a project with ETC2 ticked whose atlas has no ETC2 copy yet.
 
 The project is auto-saved every 5 minutes into `Files/AutoSave` (or `~/.parallax-editor/autosave` when the editor is
 not started from its module folder). The 10 most recent auto-saves are kept.
@@ -321,7 +333,8 @@ To profile the editor on a heavy page, `tools/stress-project.py 300` writes a 30
 |-----------|------------------------------------------------------|---------------|---------------------------|
 | `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), jME games (`engines/jme`), editor |
 | `.jplax`  | Exported page, JSON (Jackson)                        | Export        | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), jME games, editor, other tools |
-| `.plaxpj` | Project: page, loose images, default values, pixel art (JSON) | Save project  | editor, browser games (`Utils_Page_Json`), Godot games, jME games |
+| `.plaxpj` | Project: page, loose images, default values, pixel art, ETC2 (JSON) | Save project  | editor, browser games (`Utils_Page_Json`), Godot games, jME games |
+| `.etc2.atlas` + `.zktx` | ETC2 copy of an exported atlas: same regions, pages as gzipped KTX (ETC2 RGBA8, mip chain) | Export with ETC2 | libGDX games with `Gvars_Parallax.setCompressedAtlases(true)` |
 
 A page references its atlas by file name, and looks for it next to itself. **Save project** therefore copies the atlas
 and its page images into the project folder when they are not there yet, and refuses to save if that folder already
