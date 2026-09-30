@@ -14,8 +14,16 @@ sourceSets {
 }
 
 // The window icon is the editor's logo, the one README.md shows: one file, found on the classpath.
+// The demo's pages are the showcase bank (demo/showcase, r108) and their atlases stay where the pages were made: both
+// are put on the classpath rather than copied into assets/, where an internal file falls back to them.
 tasks.named('processResources', ProcessResources) {
     from('../editor/assets/skins/uis/parallaxIcon.png')
+    from('showcase') {
+        include 'calm-day.jplax', 'calm-sunset.jplax', 'winter.jplax', 'spring.jplax', 'one-night.jplax', 'purple-fairy.jplax'
+        into 'showcase'
+    }
+    from('../editor/Files/transfer') { include 'calm.atlas', 'calm.png', 'boss.atlas', 'boss.png' }
+    from('../editor/Files/Demos') { include 'OneNight.atlas', 'OneNight.png', 'PurpleFairy.atlas', 'PurpleFairy.png' }
 }
 
 dependencies {
