@@ -26,7 +26,6 @@ import com.kotcrab.vis.ui.widget.color.ColorPickerAdapter;
 import com.kotcrab.vis.ui.widget.color.ExtendedColorPicker;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
-import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.driver.Names;
@@ -44,16 +43,7 @@ public class VE_Tab_ColorConfig extends Tab implements Disposable
 		super(false, false);
 
 		final VisTable container = new VisTable();
-		TabbedPane tabbedPane = Utils_Interface.buildTabbedPane(baseSkin);
-		tabbedPane.addListener(new TabbedPaneAdapter()
-		{
-			@Override
-			public void switchedTab(Tab tab)
-			{
-				container.clearChildren();
-				container.add(tab.getContentTable()).expand().fill();
-			}
-		});
+		TabbedPane tabbedPane = Utils_Interface.buildTabbedPane(baseSkin, container);
 
 		Tab topPalette = buildColorPalette("Top Square", parallax_Heart.topSquare);
 		tabbedPane.add(topPalette);

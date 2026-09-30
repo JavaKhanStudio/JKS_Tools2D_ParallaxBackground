@@ -4,7 +4,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
-import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.libgdxutils.Utils_Interface;
 import jks.tools2d.parallax.editor.driver.Names;
@@ -20,16 +19,7 @@ public class VE_Tab_Meta extends Tab
 		super(false, false);
 
 		final VisTable container = new VisTable();
-		TabbedPane tabbedPane = Utils_Interface.buildTabbedPane(GVars_UI.baseSkin);
-		tabbedPane.addListener(new TabbedPaneAdapter()
-		{
-			@Override
-			public void switchedTab(Tab tab)
-			{
-				container.clearChildren();
-				container.add(tab.getContentTable()).expand().fill();
-			}
-		});
+		TabbedPane tabbedPane = Utils_Interface.buildTabbedPane(GVars_UI.baseSkin, container);
 
 		VE_Tab_Meta_Informations infos = new VE_Tab_Meta_Informations();
 		tabbedPane.add(infos);

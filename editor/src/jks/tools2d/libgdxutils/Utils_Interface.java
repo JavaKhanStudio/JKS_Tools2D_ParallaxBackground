@@ -15,8 +15,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.kotcrab.vis.ui.widget.VisTable;
+import com.kotcrab.vis.ui.widget.tabbedpane.Tab;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane;
 import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPane.TabbedPaneStyle;
+import com.kotcrab.vis.ui.widget.tabbedpane.TabbedPaneAdapter;
 
 import jks.tools2d.parallax.editor.inputs.GVars_Inputs;
 
@@ -111,6 +114,22 @@ public final class Utils_Interface
 		style.draggable = false;
 		TabbedPane pane = new TabbedPane(style);
 		pane.setAllowTabDeselect(false);
+		return pane;
+	}
+
+	/** {@link #buildTabbedPane(Skin)} whose switched tab's content fills {@code container}. */
+	public static TabbedPane buildTabbedPane(Skin skin, final VisTable container)
+	{
+		TabbedPane pane = buildTabbedPane(skin);
+		pane.addListener(new TabbedPaneAdapter()
+		{
+			@Override
+			public void switchedTab(Tab tab)
+			{
+				container.clearChildren();
+				container.add(tab.getContentTable()).expand().fill();
+			}
+		});
 		return pane;
 	}
 
