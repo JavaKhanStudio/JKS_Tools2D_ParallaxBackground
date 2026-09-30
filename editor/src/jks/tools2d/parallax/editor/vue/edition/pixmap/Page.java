@@ -20,6 +20,7 @@ public class Page
 
 	/** Creates a new page filled with the color provided by the {@link PixmapPacker#getTransparentColor()} */
 	public Page (PixmapPacker packer) {
+		if (packer.layoutOnly) return;
 		image = new Pixmap(packer.pageWidth, packer.pageHeight, packer.pageFormat);
 		final Color transparentColor = packer.getTransparentColor();
 		this.image.setColor(transparentColor);

@@ -31,6 +31,8 @@ public class PixmapPacker implements Disposable
 	Color transparentColor = new Color(0f, 0f, 0f, 0f);
 	final Array<Page> pages = new Array<>();
 	PackStrategy packStrategy;
+	/** Places rectangles without pages' pixels: see {@link #layoutOnly()}. */
+	boolean layoutOnly;
 
 	/** Uses {@link GuillotineStrategy}.
 	 * @see PixmapPacker#PixmapPacker(int, int, Format, int, boolean, boolean, boolean, PackStrategy) */
@@ -62,6 +64,26 @@ public class PixmapPacker implements Disposable
 		this.stripWhitespaceX = stripWhitespaceX;
 		this.stripWhitespaceY = stripWhitespaceY;
 		this.packStrategy = packStrategy;
+	}
+
+	/**
+	 * Makes this packer only place rectangles: its pages allocate no pixmap and {@link #pack(String, Pixmap)} copies
+	 * nothing, so trying a page size costs no page memory. Call before packing anything.
+	 */
+	public PixmapPacker layoutOnly () {
+		layoutOnly = true;
+		return this;
+	}
+
+	/** Places a {@code width} x {@code height} rectangle, whitespace already stripped, on a {@link #layoutOnly()} packer. */
+	public synchronized Rectangle packLayout (String name, int width, int height) {
+		if (!layoutOnly) throw new GdxRuntimeException("packLayout needs a layoutOnly packer");
+		if (getRect(name) != null) throw new GdxRuntimeException("Pixmap has already been packed with name: " + name);
+		PixmapPackerRectangle rect = new PixmapPackerRectangle(0, 0, width, height);
+		if (width > pageWidth || height > pageHeight) throw new GdxRuntimeException("Page size too small for pixmap: " + name);
+		Page page = packStrategy.pack(this, name, rect);
+		page.rects.put(name, rect);
+		return rect;
 	}
 
 	/** Sorts the images to the optimzal order they should be packed. Some packing strategies rely heavily on the images being
@@ -180,6 +202,11 @@ public class PixmapPacker implements Disposable
 			page.addedRects.add(name);
 		}
 
+		if (layoutOnly) {
+			if (pixmapToDispose != null) pixmapToDispose.dispose();
+			return rect;
+		}
+
 		int rectX = (int)rect.x, rectY = (int)rect.y, rectWidth = (int)rect.width, rectHeight = (int)rect.height;
 
 		if (packToTexture && !duplicateBorder && page.texture != null && !page.dirty) 
@@ -261,7 +288,7 @@ public class PixmapPacker implements Disposable
 	 * texture is disposed. */
 	public synchronized void dispose () {
 		for (Page page : pages) {
-			if (page.texture == null) {
+			if (page.texture == null && page.image != null) {
 				page.image.dispose();
 			}
 		}

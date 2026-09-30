@@ -27,6 +27,7 @@ import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.kotcrab.vis.ui.util.dialog.Dialogs;
 
 import jks.tools2d.parallax.editor.gvars.GVars_UI;
@@ -72,25 +73,35 @@ public final class Utils_TextureAtlas
 			groups.computeIfAbsent(regionName, k -> new ArrayList<>()).add(region);
 		}
 
-		PixmapPacker packer = createPacker(GVars_Vue_Edition.allImage);
+		// Packing order: group by group, each by position. The guillotine packer only fills its last page, so the regions
+		// of a name reach the atlas in that order, which is how a layer finds its region again (findLayer).
+		List<String> packedNames = new ArrayList<>();
+		List<TextureRegion> packedRegions = new ArrayList<>();
+		Map<Position_Infos, int[]> newPositions = new HashMap<>();
+		for (Map.Entry<String, List<TextureRegion>> group : groups.entrySet())
+		{
+			List<TextureRegion> regions = group.getValue();
+			regions.sort(Comparator.comparingInt(region -> GVars_Vue_Edition.imageRef.get(region).position));
+			for (int index = 0; index < regions.size(); index++)
+			{
+				packedNames.add(PixmapPackerIO.packedName(group.getKey(), regions.size() == 1 ? -1 : index));
+				packedRegions.add(regions.get(index));
+				newPositions.put(GVars_Vue_Edition.imageRef.get(regions.get(index)), new int[] { index });
+			}
+		}
+
+		PixmapPacker packer = null;
 		Map<Texture, Pixmap> sourcePixmaps = new IdentityHashMap<>();
 		Map<Pixmap, Boolean> mustDispose = new IdentityHashMap<>();
-		Map<Position_Infos, int[]> newPositions = new HashMap<>();
 		try
 		{
-			for (Map.Entry<String, List<TextureRegion>> group : groups.entrySet())
+			int[] pageSize = pageSize(packedNames, packedRegions, sourcePixmaps, mustDispose);
+			packer = createPacker(pageSize[0], pageSize[1]);
+			for (int i = 0; i < packedNames.size(); i++)
 			{
-				List<TextureRegion> regions = group.getValue();
-				regions.sort(Comparator.comparingInt(region -> GVars_Vue_Edition.imageRef.get(region).position));
-
-				for (int index = 0; index < regions.size(); index++)
-				{
-					TextureRegion region = regions.get(index);
-					Pixmap pixels = extractRegion(region, sourcePixmaps, mustDispose);
-					packer.pack(PixmapPackerIO.packedName(group.getKey(), regions.size() == 1 ? -1 : index), pixels);
-					pixels.dispose();
-					newPositions.put(GVars_Vue_Edition.imageRef.get(region), new int[] { index });
-				}
+				Pixmap pixels = extractRegion(packedRegions.get(i), sourcePixmaps, mustDispose);
+				packer.pack(packedNames.get(i), pixels);
+				pixels.dispose();
 			}
 
 			// Layers are always drawn scaled: linear filtering is what the 50px padding and tripled borders are for.
@@ -110,7 +121,8 @@ public final class Utils_TextureAtlas
 		}
 		finally
 		{
-			packer.dispose();
+			if (packer != null)
+				packer.dispose();
 			for (Pixmap pixmap : sourcePixmaps.values())
 				if (mustDispose.get(pixmap))
 					pixmap.dispose();
@@ -147,23 +159,80 @@ public final class Utils_TextureAtlas
 	}
 
 	/**
-	 * 4096px pages, the texture size every GPU handles, unless an image needs more; the packer adds pages as needed.
-	 * (The 2019 version used 3x the largest image, easily a 15000px page.) Sides are powers of two: OpenGL ES 2 and
-	 * WebGL 1 cannot mipmap any other texture, and draw it black.
+	 * The page size that writes the fewest pixels, pages being cropped on write (PixmapPackerIO.trimmed): every
+	 * power-of-two shape from {@link #smallestPageSide} up to 4096px pages (more if an image needs it) is laid out
+	 * without pixels, and the one whose cropped pages add up to the least wins, fewer pages on a tie. Four 3645px-wide
+	 * strips 2350px high in all fill a 4096x4096 page; 4096x2048 pages hold them in 4096x2048 + 4096x1024, a quarter
+	 * less video memory.
+	 * <p>
+	 * (The 2019 version used 3x the largest image, easily a 15000px page.) Sides are powers of two: OpenGL ES 2 and WebGL
+	 * 1 cannot mipmap any other texture, and draw it black.
 	 */
-	private static PixmapPacker createPacker(List<TextureRegion> regions)
+	private static int[] pageSize(List<String> names, List<TextureRegion> regions, Map<Texture, Pixmap> sourcePixmaps,
+			Map<Pixmap, Boolean> mustDispose)
 	{
+		// The sizes the packer will place: stripped of their whitespace when createPacker strips.
+		int[][] sizes = new int[names.size()][];
+		PixmapPacker stripper = parallax_Heart.currentPage.useOriginalSize ? createPacker(atlasMaxSize, atlasMaxSize).layoutOnly() : null;
 		int largestWidth = 0, largestHeight = 0;
-		for (TextureRegion region : regions)
+		for (int i = 0; i < names.size(); i++)
 		{
-			largestWidth = Math.max(largestWidth, region.getRegionWidth());
-			largestHeight = Math.max(largestHeight, region.getRegionHeight());
+			TextureRegion region = regions.get(i);
+			if (stripper == null)
+				sizes[i] = new int[] { flattenedWidth(region), flattenedHeight(region) };
+			else
+			{
+				Pixmap pixels = extractRegion(region, sourcePixmaps, mustDispose);
+				Rectangle rect = stripper.pack(names.get(i), pixels);
+				pixels.dispose();
+				sizes[i] = new int[] { (int) rect.width, (int) rect.height };
+			}
+			largestWidth = Math.max(largestWidth, sizes[i][0]);
+			largestHeight = Math.max(largestHeight, sizes[i][1]);
 		}
 
 		// Guillotine pages keep the padding on their edges, plus the padding added to each image.
 		int border = paddingSize * 3;
-		int pageWidth = Math.min(atlasMaxSize, MathUtils.nextPowerOfTwo(Math.max(preferredPageSize, largestWidth + border)));
-		int pageHeight = Math.min(atlasMaxSize, MathUtils.nextPowerOfTwo(Math.max(preferredPageSize, largestHeight + border)));
+		int maxWidth = Math.min(atlasMaxSize, MathUtils.nextPowerOfTwo(Math.max(preferredPageSize, largestWidth + border)));
+		int maxHeight = Math.min(atlasMaxSize, MathUtils.nextPowerOfTwo(Math.max(preferredPageSize, largestHeight + border)));
+		int minWidth = Math.min(maxWidth, MathUtils.nextPowerOfTwo(Math.max(smallestPageSide, largestWidth + border)));
+		int minHeight = Math.min(maxHeight, MathUtils.nextPowerOfTwo(Math.max(smallestPageSide, largestHeight + border)));
+
+		int[] best = { maxWidth, maxHeight };
+		long bestArea = Long.MAX_VALUE;
+		int bestPages = Integer.MAX_VALUE;
+		for (int width = maxWidth; width >= minWidth; width /= 2)
+			for (int height = maxHeight; height >= minHeight; height /= 2)
+			{
+				PixmapPacker layout = new PixmapPacker(width, height, Format.RGBA8888, paddingSize, true, new PixmapPacker.GuillotineStrategy()).layoutOnly();
+				for (int i = 0; i < names.size(); i++)
+					layout.packLayout(names.get(i), sizes[i][0], sizes[i][1]);
+
+				long area = 0;
+				for (jks.tools2d.parallax.editor.vue.edition.pixmap.Page page : layout.getPages())
+				{
+					int[] written = PixmapPackerIO.writtenSize(layout, page, true);
+					area += (long) written[0] * written[1];
+				}
+				int pages = layout.getPages().size;
+				if (area < bestArea || area == bestArea && pages < bestPages)
+				{
+					best = new int[] { width, height };
+					bestArea = area;
+					bestPages = pages;
+				}
+			}
+		return best;
+	}
+
+	/**
+	 * Pages are not tried smaller than this: a page is cropped to what it holds anyway, and more pages cost a texture
+	 * switch each where their layers are drawn.
+	 */
+	static final int smallestPageSide = 2048;
+
+	private static PixmapPacker createPacker(int pageWidth, int pageHeight)
+	{
 		// A page drawing regions at their original size keeps the fill-rate win of stripping: the packer strips each
 		// image and stores its original size and offset. Other pages stretch whatever is packed, so nothing is stripped.
 		boolean strip = parallax_Heart.currentPage.useOriginalSize;

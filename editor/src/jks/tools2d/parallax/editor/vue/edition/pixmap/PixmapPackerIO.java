@@ -80,6 +80,19 @@ public class PixmapPackerIO
 	 * the page's own pixmap when nothing can be cut.
 	 */
 	static Pixmap trimmed (PixmapPacker packer, Page page, boolean powerOfTwo) {
+		int[] size = writtenSize(packer, page, powerOfTwo);
+		int width = size[0], height = size[1];
+		if (width == page.image.getWidth() && height == page.image.getHeight())
+			return page.image;
+
+		Pixmap image = new Pixmap(width, height, page.image.getFormat());
+		image.setBlending(Blending.None);
+		image.drawPixmap(page.image, 0, 0, 0, 0, width, height);
+		return image;
+	}
+
+	/** Width and height {@link #trimmed} writes a page at; works on a {@link PixmapPacker#layoutOnly()} packer too. */
+	public static int[] writtenSize (PixmapPacker packer, Page page, boolean powerOfTwo) {
 		int width = 0, height = 0;
 		for (PixmapPacker.PixmapPackerRectangle rect : page.rects.values()) {
 			width = Math.max(width, (int)(rect.x + rect.width) + packer.padding);
@@ -89,15 +102,7 @@ public class PixmapPackerIO
 			width = MathUtils.nextPowerOfTwo(width);
 			height = MathUtils.nextPowerOfTwo(height);
 		}
-		width = Math.min(width, page.image.getWidth());
-		height = Math.min(height, page.image.getHeight());
-		if (width == page.image.getWidth() && height == page.image.getHeight())
-			return page.image;
-
-		Pixmap image = new Pixmap(width, height, page.image.getFormat());
-		image.setBlending(Blending.None);
-		image.drawPixmap(page.image, 0, 0, 0, 0, width, height);
-		return image;
+		return new int[] { Math.min(width, packer.pageWidth), Math.min(height, packer.pageHeight) };
 	}
 
 	private void write (FileHandle file, PixmapPacker packer, SaveParameters parameters, Writer writer) throws IOException {

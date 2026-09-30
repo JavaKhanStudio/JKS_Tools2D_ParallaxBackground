@@ -174,6 +174,11 @@ page black, and desktop shows nothing wrong. tools/r40-mipmap-stress.sh re-measu
 Pages are ALLOCATED at that size but WRITTEN cropped (PixmapPackerIO.trimmed, r114): each to its
 regions' extent plus padding, rounded up to a power of two. Before, 4 small images exported as a
 4096x4096 page, 85 MiB of video memory. tools/r114-flatten-export.txt + r114-atlas-check.py measure it.
+Utils_TextureAtlas.pageSize then lays the images out WITHOUT PIXELS (PixmapPacker.layoutOnly) at
+every POT shape from 2048 to 4096 and keeps the one writing the fewest pixels, fewer pages on a tie
+(r121: Hiver 4096x4096 -> 4096x2048 + 4096x1024, 85 -> 64 MiB). Same-name regions stay in position
+order across pages only because the guillotine strategy fills its LAST page alone: a packer that
+back-fills earlier pages would break findLayer's atlas-order lookup.
 Mipmap levels average 2^n-pixel blocks, so PixmapPacker duplicates each image's border over HALF
 the padding (25px), and export writes pages through PixmapPackerIO with bleed = true (ColorBleed:
 transparent pixels take their neighbours' colour). A 2px border tiled layers with a seam at every
