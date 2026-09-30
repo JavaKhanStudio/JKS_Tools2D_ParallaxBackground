@@ -3,6 +3,10 @@
 
   tools/parallax_lab.py lint PAGE...            the numbers of a page (.jplax/.plaxpj) and the rules it breaks
   tools/parallax_lab.py survey OUT_DIR          every sample page as it is, as a round (to render or grade)
+  tools/parallax_lab.py round2 [OUT_DIR]        round 2: those pages next to Simon's, and brackets of speed ratio,
+                                                span and width, shuffled blind (default demo/lab/round2)
+  tools/parallax_lab.py study [OUT_DIR]         the pages written from the art (r92), in order, to render and look
+                                                at (default demo/lab/study)
   tools/parallax_lab.py round1 [OUT_DIR]        round 1: Simon's pages, each rule broken once, and pages written from
                                                 the rules alone, shuffled blind (default demo/lab/round1)
 
@@ -278,6 +282,124 @@ def night_from_rules():
     return page_of('OneNight.atlas', L, sky=('0b1d3a', '5a6fa8'), ground=('1a1420', '0a0810'), original_size=True)
 
 
+# ---------------------------------------------------------------- pages written from the art (r92)
+#
+# Round 1's pages read as random values (Simon, r92): they were placed from rules, not from what each region shows.
+# These are written after looking at every region (tools/parallax_regions.py) and measuring two things:
+#  - what kind of region it is. A FULL-FRAME region (1920x1080, or a 1080-tall panorama) was painted for one screen
+#    height, its art already at the height it belongs: it goes at its natural size (its height = the screen's) and
+#    decal Y 0, and the regions of one atlas compose as the painter drew them. A STRIP (Hiver's 3645x580) is one band
+#    of the scene: strips are stacked, farther ones higher, each bottom edge under the solid part of the one in front.
+#  - how far each layer is, from the art. The same kind of thing (a tree, a hill) drawn at half the size is twice as
+#    far, and moves half as fast: speed ratio between two layers = size ratio of what they show. The sky and the
+#    mountains are so far that they barely move.
+
+WORLD_W, WORLD_H = 40.0, 22.5
+
+
+def natural_size(orig_w, orig_h):
+    """The sizeRatio at which a region is exactly one 16:9 screen tall."""
+    return round(orig_w / orig_h * WORLD_H / WORLD_W, 3)
+
+
+def fairy_from_art(ratio=4 / 3, front=0.1):
+    """PurpleFairy: seven full-frame 1920x1080 regions, back to front 7 (sky and far wave) 6 (far hills) 5 (bare
+    trees, far) 4 (canopy trees) 3 (pink trees) 2 (grass and butterflies) 1 (front grass). All at size 1 and decal Y 0:
+    together they are the picture the painter drew. Speeds a constant ratio: the tree rows shrink by about a third
+    per row (5 -> 4 -> 3)."""
+    order = ['7', '6', '5', '4', '3', '2', '1']
+    stagger = [0, 37, 71, 13, 53, 89, 29]
+    L = [layer(name, speed=front / ratio ** (len(order) - 1 - i), size=1.0, dx=stagger[i], dy=0)
+         for i, name in enumerate(order)]
+    return page_of('PurpleFairy.atlas', L, sky=('4b1f52', '6d2975'), ground=('6d2975', '4b1f52'), original_size=True)
+
+
+def hiver_from_art(front=0.08):
+    """Hiver: four strips 580 px tall. p3 the sky (pink streaks at its top), p1 the far mountains (the ski lift),
+    p2 the near snow hills (art floats between 14% and 76% of the strip), p0 snowy fir trees (trunks at the bottom).
+    The snow under the hills is the bottom gradient, in the hills' own bottom colour, so the screen has no white hole.
+    The tallest fir touches the top of the trees' strip (cropped by the painter), so wherever that strip's top edge is
+    on screen the tree shows cut flat: the trees are the foreground, big enough (4.6) that the strip's top is above
+    the screen."""
+    snow, sky_low, sky_high = 'e0e8dd', 'aaa8be', '9d98b4'
+    # The mountains' peaks touch the top of their strip (the painter cropped them): its top edge goes at the top of
+    # the screen, so no peak shows cut flat. The hills' solid band (14-35% of their strip) covers the mountains' bottom
+    # edge and the tree row's trunks; below the hills' art, the snow is the bottom gradient.
+    L = [
+        layer('parallax4', 3, speed=front / 16, size=2.6, dx=0, dy=26),
+        layer('parallax4', 1, speed=front / 8, size=2.6, dx=23, dy=26),
+        layer('parallax4', 2, speed=front / 3, size=1.8, dx=61, dy=11),
+        layer('parallax4', 0, speed=front, size=4.6, dx=-12, dy=-3),
+    ]
+    page = page_of('Hiver.atlas', L, sky=(sky_high, sky_low), ground=(snow, snow), top_size=0.5, bottom_size=0.78,
+                   original_size=True)
+    return page
+
+
+def calm_tree_from_art(front=0.1):
+    """calmTree3 (a misty forest): 1080-tall regions, so all at their natural size and decal Y 0. Back to front:
+    9em plan (the sky and a far pale ridge, 5 screens wide), 7em plan (pale trunks hanging from the top: the far
+    forest), 6em plan (a green hill with small trees), Parallax 7 (pale trunks, nearer), 5em plan V2 (mist, drifting),
+    Work2 (the forest floor with mushrooms, 8 screens wide), 4em plan M1 (the foreground trunks and grass). The trunks
+    widen about x1.6 from 7em to Parallax 7 and x2.5 again to M1."""
+    n = natural_size
+    L = [
+        layer('9em plan', speed=front / 20, size=n(9600, 1080), dx=0, dy=0),
+        layer('7em plan', speed=front / 8, size=n(9600, 1080), dx=31, dy=0),
+        layer('6em plan', speed=front / 6, size=n(9600, 1080), dx=57, dy=0),
+        layer('Parallax 7', speed=front / 4, size=n(2012, 1080), dx=13, dy=0),
+        layer('5em plan V2', speed=front / 3, size=n(2307, 1080), dx=0, dy=0, rest=-10),
+        layer('Work2', speed=front / 2, size=n(15580, 1080), dx=43, dy=0),
+        layer('4em plan M1', speed=front, size=n(2021, 1080), dx=7, dy=0),
+    ]
+    return page_of('calmTree3.atlas', L, sky=('b7ccd5', 'a7c4ce'), ground=('435853', '2f3f3b'), original_size=True)
+
+
+def night_from_art(front=0.08):
+    """OneNight: its grounds are 1920x1080 PIECES, not one frame cut in planes: each hill starts at the bottom of its
+    canvas, so at size 1 and decal Y 0 they pile up with every tree the full screen tall. They are stacked instead,
+    farther ones higher, and kept at least 0.8 wide (round 1's 0.5 showed each hill twice a screen). Clouds far behind
+    the mountain, drifting; dark water in front, flowing against the scroll. Simon's sky colours."""
+    L = [
+        layer('clouds', 1, speed=front / 10, size=1.0, dx=40, dy=25, rest=40),
+        layer('clouds', 0, speed=front / 8, size=1.0, dx=0, dy=0, rest=30),
+        layer('rocks', 0, speed=front / 5, size=0.9, dx=17, dy=18),
+        layer('ground', 0, speed=front / 3, size=0.8, dx=63, dy=20),
+        layer('ground', 1, speed=front / 2, size=0.8, dx=29, dy=8),
+        layer('ground', 2, speed=front / 1.4, size=1.0, dx=81, dy=-5),
+        layer('waterDark', 0, speed=front, size=1.0, dx=0, dy=-12, rest=-15),
+    ]
+    # The mountain's glow is translucent: whatever gradient is behind it shows through, so one sky gradient covers
+    # the whole screen (two would draw their seam across the mountain).
+    return page_of('OneNight.atlas', L, sky=('12537c', 'a4c1ed'), top_size=0.0, bottom_size=1.0, original_size=True)
+
+
+def calm_from_art(front=0.07):
+    """calm: six strips 5000 px wide, stacked. Farthest to nearest by haze (Trees_close is the palest tree row, so
+    the farthest). The three tree rows' crowns grow about x1.3 row to row."""
+    L = [
+        layer('Clouds', speed=front / 12, size=1.0, dx=15, dy=62, rest=40),
+        layer('Mountains_big', speed=front / 8, size=1.15, dx=0, dy=42),
+        layer('Mountains_small', speed=front / 5, size=1.2, dx=35, dy=33),
+        layer('Trees_close', speed=front / 1.7, size=1.2, dx=10, dy=24),
+        layer('Trees_far', speed=front / 1.3, size=1.3, dx=55, dy=10),
+        layer('Trees_fartest', speed=front, size=1.5, dx=25, dy=0),
+    ]
+    return page_of('calm.atlas', L, sky=('00a6ff', 'f5f5f5'), ground=('05533f', '05533f'), original_size=True)
+
+
+def study(out_dir):
+    """The pages written from the art, not shuffled: to render and look at before a round is built from them."""
+    scenes = [
+        ('PurpleFairy-art', fairy_from_art(), 'editor/Files/Demos', 'full-frame layers at size 1, decal Y 0'),
+        ('Hiver-art', hiver_from_art(), 'demo/assets', 'strips stacked, snow ground, trees at two depths'),
+        ('CalmTree3-art', calm_tree_from_art(), 'editor/Files/Aa new', '1080-tall layers at their natural size'),
+        ('OneNight-art', night_from_art(), 'editor/Files/Demos', 'full-frame grounds at size 1'),
+        ('Calm-art', calm_from_art(), 'editor/Files/transfer', 'strips stacked by haze'),
+    ]
+    write_round(out_dir, scenes, None, 'Pages written from the art (r92), in order, to look at.')
+
+
 # ---------------------------------------------------------------- rounds
 
 def write_round(out_dir, scenes, seed, note):
@@ -286,7 +408,8 @@ def write_round(out_dir, scenes, seed, note):
     out = os.path.join(ROOT, out_dir)
     os.makedirs(out, exist_ok=True)
     order = list(scenes)
-    random.Random(seed).shuffle(order)
+    if seed is not None:
+        random.Random(seed).shuffle(order)
     listed = []
     for i, (name, page, atlas_dir, about) in enumerate(order, 1):
         sid = 's%02d' % i
@@ -340,6 +463,35 @@ def round1(out_dir):
                                      'from the rules. Grade 1-5 on how good the scene feels as a game background.')
 
 
+def round2(out_dir):
+    """Round 2 (r92): the pages written from the art next to Simon's, and brackets of what round 1 left open."""
+    s = {name: load(path) for name, (path, _) in SAMPLES.items()}
+    d = {name: atlas_dir for name, (_, atlas_dir) in SAMPLES.items()}
+    fairy_dir, calm_dir = 'editor/Files/Demos', 'editor/Files/transfer'
+    scenes = [
+        ('PurpleFairy', s['PurpleFairy'], d['PurpleFairy'], 'Simon\'s page (control)'),
+        ('Hiver', s['Hiver'], d['Hiver'], 'Simon\'s page (control)'),
+        ('CalmTree3', s['CalmTree3'], d['CalmTree3'], 'Simon\'s page (control)'),
+        ('Calm', s['Calm'], d['Calm'], 'Simon\'s page (control, graded 3 in round 1)'),
+        ('OneNight', s['OneNight'], d['OneNight'], 'Simon\'s page (control, graded 3 in round 1)'),
+        ('PurpleFairy-art', fairy_from_art(), fairy_dir, 'from the art: full-frame layers at size 1, x1.33 a layer'),
+        ('Hiver-art', hiver_from_art(), 'demo/assets', 'from the art: strips stacked, snow ground, big trees'),
+        ('CalmTree3-art', calm_tree_from_art(), d['CalmTree3'], 'from the art: 1080-tall layers at natural size'),
+        ('Calm-art', calm_from_art(), calm_dir, 'from the art: strips stacked by haze'),
+        ('OneNight-art', night_from_art(), fairy_dir, 'from the art: grounds stacked, one sky gradient'),
+        ('PurpleFairy-art-x1.15', fairy_from_art(ratio=1.15), fairy_dir, 'speed ratio x1.15 a layer (span 2.3x)'),
+        ('PurpleFairy-art-x1.6', fairy_from_art(ratio=1.6), fairy_dir, 'speed ratio x1.6 a layer (span 17x)'),
+        ('Calm-art-shallow', rescale_span(calm_from_art(), 0.6), calm_dir, 'speed span 12x -> 4.5x'),
+        ('Calm-art-deep', rescale_span(calm_from_art(), 1.5), calm_dir, 'speed span 12x -> 41x'),
+        ('Calm-art-narrow', shrunk(calm_from_art(), 0.7), calm_dir, 'every layer 0.7 as wide: repeats closer'),
+        ('CalmTree3-art-narrow', shrunk(calm_tree_from_art(), 0.75), d['CalmTree3'],
+         'every layer 0.75 as wide: the forest shrinks, its bottom shows'),
+    ]
+    write_round(out_dir, scenes, 92, 'Round 2 (r92): pages written from the art next to Simon\'s, and brackets of '
+                                     'speed ratio, span and width. Grade 1-5 on how good the scene feels as a game '
+                                     'background.')
+
+
 def main(argv):
     if len(argv) < 2 or argv[1] in ('-h', '--help'):
         print(__doc__)
@@ -357,6 +509,12 @@ def main(argv):
         return 1 if bad else 0
     if cmd == 'survey':
         survey(argv[2])
+        return 0
+    if cmd == 'study':
+        study(argv[2] if len(argv) > 2 else 'demo/lab/study')
+        return 0
+    if cmd == 'round2':
+        round2(argv[2] if len(argv) > 2 else 'demo/lab/round2')
         return 0
     if cmd == 'round1':
         round1(argv[2] if len(argv) > 2 else 'demo/lab/round1')
