@@ -42,6 +42,10 @@ jobs:
       - name: Run the core tests in Chrome
         run: tools/browser-test.sh
 
+      # A tools/*.sh that opens a window runs it in cage, or says why not (r171).
+      - name: Check no script opens a window outside cage
+        run: tools/offscreen-lint.sh && tools/offscreen-lint-test.sh
+
       - name: Check the editor and demo packages
         run: ./gradlew :editor:distZip :demo:distZip
 

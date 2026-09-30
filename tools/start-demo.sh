@@ -6,6 +6,7 @@
 # The board's server runs as a service, without the desktop's display variables: this script defaults them to the
 # logged-in session's (Wayland socket wayland-0, Xwayland :0 and mutter's cookie), so the window opens on the screen.
 # It returns when the window is closed.
+# on-screen: the board's "Start the demo" buttons open these windows for Simon to watch (tools/offscreen-lint.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"

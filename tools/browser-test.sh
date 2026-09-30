@@ -5,6 +5,7 @@
 #   tools/browser-test.sh --open        the lab: the results page in a Chrome window, served until the window closes
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome (CHROME=, or google-chrome,
 # chromium, chromium-browser on the PATH) and python3, which serves the page.
+# on-screen: --open is the browser_tests lab, a window Simon asked for; the gate itself is headless Chrome.
 set -u
 cd "$(dirname "$0")/.." || exit 1
 MODE=gate SHOT="" BUILD=1

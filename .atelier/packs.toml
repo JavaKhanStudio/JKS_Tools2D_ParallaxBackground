@@ -302,6 +302,8 @@ on one that does neither. A new module's `application` plugin makes a `run` task
 script that opens a window runs it in cage (WLR_BACKENDS=headless) or through tools/offscreen.sh;
 a nested X server inside cage comes from tools/nested-x.sh (a free display: a fixed :9 broke
 two runs at once, r142).
+tools/offscreen-lint.sh (CI, job build) fails a tools/*.sh that runs java, an installDist bin/,
+godot or a browser without either, unless it carries `# on-screen: <why>` (r171).
 settings.gradle includes editor and demo only when their folder exists (r130, repo split): the
 library's gates (build, browser-test, the Godot and jME frame checks) read core/test-data/samples
 and draw their libGDX frames with :shots (shots/, ParallaxShots), never with editor/ or demo/.

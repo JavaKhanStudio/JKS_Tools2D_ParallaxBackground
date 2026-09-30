@@ -19,7 +19,8 @@ repair.
   `:demo:lab`, `:demo:stress`, `:jme:run` and `:shots:run` render in a headless cage (`gradle/offscreen.gradle`, off with
   `ATELIER_NO_OFFSCREEN=1`, only when Simon asked to watch), and fail when there is no cage. A new JavaExec task calls
   `rootProject.offscreen(it)` or `rootProject.headless(it)`, or the build stops. Anything else that opens one goes
-  through cage or `tools/offscreen.sh`. Cage renders on the NVIDIA GPU, a desktop window on the Intel one:
+  through cage or `tools/offscreen.sh`: `tools/offscreen-lint.sh` (CI) fails a `tools/*.sh` that does neither, unless
+  it carries `# on-screen: <why>`. Cage renders on the NVIDIA GPU, a desktop window on the Intel one:
   `:demo:stress` prints which, compare numbers of the same.
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
@@ -30,8 +31,8 @@ repair.
 - `editor/` and `demo/` have their own repository since r132,
   [JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), and leave this one in
   phase 3 (r133): change them there, not here, or the change is lost.
-- CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`, then
-  `./gradlew :editor:distZip :demo:distZip`.
+- CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`,
+  `tools/offscreen-lint.sh`, then `./gradlew :editor:distZip :demo:distZip`.
   Its `godot-frames` job runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
   (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), then
   `tools/jme-parallax-shots.sh` the same way, and fails on a FAIL. A manual run's `break` input sets `BREAK` for the
