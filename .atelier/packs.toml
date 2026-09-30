@@ -17,9 +17,11 @@ every layer it takes (setWorldSize). heart/Gvars_Parallax only holds the last he
 default (40 wide) for pages built without a heart: nothing a heart runs may read it.
 ParallaxHeartResizeTest.twoHeartsKeepTheirOwnWorldSize holds that. A layer is worldWidth *
 sizeRatio wide. Hearts call only getDrawing(relativePath, w, h): a stub overriding getDrawing() is ignored.
-Gate: `./gradlew :core:test`. ParallaxPageReaderTest needs NO window: it proxies Batch with
-java.lang.reflect.Proxy and records the draw calls, with GdxNativesLoader.load() in
-@BeforeAll. Assert tiling by counting and placing draws — that is the tool, use it.
+Gate: `./gradlew :core:test`. The reader's tests are core/browser-test/cases/.../ReaderCases
+(GWT-safe: no JUnit, no reflection), run on the JVM by core/test BrowserSuiteTest and in Chrome by
+tools/browser-test.sh. They need NO window: RecordingBatch records the draw calls, with
+GdxNativesLoader.load() in BrowserSuiteTest's @BeforeAll. Assert tiling by counting and placing
+draws — that is the tool, use it.
 TILING MUST READ THE CAMERA VIEW (position AND zoom). The old code ignored zoom and drew one
 extra tile past the right edge of every row: 39% of draw calls off-screen, no error anywhere.
 `tilesJustEnoughToCoverTheView` is the test that holds that; keep it honest.
