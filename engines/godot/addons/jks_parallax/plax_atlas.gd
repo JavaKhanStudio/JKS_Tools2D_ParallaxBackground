@@ -15,6 +15,7 @@ var regions: Array[Dictionary] = []
 var _dir: String
 var _page_path := ""
 var _page_mipmaps := false
+var _page_nearest := false
 var _page_texture: Texture2D = null
 
 
@@ -57,16 +58,19 @@ func _parse(text: String) -> void:
 		if _page_path.is_empty():
 			_page_path = _dir.path_join(line.strip_edges())
 			_page_mipmaps = false
+			_page_nearest = false
 			_page_texture = null
 			in_header = true
 		elif in_header and not indented and colon >= 0:
 			if line.substr(0, colon).strip_edges() == "filter":
 				_page_mipmaps = line.contains("MipMap")
+				# "Nearest,Nearest": a pixel-art export (r126). A minification filter alone set to Nearest is drawn linear.
+				_page_nearest = line.substr(colon + 1).strip_edges().ends_with("Nearest")
 		elif not indented:
 			_close(region)
 			in_header = false
 			if _page_texture == null:
-				_page_texture = _load_texture(_page_path, _page_mipmaps)
+				_page_texture = _load_texture(_page_path, _page_mipmaps, _page_nearest)
 			region = {"name": line.strip_edges(), "index": -1, "texture": _page_texture, "rotate": false,
 				"x": 0, "y": 0, "width": 0, "height": 0,
 				"original_width": 0, "original_height": 0, "offset_x": 0, "offset_y": 0}
@@ -124,8 +128,10 @@ func _stable_sort_by_index() -> void:
 		regions.append(k[2])
 
 
-## An imported resource when the project has one (res:// in a game), else the PNG read straight from disk.
-static func _load_texture(image_path: String, mipmaps: bool) -> Texture2D:
+## An imported resource when the project has one (res:// in a game), else the PNG read straight from disk. A Nearest
+## page comes wrapped in a CanvasTexture that samples it sharp whatever the canvas's filter, as a libGDX texture keeps
+## its own filter: during a cross-fade between a pixel-art page and a smooth one, each is drawn with its own.
+static func _load_texture(image_path: String, mipmaps: bool, nearest: bool) -> Texture2D:
 	var texture: Texture2D = null
 	if ResourceLoader.exists(image_path):
 		texture = load(image_path) as Texture2D
@@ -138,4 +144,11 @@ static func _load_texture(image_path: String, mipmaps: bool) -> Texture2D:
 			image.generate_mipmaps()
 		texture = ImageTexture.create_from_image(image)
 	texture.set_meta("plax_mipmaps", mipmaps)
+	if nearest:
+		var sharp := CanvasTexture.new()
+		sharp.diffuse_texture = texture
+		sharp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		sharp.set_meta("plax_mipmaps", false)
+		sharp.set_meta("plax_nearest", true)
+		return sharp
 	return texture

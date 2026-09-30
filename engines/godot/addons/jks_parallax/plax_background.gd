@@ -216,7 +216,8 @@ func _act_gradients(delta: float) -> void:
 		_gradient_fading = false
 
 
-## Mipmapped sampling when a page on screen was packed with mipmaps.
+## Mipmapped sampling when a page on screen was packed with mipmaps. A Nearest page is not concerned: its texture is a
+## CanvasTexture with its own filter (PlaxAtlas._load_texture), so it stays sharp mid-fade with a smooth page.
 func _update_filter() -> void:
 	var mipmaps := false
 	for l in layers + transfer_layers:

@@ -294,7 +294,7 @@ The atlas is written `filter: MipMapLinearLinear,Linear`, which softens pixel ar
 to 33/255 per channel). Tick **Pixel art** and it is written `filter: Nearest,Nearest`, without mipmaps, its pages no
 longer rounded to a power of two. The preview switches to Nearest as soon as the box is ticked, and back when it is
 unticked, so you see the difference before exporting. Export flattens a pixel-art project whose atlas is not already
-`Nearest,Nearest`. The game reads the filter from the atlas; the Godot reader still draws it linear.
+`Nearest,Nearest`. The game reads the filter from the atlas, the Godot reader too (`engines/godot/tests/pixelart` checks it).
 
 Tick **ETC2** and the flattened atlas is also written as `<name>.etc2.atlas`, whose pages are ETC2 RGBA8
 (`GL_COMPRESSED_RGBA8_ETC2_EAC`) with their mip chain, in gzipped KTX files (`<name>_1.zktx`...): see "Using the library

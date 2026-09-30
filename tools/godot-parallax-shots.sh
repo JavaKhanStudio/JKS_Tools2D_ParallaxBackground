@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # godot-parallax-shots.sh [ROUND_DIR] — the Godot reader (engines/godot) against the libGDX runtime, frame by frame (r87).
 #
-#   tools/godot-parallax-shots.sh                          demo/lab/round1, engines/godot/tests/conformance and /transfer
+#   tools/godot-parallax-shots.sh                          demo/lab/round1, engines/godot/tests/conformance, /transfer, /pixelart
 #   tools/godot-parallax-shots.sh demo/lab/round1
 #
 # For each round: renders its scenes with libGDX (tools/parallax-lab-shots.sh, 0, 6 and 12 s into the lab's scroll)
@@ -18,7 +18,7 @@ cd "$(dirname "$0")/.."
 ROOT="$PWD"
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(demo/lab/round1 engines/godot/tests/conformance engines/godot/tests/transfer)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(demo/lab/round1 engines/godot/tests/conformance engines/godot/tests/transfer engines/godot/tests/pixelart)
 GODOT="${GODOT:-godot}"
 status=0
 for ROUND in "${ROUNDS[@]}"; do
