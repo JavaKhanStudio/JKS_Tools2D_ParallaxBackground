@@ -5,12 +5,17 @@
 // window on Simon's desktop, in front of whatever he was doing. tools/*-shots.sh and tools/driver-probe.sh already ran
 // in cage, a headless wlroots compositor; the Gradle tasks did not.
 //
-//   offscreen(task)   offscreen when ATELIER_AGENT is set (a board session); on the screen for anyone else, including
-//                     the board's "Start the demo" buttons (tools/start-demo.sh does not go through these tasks)
+//   offscreen(task)   offscreen for an agent: ATELIER_AGENT set (a board session) or CLAUDECODE=1 (any Claude Code
+//                     session, including one that unset ATELIER_AGENT); on the screen for anyone else, including the
+//                     board's "Start the demo" buttons (tools/start-demo.sh does not go through these tasks)
+//   headless(task)    a JavaExec that opens no window (a compiler, a fixture writer)
 //
-// ATELIER_NO_OFFSCREEN=1 puts the window back when you want to watch (the tools/ scripts read the same variable);
-// ATELIER_OFFSCREEN=1 sends it offscreen for you too. Without cage (Windows, macOS, a Linux machine that lacks it) the
-// window opens on the screen as it always did.
+// Every JavaExec task of the build is one or the other, or the build stops before running anything (r144): a new
+// module's `run` task (the application plugin makes one) is exactly how :shots:run reached r130 unwired.
+//
+// ATELIER_NO_OFFSCREEN=1 puts the window back when Simon asked to watch (the tools/ scripts read the same variable);
+// ATELIER_OFFSCREEN=1 sends it offscreen for you too. An agent without cage FAILS rather than open the window on
+// Simon's screen; anyone else without cage (Windows, macOS) gets the window as always.
 //
 // cage's headless display renders on another GPU than the desktop on Simon's laptop (NVIDIA, the desktop's windows
 // Intel): :demo:stress prints the GL renderer it measured, compare numbers of the same one.
@@ -85,23 +90,48 @@ abstract class OffscreenDisplay implements BuildService<BuildServiceParameters.N
 def offscreenDisplay = gradle.sharedServices.registerIfAbsent('parallaxOffscreenDisplay', OffscreenDisplay) {}
 
 ext.offscreen = { JavaExec task ->
+	task.ext.offscreenChecked = 'offscreen'
 	task.usesService(offscreenDisplay)
 	task.doFirst {
 		def env = System.getenv()
 		if (env.ATELIER_NO_OFFSCREEN == '1') return
-		if (!env.ATELIER_AGENT && env.ATELIER_OFFSCREEN != '1') return
-		if (!System.getProperty('os.name').toLowerCase().contains('linux')) return
+		boolean agent = env.ATELIER_AGENT || env.CLAUDECODE == '1'
+		if (!agent && env.ATELIER_OFFSCREEN != '1') return
+		if (!System.getProperty('os.name').toLowerCase().contains('linux'))
+		{
+			if (agent)
+				throw new GradleException("offscreen: ${task.path} would open its window on the screen (no cage here). " +
+					'Set ATELIER_NO_OFFSCREEN=1 only when Simon asked to watch it.')
+			return
+		}
 
 		Map<String, String> display = offscreenDisplay.get().display()
 		if (display == null)
-		{
-			task.logger.warn("offscreen: cage not found, so ${task.path} opens its window on your screen")
-			return
-		}
+			throw new GradleException("offscreen: cage not found, and ${task.path} would open its window on your screen. " +
+				'Install cage (dnf install cage), or set ATELIER_NO_OFFSCREEN=1 to watch it.')
 		// Both: GLFW picks Wayland or X11 (cage's Xwayland) by itself.
 		task.environment(display)
 		task.environment(ALSOFT_DRIVERS: 'null')
 		task.logger.lifecycle("offscreen: ${task.path} renders to a headless display " +
 			"(cage, ${display.WAYLAND_DISPLAY} / ${display.DISPLAY}); ATELIER_NO_OFFSCREEN=1 to watch")
 	}
+}
+
+ext.headless = { JavaExec task ->
+	task.ext.offscreenChecked = 'headless'
+}
+
+// Every JavaExec says which it is (r144). Realizing them here runs their configuration, where offscreen/headless is
+// called; the nine of this build cost nothing.
+gradle.projectsEvaluated {
+	List<String> unchecked = []
+	rootProject.allprojects { p ->
+		p.tasks.withType(JavaExec).toList().each { t ->
+			if (!t.ext.has('offscreenChecked'))
+				unchecked << t.path
+		}
+	}
+	if (unchecked)
+		throw new GradleException("${unchecked.join(', ')}: a JavaExec that is neither rootProject.offscreen(it) (it may " +
+			"open a window: an agent's goes to cage) nor rootProject.headless(it) (it opens none). See gradle/offscreen.gradle.")
 }

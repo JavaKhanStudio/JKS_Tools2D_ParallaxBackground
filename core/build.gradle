@@ -75,6 +75,7 @@ tasks.named('test', Test) {
 def gwtCheck = tasks.register('gwtCheck', JavaExec) {
     group = 'verification'
     description = 'Proves core/src translates to JavaScript with GWT, the way a browser game inherits it.'
+    rootProject.headless(it)
     def war = layout.buildDirectory.dir('gwtCheck/war')
     def work = layout.buildDirectory.dir('gwtCheck/work')
     inputs.files(fileTree('src'), fileTree('src-jvm'), fileTree('gwt-check')).withPathSensitivity(PathSensitivity.RELATIVE)
@@ -101,6 +102,7 @@ def browserTestAssets = layout.buildDirectory.dir('browserTest/assets')
 def browserTestWar = layout.buildDirectory.dir('browserTest/war')
 def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     description = 'Writes the saved pages the browser suite loads, with what Kryo reads of each (JvmFixtures).'
+    rootProject.headless(it)
     mainClass = 'jks.tools2d.parallax.browsertest.JvmFixtures'
     classpath = sourceSets.test.runtimeClasspath
     inputs.files(fileTree('test-data') { include '**/*.plax*' })
@@ -111,6 +113,7 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
 tasks.register('browserTestWar', JavaExec) {
     group = 'verification'
     description = 'Compiles the browser suite to JavaScript: build/browserTest/war, run it with tools/browser-test.sh.'
+    rootProject.headless(it)
     dependsOn browserTestFixtures
     mainClass = 'com.google.gwt.dev.Compiler'
     classpath = files('browser-test/launcher', 'browser-test/cases', 'src', 'src-jvm') + configurations.gwtCheck

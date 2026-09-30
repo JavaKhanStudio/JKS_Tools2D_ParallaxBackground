@@ -15,10 +15,12 @@ repair.
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. The grading lab's `--shots` mode, split out of the demo. | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `tools/jme-parallax-shots.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
-- Never open a window on Simon's screen. With `ATELIER_AGENT` set, `:editor:run`, `:demo:run`, `:demo:lab`,
-  `:demo:stress` and `:jme:run` render in a headless cage (`gradle/offscreen.gradle`, off with `ATELIER_NO_OFFSCREEN=1`);
-  anything else that opens one goes through `tools/offscreen.sh`. Cage renders on the NVIDIA GPU, a desktop window on
-  the Intel one: `:demo:stress` prints which, compare numbers of the same.
+- Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:editor:run`, `:demo:run`,
+  `:demo:lab`, `:demo:stress`, `:jme:run` and `:shots:run` render in a headless cage (`gradle/offscreen.gradle`, off with
+  `ATELIER_NO_OFFSCREEN=1`, only when Simon asked to watch), and fail when there is no cage. A new JavaExec task calls
+  `rootProject.offscreen(it)` or `rootProject.headless(it)`, or the build stops. Anything else that opens one goes
+  through cage or `tools/offscreen.sh`. Cage renders on the NVIDIA GPU, a desktop window on the Intel one:
+  `:demo:stress` prints which, compare numbers of the same.
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
 - Repositories go in `settings.gradle` only: `FAIL_ON_PROJECT_REPOS` fails the build on a module-level one.

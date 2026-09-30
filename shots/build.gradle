@@ -29,3 +29,10 @@ application {
         applicationDefaultJvmArgs = ['-XstartOnFirstThread']
     }
 }
+
+// ./gradlew :shots:run --args="ROUND_DIR OUT_DIR", from the root as tools/parallax-lab-shots.sh runs it (a round names
+// its pages from there). It opens a window while it draws: an agent's goes to cage.
+tasks.named('run', JavaExec) {
+    workingDir = rootDir
+    rootProject.offscreen(it)
+}
