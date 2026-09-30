@@ -162,6 +162,10 @@ PAGES = [
 
 
 def main(argv):
+	if len(argv) > 1 and argv[1].startswith('-'):  # an option, never an OUT_DIR: print the usage and write nothing
+		help_asked = argv[1] in ('-h', '--help')
+		print(__doc__.strip(), file=sys.stdout if help_asked else sys.stderr)
+		return 0 if help_asked else 2
 	out = argv[1] if len(argv) > 1 else 'demo/showcase'
 	os.makedirs(os.path.join(ROOT, out), exist_ok=True)
 	scenes = []
