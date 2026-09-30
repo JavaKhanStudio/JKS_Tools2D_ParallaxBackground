@@ -17,23 +17,24 @@ def pages(path):
 	found = []
 	page = None
 	region = None
-	for line in open(path):
-		line = line.rstrip("\n")
-		if not line:
-			page = None
-			continue
-		if page is None:
-			page = {"file": line, "regions": []}
-			found.append(page)
-		elif not line.startswith(" ") and ":" in line and not page["regions"]:
-			key, value = line.split(":", 1)
-			page[key.strip()] = value.strip()
-		elif not line.startswith(" "):
-			region = {"name": line}
-			page["regions"].append(region)
-		else:
-			key, value = line.strip().split(":", 1)
-			region[key] = [int(v) for v in value.replace(" ", "").split(",")] if key in ("xy", "size") else value.strip()
+	with open(path) as f:
+		for line in f:
+			line = line.rstrip("\n")
+			if not line:
+				page = None
+				continue
+			if page is None:
+				page = {"file": line, "regions": []}
+				found.append(page)
+			elif not line.startswith(" ") and ":" in line and not page["regions"]:
+				key, value = line.split(":", 1)
+				page[key.strip()] = value.strip()
+			elif not line.startswith(" "):
+				region = {"name": line}
+				page["regions"].append(region)
+			else:
+				key, value = line.strip().split(":", 1)
+				region[key] = [int(v) for v in value.replace(" ", "").split(",")] if key in ("xy", "size") else value.strip()
 	return found
 
 

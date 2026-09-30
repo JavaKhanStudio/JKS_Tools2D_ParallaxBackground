@@ -14,7 +14,8 @@ from PIL import Image, ImageChops, ImageDraw, ImageStat
 
 round_dir, out, threshold, engine = sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4]
 label_of = {'godot': 'Godot', 'jme': 'jME'}.get(engine, engine)
-scenes = json.load(open(os.path.join(round_dir, 'round.json')))['scenes']
+with open(os.path.join(round_dir, 'round.json')) as f:
+    scenes = json.load(f)['scenes']
 w, h, label = 426, 240, 22
 sheet = Image.new('RGB', (w * 3, (h + label) * len(scenes) * 3), 'black')
 draw = ImageDraw.Draw(sheet)
@@ -43,7 +44,8 @@ for s in scenes:
 sheet.save(os.path.join(out, 'compare.png'))
 verdict = 'PASS' if worst <= threshold else 'FAIL'
 lines.append('%s: worst mean diff %.2f (threshold %.1f)' % (verdict, worst, threshold))
-open(os.path.join(out, 'report.txt'), 'w').write('\n'.join(lines) + '\n')
+with open(os.path.join(out, 'report.txt'), 'w') as f:
+    f.write('\n'.join(lines) + '\n')
 print('\n'.join(lines))
 print('compare sheet: ' + os.path.join(out, 'compare.png'))
 sys.exit(0 if verdict == 'PASS' else 1)
