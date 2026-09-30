@@ -13,8 +13,8 @@ every push and pull request on JDK 17, 21 and 25.
 
 ## Test versions (snapshots)
 
-Every push to `develop` publishes the library as a snapshot, under the `version` in `develop`'s `gradle.properties`
-(`X.Y.Z-SNAPSHOT`). A game can use it with:
+Every push to `develop` publishes the library, and the jMonkeyEngine reader (`parallax-background-jme`), as a snapshot,
+under the `version` in `develop`'s `gradle.properties` (`X.Y.Z-SNAPSHOT`). A game can use it with:
 
 ```groovy
 repositories {
@@ -44,8 +44,10 @@ snapshot builds after 90 days: a game still on one then needs a newer snapshot o
 `./gradlew -p tools/snapshot-probe resolve` resolves the current snapshot from Central the way a game does
 (`-Pparallax=<version>` for one pinned build).
 
-To try a change without publishing anything, `./gradlew :core:publishToMavenLocal` and add `mavenLocal()` to the
-game's repositories.
+To try a change without publishing anything, `./gradlew :core:publishToMavenLocal` (and `:jme:publishToMavenLocal`
+for the jME reader) and add `mavenLocal()` to the game's repositories. `./gradlew -p tools/jme-probe run` is such a
+game: a headless jME app that takes `parallax-background-jme` from `mavenLocal()` (or Central) and loads and
+scrolls a demo page with it (no pixels: jME's null renderer), then prints OK.
 
 ## Releasing X.Y.Z
 
@@ -55,7 +57,8 @@ git checkout -b release/2.1                      # stabilise, only fixes from he
 
 # set the final version
 sed -i 's/^version=.*/version=2.1.0/' gradle.properties
-# and the version in README.md's "Get it" snippets (Groovy, Kotlin, Maven): it is the published front page
+# and the version in README.md's "Get it" snippets (Groovy, Kotlin, Maven) and "In jMonkeyEngine 3" snippet:
+# it is the published front page
 git commit -am "Prepare 2.1.0"
 git push -u origin release/2.1                   # CI builds it
 
@@ -79,7 +82,9 @@ always matches what was published. A tag with a suffix (`v2.1.0-rc1`) is publish
 Each release publishes:
 
 - the library to Maven Central: `io.github.javakhanstudio:parallax-background`;
-- a GitHub release with the downloads: the library jars (+ sources, + javadoc),
+- the jMonkeyEngine reader (`engines/jme/src`) to Maven Central, under the same version:
+  `io.github.javakhanstudio:parallax-background-jme`. Its classes are public API: keep them compatible;
+- a GitHub release with the downloads: the library jars (+ sources, + javadoc), the jME reader's jars,
   `ParallaxEditor-X.Y.Z.zip` (the editor with the library and the sample projects) and `jks-parallax-godot-X.Y.Z.zip`
   (the Godot reader, `addons/jks_parallax/` at its root, made by `tools/godot-addon-zip.sh`).
 
@@ -165,5 +170,5 @@ ORG_GRADLE_PROJECT_mavenCentralUsername=... \
 ORG_GRADLE_PROJECT_mavenCentralPassword=... \
 ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat private-key.asc)" \
 ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=... \
-./gradlew :core:publishToMavenCentral --no-configuration-cache
+./gradlew :core:publishToMavenCentral :jme:publishToMavenCentral --no-configuration-cache
 ```

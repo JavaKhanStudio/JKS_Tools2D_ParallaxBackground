@@ -1,6 +1,6 @@
 name: Publish snapshot
 
-# Every push to develop publishes the library as a -SNAPSHOT, so a game can test the next version with:
+# Every push to develop publishes the library and the jME reader as a -SNAPSHOT, so a game can test the next version with:
 #   repositories { maven { url "https://central.sonatype.com/repository/maven-snapshots/" } }
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
 
       - name: Publish
         if: env.MAVEN_CENTRAL_USERNAME != ''
-        run: ./gradlew :core:publishToMavenCentral --no-configuration-cache
+        run: ./gradlew :core:publishToMavenCentral :jme:publishToMavenCentral --no-configuration-cache
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
