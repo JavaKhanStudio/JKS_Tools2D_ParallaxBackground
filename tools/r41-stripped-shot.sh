@@ -8,7 +8,7 @@
 # its original size and offset, what the editor now does for new pages). Headless in cage, on a nested Xwayland; needs
 # cage and Xwayland. Writes <page>-stretched.png and <page>-original.png, 1280x720.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 OUT="$(realpath -m "${1:-demo/build/stress/r41}")"
 mkdir -p "$OUT"
 CP="$PWD/demo/build/install/demo/lib/*"

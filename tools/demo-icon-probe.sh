@@ -4,7 +4,7 @@
 # Prints the icon's size and exits 0 when it is set, 1 when it is not. Needs cage, Xwayland, xprop.
 #   ./gradlew :demo:installDist && tools/demo-icon-probe.sh [shot.png]
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 BIN="$PWD/demo/build/install/demo/bin/demo"
 SHOT="${1:-}"
 OUT=$(mktemp -d)

@@ -6,7 +6,7 @@
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome (CHROME=, or google-chrome,
 # chromium, chromium-browser on the PATH) and python3, which serves the page.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 MODE=gate SHOT="" BUILD=1
 while [ $# -gt 0 ]; do
 	case "$1" in
