@@ -12,6 +12,7 @@ repair.
 | `editor/` | The desktop tool that builds pages and exports `.plax`. Sources `src/` and `mains/`. | 17 | `./gradlew :editor:run` (workingDir `editor/`, finds `editor/Files`) |
 | `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): the `demo/showcase` pages, SPACE variant, ENTER scene, N tint, LEFT/RIGHT scroll, R reset; `tools/demo-shots.sh` plays it off screen. `./gradlew :demo:lab` (workingDir the root): the grading lab, `demo/lab`. The board's Actions tab starts it, and the Godot demo, through `tools/start-demo.sh` |
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `tools/godot-parallax-shots.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared |
+| `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. The grading lab's `--shots` mode, split out of the demo. | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `tools/jme-parallax-shots.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - Never open a window on Simon's screen. With `ATELIER_AGENT` set, `:editor:run`, `:demo:run`, `:demo:lab`,
@@ -21,6 +22,9 @@ repair.
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
 - Repositories go in `settings.gradle` only: `FAIL_ON_PROJECT_REPOS` fails the build on a module-level one.
+- The library checks itself without `editor/` and `demo/` (r130, docs/repo-split.md): `settings.gradle` includes them
+  only when their folder exists, and nothing `core`, `engines/`, `shots/` or their gates read may point into them.
+  `tools/library-alone-check.sh` runs the gates on a clone with both deleted.
 - CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`, then
   `./gradlew :editor:distZip :demo:distZip`.
   Its `godot-frames` job runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
@@ -41,8 +45,9 @@ repair.
   which `JsonPageTest` uses.
 - A new stored field is read a third time in `engines/godot/addons/jks_parallax/plax_page.gd` (`LAYER_DEFAULTS` for a
   layer's): one it misses loads as its default in a Godot game.
-- `editor/Files/**/*.plax`, `demo/assets/**/*.plax` and `core/test-data/**` are the test fixtures for `core/test/.../PlaxFormatTest`.
-  Never re-export or overwrite them.
+- `core/test-data/**` holds the test fixtures for `core/test/.../PlaxFormatTest` and the reader rounds' atlases:
+  `samples/` is a byte copy of `editor/Files`' six `.plax` and `demo/assets` (r130), so the library checks itself
+  without `editor/` and `demo/`. Never re-export or overwrite them, nor the originals.
 - Change what a file holds and update README.md's "File formats" section in the same commit.
 
 ## Runtime (`core`)

@@ -10,7 +10,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 
 import java.nio.file.Paths;
 
-/** A headless jME game (null renderer): loads demo/assets' Hiver page through the published reader, scrolls it, exits 1 unless it has layers. */
+/** A headless jME game (null renderer): loads core/test-data/samples' Hiver page through the published reader, scrolls it, exits 1 unless it has layers. */
 public class JmeProbe extends SimpleApplication
 {
 	private PlaxBackground bg;

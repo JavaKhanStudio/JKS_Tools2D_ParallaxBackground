@@ -40,9 +40,9 @@ class PlaxFormatTest
 	static List<Path> legacyPlaxFiles() throws IOException
 	{
 		List<Path> files = new ArrayList<>();
-		for (String dir : new String[] { "editor/Files", "demo/assets" })
-			try (Stream<Path> walk = Files.walk(ROOT.resolve(dir)))
-			{files.addAll(walk.filter(p -> p.toString().endsWith(".plax")).sorted().collect(Collectors.toList()));}
+		// Copies of the editor's editor/Files and the demo's demo/assets (r130), so the library tests without them.
+		try (Stream<Path> walk = Files.walk(ROOT.resolve("core/test-data/samples")))
+		{files.addAll(walk.filter(p -> p.toString().endsWith(".plax")).sorted().collect(Collectors.toList()));}
 
 		assertFalse(files.isEmpty(), "no sample .plax found under " + ROOT);
 		return files;
@@ -127,7 +127,7 @@ class PlaxFormatTest
 	@Test
 	void format3FilesStillLoadStretched() throws IOException
 	{
-		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("demo/assets/hiver/Hiver.plax")));
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
 		original.pageModel.pageList.get(0).mirror = true;
 		original.useOriginalSize = true;
 
@@ -150,7 +150,7 @@ class PlaxFormatTest
 	@Test
 	void jsonWithoutUseOriginalSizeLoadsStretched() throws IOException
 	{
-		JsonNode saving = JSON.readTree(ROOT.resolve("demo/assets/hiver/Hiver.plaxpj").toFile()).get("saving");
+		JsonNode saving = JSON.readTree(ROOT.resolve("core/test-data/samples/hiver/Hiver.plaxpj").toFile()).get("saving");
 		assertFalse(saving.has("useOriginalSize"));
 		assertFalse(JSON.treeToValue(saving, WholePage_Model.class).useOriginalSize);
 	}
@@ -158,7 +158,7 @@ class PlaxFormatTest
 	@Test
 	void format2FilesStillLoadWithoutMirror() throws IOException
 	{
-		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("demo/assets/hiver/Hiver.plax")));
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
 		original.pageModel.pageList.get(0).flipY = true;
 		original.pageModel.pageList.get(0).mirror = true;
 
@@ -180,7 +180,7 @@ class PlaxFormatTest
 	@Test
 	void jsonExportRoundTrips() throws IOException
 	{
-		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("demo/assets/hiver/Hiver.plax")));
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
 		original.pageModel.pageList.get(0).flipY = true;
 		original.pageModel.pageList.get(0).mirror = true;
 		original.useOriginalSize = true;

@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # parallax-lab-shots.sh ROUND_DIR OUT_DIR — stills of every scene of a lab round (r73), off Simon's screen.
 #
-#   tools/parallax-lab-shots.sh demo/lab/round1 demo/build/lab/round1
+#   tools/parallax-lab-shots.sh engines/godot/tests/round1 build/lab/round1
 #
-# Runs ParallaxLab --shots in cage's headless display on a nested Xwayland (needs cage and Xwayland), from the demo's
-# installDist (built first). Writes <scene>-t0/-t6/-t12.png (1280x720, or the size a scene's "resize" gives; 0, 6 and
+# Runs the reference renderer (shots/, ParallaxShots: the grading lab's --shots mode, split out of the demo in r130) in
+# cage's headless display on a nested Xwayland (needs cage and Xwayland), from its installDist (built first). Writes <scene>-t0/-t6/-t12.png (1280x720, or the size a scene's "resize" gives; 0, 6 and
 # 12 s into the same scroll) and, with python3 and Pillow, contact.png: one row per scene. ATELIER_NO_OFFSCREEN=1 runs
 # it in a window instead.
 set -u
 cd "$(dirname "$0")/.."
 ROUND="$1" OUT="$(realpath -m "$2")"
 mkdir -p "$OUT"
-./gradlew -q :demo:installDist >/dev/null || exit 1
-CP="$PWD/demo/build/install/demo/lib/*"
-RUN="java -cp \"$CP\" jks.tools2d.parallax.demo.ParallaxLab \"$ROUND\" --shots \"$OUT\" >\"$OUT/lab.log\" 2>&1"
+./gradlew -q :shots:installDist >/dev/null || exit 1
+CP="$PWD/shots/build/install/shots/lib/*"
+RUN="java -cp \"$CP\" jks.tools2d.parallax.shots.ParallaxShots \"$ROUND\" \"$OUT\" >\"$OUT/lab.log\" 2>&1"
 if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
 	bash -c "$RUN"
 else

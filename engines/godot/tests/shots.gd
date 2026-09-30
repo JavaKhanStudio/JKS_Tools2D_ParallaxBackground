@@ -1,5 +1,5 @@
 extends Node
-## Stills of every scene of a lab round, as demo/.../ParallaxLab --shots takes them with libGDX: the same page, the
+## Stills of every scene of a lab round, as shots/.../ParallaxShots takes them with libGDX: the same page, the
 ## same 60 units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. tools/godot-parallax-shots.sh runs it and
 ## compares the two sets. A scene's "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same step as the lab,
 ## its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll.

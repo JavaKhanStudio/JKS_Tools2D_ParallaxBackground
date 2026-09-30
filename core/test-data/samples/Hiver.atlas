@@ -1,0 +1,33 @@
+Hiver.png
+size: 3647, 2110
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+parallax4
+  rotate: false
+  xy: 1, 365
+  size: 3403, 580
+  orig: 4559, 580
+  offset: 913, 0
+  index: 1
+parallax4
+  rotate: false
+  xy: 1, 947
+  size: 3645, 580
+  orig: 3645, 580
+  offset: 0, 0
+  index: 2
+parallax4
+  rotate: false
+  xy: 1, 1
+  size: 3645, 362
+  orig: 3645, 580
+  offset: 0, 82
+  index: 3
+parallax4
+  rotate: false
+  xy: 1, 1529
+  size: 3645, 580
+  orig: 3645, 580
+  offset: 0, 0
+  index: 4

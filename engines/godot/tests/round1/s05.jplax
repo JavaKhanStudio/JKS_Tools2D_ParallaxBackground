@@ -1,0 +1,148 @@
+{
+ "topHalf_top": {
+  "r": 1.0,
+  "g": 1.0,
+  "b": 1.0,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 1.0,
+  "g": 1.0,
+  "b": 1.0,
+  "a": 1.0
+ },
+ "topHalfSize": 0.5,
+ "bottomHalf_top": {
+  "r": 1.0,
+  "g": 1.0,
+  "b": 1.0,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 1.0,
+  "g": 1.0,
+  "b": 1.0,
+  "a": 1.0
+ },
+ "bottomHalfSize": 0.5,
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "pageModel": {
+  "atlasName": "PurpleFairy.atlas",
+  "outside": false,
+  "pageList": [
+   {
+    "regionName": "7",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.00631812400714084,
+    "parallaxScalingSpeedY": 0.0037908739782921536,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 60.0,
+    "decal_Y_Ratio": 21.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "6",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.011897436431441638,
+    "parallaxScalingSpeedY": 0.007138460856151052,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 50.0,
+    "decal_Y_Ratio": 4.5,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "4",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.02240364041136271,
+    "parallaxScalingSpeedY": 0.013442183113912586,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.11,
+    "decal_X_Ratio": 26.5,
+    "decal_Y_Ratio": 2.5,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "5",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.0421874993777778,
+    "parallaxScalingSpeedY": 0.025312497626666704,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 30.0,
+    "decal_Y_Ratio": -9.5,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "3",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.07944179312108952,
+    "parallaxScalingSpeedY": 0.04766507135329853,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.225,
+    "decal_X_Ratio": 20.0,
+    "decal_Y_Ratio": 7.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "1",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.14959401718646867,
+    "parallaxScalingSpeedY": 0.08975640632270741,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.345,
+    "decal_X_Ratio": 10.0,
+    "decal_Y_Ratio": 9.5,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   },
+   {
+    "regionName": "2",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.2816951990794196,
+    "parallaxScalingSpeedY": 0.16901711944765174,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 0.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0
+   }
+  ]
+ }
+}

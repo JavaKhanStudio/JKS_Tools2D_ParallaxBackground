@@ -59,9 +59,9 @@ A reader is three pieces, and the third is where the work is:
 Usage is in the README (*In Godot 4*). `godot --path engines/godot` is the demo/ game in Godot: Hiver and Printemps, SPACE cross-fades, N tints, LEFT/RIGHT
 scroll, R resets (`tools/start-demo-check.sh` presses SPACE and N off screen).
 
-**How it is checked.** `tools/godot-parallax-shots.sh` renders the same pages in libGDX (the grading lab's `--shots`)
+**How it is checked.** `tools/godot-parallax-shots.sh` renders the same pages in libGDX (`shots/`'s `ParallaxShots`, the grading lab's `--shots` split out in r130)
 and in Godot (`engines/godot/tests/shots.gd`), with the same 60 units/s scroll stepped at 1/60 s, 0, 6 and 12 s in,
-off screen, and compares them pixel by pixel. It runs four rounds: the lab's `demo/lab/round1` (18 pages from four
+off screen, and compares them pixel by pixel. It runs four rounds: `engines/godot/tests/round1`, a copy of the lab's `demo/lab/round1` (18 pages from four
 atlases), `engines/godot/tests/conformance` (7 pages for what round 1 lacks: trimmed regions with `useOriginalSize`,
 X+Y tiling with padding, Y tiling with mirrors, X tiling with mirrors and negative padding, no tiling, overlapping
 gradients with a translucent colour, and a `.plaxpj` with loose layers; three of them also scroll on Y at ±30 units/s,
@@ -113,8 +113,8 @@ ports its 60 lines (opaque, colours packed as ShapeRenderer packs them). `JmeBat
 calls, `draw(region, x, y, width, height)`, and throws on every other: a reader that starts calling another fails
 there, loudly.
 
-**How it is checked.** `tools/jme-parallax-shots.sh` renders three of the Godot check's rounds (the lab's
-`demo/lab/round1`, `engines/godot/tests/conformance` and `engines/godot/tests/transfer`, with their Y scroll, resizes,
+**How it is checked.** `tools/jme-parallax-shots.sh` renders three of the Godot check's rounds (`engines/godot/tests/round1`,
+`engines/godot/tests/conformance` and `engines/godot/tests/transfer`, with their Y scroll, resizes,
 cross-fades and tints) with libGDX and with `JmeParallaxShots`, off screen in cage, and compares them with the same
 `tools/compare-parallax-frames.py`. On 2026-09-30 (jME 3.9.0, LWJGL 3.3.6, NVIDIA): worst mean difference **0.25 /
 255** (round 1), 0.13 (conformance), 0.23 (transfer). A port with a scroll 10 % too fast (`BREAK=scroll`) scores

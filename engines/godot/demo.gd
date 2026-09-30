@@ -23,7 +23,7 @@ func _ready() -> void:
 	if args.size() > 0 and args[0].get_extension() in ["jplax", "plaxpj"]:
 		bg.load_page(args[0], args[1] if args.size() > 1 else "")
 	else:
-		var assets := ProjectSettings.globalize_path("res://").path_join("../../demo/assets")
+		var assets := ProjectSettings.globalize_path("res://").path_join("../../core/test-data/samples")
 		winter = PlaxPage.load_page(assets.path_join("hiver/Hiver.plaxpj"))
 		spring = PlaxPage.load_page(assets.path_join("printemps/Printemps.plaxpj"))
 		winter_atlas = PlaxAtlas.load_atlas(assets.path_join(winter.atlas_name))

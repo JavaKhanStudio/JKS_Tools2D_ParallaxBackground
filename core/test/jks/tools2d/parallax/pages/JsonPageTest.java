@@ -39,7 +39,7 @@ class JsonPageTest
 		}
 	}
 
-	/** Every page exported with its project: On Board's, the editor's samples and the demo's. */
+	/** Every page exported with its project: On Board's, and the editor's samples and the demo's (core/test-data/samples). */
 	static List<Path> plaxWithProject() throws IOException
 	{
 		List<Path> pages = new ArrayList<>(onBoardPages());

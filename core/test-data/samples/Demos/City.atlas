@@ -1,0 +1,33 @@
+City.png
+size: 489, 420
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+skill-desc_0000_foreground
+  rotate: false
+  xy: 1, 315
+  size: 272, 104
+  orig: 272, 104
+  offset: 0, 0
+  index: -1
+skill-desc_0001_buildings
+  rotate: false
+  xy: 1, 163
+  size: 272, 150
+  orig: 272, 150
+  offset: 0, 0
+  index: -1
+skill-desc_0002_far-buildings
+  rotate: false
+  xy: 275, 1
+  size: 213, 142
+  orig: 213, 142
+  offset: 0, 0
+  index: -1
+skill-desc_0003_bg
+  rotate: false
+  xy: 1, 1
+  size: 272, 160
+  orig: 272, 160
+  offset: 0, 0
+  index: -1

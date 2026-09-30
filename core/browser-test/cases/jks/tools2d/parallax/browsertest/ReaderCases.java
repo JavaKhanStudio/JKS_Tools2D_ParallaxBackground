@@ -124,7 +124,7 @@ final class ReaderCases
 		isTrue(draws.size() >= 4 && draws.size() <= 5, draws.size() + " draws");
 	}
 
-	/** demo/assets Hiver.atlas parallax4 #1: 3403x580 packed out of 4559x580, 913px stripped on its left. */
+	/** core/test-data/samples Hiver.atlas parallax4 #1: 3403x580 packed out of 4559x580, 913px stripped on its left. */
 	void strippedRegionKeepsItsOriginalWidthAndOffset()
 	{
 		float unit = 40f / 4559;
@@ -150,7 +150,7 @@ final class ReaderCases
 		equal(layerX + (4559 - 913) * unit, draw[0], 1e-4f, "a negative width draws leftwards from x");
 	}
 
-	/** demo/assets Printemps.atlas parallax1 #4: 3645x335 packed out of 3645x580, 142px stripped below it. */
+	/** core/test-data/samples Printemps.atlas parallax1 #4: 3645x335 packed out of 3645x580, 142px stripped below it. */
 	void strippedRegionKeepsItsOriginalHeightWhenTilingOnY()
 	{
 		float unit = 40f / 3645;

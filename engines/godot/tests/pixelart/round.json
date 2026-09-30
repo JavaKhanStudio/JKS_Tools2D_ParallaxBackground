@@ -19,13 +19,13 @@
     "at": 4,
     "seconds": 4,
     "page": "engines/godot/tests/pixelart/city-linear.jplax",
-    "atlasDir": "editor/Files/Demos"
+    "atlasDir": "core/test-data/samples/Demos"
    }
   },
   {
    "id": "p03",
    "page": "engines/godot/tests/pixelart/city-linear.jplax",
-   "atlasDir": "editor/Files/Demos",
+   "atlasDir": "core/test-data/samples/Demos",
    "name": "linear-into-nearest",
    "about": "the other way: Linear into Nearest; after the fade it is sharp",
    "transfer": {
