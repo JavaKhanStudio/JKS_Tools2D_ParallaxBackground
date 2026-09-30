@@ -33,7 +33,7 @@ IndexOutOfBounds; incoming layers did not scroll during the fade and jumped when
 every frame forever. Ask `== null` deliberately.
 act() and render() run every frame: no allocation, no streams. `layers.stream().forEach` in
 act() is in MEMORY_LANE.md §5 as a defect, not as a style note.
-See it: `./gradlew :demo:run` — SPACE switches page, N tints, LEFT/RIGHT scroll, R resets.
+See it: `./gradlew :demo:run` — the showcase pages: SPACE cross-fades a scene's variants, ENTER the next scene, N tints, LEFT/RIGHT scroll, R resets (off screen: tools/demo-shots.sh).
 THE GODOT PORT DRAWS THE SAME PAGE: engines/godot/addons/jks_parallax/plax_background.gd
 copies act(), tile(), drawRegion() and the gradients line for line (r87), and the cross-fade,
 syncTransferPositions and the tint (r94). Change how a page scrolls, tiles, fades or draws here and
@@ -277,6 +277,10 @@ A `run` task's workingDir matters: editor/ for the samples, demo/assets for the 
 Releases: develop (always -SNAPSHOT, every push publishes one) → release/X.Y → master, tagged
 vX.Y.Z. RELEASING.md is the procedure; follow it rather than inventing one. The release
 workflow REFUSES to run when the tag and gradle.properties disagree.
+Two artifacts share that version (r116): :core is parallax-background, :jme (engines/jme/src)
+is parallax-background-jme, each with its own mavenPublishing block; the release and snapshot
+workflows publish both. Its classes are public API. `./gradlew :core:publishToMavenLocal
+:jme:publishToMavenLocal && ./gradlew -p tools/jme-probe run` proves a fresh jME game uses it.
 A fix reaches a game as a snapshot, not a release (Simon, r57): push develop, and the game pins
 the timestamped build (X.Y.Z-yyyyMMdd.HHmmss-N, RELEASING.md "Test versions"). Do not raise a
 release to ship one fix. `./gradlew -p tools/snapshot-probe resolve` proves a snapshot resolves.

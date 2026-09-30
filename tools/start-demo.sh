@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # start-demo.sh libgdx|godot — opens a demo window on the desktop: the board's "Start the demo" buttons (r102,
 # .atelier/actions.toml).
-#   libgdx  demo/ (ParallaxDemo): SPACE next page, N tint, LEFT/RIGHT scroll, R reset.
+#   libgdx  demo/ (ParallaxDemo): the showcase pages, SPACE variant, ENTER next scene, N tint, LEFT/RIGHT scroll, R reset.
 #   godot   engines/godot (demo.tscn): Hiver through the Godot reader, LEFT/RIGHT scroll.
 # The board's server runs as a service, without the desktop's display variables: this script defaults them to the
 # logged-in session's (Wayland socket wayland-0, Xwayland :0 and mutter's cookie), so the window opens on the screen.
