@@ -11,7 +11,7 @@
 # channel, 0-255; default 2). Needs cage, Xwayland, python3 with Pillow. ATELIER_NO_OFFSCREEN=1 draws both on
 # $DISPLAY instead. BREAK=scroll draws jME with a scroll 10 % too fast: it must FAIL (the threshold's negative control).
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 ROOT="$PWD"
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")

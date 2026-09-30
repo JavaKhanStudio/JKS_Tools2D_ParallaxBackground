@@ -8,7 +8,7 @@
 # grade the first scene 4, the second 2, go back, reveal, regrade 5, then ENTER to the end (summary). Checks that
 # grades.json holds s01=5 and s02=2, and that a restarted lab opens on the first ungraded scene (s03).
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 ROUND="${1:-demo/lab/round1}" OUT="$(realpath -m "${2:-demo/build/lab/keys-probe}")"
 rm -rf "$OUT" && mkdir -p "$OUT/round"
 ./gradlew -q :demo:installDist >/dev/null || exit 1

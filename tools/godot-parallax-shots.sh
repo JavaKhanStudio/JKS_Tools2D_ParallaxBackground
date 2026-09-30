@@ -14,7 +14,7 @@
 # so under xvfb-run on Mesa llvmpipe, where the worst still was 0.75 / 255 (r96), so the threshold holds there too.
 # Its screen is 1920x1440: a "resize" scene asks for a window up to 1280 tall.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 ROOT="$PWD"
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")

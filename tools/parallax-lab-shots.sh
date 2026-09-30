@@ -8,7 +8,7 @@
 # 12 s into the same scroll) and, with python3 and Pillow, contact.png: one row per scene. ATELIER_NO_OFFSCREEN=1 runs
 # it in a window instead.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 ROUND="$1" OUT="$(realpath -m "$2")"
 mkdir -p "$OUT"
 ./gradlew -q :shots:installDist >/dev/null || exit 1

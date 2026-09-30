@@ -9,7 +9,7 @@
 # (ENTER, N), purple-fairy (ENTER). With python3 and Pillow, contact.png puts them on one sheet. ATELIER_NO_OFFSCREEN=1
 # runs it in a window instead.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 OUT="$(realpath -m "${1:-demo/build/demo-shots}")"
 mkdir -p "$OUT"
 ./gradlew -q :demo:installDist >/dev/null || exit 1

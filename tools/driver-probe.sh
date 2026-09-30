@@ -26,7 +26,7 @@ if port_open; then
 	exit 3
 fi
 
-cd "$ROOT/editor"
+cd "$ROOT/editor" || exit 1
 if [[ "${ATELIER_NO_OFFSCREEN:-0}" != "1" ]] && command -v cage >/dev/null; then
 	WLR_BACKENDS=headless ALSOFT_DRIVERS=null cage -- "$BIN" --driver-port="$PORT" "$@" >"$ROOT/editor/build/driver-probe.log" 2>&1 &
 else
