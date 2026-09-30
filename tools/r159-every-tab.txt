@@ -1,0 +1,34 @@
+# r159: every tab of the editor's four tabbed panes, one shot each, clicked away and back so each switch is exercised.
+#   tools/driver-probe.sh Files/Demos/OneNight.plaxpj < tools/r159-every-tab.txt
+#   Shots land in editor/build/r159/: move them aside between runs, then compare before and after.
+sleep 4
+click tab.controls
+click tab.controls.parallax
+sleep 1
+shot build/r159/controls-parallax.png
+click tab.controls.application
+sleep 1
+shot build/r159/controls-application.png
+click tab.controls.infos
+sleep 1
+shot build/r159/controls-infos.png
+click tab.addTexture
+click tab.addTexture.defaultValue
+sleep 1
+shot build/r159/addTexture-defaultValue.png
+click tab.addTexture.addingNew
+sleep 1
+shot build/r159/addTexture-addingNew.png
+click tab.textures
+sleep 1
+shot build/r159/textures.png
+click tab.background
+click tab.background.bottomSquare
+sleep 1
+shot build/r159/background-bottomSquare.png
+click tab.background.topSquare
+sleep 1
+shot build/r159/background-topSquare.png
+click tab.controls
+sleep 1
+shot build/r159/controls-back.png
