@@ -1,0 +1,34 @@
+
+city_1.zktx
+size: 512,1024
+format: RGBA8888
+filter: MipMapLinearLinear,Linear
+repeat: none
+skill-desc_0000_foreground
+  rotate: false
+  xy: 50,50
+  size: 272,104
+  orig: 272, 104
+  offset: 0, 0
+  index: -1
+skill-desc_0001_buildings
+  rotate: false
+  xy: 50,204
+  size: 272,150
+  orig: 272, 150
+  offset: 0, 0
+  index: -1
+skill-desc_0002_far-buildings
+  rotate: false
+  xy: 50,404
+  size: 213,142
+  orig: 213, 142
+  offset: 0, 0
+  index: -1
+skill-desc_0003_bg
+  rotate: false
+  xy: 50,596
+  size: 272,160
+  orig: 272, 160
+  offset: 0, 0
+  index: -1
