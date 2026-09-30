@@ -124,7 +124,8 @@ def decode_alpha(block):
 
 
 def read_zktx(path):
-	data = gzip.open(path).read()
+	with gzip.open(path) as f:
+		data = f.read()
 	length = struct.unpack('>I', data[:4])[0]
 	ktx = data[4:4 + length]
 	assert ktx[:12] == b'\xabKTX 11\xbb\r\n\x1a\n', 'not a KTX'
@@ -154,21 +155,22 @@ def decode_level(data, width, height):
 
 def atlas_pages(path):
 	pages, page = [], None
-	for line in open(path):
-		line = line.rstrip('\n')
-		if not line:
-			page = None
-		elif page is None:
-			page = {'file': line, 'header': {}, 'regions': []}
-			pages.append(page)
-		elif not line.startswith(' ') and ':' in line and not page['regions']:
-			key, value = line.split(':', 1)
-			page['header'][key.strip()] = value.strip()
-		elif not line.startswith(' '):
-			page['regions'].append({'name': line})
-		else:
-			key, value = line.strip().split(':', 1)
-			page['regions'][-1][key] = value.strip()
+	with open(path) as f:
+		for line in f:
+			line = line.rstrip('\n')
+			if not line:
+				page = None
+			elif page is None:
+				page = {'file': line, 'header': {}, 'regions': []}
+				pages.append(page)
+			elif not line.startswith(' ') and ':' in line and not page['regions']:
+				key, value = line.split(':', 1)
+				page['header'][key.strip()] = value.strip()
+			elif not line.startswith(' '):
+				page['regions'].append({'name': line})
+			else:
+				key, value = line.strip().split(':', 1)
+				page['regions'][-1][key] = value.strip()
 	return pages
 
 

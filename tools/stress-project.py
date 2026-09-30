@@ -22,13 +22,16 @@ source = sys.argv[2] if len(sys.argv) > 2 else os.path.join(root, 'demo/assets/h
 out = sys.argv[3] if len(sys.argv) > 3 else os.path.join(root, 'editor/build/stress')
 os.makedirs(out, exist_ok=True)
 
-project = json.load(open(source))
+with open(source) as f:
+    project = json.load(f)
 page = project['saving']['pageModel']
 atlas = page['atlasName']
 src_dir = os.path.dirname(source)
 atlas_path = next(p for p in (os.path.join(src_dir, atlas), os.path.join(src_dir, '..', atlas)) if os.path.exists(p))
 shutil.copy(atlas_path, out)
-for image in re.findall(r'^(\S+\.png)$', open(atlas_path).read(), re.MULTILINE):
+with open(atlas_path) as f:
+    images = re.findall(r'^(\S+\.png)$', f.read(), re.MULTILINE)
+for image in images:
     shutil.copy(os.path.join(os.path.dirname(atlas_path), image), out)
 
 rng = random.Random(count)
@@ -46,5 +49,6 @@ page['pageList'] = layers
 project['saving']['inside'] = [True] * count
 
 target = os.path.join(out, 'Stress%d.plaxpj' % count)
-json.dump(project, open(target, 'w'))
+with open(target, 'w') as f:
+    json.dump(project, f)
 print(target)
