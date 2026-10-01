@@ -18,8 +18,8 @@ repair.
   `ATELIER_NO_OFFSCREEN=1`, only when Simon asked to watch), and fail when there is no cage. A new JavaExec task calls
   `rootProject.offscreen(it)` or `rootProject.headless(it)`, or the build stops. Anything else that opens one goes
   through cage or `tools/offscreen.sh`: `tools/offscreen-lint.sh` (CI) fails a `tools/*.sh` that does neither, unless
-  it carries `# on-screen: <why>`. Cage renders on the NVIDIA GPU, a desktop window on the Intel one: compare frame
-  times of the same.
+  it carries `# on-screen: <why>` (a launch that opens no window: `# headless: <why>` above it). Cage renders on the
+  NVIDIA GPU, a desktop window on the Intel one: compare frame times of the same.
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
 - Repositories go in `settings.gradle` only: `FAIL_ON_PROJECT_REPOS` fails the build on a module-level one.

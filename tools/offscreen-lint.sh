@@ -9,6 +9,8 @@
 # `build/install/.../bin/`, godot without --headless, or Chrome/Chromium/Firefox without --headless. Such a script
 # passes when it also runs `cage --` or tools/offscreen.sh, or calls a tools/*.sh that does (tools/parallax-lab-shots.sh), or
 # carries a line `# on-screen: <why>` for a window opened on purpose (tools/start-demo.sh, browser-test.sh --open).
+# A program that opens no window (a java source launch of a converter) carries `# headless: <why>` on the line above it:
+# the marker covers the lines below it up to the next blank or comment line, and nothing else in the script (r197).
 # A nested X server on a fixed display (`Xwayland :9`, `Xvfb :1`) fails in any script: take a free one with
 # tools/nested-x.sh (r142).
 #
@@ -40,6 +42,7 @@ FIXED_X = re.compile(r'\b(Xwayland|Xvfb|Xephyr)\s+:\d')
 WRAPS = re.compile(r'\bcage\s+--|(^|[\s"\'/])offscreen\.sh\b')
 CALLS = re.compile(r'(?:^|[\s"\'(;&|])(?:\$\{?\w+\}?/|\./)?tools/([\w.-]+\.sh)\b')
 MARKER = re.compile(r'^\s*#\s*on-screen:\s*\S')
+NO_WINDOW = re.compile(r'^\s*#\s*headless:\s*\S')
 HEREDOC = re.compile(r'<<-?\s*([\'"]?)(\w+)\1')
 
 
@@ -67,6 +70,20 @@ def code_lines(path):
 def marked(path):
     with open(path, encoding='utf-8', errors='replace') as f:
         return any(MARKER.match(line) for line in f)
+
+
+def no_window_lines(path):
+    """Numbers of the lines a `# headless: <why>` comment covers: the ones below it, to the next blank or comment."""
+    out, on = set(), False
+    with open(path, encoding='utf-8', errors='replace') as f:
+        for n, line in enumerate(f, 1):
+            if NO_WINDOW.match(line):
+                on = True
+            elif not line.strip() or line.lstrip().startswith('#'):
+                on = False
+            elif on:
+                out.add(n)
+    return out
 
 
 wrapped_memo = {}
@@ -107,7 +124,10 @@ for path in scripts:
     if marked(path):
         continue
     opener = None
+    exempt = no_window_lines(path)
     for n, text, _ in lines:
+        if n in exempt:
+            continue
         for what, pattern, unless_headless in OPENERS:
             if pattern.search(text) and not (unless_headless and HEADLESS.search(text)):
                 opener = (n, what, text.strip())

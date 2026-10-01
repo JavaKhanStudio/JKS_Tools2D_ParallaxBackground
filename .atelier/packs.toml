@@ -176,7 +176,8 @@ script that opens a window runs it in cage (WLR_BACKENDS=headless) or through to
 a nested X server inside cage comes from tools/nested-x.sh (a free display: a fixed :9 broke
 two runs at once, r142).
 tools/offscreen-lint.sh (CI, job build) fails a tools/*.sh that runs java, an installDist bin/,
-godot or a browser without either, unless it carries `# on-screen: <why>` (r171).
+godot or a browser without either, unless it carries `# on-screen: <why>` (r171). A java launch
+that opens no window (a converter) passes with `# headless: <why>` on the line above it (r197).
 The editor and demo are another repository since the split (r130-r133, docs/repo-split.md):
 JKS_Tools2D_ParallaxEditor, board parallax-editor. The library's gates read core/test-data
 and draw their libGDX frames with :shots (shots/, ParallaxShots). The editor's build takes core
