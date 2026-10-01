@@ -18,20 +18,15 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.ScreenUtils;
-
-import org.lwjgl.glfw.GLFW;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
@@ -49,16 +44,10 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * <pre>
  * ./gradlew :demo:lab                                   the latest round under demo/lab
  * ./gradlew :demo:lab --args="demo/lab/round1"
- * ./gradlew :demo:lab --args="demo/lab/round1 --shots demo/build/lab/round1"   stills of every scene, then exits
  * </pre>
  *
- * A scene may also cross-fade or tint, in --shots only (r94): {@code "transfer": {"at": 4, "seconds": 4, "page": ...,
- * "atlasDir": ...}} fades into that page (no page: into the page on screen; a list of them: one after the other, r98) and {@code "tint": {"at": 4, "seconds": 4,
- * "color": [r, g, b, a]}} tints, both started {@code at} seconds into the scroll. engines/godot/tests/transfer uses them.
- * {@code "speedY": 30} also scrolls the scene up, and {@code "resize": {"at": 3, "size": [720, 1280]}} (--shots only, r95)
- * resizes the window mid-scroll: engines/godot/tests/conformance uses them.
- * The readers' frame checks do not run this mode: they run its copy, shots/.../ParallaxShots (r130), so that the
- * library checks them without the demo. Change how a scene is shot, change it there too.
+ * {@code "speedY": 30} also scrolls a scene up. Stills of a round, the lab's included, come from the library's
+ * tools/parallax-lab-shots.sh ROUND OUT, which draws them with its reference renderer, shots/.../ParallaxShots.
  * <p>
  * Keys: 1-5 grade (5 = best) and go on, ENTER/BACKSPACE next/previous, SPACE pause, LEFT/RIGHT scroll by hand, UP/DOWN
  * scroll speed, R restart the scene, H show what the scene tests.
@@ -66,10 +55,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 public class ParallaxLab extends ApplicationAdapter
 {
 	private static final float SPEED = 60, MANUAL_SPEED = 400;
-	private static final float[] SHOT_TIMES = { 0, 6, 12 };
 
 	private final Path roundDir;
-	private final Path shotsDir;
 	private final List<Scene> scenes = new ArrayList<>();
 	private final Map<String, Integer> grades = new LinkedHashMap<>();
 
@@ -85,44 +72,24 @@ public class ParallaxLab extends ApplicationAdapter
 	private static final class Scene
 	{
 		String id, page, atlasDir, about;
-		final List<Transfer> transfers = new ArrayList<>();
-		float tintAt = -1, tintSeconds, speedY, resizeAt = -1;
-		int resizeWidth, resizeHeight;
-		Color tint;
+		float speedY;
 	}
 
-	/** A cross-fade {@code at} seconds into the scroll; {@code page} null: into the page on screen. */
-	private static final class Transfer
-	{
-		float at, seconds;
-		String page, atlasDir;
-	}
-
-	public ParallaxLab(Path roundDir, Path shotsDir)
+	public ParallaxLab(Path roundDir)
 	{
 		this.roundDir = roundDir;
-		this.shotsDir = shotsDir;
 	}
 
 	public static void main(String[] args) throws IOException
 	{
-		Path round = null, shots = null;
-		for (int i = 0; i < args.length; i++)
-		{
-			if ("--shots".equals(args[i]))
-				shots = Paths.get(args[++i]);
-			else
-				round = Paths.get(args[i]);
-		}
-		if (round == null)
-			round = latestRound(Paths.get("demo/lab"));
+		Path round = args.length > 0 ? Paths.get(args[0]) : latestRound(Paths.get("demo/lab"));
 
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setTitle("Parallax lab - " + round.getFileName());
 		config.setWindowIcon("parallaxIcon.png");
 		config.setWindowedMode(1280, 720);
 		config.useVsync(true);
-		new Lwjgl3Application(new ParallaxLab(round, shots), config);
+		new Lwjgl3Application(new ParallaxLab(round), config);
 	}
 
 	private static Path latestRound(Path lab) throws IOException
@@ -146,32 +113,6 @@ public class ParallaxLab extends ApplicationAdapter
 			scene.atlasDir = s.getString("atlasDir");
 			scene.about = s.getString("about", "");
 			scene.speedY = s.getFloat("speedY", 0);
-			JsonValue resize = s.get("resize");
-			if (resize != null)
-			{
-				scene.resizeAt = resize.getFloat("at");
-				scene.resizeWidth = resize.get("size").getInt(0);
-				scene.resizeHeight = resize.get("size").getInt(1);
-			}
-			JsonValue transfers = s.get("transfer");
-			if (transfers != null)
-				for (JsonValue t = transfers.isArray() ? transfers.child : transfers; t != null; t = transfers.isArray() ? t.next : null)
-				{
-					Transfer transfer = new Transfer();
-					transfer.at = t.getFloat("at");
-					transfer.seconds = t.getFloat("seconds");
-					transfer.page = t.getString("page", null);
-					transfer.atlasDir = t.getString("atlasDir", scene.atlasDir);
-					scene.transfers.add(transfer);
-				}
-			JsonValue tint = s.get("tint");
-			if (tint != null)
-			{
-				scene.tintAt = tint.getFloat("at");
-				scene.tintSeconds = tint.getFloat("seconds");
-				float[] c = tint.get("color").asFloatArray();
-				scene.tint = new Color(c[0], c[1], c[2], c[3]);
-			}
 			scenes.add(scene);
 		}
 		readGrades();
@@ -181,13 +122,6 @@ public class ParallaxLab extends ApplicationAdapter
 		shapes = new ShapeRenderer();
 		font = new BitmapFont();
 		font.getData().setScale(1.25f);
-
-		if (shotsDir != null)
-		{
-			takeShots();
-			Gdx.app.exit();
-			return;
-		}
 
 		current = firstUngraded();
 		show(current);
@@ -344,87 +278,6 @@ public class ParallaxLab extends ApplicationAdapter
 		shapes.setColor(0, 0, 0, 0.6f);
 		shapes.rect(0, Gdx.graphics.getHeight() - height, Gdx.graphics.getWidth(), height);
 		shapes.end();
-	}
-
-	/** Stills of every scene at a few moments of the same scroll, without the HUD, for a contact sheet. */
-	private void takeShots()
-	{
-		try
-		{Files.createDirectories(shotsDir);}
-		catch (IOException e)
-		{throw new RuntimeException(e);}
-		float step = 1 / 60f;
-		heart.screenSpeedConstantX = SPEED;
-		for (int i = 0; i < scenes.size(); i++)
-		{
-			Scene scene = scenes.get(i);
-			resizeWindow(1280, 720);
-			show(i);
-			heart.screenSpeedConstantY = scene.speedY;
-			float time = 0;
-			int transferred = 0;
-			boolean tinted = false, resized = false;
-			for (float at : SHOT_TIMES)
-			{
-				for (; time < at; time += step)
-				{
-					while (transferred < scene.transfers.size() && time >= scene.transfers.get(transferred).at)
-					{
-						Transfer transfer = scene.transfers.get(transferred++);
-						WholePage_Model into = heart.currentPage;
-						if (transfer.page != null)
-						{
-							into = Utils_Page_Json.loadPage(new FileHandle(Paths.get(transfer.page).toFile()));
-							heart.relativePath = Paths.get(transfer.atlasDir).toAbsolutePath().toString();
-						}
-						heart.transfertIntoPage(into, transfer.seconds);
-					}
-					if (!resized && scene.resizeAt >= 0 && time >= scene.resizeAt)
-					{
-						resized = true;
-						resizeWindow(scene.resizeWidth, scene.resizeHeight);
-					}
-					if (!tinted && scene.tintAt >= 0 && time >= scene.tintAt)
-					{
-						tinted = true;
-						heart.parallaxReader.addColorTransfert(scene.tint, scene.tintSeconds);
-					}
-					heart.act(step);
-				}
-				ScreenUtils.clear(Color.BLACK);
-				heart.render();
-				Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
-				PixmapIO.writePNG(new FileHandle(shotsDir.resolve(scenes.get(i).id + "-t" + (int) at + ".png").toFile()), pixmap, 6, true);
-				pixmap.dispose();
-			}
-		}
-	}
-
-	/**
-	 * Resizes the window from inside create(): GLFW only reports the new size when its events are polled, and it does not
-	 * call resize() on a listener still in create(), so this waits for the size and calls it. Mesa's software X11 drawable
-	 * (llvmpipe under Xvfb, CI) keeps its old size until a buffer swap: without one, the rows past it read back black (r96).
-	 */
-	private void resizeWindow(int width, int height)
-	{
-		if (Gdx.graphics.getBackBufferWidth() == width && Gdx.graphics.getBackBufferHeight() == height)
-			return;
-		Gdx.graphics.setWindowedMode(width, height);
-		long giveUp = System.nanoTime() + 5_000_000_000L;
-		while ((Gdx.graphics.getBackBufferWidth() != width || Gdx.graphics.getBackBufferHeight() != height) && System.nanoTime() < giveUp)
-		{
-			GLFW.glfwPollEvents();
-			try
-			{Thread.sleep(10);}
-			catch (InterruptedException e)
-			{Thread.currentThread().interrupt();}
-		}
-		if (Gdx.graphics.getBackBufferWidth() != width || Gdx.graphics.getBackBufferHeight() != height)
-			throw new IllegalStateException("the window stayed " + Gdx.graphics.getBackBufferWidth() + "x" + Gdx.graphics.getBackBufferHeight()
-					+ ", not " + width + "x" + height);
-		GLFW.glfwSwapBuffers(((Lwjgl3Graphics) Gdx.graphics).getWindow().getWindowHandle());
-		Gdx.gl.glViewport(0, 0, width, height);
-		resize(width, height);
 	}
 
 	private void readGrades()
