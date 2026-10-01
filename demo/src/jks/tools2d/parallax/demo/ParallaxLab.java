@@ -89,6 +89,7 @@ public class ParallaxLab extends ApplicationAdapter
 		config.setWindowIcon("parallaxIcon.png");
 		config.setWindowedMode(1280, 720);
 		config.useVsync(true);
+		ParallaxDemo.keepX11();
 		new Lwjgl3Application(new ParallaxLab(round), config);
 	}
 

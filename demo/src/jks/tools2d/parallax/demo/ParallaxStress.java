@@ -107,6 +107,7 @@ public class ParallaxStress extends ApplicationAdapter
 		config.setWindowedMode(1280, 720);
 		config.useVsync(false);
 		config.setForegroundFPS(0);
+		ParallaxDemo.keepX11();
 		new Lwjgl3Application(new ParallaxStress(args), config);
 	}
 

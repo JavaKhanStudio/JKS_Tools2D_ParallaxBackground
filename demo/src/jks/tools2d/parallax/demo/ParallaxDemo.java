@@ -16,6 +16,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import org.lwjgl.glfw.GLFW;
+
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
@@ -54,6 +56,17 @@ public class ParallaxDemo extends ApplicationAdapter
 	public ParallaxDemo(File shotsDir)
 	{this.shotsDir = shotsDir;}
 
+	/**
+	 * Keeps the window on X11 (Xwayland on a Wayland desktop), as before LWJGL 3.3.6: its GLFW 3.4 opens a native
+	 * Wayland window whenever WAYLAND_DISPLAY is set, which libGDX 1.14 cannot place and cage draws shifted (r163).
+	 * Called before new Lwjgl3Application, whose glfwInit reads the hint. Without an X display GLFW picks for itself.
+	 */
+	static void keepX11()
+	{
+		if (System.getenv("DISPLAY") != null && GLFW.glfwPlatformSupported(GLFW.GLFW_PLATFORM_X11))
+			GLFW.glfwInitHint(GLFW.GLFW_PLATFORM, GLFW.GLFW_PLATFORM_X11);
+	}
+
 	public static void main(String[] args)
 	{
 		File shots = args.length == 2 && "--shots".equals(args[0]) ? new File(args[1]) : null;
@@ -62,6 +75,7 @@ public class ParallaxDemo extends ApplicationAdapter
 		config.setWindowIcon("parallaxIcon.png");
 		config.setWindowedMode(1280, 720);
 		config.useVsync(true);
+		keepX11();
 		new Lwjgl3Application(new ParallaxDemo(shots), config);
 	}
 
