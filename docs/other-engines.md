@@ -37,6 +37,10 @@ A reader is three pieces, and the third is where the work is:
      strip above an X-tiled layer, or to the right of a Y-tiled one.
    - The two gradients are in screen fractions (`topHalfSize` is the part left *uncovered*), drawn opaque (libGDX
      draws them without blending, so their alpha is ignored), the bottom one over the top one.
+   - A layer's `kind` is `IMAGE` (also when missing) or `EMPTY` (format 5): an `EMPTY` layer has no image, is
+     `world_width × sizeRatio` wide and `world_height × sizeRatio` high, scrolls and tiles like an image, and calls the
+     game's hook registered under its `name` once per visible tile instead of drawing. A kind the reader does not
+     know fails the load, as `Utils_Page_Json` does. `engines/godot/tests/effects` is its round.
    - The page is anchored to the screen, not to the game camera.
    - A cross-fade matches the two pages from their FRONT layer: each incoming layer takes the distance its outgoing
      counterpart has scrolled from its decal; an incoming page with more layers has back layers with no counterpart,
