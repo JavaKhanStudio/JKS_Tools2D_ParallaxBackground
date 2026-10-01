@@ -78,6 +78,17 @@ public class ParallaxShots extends ApplicationAdapter
 		this.shotsDir = shotsDir;
 	}
 
+	/**
+	 * Keeps the window on X11 (Xwayland on a Wayland desktop), as before LWJGL 3.3.6: its GLFW 3.4 opens a native
+	 * Wayland window whenever WAYLAND_DISPLAY is set, which libGDX 1.14 cannot place and cage draws shifted (r163).
+	 * Called before new Lwjgl3Application, whose glfwInit reads the hint. Without an X display GLFW picks for itself.
+	 */
+	static void keepX11()
+	{
+		if (System.getenv("DISPLAY") != null && GLFW.glfwPlatformSupported(GLFW.GLFW_PLATFORM_X11))
+			GLFW.glfwInitHint(GLFW.GLFW_PLATFORM, GLFW.GLFW_PLATFORM_X11);
+	}
+
 	public static void main(String[] args)
 	{
 		if (args.length != 2)
@@ -89,6 +100,7 @@ public class ParallaxShots extends ApplicationAdapter
 		config.setTitle("Parallax shots - " + Paths.get(args[0]).getFileName());
 		config.setWindowedMode(1280, 720);
 		config.useVsync(true);
+		keepX11();
 		new Lwjgl3Application(new ParallaxShots(Paths.get(args[0]), Paths.get(args[1])), config);
 	}
 
