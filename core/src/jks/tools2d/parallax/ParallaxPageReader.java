@@ -256,13 +256,16 @@ public class ParallaxPageReader implements Disposable
 	private void tile(ParallaxLayer layer, Batch batch, float x, float y, boolean onX, boolean onY, boolean mirror, LayerHook hook)
 	{
 		float width = layer.getWidth(), height = layer.getHeight();
-		if (width <= 0 || height <= 0)
+		boolean sequence = layer.kind == Enum_LayerKind.SEQUENCE;
+		// A SEQUENCE layer whose pads outweigh its segments is no wider than 0, its slots still drawn: once, below.
+		if ((width <= 0 && !sequence) || height <= 0)
 			return;
 
 		ParallaxParticles particles = layer.kind == Enum_LayerKind.PARTICLES ? layer.getParticles() : null;
-		// What is drawn of a tile, from its corner: the box, or the particles.
-		float left = particles == null ? 0 : particles.getMinX(), bottom = particles == null ? 0 : particles.getMinY();
-		float right = particles == null ? width : particles.getMaxX(), top = particles == null ? height : particles.getMaxY();
+		// What is drawn of a tile, from its corner: the box, the particles, or a SEQUENCE layer's slots.
+		float left = particles != null ? particles.getMinX() : sequence ? layer.getCycleLeft() : 0;
+		float right = particles != null ? particles.getMaxX() : sequence ? layer.getCycleRight() : width;
+		float bottom = particles == null ? 0 : particles.getMinY(), top = particles == null ? height : particles.getMaxY();
 
 		// A step <= 0 (e.g. a negative padding larger than the image) can't tile: draw the layer once.
 		float stepX = layer.getTotalWidth(), stepY = layer.getTotalHeight();

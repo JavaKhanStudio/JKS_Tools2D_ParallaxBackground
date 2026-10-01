@@ -80,8 +80,10 @@ Godot has to draw the same cycle from the same seed, so the generator is written
   (libGDX against Godot and jME, a game seed and a seeded cross-fade among its scenes). `tools/r183-sequence/mutate.sh`
   breaks the port 12 ways: each fails. A binary search gone wrong mostly hides under the slots drawn after it, so the
   slot walk, not the pixels, is what holds it.
-- A cycle no wider than 0 (pads more negative than its segments are wide) is not drawn at all, in core as in Godot:
-  `tile()` gives up on a layer without width before it reaches the slots.
+- A cycle no wider than 0 (pads more negative than its segments are wide) can't tile, so it is drawn once, as an
+  image layer whose step is 0 or less is, in core as in Godot (r202). Its slots run back left of its corner: `tile()`
+  culls by their real extent (`ParallaxLayer.getCycleLeft`/`getCycleRight`, walked only when slots go back), not by
+  the cycle's width. q04's `backward` layer is one, its corner past the view's right edge.
 
 ## Phases
 

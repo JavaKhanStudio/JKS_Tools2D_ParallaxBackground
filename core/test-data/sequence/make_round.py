@@ -97,12 +97,15 @@ def q04(layers):
     # No repeat: a cycle flipped upside down drawn once, from seed 0 (which starts from ZERO_SEED); a pad of -16 overlaps
     # the slots past the narrowest segment (the tower, 5.25 wide where the stone, the first, is 14), so the slots' edges
     # go back after a tower and the reader walks every slot rather than searching. Seed 20 puts towers where a search
-    # would miss 5 slots at t6 and 1 at t12, in a cycle still 43 wide (tools/r183-sequence/overlap.py: one no wider
-    # than 0 is not drawn at all).
+    # would miss 5 slots at t6 and 1 at t12, in a cycle still 43 wide (tools/r183-sequence/overlap.py). 'backward' pads
+    # -14 past every segment: its cycle is -36.8 wide, its slots running left from a corner past the view's right edge
+    # (decal 120%), so it can't tile and is drawn once, 8 or 9 slots in each still (r202; it once drew nothing).
     layers.insert(3, sequence('upside', [('stone', 2), ('bridge', 1), ('river', 1)], 0, 8, 0.3, -10, 55, 0.03,
                               flipY=True))
     layers.append(sequence('overlap', [('stone', 1), ('tower', 3), ('bridge', 2)], 20, 10, 0.35, 0, 0, 0.05,
                            padX=-16.0))
+    layers.append(sequence('backward', [('stone', 1), ('tower', 4), ('bridge', 1)], 22, 10, 0.35, 120, 30, 0.02,
+                           padX=-14.0))
 
 
 for source, out, change in [('c01', 'q01', q01), ('c02', 'q02', q02), ('c03', 'q03', q03), ('c05', 'q04', q04)]:

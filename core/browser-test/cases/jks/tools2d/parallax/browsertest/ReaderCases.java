@@ -74,6 +74,7 @@ final class ReaderCases
 				new BrowserCase("reader: shaderNumbersAreTheDrawnImages", () -> new ReaderCases().shaderNumbersAreTheDrawnImages()),
 				new BrowserCase("reader: sequenceDrawsJustTheSegmentsInViewInEveryRepeatMode", () -> new ReaderCases().sequenceDrawsJustTheSegmentsInViewInEveryRepeatMode()),
 				new BrowserCase("reader: sequenceWithAPadBackOverASegmentStillDrawsWhatShows", () -> new ReaderCases().sequenceWithAPadBackOverASegmentStillDrawsWhatShows()),
+				new BrowserCase("reader: sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce", () -> new ReaderCases().sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce()),
 				new BrowserCase("reader: sequenceMirrorFlipsEachSegmentInItsSlot", () -> new ReaderCases().sequenceMirrorFlipsEachSegmentInItsSlot()),
 				new BrowserCase("reader: sequenceCycleOfAKnownSeedIsPinned", () -> new ReaderCases().sequenceCycleOfAKnownSeedIsPinned()),
 				new BrowserCase("reader: aGameSeedRedrawsTheSequencesOfBothPages", () -> new ReaderCases().aGameSeedRedrawsTheSequencesOfBothPages()));
@@ -990,6 +991,44 @@ final class ReaderCases
 			for (int i = 0; i < expected.size(); i++)
 				for (int k = 0; k < 4; k++)
 					equal(expected.get(i)[k], drawn.get(i)[k], 1e-3f, "segment " + i + " value " + k);
+		}
+	}
+
+	/**
+	 * A padX of -10 steps back over every segment (3 to 9 wide): the cycle is no wider than 0, its slots running left
+	 * from its corner. It can't tile on X, so it is drawn once, as an image layer whose step is 0 or less is, every slot
+	 * that shows and no other; on Y it still tiles. Its corner in the view, then past its right edge: the slots it runs
+	 * back into the view are drawn even though the corner is not in it.
+	 */
+	void sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce()
+	{
+		for (int mode = 0; mode < 8; mode++)
+		{
+			// Its corner at 20.4, or at 48.4: off whole units, so no slot's edge lands on the view's, where a browser's
+			// doubles and the JVM's floats round apart.
+			float decal = mode < 4 ? 51 : 121;
+
+			boolean onX = mode % 4 == 0 || mode % 4 == 2, onY = mode % 4 == 1 || mode % 4 == 2;
+			String name = (onX && onY ? "XY" : onX ? "X" : onY ? "Y" : "none") + " at " + decal + "%";
+			ParallaxPageReader reader = reader(onX, onY);
+			reader.setWorldSize(40, 22.5f);
+			ParallaxLayer ground = sequence(42, 10);
+			ground.setPadX(-10);
+			ground.setDecalPercentX(decal);
+			reader.addLayers(list(ground));
+			isTrue(ground.getWidth() <= 0, name + ": the cycle is " + ground.getWidth() + " wide");
+			isTrue(ground.getCycleLeft() < -20, name + ": its slots reach " + ground.getCycleLeft() + " left of its corner");
+			draws.clear();
+			reader.draw(camera, batch);
+
+			List<float[]> drawn = new ArrayList<>(draws);
+			sortByRowThenX(drawn);
+			List<float[]> expected = segmentsInView(ground, false, onY);
+			isTrue(expected.size() >= 2, name + ": " + expected.size() + " slots show");
+			equal(expected.size(), drawn.size(), name + ": one draw per slot in view, the cycle once across");
+			for (int i = 0; i < expected.size(); i++)
+				for (int k = 0; k < 4; k++)
+					equal(expected.get(i)[k], drawn.get(i)[k], 1e-3f, name + ": slot " + i + " value " + k);
 		}
 	}
 

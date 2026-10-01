@@ -218,6 +218,44 @@
       "weight": 2
      }
     ]
+   },
+   {
+    "regionName": "",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.02,
+    "parallaxScalingSpeedY": 0.02,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.35,
+    "decal_X_Ratio": 120,
+    "decal_Y_Ratio": 30,
+    "padX": -14.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false,
+    "name": "backward",
+    "kind": "SEQUENCE",
+    "sequenceSeed": 22,
+    "sequenceLength": 10,
+    "sequenceSegments": [
+     {
+      "regionName": "stone",
+      "regionPosition": 0,
+      "weight": 1
+     },
+     {
+      "regionName": "tower",
+      "regionPosition": 0,
+      "weight": 4
+     },
+     {
+      "regionName": "bridge",
+      "regionPosition": 0,
+      "weight": 1
+     }
+    ]
    }
   ]
  }
