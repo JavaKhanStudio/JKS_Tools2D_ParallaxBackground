@@ -47,6 +47,15 @@ expect fail "godot with a window" "$WORK/godot-window.sh" "runs godot"
 printf '#!/usr/bin/env bash\njava -cp "$CP" jks.tools2d.parallax.shots.ParallaxShots r out\n' >"$WORK/java-window.sh"
 expect fail "java -cp outside cage" "$WORK/java-window.sh" "runs java"
 
+# A source launch of a program that opens no window (r178-particle-stress/run.sh's ToPlax, r197): `# headless: <why>`
+# above it passes it, and only it: a window opened after the next blank line still fails.
+printf '#!/usr/bin/env bash\n# headless: converts a file\njava -cp "$CP" ToPlax.java a b\njava -cp "$CP" ToPlax.java c d\n' \
+	>"$WORK/java-no-window.sh"
+expect pass "java -cp under a headless marker" "$WORK/java-no-window.sh"
+{ cat "$WORK/java-no-window.sh"; printf '\njava -cp "$CP" jks.tools2d.parallax.shots.ParallaxShots r out\n'; } \
+	>"$WORK/java-window-after-marker.sh"
+expect fail "a window after the headless marker's block" "$WORK/java-window-after-marker.sh" "ParallaxShots"
+
 # A script that hands its window to a tools/*.sh that runs cage (the editor repository's r74-probe-race.sh does,
 # through its driver-probe.sh).
 printf '#!/usr/bin/env bash\nBIN=shots/build/install/shots/bin/shots\nSHOTS_BIN="$BIN" "$ROOT/tools/parallax-lab-shots.sh" r out\n' \

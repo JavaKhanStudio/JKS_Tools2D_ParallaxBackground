@@ -16,6 +16,7 @@ sed '1s|.*|Hiver.png|' core/test-data/particles/HiverSnow.atlas > "$OUT/HiverSno
 CP=$(./gradlew -q -I tools/r178-particle-stress/classpath.gradle :core:printRuntimeClasspath | tail -1)
 # Assets-relative: the stress run's working directory is the editor's demo/assets.
 REL=$(realpath --relative-to="$EDITOR/demo/assets" "$OUT")
+# headless: ToPlax converts a .jplax to a .plax with core's Kryo, it opens no window
 java -cp "$CP" tools/r178-particle-stress/ToPlax.java core/test-data/particles/p01.jplax "$OUT/snow.plax" "$REL/HiverSnow.atlas"
 java -cp "$CP" tools/r178-particle-stress/ToPlax.java core/test-data/particles/p01.jplax "$OUT/none.plax" "$REL/HiverSnow.atlas" --no-particles
 for page in none snow; do
