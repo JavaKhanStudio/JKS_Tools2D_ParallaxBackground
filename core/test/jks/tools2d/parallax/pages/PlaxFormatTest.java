@@ -112,6 +112,9 @@ class PlaxFormatTest
 		original.pageModel.pageList.get(0).mirror = true;
 		assertFalse(original.useOriginalSize, "files older than format 4 stretch stripped regions");
 		original.useOriginalSize = true;
+		for (Parallax_Model layer : original.pageModel.pageList)
+			assertEquals(Enum_LayerKind.IMAGE, layer.kind, "files older than format 5 hold image layers");
+		original.pageModel.pageList.add(emptyLayer());
 
 		byte[] rewritten = write(original);
 		// Byte 0 is Kryo's reference marker for the page itself.
@@ -122,6 +125,61 @@ class PlaxFormatTest
 		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
 		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
 		assertTrue(reread.useOriginalSize, "useOriginalSize is stored since format 4");
+		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals(Enum_LayerKind.EMPTY, slot.kind, "kind is stored since format 5");
+		assertEquals("birds", slot.name, "name is stored since format 5");
+	}
+
+	/** An EMPTY layer between the far and near layers, named for a game's hook. */
+	static Parallax_Model emptyLayer()
+	{
+		Parallax_Model slot = new Parallax_Model();
+		slot.kind = Enum_LayerKind.EMPTY;
+		slot.name = "birds";
+		slot.sizeRatio = 0.5f;
+		slot.parallaxScalingSpeedX = 0.03f;
+		slot.decal_Y_Ratio = 40;
+		return slot;
+	}
+
+	@Test
+	void format4FilesStillLoadAsImageLayers() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.useOriginalSize = true;
+		original.pageModel.pageList.get(0).name = "named";
+
+		byte[] written = write(original, 4);
+		assertEquals(4, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		assertTrue(reread.useOriginalSize, "useOriginalSize is stored since format 4");
+		assertEquals(null, reread.pageModel.pageList.get(0).name, "format 4 has no layer name");
+		original.pageModel.pageList.get(0).name = null;
+		assertPageEquals(original, reread);
+	}
+
+	/** Writing a kind to a format that cannot hold it would load as an image: the kind's field only goes in format 5. */
+	@Test
+	void anEmptyLayerOnlyRoundTripsInFormat5() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.add(3, emptyLayer());
+
+		WholePage_Model reread = read(write(original));
+		assertPageEquals(original, reread);
+		assertEquals(Enum_LayerKind.EMPTY, reread.pageModel.pageList.get(3).kind);
+		assertEquals(Enum_LayerKind.IMAGE, reread.pageModel.pageList.get(4).kind);
+	}
+
+	private static byte[] write(WholePage_Model page, int version)
+	{
+		Kryo kryo = GVars_Serialization.prepareKryo();
+		kryo.register(WholePage_Model.class, new WholePage_Model_Serializer(version));
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try (Output output = new Output(bytes))
+		{kryo.writeObject(output, page);}
+		return bytes.toByteArray();
 	}
 
 	@Test
@@ -184,6 +242,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.get(0).flipY = true;
 		original.pageModel.pageList.get(0).mirror = true;
 		original.useOriginalSize = true;
+		original.pageModel.pageList.add(2, emptyLayer());
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
@@ -234,6 +293,8 @@ class PlaxFormatTest
 		{
 			assertEquals(expected.flipY, actual.flipY, name);
 			assertEquals(expected.mirror, actual.mirror, name);
+			assertEquals(expected.kind, actual.kind, name);
+			assertEquals(expected.name, actual.name, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

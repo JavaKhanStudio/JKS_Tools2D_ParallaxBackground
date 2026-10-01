@@ -1,6 +1,7 @@
 package jks.tools2d.parallax;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
@@ -8,6 +9,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
@@ -16,6 +18,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * <p>
  * Layers are screen-anchored: they are laid out from the left/bottom edge of the camera view, so moving the game
  * camera does not drag the background away.
+ * <p>
+ * An EMPTY layer is drawn by the game: {@link #setLayerHook} registers what draws it, under the layer's name.
  */
 public class ParallaxPageReader
 {
@@ -38,6 +42,11 @@ public class ParallaxPageReader
 	private final Color tintFrom = new Color(Color.WHITE);
 	private final Color tintTo = new Color(Color.WHITE);
 	private float tintDuration, tintElapsed;
+
+	/** What draws each EMPTY layer, by layer name. */
+	private final HashMap<String, LayerHook> hooks = new HashMap<>();
+	/** The batch color before a hook, put back after it. */
+	private final Color hookColor = new Color();
 
 	// Visible area of the camera, refreshed each draw.
 	private float viewLeft, viewBottom, viewWidth, viewHeight;
@@ -167,20 +176,36 @@ public class ParallaxPageReader
 		float originX = viewLeft + layer.currentDistanceX;
 		float originY = viewBottom + drawingHeight + layer.currentDistanceY;
 
-		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false);
+		if (layer.kind == Enum_LayerKind.EMPTY)
+		{
+			// No mirrored copy: the hook draws what it likes in each tile. Its color changes stay its own.
+			LayerHook hook = layer.name == null ? null : hooks.get(layer.name);
+			if (hook != null)
+			{
+				hookColor.set(batch.getColor());
+				tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, hook);
+				batch.setColor(hookColor);
+			}
+			return;
+		}
+
+		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
 
 		if (layer.isMirror && repeatOnX != repeatOnY)
 		{
 			// A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
 			if (repeatOnX)
-				tile(layer, batch, originX, originY + layer.padY + layer.getHeight(), true, false, true);
+				tile(layer, batch, originX, originY + layer.padY + layer.getHeight(), true, false, true, null);
 			else
-				tile(layer, batch, originX + layer.padX + layer.getWidth(), originY, false, true, true);
+				tile(layer, batch, originX + layer.padX + layer.getWidth(), originY, false, true, true, null);
 		}
 	}
 
-	/** Draws the layer at {@code (x, y)} plus every repetition, on the requested axes, that intersects the view. */
-	private void tile(ParallaxLayer layer, Batch batch, float x, float y, boolean onX, boolean onY, boolean mirror)
+	/**
+	 * Draws the layer at {@code (x, y)} plus every repetition, on the requested axes, that intersects the view; through
+	 * {@code hook} when it is not null.
+	 */
+	private void tile(ParallaxLayer layer, Batch batch, float x, float y, boolean onX, boolean onY, boolean mirror, LayerHook hook)
 	{
 		float width = layer.getWidth(), height = layer.getHeight();
 		if (width <= 0 || height <= 0)
@@ -207,7 +232,9 @@ public class ParallaxPageReader
 				if (drawX + width <= viewLeft || drawX >= viewLeft + viewWidth)
 					continue;
 
-				if (mirror)
+				if (hook != null)
+					hook.draw(batch, layer, drawX, drawY, width, height);
+				else if (mirror)
 					layer.drawMirror(batch, drawX, drawY, onX);
 				else
 					layer.draw(batch, drawX, drawY);
@@ -255,6 +282,21 @@ public class ParallaxPageReader
 			tint.set(tintFrom).lerp(tintTo, tintElapsed / tintDuration);
 		}
 	}
+
+	/**
+	 * Makes {@code hook} draw every EMPTY layer named {@code name}, in this reader's pages and the pages it fades into;
+	 * null removes it. A layer with no hook draws nothing.
+	 */
+	public void setLayerHook(String name, LayerHook hook)
+	{
+		if (hook == null)
+			hooks.remove(name);
+		else
+			hooks.put(name, hook);
+	}
+
+	public LayerHook getLayerHook(String name)
+	{return hooks.get(name);}
 
 	public float getWorldWidth()
 	{return worldWidth;}

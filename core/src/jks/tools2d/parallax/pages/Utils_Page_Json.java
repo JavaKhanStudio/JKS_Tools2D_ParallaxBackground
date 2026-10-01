@@ -106,7 +106,30 @@ public final class Utils_Page_Json
 		layer.padY = readFloat(json, "padY", layer.padY);
 		layer.padYFactor = readFloat(json, "padYFactor", layer.padYFactor);
 		layer.mirror = json.getBoolean("mirror", layer.mirror);
+		String kind = readString(json, "kind");
+		if (kind != null)
+			layer.kind = readKind(kind);
+		layer.name = readString(json, "name");
 		return layer;
+	}
+
+	/**
+	 * A string that may be missing or null: null for both. JsonValue.getString hands back a JSON null as JavaScript's
+	 * undefined in a browser, which then prints, and compares, as "undefined".
+	 */
+	private static String readString(JsonValue json, String name)
+	{
+		JsonValue value = json.get(name);
+		return value == null || value.isNull() ? null : value.asString();
+	}
+
+	/** The kind a page names; one this version does not know fails, rather than load as an image. */
+	private static Enum_LayerKind readKind(String kind)
+	{
+		for (Enum_LayerKind value : Enum_LayerKind.values())
+			if (value.name().equals(kind))
+				return value;
+		throw new GdxRuntimeException("Layer kind " + kind + " is not known here: the page was written by a newer version");
 	}
 
 	private static Color readColor(JsonValue json, Color fallback)

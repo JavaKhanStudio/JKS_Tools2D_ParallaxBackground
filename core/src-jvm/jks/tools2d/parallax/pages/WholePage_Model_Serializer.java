@@ -16,13 +16,15 @@ import com.esotericsoftware.kryo.io.Output;
  * <li>version 3: the version 2 layout with each layer's mirror stored after padYFactor.</li>
  * <li>version 4: the version 3 layout with the page's useOriginalSize stored after repeatOnY. Older files read it as
  * false.</li>
+ * <li>version 5: the version 4 layout with each layer's kind (its name, a String) and name (a String, null when unset)
+ * stored after mirror. Older files read IMAGE and null.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 4;
+	static final int CURRENT_VERSION = 5;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

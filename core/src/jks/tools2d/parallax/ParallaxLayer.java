@@ -8,14 +8,20 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
 /**
  * One scrolling plane of a parallax. Sizes are in world units: the layer is {@code worldDimension * sizeRatio} wide
- * (or high), the other dimension follows the texture aspect ratio.
+ * (or high), the other dimension follows the texture aspect ratio. An {@link Enum_LayerKind#EMPTY} layer has no
+ * texture: it is the world's size times sizeRatio, and the reader calls the game's {@link LayerHook} in its place.
  */
 public class ParallaxLayer
 {
+	public final Enum_LayerKind kind;
+	/** The key of the {@link LayerHook} an EMPTY layer is drawn by; null when the page names none. */
+	protected String name;
+
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
 	private TextureRegion region;
@@ -58,6 +64,7 @@ public class ParallaxLayer
 
 	public ParallaxLayer(List<TextureRegion> texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
 	{
+		this.kind = Enum_LayerKind.IMAGE;
 		this.isWidth = isWidth;
 		this.worldDimension = worldDimension;
 		this.worldWidth = Gvars_Parallax.getWorldWidth();
@@ -72,6 +79,21 @@ public class ParallaxLayer
 	{
 		this(singletonList(texRegion), isWidth, worldDimension, parallaxScrollRatioX, parallaxScrollRatioY, sizeRatio);
 	}
+
+	private ParallaxLayer(String name, float sizeRatio)
+	{
+		this.kind = Enum_LayerKind.EMPTY;
+		this.name = name;
+		this.isWidth = true;
+		this.worldDimension = 0;
+		this.worldWidth = Gvars_Parallax.getWorldWidth();
+		this.worldHeight = Gvars_Parallax.getWorldHeight();
+		this.sizeRatio = sizeRatio;
+	}
+
+	/** An EMPTY layer: draws nothing itself, the {@link LayerHook} registered under {@code name} draws in its place. */
+	public static ParallaxLayer empty(String name, float sizeRatio)
+	{return new ParallaxLayer(name, sizeRatio);}
 
 	private static List<TextureRegion> singletonList(TextureRegion region)
 	{
@@ -95,6 +117,7 @@ public class ParallaxLayer
 		setPadY(model.padY);
 		setPadYFactor(model.padYFactor);
 		setMirror(model.mirror);
+		setName(model.name);
 	}
 
 	public void resetPosition()
@@ -103,15 +126,20 @@ public class ParallaxLayer
 		currentDistanceY = decalPercentY * (worldHeight / 100);
 	}
 
+	/** Draws the region at (x, y); an EMPTY layer draws nothing, its hook does (ParallaxPageReader). */
 	public void draw(Batch batch, float x, float y)
-	{drawRegion(batch, x, y, flipX, flipY);}
+	{
+		if (kind == Enum_LayerKind.IMAGE)
+			drawRegion(batch, x, y, flipX, flipY);
+	}
 
 	/** Draws the mirrored copy: flipped vertically when tiling on X, horizontally when tiling on Y. */
 	public void drawMirror(Batch batch, float x, float y, boolean onX)
 	{
 		boolean fx = onX ? flipX : !flipX;
 		boolean fy = onX ? !flipY : flipY;
-		drawRegion(batch, x, y, fx, fy);
+		if (kind == Enum_LayerKind.IMAGE)
+			drawRegion(batch, x, y, fx, fy);
 	}
 
 	/** Draws the packed image in the layer's box at (x, y); a flip mirrors where it sits in the box too. */
@@ -137,7 +165,11 @@ public class ParallaxLayer
 	 */
 	public ParallaxLayer clone()
 	{
-		ParallaxLayer copy = new ParallaxLayer(new ArrayList<>(texRegion), isWidth, worldDimension, parallaxSpeedRatioX, parallaxSpeedRatioY, sizeRatio);
+		ParallaxLayer copy = kind == Enum_LayerKind.EMPTY ? new ParallaxLayer(name, sizeRatio)
+				: new ParallaxLayer(new ArrayList<>(texRegion), isWidth, worldDimension, parallaxSpeedRatioX, parallaxSpeedRatioY, sizeRatio);
+		copy.name = name;
+		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
+		copy.parallaxSpeedRatioY = parallaxSpeedRatioY;
 		copy.worldWidth = worldWidth;
 		copy.worldHeight = worldHeight;
 		copy.decalPercentX = decalPercentX;
@@ -224,10 +256,10 @@ public class ParallaxLayer
 	}
 
 	public float getRegionWidth()
-	{return regionWidth * sizeRatio;}
+	{return (kind == Enum_LayerKind.EMPTY ? worldWidth : regionWidth) * sizeRatio;}
 
 	public float getRegionHeight()
-	{return regionHeight * sizeRatio;}
+	{return (kind == Enum_LayerKind.EMPTY ? worldHeight : regionHeight) * sizeRatio;}
 
 	public float getSpeedAtRest()
 	{return speedXAtRest;}
@@ -321,8 +353,18 @@ public class ParallaxLayer
 	public void setMirror(boolean isMirror)
 	{this.isMirror = isMirror;}
 
+	/** The regions drawn; null for an EMPTY layer. */
 	public List<TextureRegion> getTexRegion()
 	{return texRegion;}
+
+	public Enum_LayerKind getKind()
+	{return kind;}
+
+	public String getName()
+	{return name;}
+
+	public void setName(String name)
+	{this.name = name;}
 
 	public boolean isUseOriginalSize()
 	{return useOriginalSize;}
@@ -331,12 +373,15 @@ public class ParallaxLayer
 	public void setUseOriginalSize(boolean useOriginalSize)
 	{
 		this.useOriginalSize = useOriginalSize;
-		setTexRegion(texRegion);
+		if (kind == Enum_LayerKind.IMAGE)
+			setTexRegion(texRegion);
 	}
 
 	/** Swaps the texture(s) drawn by this layer, keeping its world width and recomputing its height. */
 	public void setTexRegion(List<TextureRegion> texRegion)
 	{
+		if (kind == Enum_LayerKind.EMPTY)
+			throw new IllegalStateException("An EMPTY layer draws no region: its LayerHook draws in its place");
 		if (texRegion == null || texRegion.isEmpty())
 			throw new IllegalArgumentException("A parallax layer needs at least one texture region");
 
