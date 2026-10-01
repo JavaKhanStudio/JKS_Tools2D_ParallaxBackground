@@ -143,7 +143,8 @@ public class ParallaxLayer
 
 	/**
 	 * A PARTICLES layer: the reader draws {@code effect} in a box the world's size times sizeRatio, as {@code anchor}
-	 * says; a null effect draws nothing. Takes the effect over: {@link ParallaxParticles#allocate()} and starts it.
+	 * says; a null effect draws nothing. Takes the effect over: {@link ParallaxParticles#allocate()}, starts it and warms
+	 * it up ({@link ParallaxParticles#warmUp()}).
 	 */
 	public static ParallaxLayer particles(ParallaxParticles effect, Enum_ParticleAnchor anchor, float sizeRatio)
 	{
@@ -577,7 +578,10 @@ public class ParallaxLayer
 	public ParallaxParticles getParticles()
 	{return particles;}
 
-	/** Sets the effect a PARTICLES layer draws, null for none; allocates its particles and starts it. */
+	/**
+	 * Sets the effect a PARTICLES layer draws, null for none; allocates its particles, starts it and runs it on until its
+	 * particles are out ({@link ParallaxParticles#warmUp()}): the page's first frame shows them already falling.
+	 */
 	public void setParticles(ParallaxParticles effect)
 	{
 		if (effect != null && kind != Enum_LayerKind.PARTICLES)
@@ -587,6 +591,7 @@ public class ParallaxLayer
 		{
 			effect.allocate();
 			effect.start();
+			effect.warmUp();
 		}
 	}
 
