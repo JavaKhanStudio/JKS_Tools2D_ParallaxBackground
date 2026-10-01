@@ -109,50 +109,6 @@ project. A page names its atlas BY FILE NAME; a layer names an image by region n
 position among the regions sharing that name — never by name alone.
 """
 
-[tags.editor]
-label = "Editor UI"
-description = "The VisUI screens, panels, tabs and sliders"
-color = "#c3a6f0"
-sort = 30
-context = """
-editor/src/jks/tools2d/parallax/editor/: vue/Vue_Selection (start screen), vue/Vue_Edition
-(edition screen), vue/edition/VE_*.java (the panels), gvars/GVars_UI (skin, fonts, stage),
-gvars/GVars_Vue_Edition (editor state). Run it: `./gradlew :editor:run` — workingDir is
-editor/, which is how it finds the samples in editor/Files.
-COMPILING PROVES NOTHING IN THIS PACKAGE. Its recorded history is controls that do nothing:
-a "change the atlas?" dialog with empty YES *and* NO handlers, a "Change Atlas" button with
-an empty listener, a folder button with no listener at all, Add at Front/Back radios that
-only checked themselves, a VSync checkbox created twice where the displayed one had no
-listener. After wiring a control, START THE EDITOR AND USE IT.
-State is static GVars_* and there is one project at a time. Panels read the window size when
-they are BUILT, so Vue_Edition rebuilds them after a resize — anything that caches a size
-outside that rebuild goes stale with no symptom but a wrong layout.
-`VisUI.getSizes().scaleFactor = 0.6f` in GVars_UI.init mutates VisUI's GLOBAL sizes and the
-whole layout is built around it. Never set it from inside a widget: the 2019 code did it in a
-copied color picker, so every spinner's size depended on whether a picker had been built yet.
-NEVER MUTATE A SHARED SKIN STYLE. `title.getStyle().fontColor = LIGHT_GRAY` on the shared
-default style turned every label in the application gray. Copy it first — GVars_UI's
-labelStyle_Second exists for exactly that.
-GVars_UI.resize() regenerates the size-dependent FreeType font: dispose the previous one. It
-leaked two fonts per call and is called twice at startup. Same for icon textures and the
-color pickers (they hold shaders) — nothing in scene2d disposes itself.
-Sliders are libgdxutils/JksNumberSlider: the wheel changes the digit left of the text cursor.
-EVERY CONTROL HAS A NAME (setName; tab buttons via driver/Names.tabs). `--driver-port=N`
-(driver/EditorDriver) finds controls by those names, and the presenter board's scripts
-(~/Documents/GitHub/presenter) do too. Name a new control. A rename breaks those scripts.
-See it headless: `./gradlew :editor:installDist`, then `tools/driver-probe.sh <project>` reads
-commands on stdin (list, click, set, wheel, shot x.png) and runs the editor in cage, off Simon's screen.
-The speed "increment" defaults are MULTIPLIERS (0.75, 1.25) while the rest are additive — a
-range that suits one is nonsense for the other (a -0.01..0.01 range multiplied new layers'
-speed by 0.005).
-README.md's layer-settings table is the documented meaning of every control in this package:
-rename or rescale one and fix the table in the SAME commit.
-MEMORY_LANE.md §6 is the recorded history here — HISTORY, not a backlog. Its paths and
-line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
-anything you fix that it still lists as broken MOVES into its §10 then/now table rather
-than being deleted. It sorts this package by how it failed.
-"""
-
 [tags.assets]
 label = "Images & atlas"
 description = "Atlases, packing, flatten, loose PNGs, filtering"
@@ -217,51 +173,6 @@ fromAtlas=true, which is what the saver writes out; and hot reload swaps texture
 Utils_Texture.replaceTexture while #project-io owns the watcher itself.
 Compiling proves nothing here. `./gradlew :editor:run`, flatten a sample from editor/Files and
 look at the atlas it wrote.
-MEMORY_LANE.md §6 is the recorded history here — HISTORY, not a backlog. Its paths and
-line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
-anything you fix that it still lists as broken MOVES into its §10 then/now table rather
-than being deleted.
-"""
-
-# Split off from `assets` on 2026-09-12 (doubt d1, decision B). The seam between the two is
-# real and runs through Utils_Saving.flattenAndExport -> Utils_TextureAtlas.flattenProject:
-# tag a ticket that crosses it with BOTH, which is why each pack names the other.
-[tags.project-io]
-label = "Project files"
-description = "Save, export, autosave, paths, the file chooser, hot reload"
-color = "#5ec8c0"
-sort = 45
-context = """
-utils/Utils_Saving.java (under editor/src/jks/tools2d/parallax/editor/vue/edition/) is all of
-save, export, autosave and "pack textures". Also gvars/EditorPaths (every path decision),
-gvars/FVars_Extensions (plax / jplax / plaxpj), vue/edition/data/ (Project_Data,
-WholePage_Editor, Outside_Source, Position_Infos), filechooser/, filewatch/FileWatchService +
-utils/WatchedImage, and Vue_Selection's open-by-extension dispatch.
-TWO MODELS, AND THEY ARE NOT THE SAME FILE. buildWholePageForExport keeps ONLY layers whose
-image is in the atlas — that is the .plax/.jplax a game reads. buildWholePageAsProjectForSaving
-keeps EVERY layer, loose PNGs included, marking which was which in WholePage_Editor.inside.
-Write one where the other belongs and layers vanish from the export with no error anywhere.
-SEAM WITH #assets, needing both tags: exporting while any image is loose asks to flatten
-first, and on a FAILED flatten savingExport is deliberately not called — the images are still
-loose, and exporting anyway would silently drop their layers.
-NEVER RESOLVE A SAVED IMAGE PATH BY HAND. EditorPaths.resolveProjectFile does it: absolute
-as-is, relative against GVars_Vue_Edition.relativePath, falling back to the working directory
-where 2019 projects put their "packing_" folders. The 2019 "pack for moving" also rewrote
-every ATLAS region's path, and wrote files relative to wherever the editor happened to start.
-Autosave goes to EditorPaths.autoSaveFolder() — editor/Files/AutoSave from the module,
-~/.parallax-editor/autosave otherwise — stores ABSOLUTE image paths because the copy does not
-sit beside the project, and prunes by a regex anchored on this project's own prefix, so
-AUTO_<name>_night_* is not one of ours. 10 kept, every 300s of RENDERED time: the timer is
-accumulated delta in Vue_Edition.render, so it does not tick while the window is not drawing.
-packTextures and renameOutsideImage move LIVE state as well as files (imageRef urls,
-outsideTextureReserve, activeFileWatching) and cancel the old WatchedImage: miss one and the
-image hot-reloads onto a dead key. Hot reload is ONE FileWatchService thread for every watched
-image — cancel on each path change and on project close, or a queued reload fires on a
-disposed texture. Test that for real: save a PNG the open editor uses, watch the layer change.
-Every failure here is reported by a Dialogs call and nothing else; a silent return means you
-swallowed one. Gates: `./gradlew :editor:run`, export a sample from editor/Files and REOPEN
-the result, plus `./gradlew :core:test` — PlaxFormatTest reads those same samples. Never
-overwrite editor/Files/*.plax to make something pass; they are the 2019 evidence (see #format).
 MEMORY_LANE.md §6 is the recorded history here — HISTORY, not a backlog. Its paths and
 line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
 anything you fix that it still lists as broken MOVES into its §10 then/now table rather

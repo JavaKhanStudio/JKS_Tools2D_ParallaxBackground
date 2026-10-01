@@ -126,6 +126,8 @@ So moving `demo/` and `editor/` out as they are leaves `core`'s tests and both f
    repository on `develop`), or builds `core` from `../JKS_Tools2D_ParallaxBackground` when that checkout is there;
    its `tools/sibling-core-check.sh` proves a change to that `core` shows in `:editor:run`, and `-PparallaxFromCentral`
    takes the artifact instead. Its version went on from 2.5.0 on a line of its own. Until phase 3, `editor/` and
-   `demo/` are in both repositories: a change to one of them goes to the editor repository.
+   `demo/` are in both repositories: a change to one of them goes to the editor repository. Its tasks are on the board
+   `parallax-editor`, a sub board of `parallax` split off with `#editor` and `#project-io` (their 33 tickets, closed
+   ones too; the packs in its `.atelier/packs.toml`), worked by the same members (Simon, r132).
 3. Here: delete `editor/` and `demo/`; `release.yml` stops attaching the editor zip; README (module map, code map,
    downloads), AGENTS.md, RELEASING.md and the board's context packs follow.
