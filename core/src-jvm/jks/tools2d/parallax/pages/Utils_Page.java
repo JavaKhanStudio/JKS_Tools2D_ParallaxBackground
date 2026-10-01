@@ -33,6 +33,10 @@ public final class Utils_Page
 		{StreamUtils.closeQuietly(input);}
 	}
 
+	/**
+	 * The stored form of a loaded layer, for a page saved from its layers (the editor's): everything the layer was set
+	 * up from, its kind, name and particle files included. An IMAGE layer's region is not on it, the caller names it.
+	 */
 	public static Parallax_Model buildFromPage(ParallaxLayer page, String regionName, int region_Position)
 	{
 		Parallax_Model model = new Parallax_Model();
@@ -51,6 +55,11 @@ public final class Utils_Page
 		model.padY = page.getPadY();
 		model.padYFactor = page.getPadYFactor();
 		model.mirror = page.isMirror();
+		model.kind = page.getKind();
+		model.name = page.getName();
+		model.particlesLibgdx = page.getParticlesLibgdx();
+		model.particlesGodot = page.getParticlesGodot();
+		model.particlesAnchor = page.getAnchor();
 		return model;
 	}
 }
