@@ -33,7 +33,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 LAYER_FIELDS = ['regionName', 'regionPosition', 'flipX', 'flipY', 'parallaxScalingSpeedX', 'parallaxScalingSpeedY',
                 'speedXAtRest', 'sizeRatio', 'decal_X_Ratio', 'decal_Y_Ratio', 'padX', 'padXFactor', 'padY',
-                'padYFactor', 'mirror', 'kind', 'name']
+                'padYFactor', 'mirror', 'kind', 'name', 'particlesLibgdx', 'particlesGodot', 'particlesAnchor']
 PAGE_FIELDS = ['topHalf_top', 'topHalf_bottom', 'topHalfSize', 'bottomHalf_top', 'bottomHalf_bottom',
                'bottomHalfSize', 'repeatOnX', 'repeatOnY', 'useOriginalSize']
 
@@ -98,12 +98,13 @@ def empty(name, speed=0.02, size=1.0, dx=0.0, dy=0.0, speed_y=None, rest=0.0, pa
     return out
 
 
-def is_empty(l):
-    return l.get('kind') == 'EMPTY'
+def has_image(l):
+    """An IMAGE layer (the default); EMPTY and PARTICLES layers (formats 5 and 6) have no region."""
+    return l.get('kind', 'IMAGE') == 'IMAGE'
 
 
 def label(l):
-    return f"EMPTY '{l.get('name')}'" if is_empty(l) else f"{l['regionName']}#{l['regionPosition']}"
+    return f"{l['regionName']}#{l['regionPosition']}" if has_image(l) else f"{l['kind']} '{l.get('name')}'"
 
 
 def page_of(atlas, layer_list, sky=None, ground=None, top_size=0.5, bottom_size=0.5, original_size=None):
@@ -163,8 +164,24 @@ def lint(page, atlas_dir=None):
         if l['sizeRatio'] < 0.5 and page.get('repeatOnX', True) and l['padX'] == 0:
             problems.append(f"layer {i} is {l['sizeRatio']:.2f} worlds wide and tiled: its repeat shows"
                             f" {1 / l['sizeRatio']:.0f} times a screen")
+    problems += particle_faults(page, atlas_dir)
     if atlas_dir is not None:
         problems += layout(page, atlas_dir)
+    return problems
+
+
+def particle_faults(page, atlas_dir):
+    """A PARTICLES layer draws nothing in libGDX without a .p, and its .p is looked up beside the page's atlas."""
+    problems = []
+    for i, l in enumerate(layers(page)):
+        if l.get('kind') != 'PARTICLES':
+            continue
+        effect = l.get('particlesLibgdx')
+        if not effect:
+            problems.append(f"layer {i} ({label(l)}) names no libGDX effect (particlesLibgdx): it draws nothing")
+        elif atlas_dir is not None and not os.path.exists(os.path.join(ROOT, atlas_dir, effect)):
+            problems.append(f"layer {i} ({label(l)}): no {os.path.relpath(os.path.join(ROOT, atlas_dir, effect), ROOT)}"
+                            f" beside the atlas: it draws nothing")
     return problems
 
 
@@ -215,7 +232,7 @@ def _measure_layers(page, regions, regions_tool):
     original = page.get('useOriginalSize', False)
     sheets, placed, problems, stripped = {}, [], [], []
     for i, l in enumerate(layers(page)):
-        if is_empty(l):  # no image: it covers nothing, and its hook draws whatever the game wants there
+        if not has_image(l):  # it covers nothing: its hook or its particles draw there, never a solid band
             continue
         r = regions.get((l['regionName'], l['regionPosition']))
         if r is None:
@@ -349,7 +366,7 @@ def describe(page):
         prev = sx or prev
         region = label(l)
         y_over_x = l['parallaxScalingSpeedY'] / sx if sx else 0
-        marks = (' flip' if l['flipX'] else '') + (' mirror' if l.get('mirror') and not is_empty(l) else '')
+        marks = (' flip' if l['flipX'] else '') + (' mirror' if l.get('mirror') and has_image(l) else '')
         out.append(f"  {i:2d} {region:<16} speed {sx:.4f} {step:<6} y/x {y_over_x:.2f} rest {l['speedXAtRest']:6.1f}"
                    f" size {l['sizeRatio']:5.2f} decal {l['decal_X_Ratio']:6.1f},{l['decal_Y_Ratio']:6.1f}{marks}")
     return '\n'.join(out)
