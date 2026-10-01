@@ -1,6 +1,7 @@
 package jks.tools2d.parallax;
 
 import jks.tools2d.parallax.pages.Enum_LayerKind;
+import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 
 /**
  * Which engine draws which kind of layer, and why one does not (docs/effect-layers.md, "Saying what an engine cannot
@@ -25,7 +26,10 @@ public final class EffectSupport
 	private EffectSupport()
 	{}
 
-	/** True when {@code engine} draws a layer of {@code kind}; an EMPTY layer is drawn by the game's hook everywhere. */
+	/**
+	 * True when {@code engine} draws a layer of {@code kind}; an EMPTY layer is drawn by the game's hook everywhere. For
+	 * a SHADER layer, {@link #draws(Enum_ShaderEffect, Engine)} says whether its effect is drawn too.
+	 */
 	public static boolean draws(Enum_LayerKind kind, Engine engine)
 	{return whyNot(kind, engine) == null;}
 
@@ -43,4 +47,16 @@ public final class EffectSupport
 				return null;
 		}
 	}
+
+	/**
+	 * True when {@code engine} draws a SHADER layer's image through {@code effect}. Every effect is drawn by all four:
+	 * engines/godot/tests/shaders compares Godot's and jME's frames with libGDX's (tools/godot-parallax-shots.sh,
+	 * tools/jme-parallax-shots.sh), and the browser compiles the libGDX shaders, GLSL ES 1.0, as WebGL.
+	 */
+	public static boolean draws(Enum_ShaderEffect effect, Engine engine)
+	{return whyNot(effect, engine) == null;}
+
+	/** Why {@code engine} draws a SHADER layer without {@code effect}, for a person to read; null when it draws it. */
+	public static String whyNot(Enum_ShaderEffect effect, Engine engine)
+	{return null;}
 }

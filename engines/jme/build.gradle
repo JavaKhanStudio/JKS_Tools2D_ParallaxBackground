@@ -17,7 +17,7 @@ tasks.withType(JavaCompile).configureEach {
 sourceSets {
     main {
         java.srcDirs = ['src']
-        resources.srcDirs = []
+        resources.srcDirs = ['resources']
     }
     // The frame runner of tools/jme-parallax-shots.sh, and a demo: not part of what a game copies.
     shots {

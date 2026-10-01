@@ -1,0 +1,29 @@
+// A SHADER layer's effect (Enum_ShaderEffect) on JmeBatch's quads: core's GdxLayerEffects, in jME. JmeLayerEffects sets
+// the parameters from GdxLayerEffects.uniforms. Blending, culling and depth are set as JmeBatch sets its own materials'.
+MaterialDef ParallaxEffect {
+
+    MaterialParameters {
+        Texture2D ColorMap
+        // The region's u, v, u2, v2 (v at the image's top).
+        Vector4 Region
+        // The drawn image's width and height in world units.
+        Vector2 Size
+        // Amplitude, wavelength, phase.
+        Vector3 Effect
+        // FOG; WAVE when false.
+        Boolean Fog
+    }
+
+    Technique {
+        VertexShader   GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/ParallaxEffect.vert
+        FragmentShader GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/ParallaxEffect.frag
+
+        WorldParameters {
+            WorldViewProjectionMatrix
+        }
+
+        Defines {
+            FOG : Fog
+        }
+    }
+}

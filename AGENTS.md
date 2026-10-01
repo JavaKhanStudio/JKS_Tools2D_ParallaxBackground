@@ -74,6 +74,13 @@ repair.
 - An `EMPTY` layer (`Enum_LayerKind`, format 5) has no image: the reader calls the game's `LayerHook` per tile in its
   place, and so do `plax_background.gd` (`set_layer_hook`) and jME. A new layer kind goes in `Enum_LayerKind` (append
   only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/godot/tests` (`effects` is EMPTY's).
+- A `SHADER` layer's effects (`Enum_ShaderEffect`, format 7) are written three times, line for line:
+  `core/src/.../GdxLayerEffects.java` (GLSL ES 1.0, WebGL too), `engines/godot/addons/jks_parallax/plax_effects.gd`
+  and `engines/jme/resources/.../ParallaxEffect.frag`, all fed `GdxLayerEffects.uniforms`. Change one, change all
+  three, and run both frame checks on `engines/godot/tests/shaders`; a new effect goes in `Enum_ShaderEffect` (append
+  only), `plax_effects.gd`'s `EFFECTS` and that round, strong enough that leaving it out fails
+  (`tools/r180-shader-round/strength.sh`). The reader draws them through the engine's `LayerEffects`, never
+  `Batch.setShader`, which `JmeBatch` throws on.
 - The browser suite's `ReaderCases` checks tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs it in `:core:test`. Cover all four repeat modes (X, Y, XY, none).
 

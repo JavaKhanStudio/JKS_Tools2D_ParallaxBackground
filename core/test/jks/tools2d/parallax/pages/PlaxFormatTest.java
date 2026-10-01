@@ -116,6 +116,7 @@ class PlaxFormatTest
 			assertEquals(Enum_LayerKind.IMAGE, layer.kind, "files older than format 5 hold image layers");
 		original.pageModel.pageList.add(emptyLayer());
 		original.pageModel.pageList.add(particleLayer());
+		original.pageModel.pageList.add(shaderLayer());
 
 		byte[] rewritten = write(original);
 		// Byte 0 is Kryo's reference marker for the page itself.
@@ -126,13 +127,62 @@ class PlaxFormatTest
 		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
 		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
 		assertTrue(reread.useOriginalSize, "useOriginalSize is stored since format 4");
-		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
+		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
 		assertEquals(Enum_LayerKind.EMPTY, slot.kind, "kind is stored since format 5");
 		assertEquals("birds", slot.name, "name is stored since format 5");
-		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
 		assertEquals("effects/snow.p", snow.particlesLibgdx, "the libGDX effect is stored since format 6");
 		assertEquals("effects/snow.tscn", snow.particlesGodot, "the Godot scene is stored since format 6");
 		assertEquals(Enum_ParticleAnchor.VIEW, snow.particlesAnchor, "the anchor is stored since format 6");
+		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals(Enum_LayerKind.SHADER, fog.kind, "SHADER is a kind since format 7");
+		assertEquals(Enum_ShaderEffect.FOG, fog.shaderEffect, "the effect is stored since format 7");
+		assertEquals(0.6f, fog.shaderAmplitude, "its amplitude");
+		assertEquals(7.5f, fog.shaderWavelength, "its wavelength");
+		assertEquals(-1.25f, fog.shaderSpeed, "its speed");
+	}
+
+	/** A SHADER layer drawing an atlas region through FOG. */
+	static Parallax_Model shaderLayer()
+	{
+		Parallax_Model fog = new Parallax_Model();
+		fog.kind = Enum_LayerKind.SHADER;
+		fog.regionName = "parallax4";
+		fog.regionPosition = 1;
+		fog.shaderEffect = Enum_ShaderEffect.FOG;
+		fog.shaderAmplitude = 0.6f;
+		fog.shaderWavelength = 7.5f;
+		fog.shaderSpeed = -1.25f;
+		fog.sizeRatio = 0.8f;
+		fog.parallaxScalingSpeedX = 0.04f;
+		return fog;
+	}
+
+	/** Format 6 has no shader fields: written there, a layer reads WAVE and no numbers. */
+	@Test
+	void format6FilesStillLoadWithoutShaders() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.add(particleLayer());
+		Parallax_Model layer = original.pageModel.pageList.get(0);
+		layer.shaderEffect = Enum_ShaderEffect.FOG;
+		layer.shaderAmplitude = 1;
+		layer.shaderWavelength = 2;
+		layer.shaderSpeed = 3;
+
+		byte[] written = write(original, 6);
+		assertEquals(6, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		Parallax_Model rereadLayer = reread.pageModel.pageList.get(0);
+		assertEquals(Enum_ShaderEffect.WAVE, rereadLayer.shaderEffect, "format 6 has no shader effect");
+		assertEquals(0, rereadLayer.shaderAmplitude);
+		assertEquals(0, rereadLayer.shaderWavelength);
+		assertEquals(0, rereadLayer.shaderSpeed);
+		layer.shaderEffect = Enum_ShaderEffect.WAVE;
+		layer.shaderAmplitude = layer.shaderWavelength = layer.shaderSpeed = 0;
+		assertPageEquals(original, reread);
+		assertEquals("effects/snow.p", reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1).particlesLibgdx);
 	}
 
 	/** A PARTICLES layer naming an effect per engine, emitted from the view. */
@@ -289,6 +339,7 @@ class PlaxFormatTest
 		original.useOriginalSize = true;
 		original.pageModel.pageList.add(2, emptyLayer());
 		original.pageModel.pageList.add(4, particleLayer());
+		original.pageModel.pageList.add(5, shaderLayer());
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
@@ -344,6 +395,10 @@ class PlaxFormatTest
 			assertEquals(expected.particlesLibgdx, actual.particlesLibgdx, name);
 			assertEquals(expected.particlesGodot, actual.particlesGodot, name);
 			assertEquals(expected.particlesAnchor, actual.particlesAnchor, name);
+			assertEquals(expected.shaderEffect, actual.shaderEffect, name);
+			assertEquals(expected.shaderAmplitude, actual.shaderAmplitude, name);
+			assertEquals(expected.shaderWavelength, actual.shaderWavelength, name);
+			assertEquals(expected.shaderSpeed, actual.shaderSpeed, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

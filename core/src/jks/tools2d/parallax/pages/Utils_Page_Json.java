@@ -115,6 +115,12 @@ public final class Utils_Page_Json
 		String anchor = readString(json, "particlesAnchor");
 		if (anchor != null)
 			layer.particlesAnchor = readAnchor(anchor);
+		String effect = readString(json, "shaderEffect");
+		if (effect != null)
+			layer.shaderEffect = readEffect(effect);
+		layer.shaderAmplitude = readFloat(json, "shaderAmplitude", layer.shaderAmplitude);
+		layer.shaderWavelength = readFloat(json, "shaderWavelength", layer.shaderWavelength);
+		layer.shaderSpeed = readFloat(json, "shaderSpeed", layer.shaderSpeed);
 		return layer;
 	}
 
@@ -143,6 +149,14 @@ public final class Utils_Page_Json
 			if (value.name().equals(anchor))
 				return value;
 		throw new GdxRuntimeException("Particle anchor " + anchor + " is not known here: the page was written by a newer version");
+	}
+
+	private static Enum_ShaderEffect readEffect(String effect)
+	{
+		for (Enum_ShaderEffect value : Enum_ShaderEffect.values())
+			if (value.name().equals(effect))
+				return value;
+		throw new GdxRuntimeException("Shader effect " + effect + " is not known here: the page was written by a newer version");
 	}
 
 	private static Color readColor(JsonValue json, Color fallback)

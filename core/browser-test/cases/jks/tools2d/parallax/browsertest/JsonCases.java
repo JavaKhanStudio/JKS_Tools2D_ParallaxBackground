@@ -11,6 +11,7 @@ import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
+import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.Parallax_Model;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -32,6 +33,8 @@ final class JsonCases
 		cases.add(new BrowserCase("json: unknownKindFails", JsonCases::unknownKindFails));
 		cases.add(new BrowserCase("json: particleLayerKeepsItsEffectsAndAnchor", JsonCases::particleLayerKeepsItsEffectsAndAnchor));
 		cases.add(new BrowserCase("json: unknownAnchorFails", JsonCases::unknownAnchorFails));
+		cases.add(new BrowserCase("json: shaderLayerKeepsItsEffectAndNumbers", JsonCases::shaderLayerKeepsItsEffectAndNumbers));
+		cases.add(new BrowserCase("json: unknownEffectFails", JsonCases::unknownEffectFails));
 		return cases;
 	}
 
@@ -131,5 +134,38 @@ final class JsonCases
 			return;
 		}
 		throw new AssertionError("a page with an unknown anchor loaded");
+	}
+
+	static void shaderLayerKeepsItsEffectAndNumbers()
+	{
+		WholePage_Model page = Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"regionName\":\"sky\"},"
+				+ "{\"kind\":\"SHADER\",\"regionName\":\"sea\",\"shaderEffect\":\"FOG\",\"shaderAmplitude\":0.35,"
+				+ "\"shaderWavelength\":6.5,\"shaderSpeed\":-0.7}]}}");
+
+		Parallax_Model sky = page.pageModel.pageList.get(0);
+		equal(Enum_ShaderEffect.WAVE, sky.shaderEffect, "an image layer reads the default effect");
+		equal(0, sky.shaderWavelength, 0, "and no numbers");
+		Parallax_Model sea = page.pageModel.pageList.get(1);
+		equal(Enum_LayerKind.SHADER, sea.kind, "kind");
+		equal("sea", sea.regionName, "a SHADER layer names its region");
+		equal(Enum_ShaderEffect.FOG, sea.shaderEffect, "effect");
+		isTrue(Float.floatToIntBits(0.35f) == Float.floatToIntBits(sea.shaderAmplitude), "amplitude " + sea.shaderAmplitude);
+		isTrue(Float.floatToIntBits(6.5f) == Float.floatToIntBits(sea.shaderWavelength), "wavelength " + sea.shaderWavelength);
+		isTrue(Float.floatToIntBits(-0.7f) == Float.floatToIntBits(sea.shaderSpeed), "speed " + sea.shaderSpeed);
+	}
+
+	/** An effect added later must not load as another in an older game. */
+	static void unknownEffectFails()
+	{
+		try
+		{
+			Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"kind\":\"SHADER\",\"shaderEffect\":\"BLOOM\"}]}}");
+		}
+		catch (GdxRuntimeException e)
+		{
+			isTrue(e.getMessage().contains("BLOOM"), e.getMessage());
+			return;
+		}
+		throw new AssertionError("a page with an unknown effect loaded");
 	}
 }

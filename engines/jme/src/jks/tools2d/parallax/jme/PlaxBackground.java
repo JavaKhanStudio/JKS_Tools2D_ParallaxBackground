@@ -30,7 +30,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 /**
  * A parallax page behind a jME scene: core's {@code Parallax_Heart}, with jME drawing. The page is scrolled, tiled,
  * cross-faded and tinted by core's own {@link ParallaxPageReader}; {@link JmeBatch} and two {@link JmeGradient}s draw
- * it, in a viewport rendered before the application's, which stops clearing its colour.
+ * it, its SHADER layers through {@link JmeLayerEffects}, in a viewport rendered before the application's, which stops clearing its colour.
  * <pre>
  * PlaxBackground bg = new PlaxBackground();
  * stateManager.attach(bg);
@@ -103,6 +103,7 @@ public class PlaxBackground extends BaseAppState
 		viewPort.attachScene(root);
 		app.getViewPort().setClearColor(false);
 		batch = new JmeBatch(assets, layers, 2);
+		reader.setLayerEffects(new JmeLayerEffects(assets));
 		resize(appCamera.getWidth(), appCamera.getHeight());
 		if (pendingPage != null)
 			setPage(pendingPage, pendingAtlas);

@@ -11,7 +11,7 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 
 /**
- * Runs {@link BrowserSuite} once the assets are loaded and writes one row per case into the page, then a summary line
+ * Runs {@link BrowserSuite} and {@link WebGlCases} once the assets are loaded and writes one row per case into the page, then a summary line
  * {@code <pre id="summary">} that tools/browser-test.sh reads: "browser-tests: N passed, M failed". The canvas stays
  * green when every case passed, red otherwise.
  */
@@ -26,7 +26,9 @@ public class BrowserTestApp extends ApplicationAdapter
 		Element table = document.createTableElement();
 		table.setAttribute("style", "font: 13px monospace; border-collapse: collapse");
 		int ok = 0, failed = 0;
-		for (BrowserCase test : BrowserSuite.all(new AssetFixtures()))
+		List<BrowserCase> cases = new ArrayList<>(BrowserSuite.all(new AssetFixtures()));
+		cases.addAll(WebGlCases.all());
+		for (BrowserCase test : cases)
 		{
 			String error = null;
 			try

@@ -33,7 +33,8 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 LAYER_FIELDS = ['regionName', 'regionPosition', 'flipX', 'flipY', 'parallaxScalingSpeedX', 'parallaxScalingSpeedY',
                 'speedXAtRest', 'sizeRatio', 'decal_X_Ratio', 'decal_Y_Ratio', 'padX', 'padXFactor', 'padY',
-                'padYFactor', 'mirror', 'kind', 'name', 'particlesLibgdx', 'particlesGodot', 'particlesAnchor']
+                'padYFactor', 'mirror', 'kind', 'name', 'particlesLibgdx', 'particlesGodot', 'particlesAnchor',
+                'shaderEffect', 'shaderAmplitude', 'shaderWavelength', 'shaderSpeed']
 PAGE_FIELDS = ['topHalf_top', 'topHalf_bottom', 'topHalfSize', 'bottomHalf_top', 'bottomHalf_bottom',
                'bottomHalfSize', 'repeatOnX', 'repeatOnY', 'useOriginalSize']
 
@@ -99,8 +100,9 @@ def empty(name, speed=0.02, size=1.0, dx=0.0, dy=0.0, speed_y=None, rest=0.0, pa
 
 
 def has_image(l):
-    """An IMAGE layer (the default); EMPTY and PARTICLES layers (formats 5 and 6) have no region."""
-    return l.get('kind', 'IMAGE') == 'IMAGE'
+    """An IMAGE layer (the default) or a SHADER one (format 7, an image drawn through an effect); EMPTY and PARTICLES
+    layers (formats 5 and 6) have no region."""
+    return l.get('kind', 'IMAGE') in ('IMAGE', 'SHADER')
 
 
 def label(l):
@@ -165,6 +167,7 @@ def lint(page, atlas_dir=None):
             problems.append(f"layer {i} is {l['sizeRatio']:.2f} worlds wide and tiled: its repeat shows"
                             f" {1 / l['sizeRatio']:.0f} times a screen")
     problems += particle_faults(page, atlas_dir)
+    problems += shader_faults(page)
     if atlas_dir is not None:
         problems += layout(page, atlas_dir)
     return problems
@@ -182,6 +185,22 @@ def particle_faults(page, atlas_dir):
         elif atlas_dir is not None and not os.path.exists(os.path.join(ROOT, atlas_dir, effect)):
             problems.append(f"layer {i} ({label(l)}): no {os.path.relpath(os.path.join(ROOT, atlas_dir, effect), ROOT)}"
                             f" beside the atlas: it draws nothing")
+    return problems
+
+
+def shader_faults(page):
+    """A SHADER layer with no wavelength draws its image without its effect; FOG thins by 0 to 1, no further."""
+    problems = []
+    for i, l in enumerate(layers(page)):
+        if l.get('kind') != 'SHADER':
+            continue
+        effect = l.get('shaderEffect', 'WAVE')
+        if not l.get('shaderWavelength', 0) > 0:
+            problems.append(f"layer {i} ({label(l)}) has no shaderWavelength: it draws its image without its {effect}")
+        amplitude = l.get('shaderAmplitude', 0)
+        if effect == 'FOG' and not 0 <= amplitude <= 1:
+            problems.append(f"layer {i} ({label(l)}): FOG thins by 0 to 1, its shaderAmplitude {amplitude:g} reads as"
+                            f" {min(1, max(0, amplitude)):g}")
     return problems
 
 
@@ -234,6 +253,9 @@ def _measure_layers(page, regions, regions_tool):
     for i, l in enumerate(layers(page)):
         if not has_image(l):  # it covers nothing: its hook or its particles draw there, never a solid band
             continue
+        if l.get('kind') == 'SHADER' and l.get('shaderEffect') == 'FOG' and l.get('shaderAmplitude', 0) > 0:
+            continue  # its opacity drifts: it covers nothing for sure
+
         r = regions.get((l['regionName'], l['regionPosition']))
         if r is None:
             problems.append(f"layer {i}: no region {l['regionName']}#{l['regionPosition']}"

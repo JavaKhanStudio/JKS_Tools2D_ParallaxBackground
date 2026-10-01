@@ -10,13 +10,15 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
+import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
 /**
  * One scrolling plane of a parallax. Sizes are in world units: the layer is {@code worldDimension * sizeRatio} wide
  * (or high), the other dimension follows the texture aspect ratio. An {@link Enum_LayerKind#EMPTY} layer has no
  * texture: it is the world's size times sizeRatio, and the reader calls the game's {@link LayerHook} in its place. A
- * {@link Enum_LayerKind#PARTICLES} layer is the same box, and the reader draws its {@link ParallaxParticles} there.
+ * {@link Enum_LayerKind#PARTICLES} layer is the same box, and the reader draws its {@link ParallaxParticles} there. A
+ * {@link Enum_LayerKind#SHADER} layer is an image layer the reader draws through its {@link Enum_ShaderEffect}.
  */
 public class ParallaxLayer
 {
@@ -30,6 +32,10 @@ public class ParallaxLayer
 	private Enum_ParticleAnchor anchor = Enum_ParticleAnchor.LAYER;
 	/** The effect files the page names for a PARTICLES layer, kept so a page saved from its layers names them again. */
 	private String particlesLibgdx, particlesGodot;
+
+	/** The effect a SHADER layer's image is drawn through, and its numbers: see {@link Enum_ShaderEffect}. */
+	private Enum_ShaderEffect shaderEffect = Enum_ShaderEffect.WAVE;
+	private float shaderAmplitude, shaderWavelength, shaderSpeed;
 
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
@@ -72,8 +78,14 @@ public class ParallaxLayer
 	protected boolean isMirror;
 
 	public ParallaxLayer(List<TextureRegion> texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
+	{this(Enum_LayerKind.IMAGE, texRegion, isWidth, worldDimension, parallaxScrollRatioX, parallaxScrollRatioY, sizeRatio);}
+
+	/** An IMAGE or a SHADER layer: one that draws a region. */
+	public ParallaxLayer(Enum_LayerKind kind, List<TextureRegion> texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
 	{
-		this.kind = Enum_LayerKind.IMAGE;
+		if (kind != Enum_LayerKind.IMAGE && kind != Enum_LayerKind.SHADER)
+			throw new IllegalArgumentException("A " + kind + " layer draws no region");
+		this.kind = kind;
 		this.isWidth = isWidth;
 		this.worldDimension = worldDimension;
 		this.worldWidth = Gvars_Parallax.getWorldWidth();
@@ -116,6 +128,24 @@ public class ParallaxLayer
 		return layer;
 	}
 
+	/**
+	 * A SHADER layer: {@code region} tiled as an image layer is, drawn through {@code effect} with those numbers (see
+	 * {@link Enum_ShaderEffect}), {@code worldDimension} wide.
+	 */
+	public static ParallaxLayer shader(TextureRegion region, float worldDimension, float sizeRatio, Enum_ShaderEffect effect, float amplitude, float wavelength, float speed)
+	{
+		ParallaxLayer layer = new ParallaxLayer(Enum_LayerKind.SHADER, singletonList(region), true, worldDimension, 0, 0, sizeRatio);
+		layer.setShaderEffect(effect);
+		layer.shaderAmplitude = amplitude;
+		layer.shaderWavelength = wavelength;
+		layer.shaderSpeed = speed;
+		return layer;
+	}
+
+	/** True for the kinds that draw a region: IMAGE and SHADER. */
+	public boolean drawsImage()
+	{return kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER;}
+
 	private static List<TextureRegion> singletonList(TextureRegion region)
 	{
 		List<TextureRegion> list = new ArrayList<>(1);
@@ -143,6 +173,10 @@ public class ParallaxLayer
 		particlesGodot = model.particlesGodot;
 		if (kind == Enum_LayerKind.PARTICLES && model.particlesAnchor != null)
 			anchor = model.particlesAnchor;
+		setShaderEffect(model.shaderEffect);
+		shaderAmplitude = model.shaderAmplitude;
+		shaderWavelength = model.shaderWavelength;
+		shaderSpeed = model.shaderSpeed;
 	}
 
 	public void resetPosition()
@@ -151,10 +185,13 @@ public class ParallaxLayer
 		currentDistanceY = decalPercentY * (worldHeight / 100);
 	}
 
-	/** Draws the region at (x, y); an EMPTY layer draws nothing, its hook does (ParallaxPageReader). */
+	/**
+	 * Draws the region at (x, y); an EMPTY layer draws nothing, its hook does (ParallaxPageReader). A SHADER layer's
+	 * effect is the batch's shader, which the reader sets around its tiles.
+	 */
 	public void draw(Batch batch, float x, float y)
 	{
-		if (kind == Enum_LayerKind.IMAGE)
+		if (drawsImage())
 			drawRegion(batch, x, y, flipX, flipY);
 	}
 
@@ -163,7 +200,7 @@ public class ParallaxLayer
 	{
 		boolean fx = onX ? flipX : !flipX;
 		boolean fy = onX ? !flipY : flipY;
-		if (kind == Enum_LayerKind.IMAGE)
+		if (drawsImage())
 			drawRegion(batch, x, y, fx, fy);
 	}
 
@@ -190,8 +227,8 @@ public class ParallaxLayer
 	 */
 	public ParallaxLayer clone()
 	{
-		ParallaxLayer copy = kind != Enum_LayerKind.IMAGE ? new ParallaxLayer(kind, name, sizeRatio)
-				: new ParallaxLayer(new ArrayList<>(texRegion), isWidth, worldDimension, parallaxSpeedRatioX, parallaxSpeedRatioY, sizeRatio);
+		ParallaxLayer copy = !drawsImage() ? new ParallaxLayer(kind, name, sizeRatio)
+				: new ParallaxLayer(kind, new ArrayList<>(texRegion), isWidth, worldDimension, parallaxSpeedRatioX, parallaxSpeedRatioY, sizeRatio);
 		copy.name = name;
 		// Its own effect: both play during a cross-fade, and one effect updated twice a frame would run double speed.
 		if (particles != null)
@@ -199,6 +236,10 @@ public class ParallaxLayer
 		copy.anchor = anchor;
 		copy.particlesLibgdx = particlesLibgdx;
 		copy.particlesGodot = particlesGodot;
+		copy.shaderEffect = shaderEffect;
+		copy.shaderAmplitude = shaderAmplitude;
+		copy.shaderWavelength = shaderWavelength;
+		copy.shaderSpeed = shaderSpeed;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
 		copy.parallaxSpeedRatioY = parallaxSpeedRatioY;
 		copy.worldWidth = worldWidth;
@@ -297,10 +338,10 @@ public class ParallaxLayer
 	}
 
 	public float getRegionWidth()
-	{return (kind != Enum_LayerKind.IMAGE ? worldWidth : regionWidth) * sizeRatio;}
+	{return (drawsImage() ? regionWidth : worldWidth) * sizeRatio;}
 
 	public float getRegionHeight()
-	{return (kind != Enum_LayerKind.IMAGE ? worldHeight : regionHeight) * sizeRatio;}
+	{return (drawsImage() ? regionHeight : worldHeight) * sizeRatio;}
 
 	public float getSpeedAtRest()
 	{return speedXAtRest;}
@@ -394,7 +435,7 @@ public class ParallaxLayer
 	public void setMirror(boolean isMirror)
 	{this.isMirror = isMirror;}
 
-	/** The regions drawn; null unless the layer is an IMAGE. */
+	/** The regions drawn; null unless the layer is an IMAGE or a SHADER. */
 	public List<TextureRegion> getTexRegion()
 	{return texRegion;}
 
@@ -444,6 +485,58 @@ public class ParallaxLayer
 	public void setParticlesGodot(String particlesGodot)
 	{this.particlesGodot = particlesGodot;}
 
+	public Enum_ShaderEffect getShaderEffect()
+	{return shaderEffect;}
+
+	public void setShaderEffect(Enum_ShaderEffect shaderEffect)
+	{this.shaderEffect = shaderEffect == null ? Enum_ShaderEffect.WAVE : shaderEffect;}
+
+	/** WAVE's sideways shift in world units, FOG's thinning from 0 to 1. */
+	public float getShaderAmplitude()
+	{return shaderAmplitude;}
+
+	public void setShaderAmplitude(float shaderAmplitude)
+	{this.shaderAmplitude = shaderAmplitude;}
+
+	/** WAVE's wavelength, FOG's patch size, in world units; 0 draws the image without its effect. */
+	public float getShaderWavelength()
+	{return shaderWavelength;}
+
+	public void setShaderWavelength(float shaderWavelength)
+	{this.shaderWavelength = shaderWavelength;}
+
+	/** How fast the effect moves, in world units per second. */
+	public float getShaderSpeed()
+	{return shaderSpeed;}
+
+	public void setShaderSpeed(float shaderSpeed)
+	{this.shaderSpeed = shaderSpeed;}
+
+	/**
+	 * Where the effect is after {@code seconds} of the reader's clock, in world units: {@code speed * seconds} wrapped
+	 * to one wavelength, after which both effects repeat, so a shader is handed a small number however long the game
+	 * runs. 0 when the wavelength is not positive.
+	 */
+	public float getShaderPhase(double seconds)
+	{
+		if (!(shaderWavelength > 0))
+			return 0;
+		double phase = (seconds * shaderSpeed) % shaderWavelength;
+		return (float) (phase < 0 ? phase + shaderWavelength : phase);
+	}
+
+	/** The packed image's share of the layer's width: the part of the box the region is drawn over. */
+	public float getPackedWidthRatio()
+	{return packedWidthRatio;}
+
+	/** The packed image's share of the layer's height. */
+	public float getPackedHeightRatio()
+	{return packedHeightRatio;}
+
+	/** The region drawn, the first of {@link #getTexRegion()}; null unless the layer draws one. */
+	public TextureRegion getRegion()
+	{return region;}
+
 	public boolean isUseOriginalSize()
 	{return useOriginalSize;}
 
@@ -451,14 +544,14 @@ public class ParallaxLayer
 	public void setUseOriginalSize(boolean useOriginalSize)
 	{
 		this.useOriginalSize = useOriginalSize;
-		if (kind == Enum_LayerKind.IMAGE)
+		if (drawsImage())
 			setTexRegion(texRegion);
 	}
 
 	/** Swaps the texture(s) drawn by this layer, keeping its world width and recomputing its height. */
 	public void setTexRegion(List<TextureRegion> texRegion)
 	{
-		if (kind != Enum_LayerKind.IMAGE)
+		if (!drawsImage())
 			throw new IllegalStateException("A " + kind + " layer draws no region");
 		if (texRegion == null || texRegion.isEmpty())
 			throw new IllegalArgumentException("A parallax layer needs at least one texture region");

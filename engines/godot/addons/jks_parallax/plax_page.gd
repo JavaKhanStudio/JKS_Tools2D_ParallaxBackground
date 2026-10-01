@@ -10,10 +10,11 @@ const LAYER_DEFAULTS := {
 	"decal_X_Ratio": 0.0, "decal_Y_Ratio": 0.0, "padX": 0.0, "padXFactor": 0.0, "padY": 0.0, "padYFactor": 0.0,
 	"mirror": false, "kind": "IMAGE", "name": "",
 	"particlesLibgdx": "", "particlesGodot": "", "particlesAnchor": "LAYER",
+	"shaderEffect": "WAVE", "shaderAmplitude": 0.0, "shaderWavelength": 0.0, "shaderSpeed": 0.0,
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
-## layer's particlesGodot scene is instanced by PlaxBackground.
-const KINDS := ["IMAGE", "EMPTY", "PARTICLES"]
+## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects.
+const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER"]
 ## Where a PARTICLES layer's effect sits (Enum_ParticleAnchor).
 const ANCHORS := ["LAYER", "VIEW"]
 
@@ -75,6 +76,9 @@ func _read(json: Dictionary, inside) -> bool:
 			return false
 		if not layer.particlesAnchor in ANCHORS:
 			push_error("PlaxPage: particle anchor %s is not known here: the page was written by a newer version" % layer.particlesAnchor)
+			return false
+		if not layer.shaderEffect in PlaxEffects.EFFECTS:
+			push_error("PlaxPage: shader effect %s is not known here: the page was written by a newer version" % layer.shaderEffect)
 			return false
 		layers.append(layer)
 	return true

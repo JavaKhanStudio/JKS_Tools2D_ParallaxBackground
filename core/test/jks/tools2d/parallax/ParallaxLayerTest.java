@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.pages.Enum_LayerKind;
+import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 
 class ParallaxLayerTest
 {
@@ -87,6 +88,25 @@ class ParallaxLayerTest
 		assertEquals(20, copy.getWidth());
 		assertEquals(11.25f, copy.getHeight());
 		assertEquals(0.03f, copy.getParallaxSpeedRatioX());
+		assertEquals(7, copy.getCurrentDistanceX());
+	}
+
+	@Test
+	void aShaderLayerClonesAsAShaderLayer()
+	{
+		ParallaxLayer layer = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 0.4f, 6, -2);
+		layer.setCurrentDistanceX(7);
+
+		ParallaxLayer copy = layer.clone();
+
+		assertSame(Enum_LayerKind.SHADER, copy.getKind());
+		assertEquals(layer.getTexRegion(), copy.getTexRegion());
+		assertEquals(20, copy.getWidth());
+		assertEquals(11.25f, copy.getHeight());
+		assertSame(Enum_ShaderEffect.FOG, copy.getShaderEffect());
+		assertEquals(0.4f, copy.getShaderAmplitude());
+		assertEquals(6, copy.getShaderWavelength());
+		assertEquals(-2, copy.getShaderSpeed());
 		assertEquals(7, copy.getCurrentDistanceX());
 	}
 }

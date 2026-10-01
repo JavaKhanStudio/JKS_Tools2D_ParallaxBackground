@@ -52,6 +52,12 @@ Batch method, or change SquareBackground (ported in JmeGradient: it reads Gdx.gr
 `tools/jme-parallax-shots.sh` (CI runs it after the Godot rounds, job godot-frames). No libGDX backend there: a core call that reaches a gdx
 native from ParallaxPageReader or ParallaxLayer (OrthographicCamera.update -> Matrix4.prj does) throws
 UnsatisfiedLinkError in a jME game.
+SHADER LAYERS (r180, format 7) ARE AN IMAGE LAYER THROUGH AN EFFECT, WRITTEN THREE TIMES: core's
+GdxLayerEffects (GLSL ES 1.0), Godot's plax_effects.gd, jME's resources/.../ParallaxEffect.frag, all fed
+GdxLayerEffects.uniforms, the phase from the reader's clock. The reader calls the engine's LayerEffects around the
+layer's tiles (jME's JmeLayerEffects -> JmeBatch.setEffect), never Batch.setShader. Change an effect, change all three
+and run both frame checks on engines/godot/tests/shaders. A Godot shader error is only a log line and the layer
+draws plain: the first shaders run differed by 2-11/255 for that (TAU is a Godot built-in), so read godot.log.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.

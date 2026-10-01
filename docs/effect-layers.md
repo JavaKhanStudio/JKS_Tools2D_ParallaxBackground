@@ -97,6 +97,21 @@ or to its own image, and `FOG` (a scrolling noise that fades the layers behind i
 libGDX (a flush per shaded layer, which the stress run must measure), a `CanvasItem` shader in Godot, and a material
 on `JmeBatch`'s meshes in jME, which means `JmeBatch` learns per-run materials.
 
+Shipped in r180 (format 7): a `SHADER` layer is an image layer drawn through its effect, so the effect applies to **its
+own image**: every engine draws it without reading the screen back, and its tiling, mirror, fade and tint are the
+`IMAGE` path's. The layer below gets a ripple by being drawn as a `SHADER` layer itself; a plain white band through
+`FOG` is a fog over the layers behind it. The page stores `shaderEffect` and three numbers, `shaderAmplitude`,
+`shaderWavelength`, `shaderSpeed`, in world units and seconds on the image as drawn (README's layer settings say what
+each means per effect). Each effect works on the image's own coordinates, taken from the texture coordinates, and
+moves on the reader's clock (`act`), its phase wrapped to one wavelength on the CPU so a shader is handed small
+numbers; `FOG` is a sum of three sines, not a hash, so every GPU computes the same. `core` draws through a
+`LayerEffects` the engine sets: `GdxLayerEffects` (GLSL ES 1.0) by default, jME's `JmeLayerEffects` (a
+`ParallaxEffect` material per layer, `JmeBatch.setEffect` starting a run of its own); Godot's `plax_effects.gd` is a
+`ShaderMaterial` on the layer's canvas. `engines/godot/tests/shaders` compares Godot and jME with libGDX at 2/255
+(0.30 and 0.07), and fails with an effect left out, its phase frozen or a ripple reversed; the browser suite compiles
+both effects in WebGL and checks `FOG`'s pixels against its formula. On a still page two `WAVE` and one `FOG` layer
+took a frame from 0.70 to 0.90 ms, a flush each (`tools/r180-shader-round/stress.sh`).
+
 ## Saying what an engine cannot draw
 
 `core/src` gets a table, `EffectSupport`: for each kind and each effect, whether libGDX, the browser, Godot and jME

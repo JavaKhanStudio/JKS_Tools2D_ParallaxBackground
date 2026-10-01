@@ -36,6 +36,9 @@ extends CanvasLayer
 ## with the layer and its process material's emission_shape_offset moves back by as much (a CPUParticles2D is converted
 ## to a GPUParticles2D for that). A layer with no scene draws nothing, and the reader warns once.
 ##
+## A SHADER layer is drawn as an image layer, through its effect (PlaxEffects, the shaders of core's GdxLayerEffects),
+## which moves on act()'s clock.
+##
 ## Each layer is drawn by its own child of the gradients' canvas, in draw order, so that a particle node can sit between
 ## two of them. Not ported yet: atlas regions packed rotated.
 
@@ -97,6 +100,8 @@ var _screen_h := 0.0
 var _modulate := Color.WHITE
 # What draws each EMPTY layer, by layer name.
 var _hooks := {}
+# Seconds acted: the SHADER layers' clock, shared by both pages of a cross-fade (ParallaxPageReader.effectTime).
+var _effect_time := 0.0
 # PARTICLES layers already warned about ("<page id>:<layer index>"): a page that draws no particles says so once.
 var _warned := {}
 
@@ -209,7 +214,7 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 	var built: Array[Dictionary] = []
 	for i in from_page.layers.size():
 		var model: Dictionary = from_page.layers[i]
-		if model.kind != "IMAGE":
+		if model.kind != "IMAGE" and model.kind != "SHADER":
 			var e := {"model": model, "region": {}, "distance_x": 0.0, "distance_y": 0.0}
 			if model.kind == "PARTICLES":
 				e.scene = _particle_scene(model, from_page, from_atlas, i)
@@ -239,6 +244,8 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 func _add_canvas(l: Dictionary) -> void:
 	l.incoming = false
 	l.canvas = Node2D.new()
+	if l.model.kind == "SHADER":
+		l.canvas.material = PlaxEffects.material(l.model.shaderEffect)
 	if l.model.kind != "PARTICLES":
 		l.canvas.draw.connect(_draw_layer.bind(l))
 
@@ -378,6 +385,7 @@ func act(delta: float) -> void:
 	speed_consumable_y = 0
 	if page == null:
 		return
+	_effect_time += delta
 	_act_gradients(delta)
 	for l in layers:
 		_act_layer(l, delta, speed_x, speed_y)
@@ -436,7 +444,7 @@ func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool
 ## A layer is sizeRatio worlds wide; its height follows the image. An EMPTY or PARTICLES one is sizeRatio worlds high.
 func _size_layer(l: Dictionary) -> void:
 	l.width = world_width * l.model.sizeRatio
-	if l.model.kind != "IMAGE":
+	if l.model.kind != "IMAGE" and l.model.kind != "SHADER":
 		l.height = _world_height * l.model.sizeRatio
 		return
 	l.height = l.image_h * (world_width / l.image_w) * l.model.sizeRatio
@@ -506,6 +514,8 @@ func _draw_layer(l: Dictionary) -> void:
 		if hook.is_valid():
 			_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h, hook)
 		return
+	if m.kind == "SHADER":
+		PlaxEffects.apply(l.canvas.material, l, _effect_time)
 	_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h)
 	if m.mirror and _repeat_x != _repeat_y:
 		# A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
