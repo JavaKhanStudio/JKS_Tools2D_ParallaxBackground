@@ -22,13 +22,16 @@ import com.esotericsoftware.kryo.io.Output;
  * and particlesAnchor (its name) stored after name. Older files read null, null and LAYER.</li>
  * <li>version 7: the version 6 layout with each layer's shaderEffect (its name), shaderAmplitude, shaderWavelength and
  * shaderSpeed (floats) stored after particlesAnchor. Older files read WAVE, 0, 0 and 0.</li>
+ * <li>version 8: the version 7 layout with each layer's sequenceSegments (a count, a varint, then per segment its
+ * regionName, regionPosition and weight), sequenceSeed and sequenceLength (ints) stored after shaderSpeed. Older files
+ * read no segments, 0 and 16.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 7;
+	static final int CURRENT_VERSION = 8;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

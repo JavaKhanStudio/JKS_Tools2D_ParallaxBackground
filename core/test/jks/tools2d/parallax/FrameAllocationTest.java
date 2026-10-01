@@ -32,7 +32,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 /**
  * The rule "act() and draw() run every frame: no allocation" as a gate: a big page, every repeat mode, a cross-fade and
  * a tint, measured with the thread's allocation counter. One layer in ten plays core/test-data/particles/snow.p, one in
- * ten is a SHADER layer, half WAVE, half FOG.
+ * ten is a SHADER layer, half WAVE, half FOG, one in ten a SEQUENCE of 64 slots, drawn from the game's seed.
  */
 class FrameAllocationTest
 {
@@ -81,6 +81,7 @@ class FrameAllocationTest
 				reader.setRepeatOnY(onY);
 				reader.addLayers(layers(1));
 				reader.setLayerEffects(batch);
+				reader.setSequenceSeed(5);
 				reader.setLayerHook("hooked", (hookBatch, layer, x, y, width, height) -> hookBatch.draw(HOOKED, x, y, width, height));
 				WholePage_Model next = page(layers(2));
 
@@ -125,6 +126,8 @@ class FrameAllocationTest
 			// One layer in ten EMPTY: half drawn by a hook, half named for none. One in ten snowing, half from the view.
 			ParallaxLayer layer = i % 10 == 5 ? ParallaxLayer.empty(i % 20 == 5 ? "hooked" : "nobody", 0.05f + random.nextFloat())
 					: i % 10 == 3 ? ParallaxLayer.shader(region(), 40, 0.05f + random.nextFloat(), i % 20 == 3 ? Enum_ShaderEffect.WAVE : Enum_ShaderEffect.FOG, 0.5f, 2, 1)
+					: i % 10 == 1 ? ParallaxLayer.sequence(new ArrayList<>(List.of(region(), narrowRegion(), region())), new int[] { 3, 5, 2 },
+							(int) seed * 31 + i, 64, 40, 0.05f + random.nextFloat())
 					: i % 10 == 7 ? ParallaxLayer.particles(new ParallaxParticles(snow), i % 20 == 7 ? Enum_ParticleAnchor.VIEW : Enum_ParticleAnchor.LAYER, 0.05f + random.nextFloat())
 					: new ParallaxLayer(region(), true, 40, 0.01f + random.nextFloat() * 0.05f, 0.01f + random.nextFloat() * 0.05f, 0.05f + random.nextFloat());
 			layer.setParallaxSpeedRatioX(0.01f + random.nextFloat() * 0.05f);
@@ -147,6 +150,21 @@ class FrameAllocationTest
 			@Override
 			public List<ParallaxLayer> getDrawing(String relativePath, float worldWidth, float worldHeight)
 			{return layers;}
+		};
+	}
+
+	/** A segment a third as wide as {@link #region()} for its height. */
+	private static TextureRegion narrowRegion()
+	{
+		return new TextureRegion()
+		{
+			@Override
+			public int getRegionWidth()
+			{return 640;}
+
+			@Override
+			public int getRegionHeight()
+			{return 1080;}
 		};
 	}
 

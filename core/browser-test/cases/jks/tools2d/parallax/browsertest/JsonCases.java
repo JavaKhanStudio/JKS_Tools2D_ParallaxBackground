@@ -13,6 +13,7 @@ import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.Parallax_Model;
+import jks.tools2d.parallax.pages.Sequence_Segment;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
@@ -35,6 +36,7 @@ final class JsonCases
 		cases.add(new BrowserCase("json: unknownAnchorFails", JsonCases::unknownAnchorFails));
 		cases.add(new BrowserCase("json: shaderLayerKeepsItsEffectAndNumbers", JsonCases::shaderLayerKeepsItsEffectAndNumbers));
 		cases.add(new BrowserCase("json: unknownEffectFails", JsonCases::unknownEffectFails));
+		cases.add(new BrowserCase("json: sequenceLayerKeepsItsSegmentsSeedAndLength", JsonCases::sequenceLayerKeepsItsSegmentsSeedAndLength));
 		return cases;
 	}
 
@@ -167,5 +169,28 @@ final class JsonCases
 			return;
 		}
 		throw new AssertionError("a page with an unknown effect loaded");
+	}
+
+	static void sequenceLayerKeepsItsSegmentsSeedAndLength()
+	{
+		WholePage_Model page = Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"regionName\":\"sky\"},"
+				+ "{\"kind\":\"SEQUENCE\",\"sequenceSegments\":[{\"regionName\":\"rock\",\"regionPosition\":2,\"weight\":30},"
+				+ "{\"regionName\":\"bridge\",\"weight\":5},{\"regionName\":\"river\"}],"
+				+ "\"sequenceSeed\":-1640531527,\"sequenceLength\":40}]}}");
+
+		Parallax_Model sky = page.pageModel.pageList.get(0);
+		isTrue(sky.sequenceSegments.isEmpty(), "an image layer reads no segments");
+		equal(16, sky.sequenceLength, "and the default length");
+		Parallax_Model ground = page.pageModel.pageList.get(1);
+		equal(Enum_LayerKind.SEQUENCE, ground.kind, "kind");
+		equal(3, ground.sequenceSegments.size(), "segments");
+		Sequence_Segment rock = ground.sequenceSegments.get(0), bridge = ground.sequenceSegments.get(1), river = ground.sequenceSegments.get(2);
+		equal("rock", rock.regionName, "a segment's region");
+		equal(2, rock.regionPosition, "its position");
+		equal(30, rock.weight, "its weight");
+		equal(0, bridge.regionPosition, "a missing position is 0");
+		equal(1, river.weight, "a missing weight is 1");
+		equal(-1640531527, ground.sequenceSeed, "a negative seed");
+		equal(40, ground.sequenceLength, "length");
 	}
 }

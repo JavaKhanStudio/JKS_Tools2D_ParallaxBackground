@@ -3,6 +3,7 @@ package jks.tools2d.parallax.browsertest;
 import com.badlogic.gdx.graphics.Color;
 
 import jks.tools2d.parallax.pages.Parallax_Model;
+import jks.tools2d.parallax.pages.Sequence_Segment;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
@@ -58,6 +59,13 @@ public final class PageDump
 			line(out, at + "shaderAmplitude", layer.shaderAmplitude);
 			line(out, at + "shaderWavelength", layer.shaderWavelength);
 			line(out, at + "shaderSpeed", layer.shaderSpeed);
+			for (int k = 0; k < layer.sequenceSegments.size(); k++)
+			{
+				Sequence_Segment segment = layer.sequenceSegments.get(k);
+				line(out, at + "sequenceSegments[" + k + "]", segment.regionName + " #" + segment.regionPosition + " x" + segment.weight);
+			}
+			line(out, at + "sequenceSeed", layer.sequenceSeed);
+			line(out, at + "sequenceLength", layer.sequenceLength);
 		}
 		return out.toString();
 	}

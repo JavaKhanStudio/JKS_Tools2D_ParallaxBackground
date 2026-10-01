@@ -1,5 +1,8 @@
 package jks.tools2d.parallax.pages;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** Serialized description of one layer: which atlas region, and how it scrolls. */
 public class Parallax_Model
 {
@@ -46,6 +49,16 @@ public class Parallax_Model
 	public float shaderWavelength;
 	/** How fast a SHADER layer's effect moves, in world units per second. Stored since format 7. */
 	public float shaderSpeed;
+
+	/**
+	 * The images a SEQUENCE layer chains, each with its weight; the first one sets the layer's height. Stored since
+	 * format 8, empty before.
+	 */
+	public List<Sequence_Segment> sequenceSegments = new ArrayList<>();
+	/** What a SEQUENCE layer's cycle is drawn from, unless the game passes its own. Stored since format 8. */
+	public int sequenceSeed;
+	/** How many segments a SEQUENCE layer's cycle holds before it repeats (1 at least). Stored since format 8, 16 before. */
+	public int sequenceLength = 16;
 
 	public boolean isFlipX()
 	{return flipX;}
@@ -155,6 +168,24 @@ public class Parallax_Model
 
 	public void setShaderSpeed(float shaderSpeed)
 	{this.shaderSpeed = shaderSpeed;}
+
+	public List<Sequence_Segment> getSequenceSegments()
+	{return sequenceSegments;}
+
+	public void setSequenceSegments(List<Sequence_Segment> sequenceSegments)
+	{this.sequenceSegments = sequenceSegments;}
+
+	public int getSequenceSeed()
+	{return sequenceSeed;}
+
+	public void setSequenceSeed(int sequenceSeed)
+	{this.sequenceSeed = sequenceSeed;}
+
+	public int getSequenceLength()
+	{return sequenceLength;}
+
+	public void setSequenceLength(int sequenceLength)
+	{this.sequenceLength = sequenceLength;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

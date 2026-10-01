@@ -11,9 +11,11 @@ const LAYER_DEFAULTS := {
 	"mirror": false, "kind": "IMAGE", "name": "",
 	"particlesLibgdx": "", "particlesGodot": "", "particlesAnchor": "LAYER",
 	"shaderEffect": "WAVE", "shaderAmplitude": 0.0, "shaderWavelength": 0.0, "shaderSpeed": 0.0,
+	"sequenceSegments": [], "sequenceSeed": 0, "sequenceLength": 16,
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
-## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects.
+## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects. SEQUENCE
+## (format 8) is read into LAYER_DEFAULTS but not drawn yet (r183): such a page fails to load rather than show one image.
 const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER"]
 ## Where a PARTICLES layer's effect sits (Enum_ParticleAnchor).
 const ANCHORS := ["LAYER", "VIEW"]
@@ -66,11 +68,14 @@ func _read(json: Dictionary, inside) -> bool:
 		# A project layer without a flag comes from the atlas, as the editor reads it.
 		if typeof(inside) == TYPE_ARRAY and i < inside.size() and not inside[i]:
 			continue
-		var layer := LAYER_DEFAULTS.duplicate()
+		var layer := LAYER_DEFAULTS.duplicate(true)
 		for key in LAYER_DEFAULTS:
 			if list[i].has(key) and list[i][key] != null:
 				layer[key] = list[i][key]
 		layer.regionPosition = int(layer.regionPosition)
+		# JSON numbers are floats here: a seed is read back to the int Java stored.
+		layer.sequenceSeed = int(layer.sequenceSeed)
+		layer.sequenceLength = int(layer.sequenceLength)
 		if not layer.kind in KINDS:
 			push_error("PlaxPage: layer kind %s is not known here: the page was written by a newer version" % layer.kind)
 			return false

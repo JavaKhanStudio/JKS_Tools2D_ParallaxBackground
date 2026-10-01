@@ -117,6 +117,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(emptyLayer());
 		original.pageModel.pageList.add(particleLayer());
 		original.pageModel.pageList.add(shaderLayer());
+		original.pageModel.pageList.add(sequenceLayer());
 
 		byte[] rewritten = write(original);
 		// Byte 0 is Kryo's reference marker for the page itself.
@@ -127,19 +128,69 @@ class PlaxFormatTest
 		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
 		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
 		assertTrue(reread.useOriginalSize, "useOriginalSize is stored since format 4");
-		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
+		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 4);
 		assertEquals(Enum_LayerKind.EMPTY, slot.kind, "kind is stored since format 5");
 		assertEquals("birds", slot.name, "name is stored since format 5");
-		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
+		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
 		assertEquals("effects/snow.p", snow.particlesLibgdx, "the libGDX effect is stored since format 6");
 		assertEquals("effects/snow.tscn", snow.particlesGodot, "the Godot scene is stored since format 6");
 		assertEquals(Enum_ParticleAnchor.VIEW, snow.particlesAnchor, "the anchor is stored since format 6");
-		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
 		assertEquals(Enum_LayerKind.SHADER, fog.kind, "SHADER is a kind since format 7");
 		assertEquals(Enum_ShaderEffect.FOG, fog.shaderEffect, "the effect is stored since format 7");
 		assertEquals(0.6f, fog.shaderAmplitude, "its amplitude");
 		assertEquals(7.5f, fog.shaderWavelength, "its wavelength");
 		assertEquals(-1.25f, fog.shaderSpeed, "its speed");
+		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals(Enum_LayerKind.SEQUENCE, ground.kind, "SEQUENCE is a kind since format 8");
+		assertEquals(3, ground.sequenceSegments.size(), "the segments are stored since format 8");
+		assertEquals("parallax3", ground.sequenceSegments.get(1).regionName, "a segment's region");
+		assertEquals(50, ground.sequenceSegments.get(1).weight, "and its weight");
+		assertEquals(-1640531527, ground.sequenceSeed, "the seed, negative ones too");
+		assertEquals(24, ground.sequenceLength, "the cycle's length");
+	}
+
+	/** A SEQUENCE layer chaining three of Hiver.atlas's regions, the middle one twice as often. */
+	static Parallax_Model sequenceLayer()
+	{
+		Parallax_Model ground = new Parallax_Model();
+		ground.kind = Enum_LayerKind.SEQUENCE;
+		ground.name = "ground";
+		ground.sequenceSegments.add(new Sequence_Segment("parallax4", 1, 25));
+		ground.sequenceSegments.add(new Sequence_Segment("parallax3", 0, 50));
+		ground.sequenceSegments.add(new Sequence_Segment("parallax2", 0, 25));
+		ground.sequenceSeed = -1640531527;
+		ground.sequenceLength = 24;
+		ground.sizeRatio = 0.4f;
+		ground.padX = 0.5f;
+		ground.parallaxScalingSpeedX = 0.08f;
+		return ground;
+	}
+
+	/** Format 7 has no sequence fields: written there, a layer reads no segments, seed 0 and 16 slots. */
+	@Test
+	void format7FilesStillLoadWithoutSequences() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.add(shaderLayer());
+		Parallax_Model layer = original.pageModel.pageList.get(0);
+		layer.sequenceSegments.add(new Sequence_Segment("parallax1", 0, 3));
+		layer.sequenceSeed = 99;
+		layer.sequenceLength = 5;
+
+		byte[] written = write(original, 7);
+		assertEquals(7, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		Parallax_Model rereadLayer = reread.pageModel.pageList.get(0);
+		assertTrue(rereadLayer.sequenceSegments.isEmpty(), "format 7 has no segments");
+		assertEquals(0, rereadLayer.sequenceSeed);
+		assertEquals(16, rereadLayer.sequenceLength);
+		layer.sequenceSegments.clear();
+		layer.sequenceSeed = 0;
+		layer.sequenceLength = 16;
+		assertPageEquals(original, reread);
+		assertEquals(Enum_ShaderEffect.FOG, reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1).shaderEffect);
 	}
 
 	/** A SHADER layer drawing an atlas region through FOG. */
@@ -340,6 +391,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(2, emptyLayer());
 		original.pageModel.pageList.add(4, particleLayer());
 		original.pageModel.pageList.add(5, shaderLayer());
+		original.pageModel.pageList.add(6, sequenceLayer());
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
@@ -399,6 +451,16 @@ class PlaxFormatTest
 			assertEquals(expected.shaderAmplitude, actual.shaderAmplitude, name);
 			assertEquals(expected.shaderWavelength, actual.shaderWavelength, name);
 			assertEquals(expected.shaderSpeed, actual.shaderSpeed, name);
+			assertEquals(expected.sequenceSegments.size(), actual.sequenceSegments.size(), name);
+			for (int i = 0; i < expected.sequenceSegments.size(); i++)
+			{
+				Sequence_Segment want = expected.sequenceSegments.get(i), got = actual.sequenceSegments.get(i);
+				assertEquals(want.regionName, got.regionName, name + " segment " + i);
+				assertEquals(want.regionPosition, got.regionPosition, name + " segment " + i);
+				assertEquals(want.weight, got.weight, name + " segment " + i);
+			}
+			assertEquals(expected.sequenceSeed, actual.sequenceSeed, name);
+			assertEquals(expected.sequenceLength, actual.sequenceLength, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

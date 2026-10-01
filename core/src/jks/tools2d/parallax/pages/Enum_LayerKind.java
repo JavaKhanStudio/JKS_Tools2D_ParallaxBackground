@@ -23,4 +23,10 @@ public enum Enum_LayerKind
 	 * {@link Parallax_Model#shaderEffect}, with its numbers. See {@link Enum_ShaderEffect}.
 	 */
 	SHADER,
+	/**
+	 * Several atlas regions chained along one layer (format 8): a cycle of {@link Parallax_Model#sequenceLength}
+	 * segments drawn once, from {@link Parallax_Model#sequenceSeed} and the segments' weights, then tiled as an IMAGE
+	 * layer's one image is. See {@link Sequence_Segment}.
+	 */
+	SEQUENCE,
 }

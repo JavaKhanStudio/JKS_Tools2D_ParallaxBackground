@@ -81,6 +81,9 @@ repair.
   only), `plax_effects.gd`'s `EFFECTS` and that round, strong enough that leaving it out fails
   (`tools/r180-shader-round/strength.sh`). The reader draws them through the engine's `LayerEffects`, never
   `Batch.setShader`, which `JmeBatch` throws on.
+- A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
+  differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
+  `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground.
 - The browser suite's `ReaderCases` checks tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs it in `:core:test`. Cover all four repeat modes (X, Y, XY, none).
 
