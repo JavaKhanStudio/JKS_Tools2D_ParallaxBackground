@@ -26,11 +26,13 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
+import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
  * The rule "act() and draw() run every frame: no allocation" as a gate: a big page, every repeat mode, a cross-fade and
- * a tint, measured with the thread's allocation counter. One layer in ten plays core/test-data/particles/snow.p.
+ * a tint, measured with the thread's allocation counter. One layer in ten plays core/test-data/particles/snow.p, one in
+ * ten is a SHADER layer, half WAVE, half FOG.
  */
 class FrameAllocationTest
 {
@@ -78,6 +80,7 @@ class FrameAllocationTest
 				reader.setRepeatOnX(onX);
 				reader.setRepeatOnY(onY);
 				reader.addLayers(layers(1));
+				reader.setLayerEffects(batch);
 				reader.setLayerHook("hooked", (hookBatch, layer, x, y, width, height) -> hookBatch.draw(HOOKED, x, y, width, height));
 				WholePage_Model next = page(layers(2));
 
@@ -97,6 +100,7 @@ class FrameAllocationTest
 				assertTrue(reader.isInTransfer(), mode + ": the frames measured are cross-fading");
 				assertTrue(batch.draws >= FRAMES * LAYERS, mode + ": both pages were drawn, " + batch.draws + " draws");
 				assertTrue(batch.particles >= FRAMES * 10, mode + ": particles were drawn, " + batch.particles);
+				assertTrue(batch.shaded >= FRAMES * 10, mode + ": SHADER layers were drawn through their effect, " + batch.shaded);
 				// The counter itself costs a few bytes; a per-frame allocation costs FRAMES times at least 16.
 				assertTrue(allocated < FRAMES * 16L, mode + ": " + allocated + " bytes allocated over " + FRAMES + " frames");
 			}
@@ -120,6 +124,7 @@ class FrameAllocationTest
 		{
 			// One layer in ten EMPTY: half drawn by a hook, half named for none. One in ten snowing, half from the view.
 			ParallaxLayer layer = i % 10 == 5 ? ParallaxLayer.empty(i % 20 == 5 ? "hooked" : "nobody", 0.05f + random.nextFloat())
+					: i % 10 == 3 ? ParallaxLayer.shader(region(), 40, 0.05f + random.nextFloat(), i % 20 == 3 ? Enum_ShaderEffect.WAVE : Enum_ShaderEffect.FOG, 0.5f, 2, 1)
 					: i % 10 == 7 ? ParallaxLayer.particles(new ParallaxParticles(snow), i % 20 == 7 ? Enum_ParticleAnchor.VIEW : Enum_ParticleAnchor.LAYER, 0.05f + random.nextFloat())
 					: new ParallaxLayer(region(), true, 40, 0.01f + random.nextFloat() * 0.05f, 0.01f + random.nextFloat() * 0.05f, 0.05f + random.nextFloat());
 			layer.setParallaxSpeedRatioX(0.01f + random.nextFloat() * 0.05f);
@@ -159,10 +164,27 @@ class FrameAllocationTest
 		};
 	}
 
-	/** Counts region draws and allocates nothing, unlike a Proxy (which boxes every float it is handed). */
-	private static final class CountingBatch implements Batch
+	/**
+	 * Counts region draws and allocates nothing, unlike a Proxy (which boxes every float it is handed); and stands for
+	 * the engine's shaders, computing what GdxLayerEffects hands them.
+	 */
+	private static final class CountingBatch implements Batch, LayerEffects
 	{
-		long draws, particles;
+		long draws, particles, shaded;
+		private final float[] numbers = new float[9];
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+		{
+			GdxLayerEffects.uniforms(layer, phase, numbers);
+			shaded++;
+			return true;
+		}
+
+		@Override
+		public void end(Batch batch, ParallaxLayer layer)
+		{}
+
 		private final Color color = new Color();
 		private final Matrix4 matrix = new Matrix4();
 

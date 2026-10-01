@@ -54,6 +54,10 @@ public final class PageDump
 			line(out, at + "particlesLibgdx", layer.particlesLibgdx);
 			line(out, at + "particlesGodot", layer.particlesGodot);
 			line(out, at + "particlesAnchor", layer.particlesAnchor);
+			line(out, at + "shaderEffect", layer.shaderEffect);
+			line(out, at + "shaderAmplitude", layer.shaderAmplitude);
+			line(out, at + "shaderWavelength", layer.shaderWavelength);
+			line(out, at + "shaderSpeed", layer.shaderSpeed);
 		}
 		return out.toString();
 	}

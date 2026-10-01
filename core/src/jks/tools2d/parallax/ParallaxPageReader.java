@@ -7,6 +7,7 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.utils.Disposable;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.Enum_LayerKind;
@@ -22,9 +23,10 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * <p>
  * An EMPTY layer is drawn by the game: {@link #setLayerHook} registers what draws it, under the layer's name. A
  * PARTICLES layer draws its {@link ParallaxParticles} in its place: once per tile when pinned to the layer, once from
- * the view when anchored to it ({@link Enum_ParticleAnchor}).
+ * the view when anchored to it ({@link Enum_ParticleAnchor}). A SHADER layer's tiles are drawn through its effect, by
+ * the {@link LayerEffects} of the engine ({@link #setLayerEffects}), at a phase taken from this reader's clock.
  */
-public class ParallaxPageReader
+public class ParallaxPageReader implements Disposable
 {
 	public ArrayList<ParallaxLayer> layers = new ArrayList<>();
 	public ArrayList<ParallaxLayer> transferLayers = new ArrayList<>();
@@ -50,6 +52,12 @@ public class ParallaxPageReader
 	private final HashMap<String, LayerHook> hooks = new HashMap<>();
 	/** The batch color before a hook, put back after it. */
 	private final Color hookColor = new Color();
+
+	/** Draws the SHADER layers: {@link GdxLayerEffects} unless the engine set its own, made when first needed. */
+	private LayerEffects effects;
+	private boolean ownsEffects;
+	/** Seconds acted since the reader was made: the SHADER layers' clock, shared by both pages of a cross-fade. */
+	private double effectTime;
 
 	// Visible area of the camera, refreshed each draw.
 	private float viewLeft, viewBottom, viewWidth, viewHeight;
@@ -214,6 +222,8 @@ public class ParallaxPageReader
 			return;
 		}
 
+		boolean shaded = layer.kind == Enum_LayerKind.SHADER && getLayerEffects().begin(batch, layer, layer.getShaderPhase(effectTime));
+
 		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
 
 		if (layer.isMirror && repeatOnX != repeatOnY)
@@ -224,6 +234,9 @@ public class ParallaxPageReader
 			else
 				tile(layer, batch, originX + layer.padX + layer.getWidth(), originY, false, true, true, null);
 		}
+
+		if (shaded)
+			effects.end(batch, layer);
 	}
 
 	/**
@@ -290,6 +303,7 @@ public class ParallaxPageReader
 
 	public void act(float delta, float speedX, float speedY)
 	{
+		effectTime += delta;
 		for (int i = 0, n = layers.size(); i < n; i++)
 			layers.get(i).act(delta, speedX, speedY, repeatOnX, repeatOnY);
 
@@ -329,6 +343,44 @@ public class ParallaxPageReader
 
 	public LayerHook getLayerHook(String name)
 	{return hooks.get(name);}
+
+	/**
+	 * Sets what draws the SHADER layers' effects: a jME game's PlaxBackground sets its own, a test a recorder. Left
+	 * unset, the reader makes a {@link GdxLayerEffects} when it first draws one, and disposes it in {@link #dispose()};
+	 * one set here is the caller's to dispose.
+	 */
+	public void setLayerEffects(LayerEffects effects)
+	{
+		dispose();
+		this.effects = effects;
+		ownsEffects = false;
+	}
+
+	/** What draws the SHADER layers; a {@link GdxLayerEffects} made now when none was set. */
+	public LayerEffects getLayerEffects()
+	{
+		if (effects == null)
+		{
+			effects = new GdxLayerEffects();
+			ownsEffects = true;
+		}
+		return effects;
+	}
+
+	/** Seconds acted since the reader was made: where the SHADER layers' effects are. */
+	public double getEffectTime()
+	{return effectTime;}
+
+	/** Disposes the shaders this reader made for its SHADER layers; it makes them again if it draws one later. */
+	@Override
+	public void dispose()
+	{
+		if (ownsEffects && effects instanceof Disposable)
+			((Disposable) effects).dispose();
+		if (ownsEffects)
+			effects = null;
+		ownsEffects = false;
+	}
 
 	public float getWorldWidth()
 	{return worldWidth;}

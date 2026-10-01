@@ -46,6 +46,14 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			output.writeString(model.particlesGodot);
 			output.writeString(model.particlesAnchor.name());
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 7)
+		{
+			output.writeString(model.shaderEffect.name());
+			output.writeFloat(model.shaderAmplitude);
+			output.writeFloat(model.shaderWavelength);
+			output.writeFloat(model.shaderSpeed);
+		}
 	}
 
 	@Override
@@ -94,6 +102,18 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			{model.particlesAnchor = Enum_ParticleAnchor.valueOf(anchor);}
 			catch (IllegalArgumentException e)
 			{throw new KryoException("Particle anchor " + anchor + " is not known here: the .plax was written by a newer version");}
+		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 7)
+		{
+			String effect = input.readString();
+			try
+			{model.shaderEffect = Enum_ShaderEffect.valueOf(effect);}
+			catch (IllegalArgumentException e)
+			{throw new KryoException("Shader effect " + effect + " is not known here: the .plax was written by a newer version");}
+			model.shaderAmplitude = input.readFloat();
+			model.shaderWavelength = input.readFloat();
+			model.shaderSpeed = input.readFloat();
 		}
 
 		return model;

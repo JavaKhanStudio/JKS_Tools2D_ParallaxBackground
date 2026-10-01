@@ -38,6 +38,15 @@ public class Parallax_Model
 	/** Where a PARTICLES layer's effect sits as the page scrolls; stored since format 6, LAYER before. */
 	public Enum_ParticleAnchor particlesAnchor = Enum_ParticleAnchor.LAYER;
 
+	/** The effect a SHADER layer draws its image through; stored since format 7, WAVE before. */
+	public Enum_ShaderEffect shaderEffect = Enum_ShaderEffect.WAVE;
+	/** A SHADER layer's strength: WAVE's sideways shift in world units, FOG's thinning from 0 to 1. Stored since format 7. */
+	public float shaderAmplitude;
+	/** A SHADER layer's scale in world units: WAVE's wavelength, the size of FOG's patches; 0 draws no effect. Format 7. */
+	public float shaderWavelength;
+	/** How fast a SHADER layer's effect moves, in world units per second. Stored since format 7. */
+	public float shaderSpeed;
+
 	public boolean isFlipX()
 	{return flipX;}
 
@@ -122,6 +131,30 @@ public class Parallax_Model
 
 	public void setParticlesAnchor(Enum_ParticleAnchor particlesAnchor)
 	{this.particlesAnchor = particlesAnchor;}
+
+	public Enum_ShaderEffect getShaderEffect()
+	{return shaderEffect;}
+
+	public void setShaderEffect(Enum_ShaderEffect shaderEffect)
+	{this.shaderEffect = shaderEffect;}
+
+	public float getShaderAmplitude()
+	{return shaderAmplitude;}
+
+	public void setShaderAmplitude(float shaderAmplitude)
+	{this.shaderAmplitude = shaderAmplitude;}
+
+	public float getShaderWavelength()
+	{return shaderWavelength;}
+
+	public void setShaderWavelength(float shaderWavelength)
+	{this.shaderWavelength = shaderWavelength;}
+
+	public float getShaderSpeed()
+	{return shaderSpeed;}
+
+	public void setShaderSpeed(float shaderSpeed)
+	{this.shaderSpeed = shaderSpeed;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

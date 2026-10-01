@@ -1,0 +1,45 @@
+{
+ "round": "shaders",
+ "about": "SHADER layers (r180, docs/effect-layers.md phase 3): conformance pages with a layer drawn through WAVE and a white mist band (core/test-data/shaders/mist.png, in HiverFog.atlas) drawn through FOG, in every repeat mode, and a cross-fade into the page on screen while tinting. The effects move on the reader's clock, so t6 and t12 catch them at different phases. Written by core/test-data/shaders/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "scenes": [
+  {
+   "id": "s01",
+   "page": "engines/godot/tests/shaders/s01.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "wave-fog-repeat-X",
+   "about": "c01 (repeat X, trimmed regions): the near hills (a trimmed region) ripple, a mist band drifts through FOG between the two front layers"
+  },
+  {
+   "id": "s02",
+   "page": "engines/godot/tests/shaders/s02.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "wave-fog-repeat-XY",
+   "about": "c02 (repeat X and Y, padded), scrolling up at 30 units/s too: a ripple running down, a padded mist tiled both ways",
+   "speedY": 30
+  },
+  {
+   "id": "s03",
+   "page": "engines/godot/tests/shaders/s03.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "wave-fog-repeat-Y-mirror",
+   "about": "c03 (repeat Y, mirrored copies to the right), scrolling up at 30 units/s too: a mirrored layer ripples with its copy, a flipped mirrored hill thins through FOG",
+   "speedY": 30
+  },
+  {
+   "id": "s04",
+   "page": "engines/godot/tests/shaders/s04.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "wave-fog-no-repeat",
+   "about": "c05 (no repeat): a flipped layer ripples wide, clamped to its region; a WAVE with no wavelength draws plain; a FOG amplitude of 1.7 thins at most fully"
+  },
+  {
+   "id": "s05",
+   "page": "engines/godot/tests/shaders/s01.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "shaders-cross-fade-tinted",
+   "about": "s01 cross-fading into itself (its layers cloned) while tinting orange: both pages shade on one clock, faded and tinted",
+   "transfer": {"at": 4, "seconds": 4},
+   "tint": {"at": 4, "seconds": 4, "color": [1.0, 0.55, 0.3, 1.0]}
+  }
+ ]
+}

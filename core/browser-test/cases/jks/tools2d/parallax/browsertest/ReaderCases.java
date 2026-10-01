@@ -21,12 +21,16 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 
+import jks.tools2d.parallax.GdxLayerEffects;
+import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.LayerHook;
 import jks.tools2d.parallax.ParallaxParticles;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
+import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
@@ -60,7 +64,12 @@ final class ReaderCases
 				new BrowserCase("reader: viewAnchoredParticlesAreDrawnOnceAndDriftWithTheLayer", () -> new ReaderCases().viewAnchoredParticlesAreDrawnOnceAndDriftWithTheLayer()),
 				new BrowserCase("reader: particlesPastTheirBoxAreDrawnWhenTheBoxIsNot", () -> new ReaderCases().particlesPastTheirBoxAreDrawnWhenTheBoxIsNot()),
 				new BrowserCase("reader: particlesFadeAndTintWithTheirPage", () -> new ReaderCases().particlesFadeAndTintWithTheirPage()),
-				new BrowserCase("reader: aParticleLayerWithoutAnEffectDrawsNothing", () -> new ReaderCases().aParticleLayerWithoutAnEffectDrawsNothing()));
+				new BrowserCase("reader: aParticleLayerWithoutAnEffectDrawsNothing", () -> new ReaderCases().aParticleLayerWithoutAnEffectDrawsNothing()),
+				new BrowserCase("reader: shaderLayerIsTiledThroughItsEffectInEveryRepeatMode", () -> new ReaderCases().shaderLayerIsTiledThroughItsEffectInEveryRepeatMode()),
+				new BrowserCase("reader: shaderPhaseFollowsTheReaderClockAndWraps", () -> new ReaderCases().shaderPhaseFollowsTheReaderClockAndWraps()),
+				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ReaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
+				new BrowserCase("reader: aShaderLayerWithoutItsEffectIsDrawnPlain", () -> new ReaderCases().aShaderLayerWithoutItsEffectIsDrawnPlain()),
+				new BrowserCase("reader: shaderNumbersAreTheDrawnImages", () -> new ReaderCases().shaderNumbersAreTheDrawnImages()));
 	}
 
 	/** A region of the given pixel size, without any texture behind it. */
@@ -607,5 +616,181 @@ final class ReaderCases
 		reader.act(1 / 60f, 100, 100);
 		reader.draw(camera, batch);
 		equal(0, draws.size(), "draws");
+	}
+
+	/**
+	 * Stands for an engine's shaders: records, as indexes into the draws, where each SHADER layer began and ended, and the
+	 * phase it was handed.
+	 */
+	private final class RecordingEffects implements LayerEffects
+	{
+		final List<float[]> runs = new ArrayList<>();
+		boolean shades = true;
+		private boolean open;
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+		{
+			isTrue(!open, "a SHADER layer begun inside another");
+			if (!shades)
+				return false;
+			open = true;
+			runs.add(new float[] { draws.size(), -1, phase, layer.getShaderAmplitude() });
+			return true;
+		}
+
+		@Override
+		public void end(Batch batch, ParallaxLayer layer)
+		{
+			isTrue(open, "ended without a begin");
+			open = false;
+			runs.get(runs.size() - 1)[1] = draws.size();
+		}
+	}
+
+	/** A SHADER layer drawing a 1920x1080 region through WAVE, 12 x 6.75 world units in a 40-wide world. */
+	private static ParallaxLayer shaded(float amplitude, float wavelength, float speed)
+	{
+		ParallaxLayer layer = ParallaxLayer.shader(region(1920, 1080), 40, 0.3f, Enum_ShaderEffect.WAVE, amplitude, wavelength, speed);
+		layer.setParallaxSpeedRatioX(0.02f);
+		layer.setParallaxSpeedRatioY(0.02f);
+		layer.setDecalPercentX(25);
+		layer.setDecalPercentY(25);
+		return layer;
+	}
+
+	/**
+	 * A SHADER layer between two image layers is tiled as an IMAGE layer with the same settings would be, every tile and
+	 * its mirrored copy between one begin and one end of its effect, in its place in the draw order.
+	 */
+	void shaderLayerIsTiledThroughItsEffectInEveryRepeatMode()
+	{
+		for (int mode = 0; mode < 4; mode++)
+		{
+			boolean onX = mode == 0 || mode == 2, onY = mode == 1 || mode == 2;
+			String name = onX && onY ? "XY" : onX ? "X" : onY ? "Y" : "none";
+
+			// The same layer as an IMAGE: what the SHADER one must draw.
+			ParallaxPageReader plain = reader(onX, onY);
+			plain.setWorldSize(40, 22.5f);
+			ParallaxLayer image = new ParallaxLayer(region(1920, 1080), true, 40, 0.02f, 0.02f, 0.3f);
+			image.setDecalPercentX(25);
+			image.setDecalPercentY(25);
+			image.setMirror(true);
+			plain.addLayers(list(image));
+			draws.clear();
+			plain.act(1 / 60f, 500, 300);
+			plain.draw(camera, batch);
+			List<float[]> expected = new ArrayList<>(draws);
+
+			ParallaxPageReader reader = reader(onX, onY);
+			reader.setWorldSize(40, 22.5f);
+			RecordingEffects effects = new RecordingEffects();
+			reader.setLayerEffects(effects);
+			ParallaxLayer wave = shaded(0.5f, 2, 1);
+			wave.setMirror(true);
+			reader.addLayers(list(layer(0), wave, layer(0)));
+			draws.clear();
+			reader.act(1 / 60f, 500, 300);
+			reader.draw(camera, batch);
+
+			equal(1, effects.runs.size(), name + ": one effect run a frame");
+			float[] run = effects.runs.get(0);
+			int from = (int) run[0], to = (int) run[1];
+			isTrue(from > 0, name + ": after the layer behind it");
+			isTrue(to < draws.size(), name + ": and before the layer in front of it");
+			isTrue(expected.size() > 0, name + ": the layer shows");
+			equal(expected.size(), to - from, name + ": its tiles, mirrored copies included, are inside the run");
+			for (int i = 0; i < expected.size(); i++)
+				for (int k = 0; k < 4; k++)
+					equal(expected.get(i)[k], draws.get(from + i)[k], 1e-4f, name + ": tile " + i + " as an image layer draws it");
+		}
+	}
+
+	/** The effect's phase is speed times the reader's clock, wrapped to one wavelength, never negative; 0 without a wavelength. */
+	void shaderPhaseFollowsTheReaderClockAndWraps()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		RecordingEffects effects = new RecordingEffects();
+		reader.setLayerEffects(effects);
+		ParallaxLayer up = shaded(0.5f, 3, 2), down = shaded(0.5f, 3, -2), flat = shaded(0.5f, 0, 2);
+		reader.addLayers(list(up, down, flat));
+		for (int i = 0; i < 120; i++)
+			reader.act(1 / 60f, 0, 0);
+		reader.draw(camera, batch);
+
+		equal(2, (float) reader.getEffectTime(), 1e-4f, "the clock counts the acted seconds");
+		equal(3, effects.runs.size(), "runs");
+		equal(1, effects.runs.get(0)[2], 1e-3f, "2 s at 2 units/s is 4, one past a wavelength of 3");
+		equal(2, effects.runs.get(1)[2], 1e-3f, "-4 wraps to 2");
+		equal(0, effects.runs.get(2)[2], 0, "no wavelength, no phase");
+	}
+
+	/** During a cross-fade both pages' SHADER layers are drawn through their effect at the same phase, faded. */
+	void bothPagesOfACrossFadeShadeOnOneClock()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		RecordingEffects effects = new RecordingEffects();
+		reader.setLayerEffects(effects);
+		reader.addLayers(list(shaded(0.5f, 3, 0.7f)));
+		for (int i = 0; i < 60; i++)
+			reader.act(1 / 60f, 100, 0);
+		reader.addLayersTransfert(page(list(shaded(0.25f, 3, 0.7f))), 1);
+		reader.act(0.5f, 100, 0);
+		draws.clear();
+		reader.draw(camera, batch);
+
+		equal(2, effects.runs.size(), "both pages' layers shaded");
+		equal(0.5f, effects.runs.get(0)[3], 0, "the outgoing one first");
+		equal(0.25f, effects.runs.get(1)[3], 0, "then the incoming one");
+		equal(effects.runs.get(0)[2], effects.runs.get(1)[2], 0, "one clock: the incoming layer does not start its effect over");
+		equal(0.5f, draws.get((int) effects.runs.get(1)[0])[5], 1e-2f, "faded with its page");
+	}
+
+	/** An engine that cannot draw the effect (a shader that did not compile) draws the layer as an image. */
+	void aShaderLayerWithoutItsEffectIsDrawnPlain()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		RecordingEffects effects = new RecordingEffects();
+		effects.shades = false;
+		reader.setLayerEffects(effects);
+		reader.addLayers(list(shaded(0.5f, 3, 1)));
+		reader.draw(camera, batch);
+		equal(0, effects.runs.size(), "no run");
+		isTrue(draws.size() >= 4, draws.size() + " tiles drawn all the same");
+	}
+
+	/**
+	 * What every engine hands its shader: the region's texture coordinates, the drawn image's size (the packed part of a
+	 * stripped region), and amplitude, wavelength, phase; FOG's amplitude within 0..1; no wavelength, no effect.
+	 */
+	void shaderNumbersAreTheDrawnImages()
+	{
+		float unit = 40f / 4559;
+		List<TextureRegion> regions = new ArrayList<>();
+		regions.add(strippedRegion(3403, 580, 4559, 580, 913, 0));
+		ParallaxLayer layer = new ParallaxLayer(Enum_LayerKind.SHADER, regions, true, 40, 0, 0, 1);
+		layer.setUseOriginalSize(true);
+		layer.setShaderEffect(Enum_ShaderEffect.FOG);
+		layer.setShaderAmplitude(1.5f);
+		layer.setShaderWavelength(4);
+		float[] numbers = GdxLayerEffects.uniforms(layer, 0.75f, new float[9]);
+		equal(0, numbers[0], 0, "u");
+		equal(0, numbers[1], 0, "v");
+		equal(3403f / 4096, numbers[2], 1e-6f, "u2");
+		equal(580f / 4096, numbers[3], 1e-6f, "v2");
+		equal(3403 * unit, numbers[4], 1e-4f, "the packed image's width, not the layer's");
+		equal(580 * unit, numbers[5], 1e-4f, "its height");
+		equal(1, numbers[6], 0, "FOG thins by 100% at most");
+		equal(4, numbers[7], 0, "wavelength");
+		equal(0.75f, numbers[8], 0, "phase");
+
+		layer.setShaderEffect(Enum_ShaderEffect.WAVE);
+		equal(1.5f, GdxLayerEffects.uniforms(layer, 0.75f, numbers)[6], 0, "WAVE's amplitude is a distance, not clamped");
+		layer.setShaderWavelength(0);
+		GdxLayerEffects.uniforms(layer, 0.75f, numbers);
+		equal(0, numbers[6], 0, "no wavelength: no shift");
+		equal(1, numbers[7], 0, "and a wavelength that divides safely");
+		equal(0, numbers[8], 0, "at phase 0");
 	}
 }

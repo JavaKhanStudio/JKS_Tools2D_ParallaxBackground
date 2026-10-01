@@ -11,6 +11,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import jks.tools2d.parallax.ParallaxLayer;
@@ -244,8 +245,11 @@ public class WholePage_Model
 			return particles;
 		}
 
+		List<TextureRegion> regions = new ArrayList<>(1);
+		regions.add(findLayer(parallax, atlas));
 		ParallaxLayer layer = new ParallaxLayer(
-				findLayer(parallax, atlas),
+				parallax.kind == Enum_LayerKind.SHADER ? Enum_LayerKind.SHADER : Enum_LayerKind.IMAGE,
+				regions,
 				true,
 				worldWidth,
 				parallax.parallaxScalingSpeedX, parallax.parallaxScalingSpeedY,

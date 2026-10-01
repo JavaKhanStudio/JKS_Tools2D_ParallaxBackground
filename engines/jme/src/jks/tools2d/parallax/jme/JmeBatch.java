@@ -16,6 +16,7 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.math.Matrix4;
 import com.jme3.asset.AssetManager;
+import com.jme3.material.MatParamTexture;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.material.RenderState.FaceCullMode;
@@ -37,8 +38,9 @@ import com.jme3.util.BufferUtils;
  * same texture, in draw order, as SpriteBatch flushes. The quads keep libGDX's packed vertex colour (8 bits a channel,
  * the alpha's lowest bit dropped) and its blending (source alpha, one minus source alpha).
  * <p>
- * Positions are in the reader's world units, mapped to pixels by {@link #setView}. The other draws, shaders and
- * matrices are not supported: the reader does not use them.
+ * Positions are in the reader's world units, mapped to pixels by {@link #setView}. A SHADER layer's run is drawn with
+ * the material {@link #setEffect} names, which {@link JmeLayerEffects} sets around its tiles. The other draws, libGDX
+ * shaders and matrices are not supported: the reader does not use them.
  */
 public class JmeBatch implements Batch
 {
@@ -51,6 +53,7 @@ public class JmeBatch implements Batch
 		byte[] colors = new byte[4 * 4 * 16];
 		int quads, capacity;
 		Texture2D texture;
+		Material material;
 
 		Run(int index)
 		{
@@ -67,6 +70,8 @@ public class JmeBatch implements Batch
 	private int used;
 	private Run current;
 	private boolean drawing;
+	/** The material the next draws are drawn with, null: their texture's own (Unshaded). */
+	private Material effect;
 
 	private final Color color = new Color(1, 1, 1, 1);
 	private byte red = -1, green = -1, blue = -1, alpha = (byte) 0xFE;
@@ -88,6 +93,16 @@ public class JmeBatch implements Batch
 		this.viewBottom = viewBottom;
 		this.pixelsPerUnitX = screenWidth / viewWidth;
 		this.pixelsPerUnitY = screenHeight / viewHeight;
+	}
+
+	/**
+	 * Draws what follows with {@code material}, its ColorMap set to each run's texture, in runs of their own; null goes
+	 * back to each texture's own material. A SHADER layer's run: the reader's flush around it.
+	 */
+	public void setEffect(Material material)
+	{
+		effect = material;
+		current = null;
 	}
 
 	@Override
@@ -158,10 +173,18 @@ public class JmeBatch implements Batch
 		run.geometry.setLocalTranslation(0, 0, z + used);
 		used++;
 		run.quads = 0;
-		if (run.texture != texture)
+		run.texture = texture;
+		Material material = effect != null ? effect : materials.computeIfAbsent(texture, this::material);
+		if (effect != null)
 		{
-			run.texture = texture;
-			run.geometry.setMaterial(materials.computeIfAbsent(texture, this::material));
+			MatParamTexture map = effect.getTextureParam("ColorMap");
+			if (map == null || map.getTextureValue() != texture)
+				effect.setTexture("ColorMap", texture);
+		}
+		if (run.material != material)
+		{
+			run.material = material;
+			run.geometry.setMaterial(material);
 		}
 		return run;
 	}
@@ -171,12 +194,18 @@ public class JmeBatch implements Batch
 		Material material = new Material(assets, "Common/MatDefs/Misc/Unshaded.j3md");
 		material.setTexture("ColorMap", texture);
 		material.setBoolean("VertexColor", true);
+		renderAsRuns(material);
+		return material;
+	}
+
+	/** Blends as SpriteBatch, draws both faces, ignores depth: what every run's material is set to. */
+	static void renderAsRuns(Material material)
+	{
 		material.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
 		// A flipped layer is drawn with a negative width or height: its quad faces away.
 		material.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
 		material.getAdditionalRenderState().setDepthTest(false);
 		material.getAdditionalRenderState().setDepthWrite(false);
-		return material;
 	}
 
 	private static void ensureCapacity(Run run, int quads)

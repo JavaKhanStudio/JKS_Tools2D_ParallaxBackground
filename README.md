@@ -93,8 +93,8 @@ Versions (libGDX, LWJGL, Kryo, Jackson, GWT, jME) are set in `gradle.properties`
 A **page** (`WholePage_Model`) is one complete background:
 
 - **Layers**, stored back to front. Each layer is one image (an atlas region) with its own settings, an **empty
-  layer** the game draws (see "Draw your own things between layers"), or a **particle layer** (see "Snow, rain and
-  smoke").
+  layer** the game draws (see "Draw your own things between layers"), a **particle layer** (see "Snow, rain and
+  smoke"), or an image drawn through an **effect** (see "Water and fog").
 - **Two gradient squares** (`SquareBackground`) drawn behind the layers, one covering the top of the screen and one
   the bottom, each going from a bottom color to a top color.
 - **Repeat on X / Y**: whether layers are tiled horizontally, vertically, both, or drawn once.
@@ -116,10 +116,11 @@ Layers live in **world units**: the world is 40 units wide and its height follow
 | At rest speed            | Horizontal speed of the layer even when the screen does not move (clouds, water). |
 | Pad X / Pad Y            | Gap between two repetitions of the layer, in world units. |
 | Flip X / Flip Y          | Mirror the image. |
-| Kind                     | `IMAGE`, an atlas region (every layer saved before format 5); `EMPTY`: no image, a box `40 x sizeRatio` wide and `world height x sizeRatio` high, scrolled and tiled like an image, that the game draws in (see "Draw your own things between layers"); or `PARTICLES` (format 6): the same box, where a particle effect plays (see "Snow, rain and smoke"). |
+| Kind                     | `IMAGE`, an atlas region (every layer saved before format 5); `EMPTY`: no image, a box `40 x sizeRatio` wide and `world height x sizeRatio` high, scrolled and tiled like an image, that the game draws in (see "Draw your own things between layers"); `PARTICLES` (format 6): the same box, where a particle effect plays (see "Snow, rain and smoke"); or `SHADER` (format 7): an atlas region, sized, scrolled, tiled and mirrored as an `IMAGE` is, drawn through an effect (see "Water and fog"). |
 | Name                     | The key a game's `LayerHook` is registered under, for an `EMPTY` layer. |
 | Particles: libGDX, Godot | A `PARTICLES` layer's effect, one file per engine, relative to the page's atlas folder: a libGDX `.p` (its images are regions of the page's atlas), and a Godot scene (`.tscn`). An engine whose file is missing draws nothing for the layer. |
 | Particles: anchor        | `LAYER`: the effect is pinned to the box's bottom-left corner, scrolled and tiled with it (a chimney's smoke, a waterfall's spray). `VIEW`: emitted once from the view, at the layer's decal from its bottom-left corner, whatever the page repeats on; its particles drift by the layer's scroll (snow or rain that never runs out). |
+| Shader: effect, amplitude, wavelength, speed | A `SHADER` layer's effect, `WAVE` or `FOG`, and its numbers, in world units and seconds, measured on the image as drawn. `WAVE`: each row of the image shifted sideways by `amplitude × sin(2π (y − speed × t) / wavelength)`, y from the image's bottom, so the ripple runs up at `speed` (down when negative). `FOG`: the image's opacity thinned by up to `amplitude` (0 to 1) in soft patches `wavelength` wide that drift left at `speed`. A wavelength of 0 draws the image without its effect. |
 | Mirror                   | Doubles the strip with a reflection of it, on a page that repeats on one axis only. Repeating on X, a second row is drawn on top of the strip, upside down (the strip's top edge is the axis); on Y, a second column to its right, reversed left to right. Repeating on both axes or neither, it draws nothing. Use it for a band that reads the same reflected (clouds, water, foliage); it does not hide the seams between repeats: an upside-down copy of a foreground layer shows. |
 
 Each frame, a layer moves by `delta × (screen speed + at rest speed) × speed ratio`, then is tiled to cover the
@@ -183,6 +184,16 @@ More:
   too. Godot plays the layer's own Godot scene (below), jME none (no 2D particle
   system: fill an `EMPTY` layer instead); `EffectSupport` says which engine draws which kind, and why not.
   `WholePage_Model.forceLoad(atlas)` builds no effect; `forceLoad(atlas, files)` finds them with `files`.
+- **Water and fog:** a `SHADER` layer is an image layer drawn through one of the effects the library ships: `WAVE`, a
+  horizontal ripple (water, heat), and `FOG`, drifting patches that thin the image's opacity (a plain white band is a
+  fog over the layers behind it). Each is written for libGDX (GLSL ES 1.0, so WebGL too: `GdxLayerEffects`), Godot
+  and jME, and the three draw the same frames (`engines/godot/tests/shaders`). The effect works on the layer's own
+  image, not on what is behind it, and moves on the reader's clock: both pages of a cross-fade show it at the same
+  place. Each `SHADER` layer flushes the batch before and after its tiles: on a still page, two `WAVE` and one `FOG`
+  layer took a frame from 0.70 to 0.90 ms, 4 draw calls to 7 (`tools/r180-shader-round/stress.sh`). A shader that
+  does not compile is said once in the log, and its layers are drawn without it. A game drawing through its own
+  shaders or engine sets `ParallaxPageReader.setLayerEffects`; the reader disposes the shaders it made itself in
+  `dispose()` (`Parallax_Heart.dispose()` calls it).
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
   background away.
@@ -224,6 +235,9 @@ the one the scene sets, and converts a `CPUParticles2D` to a `GPUParticles2D`. P
 `act()`'s. A layer with no Godot scene draws nothing and warns once. It looks like the libGDX `.p` only as much as the
 two files agree: each engine draws its own.
 
+A `SHADER` layer is drawn through the same `WAVE` or `FOG` as in libGDX (`plax_effects.gd`, a `ShaderMaterial` on the
+layer's canvas), on `act()`'s clock: the same frames (`engines/godot/tests/shaders`).
+
 It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
 `world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the
 export preset lists them under *Filters to export non-resource files* (`*.jplax, *.atlas`); for an atlas written with
@@ -260,7 +274,9 @@ bg.setLayerHook("birds", (batch, layer, x, y, w, h) -> batch.draw(birdRegion, x,
 
 The scrolling, tiling, cross-fade and tint are this library's own `ParallaxPageReader`; jME only draws the quads, and
 `tools/jme-parallax-shots.sh` compares its frames with libGDX's. An `EMPTY` layer's hook draws through the same
-`JmeBatch`, whose only draw is `draw(region, x, y, width, height)` with a region of a `JmeAtlas`. The background
+`JmeBatch`, whose only draw is `draw(region, x, y, width, height)` with a region of a `JmeAtlas`. A `SHADER` layer's
+tiles are a run of their own drawn with a `ParallaxEffect` material (`JmeLayerEffects`), the same frames as libGDX's.
+The background
 clears the screen, so the game's main viewport stops clearing its colour. Keep the application's gamma correction off (`settings.setGammaCorrection(false)`)
 to get libGDX's colours.
 - **Performance:** `act` and `render` allocate nothing, and the game thread spends under a millisecond on 400 layers.
@@ -313,10 +329,11 @@ A browser (GWT) game cannot read `.plax` (Kryo): it loads the JSON of a page ins
 
 `.plax` files carry a format version since 2.0. Format 2 also stores `flipY`, format 3 `mirror`, format 4 the
 page's `useOriginalSize`, format 5 each layer's `kind` (by name) and `name`, and format 6 each layer's
-`particlesLibgdx`, `particlesGodot` (paths, null when unset) and `particlesAnchor` (by name); format 1 files (written
-by the 2019-2023 editor) and formats 2 to 5 still load, with `useOriginalSize` off before 4, every layer an `IMAGE`
-before 5 and no particle effect before 6, as do `.jplax` and `.plaxpj` files without those fields. A layer kind or a
-particle anchor a reader does not know fails the load, naming it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
+`particlesLibgdx`, `particlesGodot` (paths, null when unset) and `particlesAnchor` (by name), and format 7 each
+layer's `shaderEffect` (by name), `shaderAmplitude`, `shaderWavelength` and `shaderSpeed`; format 1 files (written
+by the 2019-2023 editor) and formats 2 to 6 still load, with `useOriginalSize` off before 4, every layer an `IMAGE`
+before 5, no particle effect before 6 and `WAVE` with no numbers before 7, as do `.jplax` and `.plaxpj` files without
+those fields. A layer kind, a particle anchor or a shader effect a reader does not know fails the load, naming it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
 exported from. Kryo registration order defines the class ids stored in the files, so `GVars_Serialization.prepareKryo`
 must only ever be appended to.
 
@@ -330,7 +347,8 @@ core/src/jks/tools2d/parallax/       translatable by GWT (Parallax.gwt.xml)
     ParallaxPageReader            scrolling, tiling, cross-fade and tint of the layers
     ParallaxLayer                 one layer: image, settings, scroll position
     ParallaxParticles             a PARTICLES layer's libGDX ParticleEffect, drawn per tile, tinted, allocation-free
-    EffectSupport                 which engine draws which layer kind, and why not
+    GdxLayerEffects               a SHADER layer's effects as libGDX batch shaders (LayerEffects: the engine's seam)
+    EffectSupport                 which engine draws which layer kind and effect, and why not
     pages/                        saved models (WholePage_Model, Page_Model, Parallax_Model), Utils_Page_Json (load JSON)
     side/SquareBackground         the gradient squares
 core/src-jvm/jks/tools2d/parallax/   same packages and jar, JVM only
@@ -340,13 +358,15 @@ core/gwt-check/                   what :core:gwtCheck compiles to JavaScript
 core/browser-test/                the core tests that translate, run in Chrome by tools/browser-test.sh
 
 engines/jme/src/.../jme/          the jMonkeyEngine reader, published as parallax-background-jme: PlaxBackground (an
-                                  AppState), JmeAtlas, JmeBatch (libGDX's Batch in jME meshes), JmeGradient
+                                  AppState), JmeAtlas, JmeBatch (libGDX's Batch in jME meshes), JmeGradient,
+                                  JmeLayerEffects (the SHADER effects, resources/.../ParallaxEffect.j3md)
 engines/jme/tests/                its frame runner (tools/jme-parallax-shots.sh) and demo (:jme:run)
 engines/godot/addons/jks_parallax the Godot 4 reader
-engines/godot/tests/              the reader rounds: round1, conformance, transfer, pixelart, effects
+engines/godot/tests/              the reader rounds: round1, conformance, transfer, pixelart, effects, particles, shaders
 shots/src/.../ParallaxShots       libGDX stills of a round, what the Godot and jME frames are compared with
 core/test-data/samples/           the sample pages and atlases the tests and the rounds read (copies, never re-exported)
 core/test-data/particles/         snow .p files (MakeSnow.java), HiverSnow.atlas, and a libGDX stills round of them
+core/test-data/shaders/           HiverFog.atlas (Hiver and a mist band) and make_round.py, which writes the shaders round
 ```
 
 ## Contributing and releases

@@ -21,7 +21,7 @@ import jks.tools2d.parallax.ParallaxLayer;
 
 /**
  * The editor saves a page from its loaded layers through {@link Utils_Page#buildFromPage}: a layer that comes back
- * from it must be the one the page was loaded from, EMPTY and PARTICLES layers included (r191).
+ * from it must be the one the page was loaded from, EMPTY, PARTICLES (r191) and SHADER (r180) layers included.
  */
 class BuildFromPageTest
 {
@@ -74,6 +74,11 @@ class BuildFromPageTest
 		Parallax_Model snow = PlaxFormatTest.particleLayer();
 		snow.particlesLibgdx = "particles/snow.p";
 		page.pageModel.pageList.add(snow);
+
+		Parallax_Model fog = PlaxFormatTest.shaderLayer();
+		fog.regionName = "sky";
+		fog.regionPosition = 0;
+		page.pageModel.pageList.add(fog);
 		return page;
 	}
 
@@ -120,5 +125,7 @@ class BuildFromPageTest
 		assertEquals(Enum_LayerKind.PARTICLES, saved.pageModel.pageList.get(2).kind);
 		assertEquals("particles/snow.p", saved.pageModel.pageList.get(2).particlesLibgdx);
 		assertEquals(Enum_ParticleAnchor.VIEW, saved.pageModel.pageList.get(2).particlesAnchor);
+		assertEquals(Enum_LayerKind.SHADER, saved.pageModel.pageList.get(3).kind);
+		assertEquals(Enum_ShaderEffect.FOG, saved.pageModel.pageList.get(3).shaderEffect);
 	}
 }

@@ -18,4 +18,9 @@ public enum Enum_LayerKind
 	 * {@link Parallax_Model#particlesLibgdx}, in a box the world's size times sizeRatio. See {@link Enum_ParticleAnchor}.
 	 */
 	PARTICLES,
+	/**
+	 * An atlas region, tiled as an IMAGE is, drawn through one of the effects the library ships (format 7):
+	 * {@link Parallax_Model#shaderEffect}, with its numbers. See {@link Enum_ShaderEffect}.
+	 */
+	SHADER,
 }

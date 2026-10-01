@@ -24,6 +24,7 @@ import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import jks.tools2d.parallax.browsertest.RecordingBatch;
 import jks.tools2d.parallax.pages.Enum_LayerKind;
+import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -129,5 +130,12 @@ class ParticlePageTest
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.BROWSER), "ReaderCases run in Chrome");
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.GODOT), "engines/godot/tests/particles");
 		assertTrue(EffectSupport.whyNot(Enum_LayerKind.PARTICLES, EffectSupport.Engine.JME).contains("EMPTY"));
+		// engines/godot/tests/shaders, compared by pixels in Godot and jME; WebGlCases in Chrome.
+		for (EffectSupport.Engine engine : EffectSupport.Engine.values())
+		{
+			assertTrue(EffectSupport.draws(Enum_LayerKind.SHADER, engine), engine + " draws SHADER layers");
+			for (Enum_ShaderEffect effect : Enum_ShaderEffect.values())
+				assertTrue(EffectSupport.draws(effect, engine), engine + " draws " + effect);
+		}
 	}
 }

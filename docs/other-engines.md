@@ -41,6 +41,10 @@ A reader is three pieces, and the third is where the work is:
      `world_width × sizeRatio` wide and `world_height × sizeRatio` high, scrolls and tiles like an image, and calls the
      game's hook registered under its `name` once per visible tile instead of drawing. A kind the reader does not
      know fails the load, as `Utils_Page_Json` does. `engines/godot/tests/effects` is its round.
+   - A `SHADER` layer (format 7) is drawn as an `IMAGE` one, through its `shaderEffect`, `WAVE` or `FOG`, ported from
+     `core/src/.../GdxLayerEffects.java`: the same numbers (`GdxLayerEffects.uniforms`), the same lines, the phase from
+     the seconds `act` has stepped, shared by both pages of a cross-fade. An effect the reader does not know fails the
+     load. `engines/godot/tests/shaders` is its round.
    - The page is anchored to the screen, not to the game camera.
    - A cross-fade matches the two pages from their FRONT layer: each incoming layer takes the distance its outgoing
      counterpart has scrolled from its decal; an incoming page with more layers has back layers with no counterpart,
