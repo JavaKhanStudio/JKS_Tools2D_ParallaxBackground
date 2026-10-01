@@ -66,6 +66,7 @@ final class ReaderCases
 				new BrowserCase("reader: particlesPastTheirBoxAreDrawnWhenTheBoxIsNot", () -> new ReaderCases().particlesPastTheirBoxAreDrawnWhenTheBoxIsNot()),
 				new BrowserCase("reader: particlesFadeAndTintWithTheirPage", () -> new ReaderCases().particlesFadeAndTintWithTheirPage()),
 				new BrowserCase("reader: aParticleLayerWithoutAnEffectDrawsNothing", () -> new ReaderCases().aParticleLayerWithoutAnEffectDrawsNothing()),
+				new BrowserCase("reader: aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame", () -> new ReaderCases().aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame()),
 				new BrowserCase("reader: shaderLayerIsTiledThroughItsEffectInEveryRepeatMode", () -> new ReaderCases().shaderLayerIsTiledThroughItsEffectInEveryRepeatMode()),
 				new BrowserCase("reader: shaderPhaseFollowsTheReaderClockAndWraps", () -> new ReaderCases().shaderPhaseFollowsTheReaderClockAndWraps()),
 				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ReaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
@@ -622,6 +623,56 @@ final class ReaderCases
 		reader.act(1 / 60f, 100, 100);
 		reader.draw(camera, batch);
 		equal(0, draws.size(), "draws");
+	}
+
+	/**
+	 * A layer built and drawn on its first frame shows its effect already running: 20 particles a second, each living
+	 * 3 s, rising 1 unit a second from a 12-wide line, is about 60 particles spread 3 units up, not the one or none
+	 * emitted in a frame. Its cross-fade copy is warmed as well.
+	 */
+	void aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame()
+	{
+		ParticleEmitter emitter = new ParticleEmitter();
+		emitter.setMaxParticleCount(60);
+		emitter.setContinuous(true);
+		emitter.getDuration().setLow(1000);
+		emitter.getEmission().setHigh(20);
+		emitter.getLife().setHigh(3000);
+		emitter.getSpawnShape().setShape(ParticleEmitter.SpawnShape.line);
+		emitter.getSpawnWidth().setHigh(12);
+		emitter.getXScale().setHigh(1);
+		emitter.getVelocity().setActive(true);
+		emitter.getVelocity().setHigh(1);
+		emitter.getAngle().setActive(true);
+		emitter.getAngle().setHigh(90);
+		emitter.getTransparency().setHigh(1);
+		emitter.setAdditive(false);
+		emitter.setSprites(new Array<Sprite>(new Sprite[] { new Sprite(strippedRegion(10, 10, 10, 10, 0, 0)) }));
+		ParticleEffect effect = new ParticleEffect();
+		effect.getEmitters().add(emitter);
+
+		ParallaxPageReader reader = reader(false, false);
+		reader.setWorldSize(40, 22.5f);
+		ParallaxLayer rising = ParallaxLayer.particles(new ParallaxParticles(effect), Enum_ParticleAnchor.LAYER, 0.3f);
+		rising.setDecalPercentX(25);
+		rising.setDecalPercentY(25);
+		List<ParallaxLayer> page = list(rising);
+		reader.addLayers(page);
+		reader.act(1 / 60f, 0, 0);
+		reader.draw(camera, batch);
+
+		List<float[]> dots = dots();
+		isTrue(dots.size() >= 50, dots.size() + " particles out on the first frame, not about 60");
+		float lowest = Float.MAX_VALUE, highest = -Float.MAX_VALUE;
+		for (float[] dot : dots)
+		{
+			lowest = Math.min(lowest, dot[1]);
+			highest = Math.max(highest, dot[1]);
+		}
+		isTrue(highest - lowest > 2.5f, "the particles are spread " + (highest - lowest) + " up, not all just emitted");
+
+		reader.addLayersTransfert(page(page), 1); // the incoming copy builds an effect of its own
+		isTrue(!reader.transferLayers.get(0).getParticles().isEmpty(), "the cross-fade copy's particles are out too");
 	}
 
 	/**

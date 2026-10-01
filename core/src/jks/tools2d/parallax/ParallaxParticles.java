@@ -18,10 +18,13 @@ import com.badlogic.gdx.utils.Array;
  * <p>
  * Allocates nothing per frame: {@link #allocate()} builds every particle an emitter can hold when the page loads, which
  * libGDX would otherwise do the first time each one is emitted. A finished effect starts again: a background loops.
+ * {@link #warmUp()} runs it on until it is already falling when its page is first drawn.
  */
 public class ParallaxParticles extends ParticleEffect
 {
 	private static final int VERTICES = 20;
+	/** {@link #warmUp()} runs the effect on in steps this long, and never longer than {@link #MAX_WARM_UP} seconds. */
+	static final float WARM_UP_STEP = 1 / 30f, MAX_WARM_UP = 30;
 
 	/** Where the particles are drawn from, and the color multiplied into them; set by {@link #draw}. */
 	private float offsetX, offsetY;
@@ -56,6 +59,34 @@ public class ParallaxParticles extends ParticleEffect
 				((Emitter) emitters.get(i)).allocate();
 		// Its box is built on first use.
 		getBoundingBox();
+	}
+
+	/**
+	 * Runs the effect on, in steps of {@link #WARM_UP_STEP}, for as long as its slowest emitter takes to start and its
+	 * longest-lived particle lives ({@link #warmUpSeconds()}): a page shows its snow already falling, not falling in, as a
+	 * Godot scene's {@code preprocess} does. Load time only: a page's effects are warmed when it is built.
+	 */
+	public void warmUp()
+	{
+		for (float left = warmUpSeconds(); left > 0; left -= WARM_UP_STEP)
+			update(Math.min(WARM_UP_STEP, left));
+	}
+
+	/** How long {@link #warmUp()} runs the effect: its longest delay and particle life, at most {@link #MAX_WARM_UP}. */
+	public float warmUpSeconds()
+	{
+		float longest = 0;
+		Array<ParticleEmitter> emitters = getEmitters();
+		for (int i = 0, n = emitters.size; i < n; i++)
+		{
+			ParticleEmitter emitter = emitters.get(i);
+			float delay = emitter.getDelay().isActive() ? emitter.getDelay().getLowMax() : 0;
+			ParticleEmitter.ScaledNumericValue life = emitter.getLife();
+			float lowest = Math.max(life.getLowMin(), life.getLowMax());
+			float highest = Math.max(life.getHighMin(), life.getHighMax()) + (life.isRelative() ? lowest : 0);
+			longest = Math.max(longest, (delay + Math.max(lowest, highest)) / 1000);
+		}
+		return Math.min(longest, MAX_WARM_UP);
 	}
 
 	/** Runs the effect {@code delta} seconds on, starting it again once finished, and measures where its particles are. */

@@ -179,7 +179,9 @@ More:
   with its page. Pinned to its layer (`LAYER`), it is drawn at the bottom-left corner of every tile the view shows;
   from the view (`VIEW`), once, and the layer's scroll moves the particles already out, so a far snowfall drifts
   slower than a near one. A `.p` "line" spawns rightwards from its emitter: to cover the view, start it at the left
-  and make it wider than the view by what the layer drifts over a particle's life. The effect loops, and allocates
+  and make it wider than the view by what the layer drifts over a particle's life. The effect is warmed up when the
+  layer is built (its longest delay and particle life, at most 30 s, in 1/30 s steps: `ParallaxParticles.warmUp`), so
+  a page shows its snow already falling, as a Godot scene's `preprocess` does. The effect loops, and allocates
   nothing per frame (`FrameAllocationTest`). Each particle is a quad blended over the layers behind it: on a still
   page, 630 flakes took a frame from 0.33 to 0.51 ms (`tools/r178-particle-stress/run.sh`). A browser game draws them
   too. Godot plays the layer's own Godot scene (below), jME none (no 2D particle
