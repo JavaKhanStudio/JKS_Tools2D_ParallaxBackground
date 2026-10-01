@@ -1,0 +1,43 @@
+{
+ "round": "particles",
+ "about": "PARTICLES layers in libGDX (r178, docs/effect-layers.md phase 1): Hiver's layers with snow between its two front ones, from HiverSnow.atlas (Hiver.png and a snowflake page). Stills only: tools/parallax-lab-shots.sh core/test-data/particles OUT. Godot draws none until phase 2 (r179), jME never.",
+ "scenes": [
+  {
+   "id": "p01",
+   "page": "core/test-data/particles/p01.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "snow-from-the-view",
+   "about": "snow-wide.p anchored to the view at its top-left corner (a .p's line spawns rightwards from its emitter): snow over the whole view, drifting with the layer's scroll"
+  },
+  {
+   "id": "p02",
+   "page": "core/test-data/particles/p02.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "snow-pinned-to-the-layer",
+   "about": "snow.p pinned to a 12-wide box every 30 units: columns of snow scrolling with their layer"
+  },
+  {
+   "id": "p03",
+   "page": "core/test-data/particles/p01.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "snow-cross-fade-tinted",
+   "about": "p01 cross-fading into p02 while tinting orange: the snow fades and tints with its page",
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "core/test-data/particles/p02.jplax",
+    "atlasDir": "core/test-data/particles"
+   },
+   "tint": {
+    "at": 4,
+    "seconds": 4,
+    "color": [
+     1.0,
+     0.55,
+     0.3,
+     1.0
+    ]
+   }
+  }
+ ]
+}

@@ -18,13 +18,15 @@ import com.esotericsoftware.kryo.io.Output;
  * false.</li>
  * <li>version 5: the version 4 layout with each layer's kind (its name, a String) and name (a String, null when unset)
  * stored after mirror. Older files read IMAGE and null.</li>
+ * <li>version 6: the version 5 layout with each layer's particlesLibgdx and particlesGodot (Strings, null when unset)
+ * and particlesAnchor (its name) stored after name. Older files read null, null and LAYER.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 5;
+	static final int CURRENT_VERSION = 6;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

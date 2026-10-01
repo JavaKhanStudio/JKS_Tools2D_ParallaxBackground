@@ -51,6 +51,9 @@ public final class PageDump
 			line(out, at + "padYFactor", layer.padYFactor);
 			line(out, at + "kind", layer.kind);
 			line(out, at + "name", layer.name);
+			line(out, at + "particlesLibgdx", layer.particlesLibgdx);
+			line(out, at + "particlesGodot", layer.particlesGodot);
+			line(out, at + "particlesAnchor", layer.particlesAnchor);
 		}
 		return out.toString();
 	}

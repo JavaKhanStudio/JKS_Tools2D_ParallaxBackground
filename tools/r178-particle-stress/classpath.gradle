@@ -1,0 +1,11 @@
+// Prints core's runtime classpath (its classes and jars): ./gradlew -q -I tools/r178-particle-stress/classpath.gradle :core:printRuntimeClasspath
+allprojects {
+	if (name == 'core')
+		afterEvaluate {
+			tasks.register('printRuntimeClasspath') {
+				dependsOn 'classes'
+				def path = sourceSets.main.runtimeClasspath
+				doLast { println path.asPath }
+			}
+		}
+}

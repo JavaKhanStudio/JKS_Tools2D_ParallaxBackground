@@ -110,6 +110,11 @@ public final class Utils_Page_Json
 		if (kind != null)
 			layer.kind = readKind(kind);
 		layer.name = readString(json, "name");
+		layer.particlesLibgdx = readString(json, "particlesLibgdx");
+		layer.particlesGodot = readString(json, "particlesGodot");
+		String anchor = readString(json, "particlesAnchor");
+		if (anchor != null)
+			layer.particlesAnchor = readAnchor(anchor);
 		return layer;
 	}
 
@@ -130,6 +135,14 @@ public final class Utils_Page_Json
 			if (value.name().equals(kind))
 				return value;
 		throw new GdxRuntimeException("Layer kind " + kind + " is not known here: the page was written by a newer version");
+	}
+
+	private static Enum_ParticleAnchor readAnchor(String anchor)
+	{
+		for (Enum_ParticleAnchor value : Enum_ParticleAnchor.values())
+			if (value.name().equals(anchor))
+				return value;
+		throw new GdxRuntimeException("Particle anchor " + anchor + " is not known here: the page was written by a newer version");
 	}
 
 	private static Color readColor(JsonValue json, Color fallback)

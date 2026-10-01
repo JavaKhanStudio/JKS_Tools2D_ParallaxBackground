@@ -64,8 +64,15 @@ libGDX's `ParticleEffect`, in a desktop game and in the browser) and a Godot sce
   max count; `FrameAllocationTest` must still count zero bytes with a particle layer playing, and `:demo:stress`
   measures one.
 
-Open, asked on phase 1: where the effect sits when the view moves (pinned to a point of the layer and scrolled with
-it, or following the view so snow never runs out), and so what a repeating layer does with it.
+**Decided** (Simon, 2026-10-01, on r178): where the effect sits when the view moves is **a setting on the layer**,
+`particlesAnchor` (format 6). `LAYER` pins it to the bottom-left corner of the layer's box, the corner a tile is placed
+by: it scrolls with the layer and is drawn once per tile the view shows, as an `EMPTY` layer's hook is called (smoke,
+spray; snow ends at the effect's edge). `VIEW` emits it from the view, at the layer's decal, drawn once whatever the
+page repeats on; the particles already out move by the layer's scroll, so the depth still shows, and the emitter never
+leaves the view (snow, rain). Shipped in r178: `ParallaxParticles` keeps the particles in the layer's own space and
+moves them to each tile as it draws them, so one simulation serves every tile; a tile is culled by where its particles
+are, not by its box. The pages in `core/test-data/particles` render both (`tools/parallax-lab-shots.sh
+core/test-data/particles OUT`).
 
 ## Shaders: options
 

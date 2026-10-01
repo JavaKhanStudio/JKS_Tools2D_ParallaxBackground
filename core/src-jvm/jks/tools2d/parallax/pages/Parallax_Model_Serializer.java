@@ -39,6 +39,13 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			output.writeString(model.kind.name());
 			output.writeString(model.name);
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 6)
+		{
+			output.writeString(model.particlesLibgdx);
+			output.writeString(model.particlesGodot);
+			output.writeString(model.particlesAnchor.name());
+		}
 	}
 
 	@Override
@@ -76,6 +83,17 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			catch (IllegalArgumentException e)
 			{throw new KryoException("Layer kind " + kind + " is not known here: the .plax was written by a newer version");}
 			model.name = input.readString();
+		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 6)
+		{
+			model.particlesLibgdx = input.readString();
+			model.particlesGodot = input.readString();
+			String anchor = input.readString();
+			try
+			{model.particlesAnchor = Enum_ParticleAnchor.valueOf(anchor);}
+			catch (IllegalArgumentException e)
+			{throw new KryoException("Particle anchor " + anchor + " is not known here: the .plax was written by a newer version");}
 		}
 
 		return model;

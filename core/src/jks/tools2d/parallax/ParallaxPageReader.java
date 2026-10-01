@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.Enum_LayerKind;
+import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
@@ -19,7 +20,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * Layers are screen-anchored: they are laid out from the left/bottom edge of the camera view, so moving the game
  * camera does not drag the background away.
  * <p>
- * An EMPTY layer is drawn by the game: {@link #setLayerHook} registers what draws it, under the layer's name.
+ * An EMPTY layer is drawn by the game: {@link #setLayerHook} registers what draws it, under the layer's name. A
+ * PARTICLES layer draws its {@link ParallaxParticles} in its place: once per tile when pinned to the layer, once from
+ * the view when anchored to it ({@link Enum_ParticleAnchor}).
  */
 public class ParallaxPageReader
 {
@@ -189,6 +192,28 @@ public class ParallaxPageReader
 			return;
 		}
 
+		if (layer.kind == Enum_LayerKind.PARTICLES)
+		{
+			ParallaxParticles particles = layer.getParticles();
+			if (particles == null || particles.isEmpty())
+				return;
+			int srcColor = batch.getBlendSrcFunc(), dstColor = batch.getBlendDstFunc();
+			int srcAlpha = batch.getBlendSrcFuncAlpha(), dstAlpha = batch.getBlendDstFuncAlpha();
+			if (layer.getAnchor() == Enum_ParticleAnchor.VIEW)
+			{
+				float x = viewLeft + layer.getDecalPercentX() * (layer.getWorldWidth() / 100);
+				float y = viewBottom + drawingHeight + layer.getDecalPercentY() * (layer.getWorldHeight() / 100);
+				if (x + particles.getMaxX() > viewLeft && x + particles.getMinX() < viewLeft + viewWidth
+						&& y + particles.getMaxY() > viewBottom && y + particles.getMinY() < viewBottom + viewHeight)
+					particles.draw(batch, x, y, batch.getColor());
+			}
+			else
+				tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
+			// The emitters set the blend function their .p asks for: the next layer is drawn with the game's.
+			batch.setBlendFunctionSeparate(srcColor, dstColor, srcAlpha, dstAlpha);
+			return;
+		}
+
 		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
 
 		if (layer.isMirror && repeatOnX != repeatOnY)
@@ -203,7 +228,7 @@ public class ParallaxPageReader
 
 	/**
 	 * Draws the layer at {@code (x, y)} plus every repetition, on the requested axes, that intersects the view; through
-	 * {@code hook} when it is not null.
+	 * {@code hook} when it is not null. A PARTICLES layer's tile is where its particles are, which may reach past its box.
 	 */
 	private void tile(ParallaxLayer layer, Batch batch, float x, float y, boolean onX, boolean onY, boolean mirror, LayerHook hook)
 	{
@@ -211,28 +236,35 @@ public class ParallaxPageReader
 		if (width <= 0 || height <= 0)
 			return;
 
+		ParallaxParticles particles = layer.kind == Enum_LayerKind.PARTICLES ? layer.getParticles() : null;
+		// What is drawn of a tile, from its corner: the box, or the particles.
+		float left = particles == null ? 0 : particles.getMinX(), bottom = particles == null ? 0 : particles.getMinY();
+		float right = particles == null ? width : particles.getMaxX(), top = particles == null ? height : particles.getMaxY();
+
 		// A step <= 0 (e.g. a negative padding larger than the image) can't tile: draw the layer once.
 		float stepX = layer.getTotalWidth(), stepY = layer.getTotalHeight();
 		boolean tileX = onX && stepX > 0, tileY = onY && stepY > 0;
 
-		float startX = tileX ? x - (float) Math.ceil((x + width - viewLeft) / stepX) * stepX : x;
-		float startY = tileY ? y - (float) Math.ceil((y + height - viewBottom) / stepY) * stepY : y;
-		int countX = tileX ? (int) Math.ceil((viewLeft + viewWidth - startX) / stepX) + 1 : 1;
-		int countY = tileY ? (int) Math.ceil((viewBottom + viewHeight - startY) / stepY) + 1 : 1;
+		float startX = tileX ? x - (float) Math.ceil((x + right - viewLeft) / stepX) * stepX : x;
+		float startY = tileY ? y - (float) Math.ceil((y + top - viewBottom) / stepY) * stepY : y;
+		int countX = tileX ? (int) Math.ceil((viewLeft + viewWidth - left - startX) / stepX) + 1 : 1;
+		int countY = tileY ? (int) Math.ceil((viewBottom + viewHeight - bottom - startY) / stepY) + 1 : 1;
 
 		for (int row = 0; row < countY; row++)
 		{
 			float drawY = startY + row * stepY;
-			if (drawY + height <= viewBottom || drawY >= viewBottom + viewHeight)
+			if (drawY + top <= viewBottom || drawY + bottom >= viewBottom + viewHeight)
 				continue;
 
 			for (int column = 0; column < countX; column++)
 			{
 				float drawX = startX + column * stepX;
-				if (drawX + width <= viewLeft || drawX >= viewLeft + viewWidth)
+				if (drawX + right <= viewLeft || drawX + left >= viewLeft + viewWidth)
 					continue;
 
-				if (hook != null)
+				if (particles != null)
+					particles.draw(batch, drawX, drawY, batch.getColor());
+				else if (hook != null)
 					hook.draw(batch, layer, drawX, drawY, width, height);
 				else if (mirror)
 					layer.drawMirror(batch, drawX, drawY, onX);

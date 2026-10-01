@@ -115,6 +115,7 @@ class PlaxFormatTest
 		for (Parallax_Model layer : original.pageModel.pageList)
 			assertEquals(Enum_LayerKind.IMAGE, layer.kind, "files older than format 5 hold image layers");
 		original.pageModel.pageList.add(emptyLayer());
+		original.pageModel.pageList.add(particleLayer());
 
 		byte[] rewritten = write(original);
 		// Byte 0 is Kryo's reference marker for the page itself.
@@ -125,9 +126,53 @@ class PlaxFormatTest
 		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
 		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
 		assertTrue(reread.useOriginalSize, "useOriginalSize is stored since format 4");
-		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
 		assertEquals(Enum_LayerKind.EMPTY, slot.kind, "kind is stored since format 5");
 		assertEquals("birds", slot.name, "name is stored since format 5");
+		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals("effects/snow.p", snow.particlesLibgdx, "the libGDX effect is stored since format 6");
+		assertEquals("effects/snow.tscn", snow.particlesGodot, "the Godot scene is stored since format 6");
+		assertEquals(Enum_ParticleAnchor.VIEW, snow.particlesAnchor, "the anchor is stored since format 6");
+	}
+
+	/** A PARTICLES layer naming an effect per engine, emitted from the view. */
+	static Parallax_Model particleLayer()
+	{
+		Parallax_Model snow = new Parallax_Model();
+		snow.kind = Enum_LayerKind.PARTICLES;
+		snow.name = "snow";
+		snow.particlesLibgdx = "effects/snow.p";
+		snow.particlesGodot = "effects/snow.tscn";
+		snow.particlesAnchor = Enum_ParticleAnchor.VIEW;
+		snow.sizeRatio = 0.3f;
+		snow.parallaxScalingSpeedX = 0.05f;
+		snow.decal_Y_Ratio = 90;
+		return snow;
+	}
+
+	/** Format 5 has no particle fields: written there, a layer reads them as none, pinned to the layer. */
+	@Test
+	void format5FilesStillLoadWithoutParticles() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.add(emptyLayer());
+		Parallax_Model layer = original.pageModel.pageList.get(0);
+		layer.particlesLibgdx = "a.p";
+		layer.particlesGodot = "a.tscn";
+		layer.particlesAnchor = Enum_ParticleAnchor.VIEW;
+
+		byte[] written = write(original, 5);
+		assertEquals(5, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		Parallax_Model rereadLayer = reread.pageModel.pageList.get(0);
+		assertEquals(null, rereadLayer.particlesLibgdx, "format 5 has no libGDX effect");
+		assertEquals(null, rereadLayer.particlesGodot, "nor a Godot scene");
+		assertEquals(Enum_ParticleAnchor.LAYER, rereadLayer.particlesAnchor, "and pins to the layer");
+		layer.particlesLibgdx = layer.particlesGodot = null;
+		layer.particlesAnchor = Enum_ParticleAnchor.LAYER;
+		assertPageEquals(original, reread);
+		assertEquals(Enum_LayerKind.EMPTY, reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1).kind);
 	}
 
 	/** An EMPTY layer between the far and near layers, named for a game's hook. */
@@ -243,6 +288,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.get(0).mirror = true;
 		original.useOriginalSize = true;
 		original.pageModel.pageList.add(2, emptyLayer());
+		original.pageModel.pageList.add(4, particleLayer());
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
@@ -295,6 +341,9 @@ class PlaxFormatTest
 			assertEquals(expected.mirror, actual.mirror, name);
 			assertEquals(expected.kind, actual.kind, name);
 			assertEquals(expected.name, actual.name, name);
+			assertEquals(expected.particlesLibgdx, actual.particlesLibgdx, name);
+			assertEquals(expected.particlesGodot, actual.particlesGodot, name);
+			assertEquals(expected.particlesAnchor, actual.particlesAnchor, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);
