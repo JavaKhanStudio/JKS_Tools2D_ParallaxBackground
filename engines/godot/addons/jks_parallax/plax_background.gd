@@ -654,16 +654,21 @@ func _tile(
 ) -> void:
 	var width: float = l.width
 	var height: float = l.height
-	if width <= 0 or height <= 0:
+	var sequence: bool = l.model.kind == "SEQUENCE"
+	# A SEQUENCE layer whose pads outweigh its segments is no wider than 0, its slots still drawn: once, below.
+	if (width <= 0 and not sequence) or height <= 0:
 		return
+	# What is drawn of a tile, from its corner: the box, or a SEQUENCE layer's slots (ParallaxLayer.getCycleLeft/Right).
+	var left := _cycle_left(l) if sequence else 0.0
+	var right := _cycle_right(l) if sequence else width
 	# A step <= 0 (a negative padding larger than the image) can't tile: the layer is drawn once.
 	var step_x: float = width + l.model.padX
 	var step_y: float = height + l.model.padY
 	var tile_x := on_x and step_x > 0
 	var tile_y := on_y and step_y > 0
-	var start_x := x - ceilf((x + width) / step_x) * step_x if tile_x else x
+	var start_x := x - ceilf((x + right) / step_x) * step_x if tile_x else x
 	var start_y := y - ceilf((y + height) / step_y) * step_y if tile_y else y
-	var count_x := int(ceilf((view_w - start_x) / step_x)) + 1 if tile_x else 1
+	var count_x := int(ceilf((view_w - left - start_x) / step_x)) + 1 if tile_x else 1
 	var count_y := int(ceilf((view_h - start_y) / step_y)) + 1 if tile_y else 1
 	for row in count_y:
 		var draw_y := start_y + row * step_y
@@ -671,7 +676,7 @@ func _tile(
 			continue
 		for column in count_x:
 			var draw_x := start_x + column * step_x
-			if draw_x + width <= 0 or draw_x >= view_w:
+			if draw_x + right <= 0 or draw_x + left >= view_w:
 				continue
 			if hook.is_valid():
 				var rect := Rect2(draw_x * _ppu, _screen_h - (draw_y + height) * _ppu, width * _ppu, height * _ppu)
@@ -692,6 +697,32 @@ func _tile(
 				_draw_region(l, draw_x, draw_y, l.width, l.height, fx, fy)
 
 
+## ParallaxLayer.getCycleLeft: where a SEQUENCE layer's leftmost slot starts, from the tile's corner; below 0 only when a
+## negative padX wider than a segment takes slots back past it.
+func _cycle_left(l: Dictionary) -> float:
+	if _cycle_ordered(l):
+		return 0.0
+	var left := 0.0
+	for slot in l.cycle.size():
+		left = minf(left, l.height * l.edges[slot] + slot * l.model.padX)
+	return left
+
+
+## ParallaxLayer.getCycleRight: where its rightmost slot ends; the layer's width unless slots go back.
+func _cycle_right(l: Dictionary) -> float:
+	if _cycle_ordered(l):
+		return l.width
+	var right := -INF
+	for slot in l.cycle.size():
+		right = maxf(right, l.height * (l.edges[slot] + l.segments[l.cycle[slot]].aspect) + slot * l.model.padX)
+	return right
+
+
+## Every slot starts right of the one before: no negative padX outweighs the narrowest segment.
+static func _cycle_ordered(l: Dictionary) -> bool:
+	return l.height * l.narrowest + l.model.padX > 0
+
+
 ## ParallaxLayer.drawCycle: the slots of a SEQUENCE layer's cycle, starting at (x, y), that reach between `from_x` and
 ## `to_x`. A binary search finds the first, then the walk stops past `to_x`, so a long cycle costs only what shows. A
 ## flip mirrors each segment in its own slot; the slots keep their order.
@@ -702,7 +733,7 @@ func _draw_cycle(l: Dictionary, x: float, y: float, from_x: float, to_x: float, 
 	var cycle: PackedInt32Array = l.cycle
 	var slots := cycle.size()
 	# A negative padX wider than a segment makes the edges go back: then every slot is looked at.
-	var ordered: bool = height * l.narrowest + pad > 0
+	var ordered := _cycle_ordered(l)
 	var first := 0
 	if ordered:
 		var last := slots

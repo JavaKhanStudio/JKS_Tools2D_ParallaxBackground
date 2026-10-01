@@ -68,7 +68,8 @@ to 32 bits) matches them: engines/godot/tests/sequence_cycle.gd (the JVM's picks
 slots drawn against a walk over every slot) and the pixel round engines/godot/tests/sequence, which jME runs too. Change
 the generator or drawCycle and change both, regenerate picks.json, run tools/r183-sequence/mutate.sh. A game's seed
 (reader.setSequenceSeed, Godot set_sequence_seed) is XORed with each layer's stored one. A cycle no wider than 0 (pads
-outweighing segments) draws nothing at all, in both.
+outweighing segments) can't tile and is drawn once, culled by its slots' real extent (getCycleLeft/Right, Godot
+_cycle_left/_right), in both (r202; ReaderCases.sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce, q04 'backward').
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.

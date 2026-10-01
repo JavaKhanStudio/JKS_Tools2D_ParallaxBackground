@@ -273,7 +273,7 @@ public class ParallaxLayer
 		float height = getRegionHeight();
 		int slots = cycle.length;
 		// A negative padX wider than a segment makes the edges go back: then every slot is looked at.
-		boolean ordered = height * narrowestSegment + padX > 0;
+		boolean ordered = isCycleOrdered();
 
 		int first = 0;
 		if (ordered)
@@ -414,6 +414,39 @@ public class ParallaxLayer
 			return getRegionHeight() * cycleEdges[cycle.length] + (cycle.length - 1) * padX;
 		return getRegionWidth();
 	}
+
+	/**
+	 * Where a SEQUENCE layer's leftmost slot starts, from the tile's corner: 0, unless a negative padX wider than a
+	 * segment takes slots back past it. Other kinds: 0. Walks the slots only when they go back.
+	 */
+	public float getCycleLeft()
+	{
+		if (kind != Enum_LayerKind.SEQUENCE || cycle == null || isCycleOrdered())
+			return 0;
+		float height = getRegionHeight(), left = 0;
+		for (int slot = 0; slot < cycle.length; slot++)
+			left = Math.min(left, height * cycleEdges[slot] + slot * padX);
+		return left;
+	}
+
+	/**
+	 * Where a SEQUENCE layer's rightmost slot ends, from the tile's corner: {@link #getWidth()}, unless a negative padX
+	 * wider than a segment brings slots back (then the width can be 0 or less, the slots still drawn). Other kinds: the
+	 * width.
+	 */
+	public float getCycleRight()
+	{
+		if (kind != Enum_LayerKind.SEQUENCE || cycle == null || isCycleOrdered())
+			return getWidth();
+		float height = getRegionHeight(), right = -Float.MAX_VALUE;
+		for (int slot = 0; slot < cycle.length; slot++)
+			right = Math.max(right, height * (cycleEdges[slot] + segmentAspect[cycle[slot]]) + slot * padX);
+		return right;
+	}
+
+	/** True when every slot starts right of the one before: no negative padX outweighs the narrowest segment. */
+	private boolean isCycleOrdered()
+	{return getRegionHeight() * narrowestSegment + padX > 0;}
 
 	public float getHeight()
 	{return getRegionHeight();}
