@@ -94,6 +94,10 @@ A THIRD reader has the same blind spot: engines/godot/addons/jks_parallax/plax_p
 Godot port, r87) lists the layer fields in LAYER_DEFAULTS and reads the page's by hand. A
 field missing there loads as its default in a Godot game. Add it, and a scene using it to
 engines/godot/tests/conformance; `tools/godot-parallax-shots.sh` is the gate.
+A layer field also lives on ParallaxLayer: setUpEverything copies it in, clone() copies it
+(ParallaxLayerTest), and pages/Utils_Page.buildFromPage writes it back. That is the editor's
+save path: a field it misses is dropped when the editor saves the page. BuildFromPageTest
+round-trips a page through it.
 Color_Serializer writes channels in A, B, G, R order. That is deliberate now; leave it.
 Gate: `./gradlew :core:test`. PlaxFormatTest walks every .plax under core/test-data/samples
 (byte copies of the 2019 editor's six and the demo's two, r130: core/test-data/samples/README.md

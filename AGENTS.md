@@ -48,6 +48,8 @@ repair.
   which `JsonPageTest` uses.
 - A new stored field is read a third time in `engines/godot/addons/jks_parallax/plax_page.gd` (`LAYER_DEFAULTS` for a
   layer's): one it misses loads as its default in a Godot game.
+- A new layer field is also written back from the `ParallaxLayer` by `pages/Utils_Page.buildFromPage`, the editor's
+  save path: one it misses is dropped when the editor saves. `BuildFromPageTest` round-trips a page through it.
 - `core/test-data/**` holds the test fixtures for `core/test/.../PlaxFormatTest` and the reader rounds' atlases:
   `samples/` is a byte copy of the 2019 editor's six `.plax` and the demo's pages (r130, `samples/README.md`). Never
   re-export or overwrite them, nor the originals in the editor repository.

@@ -28,6 +28,8 @@ public class ParallaxLayer
 	private ParallaxParticles particles;
 	/** Where a PARTICLES layer's effect sits as the page scrolls. */
 	private Enum_ParticleAnchor anchor = Enum_ParticleAnchor.LAYER;
+	/** The effect files the page names for a PARTICLES layer, kept so a page saved from its layers names them again. */
+	private String particlesLibgdx, particlesGodot;
 
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
@@ -137,6 +139,8 @@ public class ParallaxLayer
 		setPadYFactor(model.padYFactor);
 		setMirror(model.mirror);
 		setName(model.name);
+		particlesLibgdx = model.particlesLibgdx;
+		particlesGodot = model.particlesGodot;
 		if (kind == Enum_LayerKind.PARTICLES && model.particlesAnchor != null)
 			anchor = model.particlesAnchor;
 	}
@@ -193,6 +197,8 @@ public class ParallaxLayer
 		if (particles != null)
 			copy.setParticles(new ParallaxParticles(particles));
 		copy.anchor = anchor;
+		copy.particlesLibgdx = particlesLibgdx;
+		copy.particlesGodot = particlesGodot;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
 		copy.parallaxSpeedRatioY = parallaxSpeedRatioY;
 		copy.worldWidth = worldWidth;
@@ -423,6 +429,20 @@ public class ParallaxLayer
 
 	public void setAnchor(Enum_ParticleAnchor anchor)
 	{this.anchor = anchor == null ? Enum_ParticleAnchor.LAYER : anchor;}
+
+	/** The libGDX effect (.p) the page names for this layer, null when none; see {@link Parallax_Model#particlesLibgdx}. */
+	public String getParticlesLibgdx()
+	{return particlesLibgdx;}
+
+	public void setParticlesLibgdx(String particlesLibgdx)
+	{this.particlesLibgdx = particlesLibgdx;}
+
+	/** The Godot scene the page names for this layer, null when none; libGDX never reads it. */
+	public String getParticlesGodot()
+	{return particlesGodot;}
+
+	public void setParticlesGodot(String particlesGodot)
+	{this.particlesGodot = particlesGodot;}
 
 	public boolean isUseOriginalSize()
 	{return useOriginalSize;}
