@@ -35,7 +35,9 @@ IndexOutOfBounds; incoming layers did not scroll during the fade and jumped when
 every frame forever. Ask `== null` deliberately.
 act() and render() run every frame: no allocation, no streams. `layers.stream().forEach` in
 act() is in MEMORY_LANE.md §5 as a defect, not as a style note.
-See it: `./gradlew :demo:run` — the showcase pages: SPACE cross-fades a scene's variants, ENTER the next scene, N tints, LEFT/RIGHT scroll, R resets (off screen: tools/demo-shots.sh).
+See it: `tools/parallax-lab-shots.sh ROUND OUT` (stills of a round's pages, off screen; engines/godot/tests/transfer
+for cross-fades), `./gradlew :jme:run`, or the editor repository's `./gradlew :demo:run`, which builds this core
+when this checkout sits beside it.
 THE GODOT PORT DRAWS THE SAME PAGE: engines/godot/addons/jks_parallax/plax_background.gd
 copies act(), tile(), drawRegion() and the gradients line for line (r87), and the cross-fade,
 syncTransferPositions and the tint (r94). Change how a page scrolls, tiles, fades or draws here and
@@ -94,15 +96,15 @@ field missing there loads as its default in a Godot game. Add it, and a scene us
 engines/godot/tests/conformance; `tools/godot-parallax-shots.sh` is the gate.
 Color_Serializer writes channels in A, B, G, R order. That is deliberate now; leave it.
 Gate: `./gradlew :core:test`. PlaxFormatTest walks every .plax under core/test-data/samples
-(byte copies of editor/Files' six and demo/assets' two, r130, so the library tests without
-editor/ and demo/) and checks it against the .plaxpj saved in the same 2019 session;
+(byte copies of the 2019 editor's six and the demo's two, r130: core/test-data/samples/README.md
+says where each came from) and checks it against the .plaxpj saved in the same 2019 session;
 core/test-data/onboard holds copies of On Board's four pages for JsonPageTest. It reads the
 `parallax.repoRoot` system property, which core/build.gradle sets — run the class straight
 from an IDE without it and it hunts for samples in the wrong folder.
 README.md's table of the three file formats mirrors these shapes; change what one holds and
 fix the table in the SAME commit.
-THE SAMPLE FILES ARE THE FIXTURES. Never re-export or overwrite core/test-data/samples or
-editor/Files/*.plax to make a test pass: they are the 2019 evidence and the only proof the legacy path still works.
+THE SAMPLE FILES ARE THE FIXTURES. Never re-export or overwrite core/test-data/samples, nor
+their originals in the editor repository, to make a test pass: they are the 2019 evidence and the only proof the legacy path still works.
 Shapes: .plax = Kryo binary (what games load), .jplax = JSON (what browser games load, and
 tooling), .plaxpj = the editor
 project. A page names its atlas BY FILE NAME; a layer names an image by region name AND its
@@ -115,68 +117,26 @@ description = "Atlases, packing, flatten, loose PNGs, filtering"
 color = "#7fd6a6"
 sort = 40
 context = """
-editor/src/jks/tools2d/parallax/editor/vue/edition/utils/: Utils_TextureAtlas (flatten +
-packing), Utils_LoadingImages (dropped PNGs), Utils_Texture (load, swap, dispose). Also
-vue/edition/pixmap/PixmapPacker + PixmapPackerIO.
-Image state is the static maps in gvars/GVars_Vue_Edition — allImage, imageRef (region ->
-Position_Infos), outsideTextureReserve (path -> region), textureLink (region -> layers).
-Update one and not the others and it goes wrong later, never at the call site;
-Utils_Texture.replaceTexture is the one place that does all of them together.
-FILTERING IS LINEAR ON PURPOSE. The 50px paddingSize and the tripled border in
-Utils_TextureAtlas exist FOR Linear and mipmaps — flipping to Nearest to "fix" bleeding
-deletes the reason the padding is there. The 2019 flatten did exactly that, with pages at 3x
-the largest image: 15000px, which many GPUs simply refuse to upload, and the packer reports
-nothing. Keep preferredPageSize 4096, capped at FVars_Extensions.atlasMaxSize 16384.
-Export writes MipMapLinearLinear,Linear (r40: 200 layers 24.7 -> 17.0 ms), so createPacker rounds
-page sides UP TO A POWER OF TWO: GLES2/WebGL1 (Android, the GWT build) draw a mipmapped NPOT
-page black, and desktop shows nothing wrong. tools/r40-mipmap-stress.sh re-measures it.
-EXCEPT a pixel-art project (Project_Data.pixelArt, the VE_Options "Pixel art" box, d14/r126): it
-writes Nearest,Nearest, no mipmaps, pages cropped without POT rounding (writtenSize's powerOfTwo
-follows the filter). Ticked, Utils_Texture.applyPixelArt sets every project texture Nearest in the
-live preview and gives the saved filters back on untick: a texture the project gains while it is on
-must go through applyPixelArt too (registerOutsideImage, replaceTexture and Vue_Edition do). Export
-decides to flatten from the atlas FILE's filter, never the live texture's, which the preview changed.
-tools/r126-pixel-art.txt drives it end to end.
-Pages are ALLOCATED at that size but WRITTEN cropped (PixmapPackerIO.trimmed, r114): each to its
-regions' extent plus padding, rounded up to a power of two. Before, 4 small images exported as a
-4096x4096 page, 85 MiB of video memory. tools/r114-flatten-export.txt + r114-atlas-check.py measure it.
-Utils_TextureAtlas.pageSize then lays the images out WITHOUT PIXELS (PixmapPacker.layoutOnly) at
-every POT shape from 2048 to 4096 and keeps the one writing the fewest pixels, fewer pages on a tie
-(r121: Hiver 4096x4096 -> 4096x2048 + 4096x1024, 85 -> 64 MiB). Same-name regions stay in position
-order across pages only because the guillotine strategy fills its LAST page alone: a packer that
-back-fills earlier pages would break findLayer's atlas-order lookup.
-ETC2 (d13, r125: Project_Data.etc2, the "ETC2" box): PixmapPackerIO also writes each page, bled
-and cropped, through pixmap/Etc2 (our own encoder, ETC1 modes + EAC alpha, parallel, mip chain
-averaged 2x2 because a compressed texture cannot glGenerateMipmap) as <name>_N.zktx, and
-<name>.etc2.atlas with the SAME page bodies. A change to what the atlas says of a page goes through
-pageBody, or the two atlases disagree. core picks the copy in Gvars_Parallax.atlasFile when
-setCompressedAtlases is on (falls back to the PNG atlas when the copy is missing). Proof:
-tools/r125-etc2-export.txt, then tools/r125-etc2-check.py (independent decoder, all ETC2 modes:
-PSNR per region, colour >= 30 dB, alpha >= 40) — and render both atlases on a GPU.
-Mipmap levels average 2^n-pixel blocks, so PixmapPacker duplicates each image's border over HALF
-the padding (25px), and export writes pages through PixmapPackerIO with bleed = true (ColorBleed:
-transparent pixels take their neighbours' colour). A 2px border tiled layers with a seam at every
-join, and unbled black outlined every silhouette in grey (r53: tools/r53-export-place.txt, then
-tools/r53-seam.py). An export is NOT pixel-identical to the preview of a Linear source atlas:
-mipmaps smooth it, by design.
-A layer names a region by NAME + POSITION among same-named regions, and PixmapPackerIO
-.packedName writes index -1 when a name is used once. TexturePacker numbers files from 1
-(ground_1, ground_2), so "ground"+index and "ground"+position are two different keys — mixing
-them listed ground #2 twice and ground #1 never. Flatten must pack EVERY region of a name, or
-the .plax written next asks for a region the atlas it just produced does not contain.
-PIXMAPS ARE NATIVE MEMORY AND NOTHING FREES THEM FOR YOU. The eyedropper allocated one per
-frame while armed and disposed none. Reading an atlas's pixels also changes the LIVE texture's
-filter as a side effect — export used to leave the editor's own preview on Nearest.
-TWO SEAMS WITH #project-io, and a ticket that crosses either needs BOTH tags: export triggers
-flatten (Utils_Saving.flattenAndExport), and flatten then rewrites every Position_Infos to
-fromAtlas=true, which is what the saver writes out; and hot reload swaps textures through
-Utils_Texture.replaceTexture while #project-io owns the watcher itself.
-Compiling proves nothing here. `./gradlew :editor:run`, flatten a sample from editor/Files and
-look at the atlas it wrote.
-MEMORY_LANE.md §6 is the recorded history here — HISTORY, not a backlog. Its paths and
-line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
-anything you fix that it still lists as broken MOVES into its §10 then/now table rather
-than being deleted.
+The library's side of atlases; packing, flatten and export are the editor's, on the
+parallax-editor board (its #assets pack, in the editor repository's .atelier/packs.toml).
+A page names its atlas BY FILE NAME and finds it next to the page (relativePath), through
+Gvars_Parallax's AssetManager. A layer names a region by NAME + POSITION among same-named
+regions; index -1 means a name used once. TexturePacker numbers files from 1 (ground_1,
+ground_2), so "ground"+index and "ground"+position are two different keys.
+The atlas file's `filter:` line is what the game draws with: the editor writes
+MipMapLinearLinear,Linear on power-of-two pages (GLES2/WebGL1 draw a mipmapped NPOT page
+black, desktop shows nothing wrong), Nearest,Nearest for a pixel-art project. The Godot reader
+reads the same line (engines/godot/tests/pixelart).
+useOriginalSize: an atlas packed with whitespace stripped (non-zero `offset:` lines) draws its
+regions at their original size only when the page says so.
+ETC2 (d13, r125, r173): Gvars_Parallax.setCompressedAtlases(on) makes atlasFile() load
+<name>.etc2.atlas instead of <name>.atlas, when that copy exists; supportsEtc2() is true on
+OpenGL ES 3 only (desktops unpack ETC2 to RGBA, browsers cannot read the gzipped pages).
+pages/Utils_Etc2_Atlas loads its <name>_N.zktx pages with their OWN mip levels: a compressed
+texture cannot glGenerateMipmap. Fixtures: core/test-data/etc2 (byte copies of an editor
+export, never re-exported), Etc2AtlasMipmapTest. Open question on a phone: r140.
+PIXMAPS AND TEXTURES ARE NATIVE MEMORY: dispose what you load; the AssetManager owns what it
+loaded.
 """
 
 # No `docs` tag (doubt d2, decision B, 2026-09-14): documentation work carries the tag of the
@@ -188,13 +148,13 @@ description = "Gradle, CI, dependency versions, Maven Central"
 color = "#e8938f"
 sort = 50
 context = """
-gradle.properties holds EVERY dependency version (gdx, visUi, kryo, jackson, junit) and the
+gradle.properties holds EVERY dependency version (gdx, lwjgl, kryo, jackson, gwt, junit, jme) and the
 published `version`. Nothing pins a version inline; add new ones there.
 build.gradle (root: encoding, lint, JUnit platform for all modules), core/build.gradle
-(sources in src/ = GWT-translatable, src-jvm/ = Kryo/Jackson, test/; publishing; gwtCheck), editor/build.gradle, demo/build.gradle,
-settings.gradle, .github/workflows/{ci,release,snapshot}.yml, RELEASING.md.
-core compiles to `options.release = 11` — games consume it, including on Android. Its tests
-and the editor and demo are 17. A Java 12+ API used in core/src fails the build with a
+(sources in src/ = GWT-translatable, src-jvm/ = Kryo/Jackson, test/; publishing; gwtCheck),
+shots/build.gradle, engines/jme/build.gradle, settings.gradle, .github/workflows/{ci,release,snapshot}.yml, RELEASING.md.
+core compiles to `options.release = 11` — games consume it, including on Android. Its tests,
+shots and jme are 17. A Java 12+ API used in core/src fails the build with a
 message about the API, never about the rule.
 `repositoriesMode = FAIL_ON_PROJECT_REPOS` in settings.gradle: declaring a repository in a
 module's build.gradle FAILS the build. Repositories go in settings.gradle only.
@@ -202,10 +162,8 @@ Gates, exactly what CI runs on JDK 17, 21 AND 25 (.github/workflows/ci.yml, job 
   ./gradlew build                              compile + test everything, and :core:gwtCheck
                                                (GWT compiles core/src to JavaScript, ~20 s)
   tools/browser-test.sh                        the browser suite in headless Chrome (below)
-  ./gradlew :editor:distZip :demo:distZip      the packaged downloads
 and once, on JDK 17 (job godot-frames, xvfb-run + Mesa): tools/godot-parallax-shots.sh then
 tools/jme-parallax-shots.sh, failing on a FAIL.
-A `run` task's workingDir matters: editor/ for the samples, demo/assets for the .plax files.
 NO WINDOW ON SIMON'S SCREEN (r118, r144): every JavaExec task calls rootProject.offscreen(it) (it
 opens a window: an agent's, ATELIER_AGENT or CLAUDECODE=1, goes to a headless cage, and fails
 without cage) or rootProject.headless(it) (it opens none); gradle/offscreen.gradle stops the build
@@ -215,10 +173,11 @@ a nested X server inside cage comes from tools/nested-x.sh (a free display: a fi
 two runs at once, r142).
 tools/offscreen-lint.sh (CI, job build) fails a tools/*.sh that runs java, an installDist bin/,
 godot or a browser without either, unless it carries `# on-screen: <why>` (r171).
-settings.gradle includes editor and demo only when their folder exists (r130, repo split): the
-library's gates (build, browser-test, the Godot and jME frame checks) read core/test-data/samples
-and draw their libGDX frames with :shots (shots/, ParallaxShots), never with editor/ or demo/.
-`tools/library-alone-check.sh` proves it on a clone with both deleted.
+The editor and demo are another repository since the split (r130-r133, docs/repo-split.md):
+JKS_Tools2D_ParallaxEditor, board parallax-editor. The library's gates read core/test-data
+and draw their libGDX frames with :shots (shots/, ParallaxShots). The editor's build takes core
+from Central, or builds this checkout's when it sits beside it: a core change shows in its
+:editor:run without publishing. Its zip is released there, not here.
 Releases: develop (always -SNAPSHOT, every push publishes one) → release/X.Y → master, tagged
 vX.Y.Z. RELEASING.md is the procedure; follow it rather than inventing one. The release
 workflow REFUSES to run when the tag and gradle.properties disagree.

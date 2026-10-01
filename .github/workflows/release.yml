@@ -2,8 +2,8 @@ name: Release
 
 # Pushing a tag like v2.1.0 releases that version:
 #   - the library and the jMonkeyEngine reader go to Maven Central (parallax-background, parallax-background-jme)
-#   - the GitHub release gets the downloads: the library jars, the jME reader's jars, the editor (library included),
-#     and the Godot reader (jks-parallax-godot-X.Y.Z.zip, which the Godot Asset Library listing downloads: RELEASING.md)
+#   - the GitHub release gets the downloads: the library jars, the jME reader's jars and the Godot
+#     reader (jks-parallax-godot-X.Y.Z.zip, which the Godot Asset Library listing downloads: RELEASING.md)
 # Without the four Maven Central secrets the workflow FAILS before building anything: the README tells games to
 # depend on the Central artifact, so a release that skipped Central must not look green. To release the GitHub
 # downloads only, run the workflow by hand on the tag with "without_central" ticked.
@@ -99,15 +99,13 @@ jobs:
 
       - name: Package the downloads
         run: |
-          ./gradlew :core:plainJavadocJar :jme:plainJavadocJar :editor:distZip
+          ./gradlew :core:plainJavadocJar :jme:plainJavadocJar
           mkdir -p release
           # 1. The library, to use a parallax in a game (also on Maven Central).
           cp core/build/libs/parallax-background-*.jar release/
           # 1b. The jMonkeyEngine reader (also on Maven Central).
           cp engines/jme/build/libs/parallax-background-jme-*.jar release/
-          # 2. The editor with the library included, to design a parallax.
-          cp editor/build/distributions/ParallaxEditor-*.zip release/
-          # 3. The Godot reader, addons/jks_parallax at the zip's root.
+          # 2. The Godot reader, addons/jks_parallax at the zip's root.
           tools/godot-addon-zip.sh release
           ls -la release
 
@@ -130,9 +128,8 @@ jobs:
               echo "This version is not on Maven Central: add the jar to your game yourself."
             fi
             echo
-            echo "**Design a parallax** — \`ParallaxEditor-$VERSION.zip\`: the editor with the library included and the"
-            echo "sample projects. Unzip it and run \`bin/ParallaxEditor\` (\`bin\\ParallaxEditor.bat\` on Windows). Needs"
-            echo "Java 17 or newer."
+            echo "**Design a parallax** — the editor has its own repository and downloads:"
+            echo "[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor)."
             echo
             echo "**Use a parallax in a Godot 4 game** — \`jks-parallax-godot-$VERSION.zip\`: unzip it at the root of your"
             echo "project (it holds \`addons/jks_parallax/\`)."

@@ -131,3 +131,8 @@ So moving `demo/` and `editor/` out as they are leaves `core`'s tests and both f
    ones too; the packs in its `.atelier/packs.toml`), worked by the same members (Simon, r132).
 3. Here: delete `editor/` and `demo/`; `release.yml` stops attaching the editor zip; README (module map, code map,
    downloads), AGENTS.md, RELEASING.md and the board's context packs follow.
+   **Done (r133):** both folders gone, and with them the tools that only drove the editor or the demo (the editor
+   repository has them); `tools/start-demo.sh` keeps its Godot half, `tools/parallax_lab.py` and
+   `parallax_regions.py` stay for the `parallax-pages` skill. CI and the release build the library, the jME reader
+   and the Godot zip only; the release notes point at the editor repository. The logo moved to `docs/parallaxIcon.png`.
+   The `#assets` pack keeps the library's side of atlases; the editor's side went to the editor board's packs.

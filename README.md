@@ -1,4 +1,4 @@
-<img src="editor/assets/skins/uis/parallaxIcon.png" alt="Parallax Background logo: layers of sky, mountains and clouds standing one behind the other" width="128" align="right">
+<img src="docs/parallaxIcon.png" alt="Parallax Background logo: layers of sky, mountains and clouds standing one behind the other" width="128" align="right">
 
 # JKS Tools2D - Parallax Background
 
@@ -6,12 +6,12 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.javakhanstudio/parallax-background)](https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
-A parallax background library for [libGDX](https://libgdx.com) games, and a desktop editor to build those
-backgrounds visually.
+A parallax background library for [libGDX](https://libgdx.com) games, with readers for Godot 4 and jMonkeyEngine 3.
 
-You compose a parallax in the **editor** from an atlas and/or PNG images, tune each layer while it scrolls, then
-export a `.plax` file. Your game loads that file with the **core** library, which scrolls, tiles and draws the layers
-behind your game.
+You compose a parallax in the **editor** (a desktop tool with a repository of its own,
+[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor)) from an atlas and/or PNG
+images, tune each layer while it scrolls, then export a `.plax` file. Your game loads that file with the **core**
+library, which scrolls, tiles and draws the layers behind your game.
 
 ## Get it
 
@@ -62,10 +62,10 @@ Then see [Using the library in a game](#using-the-library-in-a-game). A jMonkeyE
 
 ### The editor, to design a parallax
 
-Download `ParallaxEditor-<version>.zip` from the
-[latest release](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/releases/latest), unzip it and run
-`bin/ParallaxEditor` (`bin\ParallaxEditor.bat` on Windows). It includes the library and the sample projects, and
-needs Java 17 or newer.
+The editor and its sample projects are in
+[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor): its README says how to
+download, run and use it.
+Releases of this library up to 2.5 also attach `ParallaxEditor-<version>.zip`.
 
 ## Build and run
 
@@ -74,25 +74,19 @@ To build from source instead, the repository has these Gradle modules:
 | Module   | What it is                                                                                  |
 |----------|---------------------------------------------------------------------------------------------|
 | `core`   | Runtime library for games: loads `.plax` files, scrolls, tiles and draws the layers.        |
-| `editor` | The Parallax Editor (desktop, LWJGL3 + VisUI).                                               |
-| `demo`   | A minimal game using `core`: a winter and a spring page cross-faded on demand.               |
 | `jme`    | The jMonkeyEngine reader (`engines/jme`), published as `parallax-background-jme`.            |
 | `shots`  | Not published: draws a round of pages with `core`, the frames the other engines are checked against. |
 
 Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
 
 ```bash
-./gradlew :editor:run           # the editor, opens on the sample projects in editor/Files
-./gradlew :demo:run             # the demo: the showcase pages; SPACE variant, ENTER next scene, N tints, LEFT/RIGHT scroll, R resets
 godot --path engines/godot      # Hiver and Printemps through the Godot reader (Godot 4)
 ./gradlew :jme:run              # Hiver and Printemps through the jMonkeyEngine reader, behind a jME cube
 ./gradlew test                  # file format, tiling, cross-fade and no-allocation-per-frame tests
-./gradlew :demo:stress --args="--layers 400 --repeat xy"   # frame time of generated pages, see ParallaxStress
-./gradlew :demo:lab               # grade parallax scenes blind, 1-5: see docs/parallax-design.md
-./gradlew :editor:installDist   # standalone editor in editor/build/install/ParallaxEditor
+tools/parallax-lab-shots.sh engines/godot/tests/round1 build/lab/round1   # libGDX stills of a round of pages (off screen)
 ```
 
-Versions (libGDX, VisUI, Kryo, Jackson) are set in `gradle.properties`.
+Versions (libGDX, LWJGL, Kryo, Jackson, GWT, jME) are set in `gradle.properties`.
 
 ## Concepts
 
@@ -261,82 +255,12 @@ art shifts its colours slightly. The Godot and jME readers load the PNG atlas; G
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
-pages built without a heart. `demo/` is a complete example.
+pages built without a heart. The editor repository's `demo/` is a complete example.
 
 ## Using the editor
 
-### Start screen
-
-Open a project (`.plaxpj`), an exported parallax (`.plax` or `.jplax`), or an atlas (`.atlas`) to start a project
-from it. **NEW** starts an empty project. Files can also be dragged onto the window.
-
-### Edition screen
-
-- **Center:** the live preview. Use play/pause, full screen, the X/Y speed sliders and "Reset position".
-  Arrows/WASD (and space) scroll it by hand.
-- **Top:** project folder and name. The two save buttons are **Save project** (`.plaxpj`) and **Export** (`.plax` and/or
-  `.jplax`, see the format checkboxes). **ETC2** and **Pixel art**, with them, are saved with the project: see "Loose
-  images and export".
-- **Left tabs:**
-  - **Controls:** help and tutorial links; **Parallax** (repeat on X/Y, current atlas, copy loose images next to the
-    project, back to the start screen); **Application** (window size, full screen, VSync).
-  - **Add texture:** **Adding new** is the list of images. The selected image has three buttons: *add it as a layer*,
-    *make the layers of this image use another one*, and *delete it*. **Default Value** sets the settings of the
-    next added layer, and how they change after each addition (speeds are multiplied, the rest is added), which
-    quickly builds a stack of layers with depth.
-  - **Textures:** every setting of the selected layer: its position in the stack, clone, set as default, delete/undo,
-    flips, and the sliders. The arrow buttons next to a slider copy that value from the layer in front / behind.
-  - **Background:** the top and bottom squares: on/off, size, and both colors, with an eyedropper that picks a color
-    from the preview (right click cancels it).
-
-The mouse wheel changes the slider under the mouse. Over a slider's number field, it changes the digit left of the
-text cursor.
-
-### Loose images and export
-
-Drop PNG files on the edition screen to add them without an atlas. They reload automatically when you save them from
-an image editor. When you export a project that uses loose images (or with **F.Export** checked), the editor first
-**flattens** it: every image of the list is packed into a new atlas next to the project (`<name>.atlas` plus
-`<name>_1.png`, `<name>_2.png`...), and the project then uses that atlas. Each page is written only as large as the
-images it holds, rounded up to a power of two: a few small images make a 512 px page, not a 4096 px one. The page
-shape (4096x4096, 4096x2048...) is the one that writes the fewest pixels.
-
-The atlas is written `filter: MipMapLinearLinear,Linear`, which softens pixel art (City differs from its preview by up
-to 33/255 per channel). Tick **Pixel art** and it is written `filter: Nearest,Nearest`, without mipmaps, its pages no
-longer rounded to a power of two. The preview switches to Nearest as soon as the box is ticked, and back when it is
-unticked, so you see the difference before exporting. Export flattens a pixel-art project whose atlas is not already
-`Nearest,Nearest`. The game reads the filter from the atlas, the Godot reader too (`engines/godot/tests/pixelart` checks it).
-
-Tick **ETC2** and the flattened atlas is also written as `<name>.etc2.atlas`, whose pages are ETC2 RGBA8
-(`GL_COMPRESSED_RGBA8_ETC2_EAC`) with their mip chain, in gzipped KTX files (`<name>_1.zktx`...): see "Using the library
-in a game" for loading it. Export flattens a project with ETC2 ticked whose atlas has no ETC2 copy yet.
-
-The project is auto-saved every 5 minutes into `Files/AutoSave` (or `~/.parallax-editor/autosave` when the editor is
-not started from its module folder). The 10 most recent auto-saves are kept.
-
-### Driving the editor from another program
-
-`--driver-port=N` lets a script drive the editor, for demos and narrated videos. It is off unless you pass the flag,
-and it listens on `127.0.0.1` only:
-
-```bash
-./gradlew :editor:run --args="--driver-port=47777 Files/Demos/OneNight.plaxpj"
-echo "click tab.textures" | nc 127.0.0.1 47777
-```
-
-It reads one command per line and answers each one with `ok ...` or `err ...`. `list` gives the named controls on screen
-with their bounds, `bounds`, `click`, `set` and `wheel` act on one control, `open` loads a file, and `shot` writes the next
-frame to a PNG. `fps` gives the frame rate and render-thread time over the last 120 frames. A control is found by its name (`texture.sizeRatio`, `tab.background.topSquare`), or by its text with
-`text:Yes`. The full list is in `EditorDriver`'s javadoc. A resize rebuilds the panels and puts every tab back on its
-first, so commands wait for that rebuild. Set the window size before the demo, not during it. `tools/driver-probe.sh`
-starts the editor off screen, sends it the commands it reads, and stops it.
-
-To profile the editor on a heavy page, `tools/stress-project.py 300` writes a 300-layer project in
-`editor/build/stress`, and `tools/editor-stress.txt` is a session of edits, save and export to replay on it:
-
-```bash
-(echo "open build/stress/Stress300.plaxpj"; cat tools/editor-stress.txt) | PROBE_TIMES=1 tools/driver-probe.sh
-```
+How to use the editor (its screens, loose images and export, flatten, ETC2 and pixel-art exports, driving it from
+another program) is in the README of [JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor).
 
 ## File formats
 
@@ -381,17 +305,6 @@ core/src-jvm/jks/tools2d/parallax/   same packages and jar, JVM only
 core/gwt-check/                   what :core:gwtCheck compiles to JavaScript
 core/browser-test/                the core tests that translate, run in Chrome by tools/browser-test.sh
 
-editor/mains/.../Launcher_Editor  desktop launcher (window, file drops)
-editor/src/jks/tools2d/
-    amains/Main_Editor            application: switches between the two screens
-    parallax/editor/vue/          Vue_Selection (start screen), Vue_Edition (edition screen)
-    parallax/editor/vue/edition/  the panels (VE_*), project data, save/export/flatten utilities, atlas packer
-    parallax/editor/gvars/        editor-wide state, paths, UI skin and fonts, JSON setup
-    parallax/editor/driver/       EditorDriver (--driver-port), Names (the controls' names)
-    filechooser/ filewatch/ libgdxutils/   file browser, file watcher, small scene2d widgets
-
-demo/src/.../ParallaxDemo         example game
-
 engines/jme/src/.../jme/          the jMonkeyEngine reader, published as parallax-background-jme: PlaxBackground (an
                                   AppState), JmeAtlas, JmeBatch (libGDX's Batch in jME meshes), JmeGradient
 engines/jme/tests/                its frame runner (tools/jme-parallax-shots.sh) and demo (:jme:run)
@@ -400,9 +313,6 @@ engines/godot/tests/              the reader rounds: round1, conformance, transf
 shots/src/.../ParallaxShots       libGDX stills of a round, what the Godot and jME frames are compared with
 core/test-data/samples/           the sample pages and atlases the tests and the rounds read (copies, never re-exported)
 ```
-
-The editor keeps its state in static `GVars_*` classes, one project at a time. The panels read the window size when
-they are built, so the edition screen rebuilds them after a resize.
 
 ## Contributing and releases
 
@@ -418,4 +328,5 @@ Apache License 2.0, see [LICENSE](LICENSE).
 
 Started in 2017 as a fork of [ParallaxBackground-libgdx](https://github.com/fooble/ParallaxBackground-libgdx) by
 **Rahul Verma**, Copyright 2014, licensed under the Apache License 2.0. See [NOTICE](NOTICE) for the other
-third-party code included in the editor.
+third-party code the editor included (the editor now lives in
+[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), with its own NOTICE).

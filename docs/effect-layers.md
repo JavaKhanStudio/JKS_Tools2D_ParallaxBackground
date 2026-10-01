@@ -15,7 +15,7 @@ options as they were weighed; the phases at the end are the plan as decided.
   `tools/godot-parallax-shots.sh` and `tools/jme-parallax-shots.sh` prove, frame by frame, at 2/255. An effect either
   draws the same there too, or the editor says, on the effect's own controls, which engine will not draw it.
 - **No allocation per frame** (`FrameAllocationTest`): particles live in a pool sized when the page is built.
-- **Fill rate is the cost** (`:demo:stress`): a particle is a quad, and hundreds of overlapping ones cost more than
+- **Fill rate is the cost** (`:demo:stress`, in the editor repository): a particle is a quad, and hundreds of overlapping ones cost more than
   the whole page. An effect carries a hard cap, and the editor shows it.
 - **`core/src` is GWT**: no reflection, no `java.util.Random` seeding tricks that differ in JavaScript. A seeded
   generator written in the code, the same on every engine, makes particles deterministic, and so comparable by pixels.

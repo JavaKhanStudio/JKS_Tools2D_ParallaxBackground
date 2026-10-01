@@ -56,12 +56,12 @@ A reader is three pieces, and the third is where the work is:
   `Parallax_Heart`: `speed_constant_x/y`, `speed_consumable_x/y`, `act(delta)`, `reset_positions()`,
   `transfert_into(page, atlas, seconds)` (`transfertIntoPage`) and `tint_to(color, seconds)` (`addColorTransfert`).
 
-Usage is in the README (*In Godot 4*). `godot --path engines/godot` is the demo/ game in Godot: Hiver and Printemps, SPACE cross-fades, N tints, LEFT/RIGHT
+Usage is in the README (*In Godot 4*). `godot --path engines/godot` is the libGDX demo game (the editor repository's `demo/`) in Godot: Hiver and Printemps, SPACE cross-fades, N tints, LEFT/RIGHT
 scroll, R resets (`tools/start-demo-check.sh` presses SPACE and N off screen).
 
 **How it is checked.** `tools/godot-parallax-shots.sh` renders the same pages in libGDX (`shots/`'s `ParallaxShots`, the grading lab's `--shots` split out in r130)
 and in Godot (`engines/godot/tests/shots.gd`), with the same 60 units/s scroll stepped at 1/60 s, 0, 6 and 12 s in,
-off screen, and compares them pixel by pixel. It runs four rounds: `engines/godot/tests/round1`, a copy of the lab's `demo/lab/round1` (18 pages from four
+off screen, and compares them pixel by pixel. It runs four rounds: `engines/godot/tests/round1`, a copy of the grading lab's round 1 (`demo/lab/round1`, in the editor repository; 18 pages from four
 atlases), `engines/godot/tests/conformance` (7 pages for what round 1 lacks: trimmed regions with `useOriginalSize`,
 X+Y tiling with padding, Y tiling with mirrors, X tiling with mirrors and negative padding, no tiling, overlapping
 gradients with a translucent colour, and a `.plaxpj` with loose layers; three of them also scroll on Y at ±30 units/s,

@@ -1,5 +1,5 @@
 extends Node
-## The Godot twin of demo/ (ParallaxDemo): Hiver and Printemps cross-faded on demand, through the reader.
+## The Godot twin of the editor repository's demo/ (ParallaxDemo): Hiver and Printemps cross-faded on demand, through the reader.
 ## SPACE winter/spring, N night tint, LEFT / RIGHT scroll, R reset. A page given after "--" is shown alone:
 ##   godot --path engines/godot -- /abs/path/page.jplax [/abs/path/atlas_dir]
 

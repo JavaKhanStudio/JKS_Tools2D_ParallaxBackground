@@ -7,7 +7,7 @@
 # gradle/offscreen.gradle refuses a JavaExec that is neither offscreen nor headless (r144); this is the same rail for
 # scripts. A script OPENS A WINDOW when a line that is not a comment runs `java ... -cp|-classpath|-jar`, an installDist
 # `build/install/.../bin/`, godot without --headless, or Chrome/Chromium/Firefox without --headless. Such a script
-# passes when it also runs `cage --` or tools/offscreen.sh, or calls a tools/*.sh that does (tools/driver-probe.sh), or
+# passes when it also runs `cage --` or tools/offscreen.sh, or calls a tools/*.sh that does (tools/parallax-lab-shots.sh), or
 # carries a line `# on-screen: <why>` for a window opened on purpose (tools/start-demo.sh, browser-test.sh --open).
 # A nested X server on a fixed display (`Xwayland :9`, `Xvfb :1`) fails in any script: take a free one with
 # tools/nested-x.sh (r142).

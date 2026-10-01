@@ -1,8 +1,8 @@
 // Offscreen for a board agent: the windows nobody is meant to watch get a display of their own (r118, after
 // ~/Documents/GitHub/onboard's gradle/offscreen.gradle).
 //
-// An agent checking its work runs :editor:run, :demo:run, :demo:lab, :demo:stress or :jme:run, and each opened a
-// window on Simon's desktop, in front of whatever he was doing. tools/*-shots.sh and tools/driver-probe.sh already ran
+// An agent checking its work ran :editor:run, :demo:run or :jme:run (the editor and demo are another repository since
+// r133), and each opened a window on Simon's desktop, in front of whatever he was doing. tools/*-shots.sh already ran
 // in cage, a headless wlroots compositor; the Gradle tasks did not.
 //
 //   offscreen(task)   offscreen for an agent: ATELIER_AGENT set (a board session) or CLAUDECODE=1 (any Claude Code
@@ -18,7 +18,7 @@
 // Simon's screen; anyone else without cage (Windows, macOS) gets the window as always.
 //
 // cage's headless display renders on another GPU than the desktop on Simon's laptop (NVIDIA, the desktop's windows
-// Intel): :demo:stress prints the GL renderer it measured, compare numbers of the same one.
+// Intel): compare frame times of the same one.
 //
 // Nothing here is a test: core's tests draw nothing (a proxied Batch) and tools/browser-test.sh is headless Chrome.
 

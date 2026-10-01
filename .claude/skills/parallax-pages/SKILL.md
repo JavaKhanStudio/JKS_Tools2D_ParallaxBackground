@@ -84,7 +84,7 @@ judge composition: the editor's default layout (`calmLag.plaxpj`) passes lint an
 
 ```bash
 # a round of one or more scenes: round.json lists {id, page, atlasDir, about}, paths relative to the repo root
-tools/parallax-lab-shots.sh demo/lab/<round> demo/build/lab/<round>   # stills at 0, 6, 12 s + contact.png
+tools/parallax-lab-shots.sh <round dir> build/lab/<round>   # stills at 0, 6, 12 s + contact.png
 ```
 
 Look at every frame, full size, not only the contact sheet. Look for: a bottom or top edge cut flat, an empty band,
@@ -93,6 +93,7 @@ order in the picture contradicts their speed, a sky that does not belong to the 
 
 ## Getting it graded
 
+The grading lab is in the editor repository (JKS_Tools2D_ParallaxEditor, beside this checkout): there,
 `./gradlew :demo:lab --args="demo/lab/<round>"` shows the scenes blind, scrolling; a human grades 1-5 and the grades
 land in `demo/lab/<round>/grades.json`. Put the page next to variants of it that each break one rule
 (`tools/parallax_lab.py` has `flat`, `inverted`, `rescale_span`, `linear`, `shrunk`, `white_sky`, `aligned`…): what
