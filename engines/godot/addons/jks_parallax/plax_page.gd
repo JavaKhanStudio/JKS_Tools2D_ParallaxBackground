@@ -12,7 +12,7 @@ const LAYER_DEFAULTS := {
 	"particlesLibgdx": "", "particlesGodot": "", "particlesAnchor": "LAYER",
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
-## layer loads and draws nothing yet: phase 2 of docs/effect-layers.md (r179) instances its particlesGodot scene.
+## layer's particlesGodot scene is instanced by PlaxBackground.
 const KINDS := ["IMAGE", "EMPTY", "PARTICLES"]
 ## Where a PARTICLES layer's effect sits (Enum_ParticleAnchor).
 const ANCHORS := ["LAYER", "VIEW"]

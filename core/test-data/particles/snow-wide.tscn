@@ -1,0 +1,33 @@
+[gd_scene load_steps=4 format=3]
+
+; snow-wide.p for Godot (r179): a GPUParticles2D, in screen pixels at 1280 wide (32 px a page unit), falling from a
+; line 1472 px wide that starts at the node and runs right, as the libGDX .p's does. Anchored to the VIEW in p01.
+
+[sub_resource type="Gradient" id="flake_colors"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="flake"]
+gradient = SubResource("flake_colors")
+width = 12
+height = 12
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="ParticleProcessMaterial" id="fall"]
+emission_shape_offset = Vector3(736, 0, 0)
+emission_shape = 3
+emission_box_extents = Vector3(736, 1, 0)
+direction = Vector3(0, 1, 0)
+spread = 10.0
+initial_velocity_min = 64.0
+initial_velocity_max = 128.0
+gravity = Vector3(0, 0, 0)
+
+[node name="SnowWide" type="GPUParticles2D"]
+amount = 690
+lifetime = 9.0
+preprocess = 9.0
+texture = SubResource("flake")
+process_material = SubResource("fall")
+visibility_rect = Rect2(0, -16, 1472, 1200)

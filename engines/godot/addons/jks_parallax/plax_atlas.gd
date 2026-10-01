@@ -30,6 +30,11 @@ static func load_atlas(path: String) -> PlaxAtlas:
 	return atlas
 
 
+## The folder the atlas is in: a page's particle scenes are named from it.
+func get_dir() -> String:
+	return _dir
+
+
 ## The n-th region called `name`, counting from 0 in libGDX's order: how a page names its layers
 ## (regionName and regionPosition). Empty when there is none.
 func find_region(name: String, position: int) -> Dictionary:

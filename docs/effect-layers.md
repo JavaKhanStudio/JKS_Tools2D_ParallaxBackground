@@ -74,6 +74,13 @@ moves them to each tile as it draws them, so one simulation serves every tile; a
 are, not by its box. The pages in `core/test-data/particles` render both (`tools/parallax-lab-shots.sh
 core/test-data/particles OUT`).
 
+Shipped in Godot in r179: `plax_background.gd` draws each layer on its own canvas, so the scene's node sits between
+two. Godot cannot draw one particle node at several places, so a `LAYER` effect is one instance per tile the view
+shows, each its own simulation, made as a tile scrolls in and pooled as it leaves; a `VIEW` effect is one instance
+moved with the layer, its `ParticleProcessMaterial.emission_shape_offset` moved back by as much, which keeps the
+emitter in the view and lets the particles drift (a `CPUParticles2D` has no such offset: it is converted to a
+`GPUParticles2D`). The scene is in screen pixels, unscaled. `engines/godot/tests/particles` checks it.
+
 ## Shaders: options
 
 There is no shader language the three engines share: libGDX takes GLSL ES (and WebGL in a browser), jME GLSL in a

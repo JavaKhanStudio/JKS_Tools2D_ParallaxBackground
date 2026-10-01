@@ -180,7 +180,7 @@ More:
   and make it wider than the view by what the layer drifts over a particle's life. The effect loops, and allocates
   nothing per frame (`FrameAllocationTest`). Each particle is a quad blended over the layers behind it: on a still
   page, 630 flakes took a frame from 0.33 to 0.51 ms (`tools/r178-particle-stress/run.sh`). A browser game draws them
-  too. Godot draws none yet (phase 2 of [docs/effect-layers.md](docs/effect-layers.md)), jME never (no 2D particle
+  too. Godot plays the layer's own Godot scene (below), jME none (no 2D particle
   system: fill an `EMPTY` layer instead); `EffectSupport` says which engine draws which kind, and why not.
   `WholePage_Model.forceLoad(atlas)` builds no effect; `forceLoad(atlas, files)` finds them with `files`.
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
@@ -213,6 +213,16 @@ bg.set_layer_hook("birds", func(canvas, rect, modulate, layer): canvas.draw_text
 
 An `EMPTY` layer's hook gets the canvas it draws on, the tile's box in screen pixels and the page's tint at the
 layer's opacity.
+
+A `PARTICLES` layer plays the scene its `particlesGodot` names, beside the atlas: a `GPUParticles2D` or a
+`CPUParticles2D` at its root, in screen pixels, y down, between the layers before and after it, tinted and faded with
+its page. Pinned to its `LAYER`, one instance sits at the bottom-left corner of every tile the view shows, its
+particles carried by the tile, each instance its own simulation (give it a `preprocess`, or a tile scrolling in starts
+empty). From the `VIEW`, one instance emits from the view's bottom-left plus the layer's decal, and its particles drift
+by the layer's scroll; the reader moves its `ParticleProcessMaterial`'s `emission_shape_offset` for that, adding to
+the one the scene sets, and converts a `CPUParticles2D` to a `GPUParticles2D`. Particles run on Godot's clock, not
+`act()`'s. A layer with no Godot scene draws nothing and warns once. It looks like the libGDX `.p` only as much as the
+two files agree: each engine draws its own.
 
 It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
 `world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the

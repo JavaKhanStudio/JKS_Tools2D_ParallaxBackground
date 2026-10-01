@@ -1,6 +1,6 @@
 {
  "round": "effects",
- "about": "EMPTY layers (r177, docs/effect-layers.md phase 0): each page has an EMPTY layer named 'slot' fourth from the back (sizeRatio 0.6, padded, mirror set, which an EMPTY layer ignores), drawn by a hook that stretches the atlas region the scene's 'hooks' names over every tile the reader hands it. e06 adds a PARTICLES layer (r178) naming no effect, which every reader loads and draws nothing for: libGDX logs it, Godot draws particles from phase 2 (r179), jME never. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "about": "EMPTY layers (r177, docs/effect-layers.md phase 0): each page has an EMPTY layer named 'slot' fourth from the back (sizeRatio 0.6, padded, mirror set, which an EMPTY layer ignores), drawn by a hook that stretches the atlas region the scene's 'hooks' names over every tile the reader hands it. e06 adds a PARTICLES layer (r178) naming no effect, which every reader loads and draws nothing for: libGDX logs it, Godot warns once (engines/godot/tests/particles checks its particles, r179), jME never. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
  "scenes": [
   {
    "id": "e01",

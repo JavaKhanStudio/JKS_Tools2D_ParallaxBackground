@@ -1,0 +1,45 @@
+{
+ "round": "particles",
+ "about": "PARTICLES layers in Godot (r179, docs/effect-layers.md phase 2). Not a pixel comparison: each engine draws its own particle system. engines/godot/tests/particles.gd scrolls each scene at 60 units/s, stepped at 1/60 s, and checks at 0, 6 and 12 s that the layer's Godot scene is instanced, between the layers before and after it, where its layer has scrolled it; it saves a still of each. Pages and scenes from core/test-data/particles (libGDX's round there).",
+ "scenes": [
+  {
+   "id": "q01",
+   "page": "core/test-data/particles/p01.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "view-anchored-gpu",
+   "about": "snow-wide.tscn (a GPUParticles2D) anchored to the VIEW: one instance, carried by the layer's scroll, its emitter kept at the view's top-left"
+  },
+  {
+   "id": "q02",
+   "page": "core/test-data/particles/p02.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "layer-anchored-cpu-repeat-X",
+   "about": "snow.tscn (a CPUParticles2D) pinned to the LAYER: an instance at the bottom-left corner of every tile, tiles 30 units apart"
+  },
+  {
+   "id": "q03",
+   "page": "core/test-data/particles/p02.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "layer-anchored-repeat-XY",
+   "about": "q02 repeating on X and Y too, scrolling up at 30 units/s: tiles on both axes",
+   "repeatY": true,
+   "speedY": 30
+  },
+  {
+   "id": "q04",
+   "page": "core/test-data/particles/p01.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "cross-fade-tinted",
+   "about": "p01 cross-fading into p02 while tinting orange (as libGDX's p03): both pages' particle nodes in their slots, each at its page's opacity; after it, only p02's",
+   "transfer": {"at": 4, "seconds": 4, "page": "core/test-data/particles/p02.jplax"},
+   "tint": {"at": 4, "seconds": 4, "color": [1.0, 0.55, 0.3, 1.0]}
+  },
+  {
+   "id": "q05",
+   "page": "engines/godot/tests/effects/e06.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "no-godot-scene",
+   "about": "e06's PARTICLES layer names no Godot scene: nothing instanced, one warning"
+  }
+ ]
+}
