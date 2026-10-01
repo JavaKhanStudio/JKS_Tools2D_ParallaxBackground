@@ -24,19 +24,19 @@ expect() {
 out=$("$LINT"); code=$?
 if [ $code = 0 ]; then echo "ok    today's tools/*.sh pass"; else echo "WRONG today's tools/*.sh"; echo "$out"; status=1; fi
 
-# demo-shots.sh with its cage line made a plain run: the demo would open on the screen.
-grep -q 'cage -- tools/nested-x.sh' tools/demo-shots.sh || { echo "demo-shots.sh changed: fix this test" >&2; exit 2; }
-sed 's/WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- tools\/nested-x.sh 1280x720 bash -c "\$RUN"/bash -c "$RUN"/' \
-	tools/demo-shots.sh >"$WORK/demo-shots-plain.sh"
-expect fail "demo-shots.sh without cage" "$WORK/demo-shots-plain.sh" "runs an installDist program"
+# parallax-lab-shots.sh with its cage line made a plain run: ParallaxShots would open on the screen.
+grep -q 'cage -- tools/nested-x.sh' tools/parallax-lab-shots.sh || { echo "parallax-lab-shots.sh changed: fix this test" >&2; exit 2; }
+sed 's/WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- tools\/nested-x.sh 1280x1280 bash -c "\$RUN"/bash -c "$RUN"/' \
+	tools/parallax-lab-shots.sh >"$WORK/lab-shots-plain.sh"
+expect fail "parallax-lab-shots.sh without cage" "$WORK/lab-shots-plain.sh" "runs java"
 
-{ head -1 "$WORK/demo-shots-plain.sh"; echo "# on-screen: a test of the marker"; tail -n +2 "$WORK/demo-shots-plain.sh"; } \
-	>"$WORK/demo-shots-marked.sh"
-expect pass "the same, with the on-screen marker" "$WORK/demo-shots-marked.sh"
+{ head -1 "$WORK/lab-shots-plain.sh"; echo "# on-screen: a test of the marker"; tail -n +2 "$WORK/lab-shots-plain.sh"; } \
+	>"$WORK/lab-shots-marked.sh"
+expect pass "the same, with the on-screen marker" "$WORK/lab-shots-marked.sh"
 
 # A nested X server on a fixed display, as the shot scripts had before r142: fails even inside cage. (The server's name
 # is a printf argument, or this script would be the lint's first catch.)
-printf '#!/usr/bin/env bash\nWLR_BACKENDS=headless cage -- bash -c "%s :9 & DISPLAY=:9 demo/build/install/demo/bin/demo"\n' \
+printf '#!/usr/bin/env bash\nWLR_BACKENDS=headless cage -- bash -c "%s :9 & DISPLAY=:9 shots/build/install/shots/bin/shots"\n' \
 	Xwayland >"$WORK/fixed-display.sh"
 expect fail "a fixed display number inside cage" "$WORK/fixed-display.sh" "fixed display"
 
@@ -47,11 +47,12 @@ expect fail "godot with a window" "$WORK/godot-window.sh" "runs godot"
 printf '#!/usr/bin/env bash\njava -cp "$CP" jks.tools2d.parallax.shots.ParallaxShots r out\n' >"$WORK/java-window.sh"
 expect fail "java -cp outside cage" "$WORK/java-window.sh" "runs java"
 
-# A script that hands its window to a tools/*.sh that runs cage (r74-probe-race.sh does, through driver-probe.sh).
-printf '#!/usr/bin/env bash\nBIN=editor/build/install/ParallaxEditor/bin/ParallaxEditor\necho list | EDITOR_BIN="$BIN" "$ROOT/tools/driver-probe.sh"\n' \
+# A script that hands its window to a tools/*.sh that runs cage (the editor repository's r74-probe-race.sh does,
+# through its driver-probe.sh).
+printf '#!/usr/bin/env bash\nBIN=shots/build/install/shots/bin/shots\nSHOTS_BIN="$BIN" "$ROOT/tools/parallax-lab-shots.sh" r out\n' \
 	>"$WORK/through-probe.sh"
-expect pass "a window handed to driver-probe.sh" "$WORK/through-probe.sh"
-printf '#!/usr/bin/env bash\ntools/offscreen.sh editor/build/install/ParallaxEditor/bin/ParallaxEditor\n' >"$WORK/through-offscreen.sh"
+expect pass "a window handed to parallax-lab-shots.sh" "$WORK/through-probe.sh"
+printf '#!/usr/bin/env bash\ntools/offscreen.sh shots/build/install/shots/bin/shots\n' >"$WORK/through-offscreen.sh"
 expect pass "a window through tools/offscreen.sh" "$WORK/through-offscreen.sh"
 
 [ $status = 0 ] && echo PASS || echo FAIL

@@ -21,13 +21,9 @@ HQ/
 *.tmp
 *.bak
 
-# JVM crash logs and core dumps, written to the working directory (e.g. demo/assets under :demo:run)
+# JVM crash logs and core dumps, written to the working directory
 hs_err_pid*.log
 core.[0-9]*
-
-# Editor runtime output
-editor/Files/AutoSave/
-editor/packing_*/
 
 # Atelier board skills: absolute symlinks into the atelier checkout, broken for anyone else.
 .claude/skills/board

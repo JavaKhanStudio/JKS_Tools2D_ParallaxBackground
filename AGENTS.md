@@ -9,30 +9,27 @@ repair.
 | Module    | What it is | Java | Run / check |
 |-----------|------------|------|-------------|
 | `core/`   | The runtime games depend on (`parallax-background` on Maven Central). Sources `src/` (GWT) and `src-jvm/`, tests `test/`. | `options.release = 11` for main, 17 for tests | `./gradlew :core:test`, `./gradlew :core:gwtCheck` |
-| `editor/` | The desktop tool that builds pages and exports `.plax`. Sources `src/` and `mains/`. | 17 | `./gradlew :editor:run` (workingDir `editor/`, finds `editor/Files`) |
-| `demo/`   | A small game using `core`. | 17 | `./gradlew :demo:run` (workingDir `demo/assets`): the `demo/showcase` pages, SPACE variant, ENTER scene, N tint, LEFT/RIGHT scroll, R reset; `tools/demo-shots.sh` plays it off screen. `./gradlew :demo:lab` (workingDir the root): the grading lab, `demo/lab`. The board's Actions tab starts it, and the Godot demo, through `tools/start-demo.sh` |
-| `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `tools/godot-parallax-shots.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared |
+| `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `tools/godot-parallax-shots.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. Split out of the grading lab's `--shots` mode, which the lab no longer has (r157). | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `tools/jme-parallax-shots.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
-- Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:editor:run`, `:demo:run`,
-  `:demo:lab`, `:demo:stress`, `:jme:run` and `:shots:run` render in a headless cage (`gradle/offscreen.gradle`, off with
+- Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:jme:run` and `:shots:run`
+  render in a headless cage (`gradle/offscreen.gradle`, off with
   `ATELIER_NO_OFFSCREEN=1`, only when Simon asked to watch), and fail when there is no cage. A new JavaExec task calls
   `rootProject.offscreen(it)` or `rootProject.headless(it)`, or the build stops. Anything else that opens one goes
   through cage or `tools/offscreen.sh`: `tools/offscreen-lint.sh` (CI) fails a `tools/*.sh` that does neither, unless
-  it carries `# on-screen: <why>`. Cage renders on the NVIDIA GPU, a desktop window on the Intel one:
-  `:demo:stress` prints which, compare numbers of the same.
+  it carries `# on-screen: <why>`. Cage renders on the NVIDIA GPU, a desktop window on the Intel one: compare frame
+  times of the same.
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
 - Repositories go in `settings.gradle` only: `FAIL_ON_PROJECT_REPOS` fails the build on a module-level one.
-- The library checks itself without `editor/` and `demo/` (r130, docs/repo-split.md): `settings.gradle` includes them
-  only when their folder exists, and nothing `core`, `engines/`, `shots/` or their gates read may point into them.
-  `tools/library-alone-check.sh` runs the gates on a clone with both deleted.
-- `editor/` and `demo/` have their own repository since r132,
-  [JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), and leave this one in
-  phase 3 (r133): change them there, not here, or the change is lost.
+- The editor and the demo are
+  [JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), a repository and an
+  Atelier board (`parallax-editor`) of their own since the split (r130-r133, docs/repo-split.md). Beside this
+  checkout, its build compiles this `core` instead of Maven's: run a `core` change in `:editor:run` or `:demo:stress`
+  there. Nothing here may point into it.
 - CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`,
-  `tools/offscreen-lint.sh`, then `./gradlew :editor:distZip :demo:distZip`.
+  `tools/offscreen-lint.sh`.
   Its `godot-frames` job runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
   (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), then
   `tools/jme-parallax-shots.sh` the same way, and fails on a FAIL. A manual run's `break` input sets `BREAK` for the
@@ -52,8 +49,8 @@ repair.
 - A new stored field is read a third time in `engines/godot/addons/jks_parallax/plax_page.gd` (`LAYER_DEFAULTS` for a
   layer's): one it misses loads as its default in a Godot game.
 - `core/test-data/**` holds the test fixtures for `core/test/.../PlaxFormatTest` and the reader rounds' atlases:
-  `samples/` is a byte copy of `editor/Files`' six `.plax` and `demo/assets` (r130), so the library checks itself
-  without `editor/` and `demo/`. Never re-export or overwrite them, nor the originals.
+  `samples/` is a byte copy of the 2019 editor's six `.plax` and the demo's pages (r130, `samples/README.md`). Never
+  re-export or overwrite them, nor the originals in the editor repository.
 - Change what a file holds and update README.md's "File formats" section in the same commit.
 
 ## Runtime (`core`)
@@ -62,8 +59,8 @@ repair.
   takes its decal percentages of that size. `heart/Gvars_Parallax` only holds the last heart's size, the default for
   layers and pages built without a heart: nothing a heart runs may read it.
 - `ParallaxPageReader.act()`/`draw()` and `heart/Parallax_Heart.act()`/`render()` run every frame: no allocation, no
-  streams. `FrameAllocationTest` counts the reader's bytes over 2000 frames and fails on any. `./gradlew :demo:stress`
-  measures a change on the GPU: the runtime is fill-rate bound, so time pixels, not code.
+  streams. `FrameAllocationTest` counts the reader's bytes over 2000 frames and fails on any. The editor repository's
+  `./gradlew :demo:stress` measures a change on the GPU: the runtime is fill-rate bound, so time pixels, not code.
 - Tiling reads the camera view, position and zoom: `tilesJustEnoughToCoverTheView` holds it.
 - `engines/godot/addons/jks_parallax/plax_background.gd` ports `ParallaxLayer.act`, `ParallaxPageReader.tile`/`drawRegion`,
   the cross-fade, the tint and the gradients line for line: change how a page scrolls, fades or draws, change it there,
@@ -90,19 +87,7 @@ repair.
   the JVM. A test of what a browser game calls goes there; GWT floats are JavaScript doubles, so compare floats by
   `Float.floatToIntBits`, never by their printed text.
 
-## Editor
-
-- State is static, in `editor/src/jks/tools2d/parallax/editor/gvars/GVars_*`, and there is one project at a time.
-- There are no editor tests, and a compiling control is not a working one: the 2019 editor shipped buttons and
-  dialogs with empty listeners. After wiring a control, run `./gradlew :editor:run` and use it.
-- Panels read the window size when built; `vue/Vue_Edition` rebuilds them after a resize.
-- `GVars_UI.init` sets VisUI's global `scaleFactor`; skin styles are shared, so copy a style before changing it.
-- Every control has a `setName` (`driver/Names`): `--driver-port` and the presenter's scripts find controls by it. Name a
-  new control, and treat a rename as breaking those scripts.
-- README.md's layer-settings table documents every setting: rename or rescale one and fix the table in the same
-  commit.
-
 ## Words
 
-French names are kept: `vue` = a screen of the editor, `transfert` = the cross-fade between two pages, `decal` = a
+French names are kept: `transfert` = the cross-fade between two pages, `decal` = a
 layer's starting offset in percent of the world.

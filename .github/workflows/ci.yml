@@ -46,9 +46,6 @@ jobs:
       - name: Check no script opens a window outside cage
         run: tools/offscreen-lint.sh && tools/offscreen-lint-test.sh
 
-      - name: Check the editor and demo packages
-        run: ./gradlew :editor:distZip :demo:distZip
-
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v7

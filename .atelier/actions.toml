@@ -2,11 +2,6 @@
 # `run` is a script (no session, no tokens), `prompt` files a ticket.
 # A script runs only once Simon has pressed Keep on the Actions tab.
 
-[actions.demo-libgdx]
-label = "Start the libGDX demo"
-about = "Opens demo/ in a window on this machine's screen: SPACE next page, N tint, LEFT/RIGHT scroll, R reset. Builds it first (a few seconds, longer after a change). Ends when you close the window."
-run   = ["tools/start-demo.sh", "libgdx"]
-
 [actions.demo-godot]
 label = "Start the Godot demo"
 about = "Opens engines/godot in a window on this machine's screen: Hiver drawn by the Godot reader, LEFT/RIGHT scroll. Needs godot 4.x on the PATH. Ends when you close the window."

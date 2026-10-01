@@ -15,6 +15,10 @@
 A round is a folder of .jplax pages and a round.json listing them in the order shown, with the folder of each page's
 atlas and what the scene tests; ParallaxLab (./gradlew :demo:lab) shows it and saves the grades next to it.
 Paths are relative to the repository root, the lab's working directory.
+
+Since r133 the lab, its rounds and the sample projects they read (editor/Files, demo/assets) are in the editor
+repository, JKS_Tools2D_ParallaxEditor, which has this file too: run survey, study, round1 and round2 there. Here, lint
+finds a page's atlas next to it, in its round.json, or in core/test-data/samples.
 """
 import collections
 import copy
@@ -678,7 +682,7 @@ def find_atlas_dir(path, page):
                 if os.path.normpath(scene['page']) == os.path.normpath(os.path.relpath(os.path.join(ROOT, path), ROOT)):
                     return scene['atlasDir']
     found = {os.path.relpath(os.path.dirname(a), ROOT)
-             for d in ('editor/Files', 'demo/assets') for a in glob.glob(os.path.join(ROOT, d, '**', name), recursive=True)}
+             for d in ('editor/Files', 'demo/assets', 'core/test-data/samples') for a in glob.glob(os.path.join(ROOT, d, '**', name), recursive=True)}
     return found.pop() if len(found) == 1 else None
 
 

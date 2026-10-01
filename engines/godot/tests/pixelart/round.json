@@ -1,6 +1,6 @@
 {
  "round": "pixelart",
- "about": "A pixel-art export (r126, d14: the atlas written filter: Nearest,Nearest) drawn sharp, and cross-faded with the same page on its Linear source atlas (r136). city.atlas and city_1.png are copied from tools/r126-pixel-art.txt's export (editor/build/r126/out), never re-exported over.",
+ "about": "A pixel-art export (r126, d14: the atlas written filter: Nearest,Nearest) drawn sharp, and cross-faded with the same page on its Linear source atlas (r136). city.atlas and city_1.png are copied from the editor repository's tools/r126-pixel-art.txt export (editor/build/r126/out), never re-exported over.",
  "scenes": [
   {
    "id": "p01",

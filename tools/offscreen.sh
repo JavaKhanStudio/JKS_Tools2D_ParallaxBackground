@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # offscreen.sh COMMAND... — runs a command that opens a window in cage's headless display, off Simon's screen (r118).
 #
-#   tools/offscreen.sh editor/build/install/bin/ParallaxEditor
-#   tools/offscreen.sh java -cp "demo/build/install/demo/lib/*" jks.tools2d.parallax.demo.ParallaxLab demo/lab/round1
+#   tools/offscreen.sh shots/build/install/shots/bin/shots engines/godot/tests/round1 build/lab/round1
+#   tools/offscreen.sh java -cp "$(cat engines/jme/build/shots.classpath)" jks.tools2d.parallax.jme.JmeParallaxDemo
 #
-# The Gradle tasks that open one (:editor:run, :demo:run, :demo:lab, :demo:stress, :jme:run) do it by themselves for a
+# The Gradle tasks that open one (:jme:run, :shots:run) do it by themselves for a
 # board agent (gradle/offscreen.gradle); this is for everything else: an installDist build, a scratch program. The GPU
 # stays (cage's display renders on the NVIDIA one here, a desktop window on the Intel one), the sound goes nowhere.
 # ATELIER_NO_OFFSCREEN=1 runs the command on your display. Without cage it stops (exit 2) rather than open the window

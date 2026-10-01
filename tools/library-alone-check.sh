@@ -8,7 +8,8 @@
 #
 # Commit first: the clone holds REF, not the working tree. Writes scores.txt in the clone: every still's mean
 # difference and each round's verdict, from both frame comparisons. Diff two runs' scores.txt to see that none moved
-# (a REF before r130 writes its reports under demo/build/: read there too). Exits 1 when a gate fails. Needs what the four gates need (Chrome, godot 4.x, cage, Xwayland, python3 with Pillow).
+# (a REF before r130 writes its reports under demo/build/: read there too). From r133 on, REF has no editor/ or demo/
+# to delete: this runs the four gates on a clean clone of it. Exits 1 when a gate fails. Needs what the four gates need (Chrome, godot 4.x, cage, Xwayland, python3 with Pillow).
 set -u
 cd "$(dirname "$0")/.." || exit 1
 REF="${1:-HEAD}"

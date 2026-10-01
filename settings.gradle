@@ -9,9 +9,8 @@ rootProject.name = 'JKS_Tools2D_ParallaxBackground'
 
 include 'core'
 
-// The editor and the demo leave for their own repository (docs/repo-split.md): this build, and the library's checks,
-// run without them (r130).
-['editor', 'demo'].each { if (file(it).isDirectory()) include it }
+// The editor and the demo are JKS_Tools2D_ParallaxEditor, a repository of their own since the split (r130-r133,
+// docs/repo-split.md): it takes core from Maven Central, or from this checkout when it sits beside it.
 
 // The reference renderer (r130): the libGDX frames tools/parallax-lab-shots.sh draws for the reader rounds.
 include 'shots'

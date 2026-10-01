@@ -19,7 +19,7 @@ import com.jme3.system.AppSettings;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
- * The jME twin of demo/ (ParallaxDemo): Hiver and Printemps, read from their .plax files, behind a spinning cube.
+ * The jME twin of the editor repository's demo/ (ParallaxDemo): Hiver and Printemps, read from their .plax files, behind a spinning cube.
  * SPACE winter/spring, N night tint, LEFT / RIGHT scroll, R reset. {@code ./gradlew :jme:run} (from the repository
  * root: it reads core/test-data/samples). {@code -Dparallax.jme.demoShot=out.png} presses SPACE and N, saves the frame once both
  * fades are over, and quits (tools/start-demo-check.sh).

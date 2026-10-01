@@ -4,6 +4,10 @@ Research notes for the grading lab (r73) and the `parallax-pages` skill (`.claud
 Each rule is marked with where it comes from, and the lab's rounds turn claims into measured ones: a rule stays a
 **hypothesis** until Simon's grades back it.
 
+The grading lab (`ParallaxLab`, `./gradlew :demo:lab`) and its rounds (`demo/lab/...`) are in the editor repository,
+[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), since r133; the paths
+below are there. The stills come from this repository's `tools/parallax-lab-shots.sh`.
+
 ## 1. Where depth comes from
 
 A 2D background gets its depth from three cues, strongest first:

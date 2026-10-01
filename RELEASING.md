@@ -93,9 +93,10 @@ Each release publishes:
 - the library to Maven Central: `io.github.javakhanstudio:parallax-background`;
 - the jMonkeyEngine reader (`engines/jme/src`) to Maven Central, under the same version:
   `io.github.javakhanstudio:parallax-background-jme`. Its classes are public API: keep them compatible;
-- a GitHub release with the downloads: the library jars (+ sources, + javadoc), the jME reader's jars,
-  `ParallaxEditor-X.Y.Z.zip` (the editor with the library and the sample projects) and `jks-parallax-godot-X.Y.Z.zip`
-  (the Godot reader, `addons/jks_parallax/` at its root, made by `tools/godot-addon-zip.sh`).
+- a GitHub release with the downloads: the library jars (+ sources, + javadoc), the jME reader's jars and
+  `jks-parallax-godot-X.Y.Z.zip` (the Godot reader, `addons/jks_parallax/` at its root, made by
+  `tools/godot-addon-zip.sh`). The editor's zip is released from its own repository,
+  [JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), since r133.
 
 ## Godot Asset Library
 
@@ -125,7 +126,9 @@ releases.
 - Title `JKS Parallax`, category *2D Tools*, license *Apache-2.0*;
 - Repository host *Custom*, browse URL `https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground`, issues URL
   its `/issues`, and the fields of the table above;
-- Icon URL `https://raw.githubusercontent.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/master/editor/assets/skins/uis/parallaxIcon.png`;
+- Icon URL `https://raw.githubusercontent.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground/master/docs/parallaxIcon.png`
+  (until a release carries r133 to `master`, the logo is still at `editor/assets/skins/uis/parallaxIcon.png` there; a
+  listing made with that URL needs it changed once that release is out);
 - the description: the README's *In Godot 4* section, and screenshots of a page in Godot.
 
 `tools/godot-addon-zip-check.sh` installs the zip into a blank Godot project, loads a page from `res://` and saves a
