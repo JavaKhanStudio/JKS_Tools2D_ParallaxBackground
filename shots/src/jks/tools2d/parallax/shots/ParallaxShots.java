@@ -16,6 +16,8 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -43,7 +45,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * page on screen; a list of them: one after the other, r98), {@code "tint": {"at": 4, "seconds": 4, "color": [r, g, b,
  * a]}} tint, both started {@code at} seconds into the scroll (r94, engines/godot/tests/transfer); {@code "speedY": 30}
  * also scroll up, and {@code "resize": {"at": 3, "size": [720, 1280]}} resize the window mid-scroll (r95,
- * engines/godot/tests/conformance). engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots step the same way.
+ * engines/godot/tests/conformance); {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY
+ * layer named slot with that atlas region stretched over each tile (r177, engines/godot/tests/effects).
+ * engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots step the same way.
  */
 public class ParallaxShots extends ApplicationAdapter
 {
@@ -55,14 +59,24 @@ public class ParallaxShots extends ApplicationAdapter
 	private final List<Scene> scenes = new ArrayList<>();
 
 	private Parallax_Heart heart;
+	/** The layer names the scene on screen hooked. */
+	private final List<String> hooked = new ArrayList<>();
 
 	private static final class Scene
 	{
 		String id, page, atlasDir;
 		final List<Transfer> transfers = new ArrayList<>();
+		final List<Hook> hooks = new ArrayList<>();
 		float tintAt = -1, tintSeconds, speedY, resizeAt = -1;
 		int resizeWidth, resizeHeight;
 		Color tint;
+	}
+
+	/** An EMPTY layer's hook from a round: stretches the n-th atlas region of that name over every tile (r177). */
+	private static final class Hook
+	{
+		String layer, region;
+		int position;
 	}
 
 	/** A cross-fade {@code at} seconds into the scroll; {@code page} null: into the page on screen. */
@@ -133,6 +147,16 @@ public class ParallaxShots extends ApplicationAdapter
 					transfer.atlasDir = t.getString("atlasDir", scene.atlasDir);
 					scene.transfers.add(transfer);
 				}
+			JsonValue hooks = s.get("hooks");
+			if (hooks != null)
+				for (JsonValue h = hooks.child; h != null; h = h.next)
+				{
+					Hook hook = new Hook();
+					hook.layer = h.name;
+					hook.region = h.getString("region");
+					hook.position = h.getInt("position", 0);
+					scene.hooks.add(hook);
+				}
 			JsonValue tint = s.get("tint");
 			if (tint != null)
 			{
@@ -156,6 +180,15 @@ public class ParallaxShots extends ApplicationAdapter
 		heart.relativePath = Paths.get(scene.atlasDir).toAbsolutePath().toString();
 		heart.setPage(page);
 		heart.parallaxReader.resetPositions();
+		for (String name : hooked)
+			heart.parallaxReader.setLayerHook(name, null);
+		hooked.clear();
+		for (Hook hook : scene.hooks)
+		{
+			TextureRegion region = findRegion(page.getLoadedAtlas(), hook.region, hook.position);
+			heart.parallaxReader.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x, y, width, height));
+			hooked.add(hook.layer);
+		}
 		// A tint outlives setPage: the scene before may have left one.
 		heart.parallaxReader.addColorTransfert(Color.WHITE, 0);
 	}
@@ -238,6 +271,16 @@ public class ParallaxShots extends ApplicationAdapter
 		GLFW.glfwSwapBuffers(((Lwjgl3Graphics) Gdx.graphics).getWindow().getWindowHandle());
 		Gdx.gl.glViewport(0, 0, width, height);
 		resize(width, height);
+	}
+
+	/** The n-th region of that name, in atlas order, as a page names its layers' images. */
+	static TextureRegion findRegion(TextureAtlas atlas, String name, int position)
+	{
+		int seen = 0;
+		for (TextureAtlas.AtlasRegion region : atlas.getRegions())
+			if (region.name.equals(name) && seen++ == position)
+				return region;
+		throw new IllegalArgumentException("no region " + name + " #" + position + " in the atlas");
 	}
 
 	@Override

@@ -30,7 +30,9 @@ speeds, decal and size, whatever its kind: an effect between the far hills and t
 depth, and the trees are drawn over it.
 
 - **`EMPTY`** draws nothing. It holds a slot a game can fill: `ParallaxPageReader` calls a `LayerHook` the game
-  registered under the layer's `name`, with the layer's scrolled origin and the batch, in draw order. That is the
+  registered under the layer's `name` (`setLayerHook`), in draw order, once per tile of the layer the view shows: a box
+  the world's size times `sizeRatio`, scrolled and tiled as an image would be, the batch at the page's tint and fade.
+  Shipped in r177 (format 5); `engines/godot/tests/effects` is its round. That is the
   escape hatch for anything the page cannot describe (a libGDX `ParticleEffect`, a Godot `GPUParticles2D`, a game
   sprite that should sit between two layers), and it is portable by construction: each engine calls its own hook.
 - **`PARTICLES`** is an engine's own particle effect, named by file in the page, one file per engine (below).

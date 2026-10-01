@@ -2,7 +2,8 @@ extends Node
 ## Stills of every scene of a lab round, as shots/.../ParallaxShots takes them with libGDX: the same page, the
 ## same 60 units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. tools/godot-parallax-shots.sh runs it and
 ## compares the two sets. A scene's "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same
-## step as the lab, its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll.
+## step as the lab, its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
+## the page's EMPTY layers: each stretches the atlas region it names over every tile it is handed (r177).
 ##   godot --path engines/godot res://tests/shots.tscn -- <repo root> <round dir> <out dir>
 
 const SPEED := 60.0
@@ -23,6 +24,7 @@ func _ready() -> void:
 	for scene in round.scenes:
 		await _resize_window(Vector2i(1280, 720))
 		bg.load_page(root.path_join(scene.page), root.path_join(scene.atlasDir))
+		_set_hooks(bg, scene.get("hooks", {}))
 		bg.tint_to(Color.WHITE, 0)
 		bg.speed_constant_x = SPEED
 		bg.speed_constant_y = scene.get("speedY", 0.0)
@@ -64,6 +66,17 @@ func _resize_window(size: Vector2i) -> void:
 		if Vector2i(get_viewport().get_visible_rect().size) == size:
 			return
 	push_error("shots: the window stayed %s, not %s" % [get_viewport().get_visible_rect().size, size])
+
+
+## A hook per EMPTY layer the scene names, drawing a region of the page's atlas; the scene before's are removed.
+static func _set_hooks(bg: PlaxBackground, hooks: Dictionary) -> void:
+	for layer_name in bg._hooks.keys():
+		bg.set_layer_hook(layer_name, Callable())
+	for layer_name in hooks:
+		var region: Dictionary = bg.atlas.find_region(hooks[layer_name].region, int(hooks[layer_name].position))
+		bg.set_layer_hook(layer_name, func(canvas: CanvasItem, rect: Rect2, modulate: Color, _l: Dictionary) -> void:
+			canvas.draw_texture_rect_region(region.texture, rect,
+					Rect2(region.x, region.y, region.width, region.height), modulate))
 
 
 ## Into the scene's transfer page, or into the page on screen when it names none.

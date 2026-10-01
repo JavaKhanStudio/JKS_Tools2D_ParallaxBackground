@@ -194,7 +194,11 @@ add_child(bg)
 # each frame: bg.speed_consumable_x = player_speed_x
 bg.transfert_into(PlaxPage.load_page(path), PlaxAtlas.load_atlas(atlas_path), 3.0)   # cross-fade into another page
 bg.tint_to(Color(0.5, 0.55, 0.8), 3.0)                                                 # tint every layer
+bg.set_layer_hook("birds", func(canvas, rect, modulate, layer): canvas.draw_texture_rect(bird, rect, false, modulate))
 ```
+
+An `EMPTY` layer's hook gets the canvas it draws on, the tile's box in screen pixels and the page's tint at the
+layer's opacity.
 
 It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
 `world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the
@@ -227,11 +231,13 @@ bg.setPage(page, JmeAtlas.load(assetManager, "Backgrounds/" + page.pageModel.atl
 bg.speedConstantX = 60;                     // optional: always scroll; each frame: bg.speedConsumableX = playerSpeedX
 bg.transfertIntoPage(other, otherAtlas, 3); // cross-fade into another page
 bg.tintTo(new Color(0.5f, 0.55f, 0.8f, 1), 3);
+bg.setLayerHook("birds", (batch, layer, x, y, w, h) -> batch.draw(birdRegion, x, y, w, h));  // an EMPTY layer
 ```
 
 The scrolling, tiling, cross-fade and tint are this library's own `ParallaxPageReader`; jME only draws the quads, and
-`tools/jme-parallax-shots.sh` compares its frames with libGDX's. The background clears the screen, so the game's main
-viewport stops clearing its colour. Keep the application's gamma correction off (`settings.setGammaCorrection(false)`)
+`tools/jme-parallax-shots.sh` compares its frames with libGDX's. An `EMPTY` layer's hook draws through the same
+`JmeBatch`, whose only draw is `draw(region, x, y, width, height)` with a region of a `JmeAtlas`. The background
+clears the screen, so the game's main viewport stops clearing its colour. Keep the application's gamma correction off (`settings.setGammaCorrection(false)`)
 to get libGDX's colours.
 - **Performance:** `act` and `render` allocate nothing, and the game thread spends under a millisecond on 400 layers.
   What costs is the GPU filling pixels: every layer is blended over the ones behind it, and a cross-fade draws both
