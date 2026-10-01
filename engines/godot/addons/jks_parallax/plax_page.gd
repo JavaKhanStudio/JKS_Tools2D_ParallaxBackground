@@ -14,9 +14,12 @@ const LAYER_DEFAULTS := {
 	"sequenceSegments": [], "sequenceSeed": 0, "sequenceLength": 16,
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
-## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects. SEQUENCE
-## (format 8) is read into LAYER_DEFAULTS but not drawn yet (r183): such a page fails to load rather than show one image.
-const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER"]
+## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects, a SEQUENCE
+## layer's cycle drawn by draw_cycle.
+const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER", "SEQUENCE"]
+## What a seed of 0 starts from (SequenceCycle.ZERO_SEED): xorshift never leaves 0.
+const ZERO_SEED := 0x6D2B79F5
+const _U32 := 0xFFFFFFFF
 ## Where a PARTICLES layer's effect sits (Enum_ParticleAnchor).
 const ANCHORS := ["LAYER", "VIEW"]
 
@@ -76,6 +79,9 @@ func _read(json: Dictionary, inside) -> bool:
 		# JSON numbers are floats here: a seed is read back to the int Java stored.
 		layer.sequenceSeed = int(layer.sequenceSeed)
 		layer.sequenceLength = int(layer.sequenceLength)
+		for segment in layer.sequenceSegments:
+			segment.regionPosition = int(segment.get("regionPosition", 0))
+			segment.weight = int(segment.get("weight", 1)) if segment.get("weight") != null else 1
 		if not layer.kind in KINDS:
 			push_error("PlaxPage: layer kind %s is not known here: the page was written by a newer version" % layer.kind)
 			return false
@@ -87,6 +93,43 @@ func _read(json: Dictionary, inside) -> bool:
 			return false
 		layers.append(layer)
 	return true
+
+
+## SequenceCycle.next: the 32-bit xorshift step (13, 17, 5) of `state`, both unsigned 32-bit ints (0 .. 2^32 - 1).
+## GDScript's ints are 64-bit: every left shift is masked back to 32 bits, and a right shift of an unsigned value is
+## Java's >>>.
+static func sequence_next(state: int) -> int:
+	state ^= (state << 13) & _U32
+	state ^= state >> 17
+	state ^= (state << 5) & _U32
+	return state
+
+
+## SequenceCycle.draw, bit for bit: `length` segment indexes picked from `seed` (Java's int: negative or not) and
+## `weights`, one per segment. For each slot the state steps once and (state >>> 1) % total walks the weights; a weight
+## of 0 or less is never picked, and when none is above 0 each weighs 1. Integers only: a float would pick otherwise.
+static func draw_cycle(seed: int, weights: PackedInt32Array, length: int) -> PackedInt32Array:
+	var total := 0
+	for weight in weights:
+		if weight > 0:
+			total += weight
+	var state := seed & _U32
+	if state == 0:
+		state = ZERO_SEED
+	var cycle := PackedInt32Array()
+	cycle.resize(maxi(1, length))
+	for slot in cycle.size():
+		state = sequence_next(state)
+		var pick := (state >> 1) % (total if total > 0 else weights.size())
+		var segment := 0
+		while segment < weights.size() - 1:
+			var weight := maxi(weights[segment], 0) if total > 0 else 1
+			if pick < weight:
+				break
+			pick -= weight
+			segment += 1
+		cycle[slot] = segment
+	return cycle
 
 
 static func _color(json, fallback: Color) -> Color:

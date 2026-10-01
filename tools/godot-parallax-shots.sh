@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # godot-parallax-shots.sh [ROUND_DIR] — the Godot reader (engines/godot) against the libGDX runtime, frame by frame (r87).
 #
-#   tools/godot-parallax-shots.sh                          engines/godot/tests/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders
+#   tools/godot-parallax-shots.sh                          engines/godot/tests/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence
 #   tools/godot-parallax-shots.sh engines/godot/tests/round1
 #
 # For each round: renders its scenes with libGDX (tools/parallax-lab-shots.sh, 0, 6 and 12 s into the lab's scroll)
@@ -15,14 +15,15 @@
 # Its screen is 1920x1440: a "resize" scene asks for a window up to 1280 tall.
 # The particles round (r179) is not compared by pixels, each engine drawing its own particle system:
 # engines/godot/tests/particles.gd checks where Godot puts the particle nodes, saves its stills in godot/, and fails on
-# a FAIL in godot.log.
+# a FAIL in godot.log. The sequence round (r183) first runs engines/godot/tests/sequence_cycle.gd: Godot's cycle
+# generator against the JVM's picks.
 set -u
 cd "$(dirname "$0")/.." || exit 1
 ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/godot/tests/round1 engines/godot/tests/conformance engines/godot/tests/transfer engines/godot/tests/pixelart engines/godot/tests/effects engines/godot/tests/particles engines/godot/tests/shaders)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/godot/tests/round1 engines/godot/tests/conformance engines/godot/tests/transfer engines/godot/tests/pixelart engines/godot/tests/effects engines/godot/tests/particles engines/godot/tests/shaders engines/godot/tests/sequence)
 GODOT="${GODOT:-godot}"
 status=0
 for ROUND in "${ROUNDS[@]}"; do
@@ -32,6 +33,12 @@ for ROUND in "${ROUNDS[@]}"; do
 		tools/parallax-lab-shots.sh "$ROUND" "$OUT/gdx" >/dev/null || { echo "libGDX shots failed: $OUT/gdx/lab.log"; exit 1; }
 	fi
 	"$GODOT" --headless --path engines/godot --import >/dev/null 2>&1
+	if [ "$(basename "$ROUND")" = sequence ]; then
+		# Godot's cycle generator against the JVM's picks (picks.json), before the frames: a pick off shows here first.
+		"$GODOT" --headless --path engines/godot --script res://tests/sequence_cycle.gd >"$OUT/sequence_cycle.log" 2>&1
+		grep -h "^FAIL\|^sequence_cycle:" "$OUT/sequence_cycle.log"
+		grep -q "^sequence_cycle: .*PASS" "$OUT/sequence_cycle.log" || { echo "FAIL: sequence_cycle, see $OUT/sequence_cycle.log"; status=1; }
+	fi
 	SCENE=res://tests/shots.tscn; [ $PARTICLES = 1 ] && SCENE=res://tests/particles.tscn
 	RUN="$GODOT --path \"$ROOT/engines/godot\" --resolution 1280x720 $SCENE -- \"$ROOT\" \"$ROUND\" \"$OUT/godot\" >\"$OUT/godot.log\" 2>&1"
 	if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then

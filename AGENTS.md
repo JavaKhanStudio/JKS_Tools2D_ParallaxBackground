@@ -83,7 +83,11 @@ repair.
   `Batch.setShader`, which `JmeBatch` throws on.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
-  `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground.
+  `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's
+  copy is `plax_page.gd`'s `draw_cycle` (32-bit masked) and `plax_background.gd`'s `_draw_cycle`:
+  `engines/godot/tests/sequence_cycle.gd` holds them to the JVM's picks (`tests/sequence/picks.json`, written by
+  `tools/r183-sequence/PickTable.java`) and to a walk over every slot; `tools/godot-parallax-shots.sh` runs it with the
+  `sequence` round.
 - The browser suite's `ReaderCases` checks tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs it in `:core:test`. Cover all four repeat modes (X, Y, XY, none).
 

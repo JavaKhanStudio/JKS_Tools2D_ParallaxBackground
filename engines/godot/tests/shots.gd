@@ -3,7 +3,8 @@ extends Node
 ## same 60 units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. tools/godot-parallax-shots.sh runs it and
 ## compares the two sets. A scene's "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same
 ## step as the lab, its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
-## the page's EMPTY layers: each stretches the atlas region it names over every tile it is handed (r177).
+## the page's EMPTY layers: each stretches the atlas region it names over every tile it is handed (r177). Its
+## "sequenceSeed" draws the SEQUENCE layers from that game seed (r183).
 ##   godot --path engines/godot res://tests/shots.tscn -- <repo root> <round dir> <out dir>
 
 const SPEED := 60.0
@@ -25,6 +26,10 @@ func _ready() -> void:
 		await _resize_window(Vector2i(1280, 720))
 		bg.load_page(root.path_join(scene.page), root.path_join(scene.atlasDir))
 		_set_hooks(bg, scene.get("hooks", {}))
+		if scene.has("sequenceSeed"):
+			bg.set_sequence_seed(int(scene.sequenceSeed))
+		else:
+			bg.clear_sequence_seed()
 		bg.tint_to(Color.WHITE, 0)
 		bg.speed_constant_x = SPEED
 		bg.speed_constant_y = scene.get("speedY", 0.0)

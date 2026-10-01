@@ -198,12 +198,12 @@ More:
 - **Ground that does not repeat:** a `SEQUENCE` layer chains several images (rock, rock, bridge, river...) along one
   layer, each picked by its weight (docs/sequence-layers.md). The page stores the weights and a seed, and the cycle of
   segments is drawn once when the page's layers are built, from integers only (a 32-bit xorshift, `SequenceCycle`), so
-  the JVM and the browser draw the same ground from the same seed. `parallaxReader.setSequenceSeed(seed)` draws every
+  the JVM, the browser and Godot draw the same ground from the same seed. `parallaxReader.setSequenceSeed(seed)` draws every
   sequence from the game's seed instead (XOR each layer's own, so two layers stay different): a new ground each run;
   `clearSequenceSeed()` goes back to the page's. The cycle is the layer's tile: a frame draws only the segments in view,
   found by a binary search, and allocates nothing. On a still page, seven 64-slot sequences in place of
   seven image layers took a frame from 0.50 to 0.48 ms, 4 draw calls both (`tools/r182-sequence/stress.sh`): a
-  sequence costs the segments it shows. Godot does not draw them yet (phase 2): a page holding one fails to load there.
+  sequence costs the segments it shows.
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
   background away.
@@ -248,8 +248,9 @@ two files agree: each engine draws its own.
 A `SHADER` layer is drawn through the same `WAVE` or `FOG` as in libGDX (`plax_effects.gd`, a `ShaderMaterial` on the
 layer's canvas), on `act()`'s clock: the same frames (`engines/godot/tests/shaders`).
 
-A `SEQUENCE` layer is read but not drawn yet (docs/sequence-layers.md, phase 2): `load_page` refuses a page holding
-one, as it refuses a kind it does not know, rather than show its first segment alone.
+A `SEQUENCE` layer draws the same cycle as libGDX from the same seed (`PlaxPage.draw_cycle`, bit for bit:
+`engines/godot/tests/sequence`); `bg.set_sequence_seed(randi())` draws a new ground each run, XORed with each layer's
+own seed as in libGDX, and `clear_sequence_seed()` goes back to the page's.
 
 It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
 `world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the

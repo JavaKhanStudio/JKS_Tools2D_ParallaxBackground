@@ -69,6 +69,20 @@ Godot has to draw the same cycle from the same seed, so the generator is written
 - A negative padX wider than a segment makes the edges go back: the reader then looks at every slot instead of
   searching. Still only the slots in view are drawn.
 
+## What phase 2 settled (r183)
+
+- Godot: `plax_page.gd`'s `draw_cycle` is `SequenceCycle` with the state kept as an unsigned 32-bit int (every `<<`
+  masked with `0xFFFFFFFF`, so `>>` is Java's `>>>`; a seed is masked the same way). `plax_background.gd` keeps each
+  segment's box and the edges as core does, `_draw_cycle` searching and walking the same; `set_sequence_seed` and
+  `clear_sequence_seed` are the reader's. jME runs core as is; its `PlaxBackground` passes a game's seed on.
+- Held by `engines/godot/tests/sequence_cycle.gd` (the JVM's picks for 240 cycles, `tools/r183-sequence/PickTable.java`,
+  and the slots `_draw_cycle` draws against a walk over every slot) and the pixel round `engines/godot/tests/sequence`
+  (libGDX against Godot and jME, a game seed and a seeded cross-fade among its scenes). `tools/r183-sequence/mutate.sh`
+  breaks the port 12 ways: each fails. A binary search gone wrong mostly hides under the slots drawn after it, so the
+  slot walk, not the pixels, is what holds it.
+- A cycle no wider than 0 (pads more negative than its segments are wide) is not drawn at all, in core as in Godot:
+  `tile()` gives up on a layer without width before it reaches the slots.
+
 ## Phases
 
 Raised under r147, each `--after` the one before.

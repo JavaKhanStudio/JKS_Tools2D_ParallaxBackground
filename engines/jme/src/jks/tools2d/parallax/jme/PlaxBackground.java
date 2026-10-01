@@ -181,6 +181,17 @@ public class PlaxBackground extends BaseAppState
 	public void setLayerHook(String name, LayerHook hook)
 	{reader.setLayerHook(name, hook);}
 
+	/**
+	 * Draws every SEQUENCE layer's cycle from {@code seed} XOR the seed its page stores, as
+	 * {@link ParallaxPageReader#setSequenceSeed}: a new ground each run.
+	 */
+	public void setSequenceSeed(int seed)
+	{reader.setSequenceSeed(seed);}
+
+	/** The SEQUENCE layers back to the seeds their pages store. */
+	public void clearSequenceSeed()
+	{reader.clearSequenceSeed();}
+
 	/** Every layer back at its decal. */
 	public void resetPositions()
 	{reader.resetPositions();}
