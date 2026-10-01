@@ -1,6 +1,6 @@
 {
  "round": "transfer",
- "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it; t06 starts a second at 5 s (r98). Read by ParallaxLab --shots and engines/godot/tests/shots.gd.",
+ "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it; t06 starts a second at 5 s (r98). Read by shots/.../ParallaxShots and engines/godot/tests/shots.gd.",
  "scenes": [
   {
    "id": "t01",

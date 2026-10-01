@@ -3,7 +3,7 @@
 #
 #   tools/parallax-lab-shots.sh engines/godot/tests/round1 build/lab/round1
 #
-# Runs the reference renderer (shots/, ParallaxShots: the grading lab's --shots mode, split out of the demo in r130) in
+# Runs the reference renderer (shots/, ParallaxShots: split out of the grading lab in r130, the only stills of a round since r157) in
 # cage's headless display on a nested Xwayland (needs cage and Xwayland), from its installDist (built first). Writes <scene>-t0/-t6/-t12.png (1280x720, or the size a scene's "resize" gives; 0, 6 and
 # 12 s into the same scroll) and, with python3 and Pillow, contact.png: one row per scene. ATELIER_NO_OFFSCREEN=1 runs
 # it in a window instead.
