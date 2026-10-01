@@ -19,6 +19,7 @@ import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial.CullHint;
 
+import jks.tools2d.parallax.LayerHook;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parallax;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
@@ -170,6 +171,14 @@ public class PlaxBackground extends BaseAppState
 	/** Tints every layer toward {@code color} over {@code seconds}, not the gradients. */
 	public void tintTo(Color color, float seconds)
 	{reader.addColorTransfert(color, seconds);}
+
+	/**
+	 * Makes {@code hook} draw every EMPTY layer named {@code name}, as {@link ParallaxPageReader#setLayerHook}: through
+	 * the {@link JmeBatch} it is handed, whose only draw is {@code draw(region, x, y, width, height)} (a region of a
+	 * {@link JmeAtlas}); null removes it.
+	 */
+	public void setLayerHook(String name, LayerHook hook)
+	{reader.setLayerHook(name, hook);}
 
 	/** Every layer back at its decal. */
 	public void resetPositions()

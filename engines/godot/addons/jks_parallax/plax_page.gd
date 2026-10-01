@@ -8,8 +8,10 @@ const LAYER_DEFAULTS := {
 	"regionName": "", "regionPosition": 0, "flipX": false, "flipY": false,
 	"parallaxScalingSpeedX": 0.0, "parallaxScalingSpeedY": 0.0, "speedXAtRest": 0.0, "sizeRatio": 1.0,
 	"decal_X_Ratio": 0.0, "decal_Y_Ratio": 0.0, "padX": 0.0, "padXFactor": 0.0, "padY": 0.0, "padYFactor": 0.0,
-	"mirror": false,
+	"mirror": false, "kind": "IMAGE", "name": "",
 }
+## The layer kinds this reader draws (Enum_LayerKind): a page naming another fails to load, as in libGDX.
+const KINDS := ["IMAGE", "EMPTY"]
 
 var top_half_top := Color.WHITE
 var top_half_bottom := Color.WHITE
@@ -33,14 +35,12 @@ static func load_page(path: String) -> PlaxPage:
 		return null
 	var page := PlaxPage.new()
 	# A project holds its page under "saving", with a flag per layer telling whether it comes from the atlas.
-	if json.has("saving"):
-		page._read(json.saving, json.saving.get("inside"))
-	else:
-		page._read(json, null)
-	return page
+	var ok := page._read(json.saving, json.saving.get("inside")) if json.has("saving") else page._read(json, null)
+	return page if ok else null
 
 
-func _read(json: Dictionary, inside) -> void:
+## False when a layer is of a kind this reader does not know.
+func _read(json: Dictionary, inside) -> bool:
 	top_half_top = _color(json.get("topHalf_top"), top_half_top)
 	top_half_bottom = _color(json.get("topHalf_bottom"), top_half_bottom)
 	bottom_half_top = _color(json.get("bottomHalf_top"), bottom_half_top)
@@ -52,11 +52,11 @@ func _read(json: Dictionary, inside) -> void:
 	use_original_size = bool(json.get("useOriginalSize", use_original_size))
 	var page_model = json.get("pageModel")
 	if typeof(page_model) != TYPE_DICTIONARY:
-		return
+		return true
 	atlas_name = str(page_model.get("atlasName", atlas_name))
 	var list = page_model.get("pageList")
 	if typeof(list) != TYPE_ARRAY:
-		return
+		return true
 	for i in list.size():
 		# A project layer without a flag comes from the atlas, as the editor reads it.
 		if typeof(inside) == TYPE_ARRAY and i < inside.size() and not inside[i]:
@@ -66,7 +66,11 @@ func _read(json: Dictionary, inside) -> void:
 			if list[i].has(key) and list[i][key] != null:
 				layer[key] = list[i][key]
 		layer.regionPosition = int(layer.regionPosition)
+		if not layer.kind in KINDS:
+			push_error("PlaxPage: layer kind %s is not known here: the page was written by a newer version" % layer.kind)
+			return false
 		layers.append(layer)
+	return true
 
 
 static func _color(json, fallback: Color) -> Color:

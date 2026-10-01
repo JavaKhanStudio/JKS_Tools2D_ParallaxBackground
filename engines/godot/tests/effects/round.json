@@ -1,0 +1,50 @@
+{
+ "round": "effects",
+ "about": "EMPTY layers (r177, docs/effect-layers.md phase 0): each page has an EMPTY layer named 'slot' fourth from the back (sizeRatio 0.6, padded, mirror set, which an EMPTY layer ignores), drawn by a hook that stretches the atlas region the scene's 'hooks' names over every tile the reader hands it. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "scenes": [
+  {
+   "id": "e01",
+   "page": "engines/godot/tests/effects/e01.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "empty-repeat-X",
+   "about": "c01 (Hiver, useOriginalSize, repeat X) with the slot between its fourth and fifth layers",
+   "hooks": {"slot": {"region": "parallax4", "position": 1}}
+  },
+  {
+   "id": "e02",
+   "page": "engines/godot/tests/effects/e02.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "empty-repeat-XY",
+   "about": "c02 (repeat X and Y, padded), scrolling up at 30 units/s too: the slot tiles on both axes",
+   "speedY": 30,
+   "hooks": {"slot": {"region": "parallax4", "position": 1}}
+  },
+  {
+   "id": "e03",
+   "page": "engines/godot/tests/effects/e03.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "empty-repeat-Y",
+   "about": "c03 (repeat Y, mirrored layers), scrolling up at 30 units/s too: the slot tiles up, and has no mirrored copy",
+   "speedY": 30,
+   "hooks": {"slot": {"region": "parallax4", "position": 1}}
+  },
+  {
+   "id": "e04",
+   "page": "engines/godot/tests/effects/e04.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "empty-no-repeat",
+   "about": "c05 (no repeat): the slot is drawn once, and scrolls out of the view",
+   "hooks": {"slot": {"region": "parallax4", "position": 1}}
+  },
+  {
+   "id": "e05",
+   "page": "engines/godot/tests/effects/e01.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "empty-cross-fade-tinted",
+   "about": "e01 cross-fading into itself (its layers cloned, the slot too) while tinting orange: the hook's tiles fade and tint with their page",
+   "hooks": {"slot": {"region": "parallax4", "position": 1}},
+   "transfer": {"at": 4, "seconds": 4},
+   "tint": {"at": 4, "seconds": 4, "color": [1.0, 0.55, 0.3, 1.0]}
+  }
+ ]
+}

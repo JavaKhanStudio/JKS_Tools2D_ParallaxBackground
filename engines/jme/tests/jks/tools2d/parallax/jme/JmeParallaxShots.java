@@ -11,6 +11,7 @@ import org.lwjgl.glfw.GLFW;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.jme3.app.SimpleApplication;
@@ -23,7 +24,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 /**
  * Stills of every scene of a lab round drawn by jME, as {@code ParallaxShots} (shots/) takes them with libGDX: the same
  * page, the same 60 units/s scroll stepped at 1/60 s (in float, as the lab counts it), grabbed 0, 6 and 12 s in. A
- * scene's "transfer" (one or a list), "tint", "speedY" and "resize" are played at the same steps.
+ * scene's "transfer" (one or a list), "tint", "speedY" and "resize" are played at the same steps, and its "hooks" draw
+ * its EMPTY layers the same way (r177).
  * tools/jme-parallax-shots.sh runs it and compares the two sets.
  * <pre>
  *   java -cp ... jks.tools2d.parallax.jme.JmeParallaxShots &lt;round dir&gt; &lt;out dir&gt;   (from the repository root)
@@ -49,12 +51,22 @@ public class JmeParallaxShots extends SimpleApplication
 		int resizeWidth, resizeHeight;
 		Color tint;
 		final List<Transfer> transfers = new ArrayList<>();
+		final List<Hook> hooks = new ArrayList<>();
+	}
+
+	/** An EMPTY layer's hook from a round: stretches the n-th atlas region of that name over every tile (r177). */
+	private static final class Hook
+	{
+		String layer, region;
+		int position;
 	}
 
 	private final Path roundDir, outDir;
 	private final List<Scene> scenes = new ArrayList<>();
 	private final float speedFactor = "scroll".equals(System.getProperty("parallax.jme.break")) ? 1.1f : 1;
 	private PlaxBackground bg;
+	/** The layer names the scene on screen hooked. */
+	private final List<String> hooked = new ArrayList<>();
 
 	// Where the stepping is: scene, shot, time, and what of the scene has been played.
 	private int sceneIndex = -1, shotIndex;
@@ -136,6 +148,16 @@ public class JmeParallaxShots extends SimpleApplication
 					into.page = t.getString("page", null);
 					into.atlasDir = t.getString("atlasDir", scene.atlasDir);
 					scene.transfers.add(into);
+				}
+			JsonValue hooks = s.get("hooks");
+			if (hooks != null)
+				for (JsonValue h = hooks.child; h != null; h = h.next)
+				{
+					Hook hook = new Hook();
+					hook.layer = h.name;
+					hook.region = h.getString("region");
+					hook.position = h.getInt("position", 0);
+					scene.hooks.add(hook);
 				}
 			JsonValue tint = s.get("tint");
 			if (tint != null)
@@ -223,8 +245,18 @@ public class JmeParallaxShots extends SimpleApplication
 	{
 		Scene scene = scenes.get(index);
 		WholePage_Model page = PlaxBackground.loadPage(assetManager, scene.page);
-		bg.setPage(page, JmeAtlas.load(assetManager, scene.atlasDir + "/" + page.pageModel.atlasName));
+		TextureAtlas atlas = JmeAtlas.load(assetManager, scene.atlasDir + "/" + page.pageModel.atlasName);
+		bg.setPage(page, atlas);
 		bg.resetPositions();
+		for (String name : hooked)
+			bg.setLayerHook(name, null);
+		hooked.clear();
+		for (Hook hook : scene.hooks)
+		{
+			TextureRegion region = findRegion(atlas, hook.region, hook.position);
+			bg.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x, y, width, height));
+			hooked.add(hook.layer);
+		}
 		bg.tintTo(Color.WHITE, 0);
 		bg.speedConstantX = SPEED;
 		bg.speedConstantY = scene.speedY;
@@ -233,6 +265,16 @@ public class JmeParallaxShots extends SimpleApplication
 		transferred = 0;
 		tinted = resized = false;
 		System.out.println("shots: " + scene.id);
+	}
+
+	/** The n-th region of that name, in atlas order, as a page names its layers' images. */
+	static TextureRegion findRegion(TextureAtlas atlas, String name, int position)
+	{
+		int seen = 0;
+		for (TextureAtlas.AtlasRegion region : atlas.getRegions())
+			if (region.name.equals(name) && seen++ == position)
+				return region;
+		throw new IllegalArgumentException("no region " + name + " #" + position + " in the atlas");
 	}
 
 	@Override

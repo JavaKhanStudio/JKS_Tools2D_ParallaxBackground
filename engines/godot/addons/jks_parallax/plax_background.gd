@@ -19,6 +19,14 @@ extends CanvasLayer
 ##   bg.transfert_into(PlaxPage.load_page(path), PlaxAtlas.load_atlas(atlas_path), 2.0)
 ##   bg.tint_to(Color(1, 0.6, 0.4), 2.0)
 ##
+## An EMPTY layer (kind "EMPTY") is drawn by the game, as ParallaxPageReader.setLayerHook:
+##
+##   bg.set_layer_hook("birds", func(canvas: CanvasItem, rect: Rect2, modulate: Color, l: Dictionary):
+##       canvas.draw_texture_rect(bird, rect, false, modulate))
+##
+## called in the layer's place in the draw order, once per tile of it the view shows, `rect` in screen pixels and
+## `modulate` the page's tint at the layer's opacity. A layer with no hook draws nothing.
+##
 ## Not ported yet: atlas regions packed rotated.
 
 @export_file("*.jplax", "*.plaxpj") var page_path := ""
@@ -74,6 +82,8 @@ var _world_height := 22.5
 var _ppu := 1.0
 var _screen_h := 0.0
 var _modulate := Color.WHITE
+# What draws each EMPTY layer, by layer name.
+var _hooks := {}
 
 
 func _init() -> void:
@@ -152,6 +162,15 @@ func tint_to(color: Color, seconds: float) -> void:
 	_canvas.queue_redraw()
 
 
+## Makes `hook` draw every EMPTY layer named `layer_name`; an empty Callable removes it. See the class doc.
+func set_layer_hook(layer_name: String, hook: Callable) -> void:
+	if hook.is_valid():
+		_hooks[layer_name] = hook
+	else:
+		_hooks.erase(layer_name)
+	_canvas.queue_redraw()
+
+
 func is_in_transfer() -> bool:
 	return not transfer_layers.is_empty()
 
@@ -159,6 +178,12 @@ func is_in_transfer() -> bool:
 func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictionary]:
 	var built: Array[Dictionary] = []
 	for model in from_page.layers:
+		if model.kind == "EMPTY":
+			var e := {"model": model, "region": {}, "distance_x": 0.0, "distance_y": 0.0}
+			_size_layer(e)
+			_reset_position(e)
+			built.append(e)
+			continue
 		var region := from_atlas.find_region(model.regionName, model.regionPosition) if from_atlas else {}
 		if region.is_empty():
 			push_error("PlaxBackground: region '%s' #%d not found in %s"
@@ -230,6 +255,8 @@ func _act_gradients(delta: float) -> void:
 func _update_filter() -> void:
 	var mipmaps := false
 	for l in layers + transfer_layers:
+		if l.region.is_empty():
+			continue
 		mipmaps = mipmaps or l.region.texture.get_meta("plax_mipmaps", false)
 	_canvas.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS if mipmaps else CanvasItem.TEXTURE_FILTER_LINEAR
 
@@ -308,9 +335,12 @@ func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool
 	return l
 
 
-## A layer is sizeRatio worlds wide; its height follows the image.
+## A layer is sizeRatio worlds wide; its height follows the image. An EMPTY one is sizeRatio worlds high.
 func _size_layer(l: Dictionary) -> void:
 	l.width = world_width * l.model.sizeRatio
+	if l.model.kind == "EMPTY":
+		l.height = _world_height * l.model.sizeRatio
+		return
 	l.height = l.image_h * (world_width / l.image_w) * l.model.sizeRatio
 
 
@@ -369,6 +399,12 @@ func _draw_layer(l: Dictionary) -> void:
 	var y: float = l.distance_y
 	var view_w := world_width
 	var view_h := _world_height
+	if m.kind == "EMPTY":
+		# No mirrored copy: the hook draws what it likes in each tile.
+		var hook: Callable = _hooks.get(m.name, Callable())
+		if hook.is_valid():
+			_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h, hook)
+		return
 	_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h)
 	if m.mirror and _repeat_x != _repeat_y:
 		# A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
@@ -400,7 +436,8 @@ func _draw_gradient(rect: Rect2, top: Color, bottom: Color) -> void:
 ## The layer at (x, y) plus every repetition, on the requested axes, that intersects the view
 ## (x 0..view_w, y 0..view_h).
 func _tile(
-		l: Dictionary, x: float, y: float, on_x: bool, on_y: bool, mirror: bool, view_w: float, view_h: float
+		l: Dictionary, x: float, y: float, on_x: bool, on_y: bool, mirror: bool, view_w: float, view_h: float,
+		hook := Callable()
 ) -> void:
 	var width: float = l.width
 	var height: float = l.height
@@ -422,6 +459,11 @@ func _tile(
 		for column in count_x:
 			var draw_x := start_x + column * step_x
 			if draw_x + width <= 0 or draw_x >= view_w:
+				continue
+			if hook.is_valid():
+				var rect := Rect2(draw_x * _ppu, _screen_h - (draw_y + height) * _ppu, width * _ppu, height * _ppu)
+				hook.call(_canvas, rect, _modulate, l)
+				_canvas.draw_set_transform(Vector2.ZERO)
 				continue
 			var fx: bool = l.model.flipX
 			var fy: bool = l.model.flipY
