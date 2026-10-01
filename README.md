@@ -116,11 +116,12 @@ Layers live in **world units**: the world is 40 units wide and its height follow
 | At rest speed            | Horizontal speed of the layer even when the screen does not move (clouds, water). |
 | Pad X / Pad Y            | Gap between two repetitions of the layer, in world units. |
 | Flip X / Flip Y          | Mirror the image. |
-| Kind                     | `IMAGE`, an atlas region (every layer saved before format 5); `EMPTY`: no image, a box `40 x sizeRatio` wide and `world height x sizeRatio` high, scrolled and tiled like an image, that the game draws in (see "Draw your own things between layers"); `PARTICLES` (format 6): the same box, where a particle effect plays (see "Snow, rain and smoke"); or `SHADER` (format 7): an atlas region, sized, scrolled, tiled and mirrored as an `IMAGE` is, drawn through an effect (see "Water and fog"). |
+| Kind                     | `IMAGE`, an atlas region (every layer saved before format 5); `EMPTY`: no image, a box `40 x sizeRatio` wide and `world height x sizeRatio` high, scrolled and tiled like an image, that the game draws in (see "Draw your own things between layers"); `PARTICLES` (format 6): the same box, where a particle effect plays (see "Snow, rain and smoke"); `SHADER` (format 7): an atlas region, sized, scrolled, tiled and mirrored as an `IMAGE` is, drawn through an effect (see "Water and fog"); or `SEQUENCE` (format 8): several atlas regions chained along the layer in a cycle drawn from a seed, the cycle tiled as an `IMAGE`'s one image is (see "Ground that does not repeat"). |
 | Name                     | The key a game's `LayerHook` is registered under, for an `EMPTY` layer. |
 | Particles: libGDX, Godot | A `PARTICLES` layer's effect, one file per engine, relative to the page's atlas folder: a libGDX `.p` (its images are regions of the page's atlas), and a Godot scene (`.tscn`). An engine whose file is missing draws nothing for the layer. |
 | Particles: anchor        | `LAYER`: the effect is pinned to the box's bottom-left corner, scrolled and tiled with it (a chimney's smoke, a waterfall's spray). `VIEW`: emitted once from the view, at the layer's decal from its bottom-left corner, whatever the page repeats on; its particles drift by the layer's scroll (snow or rain that never runs out). |
 | Shader: effect, amplitude, wavelength, speed | A `SHADER` layer's effect, `WAVE` or `FOG`, and its numbers, in world units and seconds, measured on the image as drawn. `WAVE`: each row of the image shifted sideways by `amplitude × sin(2π (y − speed × t) / wavelength)`, y from the image's bottom, so the ripple runs up at `speed` (down when negative). `FOG`: the image's opacity thinned by up to `amplitude` (0 to 1) in soft patches `wavelength` wide that drift left at `speed`. A wavelength of 0 draws the image without its effect. |
+| Sequence: segments, seed, length | A `SEQUENCE` layer's images (its segments: region name and position, and a whole-number weight each), the seed its cycle is drawn from and how many segments the cycle holds before it repeats (16 when unset). The first segment is `40 x sizeRatio` wide and sets the layer's height; every other is as wide as that height and its own image make it, so segments of different widths chain unstretched, Pad X apart. Each slot of the cycle picks a segment by its weight out of the sum of the weights, whatever came before it (B weighing 30 of 100 is 30% of the slots); a weight of 0 is never picked. The same seed draws the same cycle in every engine; a game passes its own with `ParallaxPageReader.setSequenceSeed`. Flip and Mirror flip each segment in its own slot; the slots keep their order. |
 | Mirror                   | Doubles the strip with a reflection of it, on a page that repeats on one axis only. Repeating on X, a second row is drawn on top of the strip, upside down (the strip's top edge is the axis); on Y, a second column to its right, reversed left to right. Repeating on both axes or neither, it draws nothing. Use it for a band that reads the same reflected (clouds, water, foliage); it does not hide the seams between repeats: an upside-down copy of a foreground layer shows. |
 
 Each frame, a layer moves by `delta × (screen speed + at rest speed) × speed ratio`, then is tiled to cover the
@@ -194,6 +195,15 @@ More:
   does not compile is said once in the log, and its layers are drawn without it. A game drawing through its own
   shaders or engine sets `ParallaxPageReader.setLayerEffects`; the reader disposes the shaders it made itself in
   `dispose()` (`Parallax_Heart.dispose()` calls it).
+- **Ground that does not repeat:** a `SEQUENCE` layer chains several images (rock, rock, bridge, river...) along one
+  layer, each picked by its weight (docs/sequence-layers.md). The page stores the weights and a seed, and the cycle of
+  segments is drawn once when the page's layers are built, from integers only (a 32-bit xorshift, `SequenceCycle`), so
+  the JVM and the browser draw the same ground from the same seed. `parallaxReader.setSequenceSeed(seed)` draws every
+  sequence from the game's seed instead (XOR each layer's own, so two layers stay different): a new ground each run;
+  `clearSequenceSeed()` goes back to the page's. The cycle is the layer's tile: a frame draws only the segments in view,
+  found by a binary search, and allocates nothing. On a still page, seven 64-slot sequences in place of
+  seven image layers took a frame from 0.50 to 0.48 ms, 4 draw calls both (`tools/r182-sequence/stress.sh`): a
+  sequence costs the segments it shows. Godot does not draw them yet (phase 2): a page holding one fails to load there.
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
   background away.
@@ -237,6 +247,9 @@ two files agree: each engine draws its own.
 
 A `SHADER` layer is drawn through the same `WAVE` or `FOG` as in libGDX (`plax_effects.gd`, a `ShaderMaterial` on the
 layer's canvas), on `act()`'s clock: the same frames (`engines/godot/tests/shaders`).
+
+A `SEQUENCE` layer is read but not drawn yet (docs/sequence-layers.md, phase 2): `load_page` refuses a page holding
+one, as it refuses a kind it does not know, rather than show its first segment alone.
 
 It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
 `world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the
@@ -330,10 +343,12 @@ A browser (GWT) game cannot read `.plax` (Kryo): it loads the JSON of a page ins
 `.plax` files carry a format version since 2.0. Format 2 also stores `flipY`, format 3 `mirror`, format 4 the
 page's `useOriginalSize`, format 5 each layer's `kind` (by name) and `name`, and format 6 each layer's
 `particlesLibgdx`, `particlesGodot` (paths, null when unset) and `particlesAnchor` (by name), and format 7 each
-layer's `shaderEffect` (by name), `shaderAmplitude`, `shaderWavelength` and `shaderSpeed`; format 1 files (written
-by the 2019-2023 editor) and formats 2 to 6 still load, with `useOriginalSize` off before 4, every layer an `IMAGE`
-before 5, no particle effect before 6 and `WAVE` with no numbers before 7, as do `.jplax` and `.plaxpj` files without
-those fields. A layer kind, a particle anchor or a shader effect a reader does not know fails the load, naming it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
+layer's `shaderEffect` (by name), `shaderAmplitude`, `shaderWavelength` and `shaderSpeed`, and format 8 each layer's
+`sequenceSegments` (a count, then each segment's `regionName`, `regionPosition` and `weight`), `sequenceSeed` and
+`sequenceLength`; format 1 files (written by the 2019-2023 editor) and formats 2 to 7 still load, with
+`useOriginalSize` off before 4, every layer an `IMAGE` before 5, no particle effect before 6, `WAVE` with no numbers
+before 7 and no segments, seed 0 and length 16 before 8, as do `.jplax` and `.plaxpj` files without those fields (a
+segment without a weight weighs 1). A layer kind, a particle anchor or a shader effect a reader does not know fails the load, naming it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
 exported from. Kryo registration order defines the class ids stored in the files, so `GVars_Serialization.prepareKryo`
 must only ever be appended to.
 

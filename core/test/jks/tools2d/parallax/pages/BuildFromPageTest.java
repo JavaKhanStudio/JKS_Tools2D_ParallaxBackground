@@ -18,10 +18,12 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.ParallaxPageReader;
 
 /**
  * The editor saves a page from its loaded layers through {@link Utils_Page#buildFromPage}: a layer that comes back
- * from it must be the one the page was loaded from, EMPTY, PARTICLES (r191) and SHADER (r180) layers included.
+ * from it must be the one the page was loaded from, EMPTY, PARTICLES (r191), SHADER (r180) and SEQUENCE (r182) layers
+ * included.
  */
 class BuildFromPageTest
 {
@@ -79,6 +81,16 @@ class BuildFromPageTest
 		fog.regionName = "sky";
 		fog.regionPosition = 0;
 		page.pageModel.pageList.add(fog);
+
+		Parallax_Model ground = new Parallax_Model();
+		ground.kind = Enum_LayerKind.SEQUENCE;
+		ground.sequenceSegments.add(new Sequence_Segment("sky", 0, 3));
+		ground.sequenceSegments.add(new Sequence_Segment("snowflake", 0, 1));
+		ground.sequenceSeed = 7;
+		ground.sequenceLength = 9;
+		ground.sizeRatio = 0.25f;
+		ground.padX = 1;
+		page.pageModel.pageList.add(ground);
 		return page;
 	}
 
@@ -127,5 +139,22 @@ class BuildFromPageTest
 		assertEquals(Enum_ParticleAnchor.VIEW, saved.pageModel.pageList.get(2).particlesAnchor);
 		assertEquals(Enum_LayerKind.SHADER, saved.pageModel.pageList.get(3).kind);
 		assertEquals(Enum_ShaderEffect.FOG, saved.pageModel.pageList.get(3).shaderEffect);
+		assertEquals(Enum_LayerKind.SEQUENCE, saved.pageModel.pageList.get(4).kind);
+		assertEquals("snowflake", saved.pageModel.pageList.get(4).sequenceSegments.get(1).regionName);
+	}
+
+	/** A game's seed redraws the cycle on screen, never the seed the editor saves. */
+	@Test
+	void aSequenceSavesItsStoredSeedNotTheGames()
+	{
+		WholePage_Model page = page();
+		page.forceLoad(atlas());
+		ParallaxPageReader reader = new ParallaxPageReader();
+		reader.addLayers(page.preloadValue);
+		reader.setSequenceSeed(123456);
+		assertEquals(123456 ^ 7, page.preloadValue.get(4).getDrawnSeed());
+
+		assertSameLayers(page, saved(page));
+		assertEquals(7, saved(page).pageModel.pageList.get(4).sequenceSeed);
 	}
 }

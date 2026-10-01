@@ -121,6 +121,13 @@ public final class Utils_Page_Json
 		layer.shaderAmplitude = readFloat(json, "shaderAmplitude", layer.shaderAmplitude);
 		layer.shaderWavelength = readFloat(json, "shaderWavelength", layer.shaderWavelength);
 		layer.shaderSpeed = readFloat(json, "shaderSpeed", layer.shaderSpeed);
+		JsonValue segments = json.get("sequenceSegments");
+		if (segments != null && segments.isArray())
+			for (JsonValue segment = segments.child; segment != null; segment = segment.next)
+				layer.sequenceSegments.add(new Sequence_Segment(readString(segment, "regionName"),
+						segment.getInt("regionPosition", 0), segment.getInt("weight", 1)));
+		layer.sequenceSeed = json.getInt("sequenceSeed", layer.sequenceSeed);
+		layer.sequenceLength = json.getInt("sequenceLength", layer.sequenceLength);
 		return layer;
 	}
 

@@ -34,7 +34,8 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 LAYER_FIELDS = ['regionName', 'regionPosition', 'flipX', 'flipY', 'parallaxScalingSpeedX', 'parallaxScalingSpeedY',
                 'speedXAtRest', 'sizeRatio', 'decal_X_Ratio', 'decal_Y_Ratio', 'padX', 'padXFactor', 'padY',
                 'padYFactor', 'mirror', 'kind', 'name', 'particlesLibgdx', 'particlesGodot', 'particlesAnchor',
-                'shaderEffect', 'shaderAmplitude', 'shaderWavelength', 'shaderSpeed']
+                'shaderEffect', 'shaderAmplitude', 'shaderWavelength', 'shaderSpeed',
+                'sequenceSegments', 'sequenceSeed', 'sequenceLength']
 PAGE_FIELDS = ['topHalf_top', 'topHalf_bottom', 'topHalfSize', 'bottomHalf_top', 'bottomHalf_bottom',
                'bottomHalfSize', 'repeatOnX', 'repeatOnY', 'useOriginalSize']
 

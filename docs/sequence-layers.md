@@ -51,6 +51,24 @@ Godot has to draw the same cycle from the same seed, so the generator is written
 - The Godot pixel round (`engines/godot/tests/sequence`) proves the two generators agree, and a `ReaderCases` case
   pins the first picks of a known seed, so the browser and the JVM are held to the same list.
 
+## What phase 1 settled (r182)
+
+- Stored in `.plax` format 8: `sequenceSegments` (each `regionName`, `regionPosition`, `weight`), `sequenceSeed`,
+  `sequenceLength` (16 when unset, 1 at least). A segment without a weight weighs 1; a weight of 0 or less is never
+  picked, and when none is above 0 each weighs 1.
+- The generator, `SequenceCycle`: `state = seed` (0, where xorshift sticks, starts from `0x6D2B79F5`); per slot,
+  `state ^= state << 13; state ^= state >>> 17; state ^= state << 5`, then `pick = (state >>> 1) % total` walks the
+  weights in order. `ReaderCases.sequenceCycleOfAKnownSeedIsPinned` holds its first picks, worked out a second time in
+  Python.
+- The cycle's edges are kept in layer heights, without the pads: slot i starts at `height * edge[i] + i * padX`. The
+  first segment is as wide as the layer (`40 x sizeRatio`), so a one-segment sequence draws as its image layer would.
+- A game's seed (`ParallaxPageReader.setSequenceSeed`) draws each layer from `game seed XOR the layer's seed`, so two
+  layers stored with different seeds stay different; `clearSequenceSeed` goes back to the stored ones, which are what
+  the editor saves.
+- Flip X / Y and Mirror flip each segment in its own slot; the slots keep their order.
+- A negative padX wider than a segment makes the edges go back: the reader then looks at every slot instead of
+  searching. Still only the slots in view are drawn.
+
 ## Phases
 
 Raised under r147, each `--after` the one before.

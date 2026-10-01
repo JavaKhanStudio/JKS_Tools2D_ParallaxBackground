@@ -24,7 +24,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * An EMPTY layer is drawn by the game: {@link #setLayerHook} registers what draws it, under the layer's name. A
  * PARTICLES layer draws its {@link ParallaxParticles} in its place: once per tile when pinned to the layer, once from
  * the view when anchored to it ({@link Enum_ParticleAnchor}). A SHADER layer's tiles are drawn through its effect, by
- * the {@link LayerEffects} of the engine ({@link #setLayerEffects}), at a phase taken from this reader's clock.
+ * the {@link LayerEffects} of the engine ({@link #setLayerEffects}), at a phase taken from this reader's clock. A
+ * SEQUENCE layer's cycle is the one its page stores the seed of, unless the game passes its own
+ * ({@link #setSequenceSeed}).
  */
 public class ParallaxPageReader implements Disposable
 {
@@ -59,13 +61,20 @@ public class ParallaxPageReader implements Disposable
 	/** Seconds acted since the reader was made: the SHADER layers' clock, shared by both pages of a cross-fade. */
 	private double effectTime;
 
+	/** The game's seed for the SEQUENCE layers, when {@link #hasSequenceSeed}: see {@link #setSequenceSeed}. */
+	private int sequenceSeed;
+	private boolean hasSequenceSeed;
+
 	// Visible area of the camera, refreshed each draw.
 	private float viewLeft, viewBottom, viewWidth, viewHeight;
 
 	public void addLayers(List<ParallaxLayer> newLayers)
 	{
 		for (ParallaxLayer layer : newLayers)
+		{
 			layer.setWorldSize(worldWidth, worldHeight);
+			drawCycle(layer);
+		}
 		layers.addAll(newLayers);
 	}
 
@@ -93,6 +102,7 @@ public class ParallaxPageReader implements Disposable
 		{
 			ParallaxLayer incoming = layers.contains(layer) ? layer.clone() : layer;
 			incoming.setWorldSize(worldWidth, worldHeight);
+			drawCycle(incoming);
 			transferLayers.add(incoming);
 		}
 		syncTransferPositions();
@@ -277,6 +287,9 @@ public class ParallaxPageReader implements Disposable
 
 				if (particles != null)
 					particles.draw(batch, drawX, drawY, batch.getColor());
+				else if (layer.kind == Enum_LayerKind.SEQUENCE)
+					layer.drawCycle(batch, drawX, drawY, viewLeft, viewLeft + viewWidth,
+							mirror && !onX ? !layer.flipX : layer.flipX, mirror && onX ? !layer.flipY : layer.flipY);
 				else if (hook != null)
 					hook.draw(batch, layer, drawX, drawY, width, height);
 				else if (mirror)
@@ -343,6 +356,47 @@ public class ParallaxPageReader implements Disposable
 
 	public LayerHook getLayerHook(String name)
 	{return hooks.get(name);}
+
+	/**
+	 * Draws every SEQUENCE layer's cycle, in this reader's pages and the pages it fades into, from the game's
+	 * {@code seed} rather than the page's: a new ground each run. Each layer draws from {@code seed} XOR the seed its page
+	 * stores, so two layers stored with different seeds stay different. Redraws the cycles of the layers on screen.
+	 */
+	public void setSequenceSeed(int seed)
+	{
+		sequenceSeed = seed;
+		hasSequenceSeed = true;
+		drawCycles();
+	}
+
+	/** Back to the seeds the pages store: what the editor previews. */
+	public void clearSequenceSeed()
+	{
+		hasSequenceSeed = false;
+		drawCycles();
+	}
+
+	/** The game's seed, or null when the layers draw from their pages' seeds. */
+	public Integer getSequenceSeed()
+	{return hasSequenceSeed ? sequenceSeed : null;}
+
+	private void drawCycles()
+	{
+		for (int i = 0, n = layers.size(); i < n; i++)
+			drawCycle(layers.get(i));
+		for (int i = 0, n = transferLayers.size(); i < n; i++)
+			drawCycle(transferLayers.get(i));
+	}
+
+	/** Draws a SEQUENCE layer's cycle from the seed this reader gives it, when it was drawn from another. */
+	private void drawCycle(ParallaxLayer layer)
+	{
+		if (layer.kind != Enum_LayerKind.SEQUENCE)
+			return;
+		int seed = hasSequenceSeed ? sequenceSeed ^ layer.getSequenceSeed() : layer.getSequenceSeed();
+		if (seed != layer.getDrawnSeed())
+			layer.drawCycleFrom(seed);
+	}
 
 	/**
 	 * Sets what draws the SHADER layers' effects: a jME game's PlaxBackground sets its own, a test a recorder. Left

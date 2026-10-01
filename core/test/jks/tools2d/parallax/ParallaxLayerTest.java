@@ -1,6 +1,7 @@
 package jks.tools2d.parallax;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -8,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,8 @@ class ParallaxLayerTest
 				field.setFloat(layer, next++);
 			else if (field.getType() == boolean.class)
 				field.setBoolean(layer, true);
+			else if (field.getType() == int.class)
+				field.setInt(layer, (int) next++);
 			else if (field.getType() == String.class)
 				field.set(layer, "field " + next++);
 		}
@@ -108,5 +112,34 @@ class ParallaxLayerTest
 		assertEquals(6, copy.getShaderWavelength());
 		assertEquals(-2, copy.getShaderSpeed());
 		assertEquals(7, copy.getCurrentDistanceX());
+	}
+
+	/** A SEQUENCE layer's copy draws the same cycle, from arrays of its own: a game's seed redraws one in place. */
+	@Test
+	void aSequenceLayerClonesItsCycle()
+	{
+		ParallaxLayer layer = ParallaxLayer.sequence(new ArrayList<>(List.of(region(200, 100), region(100, 100), region(300, 100))),
+				new int[] { 1, 2, 3 }, 42, 10, 40, 0.15f);
+		layer.setPadX(0.5f);
+		layer.setCurrentDistanceX(7);
+
+		ParallaxLayer copy = layer.clone();
+
+		assertSame(Enum_LayerKind.SEQUENCE, copy.getKind());
+		assertEquals(10, copy.getSequenceLength());
+		assertEquals(42, copy.getSequenceSeed());
+		assertEquals(layer.getWidth(), copy.getWidth());
+		assertEquals(layer.getTotalWidth(), copy.getTotalWidth());
+		int[] picks = new int[10];
+		for (int slot = 0; slot < 10; slot++)
+			assertEquals(picks[slot] = layer.getCycleSegment(slot), copy.getCycleSegment(slot), "slot " + slot);
+
+		copy.drawCycleFrom(7);
+		for (int slot = 0; slot < 10; slot++)
+			assertEquals(picks[slot], layer.getCycleSegment(slot), "the original keeps its cycle, slot " + slot);
+		int[] copied = new int[10];
+		for (int slot = 0; slot < 10; slot++)
+			copied[slot] = copy.getCycleSegment(slot);
+		assertNotEquals(Arrays.toString(picks), Arrays.toString(copied), "seed 7 draws another cycle");
 	}
 }

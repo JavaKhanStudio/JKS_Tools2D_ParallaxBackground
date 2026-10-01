@@ -137,5 +137,10 @@ class ParticlePageTest
 			for (Enum_ShaderEffect effect : Enum_ShaderEffect.values())
 				assertTrue(EffectSupport.draws(effect, engine), engine + " draws " + effect);
 		}
+		// ReaderCases, on the JVM and in Chrome; jME runs the same reader. Godot's comes with r183.
+		assertTrue(EffectSupport.draws(Enum_LayerKind.SEQUENCE, EffectSupport.Engine.LIBGDX));
+		assertTrue(EffectSupport.draws(Enum_LayerKind.SEQUENCE, EffectSupport.Engine.BROWSER));
+		assertTrue(EffectSupport.draws(Enum_LayerKind.SEQUENCE, EffectSupport.Engine.JME));
+		assertTrue(EffectSupport.whyNot(Enum_LayerKind.SEQUENCE, EffectSupport.Engine.GODOT).contains("fails to load"));
 	}
 }

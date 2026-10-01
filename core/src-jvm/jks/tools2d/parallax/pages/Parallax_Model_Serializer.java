@@ -54,6 +54,21 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			output.writeFloat(model.shaderWavelength);
 			output.writeFloat(model.shaderSpeed);
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 8)
+		{
+			int segments = model.sequenceSegments == null ? 0 : model.sequenceSegments.size();
+			output.writeVarInt(segments, true);
+			for (int i = 0; i < segments; i++)
+			{
+				Sequence_Segment segment = model.sequenceSegments.get(i);
+				output.writeString(segment.regionName);
+				output.writeInt(segment.regionPosition);
+				output.writeInt(segment.weight);
+			}
+			output.writeInt(model.sequenceSeed);
+			output.writeInt(model.sequenceLength);
+		}
 	}
 
 	@Override
@@ -114,6 +129,15 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			model.shaderAmplitude = input.readFloat();
 			model.shaderWavelength = input.readFloat();
 			model.shaderSpeed = input.readFloat();
+		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 8)
+		{
+			int segments = input.readVarInt(true);
+			for (int i = 0; i < segments; i++)
+				model.sequenceSegments.add(new Sequence_Segment(input.readString(), input.readInt(), input.readInt()));
+			model.sequenceSeed = input.readInt();
+			model.sequenceLength = input.readInt();
 		}
 
 		return model;

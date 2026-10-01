@@ -58,6 +58,12 @@ GdxLayerEffects.uniforms, the phase from the reader's clock. The reader calls th
 layer's tiles (jME's JmeLayerEffects -> JmeBatch.setEffect), never Batch.setShader. Change an effect, change all three
 and run both frame checks on engines/godot/tests/shaders. A Godot shader error is only a log line and the layer
 draws plain: the first shaders run differed by 2-11/255 for that (TAU is a Godot built-in), so read godot.log.
+SEQUENCE LAYERS (r182, format 8) ARE A CYCLE DRAWN ONCE, THEN TILED: ParallaxLayer.sequence holds the segment regions
+in texRegion (the first sets the height), a cycle int[N] picked by SequenceCycle and its edges in LAYER HEIGHTS (slot i
+starts at height * cycleEdges[i] + i * padX), so act() and draw() recompute nothing; getTotalWidth() is the cycle.
+drawCycle binary-searches the first slot in view. The generator is INTEGERS ONLY (xorshift32 13/17/5, (state >>> 1) %
+total): a float rounds differently in GWT and GDScript. ReaderCases.sequenceCycleOfAKnownSeedIsPinned pins its picks;
+Godot's port (r183) must match them. A game's seed (reader.setSequenceSeed) is XORed with each layer's stored one.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.

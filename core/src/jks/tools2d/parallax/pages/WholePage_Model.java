@@ -245,6 +245,26 @@ public class WholePage_Model
 			return particles;
 		}
 
+		if (parallax.kind == Enum_LayerKind.SEQUENCE)
+		{
+			if (parallax.sequenceSegments == null || parallax.sequenceSegments.isEmpty())
+				throw new GdxRuntimeException("The sequence layer " + (parallax.name == null ? "" : "'" + parallax.name + "' ")
+						+ "of " + pageModel.atlasName + " has no segment");
+			List<TextureRegion> segments = new ArrayList<>(parallax.sequenceSegments.size());
+			int[] weights = new int[parallax.sequenceSegments.size()];
+			for (int i = 0; i < weights.length; i++)
+			{
+				Sequence_Segment segment = parallax.sequenceSegments.get(i);
+				segments.add(findRegion(segment.regionName, segment.regionPosition, atlas));
+				weights[i] = segment.weight;
+			}
+			// Built from the stored seed: a reader given a game's seed draws the cycle again when it takes the layer.
+			ParallaxLayer sequence = ParallaxLayer.sequence(segments, weights, parallax.sequenceSeed, parallax.sequenceLength, worldWidth, parallax.sizeRatio);
+			sequence.setUseOriginalSize(useOriginalSize);
+			sequence.setUpEverything(parallax);
+			return sequence;
+		}
+
 		List<TextureRegion> regions = new ArrayList<>(1);
 		regions.add(findLayer(parallax, atlas));
 		ParallaxLayer layer = new ParallaxLayer(
@@ -285,6 +305,10 @@ public class WholePage_Model
 	 * name, in atlas order.
 	 */
 	protected AtlasRegion findLayer(Parallax_Model parallax, TextureAtlas atlas)
+	{return findRegion(parallax.regionName, parallax.regionPosition, atlas);}
+
+	/** The atlas's own n-th region named {@code regionName}, in atlas order. */
+	protected AtlasRegion findRegion(String regionName, int regionPosition, TextureAtlas atlas)
 	{
 		if (loadedRegion == null)
 		{
@@ -295,9 +319,9 @@ public class WholePage_Model
 		}
 
 		// Keys are 1-based ("ground1" is position 0) so they never depend on region indices.
-		AtlasRegion region = loadedRegion.get(parallax.regionName + (parallax.regionPosition + 1));
+		AtlasRegion region = loadedRegion.get(regionName + (regionPosition + 1));
 		if (region == null)
-			throw new GdxRuntimeException("Region '" + parallax.regionName + "' #" + parallax.regionPosition
+			throw new GdxRuntimeException("Region '" + regionName + "' #" + regionPosition
 					+ " not found in atlas " + pageModel.atlasName);
 		return region;
 	}

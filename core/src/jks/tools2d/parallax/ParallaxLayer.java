@@ -1,6 +1,7 @@
 package jks.tools2d.parallax;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -12,13 +13,16 @@ import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.Parallax_Model;
+import jks.tools2d.parallax.pages.Sequence_Segment;
 
 /**
  * One scrolling plane of a parallax. Sizes are in world units: the layer is {@code worldDimension * sizeRatio} wide
  * (or high), the other dimension follows the texture aspect ratio. An {@link Enum_LayerKind#EMPTY} layer has no
  * texture: it is the world's size times sizeRatio, and the reader calls the game's {@link LayerHook} in its place. A
  * {@link Enum_LayerKind#PARTICLES} layer is the same box, and the reader draws its {@link ParallaxParticles} there. A
- * {@link Enum_LayerKind#SHADER} layer is an image layer the reader draws through its {@link Enum_ShaderEffect}.
+ * {@link Enum_LayerKind#SHADER} layer is an image layer the reader draws through its {@link Enum_ShaderEffect}. A
+ * {@link Enum_LayerKind#SEQUENCE} layer chains its regions (its segments) in a cycle drawn once from a seed: the cycle is
+ * its tile, as wide as its segments and their padX, each segment as wide as the layer's height and its own image make it.
  */
 public class ParallaxLayer
 {
@@ -36,6 +40,24 @@ public class ParallaxLayer
 	/** The effect a SHADER layer's image is drawn through, and its numbers: see {@link Enum_ShaderEffect}. */
 	private Enum_ShaderEffect shaderEffect = Enum_ShaderEffect.WAVE;
 	private float shaderAmplitude, shaderWavelength, shaderSpeed;
+
+	/** A SEQUENCE layer's segments as the page names them, kept so a page saved from its layers names them again. */
+	private List<Sequence_Segment> segments;
+	/** Their weights, in the same order. */
+	private int[] segmentWeights;
+	/** The seed the page stores for a SEQUENCE layer, and the one its cycle was last drawn from (a game's may differ). */
+	private int sequenceSeed, drawnSeed;
+	/** A SEQUENCE layer's cycle: the segment (index in texRegion) of each slot. */
+	private int[] cycle;
+	/**
+	 * Where each slot of the cycle starts, without the pads, in layer heights: slot i's left edge is
+	 * {@code height * cycleEdges[i] + i * padX}, so a resize or a new padX recomputes nothing. One more than the slots.
+	 */
+	private float[] cycleEdges;
+	/** Per segment: its width in layer heights, and where its packed image sits in it (as trimLeft... for one region). */
+	private float[] segmentAspect, segmentTrimLeft, segmentTrimBottom, segmentPackedWidth, segmentPackedHeight;
+	/** The narrowest segment, in layer heights: with padX, whether the slots' edges grow from left to right. */
+	private float narrowestSegment;
 
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
@@ -80,10 +102,13 @@ public class ParallaxLayer
 	public ParallaxLayer(List<TextureRegion> texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
 	{this(Enum_LayerKind.IMAGE, texRegion, isWidth, worldDimension, parallaxScrollRatioX, parallaxScrollRatioY, sizeRatio);}
 
-	/** An IMAGE or a SHADER layer: one that draws a region. */
+	/**
+	 * An IMAGE or a SHADER layer: one that draws a region, the first of {@code texRegion}. A SEQUENCE layer is made by
+	 * {@link #sequence}.
+	 */
 	public ParallaxLayer(Enum_LayerKind kind, List<TextureRegion> texRegion, boolean isWidth, float worldDimension, float parallaxScrollRatioX, float parallaxScrollRatioY, float sizeRatio)
 	{
-		if (kind != Enum_LayerKind.IMAGE && kind != Enum_LayerKind.SHADER)
+		if (!drawsImage(kind))
 			throw new IllegalArgumentException("A " + kind + " layer draws no region");
 		this.kind = kind;
 		this.isWidth = isWidth;
@@ -142,9 +167,29 @@ public class ParallaxLayer
 		return layer;
 	}
 
-	/** True for the kinds that draw a region: IMAGE and SHADER. */
+	/**
+	 * A SEQUENCE layer chaining {@code segments}, the first {@code worldDimension} wide and as high as its image makes it,
+	 * every other as wide as that height and its own image make it; {@code length} of them, picked by
+	 * {@link SequenceCycle} from {@code seed} and {@code weights} (one per segment).
+	 */
+	public static ParallaxLayer sequence(List<TextureRegion> segments, int[] weights, int seed, int length, float worldDimension, float sizeRatio)
+	{
+		if (segments == null || weights == null || segments.size() != weights.length)
+			throw new IllegalArgumentException("A sequence layer needs one weight per segment");
+		List<Sequence_Segment> named = new ArrayList<>(weights.length);
+		for (int i = 0; i < weights.length; i++)
+			named.add(new Sequence_Segment(null, i, weights[i]));
+		ParallaxLayer layer = new ParallaxLayer(Enum_LayerKind.SEQUENCE, segments, true, worldDimension, 0, 0, sizeRatio);
+		layer.setSequence(named, seed, length);
+		return layer;
+	}
+
+	/** True for the kinds that draw a region: IMAGE, SHADER and SEQUENCE. */
 	public boolean drawsImage()
-	{return kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER;}
+	{return drawsImage(kind);}
+
+	private static boolean drawsImage(Enum_LayerKind kind)
+	{return kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER || kind == Enum_LayerKind.SEQUENCE;}
 
 	private static List<TextureRegion> singletonList(TextureRegion region)
 	{
@@ -177,6 +222,13 @@ public class ParallaxLayer
 		shaderAmplitude = model.shaderAmplitude;
 		shaderWavelength = model.shaderWavelength;
 		shaderSpeed = model.shaderSpeed;
+		if (kind == Enum_LayerKind.SEQUENCE)
+		{
+			List<Sequence_Segment> named = new ArrayList<>(model.sequenceSegments.size());
+			for (Sequence_Segment segment : model.sequenceSegments)
+				named.add(segment.copy());
+			setSequence(named, model.sequenceSeed, model.sequenceLength);
+		}
 	}
 
 	public void resetPosition()
@@ -191,8 +243,10 @@ public class ParallaxLayer
 	 */
 	public void draw(Batch batch, float x, float y)
 	{
-		if (drawsImage())
-			drawRegion(batch, x, y, flipX, flipY);
+		if (kind == Enum_LayerKind.SEQUENCE)
+			drawCycle(batch, x, y, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, flipX, flipY);
+		else if (drawsImage())
+			drawRegion(batch, region, x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, flipX, flipY);
 	}
 
 	/** Draws the mirrored copy: flipped vertically when tiling on X, horizontally when tiling on Y. */
@@ -200,15 +254,62 @@ public class ParallaxLayer
 	{
 		boolean fx = onX ? flipX : !flipX;
 		boolean fy = onX ? !flipY : flipY;
-		if (drawsImage())
-			drawRegion(batch, x, y, fx, fy);
+		if (kind == Enum_LayerKind.SEQUENCE)
+			drawCycle(batch, x, y, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, fx, fy);
+		else if (drawsImage())
+			drawRegion(batch, region, x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, fx, fy);
 	}
 
-	/** Draws the packed image in the layer's box at (x, y); a flip mirrors where it sits in the box too. */
-	private void drawRegion(Batch batch, float x, float y, boolean fx, boolean fy)
+	/**
+	 * Draws the slots of a SEQUENCE layer's cycle, starting at (x, y), that reach between {@code fromX} and {@code toX}:
+	 * a binary search finds the first, then the walk stops past {@code toX}, so a long cycle costs only what shows. A
+	 * flip mirrors each segment in its own slot; the slots keep their order.
+	 */
+	public void drawCycle(Batch batch, float x, float y, float fromX, float toX, boolean fx, boolean fy)
 	{
-		float width = getRegionWidth();
+		if (cycle == null)
+			return;
 		float height = getRegionHeight();
+		int slots = cycle.length;
+		// A negative padX wider than a segment makes the edges go back: then every slot is looked at.
+		boolean ordered = height * narrowestSegment + padX > 0;
+
+		int first = 0;
+		if (ordered)
+		{
+			int last = slots;
+			while (first < last)
+			{
+				int middle = (first + last) >>> 1;
+				if (x + height * cycleEdges[middle + 1] + middle * padX > fromX)
+					last = middle;
+				else
+					first = middle + 1;
+			}
+		}
+
+		for (int slot = first; slot < slots; slot++)
+		{
+			float left = x + height * cycleEdges[slot] + slot * padX;
+			if (left >= toX)
+			{
+				if (ordered)
+					break;
+				continue;
+			}
+			int segment = cycle[slot];
+			float width = height * segmentAspect[segment];
+			if (left + width <= fromX)
+				continue;
+			drawRegion(batch, texRegion.get(segment), left, y, width, height, segmentTrimLeft[segment], segmentTrimBottom[segment],
+					segmentPackedWidth[segment], segmentPackedHeight[segment], fx, fy);
+		}
+	}
+
+	/** Draws the packed image in a box at (x, y); a flip mirrors where it sits in the box too. */
+	private static void drawRegion(Batch batch, TextureRegion region, float x, float y, float width, float height,
+			float trimLeft, float trimBottom, float packedWidthRatio, float packedHeightRatio, boolean fx, boolean fy)
+	{
 		float drawWidth = width * packedWidthRatio;
 		float drawHeight = height * packedHeightRatio;
 		float left = x + width * (fx ? 1 - trimLeft - packedWidthRatio : trimLeft);
@@ -240,6 +341,20 @@ public class ParallaxLayer
 		copy.shaderAmplitude = shaderAmplitude;
 		copy.shaderWavelength = shaderWavelength;
 		copy.shaderSpeed = shaderSpeed;
+		// The segments and their weights are replaced, never changed: shared. The arrays a game's seed or a resize
+		// rewrites in place are the copy's own.
+		copy.segments = segments;
+		copy.segmentWeights = segmentWeights;
+		copy.sequenceSeed = sequenceSeed;
+		copy.drawnSeed = drawnSeed;
+		copy.cycle = cycle == null ? null : Arrays.copyOf(cycle, cycle.length);
+		copy.cycleEdges = cycleEdges == null ? null : Arrays.copyOf(cycleEdges, cycleEdges.length);
+		copy.segmentAspect = segmentAspect == null ? null : Arrays.copyOf(segmentAspect, segmentAspect.length);
+		copy.segmentTrimLeft = segmentTrimLeft == null ? null : Arrays.copyOf(segmentTrimLeft, segmentTrimLeft.length);
+		copy.segmentTrimBottom = segmentTrimBottom == null ? null : Arrays.copyOf(segmentTrimBottom, segmentTrimBottom.length);
+		copy.segmentPackedWidth = segmentPackedWidth == null ? null : Arrays.copyOf(segmentPackedWidth, segmentPackedWidth.length);
+		copy.segmentPackedHeight = segmentPackedHeight == null ? null : Arrays.copyOf(segmentPackedHeight, segmentPackedHeight.length);
+		copy.narrowestSegment = narrowestSegment;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
 		copy.parallaxSpeedRatioY = parallaxSpeedRatioY;
 		copy.worldWidth = worldWidth;
@@ -291,14 +406,24 @@ public class ParallaxLayer
 			currentDistanceY %= totalHeight;
 	}
 
+	/** The layer's tile: its image, or a SEQUENCE layer's whole cycle, without the padX after its last slot. */
 	public float getWidth()
-	{return getRegionWidth();}
+	{
+		if (kind == Enum_LayerKind.SEQUENCE && cycle != null)
+			return getRegionHeight() * cycleEdges[cycle.length] + (cycle.length - 1) * padX;
+		return getRegionWidth();
+	}
 
 	public float getHeight()
 	{return getRegionHeight();}
 
+	/** The step between two tiles: a SEQUENCE layer's cycle, each slot followed by padX. */
 	public float getTotalWidth()
-	{return getRegionWidth() + padX;}
+	{
+		if (kind == Enum_LayerKind.SEQUENCE && cycle != null)
+			return getRegionHeight() * cycleEdges[cycle.length] + cycle.length * padX;
+		return getRegionWidth() + padX;
+	}
 
 	public float getTotalHeight()
 	{return getRegionHeight() + padY;}
@@ -525,6 +650,73 @@ public class ParallaxLayer
 		return (float) (phase < 0 ? phase + shaderWavelength : phase);
 	}
 
+	/** A SEQUENCE layer's segments as the page names them, each with its weight; null for other kinds. */
+	public List<Sequence_Segment> getSequenceSegments()
+	{return segments;}
+
+	/** The seed the page stores for a SEQUENCE layer; a game's own is given to {@link #drawCycleFrom(int)}. */
+	public int getSequenceSeed()
+	{return sequenceSeed;}
+
+	/** The seed the cycle was last drawn from. */
+	public int getDrawnSeed()
+	{return drawnSeed;}
+
+	/** How many slots the cycle holds; 0 for other kinds. */
+	public int getSequenceLength()
+	{return cycle == null ? 0 : cycle.length;}
+
+	/** The segment (index in {@link #getTexRegion()}) a slot of the cycle draws. */
+	public int getCycleSegment(int slot)
+	{return cycle[slot];}
+
+	/**
+	 * Sets a SEQUENCE layer's segments (one per region, in {@link #getTexRegion()}'s order), the seed the page stores and
+	 * the cycle's length, and draws the cycle from that seed.
+	 */
+	public void setSequence(List<Sequence_Segment> segments, int seed, int length)
+	{
+		if (kind != Enum_LayerKind.SEQUENCE)
+			throw new IllegalStateException("Only a SEQUENCE layer chains segments, not " + kind);
+		if (segments.size() != texRegion.size())
+			throw new IllegalArgumentException(segments.size() + " segments for " + texRegion.size() + " regions");
+		this.segments = segments;
+		segmentWeights = new int[segments.size()];
+		for (int i = 0; i < segmentWeights.length; i++)
+			segmentWeights[i] = segments.get(i).weight;
+		this.sequenceSeed = seed;
+		cycle = new int[Math.max(1, length)];
+		cycleEdges = new float[cycle.length + 1];
+		drawCycleFrom(seed);
+	}
+
+	/**
+	 * Draws a SEQUENCE layer's cycle again from {@code seed}, in place: the page keeps its stored seed. Allocates
+	 * nothing; does nothing to other kinds.
+	 */
+	public void drawCycleFrom(int seed)
+	{
+		if (kind != Enum_LayerKind.SEQUENCE)
+			return;
+		SequenceCycle.draw(seed, segmentWeights, cycle);
+		drawnSeed = seed;
+		measureCycle();
+	}
+
+	/** The cycle's edges, in layer heights, from the slots' segments. */
+	private void measureCycle()
+	{
+		if (cycle == null || segmentAspect == null)
+			return;
+		float edge = 0;
+		for (int slot = 0; slot < cycle.length; slot++)
+		{
+			cycleEdges[slot] = edge;
+			edge += segmentAspect[cycle[slot]];
+		}
+		cycleEdges[cycle.length] = edge;
+	}
+
 	/** The packed image's share of the layer's width: the part of the box the region is drawn over. */
 	public float getPackedWidthRatio()
 	{return packedWidthRatio;}
@@ -587,6 +779,48 @@ public class ParallaxLayer
 			regionHeight = worldDimension;
 			regionWidth = Utils_Parallax.calculateOtherDimension(false, worldDimension, imageWidth, imageHeight);
 		}
+
+		if (kind == Enum_LayerKind.SEQUENCE)
+			measureSegments();
+	}
+
+	/** Each segment's width in layer heights and where its packed image sits, as {@link #setTexRegion} does for one. */
+	private void measureSegments()
+	{
+		int count = texRegion.size();
+		if (segmentAspect == null || segmentAspect.length != count)
+		{
+			segmentAspect = new float[count];
+			segmentTrimLeft = new float[count];
+			segmentTrimBottom = new float[count];
+			segmentPackedWidth = new float[count];
+			segmentPackedHeight = new float[count];
+		}
+		narrowestSegment = Float.POSITIVE_INFINITY;
+		for (int i = 0; i < count; i++)
+		{
+			TextureRegion segment = texRegion.get(i);
+			float imageWidth = segment.getRegionWidth(), imageHeight = segment.getRegionHeight();
+			segmentTrimLeft[i] = segmentTrimBottom[i] = 0;
+			segmentPackedWidth[i] = segmentPackedHeight[i] = 1;
+			if (useOriginalSize && segment instanceof AtlasRegion)
+			{
+				AtlasRegion atlasRegion = (AtlasRegion) segment;
+				if (atlasRegion.originalWidth > 0 && atlasRegion.originalHeight > 0)
+				{
+					segmentTrimLeft[i] = atlasRegion.offsetX / atlasRegion.originalWidth;
+					segmentTrimBottom[i] = atlasRegion.offsetY / atlasRegion.originalHeight;
+					segmentPackedWidth[i] = (float) atlasRegion.packedWidth / atlasRegion.originalWidth;
+					segmentPackedHeight[i] = (float) atlasRegion.packedHeight / atlasRegion.originalHeight;
+					imageWidth = atlasRegion.originalWidth;
+					imageHeight = atlasRegion.originalHeight;
+				}
+			}
+			// The first segment is the layer's own width, as an image layer's region is.
+			segmentAspect[i] = i == 0 ? regionWidth / regionHeight : imageWidth / imageHeight;
+			narrowestSegment = Math.min(narrowestSegment, segmentAspect[i]);
+		}
+		measureCycle();
 	}
 
 	public void setTexRegion(TextureRegion texRegion)
