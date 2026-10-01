@@ -49,6 +49,8 @@ public final class PageDump
 			line(out, at + "padXFactor", layer.padXFactor);
 			line(out, at + "padY", layer.padY);
 			line(out, at + "padYFactor", layer.padYFactor);
+			line(out, at + "kind", layer.kind);
+			line(out, at + "name", layer.name);
 		}
 		return out.toString();
 	}

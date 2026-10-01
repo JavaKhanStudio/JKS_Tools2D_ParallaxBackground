@@ -98,7 +98,8 @@ Versions (libGDX, VisUI, Kryo, Jackson) are set in `gradle.properties`.
 
 A **page** (`WholePage_Model`) is one complete background:
 
-- **Layers**, stored back to front. Each layer is one image (an atlas region) with its own settings.
+- **Layers**, stored back to front. Each layer is one image (an atlas region) with its own settings, or an **empty
+  layer** the game draws (see "Draw your own things between layers").
 - **Two gradient squares** (`SquareBackground`) drawn behind the layers, one covering the top of the screen and one
   the bottom, each going from a bottom color to a top color.
 - **Repeat on X / Y**: whether layers are tiled horizontally, vertically, both, or drawn once.
@@ -120,6 +121,8 @@ Layers live in **world units**: the world is 40 units wide and its height follow
 | At rest speed            | Horizontal speed of the layer even when the screen does not move (clouds, water). |
 | Pad X / Pad Y            | Gap between two repetitions of the layer, in world units. |
 | Flip X / Flip Y          | Mirror the image. |
+| Kind                     | `IMAGE`, an atlas region (every layer saved before format 5), or `EMPTY`: no image, a box `40 x sizeRatio` wide and `world height x sizeRatio` high, scrolled and tiled like an image, that the game draws in (see "Draw your own things between layers"). |
+| Name                     | The key a game's `LayerHook` is registered under, for an `EMPTY` layer. |
 | Mirror                   | Doubles the strip with a reflection of it, on a page that repeats on one axis only. Repeating on X, a second row is drawn on top of the strip, upside down (the strip's top edge is the axis); on Y, a second column to its right, reversed left to right. Repeating on both axes or neither, it draws nothing. Use it for a band that reads the same reflected (clouds, water, foliage); it does not hide the seams between repeats: an upside-down copy of a foreground layer shows. |
 
 Each frame, a layer moves by `delta × (screen speed + at rest speed) × speed ratio`, then is tiled to cover the
@@ -166,6 +169,12 @@ More:
   Layers are matched from the front, and matching layers keep scrolling seamlessly. This works best between variants
   of the same scene (day/night, winter/spring).
 - **Tint every layer:** `heart.parallaxReader.addColorTransfert(color, seconds)`.
+- **Draw your own things between layers:** give the page an `EMPTY` layer named, say, `birds`, at the depth they fly
+  at, and register what draws it: `heart.parallaxReader.setLayerHook("birds", (batch, layer, x, y, width, height) ->
+  ...)`. The hook is called each frame in the layer's place, once per tile the view shows, with the tile's box in
+  world units and the batch at the page's tint and fade; a color it sets does not leak into the next layer. It runs
+  every frame: allocate nothing. An `EMPTY` layer with no hook draws nothing, and has no mirrored copy. Godot and jME
+  register theirs the same way (below).
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
   background away.
@@ -348,9 +357,10 @@ A browser (GWT) game cannot read `.plax` (Kryo): it loads the JSON of a page ins
 `Parallax_Heart.fromJson("page.jplax")` or `Utils_Page_Json.loadPage(file)`. That reader takes a `.jplax` or a
 `.plaxpj`; of a project it keeps the layers an export would keep, the ones drawn from the atlas.
 
-`.plax` files carry a format version since 2.0. Format 2 also stores `flipY`, format 3 `mirror` and format 4 the
-page's `useOriginalSize`; format 1 files (written by the 2019-2023 editor) and formats 2 and 3 still load, with
-`useOriginalSize` off, as do `.jplax` and `.plaxpj` files without it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
+`.plax` files carry a format version since 2.0. Format 2 also stores `flipY`, format 3 `mirror`, format 4 the
+page's `useOriginalSize` and format 5 each layer's `kind` (by name) and `name`; format 1 files (written by the 2019-2023
+editor) and formats 2 to 4 still load, with `useOriginalSize` off before 4 and every layer an `IMAGE` before 5, as do
+`.jplax` and `.plaxpj` files without those fields. A layer kind a reader does not know fails the load, naming it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
 exported from. Kryo registration order defines the class ids stored in the files, so `GVars_Serialization.prepareKryo`
 must only ever be appended to.
 

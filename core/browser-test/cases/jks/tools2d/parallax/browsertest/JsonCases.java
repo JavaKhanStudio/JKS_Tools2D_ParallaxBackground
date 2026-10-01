@@ -7,6 +7,9 @@ import static jks.tools2d.parallax.browsertest.Check.isTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.badlogic.gdx.utils.GdxRuntimeException;
+
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Parallax_Model;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -24,6 +27,8 @@ final class JsonCases
 			cases.add(new BrowserCase("json: " + name + " reads as its .plax", () -> readsAsItsPlax(fixtures, name)));
 		cases.add(new BrowserCase("json: projectKeepsOnlyTheLayersAnExportKeeps", JsonCases::projectKeepsOnlyTheLayersAnExportKeeps));
 		cases.add(new BrowserCase("json: missingFieldsKeepTheirDefaults", JsonCases::missingFieldsKeepTheirDefaults));
+		cases.add(new BrowserCase("json: emptyLayerKeepsItsKindAndName", JsonCases::emptyLayerKeepsItsKindAndName));
+		cases.add(new BrowserCase("json: unknownKindFails", JsonCases::unknownKindFails));
 		return cases;
 	}
 
@@ -63,5 +68,34 @@ final class JsonCases
 		equal(null, layer.regionName, "regionName");
 		equal(1, layer.sizeRatio, 0, "sizeRatio");
 		isFalse(layer.mirror, "mirror");
+		equal(Enum_LayerKind.IMAGE, layer.kind, "kind");
+		equal(null, layer.name, "name");
+	}
+
+	static void emptyLayerKeepsItsKindAndName()
+	{
+		WholePage_Model page = Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"regionName\":\"sky\"},"
+				+ "{\"kind\":\"EMPTY\",\"name\":\"birds\",\"sizeRatio\":0.5}]}}");
+
+		equal(Enum_LayerKind.IMAGE, page.pageModel.pageList.get(0).kind, "an image layer");
+		Parallax_Model slot = page.pageModel.pageList.get(1);
+		equal(Enum_LayerKind.EMPTY, slot.kind, "kind");
+		equal("birds", slot.name, "name");
+		equal(0.5f, slot.sizeRatio, 0, "sizeRatio");
+	}
+
+	/** A kind added later must not load as an image in an older game: it fails, naming the kind. */
+	static void unknownKindFails()
+	{
+		try
+		{
+			Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"kind\":\"HOLOGRAM\"}]}}");
+		}
+		catch (GdxRuntimeException e)
+		{
+			isTrue(e.getMessage().contains("HOLOGRAM"), e.getMessage());
+			return;
+		}
+		throw new AssertionError("a page with an unknown kind loaded");
 	}
 }

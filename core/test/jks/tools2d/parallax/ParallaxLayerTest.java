@@ -2,6 +2,7 @@ package jks.tools2d.parallax;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.lang.reflect.Field;
@@ -12,6 +13,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 
 class ParallaxLayerTest
 {
@@ -47,6 +50,8 @@ class ParallaxLayerTest
 				field.setFloat(layer, next++);
 			else if (field.getType() == boolean.class)
 				field.setBoolean(layer, true);
+			else if (field.getType() == String.class)
+				field.set(layer, "field " + next++);
 		}
 
 		ParallaxLayer copy = layer.clone();
@@ -64,5 +69,24 @@ class ParallaxLayerTest
 			else if (!field.getName().equals("texRegion"))
 				assertSame(field.get(layer), field.get(copy), field.getName());
 		}
+	}
+
+	@Test
+	void anEmptyLayerClonesAsEmpty()
+	{
+		ParallaxLayer layer = ParallaxLayer.empty("birds", 0.5f);
+		layer.setWorldSize(40, 22.5f);
+		layer.setParallaxSpeedRatioX(0.03f);
+		layer.setCurrentDistanceX(7);
+
+		ParallaxLayer copy = layer.clone();
+
+		assertSame(Enum_LayerKind.EMPTY, copy.getKind());
+		assertEquals("birds", copy.getName());
+		assertNull(copy.getTexRegion());
+		assertEquals(20, copy.getWidth());
+		assertEquals(11.25f, copy.getHeight());
+		assertEquals(0.03f, copy.getParallaxSpeedRatioX());
+		assertEquals(7, copy.getCurrentDistanceX());
 	}
 }

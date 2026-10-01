@@ -26,6 +26,11 @@ public class Parallax_Model
 	/** Stored since format 3. */
 	public boolean mirror;
 
+	/** What the layer draws; stored since format 5, IMAGE before. */
+	public Enum_LayerKind kind = Enum_LayerKind.IMAGE;
+	/** The key a game's {@link jks.tools2d.parallax.LayerHook} is registered under; stored since format 5, null before. */
+	public String name;
+
 	public boolean isFlipX()
 	{return flipX;}
 
@@ -80,6 +85,18 @@ public class Parallax_Model
 
 	public void setDecal_Y_Ratio(float decal_Y_Ratio)
 	{this.decal_Y_Ratio = decal_Y_Ratio;}
+
+	public Enum_LayerKind getKind()
+	{return kind;}
+
+	public void setKind(Enum_LayerKind kind)
+	{this.kind = kind;}
+
+	public String getName()
+	{return name;}
+
+	public void setName(String name)
+	{this.name = name;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

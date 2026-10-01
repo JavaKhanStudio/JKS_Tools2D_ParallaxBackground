@@ -31,6 +31,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 class FrameAllocationTest
 {
 	private static final int LAYERS = 300, FRAMES = 2000;
+	private static final TextureRegion HOOKED = region();
 
 	@BeforeAll
 	static void natives()
@@ -55,6 +56,7 @@ class FrameAllocationTest
 				reader.setRepeatOnX(onX);
 				reader.setRepeatOnY(onY);
 				reader.addLayers(layers(1));
+				reader.setLayerHook("hooked", (hookBatch, layer, x, y, width, height) -> hookBatch.draw(HOOKED, x, y, width, height));
 				WholePage_Model next = page(layers(2));
 
 				// Warm up: the JIT, and the one-time allocations of starting a transfer, are not per frame.
@@ -93,7 +95,11 @@ class FrameAllocationTest
 		List<ParallaxLayer> layers = new ArrayList<>(LAYERS);
 		for (int i = 0; i < LAYERS; i++)
 		{
-			ParallaxLayer layer = new ParallaxLayer(region(), true, 40, 0.01f + random.nextFloat() * 0.05f, 0.01f + random.nextFloat() * 0.05f, 0.05f + random.nextFloat());
+			// One layer in ten EMPTY: half drawn by a hook, half named for none.
+			ParallaxLayer layer = i % 10 == 5 ? ParallaxLayer.empty(i % 20 == 5 ? "hooked" : "nobody", 0.05f + random.nextFloat())
+					: new ParallaxLayer(region(), true, 40, 0.01f + random.nextFloat() * 0.05f, 0.01f + random.nextFloat() * 0.05f, 0.05f + random.nextFloat());
+			layer.setParallaxSpeedRatioX(0.01f + random.nextFloat() * 0.05f);
+			layer.setParallaxSpeedRatioY(0.01f + random.nextFloat() * 0.05f);
 			layer.setDecalPercentX(random.nextFloat() * 100);
 			layer.setDecalPercentY(random.nextFloat() * 50);
 			layer.setPadX(random.nextFloat() * 5);

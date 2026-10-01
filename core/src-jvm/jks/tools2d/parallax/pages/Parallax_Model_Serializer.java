@@ -1,6 +1,7 @@
 package jks.tools2d.parallax.pages;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -32,6 +33,12 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		if (WholePage_Model_Serializer.currentVersion(kryo) >= 3)
 			output.writeBoolean(model.mirror);
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 5)
+		{
+			output.writeString(model.kind.name());
+			output.writeString(model.name);
+		}
 	}
 
 	@Override
@@ -60,6 +67,16 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		if (WholePage_Model_Serializer.currentVersion(kryo) >= 3)
 			model.mirror = input.readBoolean();
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 5)
+		{
+			String kind = input.readString();
+			try
+			{model.kind = Enum_LayerKind.valueOf(kind);}
+			catch (IllegalArgumentException e)
+			{throw new KryoException("Layer kind " + kind + " is not known here: the .plax was written by a newer version");}
+			model.name = input.readString();
+		}
 
 		return model;
 	}

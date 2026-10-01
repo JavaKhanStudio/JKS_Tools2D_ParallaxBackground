@@ -198,6 +198,13 @@ public class WholePage_Model
 
 	protected ParallaxLayer buildLayer(Parallax_Model parallax, TextureAtlas atlas, float worldWidth)
 	{
+		if (parallax.kind == Enum_LayerKind.EMPTY)
+		{
+			ParallaxLayer empty = ParallaxLayer.empty(parallax.name, parallax.sizeRatio);
+			empty.setUpEverything(parallax);
+			return empty;
+		}
+
 		ParallaxLayer layer = new ParallaxLayer(
 				findLayer(parallax, atlas),
 				true,
