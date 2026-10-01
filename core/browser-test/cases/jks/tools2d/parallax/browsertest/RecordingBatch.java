@@ -13,12 +13,12 @@ import com.badlogic.gdx.math.Matrix4;
 
 /**
  * A {@link Batch} that draws nothing and records the x, y, width and height of every 5-argument draw, the ones the
- * reader makes, then the batch color's red and alpha. ReaderCases records the reader on it: a java.lang.reflect.Proxy would too, but GWT does not have one.
+ * reader makes, then the batch color's red and alpha; and of every particle, its own color's. ReaderCases records the reader on it: a java.lang.reflect.Proxy would too, but GWT does not have one.
  */
 public class RecordingBatch implements Batch
 {
 	public final List<float[]> draws = new ArrayList<>();
-	private final Color color = new Color(Color.WHITE);
+	private final Color color = new Color(Color.WHITE), vertexColor = new Color();
 	private final Matrix4 projection = new Matrix4(), transform = new Matrix4();
 
 	@Override
@@ -41,7 +41,15 @@ public class RecordingBatch implements Batch
 	@Override public void draw(Texture texture, float x, float y, int srcX, int srcY, int srcWidth, int srcHeight) {}
 	@Override public void draw(Texture texture, float x, float y, float width, float height, float u, float v, float u2, float v2) {}
 	@Override public void draw(Texture texture, float x, float y) {}
-	@Override public void draw(Texture texture, float[] spriteVertices, int offset, int count) {}
+	/** A particle's quad: its bottom-left and top-right corners, then its own color's red and alpha. */
+	@Override
+	public void draw(Texture texture, float[] spriteVertices, int offset, int count)
+	{
+		Color.abgr8888ToColor(vertexColor, spriteVertices[offset + 2]);
+		draws.add(new float[] { spriteVertices[offset], spriteVertices[offset + 1], spriteVertices[offset + 10] - spriteVertices[offset],
+				spriteVertices[offset + 11] - spriteVertices[offset + 1], vertexColor.r, vertexColor.a });
+	}
+
 	@Override public void draw(TextureRegion region, float x, float y) {}
 	@Override public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height, float scaleX, float scaleY, float rotation) {}
 	@Override public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height, float scaleX, float scaleY, float rotation, boolean clockwise) {}

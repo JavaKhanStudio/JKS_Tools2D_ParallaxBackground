@@ -178,7 +178,7 @@ func is_in_transfer() -> bool:
 func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictionary]:
 	var built: Array[Dictionary] = []
 	for model in from_page.layers:
-		if model.kind == "EMPTY":
+		if model.kind != "IMAGE":
 			var e := {"model": model, "region": {}, "distance_x": 0.0, "distance_y": 0.0}
 			_size_layer(e)
 			_reset_position(e)
@@ -335,10 +335,10 @@ func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool
 	return l
 
 
-## A layer is sizeRatio worlds wide; its height follows the image. An EMPTY one is sizeRatio worlds high.
+## A layer is sizeRatio worlds wide; its height follows the image. An EMPTY or PARTICLES one is sizeRatio worlds high.
 func _size_layer(l: Dictionary) -> void:
 	l.width = world_width * l.model.sizeRatio
-	if l.model.kind == "EMPTY":
+	if l.model.kind != "IMAGE":
 		l.height = _world_height * l.model.sizeRatio
 		return
 	l.height = l.image_h * (world_width / l.image_w) * l.model.sizeRatio
@@ -404,6 +404,9 @@ func _draw_layer(l: Dictionary) -> void:
 		var hook: Callable = _hooks.get(m.name, Callable())
 		if hook.is_valid():
 			_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h, hook)
+		return
+	if m.kind == "PARTICLES":
+		# Not drawn yet: phase 2 of docs/effect-layers.md (r179) instances its particlesGodot scene here.
 		return
 	_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h)
 	if m.mirror and _repeat_x != _repeat_y:

@@ -13,4 +13,9 @@ public enum Enum_LayerKind
 	 * {@link jks.tools2d.parallax.LayerHook} registered under the layer's name.
 	 */
 	EMPTY,
+	/**
+	 * An engine's own particle effect, from a file the page names per engine (format 6): libGDX's ParticleEffect, from
+	 * {@link Parallax_Model#particlesLibgdx}, in a box the world's size times sizeRatio. See {@link Enum_ParticleAnchor}.
+	 */
+	PARTICLES,
 }

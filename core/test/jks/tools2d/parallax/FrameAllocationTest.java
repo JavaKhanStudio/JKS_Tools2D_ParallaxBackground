@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.lang.management.ManagementFactory;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -12,30 +13,51 @@ import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
+import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
  * The rule "act() and draw() run every frame: no allocation" as a gate: a big page, every repeat mode, a cross-fade and
- * a tint, measured with the thread's allocation counter.
+ * a tint, measured with the thread's allocation counter. One layer in ten plays core/test-data/particles/snow.p.
  */
 class FrameAllocationTest
 {
 	private static final int LAYERS = 300, FRAMES = 2000;
 	private static final TextureRegion HOOKED = region();
+	private static final Path ROOT = Path.of(System.getProperty("parallax.repoRoot", ".."));
+	private static ParallaxParticles snow;
 
 	@BeforeAll
 	static void natives()
-	{GdxNativesLoader.load();}
+	{
+		GdxNativesLoader.load();
+		Texture page = new Texture()
+		{
+			@Override
+			public int getWidth()
+			{return 64;}
+
+			@Override
+			public int getHeight()
+			{return 64;}
+		};
+		TextureAtlas atlas = new TextureAtlas();
+		atlas.addRegion("snowflake", page, 0, 0, 8, 8);
+		snow = new ParallaxParticles();
+		snow.load(new FileHandle(ROOT.resolve("core/test-data/particles/snow.p").toFile()), atlas);
+	}
 
 	@Test
 	void aFrameAllocatesNothing()
@@ -74,6 +96,7 @@ class FrameAllocationTest
 				String mode = (onX ? "X" : "") + (onY ? "Y" : "") + (onX || onY ? "" : "none");
 				assertTrue(reader.isInTransfer(), mode + ": the frames measured are cross-fading");
 				assertTrue(batch.draws >= FRAMES * LAYERS, mode + ": both pages were drawn, " + batch.draws + " draws");
+				assertTrue(batch.particles >= FRAMES * 10, mode + ": particles were drawn, " + batch.particles);
 				// The counter itself costs a few bytes; a per-frame allocation costs FRAMES times at least 16.
 				assertTrue(allocated < FRAMES * 16L, mode + ": " + allocated + " bytes allocated over " + FRAMES + " frames");
 			}
@@ -95,8 +118,9 @@ class FrameAllocationTest
 		List<ParallaxLayer> layers = new ArrayList<>(LAYERS);
 		for (int i = 0; i < LAYERS; i++)
 		{
-			// One layer in ten EMPTY: half drawn by a hook, half named for none.
+			// One layer in ten EMPTY: half drawn by a hook, half named for none. One in ten snowing, half from the view.
 			ParallaxLayer layer = i % 10 == 5 ? ParallaxLayer.empty(i % 20 == 5 ? "hooked" : "nobody", 0.05f + random.nextFloat())
+					: i % 10 == 7 ? ParallaxLayer.particles(new ParallaxParticles(snow), i % 20 == 7 ? Enum_ParticleAnchor.VIEW : Enum_ParticleAnchor.LAYER, 0.05f + random.nextFloat())
 					: new ParallaxLayer(region(), true, 40, 0.01f + random.nextFloat() * 0.05f, 0.01f + random.nextFloat() * 0.05f, 0.05f + random.nextFloat());
 			layer.setParallaxSpeedRatioX(0.01f + random.nextFloat() * 0.05f);
 			layer.setParallaxSpeedRatioY(0.01f + random.nextFloat() * 0.05f);
@@ -138,7 +162,7 @@ class FrameAllocationTest
 	/** Counts region draws and allocates nothing, unlike a Proxy (which boxes every float it is handed). */
 	private static final class CountingBatch implements Batch
 	{
-		long draws;
+		long draws, particles;
 		private final Color color = new Color();
 		private final Matrix4 matrix = new Matrix4();
 
@@ -168,7 +192,7 @@ class FrameAllocationTest
 		@Override public void draw(Texture texture, float x, float y, float width, float height, float u, float v, float u2, float v2) {}
 		@Override public void draw(Texture texture, float x, float y) {}
 		@Override public void draw(Texture texture, float x, float y, float width, float height) {}
-		@Override public void draw(Texture texture, float[] spriteVertices, int offset, int count) {}
+		@Override public void draw(Texture texture, float[] spriteVertices, int offset, int count) {particles++;}
 		@Override public void draw(TextureRegion region, float x, float y) {}
 		@Override public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height, float scaleX, float scaleY, float rotation) {}
 		@Override public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height, float scaleX, float scaleY, float rotation, boolean clockwise) {}

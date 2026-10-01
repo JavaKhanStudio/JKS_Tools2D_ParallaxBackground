@@ -9,9 +9,13 @@ const LAYER_DEFAULTS := {
 	"parallaxScalingSpeedX": 0.0, "parallaxScalingSpeedY": 0.0, "speedXAtRest": 0.0, "sizeRatio": 1.0,
 	"decal_X_Ratio": 0.0, "decal_Y_Ratio": 0.0, "padX": 0.0, "padXFactor": 0.0, "padY": 0.0, "padYFactor": 0.0,
 	"mirror": false, "kind": "IMAGE", "name": "",
+	"particlesLibgdx": "", "particlesGodot": "", "particlesAnchor": "LAYER",
 }
-## The layer kinds this reader draws (Enum_LayerKind): a page naming another fails to load, as in libGDX.
-const KINDS := ["IMAGE", "EMPTY"]
+## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
+## layer loads and draws nothing yet: phase 2 of docs/effect-layers.md (r179) instances its particlesGodot scene.
+const KINDS := ["IMAGE", "EMPTY", "PARTICLES"]
+## Where a PARTICLES layer's effect sits (Enum_ParticleAnchor).
+const ANCHORS := ["LAYER", "VIEW"]
 
 var top_half_top := Color.WHITE
 var top_half_bottom := Color.WHITE
@@ -68,6 +72,9 @@ func _read(json: Dictionary, inside) -> bool:
 		layer.regionPosition = int(layer.regionPosition)
 		if not layer.kind in KINDS:
 			push_error("PlaxPage: layer kind %s is not known here: the page was written by a newer version" % layer.kind)
+			return false
+		if not layer.particlesAnchor in ANCHORS:
+			push_error("PlaxPage: particle anchor %s is not known here: the page was written by a newer version" % layer.particlesAnchor)
 			return false
 		layers.append(layer)
 	return true

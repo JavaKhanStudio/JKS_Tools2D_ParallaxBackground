@@ -10,6 +10,7 @@ import java.util.List;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import jks.tools2d.parallax.pages.Enum_LayerKind;
+import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Parallax_Model;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -29,6 +30,8 @@ final class JsonCases
 		cases.add(new BrowserCase("json: missingFieldsKeepTheirDefaults", JsonCases::missingFieldsKeepTheirDefaults));
 		cases.add(new BrowserCase("json: emptyLayerKeepsItsKindAndName", JsonCases::emptyLayerKeepsItsKindAndName));
 		cases.add(new BrowserCase("json: unknownKindFails", JsonCases::unknownKindFails));
+		cases.add(new BrowserCase("json: particleLayerKeepsItsEffectsAndAnchor", JsonCases::particleLayerKeepsItsEffectsAndAnchor));
+		cases.add(new BrowserCase("json: unknownAnchorFails", JsonCases::unknownAnchorFails));
 		return cases;
 	}
 
@@ -97,5 +100,36 @@ final class JsonCases
 			return;
 		}
 		throw new AssertionError("a page with an unknown kind loaded");
+	}
+
+	static void particleLayerKeepsItsEffectsAndAnchor()
+	{
+		WholePage_Model page = Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"regionName\":\"sky\"},"
+				+ "{\"kind\":\"PARTICLES\",\"name\":\"snow\",\"particlesLibgdx\":\"fx/snow.p\",\"particlesGodot\":\"fx/snow.tscn\","
+				+ "\"particlesAnchor\":\"VIEW\"}]}}");
+
+		Parallax_Model sky = page.pageModel.pageList.get(0);
+		equal(null, sky.particlesLibgdx, "an image layer names no effect");
+		equal(Enum_ParticleAnchor.LAYER, sky.particlesAnchor, "and is pinned to its layer");
+		Parallax_Model snow = page.pageModel.pageList.get(1);
+		equal(Enum_LayerKind.PARTICLES, snow.kind, "kind");
+		equal("fx/snow.p", snow.particlesLibgdx, "the libGDX effect");
+		equal("fx/snow.tscn", snow.particlesGodot, "the Godot scene");
+		equal(Enum_ParticleAnchor.VIEW, snow.particlesAnchor, "anchor");
+	}
+
+	/** An anchor added later must not load as another in an older game. */
+	static void unknownAnchorFails()
+	{
+		try
+		{
+			Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"kind\":\"PARTICLES\",\"particlesAnchor\":\"ORBIT\"}]}}");
+		}
+		catch (GdxRuntimeException e)
+		{
+			isTrue(e.getMessage().contains("ORBIT"), e.getMessage());
+			return;
+		}
+		throw new AssertionError("a page with an unknown anchor loaded");
 	}
 }

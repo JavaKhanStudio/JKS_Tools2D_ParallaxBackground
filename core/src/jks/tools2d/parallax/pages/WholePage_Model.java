@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.assets.loaders.FileHandleResolver;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -12,6 +14,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.ParallaxParticles;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.side.SquareBackground;
 
@@ -49,6 +52,8 @@ public class WholePage_Model
 	private TextureAtlas loadedAtlas;
 	/** True when {@link #loadedAtlas} was created by this page rather than handed in or owned by the AssetManager. */
 	private boolean ownsAtlas;
+	/** Finds the PARTICLES layers' .p files in the atlas's folder; null when the layers were built without one. */
+	private FileHandleResolver effectFiles;
 
 	public WholePage_Model()
 	{
@@ -128,14 +133,28 @@ public class WholePage_Model
 			Utils_Etc2_Atlas.register(manager);
 		manager.load(atlas, TextureAtlas.class);
 		manager.finishLoadingAsset(atlas);
+		final FileHandleResolver assets = manager.getFileHandleResolver();
+		final String folder = atlas.substring(0, atlas.lastIndexOf('/') + 1);
+		effectFiles = new FileHandleResolver()
+		{
+			@Override
+			public FileHandle resolve(String fileName)
+			{return assets.resolve(folder + fileName);}
+		};
 		useAtlas(manager.get(atlas, TextureAtlas.class), false, worldWidth, worldHeight);
 	}
 
 	public void preload(String relativePath)
 	{preload(relativePath, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
 
-	public void preload(String relativePath, float worldWidth, float worldHeight)
+	public void preload(final String relativePath, float worldWidth, float worldHeight)
 	{
+		effectFiles = new FileHandleResolver()
+		{
+			@Override
+			public FileHandle resolve(String fileName)
+			{return new FileHandle(relativePath + "/" + fileName);}
+		};
 		if (pageModel.atlasName != null)
 		{
 			FileHandle atlas = new FileHandle(relativePath + "/" + Gvars_Parallax.atlasFile(pageModel.atlasName));
@@ -147,9 +166,22 @@ public class WholePage_Model
 			useAtlas(new TextureAtlas(), true, worldWidth, worldHeight);
 	}
 
-	/** Builds the layers, for the default world size, from an atlas the caller keeps ownership of. */
+	/**
+	 * Builds the layers, for the default world size, from an atlas the caller keeps ownership of. Its PARTICLES layers
+	 * draw nothing: {@link #forceLoad(TextureAtlas, FileHandleResolver)} says where their effects are.
+	 */
 	public void forceLoad(TextureAtlas atlas)
-	{useAtlas(atlas, false, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());}
+	{forceLoad(atlas, null);}
+
+	/**
+	 * Builds the layers, for the default world size, from an atlas the caller keeps ownership of, and the PARTICLES
+	 * layers' effects from the .p files {@code effectFiles} finds (null: none, the layers draw nothing).
+	 */
+	public void forceLoad(TextureAtlas atlas, FileHandleResolver effectFiles)
+	{
+		this.effectFiles = effectFiles;
+		useAtlas(atlas, false, Gvars_Parallax.getWorldWidth(), Gvars_Parallax.getWorldHeight());
+	}
 
 	private void useAtlas(TextureAtlas atlas, boolean owned, float worldWidth, float worldHeight)
 	{
@@ -205,6 +237,13 @@ public class WholePage_Model
 			return empty;
 		}
 
+		if (parallax.kind == Enum_LayerKind.PARTICLES)
+		{
+			ParallaxLayer particles = ParallaxLayer.particles(loadParticles(parallax, atlas), parallax.particlesAnchor, parallax.sizeRatio);
+			particles.setUpEverything(parallax);
+			return particles;
+		}
+
 		ParallaxLayer layer = new ParallaxLayer(
 				findLayer(parallax, atlas),
 				true,
@@ -215,6 +254,26 @@ public class WholePage_Model
 		layer.setUseOriginalSize(useOriginalSize);
 		layer.setUpEverything(parallax);
 		return layer;
+	}
+
+	/**
+	 * A PARTICLES layer's libGDX effect, its images taken from the page's atlas; null, said in the log, when the page
+	 * names no .p for libGDX or was built without a folder to find it in.
+	 */
+	protected ParallaxParticles loadParticles(Parallax_Model parallax, TextureAtlas atlas)
+	{
+		if (parallax.particlesLibgdx == null || parallax.particlesLibgdx.isEmpty() || effectFiles == null)
+		{
+			if (Gdx.app != null)
+				Gdx.app.log("Parallax", "The particle layer " + (parallax.name == null ? "" : "'" + parallax.name + "' ")
+						+ "of " + pageModel.atlasName + " draws nothing: "
+						+ (effectFiles == null ? "the page was built without a folder to find its effect in" : "the page names no libGDX effect (.p)"));
+			return null;
+		}
+
+		ParallaxParticles effect = new ParallaxParticles();
+		effect.load(effectFiles.resolve(parallax.particlesLibgdx), atlas);
+		return effect;
 	}
 
 	/**

@@ -31,6 +31,13 @@ public class Parallax_Model
 	/** The key a game's {@link jks.tools2d.parallax.LayerHook} is registered under; stored since format 5, null before. */
 	public String name;
 
+	/** A PARTICLES layer's libGDX effect (a .p), relative to the page's atlas folder; stored since format 6. */
+	public String particlesLibgdx;
+	/** A PARTICLES layer's Godot scene (a .tscn), relative to the page's atlas folder; stored since format 6. */
+	public String particlesGodot;
+	/** Where a PARTICLES layer's effect sits as the page scrolls; stored since format 6, LAYER before. */
+	public Enum_ParticleAnchor particlesAnchor = Enum_ParticleAnchor.LAYER;
+
 	public boolean isFlipX()
 	{return flipX;}
 
@@ -97,6 +104,24 @@ public class Parallax_Model
 
 	public void setName(String name)
 	{this.name = name;}
+
+	public String getParticlesLibgdx()
+	{return particlesLibgdx;}
+
+	public void setParticlesLibgdx(String particlesLibgdx)
+	{this.particlesLibgdx = particlesLibgdx;}
+
+	public String getParticlesGodot()
+	{return particlesGodot;}
+
+	public void setParticlesGodot(String particlesGodot)
+	{this.particlesGodot = particlesGodot;}
+
+	public Enum_ParticleAnchor getParticlesAnchor()
+	{return particlesAnchor;}
+
+	public void setParticlesAnchor(Enum_ParticleAnchor particlesAnchor)
+	{this.particlesAnchor = particlesAnchor;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

@@ -9,18 +9,25 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.Enum_LayerKind;
+import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Parallax_Model;
 
 /**
  * One scrolling plane of a parallax. Sizes are in world units: the layer is {@code worldDimension * sizeRatio} wide
  * (or high), the other dimension follows the texture aspect ratio. An {@link Enum_LayerKind#EMPTY} layer has no
- * texture: it is the world's size times sizeRatio, and the reader calls the game's {@link LayerHook} in its place.
+ * texture: it is the world's size times sizeRatio, and the reader calls the game's {@link LayerHook} in its place. A
+ * {@link Enum_LayerKind#PARTICLES} layer is the same box, and the reader draws its {@link ParallaxParticles} there.
  */
 public class ParallaxLayer
 {
 	public final Enum_LayerKind kind;
 	/** The key of the {@link LayerHook} an EMPTY layer is drawn by; null when the page names none. */
 	protected String name;
+
+	/** A PARTICLES layer's effect; null when it has none to draw (no libGDX file, or a reader that draws none). */
+	private ParallaxParticles particles;
+	/** Where a PARTICLES layer's effect sits as the page scrolls. */
+	private Enum_ParticleAnchor anchor = Enum_ParticleAnchor.LAYER;
 
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
@@ -80,9 +87,9 @@ public class ParallaxLayer
 		this(singletonList(texRegion), isWidth, worldDimension, parallaxScrollRatioX, parallaxScrollRatioY, sizeRatio);
 	}
 
-	private ParallaxLayer(String name, float sizeRatio)
+	private ParallaxLayer(Enum_LayerKind kind, String name, float sizeRatio)
 	{
-		this.kind = Enum_LayerKind.EMPTY;
+		this.kind = kind;
 		this.name = name;
 		this.isWidth = true;
 		this.worldDimension = 0;
@@ -93,7 +100,19 @@ public class ParallaxLayer
 
 	/** An EMPTY layer: draws nothing itself, the {@link LayerHook} registered under {@code name} draws in its place. */
 	public static ParallaxLayer empty(String name, float sizeRatio)
-	{return new ParallaxLayer(name, sizeRatio);}
+	{return new ParallaxLayer(Enum_LayerKind.EMPTY, name, sizeRatio);}
+
+	/**
+	 * A PARTICLES layer: the reader draws {@code effect} in a box the world's size times sizeRatio, as {@code anchor}
+	 * says; a null effect draws nothing. Takes the effect over: {@link ParallaxParticles#allocate()} and starts it.
+	 */
+	public static ParallaxLayer particles(ParallaxParticles effect, Enum_ParticleAnchor anchor, float sizeRatio)
+	{
+		ParallaxLayer layer = new ParallaxLayer(Enum_LayerKind.PARTICLES, null, sizeRatio);
+		layer.anchor = anchor == null ? Enum_ParticleAnchor.LAYER : anchor;
+		layer.setParticles(effect);
+		return layer;
+	}
 
 	private static List<TextureRegion> singletonList(TextureRegion region)
 	{
@@ -118,6 +137,8 @@ public class ParallaxLayer
 		setPadYFactor(model.padYFactor);
 		setMirror(model.mirror);
 		setName(model.name);
+		if (kind == Enum_LayerKind.PARTICLES && model.particlesAnchor != null)
+			anchor = model.particlesAnchor;
 	}
 
 	public void resetPosition()
@@ -165,9 +186,13 @@ public class ParallaxLayer
 	 */
 	public ParallaxLayer clone()
 	{
-		ParallaxLayer copy = kind == Enum_LayerKind.EMPTY ? new ParallaxLayer(name, sizeRatio)
+		ParallaxLayer copy = kind != Enum_LayerKind.IMAGE ? new ParallaxLayer(kind, name, sizeRatio)
 				: new ParallaxLayer(new ArrayList<>(texRegion), isWidth, worldDimension, parallaxSpeedRatioX, parallaxSpeedRatioY, sizeRatio);
 		copy.name = name;
+		// Its own effect: both play during a cross-fade, and one effect updated twice a frame would run double speed.
+		if (particles != null)
+			copy.setParticles(new ParallaxParticles(particles));
+		copy.anchor = anchor;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
 		copy.parallaxSpeedRatioY = parallaxSpeedRatioY;
 		copy.worldWidth = worldWidth;
@@ -196,8 +221,18 @@ public class ParallaxLayer
 
 	public void act(float delta, float speedX, float speedY, boolean onX, boolean onY)
 	{
-		currentDistanceY -= delta * speedY * parallaxSpeedRatioY;
-		currentDistanceX -= delta * (speedXAtRest + speedX) * parallaxSpeedRatioX;
+		float moveX = -delta * (speedXAtRest + speedX) * parallaxSpeedRatioX;
+		float moveY = -delta * speedY * parallaxSpeedRatioY;
+		currentDistanceY += moveY;
+		currentDistanceX += moveX;
+
+		if (particles != null)
+		{
+			// Emitted from the view, the particles still move with the depth they are at.
+			if (anchor == Enum_ParticleAnchor.VIEW)
+				particles.translateParticles(moveX, moveY);
+			particles.update(delta);
+		}
 
 		// Keep the offset within one tile so the tiling loops stay short and floats stay precise.
 		float totalWidth = getTotalWidth();
@@ -256,10 +291,10 @@ public class ParallaxLayer
 	}
 
 	public float getRegionWidth()
-	{return (kind == Enum_LayerKind.EMPTY ? worldWidth : regionWidth) * sizeRatio;}
+	{return (kind != Enum_LayerKind.IMAGE ? worldWidth : regionWidth) * sizeRatio;}
 
 	public float getRegionHeight()
-	{return (kind == Enum_LayerKind.EMPTY ? worldHeight : regionHeight) * sizeRatio;}
+	{return (kind != Enum_LayerKind.IMAGE ? worldHeight : regionHeight) * sizeRatio;}
 
 	public float getSpeedAtRest()
 	{return speedXAtRest;}
@@ -353,7 +388,7 @@ public class ParallaxLayer
 	public void setMirror(boolean isMirror)
 	{this.isMirror = isMirror;}
 
-	/** The regions drawn; null for an EMPTY layer. */
+	/** The regions drawn; null unless the layer is an IMAGE. */
 	public List<TextureRegion> getTexRegion()
 	{return texRegion;}
 
@@ -365,6 +400,29 @@ public class ParallaxLayer
 
 	public void setName(String name)
 	{this.name = name;}
+
+	/** A PARTICLES layer's effect, null when it draws none. */
+	public ParallaxParticles getParticles()
+	{return particles;}
+
+	/** Sets the effect a PARTICLES layer draws, null for none; allocates its particles and starts it. */
+	public void setParticles(ParallaxParticles effect)
+	{
+		if (effect != null && kind != Enum_LayerKind.PARTICLES)
+			throw new IllegalStateException("Only a PARTICLES layer draws a particle effect, not " + kind);
+		particles = effect;
+		if (effect != null)
+		{
+			effect.allocate();
+			effect.start();
+		}
+	}
+
+	public Enum_ParticleAnchor getAnchor()
+	{return anchor;}
+
+	public void setAnchor(Enum_ParticleAnchor anchor)
+	{this.anchor = anchor == null ? Enum_ParticleAnchor.LAYER : anchor;}
 
 	public boolean isUseOriginalSize()
 	{return useOriginalSize;}
@@ -380,8 +438,8 @@ public class ParallaxLayer
 	/** Swaps the texture(s) drawn by this layer, keeping its world width and recomputing its height. */
 	public void setTexRegion(List<TextureRegion> texRegion)
 	{
-		if (kind == Enum_LayerKind.EMPTY)
-			throw new IllegalStateException("An EMPTY layer draws no region: its LayerHook draws in its place");
+		if (kind != Enum_LayerKind.IMAGE)
+			throw new IllegalStateException("A " + kind + " layer draws no region");
 		if (texRegion == null || texRegion.isEmpty())
 			throw new IllegalArgumentException("A parallax layer needs at least one texture region");
 
