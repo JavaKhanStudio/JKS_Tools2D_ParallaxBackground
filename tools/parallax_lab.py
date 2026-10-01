@@ -107,7 +107,11 @@ def has_image(l):
 
 
 def label(l):
-    return f"{l['regionName']}#{l['regionPosition']}" if has_image(l) else f"{l['kind']} '{l.get('name')}'"
+    if has_image(l):
+        return f"{l['regionName']}#{l['regionPosition']}"
+    if l.get('kind') == 'SEQUENCE' and not l.get('name'):  # unnamed, it reads as its segments
+        return 'SEQUENCE ' + '+'.join(s['regionName'] for s in l.get('sequenceSegments') or [])
+    return f"{l['kind']} '{l.get('name')}'"
 
 
 def page_of(atlas, layer_list, sky=None, ground=None, top_size=0.5, bottom_size=0.5, original_size=None):
@@ -169,6 +173,7 @@ def lint(page, atlas_dir=None):
                             f" {1 / l['sizeRatio']:.0f} times a screen")
     problems += particle_faults(page, atlas_dir)
     problems += shader_faults(page)
+    problems += sequence_faults(page, atlas_dir)
     if atlas_dir is not None:
         problems += layout(page, atlas_dir)
     return problems
@@ -203,6 +208,50 @@ def shader_faults(page):
             problems.append(f"layer {i} ({label(l)}): FOG thins by 0 to 1, its shaderAmplitude {amplitude:g} reads as"
                             f" {min(1, max(0, amplitude)):g}")
     return problems
+
+
+def sequence_faults(page, atlas_dir):
+    """A SEQUENCE layer (format 8) chains its segments' regions: core fails to load the page on a region its atlas does
+    not hold, draws nothing with no segment, reads a sequenceLength under 1 as 1 and weighs every segment 1 when no
+    weight is above 0. With the folder of the page's atlas, each segment's region is looked up in it."""
+    problems, regions = [], None
+    for i, l in enumerate(layers(page)):
+        if l.get('kind') != 'SEQUENCE':
+            continue
+        segments = l.get('sequenceSegments') or []
+        if not segments:
+            problems.append(f"layer {i} ({label(l)}) has no sequenceSegments: it draws nothing")
+            continue
+        length = l.get('sequenceLength', 1)
+        if length < 1:
+            problems.append(f"layer {i} ({label(l)}): its sequenceLength {length} reads as 1, one segment repeated")
+        if all(s.get('weight', 1) <= 0 for s in segments):
+            problems.append(f"layer {i} ({label(l)}): no segment weighs above 0, so each weighs 1")
+        if atlas_dir is None:
+            continue
+        if regions is None:
+            regions = _atlas_regions(page, atlas_dir)
+        if isinstance(regions, str):
+            problems.append(f"layer {i} ({label(l)}): segments not checked: {regions}")
+            continue
+        for k, s in enumerate(segments):
+            if (s['regionName'], s.get('regionPosition', 0)) not in regions:
+                problems.append(f"layer {i} ({label(l)}): segment {k} names no region {s['regionName']}"
+                                f"#{s.get('regionPosition', 0)} in {page['pageModel']['atlasName']}: the page fails to"
+                                f" load")
+    return problems
+
+
+def _atlas_regions(page, atlas_dir):
+    """The (name, position) pairs the page's atlas holds, or why they could not be read."""
+    try:
+        import parallax_regions as regions_tool
+    except ImportError:
+        return 'tools/parallax_regions.py needs Pillow'
+    atlas = os.path.join(ROOT, atlas_dir, page['pageModel']['atlasName'])
+    if not os.path.exists(atlas):
+        return f'no {os.path.relpath(atlas, ROOT)}'
+    return {(r['name'], r['pos']) for r in regions_tool.read_atlas(atlas)}
 
 
 SCREEN_W, SCREEN_H = 40.0, 22.5  # the lab's world at 1280x720, the camera's view before any scroll

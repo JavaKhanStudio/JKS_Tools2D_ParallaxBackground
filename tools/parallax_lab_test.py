@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""What parallax_lab.py lint says of imageless layers (r186 EMPTY, r193 PARTICLES) and SHADER layers (r180).
+"""What parallax_lab.py lint says of imageless layers (r186 EMPTY, r193 PARTICLES), SHADER layers (r180) and SEQUENCE
+layers (r201).
 Run: python3 tools/parallax_lab_test.py"""
 import copy
 import os
@@ -64,6 +65,59 @@ class ShaderLayers(unittest.TestCase):
     def test_a_good_shader_layer_says_nothing(self):
         problems = lab.lint(lab.load('engines/godot/tests/shaders/s01.jplax'))
         self.assertFalse([p for p in problems if 'shader' in p or 'FOG' in p], problems)
+
+
+class SequenceLayers(unittest.TestCase):
+    """engines/godot/tests/sequence/q01.jplax: layer 4 chains tower, river and stone from HiverSeq.atlas."""
+    PATH = 'engines/godot/tests/sequence/q01.jplax'
+
+    def setUp(self):
+        self.page = lab.load(self.PATH)
+        self.atlas_dir = lab.find_atlas_dir(self.PATH, self.page)
+        self.strip = lab.layers(self.page)[4]
+
+    def faults(self, page, atlas_dir=None):
+        return [p for p in lab.lint(page, atlas_dir) if 'SEQUENCE' in p]
+
+    def test_load_keeps_the_sequence_fields(self):
+        self.assertEqual(('SEQUENCE', 12, 3), (self.strip['kind'], self.strip['sequenceLength'],
+                                               len(self.strip['sequenceSegments'])))
+
+    def test_a_good_sequence_says_nothing(self):
+        self.assertEqual([], self.faults(self.page, self.atlas_dir))
+
+    def test_a_segment_missing_from_the_atlas_is_said(self):
+        page = copy.deepcopy(self.page)
+        lab.layers(page)[4]['sequenceSegments'][1]['regionName'] = 'lake'
+        lab.layers(page)[4]['sequenceSegments'][2]['regionPosition'] = 3
+        self.assertEqual(["layer 4 (SEQUENCE 'strip'): segment 1 names no region lake#0 in HiverSeq.atlas: the page"
+                          " fails to load",
+                          "layer 4 (SEQUENCE 'strip'): segment 2 names no region stone#3 in HiverSeq.atlas: the page"
+                          " fails to load"], self.faults(page, self.atlas_dir))
+
+    def test_no_segments_is_said(self):
+        page = copy.deepcopy(self.page)
+        lab.layers(page)[4]['sequenceSegments'] = []
+        self.assertEqual(["layer 4 (SEQUENCE 'strip') has no sequenceSegments: it draws nothing"], self.faults(page))
+
+    def test_a_length_under_1_is_said(self):
+        page = copy.deepcopy(self.page)
+        lab.layers(page)[4]['sequenceLength'] = 0
+        self.assertEqual(["layer 4 (SEQUENCE 'strip'): its sequenceLength 0 reads as 1, one segment repeated"],
+                         self.faults(page))
+
+    def test_weights_all_0_or_less_are_said(self):
+        page = copy.deepcopy(self.page)
+        for weight, segment in zip((0, -2, 0), lab.layers(page)[4]['sequenceSegments']):
+            segment['weight'] = weight
+        self.assertEqual(["layer 4 (SEQUENCE 'strip'): no segment weighs above 0, so each weighs 1"],
+                         self.faults(page))
+        lab.layers(page)[4]['sequenceSegments'][0]['weight'] = 1
+        self.assertEqual([], self.faults(page), 'one weight above 0 is enough')
+
+    def test_an_unnamed_sequence_reads_as_its_segments(self):
+        strip = dict(self.strip, name=None)
+        self.assertEqual('SEQUENCE tower+river+stone', lab.label(strip))
 
 
 if __name__ == '__main__':
