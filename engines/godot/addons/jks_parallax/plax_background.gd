@@ -39,6 +39,12 @@ extends CanvasLayer
 ## A SHADER layer is drawn as an image layer, through its effect (PlaxEffects, the shaders of core's GdxLayerEffects),
 ## which moves on act()'s clock.
 ##
+## A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set, by PlaxPage.draw_cycle
+## from the page's seed: the same picks as core's SequenceCycle. The cycle is the layer's tile. A game draws a new ground
+## each run with its own seed, XORed with each layer's stored one, as ParallaxPageReader.setSequenceSeed:
+##
+##   bg.set_sequence_seed(randi())
+##
 ## Each layer is drawn by its own child of the gradients' canvas, in draw order, so that a particle node can sit between
 ## two of them. Not ported yet: atlas regions packed rotated.
 
@@ -102,6 +108,9 @@ var _modulate := Color.WHITE
 var _hooks := {}
 # Seconds acted: the SHADER layers' clock, shared by both pages of a cross-fade (ParallaxPageReader.effectTime).
 var _effect_time := 0.0
+# The game's seed for the SEQUENCE layers, when _has_sequence_seed (set_sequence_seed).
+var _sequence_seed := 0
+var _has_sequence_seed := false
 # PARTICLES layers already warned about ("<page id>:<layer index>"): a page that draws no particles says so once.
 var _warned := {}
 
@@ -206,6 +215,48 @@ func set_layer_hook(layer_name: String, hook: Callable) -> void:
 	_redraw()
 
 
+## Draws every SEQUENCE layer's cycle, on screen and fading in, from `seed` XOR the seed its page stores rather than from
+## the stored one alone: a new ground each run (ParallaxPageReader.setSequenceSeed). `seed` is Java's int: 32 bits.
+func set_sequence_seed(seed: int) -> void:
+	_sequence_seed = seed
+	_has_sequence_seed = true
+	_draw_cycles()
+
+
+## Back to the seeds the pages store: what the editor previews.
+func clear_sequence_seed() -> void:
+	_has_sequence_seed = false
+	_draw_cycles()
+
+
+func _draw_cycles() -> void:
+	for l in layers + transfer_layers:
+		_draw_cycle_of(l)
+	_redraw()
+
+
+## Draws a SEQUENCE layer's cycle from the seed this background gives it, when it was drawn from another.
+func _draw_cycle_of(l: Dictionary) -> void:
+	if l.model.kind != "SEQUENCE":
+		return
+	var seed: int = (_sequence_seed ^ l.model.sequenceSeed if _has_sequence_seed else l.model.sequenceSeed) & 0xFFFFFFFF
+	if l.has("drawn_seed") and l.drawn_seed == seed:
+		return
+	l.drawn_seed = seed
+	l.cycle = PlaxPage.draw_cycle(seed, l.weights, l.model.sequenceLength)
+	# Where each slot starts, without the pads, in layer heights: slot i at height * edges[i] + i * padX. One more than
+	# the slots.
+	var edges := PackedFloat64Array()
+	edges.resize(l.cycle.size() + 1)
+	var edge := 0.0
+	for slot in l.cycle.size():
+		edges[slot] = edge
+		edge += l.segments[l.cycle[slot]].aspect
+	edges[l.cycle.size()] = edge
+	l.edges = edges
+	_size_layer(l)
+
+
 func is_in_transfer() -> bool:
 	return not transfer_layers.is_empty()
 
@@ -214,6 +265,14 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 	var built: Array[Dictionary] = []
 	for i in from_page.layers.size():
 		var model: Dictionary = from_page.layers[i]
+		if model.kind == "SEQUENCE":
+			var sequence := _build_sequence(model, from_page, from_atlas)
+			if sequence.is_empty():
+				continue
+			_reset_position(sequence)
+			_add_canvas(sequence)
+			built.append(sequence)
+			continue
 		if model.kind != "IMAGE" and model.kind != "SHADER":
 			var e := {"model": model, "region": {}, "distance_x": 0.0, "distance_y": 0.0}
 			if model.kind == "PARTICLES":
@@ -238,6 +297,56 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		_add_canvas(l)
 		built.append(l)
 	return built
+
+
+## A SEQUENCE layer (WholePage_Model.buildLayer, ParallaxLayer.measureSegments): its first segment sizes it as an image
+## layer's region does, every segment is as wide as the layer's height and its own image make it, the first as wide as
+## the layer. Empty when a segment's region is missing.
+func _build_sequence(model: Dictionary, from_page: PlaxPage, from_atlas: PlaxAtlas) -> Dictionary:
+	if model.sequenceSegments.is_empty():
+		push_error("PlaxBackground: the sequence layer '%s' has no segments" % model.name)
+		return {}
+	var segments: Array[Dictionary] = []
+	var weights := PackedInt32Array()
+	for named in model.sequenceSegments:
+		var region := from_atlas.find_region(named.regionName, named.regionPosition) if from_atlas else {}
+		if region.is_empty():
+			push_error("PlaxBackground: region '%s' #%d of the sequence layer '%s' not found in %s"
+					% [named.regionName, named.regionPosition, model.name, from_page.atlas_name])
+			return {}
+		if region.rotate:
+			push_warning("PlaxBackground: region '%s' is packed rotated, which is not supported: drawn as is" % named.regionName)
+		segments.append(_measure_region(region, from_page.use_original_size))
+		weights.append(named.weight)
+	# The first segment sizes the layer, as an image layer's region does.
+	var l := _build_layer(model, segments[0].region, from_page.use_original_size)
+	l.segments = segments
+	l.weights = weights
+	l.narrowest = INF
+	for segment in segments:
+		l.narrowest = minf(l.narrowest, segment.aspect)
+	_draw_cycle_of(l)
+	return l
+
+
+## A region's box: where its packed image sits in it, the image's size, and its width in heights. useOriginalSize: a
+## region packed with its whitespace stripped keeps its original size, and its packed image is drawn at its offset inside
+## it. Off: the packed image is stretched over the whole box.
+static func _measure_region(region: Dictionary, use_original_size: bool) -> Dictionary:
+	var m := {"region": region, "trim_left": 0.0, "trim_bottom": 0.0, "packed_w": 1.0, "packed_h": 1.0}
+	var image_w: float = region.width
+	var image_h: float = region.height
+	if use_original_size and region.original_width > 0 and region.original_height > 0:
+		m.trim_left = region.offset_x / region.original_width
+		m.trim_bottom = region.offset_y / region.original_height
+		m.packed_w = region.width / region.original_width
+		m.packed_h = region.height / region.original_height
+		image_w = region.original_width
+		image_h = region.original_height
+	m.image_w = image_w
+	m.image_h = image_h
+	m.aspect = image_w / image_h
+	return m
 
 
 ## What draws the layer: a canvas calling _draw_layer, or for a PARTICLES layer the node holding its instances.
@@ -422,32 +531,25 @@ func _act_layer(l: Dictionary, delta: float, speed_x: float, speed_y: float) -> 
 
 
 func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool) -> Dictionary:
-	var l := {"model": model, "region": region, "distance_x": 0.0, "distance_y": 0.0,
-		"trim_left": 0.0, "trim_bottom": 0.0, "packed_w": 1.0, "packed_h": 1.0}
-	var image_w: float = region.width
-	var image_h: float = region.height
-	# useOriginalSize: a region packed with its whitespace stripped keeps its original size, and its packed image
-	# is drawn at its offset inside it. Off: the packed image is stretched over the whole layer.
-	if use_original_size and region.original_width > 0 and region.original_height > 0:
-		l.trim_left = region.offset_x / region.original_width
-		l.trim_bottom = region.offset_y / region.original_height
-		l.packed_w = region.width / region.original_width
-		l.packed_h = region.height / region.original_height
-		image_w = region.original_width
-		image_h = region.original_height
-	l.image_w = image_w
-	l.image_h = image_h
+	var l := _measure_region(region, use_original_size)
+	l.model = model
+	l.distance_x = 0.0
+	l.distance_y = 0.0
 	_size_layer(l)
 	return l
 
 
 ## A layer is sizeRatio worlds wide; its height follows the image. An EMPTY or PARTICLES one is sizeRatio worlds high.
+## A SEQUENCE one is as high as its first segment makes it, and as wide as its cycle, without the padX after the last
+## slot (ParallaxLayer.getWidth).
 func _size_layer(l: Dictionary) -> void:
 	l.width = world_width * l.model.sizeRatio
-	if l.model.kind != "IMAGE" and l.model.kind != "SHADER":
+	if l.model.kind == "EMPTY" or l.model.kind == "PARTICLES":
 		l.height = _world_height * l.model.sizeRatio
 		return
 	l.height = l.image_h * (world_width / l.image_w) * l.model.sizeRatio
+	if l.model.kind == "SEQUENCE" and l.has("edges"):
+		l.width = l.height * l.edges[l.cycle.size()] + (l.cycle.size() - 1) * l.model.padX
 
 
 func _update_world() -> void:
@@ -584,13 +686,48 @@ func _tile(
 					fy = not fy
 				else:
 					fx = not fx
-			_draw_region(l, draw_x, draw_y, fx, fy)
+			if l.model.kind == "SEQUENCE":
+				_draw_cycle(l, draw_x, draw_y, 0, view_w, fx, fy)
+			else:
+				_draw_region(l, draw_x, draw_y, l.width, l.height, fx, fy)
 
 
-## The packed image in the layer's box at (x, y); a flip mirrors where it sits in the box too.
-func _draw_region(l: Dictionary, x: float, y: float, fx: bool, fy: bool) -> void:
-	var width: float = l.width
+## ParallaxLayer.drawCycle: the slots of a SEQUENCE layer's cycle, starting at (x, y), that reach between `from_x` and
+## `to_x`. A binary search finds the first, then the walk stops past `to_x`, so a long cycle costs only what shows. A
+## flip mirrors each segment in its own slot; the slots keep their order.
+func _draw_cycle(l: Dictionary, x: float, y: float, from_x: float, to_x: float, fx: bool, fy: bool) -> void:
 	var height: float = l.height
+	var pad: float = l.model.padX
+	var edges: PackedFloat64Array = l.edges
+	var cycle: PackedInt32Array = l.cycle
+	var slots := cycle.size()
+	# A negative padX wider than a segment makes the edges go back: then every slot is looked at.
+	var ordered: bool = height * l.narrowest + pad > 0
+	var first := 0
+	if ordered:
+		var last := slots
+		while first < last:
+			var middle := (first + last) >> 1
+			if x + height * edges[middle + 1] + middle * pad > from_x:
+				last = middle
+			else:
+				first = middle + 1
+	for slot in range(first, slots):
+		var left: float = x + height * edges[slot] + slot * pad
+		if left >= to_x:
+			if ordered:
+				break
+			continue
+		var segment: Dictionary = l.segments[cycle[slot]]
+		var width: float = height * segment.aspect
+		if left + width <= from_x:
+			continue
+		_draw_region(segment, left, y, width, height, fx, fy)
+
+
+## The packed image of `l` (a layer, or a sequence's segment) in a box at (x, y); a flip mirrors where it sits in the box
+## too.
+func _draw_region(l: Dictionary, x: float, y: float, width: float, height: float, fx: bool, fy: bool) -> void:
 	var draw_w: float = width * l.packed_w
 	var draw_h: float = height * l.packed_h
 	var left: float = x + width * ((1 - l.trim_left - l.packed_w) if fx else l.trim_left)

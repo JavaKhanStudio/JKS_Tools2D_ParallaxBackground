@@ -24,8 +24,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 /**
  * Stills of every scene of a lab round drawn by jME, as {@code ParallaxShots} (shots/) takes them with libGDX: the same
  * page, the same 60 units/s scroll stepped at 1/60 s (in float, as the lab counts it), grabbed 0, 6 and 12 s in. A
- * scene's "transfer" (one or a list), "tint", "speedY" and "resize" are played at the same steps, and its "hooks" draw
- * its EMPTY layers the same way (r177).
+ * scene's "transfer" (one or a list), "tint", "speedY" and "resize" are played at the same steps, its "hooks" draw
+ * its EMPTY layers the same way (r177), and its "sequenceSeed" draws the SEQUENCE layers from that game seed (r183).
  * tools/jme-parallax-shots.sh runs it and compares the two sets.
  * <pre>
  *   java -cp ... jks.tools2d.parallax.jme.JmeParallaxShots &lt;round dir&gt; &lt;out dir&gt;   (from the repository root)
@@ -50,6 +50,8 @@ public class JmeParallaxShots extends SimpleApplication
 		float speedY, tintAt = -1, tintSeconds, resizeAt = -1;
 		int resizeWidth, resizeHeight;
 		Color tint;
+		/** The game's seed for the SEQUENCE layers; null: the pages' own. */
+		Integer sequenceSeed;
 		final List<Transfer> transfers = new ArrayList<>();
 		final List<Hook> hooks = new ArrayList<>();
 	}
@@ -131,6 +133,8 @@ public class JmeParallaxShots extends SimpleApplication
 			scene.page = s.getString("page");
 			scene.atlasDir = s.getString("atlasDir");
 			scene.speedY = s.getFloat("speedY", 0);
+			if (s.has("sequenceSeed"))
+				scene.sequenceSeed = s.getInt("sequenceSeed");
 			JsonValue resize = s.get("resize");
 			if (resize != null)
 			{
@@ -257,6 +261,10 @@ public class JmeParallaxShots extends SimpleApplication
 			bg.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x, y, width, height));
 			hooked.add(hook.layer);
 		}
+		if (scene.sequenceSeed != null)
+			bg.setSequenceSeed(scene.sequenceSeed);
+		else
+			bg.clearSequenceSeed();
 		bg.tintTo(Color.WHITE, 0);
 		bg.speedConstantX = SPEED;
 		bg.speedConstantY = scene.speedY;

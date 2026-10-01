@@ -46,7 +46,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * a]}} tint, both started {@code at} seconds into the scroll (r94, engines/godot/tests/transfer); {@code "speedY": 30}
  * also scroll up, and {@code "resize": {"at": 3, "size": [720, 1280]}} resize the window mid-scroll (r95,
  * engines/godot/tests/conformance); {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY
- * layer named slot with that atlas region stretched over each tile (r177, engines/godot/tests/effects).
+ * layer named slot with that atlas region stretched over each tile (r177, engines/godot/tests/effects);
+ * {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that game seed (r183, engines/godot/tests/sequence).
  * engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots step the same way.
  */
 public class ParallaxShots extends ApplicationAdapter
@@ -70,6 +71,8 @@ public class ParallaxShots extends ApplicationAdapter
 		float tintAt = -1, tintSeconds, speedY, resizeAt = -1;
 		int resizeWidth, resizeHeight;
 		Color tint;
+		/** The game's seed for the SEQUENCE layers; null: the pages' own. */
+		Integer sequenceSeed;
 	}
 
 	/** An EMPTY layer's hook from a round: stretches the n-th atlas region of that name over every tile (r177). */
@@ -129,6 +132,8 @@ public class ParallaxShots extends ApplicationAdapter
 			scene.page = s.getString("page");
 			scene.atlasDir = s.getString("atlasDir");
 			scene.speedY = s.getFloat("speedY", 0);
+			if (s.has("sequenceSeed"))
+				scene.sequenceSeed = s.getInt("sequenceSeed");
 			JsonValue resize = s.get("resize");
 			if (resize != null)
 			{
@@ -189,6 +194,10 @@ public class ParallaxShots extends ApplicationAdapter
 			heart.parallaxReader.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x, y, width, height));
 			hooked.add(hook.layer);
 		}
+		if (scene.sequenceSeed != null)
+			heart.parallaxReader.setSequenceSeed(scene.sequenceSeed);
+		else
+			heart.parallaxReader.clearSequenceSeed();
 		// A tint outlives setPage: the scene before may have left one.
 		heart.parallaxReader.addColorTransfert(Color.WHITE, 0);
 	}

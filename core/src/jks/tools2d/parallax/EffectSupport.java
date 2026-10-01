@@ -36,9 +36,6 @@ public final class EffectSupport
 	/** Why {@code engine} draws no layer of {@code kind}, for a person to read; null when it draws it. */
 	public static String whyNot(Enum_LayerKind kind, Engine engine)
 	{
-		if (kind == Enum_LayerKind.SEQUENCE && engine == Engine.GODOT)
-			return "Godot's reader does not draw SEQUENCE layers yet (docs/sequence-layers.md, phase 2): a page holding one"
-					+ " fails to load there";
 		if (kind != Enum_LayerKind.PARTICLES)
 			return null;
 		switch (engine)

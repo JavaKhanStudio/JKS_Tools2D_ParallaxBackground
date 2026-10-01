@@ -63,7 +63,12 @@ in texRegion (the first sets the height), a cycle int[N] picked by SequenceCycle
 starts at height * cycleEdges[i] + i * padX), so act() and draw() recompute nothing; getTotalWidth() is the cycle.
 drawCycle binary-searches the first slot in view. The generator is INTEGERS ONLY (xorshift32 13/17/5, (state >>> 1) %
 total): a float rounds differently in GWT and GDScript. ReaderCases.sequenceCycleOfAKnownSeedIsPinned pins its picks;
-Godot's port (r183) must match them. A game's seed (reader.setSequenceSeed) is XORed with each layer's stored one.
+Godot's port (r183: plax_page.gd draw_cycle, plax_background.gd _draw_cycle, GDScript ints 64-bit so every << masked
+to 32 bits) matches them: engines/godot/tests/sequence_cycle.gd (the JVM's picks in tests/sequence/picks.json, and the
+slots drawn against a walk over every slot) and the pixel round engines/godot/tests/sequence, which jME runs too. Change
+the generator or drawCycle and change both, regenerate picks.json, run tools/r183-sequence/mutate.sh. A game's seed
+(reader.setSequenceSeed, Godot set_sequence_seed) is XORed with each layer's stored one. A cycle no wider than 0 (pads
+outweighing segments) draws nothing at all, in both.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.
