@@ -140,7 +140,7 @@
     "name": "snow",
     "mirror": false,
     "particlesLibgdx": "snow.p",
-    "particlesGodot": null,
+    "particlesGodot": "snow.tscn",
     "particlesAnchor": "LAYER"
    },
    {

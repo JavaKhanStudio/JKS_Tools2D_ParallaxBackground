@@ -36,8 +36,6 @@ public final class EffectSupport
 			return null;
 		switch (engine)
 		{
-			case GODOT:
-				return "Not yet: Godot instances the page's particle scene in phase 2 of docs/effect-layers.md (r179)";
 			case JME:
 				return "jME has no 2D particle system, and libGDX's ParticleEffect draws through a Batch call JmeBatch does not"
 						+ " implement: fill an EMPTY layer from a hook instead";

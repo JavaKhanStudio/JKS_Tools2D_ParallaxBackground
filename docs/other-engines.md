@@ -87,6 +87,13 @@ resizes: worst 0.25; with the Y scroll reversed it scores 31.5, with the world h
 41.8. CI runs the three rounds on every push (`.github/workflows/ci.yml`, job `godot-frames`: Xvfb and Mesa llvmpipe,
 no GPU), where round 1, the conformance round and the transfer round scored 0.17, 0.24 and 0.75.
 
+`engines/godot/tests/particles` (r179) is the one round not compared by pixels: a `PARTICLES` layer is drawn by each
+engine's own particle system. `engines/godot/tests/particles.gd` checks, 0, 6 and 12 s into the scroll, that the
+layer's Godot scene is instanced, between the layers before and after it, at its page's opacity, and where the layer
+scrolled it (counted apart from the reader), for a `VIEW` and a `LAYER` anchor, repeating on X and on XY, through a
+cross-fade, and for a layer naming no scene. It fails with the emitter's offset reversed, the particle nodes drawn
+last, a tile's corner placed from the screen's top, or the Y scroll left out.
+
 **Not ported yet:** atlas regions packed rotated (the editor's packer does not rotate; a TexturePacker atlas may).
 **Not checked:** an exported Godot game (only the editor/runner has been tried: `res://` pages load, with the PNG
 imported).

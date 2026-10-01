@@ -127,7 +127,7 @@ class ParticlePageTest
 		}
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.LIBGDX));
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.BROWSER), "ReaderCases run in Chrome");
-		assertTrue(EffectSupport.whyNot(Enum_LayerKind.PARTICLES, EffectSupport.Engine.GODOT).contains("r179"));
+		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.GODOT), "engines/godot/tests/particles");
 		assertTrue(EffectSupport.whyNot(Enum_LayerKind.PARTICLES, EffectSupport.Engine.JME).contains("EMPTY"));
 	}
 }

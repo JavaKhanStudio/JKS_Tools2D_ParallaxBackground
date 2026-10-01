@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3]
+
+; snow.p for Godot (r179): a CPUParticles2D, in screen pixels at 1280 wide (32 px a page unit), falling from the
+; bottom edge of p02's 12-unit box (384 px wide, the node at its bottom-left corner), as the libGDX .p's line runs
+; right from its emitter. Anchored to the LAYER in p02.
+
+[sub_resource type="Gradient" id="flake_colors"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="flake"]
+gradient = SubResource("flake_colors")
+width = 12
+height = 12
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="Snow" type="CPUParticles2D"]
+amount = 60
+lifetime = 3.0
+preprocess = 3.0
+texture = SubResource("flake")
+emission_shape = 4
+emission_points = PackedVector2Array(0, 0, 16, 0, 32, 0, 48, 0, 64, 0, 80, 0, 96, 0, 112, 0, 128, 0, 144, 0, 160, 0, 176, 0, 192, 0, 208, 0, 224, 0, 240, 0, 256, 0, 272, 0, 288, 0, 304, 0, 320, 0, 336, 0, 352, 0, 368, 0, 384, 0)
+direction = Vector2(0, 1)
+spread = 10.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 64.0
+initial_velocity_max = 128.0

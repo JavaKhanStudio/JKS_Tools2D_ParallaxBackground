@@ -116,6 +116,7 @@ jobs:
             build/godot/*/report.txt
             build/godot/*/*.log
             build/godot/*/gdx/lab.log
+            build/godot/particles/godot/*.png
             build/jme/*/compare.png
             build/jme/*/report.txt
             build/jme/*/*.log
