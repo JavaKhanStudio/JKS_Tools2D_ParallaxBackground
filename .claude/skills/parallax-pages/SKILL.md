@@ -23,7 +23,8 @@ them. The world is 40 units wide; its height follows the screen (22.5 at 16:9). 
 | `speedXAtRest` | Own movement even when the screen is still: clouds, water. |
 | `padX`, `padY`, `flipX`, `flipY` | Gap between repeats (world units), and the image flipped left-right / upside down. |
 | `mirror` | Only on a page repeating on ONE axis: repeating on X, a second row stacked on top of the strip, upside down; on Y, a second column to its right, reversed. Nothing on XY or none. A reflection that doubles the band (clouds, water), never a seam fix: on a foreground layer it draws the ground upside down above itself. |
-| `kind`, `name` | `IMAGE` (the default; `name` null) or `EMPTY` (format 5): a layer with no image, `regionName` null. It is the world's width x `sizeRatio` by the world's height x `sizeRatio`, keeps its speeds, `speedXAtRest`, decal and pads, ignores `mirror`, and draws only through the hook the game registers under its `name` (`ParallaxPageReader.setLayerHook`, Godot's `set_layer_hook`). |
+| `kind`, `name` | `IMAGE` (the default; `name` null) or `EMPTY` (format 5): a layer with no image, `regionName` null. It is the world's width x `sizeRatio` by the world's height x `sizeRatio`, keeps its speeds, `speedXAtRest`, decal and pads, ignores `mirror`, and draws only through the hook the game registers under its `name` (`ParallaxPageReader.setLayerHook`, Godot's `set_layer_hook`). `PARTICLES` (format 6): the same imageless box, drawing a particle effect instead of a hook. |
+| `particlesLibgdx`, `particlesGodot`, `particlesAnchor` | A `PARTICLES` layer's effect files: a libGDX `.p` beside the atlas, its images packed in the atlas, and a Godot scene; each engine draws its own, jME none. `particlesAnchor`: `LAYER` (default) pins the effect to the box's bottom-left corner on every tile (smoke, spray), `VIEW` emits it once from the view at the layer's decal (snow, rain). |
 
 Page: `topHalf_top/bottom`, `bottomHalf_top/bottom` (RGBA 0-1), `topHalfSize`/`bottomHalfSize` (share of the screen
 left **uncovered**: 0.5 = half), `repeatOnX/Y`, `useOriginalSize` (true for new pages on atlases packed with
@@ -37,6 +38,11 @@ counts its speed and skips its layout: it covers nothing. A render of the page a
 hooks it, so a gap in a still at an EMPTY layer is expected: render it with a scene's `"hooks": {"<name>": {"region":
 ..., "position": ...}}`, which draws an atlas region over each of its tiles (`tools/r186-empty-page` is a worked page
 and round, hooked and not).
+
+**A PARTICLES layer** is snow, rain or smoke at one depth: placed and sped like an EMPTY layer, and like it skipped
+by the layout checks. Lint also says when it names no `.p`, or its `.p` is not beside the atlas: libGDX then draws
+nothing there. README.md's "Snow, rain and smoke" says how wide a `VIEW` effect's `.p` must spawn;
+`core/test-data/particles` is a worked round, `VIEW` (p01) and `LAYER` (p02).
 
 ## How to build one
 
