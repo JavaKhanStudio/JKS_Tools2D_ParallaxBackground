@@ -23,11 +23,20 @@ them. The world is 40 units wide; its height follows the screen (22.5 at 16:9). 
 | `speedXAtRest` | Own movement even when the screen is still: clouds, water. |
 | `padX`, `padY`, `flipX`, `flipY` | Gap between repeats (world units), and the image flipped left-right / upside down. |
 | `mirror` | Only on a page repeating on ONE axis: repeating on X, a second row stacked on top of the strip, upside down; on Y, a second column to its right, reversed. Nothing on XY or none. A reflection that doubles the band (clouds, water), never a seam fix: on a foreground layer it draws the ground upside down above itself. |
+| `kind`, `name` | `IMAGE` (the default; `name` null) or `EMPTY` (format 5): a layer with no image, `regionName` null. It is the world's width x `sizeRatio` by the world's height x `sizeRatio`, keeps its speeds, `speedXAtRest`, decal and pads, ignores `mirror`, and draws only through the hook the game registers under its `name` (`ParallaxPageReader.setLayerHook`, Godot's `set_layer_hook`). |
 
 Page: `topHalf_top/bottom`, `bottomHalf_top/bottom` (RGBA 0-1), `topHalfSize`/`bottomHalfSize` (share of the screen
 left **uncovered**: 0.5 = half), `repeatOnX/Y`, `useOriginalSize` (true for new pages on atlases packed with
 whitespace stripped), `pageModel.atlasName` (file name; the atlas sits next to the page).
-`tools/parallax_lab.py` has `layer()` and `page_of()` helpers that write all of it.
+`tools/parallax_lab.py` has `layer()`, `empty()` and `page_of()` helpers that write all of it.
+
+**An EMPTY layer** is a depth the game fills: a sprite, particles, a flock of birds that must pass in front of one
+layer and behind the next. Place it in the list where that depth is, give it a speed between its neighbours' (step 5
+holds for it too: it is what puts the game's things at that depth), and size it to the tile the hook draws into. Lint
+counts its speed and skips its layout: it covers nothing. A render of the page alone shows nothing there until the game
+hooks it, so a gap in a still at an EMPTY layer is expected: render it with a scene's `"hooks": {"<name>": {"region":
+..., "position": ...}}`, which draws an atlas region over each of its tiles (`tools/r186-empty-page` is a worked page
+and round, hooked and not).
 
 ## How to build one
 

@@ -1,0 +1,26 @@
+{
+ "round": "r186-empty-page",
+ "about": "r186: a page written by following the parallax-pages skill with an EMPTY layer, and the round that renders it.",
+ "scenes": [
+  {
+   "page": "tools/r186-empty-page/page.jplax",
+   "atlasDir": "core/test-data/samples",
+   "id": "h01",
+   "name": "hooked",
+   "about": "the birds slot drawn by a hook (parallax4#2 stretched over each tile)",
+   "hooks": {
+    "birds": {
+     "region": "parallax4",
+     "position": 2
+    }
+   }
+  },
+  {
+   "page": "tools/r186-empty-page/page.jplax",
+   "atlasDir": "core/test-data/samples",
+   "id": "h02",
+   "name": "unhooked",
+   "about": "the same page, no hook: nothing at the slot, as a render of the page alone shows it"
+  }
+ ]
+}

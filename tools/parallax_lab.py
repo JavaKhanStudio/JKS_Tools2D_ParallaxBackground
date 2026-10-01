@@ -33,7 +33,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 LAYER_FIELDS = ['regionName', 'regionPosition', 'flipX', 'flipY', 'parallaxScalingSpeedX', 'parallaxScalingSpeedY',
                 'speedXAtRest', 'sizeRatio', 'decal_X_Ratio', 'decal_Y_Ratio', 'padX', 'padXFactor', 'padY',
-                'padYFactor', 'mirror']
+                'padYFactor', 'mirror', 'kind', 'name']
 PAGE_FIELDS = ['topHalf_top', 'topHalf_bottom', 'topHalfSize', 'bottomHalf_top', 'bottomHalf_bottom',
                'bottomHalfSize', 'repeatOnX', 'repeatOnY', 'useOriginalSize']
 
@@ -88,6 +88,22 @@ def layer(region, position=0, speed=0.02, size=1.0, dx=0.0, dy=0.0, speed_y=None
             'parallaxScalingSpeedX': speed, 'parallaxScalingSpeedY': speed * 0.6 if speed_y is None else speed_y,
             'speedXAtRest': rest, 'sizeRatio': size, 'decal_X_Ratio': dx, 'decal_Y_Ratio': dy, 'padX': pad_x,
             'padXFactor': 0.0, 'padY': pad_y, 'padYFactor': 0.0, 'mirror': mirror}
+
+
+def empty(name, speed=0.02, size=1.0, dx=0.0, dy=0.0, speed_y=None, rest=0.0, pad_x=0.0, pad_y=0.0):
+    """An EMPTY layer (format 5): no image, world width x size by world height x size, drawn only by the hook the game
+    registers under its name."""
+    out = layer(None, 0, speed, size, dx, dy, speed_y, rest, pad_x=pad_x, pad_y=pad_y)
+    out.update(kind='EMPTY', name=name)
+    return out
+
+
+def is_empty(l):
+    return l.get('kind') == 'EMPTY'
+
+
+def label(l):
+    return f"EMPTY '{l.get('name')}'" if is_empty(l) else f"{l['regionName']}#{l['regionPosition']}"
 
 
 def page_of(atlas, layer_list, sky=None, ground=None, top_size=0.5, bottom_size=0.5, original_size=None):
@@ -176,7 +192,7 @@ def layout(page, atlas_dir):
       (d) regions packed with their whitespace stripped and useOriginalSize off: they are stretched over the layer;
       (e) a layer tiled on X whose left and right edges differ (seam > 20) in the rows on screen: a cut every repeat.
     A layer counts as covering a band only if it spans the screen's width: tiled on X without padding, or 1 world
-    wide or more."""
+    wide or more. An EMPTY layer covers nothing: what its hook draws is the game's."""
     try:
         import parallax_regions as regions_tool
     except ImportError:  # no Pillow
@@ -199,6 +215,8 @@ def _measure_layers(page, regions, regions_tool):
     original = page.get('useOriginalSize', False)
     sheets, placed, problems, stripped = {}, [], [], []
     for i, l in enumerate(layers(page)):
+        if is_empty(l):  # no image: it covers nothing, and its hook draws whatever the game wants there
+            continue
         r = regions.get((l['regionName'], l['regionPosition']))
         if r is None:
             problems.append(f"layer {i}: no region {l['regionName']}#{l['regionPosition']}"
@@ -329,9 +347,9 @@ def describe(page):
         sx = l['parallaxScalingSpeedX']
         step = '' if not prev else f'x{sx / prev:.2f}'
         prev = sx or prev
-        region = f"{l['regionName']}#{l['regionPosition']}"
+        region = label(l)
         y_over_x = l['parallaxScalingSpeedY'] / sx if sx else 0
-        marks = (' flip' if l['flipX'] else '') + (' mirror' if l.get('mirror') else '')
+        marks = (' flip' if l['flipX'] else '') + (' mirror' if l.get('mirror') and not is_empty(l) else '')
         out.append(f"  {i:2d} {region:<16} speed {sx:.4f} {step:<6} y/x {y_over_x:.2f} rest {l['speedXAtRest']:6.1f}"
                    f" size {l['sizeRatio']:5.2f} decal {l['decal_X_Ratio']:6.1f},{l['decal_Y_Ratio']:6.1f}{marks}")
     return '\n'.join(out)
