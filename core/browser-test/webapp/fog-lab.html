@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>FOG lab (d15): how tall should the patches be?</title>
+	<style>
+		body { margin: 8px; font: 13px sans-serif; background: #222; color: #ddd; }
+		#fog-lab { position: relative; width: 1524px; height: 504px; }
+		#fog-labels { position: absolute; inset: 0; display: grid; grid-template-columns: 764px 760px; grid-template-rows: 254px 250px; pointer-events: none; }
+		.panel-label { padding: 4px 8px; font: bold 14px sans-serif; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+		#fog-controls { margin-top: 8px; width: 1524px; }
+		.row { display: grid; grid-template-columns: 280px 1fr 60px; align-items: center; gap: 8px; }
+		#fog-readout { margin-top: 6px; color: #aaa; }
+		#fog-about { width: 1200px; color: #bbb; line-height: 1.4; }
+	</style>
+	<!-- FogLab (r204): the shaders round's s01, its mist drawn through FOG with patches of three heights, and plain. -->
+	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+</head>
+<body>
+	<div id="fog-lab">
+		<div id="embed-browsertests"></div>
+		<div id="fog-labels"></div>
+	</div>
+	<div id="fog-controls"></div>
+	<p id="fog-about">FOG thins the mist's opacity by a sum of three sines. Across, they repeat every 1, 1/2 and 1/3 of a
+	wavelength; up and down only every 2, 2 and 1.25 wavelengths, so today's patches (A) are 3 to 4 times taller than
+	wide and read as vertical streaks on any band. B halves the heights: patches about as tall as wide. C is the same
+	with a patch height a page would store (a fourth number, an editor slider). The scroll and every slider act on all
+	four panels at once.</p>
+</body>
+</html>
