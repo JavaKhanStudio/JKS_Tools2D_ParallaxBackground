@@ -20,6 +20,10 @@ repair.
   through cage or `tools/offscreen.sh`: `tools/offscreen-lint.sh` (CI) fails a `tools/*.sh` that does neither, unless
   it carries `# on-screen: <why>` (a launch that opens no window: `# headless: <why>` above it). Cage renders on the
   NVIDIA GPU, a desktop window on the Intel one: compare frame times of the same.
+  Under all of that, `.claude/settings.json` gives every Claude session here an empty `DISPLAY` and a
+  `WAYLAND_DISPLAY` naming no socket (r118): a window outside cage fails to open instead of showing. When Simon asks to
+  watch, put his back on the command: `DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 ATELIER_NO_OFFSCREEN=1 ...`.
+  `tools/agent-screen-check.sh` proves both halves.
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
 - Repositories go in `settings.gradle` only: `FAIL_ON_PROJECT_REPOS` fails the build on a module-level one.
