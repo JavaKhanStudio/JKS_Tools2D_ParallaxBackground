@@ -156,7 +156,10 @@ ETC2 (d13, r125, r173): Gvars_Parallax.setCompressedAtlases(on) makes atlasFile(
 OpenGL ES 3 only (desktops unpack ETC2 to RGBA, browsers cannot read the gzipped pages).
 pages/Utils_Etc2_Atlas loads its <name>_N.zktx pages with their OWN mip levels: a compressed
 texture cannot glGenerateMipmap. Fixtures: core/test-data/etc2 (byte copies of an editor
-export, never re-exported), Etc2AtlasMipmapTest. Open question on a phone: r140.
+export, never re-exported), Etc2AtlasMipmapTest. On Android (r140, the atelier-phone emulator,
+GLES 3.1): tools/android-etc2-check.sh loads City PNG and ETC2 as a game does and fails on any
+GL error; libGDX's own TextureAtlas loader still raises GL_INVALID_OPERATION from glGenerateMipmap
+there. The emulator cannot prove the memory (its host driver unpacks ETC2): a real phone can.
 PIXMAPS AND TEXTURES ARE NATIVE MEMORY: dispose what you load; the AssetManager owns what it
 loaded.
 """
