@@ -1,0 +1,60 @@
+plugins {
+    id 'com.android.application' version '9.4.1'
+}
+
+def gdxVersion = '1.14.2' // gradle.properties' gdxVersion, which an included build does not hand down
+
+configurations {
+    natives
+}
+
+dependencies {
+    implementation 'io.github.javakhanstudio:parallax-background:+'
+    implementation "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
+}
+
+// The pages it loads: City from core/test-data/etc2 (the editor's r125 export, PNG and ETC2), and any folder of
+// exports passed as -PextraAssets=DIR (the editor's Hiver, 4096x2048, which is too big to commit).
+def extraAssets = providers.gradleProperty('extraAssets')
+
+android {
+    namespace = 'jks.tools2d.parallax.etc2check'
+    compileSdk = 36
+    defaultConfig {
+        applicationId = 'jks.tools2d.parallax.etc2check'
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = '1'
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            assets.srcDirs = ['../../core/test-data/etc2'] + (extraAssets.present ? [extraAssets.get()] : [])
+            jniLibs.srcDirs = [layout.buildDirectory.dir('natives').get().asFile]
+        }
+    }
+    packaging {
+        resources.excludes += ['META-INF/**']
+    }
+}
+
+// libGDX's natives come as jars: their .so go to jniLibs/<abi>.
+def copyNatives = tasks.register('copyNatives', Sync) {
+    into layout.buildDirectory.dir('natives')
+    configurations.natives.files.each { jar ->
+        def abi = (jar.name =~ /natives-(.+)\.jar/)[0][1]
+        from(zipTree(jar)) {
+            include '*.so'
+            into abi
+        }
+    }
+}
+tasks.named('preBuild') { dependsOn copyNatives }

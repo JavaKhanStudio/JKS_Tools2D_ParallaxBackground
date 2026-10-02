@@ -1,0 +1,27 @@
+// r140: a small Android app that loads a page from its PNG atlas and from its ETC2 copy, on the atelier-phone emulator
+// or a phone, and reports the GL errors and the frames (tools/android-etc2-check.sh). Its own build, out of the
+// library's (Simon, r140): settings.gradle, CI and tools/library-alone-check.sh never need an Android SDK.
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'android-etc2-check'
+
+// core from this checkout, not Maven Central's.
+includeBuild('../..') {
+    dependencySubstitution {
+        substitute module('io.github.javakhanstudio:parallax-background') using project(':core')
+    }
+}
