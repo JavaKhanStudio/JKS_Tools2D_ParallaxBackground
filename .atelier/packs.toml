@@ -196,6 +196,11 @@ two runs at once, r142).
 tools/offscreen-lint.sh (CI, job build) fails a tools/*.sh that runs java, an installDist bin/,
 godot or a browser without either, unless it carries `# on-screen: <why>` (r171). A java launch
 that opens no window (a converter) passes with `# headless: <why>` on the line above it (r197).
+The process-level rail under all of these (r118): .claude/settings.json gives every Claude session in
+this checkout DISPLAY="" and WAYLAND_DISPLAY=no-screen-for-agents, so a launch that slips past them
+FAILS ("Failed to open display") instead of popping up on Simon's desk. Cage needs neither. Do not
+put the screen back in a session's env; when Simon asks to watch, prefix that one command with
+DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 ATELIER_NO_OFFSCREEN=1. tools/agent-screen-check.sh proves it.
 The editor and demo are another repository since the split (r130-r133, docs/repo-split.md):
 JKS_Tools2D_ParallaxEditor, board parallax-editor. The library's gates read core/test-data
 and draw their libGDX frames with :shots (shots/, ParallaxShots). The editor's build takes core

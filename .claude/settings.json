@@ -1,0 +1,6 @@
+{
+  "env": {
+    "DISPLAY": "",
+    "WAYLAND_DISPLAY": "no-screen-for-agents"
+  }
+}
