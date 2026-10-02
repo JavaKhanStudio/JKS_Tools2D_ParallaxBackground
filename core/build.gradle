@@ -109,6 +109,18 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     outputs.dir(browserTestAssets)
     argumentProviders.add({ [rootDir.absolutePath, browserTestAssets.get().asFile.absolutePath] } as CommandLineArgumentProvider)
     doFirst { delete browserTestAssets }
+    // The FOG lab's page and atlas (r204, FogLab): the atlas beside its two images, which it names from its own folder.
+    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png' }, file('../engines/godot/tests/shaders/s01.jplax'))
+    doLast {
+        def assets = browserTestAssets.get().asFile
+        project.copy { from 'test-data/shaders/mist.png', 'test-data/samples/Hiver.png'; into assets }
+        project.copy {
+            from 'test-data/shaders/HiverFog.atlas'
+            into assets
+            filter { it == '../samples/Hiver.png' ? 'Hiver.png' : it }
+        }
+        project.copy { from '../engines/godot/tests/shaders/s01.jplax'; into new File(assets, 'fog-lab') }
+    }
 }
 tasks.register('browserTestWar', JavaExec) {
     group = 'verification'
