@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # The FOG lab (r204, doubt d15): the shaders round's s01 page drawn four times by the real reader, compiled with GWT,
 # in WebGL: its mist band through FOG with patches as tall as wide (A, what ships), half as tall (B), as tall as a
-# slider says (C), and plain. Sliders: amplitude, wavelength, speed, C's height, the camera's scroll, the trees' WAVE ripple.
+# slider says (C), and plain. Sliders: amplitude, wavelength, speed, C's height, the camera's scroll, the trees' WAVE ripple,
+# the mist's layer. It opens on Simon's r208 settings.
 #   tools/fog-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/fog-lab.sh --shot F.png    one still, headless (6 s into the scroll)
 #   tools/fog-lab.sh --clip F.mp4    a clip, headless: 12 s at 30 fps, stepped at game speed (window.fogLabAct)
-#   tools/fog-lab.sh --copy F.png    checks "Copy settings", headless: moves C's slider, clicks, fails unless the
-#                                    JSON names every slider and the one moved; F is the page with the JSON shown
+#   tools/fog-lab.sh --copy F.png    checks "Copy settings", headless: moves C's slider and the mist to the front,
+#                                    clicks, fails unless the JSON names every slider and the two moved; F is the page
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, for --shot and
 # --clip, Python Playwright and ffmpeg.
 # on-screen: with no argument this is the fog lab, a window Simon asked for; --shot and --clip are headless Chrome.
@@ -82,14 +83,16 @@ with sync_playwright() as p:
         shot(frames + "/still.png")
     elif mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        page.eval_on_selector("input[data-key=patchHeightC]", "e => { e.value = '0.4'; }")
+        page.eval_on_selector("input[data-key=patchHeightC]", "e => { e.value = '0.6'; }")
+        page.eval_on_selector("input[data-key=mistLayer]", "e => { e.value = '7'; }")
         page.evaluate("window.fogLabAct(6)")
         page.click("#fog-copy")
         page.wait_for_function("document.getElementById('fog-copy-state').textContent !== ''")
         import json
         got = json.loads(page.input_value("#fog-copy-json"))
-        keys = {"mistAmplitude", "mistWavelength", "mistSpeed", "patchHeightC", "cameraScroll", "treesWaveRipple"}
-        if set(got["settings"]) != keys or got["changed"] != {"patchHeightC": {"started": 0.25, "now": 0.4}}:
+        keys = {"mistAmplitude", "mistWavelength", "mistSpeed", "patchHeightC", "cameraScroll", "treesWaveRipple", "mistLayer"}
+        moved = {"patchHeightC": {"started": 0.45, "now": 0.6}, "mistLayer": {"started": 5, "now": 7}}
+        if set(got["settings"]) != keys or got["changed"] != moved:
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#fog-copy-state"), json.dumps(got["settings"])))
         shot(frames + "/still.png")

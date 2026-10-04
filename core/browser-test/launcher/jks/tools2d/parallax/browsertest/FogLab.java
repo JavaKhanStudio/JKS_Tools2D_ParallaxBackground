@@ -24,7 +24,8 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * band's FOG patches as tall as they are wide (A, what ships), half as tall (B), as tall as the slider says (C, a
  * stored patch height), and without FOG. Opened with fog-lab.html: tools/fog-lab.sh. The sliders move
  * the mist's amplitude, wavelength and speed, and the scroll, in every panel at once, and the ripple of s01's two WAVE
- * tree layers (r208: Simon read them as "dancing"): their amplitude times the slider, 0.3 to begin with. "Copy settings"
+ * tree layers (r208: Simon read them as "dancing"): their amplitude times the slider, and the mist's place among the
+ * layers. It opens on the settings Simon sent on r208 ({@link #SIMON}: shape A, a lighter, wider mist, no ripple). "Copy settings"
  * (fog-lab.html) puts every slider, and what it started at, on the clipboard as JSON, for Simon to paste into a card.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.fogLabAct(seconds)} steps every heart at 1/60 s, so that
@@ -39,6 +40,9 @@ public class FogLab extends ApplicationAdapter
 	static final int FRAME_WIDTH = 760, FRAME_HEIGHT = 428, PANEL_HEIGHT = 250;
 	static final String[] TITLES = { "A: ships today (patches 3-4x taller than wide)", "B: half as tall (about round)", "C: patch height = slider", "no FOG" };
 
+	/** Simon's settings from r208 (d16 answered A): mist amplitude, wavelength, C's patch height, scroll, trees' ripple. */
+	static final float[] SIMON = { 0.25f, 8.25f, 0.45f, 40, 0 };
+
 	/** The FOG patch height per panel, in wavelengths; C's comes from its slider, the last panel draws plain. */
 	private final float[] heights = { 1, 0.5f, 0.25f, 1 };
 	private final Parallax_Heart[] hearts = new Parallax_Heart[4];
@@ -47,7 +51,9 @@ public class FogLab extends ApplicationAdapter
 	private final ParallaxLayer[] waves = new ParallaxLayer[8];
 	private final float[] waveAmplitudes = new float[8];
 	private int waveCount;
-	private InputElement amplitude, wavelength, speed, height, scroll, ripple;
+	private InputElement amplitude, wavelength, speed, height, scroll, ripple, order;
+	/** Where the mist sits in every heart's layers, 0 = at the back: the page's place to begin with. */
+	private int mistIndex, pageMistIndex;
 	private Element readout;
 	private boolean clip;
 	private SpriteBatch batch;
@@ -76,8 +82,10 @@ public class FogLab extends ApplicationAdapter
 			if (mists[i] == null)
 				throw new IllegalStateException(PAGE + " has no layer named mist");
 		}
+		pageMistIndex = mistIndex = hearts[0].parallaxReader.layers.indexOf(mists[0]);
 		ParallaxLayer mist = mists[0];
-		buildControls(mist.getShaderAmplitude(), mist.getShaderWavelength(), mist.getShaderSpeed());
+		heights[2] = SIMON[2];
+		buildControls(SIMON[0], SIMON[1], mist.getShaderSpeed());
 		if (clip)
 			exportAct(this);
 	}
@@ -98,8 +106,10 @@ public class FogLab extends ApplicationAdapter
 		wavelength = slider(document, controls, "mistWavelength", "wavelength (patch width, world units)", 0.5f, 20, 0.25f, w);
 		speed = slider(document, controls, "mistSpeed", "speed (world units/s)", 0, 6, 0.1f, s);
 		height = slider(document, controls, "patchHeightC", "C's patch height (x wavelength)", 0.05f, 1.5f, 0.05f, heights[2]);
-		scroll = slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, 60);
-		ripple = slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, 0.3f);
+		scroll = slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SIMON[3]);
+		ripple = slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, SIMON[4]);
+		int last = hearts[0].parallaxReader.layers.size() - 1;
+		order = slider(document, controls, "mistLayer", "mist's layer (0 = back, " + last + " = front; page: " + pageMistIndex + ")", 0, last, 1, pageMistIndex);
 		readout = document.createDivElement();
 		readout.setId("fog-readout");
 		controls.appendChild(readout);
@@ -145,6 +155,16 @@ public class FogLab extends ApplicationAdapter
 		float a = read(amplitude), w = read(wavelength), s = read(speed);
 		heights[2] = read(height);
 		float sc = read(scroll), rp = read(ripple);
+		int index = Math.round(read(order));
+		if (index != mistIndex)
+		{
+			for (int i = 0; i < hearts.length; i++)
+			{
+				hearts[i].parallaxReader.layers.remove(mists[i]);
+				hearts[i].parallaxReader.layers.add(index, mists[i]);
+			}
+			mistIndex = index;
+		}
 		for (int i = 0; i < waveCount; i++)
 			waves[i].setShaderAmplitude(waveAmplitudes[i] * rp);
 		for (int i = 0; i < hearts.length; i++)
@@ -156,7 +176,8 @@ public class FogLab extends ApplicationAdapter
 		}
 		float band = mists[0].getHeight() * mists[0].getPackedHeightRatio();
 		readout.setInnerText("mist band: " + Math.round(band * 10) / 10f + " world units tall = "
-				+ Math.round(band / w * 100) / 100f + " wavelengths; world " + Math.round(hearts[0].getWorldWidth()) + " wide");
+				+ Math.round(band / w * 100) / 100f + " wavelengths; world " + Math.round(hearts[0].getWorldWidth()) + " wide; mist in front of "
+				+ mistIndex + " of " + (hearts[0].parallaxReader.layers.size() - 1) + " layers");
 	}
 
 	/** Steps every heart by {@code seconds}, at 1/60 s: the clip's clock. */
