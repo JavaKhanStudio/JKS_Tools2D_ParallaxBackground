@@ -11,6 +11,8 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
 
+import java.util.ArrayList;
+
 import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
@@ -25,7 +27,10 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * stored patch height), and without FOG. Opened with fog-lab.html: tools/fog-lab.sh. The sliders move
  * the mist's amplitude, wavelength and speed, and the scroll, in every panel at once, and the ripple of s01's two WAVE
  * tree layers (r208: Simon read them as "dancing"): their amplitude times the slider, and the mist's place among the
- * layers. It opens on the settings Simon sent on r208 ({@link #SIMON}: shape A, a lighter, wider mist, no ripple). "Copy settings"
+ * layers. It opens on the settings Simon sent on r208 ({@link #SIMON}: shape A, a lighter, wider mist, no ripple). Depth haze
+ * (r208, Simon: "the thing in the background that the fog completely blocks"): every layer behind the mist mixed toward
+ * the mist's white, more the further back it is, in panels A to C; the lab draws the page one layer at a time to do it,
+ * the reader is unchanged. "Copy settings"
  * (fog-lab.html) puts every slider, and what it started at, on the clipboard as JSON, for Simon to paste into a card.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.fogLabAct(seconds)} steps every heart at 1/60 s, so that
@@ -38,10 +43,14 @@ public class FogLab extends ApplicationAdapter
 	static final float WORLD_WIDTH = 40, WORLD_HEIGHT = 22.5f;
 	/** Each panel: the round's 16:9 frame, cut below the page (s01 leaves its lower 42% to the white gradient). */
 	static final int FRAME_WIDTH = 760, FRAME_HEIGHT = 428, PANEL_HEIGHT = 250;
-	static final String[] TITLES = { "A: ships today (patches 3-4x taller than wide)", "B: half as tall (about round)", "C: patch height = slider", "no FOG" };
+	static final String[] TITLES = { "A: ships today (patches 3-4x taller than wide)", "B: half as tall (about round)", "C: patch height = slider", "no FOG, no haze" };
 
 	/** Simon's settings from r208 (d16 answered A): mist amplitude, wavelength, C's patch height, scroll, trees' ripple. */
 	static final float[] SIMON = { 0.25f, 8.25f, 0.45f, 40, 0 };
+	/** Depth haze to begin with: the share of the mist's white a layer one step behind it takes. */
+	static final float HAZE = 0.25f;
+	/** The haze's color: the mist's white. */
+	static final float FOG_R = 0.93f, FOG_G = 0.95f, FOG_B = 0.97f;
 
 	/** The FOG patch height per panel, in wavelengths; C's comes from its slider, the last panel draws plain. */
 	private final float[] heights = { 1, 0.5f, 0.25f, 1 };
@@ -51,7 +60,11 @@ public class FogLab extends ApplicationAdapter
 	private final ParallaxLayer[] waves = new ParallaxLayer[8];
 	private final float[] waveAmplitudes = new float[8];
 	private int waveCount;
-	private InputElement amplitude, wavelength, speed, height, scroll, ripple, order;
+	private InputElement amplitude, wavelength, speed, height, scroll, ripple, order, haze;
+	/** Every heart's layers back to front, while the lab hands its reader one at a time. */
+	private final ArrayList<ParallaxLayer> drawn = new ArrayList<>();
+	private final PatchHeightEffects[] effects = new PatchHeightEffects[4];
+	private ShaderProgram plainHaze;
 	/** Where the mist sits in every heart's layers, 0 = at the back: the page's place to begin with. */
 	private int mistIndex, pageMistIndex;
 	private Element readout;
@@ -70,7 +83,8 @@ public class FogLab extends ApplicationAdapter
 				batch = new SpriteBatch();
 			hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i].setPage(Utils_Page_Json.loadPage(PAGE));
-			hearts[i].parallaxReader.setLayerEffects(new PatchHeightEffects(heights, i));
+			effects[i] = new PatchHeightEffects(heights, i);
+			hearts[i].parallaxReader.setLayerEffects(effects[i]);
 			for (ParallaxLayer layer : hearts[i].parallaxReader.layers)
 				if ("mist".equals(layer.getName()))
 					mists[i] = layer;
@@ -110,6 +124,7 @@ public class FogLab extends ApplicationAdapter
 		ripple = slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, SIMON[4]);
 		int last = hearts[0].parallaxReader.layers.size() - 1;
 		order = slider(document, controls, "mistLayer", "mist's layer (0 = back, " + last + " = front; page: " + pageMistIndex + ")", 0, last, 1, pageMistIndex);
+		haze = slider(document, controls, "depthHaze", "depth haze (white per layer behind the mist)", 0, 0.6f, 0.05f, HAZE);
 		readout = document.createDivElement();
 		readout.setId("fog-readout");
 		controls.appendChild(readout);
@@ -167,6 +182,9 @@ public class FogLab extends ApplicationAdapter
 		}
 		for (int i = 0; i < waveCount; i++)
 			waves[i].setShaderAmplitude(waveAmplitudes[i] * rp);
+		float k = read(haze);
+		for (PatchHeightEffects e : effects)
+			e.hazePerLayer = k;
 		for (int i = 0; i < hearts.length; i++)
 		{
 			mists[i].setShaderAmplitude(a);
@@ -217,10 +235,53 @@ public class FogLab extends ApplicationAdapter
 			int x = (i % 2) * (FRAME_WIDTH + 4), top = i < 2 ? height : height - PANEL_HEIGHT - 4;
 			Gdx.gl.glScissor(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
 			Gdx.gl.glViewport(x, top - FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
-			hearts[i].render();
+			renderHazed(hearts[i], effects[i]);
 		}
 		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
 		Gdx.gl.glViewport(0, 0, width, height);
+	}
+
+	/**
+	 * Parallax_Heart.render, but the reader is handed one layer at a time, each drawn through a shader that mixes it
+	 * toward the mist's white by {@link PatchHeightEffects#haze(int)}; the SHADER layers' own shaders do the same.
+	 */
+	private void renderHazed(Parallax_Heart heart, PatchHeightEffects effects)
+	{
+		ArrayList<ParallaxLayer> layers = heart.parallaxReader.layers;
+		drawn.clear();
+		drawn.addAll(layers);
+		heart.worldCamera.update();
+		heart.drawBackGround();
+		batch.setProjectionMatrix(heart.worldCamera.combined);
+		batch.enableBlending();
+		batch.begin();
+		for (int j = 0; j < drawn.size(); j++)
+		{
+			ParallaxLayer layer = drawn.get(j);
+			effects.layerHaze = effects.haze(mistIndex - j);
+			batch.setShader(plainHaze());
+			batch.flush();
+			plainHaze.setUniformf("u_haze", effects.layerHaze);
+			plainHaze.setUniformf("u_fog", FOG_R, FOG_G, FOG_B);
+			layers.clear();
+			layers.add(layer);
+			heart.parallaxReader.draw(heart.worldCamera, batch);
+		}
+		layers.clear();
+		layers.addAll(drawn);
+		batch.setShader(null);
+		batch.end();
+	}
+
+	private ShaderProgram plainHaze()
+	{
+		if (plainHaze != null)
+			return plainHaze;
+		String source = "#ifdef GL_ES\nprecision mediump float;\n#endif\n"
+				+ "varying vec4 v_color;\nvarying vec2 v_texCoords;\nuniform sampler2D u_texture;\n"
+				+ "void main()\n{\n	gl_FragColor = v_color * texture2D(u_texture, v_texCoords);\n}\n";
+		plainHaze = PatchHeightEffects.compile(PatchHeightEffects.hazed(source), "plain");
+		return plainHaze;
 	}
 
 	/**
@@ -234,6 +295,9 @@ public class FogLab extends ApplicationAdapter
 
 		private final float[] heights;
 		private final int panel;
+		/** The haze slider, and the haze of the layer being drawn (set by renderHazed). */
+		float hazePerLayer, layerHaze;
+		private ShaderProgram wave;
 		private final GdxLayerEffects shipped = new GdxLayerEffects();
 		private final float[] numbers = new float[9];
 		private ShaderProgram fog, previous;
@@ -247,11 +311,9 @@ public class FogLab extends ApplicationAdapter
 		@Override
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
 		{
-			if (layer.getShaderEffect() != Enum_ShaderEffect.FOG)
-				return shipped.begin(batch, layer, phase);
 			if (panel == 3)
-				return false;
-			ShaderProgram program = fog();
+				return layer.getShaderEffect() != Enum_ShaderEffect.FOG && shipped.begin(batch, layer, phase);
+			ShaderProgram program = layer.getShaderEffect() == Enum_ShaderEffect.FOG ? fog() : wave();
 			previous = batch.getShader();
 			batch.setShader(program);
 			if (!batch.isDrawing())
@@ -260,14 +322,17 @@ public class FogLab extends ApplicationAdapter
 			program.setUniformf("u_region", numbers[0], numbers[1], numbers[2], numbers[3]);
 			program.setUniformf("u_size", numbers[4], numbers[5]);
 			program.setUniformf("u_effect", numbers[6], numbers[7], numbers[8]);
-			program.setUniformf("u_height", heights[panel]);
+			if (layer.getShaderEffect() == Enum_ShaderEffect.FOG)
+				program.setUniformf("u_height", heights[panel]);
+			program.setUniformf("u_haze", layerHaze);
+			program.setUniformf("u_fog", FOG_R, FOG_G, FOG_B);
 			return true;
 		}
 
 		@Override
 		public void end(Batch batch, ParallaxLayer layer)
 		{
-			if (layer.getShaderEffect() != Enum_ShaderEffect.FOG)
+			if (panel == 3)
 			{
 				shipped.end(batch, layer);
 				return;
@@ -284,10 +349,35 @@ public class FogLab extends ApplicationAdapter
 			if (!source.contains(SHIPPED))
 				throw new IllegalStateException("GdxLayerEffects' FOG no longer has the line this lab scales: " + SHIPPED);
 			source = source.replace(SHIPPED, SCALED).replace("uniform vec3 u_effect;\n", "uniform vec3 u_effect;\nuniform float u_height;\n");
-			fog = new ShaderProgram(GdxLayerEffects.vertex(), source);
-			if (!fog.isCompiled())
-				throw new IllegalStateException("the lab's FOG does not compile: " + fog.getLog());
+			fog = compile(hazed(source), "FOG");
 			return fog;
+		}
+
+		private ShaderProgram wave()
+		{
+			if (wave == null)
+				wave = compile(hazed(GdxLayerEffects.fragment(Enum_ShaderEffect.WAVE)), "WAVE");
+			return wave;
+		}
+
+		/** The haze a layer {@code behind} layers behind the mist takes: none in front of it or in the plain panel. */
+		float haze(int behind)
+		{return panel == 3 || behind <= 0 ? 0 : 1 - (float) Math.pow(1 - hazePerLayer, behind);}
+
+		/** A fragment shader whose color is then mixed toward u_fog by u_haze, its alpha kept. */
+		static String hazed(String source)
+		{
+			return source.replace("void main()", "uniform float u_haze;\nuniform vec3 u_fog;\nvec4 fragColor;\nvoid effectMain()")
+					.replace("gl_FragColor", "fragColor")
+					+ "void main()\n{\n	effectMain();\n	gl_FragColor = vec4(mix(fragColor.rgb, u_fog, u_haze), fragColor.a);\n}\n";
+		}
+
+		static ShaderProgram compile(String fragment, String name)
+		{
+			ShaderProgram program = new ShaderProgram(GdxLayerEffects.vertex(), fragment);
+			if (!program.isCompiled())
+				throw new IllegalStateException("the lab's hazed " + name + " does not compile: " + program.getLog());
+			return program;
 		}
 	}
 }
