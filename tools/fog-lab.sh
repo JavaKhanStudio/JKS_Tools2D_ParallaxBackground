@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The FOG lab (r204, doubt d15): the shaders round's s01 page drawn four times by the real reader, compiled with GWT,
 # in WebGL: its mist band through FOG with patches as tall as wide (A, what ships), half as tall (B), as tall as a
-# slider says (C), and plain. Sliders: amplitude, wavelength, speed, C's height, the camera's scroll.
+# slider says (C), and plain. Sliders: amplitude, wavelength, speed, C's height, the camera's scroll, the trees' WAVE ripple.
 #   tools/fog-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/fog-lab.sh --shot F.png    one still, headless (6 s into the scroll)
 #   tools/fog-lab.sh --clip F.mp4    a clip, headless: 12 s at 30 fps, stepped at game speed (window.fogLabAct)
