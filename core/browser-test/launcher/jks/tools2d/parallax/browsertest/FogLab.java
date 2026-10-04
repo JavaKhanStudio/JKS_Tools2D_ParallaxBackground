@@ -24,7 +24,8 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * band's FOG patches as tall as they are wide (A, what ships), half as tall (B), as tall as the slider says (C, a
  * stored patch height), and without FOG. Opened with fog-lab.html: tools/fog-lab.sh. The sliders move
  * the mist's amplitude, wavelength and speed, and the scroll, in every panel at once, and the ripple of s01's two WAVE
- * tree layers (r208: Simon read them as "dancing"): their amplitude times the slider, 0.3 to begin with.
+ * tree layers (r208: Simon read them as "dancing"): their amplitude times the slider, 0.3 to begin with. "Copy settings"
+ * (fog-lab.html) puts every slider, and what it started at, on the clipboard as JSON, for Simon to paste into a card.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.fogLabAct(seconds)} steps every heart at 1/60 s, so that
  * tools/fog-lab.sh --clip records it at game speed however slow the browser draws.
@@ -93,12 +94,12 @@ public class FogLab extends ApplicationAdapter
 			labels.appendChild(label);
 		}
 		Element controls = document.getElementById("fog-controls");
-		amplitude = slider(document, controls, "amplitude (thinning, 0..1)", 0, 1, 0.05f, a);
-		wavelength = slider(document, controls, "wavelength (patch width, world units)", 0.5f, 20, 0.25f, w);
-		speed = slider(document, controls, "speed (world units/s)", 0, 6, 0.1f, s);
-		height = slider(document, controls, "C's patch height (x wavelength)", 0.05f, 1.5f, 0.05f, heights[2]);
-		scroll = slider(document, controls, "camera scroll", 0, 240, 5, 60);
-		ripple = slider(document, controls, "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, 0.3f);
+		amplitude = slider(document, controls, "mistAmplitude", "amplitude (thinning, 0..1)", 0, 1, 0.05f, a);
+		wavelength = slider(document, controls, "mistWavelength", "wavelength (patch width, world units)", 0.5f, 20, 0.25f, w);
+		speed = slider(document, controls, "mistSpeed", "speed (world units/s)", 0, 6, 0.1f, s);
+		height = slider(document, controls, "patchHeightC", "C's patch height (x wavelength)", 0.05f, 1.5f, 0.05f, heights[2]);
+		scroll = slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, 60);
+		ripple = slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, 0.3f);
 		readout = document.createDivElement();
 		readout.setId("fog-readout");
 		controls.appendChild(readout);
@@ -107,7 +108,8 @@ public class FogLab extends ApplicationAdapter
 	private static String text(float value)
 	{return String.valueOf(Math.round(value * 100) / 100.0);}
 
-	private static InputElement slider(Document document, Element into, String name, float min, float max, float step, float value)
+	/** A slider row; {@code key} and the value it starts at go on the input, read by fog-lab.html's "Copy settings". */
+	private static InputElement slider(Document document, Element into, String key, String name, float min, float max, float step, float value)
 	{
 		Element row = document.createLabelElement();
 		row.setClassName("row");
@@ -119,6 +121,8 @@ public class FogLab extends ApplicationAdapter
 		input.setAttribute("max", text(max));
 		input.setAttribute("step", text(step));
 		input.setValue(text(value));
+		input.setAttribute("data-key", key);
+		input.setAttribute("data-start", text(value));
 		Element shown = document.createSpanElement();
 		shown.setClassName("value");
 		row.appendChild(text);

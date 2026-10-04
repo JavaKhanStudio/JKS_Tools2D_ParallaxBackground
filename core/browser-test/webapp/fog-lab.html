@@ -12,6 +12,9 @@
 		.row { display: grid; grid-template-columns: 280px 1fr 60px; align-items: center; gap: 8px; }
 		#fog-readout { margin-top: 6px; color: #aaa; }
 		#fog-about { width: 1200px; color: #bbb; line-height: 1.4; }
+		#fog-copy-row { margin-top: 8px; display: flex; gap: 10px; align-items: center; }
+		#fog-copy { font: bold 14px sans-serif; padding: 6px 14px; }
+		#fog-copy-json { width: 1200px; height: 360px; margin-top: 6px; font: 12px monospace; background: #111; color: #ddd; }
 	</style>
 	<!-- FogLab (r204): the shaders round's s01, its mist drawn through FOG with patches of three heights, and plain. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
@@ -22,10 +25,43 @@
 		<div id="fog-labels"></div>
 	</div>
 	<div id="fog-controls"></div>
+	<div id="fog-copy-row"><button id="fog-copy">Copy settings</button><span id="fog-copy-state"></span></div>
+	<textarea id="fog-copy-json" hidden readonly></textarea>
 	<p id="fog-about">FOG thins the mist's opacity by a sum of three sines. Across, they repeat every 1, 1/2 and 1/3 of a
 	wavelength; up and down only every 2, 2 and 1.25 wavelengths, so today's patches (A) are 3 to 4 times taller than
 	wide and read as vertical streaks on any band. B halves the heights: patches about as tall as wide. C is the same
 	with a patch height a page would store (a fourth number, an editor slider). The scroll and every slider act on all
 	four panels at once.</p>
+	<script>
+	// Copy settings (r208): every slider, what it started at, and which ones moved, as JSON Simon pastes into a card.
+	function fogLabSettings() {
+		var settings = {}, changed = {};
+		document.querySelectorAll('#fog-controls input[data-key]').forEach(function (input) {
+			var key = input.dataset.key, value = Number(input.value), start = Number(input.dataset.start);
+			settings[key] = value;
+			if (value !== start) changed[key] = { started: start, now: value };
+		});
+		return JSON.stringify({
+			lab: 'fog-lab', page: 'fog-lab/s01.jplax (the shaders round\'s s01)',
+			panels: 'A ships (patch height 1), B half (0.5), C = patchHeightC, plain',
+			settings: settings,
+			changed: Object.keys(changed).length ? changed : 'nothing: the values the lab opens with'
+		}, null, 2);
+	}
+	document.getElementById('fog-copy').addEventListener('click', async function () {
+		var text = fogLabSettings(), box = document.getElementById('fog-copy-json'), state = document.getElementById('fog-copy-state');
+		box.value = text;
+		box.hidden = false;
+		// The clipboard is refused on some origins: the selected textarea is the answer, the clipboard a convenience.
+		box.focus();
+		box.select();
+		try {
+			await navigator.clipboard.writeText(text);
+			state.textContent = 'copied: paste it on the card';
+		} catch (e) {
+			state.textContent = 'selected: Ctrl+C';
+		}
+	});
+	</script>
 </body>
 </html>
