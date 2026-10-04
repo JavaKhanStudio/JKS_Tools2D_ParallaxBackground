@@ -5,6 +5,8 @@
 #   tools/fog-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/fog-lab.sh --shot F.png    one still, headless (6 s into the scroll)
 #   tools/fog-lab.sh --clip F.mp4    a clip, headless: 12 s at 30 fps, stepped at game speed (window.fogLabAct)
+#   tools/fog-lab.sh --copy F.png    checks "Copy settings", headless: moves C's slider, clicks, fails unless the
+#                                    JSON names every slider and the one moved; F is the page with the JSON shown
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, for --shot and
 # --clip, Python Playwright and ffmpeg.
 # on-screen: with no argument this is the fog lab, a window Simon asked for; --shot and --clip are headless Chrome.
@@ -15,6 +17,7 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 		--shot) MODE=shot; OUT="$(realpath -m "$2")"; shift ;;
 		--clip) MODE=clip; OUT="$(realpath -m "$2")"; shift ;;
+		--copy) MODE=copy; OUT="$(realpath -m "$2")"; shift ;;
 		--no-build) BUILD=0 ;;
 		*) echo "unknown argument: $1" >&2; exit 2 ;;
 	esac
@@ -77,6 +80,19 @@ with sync_playwright() as p:
     if mode == "shot":
         page.evaluate("window.fogLabAct(6)")
         shot(frames + "/still.png")
+    elif mode == "copy":
+        page.context.grant_permissions(["clipboard-read", "clipboard-write"])
+        page.eval_on_selector("input[data-key=patchHeightC]", "e => { e.value = '0.4'; }")
+        page.evaluate("window.fogLabAct(6)")
+        page.click("#fog-copy")
+        page.wait_for_function("document.getElementById('fog-copy-state').textContent !== ''")
+        import json
+        got = json.loads(page.input_value("#fog-copy-json"))
+        keys = {"mistAmplitude", "mistWavelength", "mistSpeed", "patchHeightC", "cameraScroll", "treesWaveRipple"}
+        if set(got["settings"]) != keys or got["changed"] != {"patchHeightC": {"started": 0.25, "now": 0.4}}:
+            sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
+        print("Copy settings: %s; %s" % (page.text_content("#fog-copy-state"), json.dumps(got["settings"])))
+        shot(frames + "/still.png")
     else:
         for i in range(360):
             page.evaluate("window.fogLabAct(%r)" % (0 if i == 0 else 1 / 30))
@@ -85,7 +101,7 @@ with sync_playwright() as p:
         print("page errors: %s" % errors, file=sys.stderr)
     browser.close()
 PY
-if [ $MODE = shot ]; then
+if [ $MODE = shot ] || [ $MODE = copy ]; then
 	cp "$FRAMES/still.png" "$OUT" && echo "still: $OUT"
 else
 	ffmpeg -loglevel error -y -framerate 30 -i "$FRAMES/f%04d.png" -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" \
