@@ -15,6 +15,7 @@ import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Parallax_Heart;
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 
@@ -22,7 +23,8 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * The FOG lab (r204, doubt d15): the shaders round's s01 page, drawn four times by the real reader in WebGL, its mist
  * band's FOG patches as tall as they are wide (A, what ships), half as tall (B), as tall as the slider says (C, a
  * stored patch height), and without FOG. Opened with fog-lab.html: tools/fog-lab.sh. The sliders move
- * the mist's amplitude, wavelength and speed, and the scroll, in every panel at once.
+ * the mist's amplitude, wavelength and speed, and the scroll, in every panel at once, and the ripple of s01's two WAVE
+ * tree layers (r208: Simon read them as "dancing"): their amplitude times the slider, 0.3 to begin with.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.fogLabAct(seconds)} steps every heart at 1/60 s, so that
  * tools/fog-lab.sh --clip records it at game speed however slow the browser draws.
@@ -40,7 +42,11 @@ public class FogLab extends ApplicationAdapter
 	private final float[] heights = { 1, 0.5f, 0.25f, 1 };
 	private final Parallax_Heart[] hearts = new Parallax_Heart[4];
 	private final ParallaxLayer[] mists = new ParallaxLayer[4];
-	private InputElement amplitude, wavelength, speed, height, scroll;
+	/** s01's WAVE layers in every heart, and the amplitude each was saved with. */
+	private final ParallaxLayer[] waves = new ParallaxLayer[8];
+	private final float[] waveAmplitudes = new float[8];
+	private int waveCount;
+	private InputElement amplitude, wavelength, speed, height, scroll, ripple;
 	private Element readout;
 	private boolean clip;
 	private SpriteBatch batch;
@@ -61,6 +67,11 @@ public class FogLab extends ApplicationAdapter
 			for (ParallaxLayer layer : hearts[i].parallaxReader.layers)
 				if ("mist".equals(layer.getName()))
 					mists[i] = layer;
+				else if (layer.getShaderEffect() == Enum_ShaderEffect.WAVE && layer.getKind() == Enum_LayerKind.SHADER)
+				{
+					waves[waveCount] = layer;
+					waveAmplitudes[waveCount++] = layer.getShaderAmplitude();
+				}
 			if (mists[i] == null)
 				throw new IllegalStateException(PAGE + " has no layer named mist");
 		}
@@ -87,6 +98,7 @@ public class FogLab extends ApplicationAdapter
 		speed = slider(document, controls, "speed (world units/s)", 0, 6, 0.1f, s);
 		height = slider(document, controls, "C's patch height (x wavelength)", 0.05f, 1.5f, 0.05f, heights[2]);
 		scroll = slider(document, controls, "camera scroll", 0, 240, 5, 60);
+		ripple = slider(document, controls, "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, 0.3f);
 		readout = document.createDivElement();
 		readout.setId("fog-readout");
 		controls.appendChild(readout);
@@ -128,7 +140,9 @@ public class FogLab extends ApplicationAdapter
 	{
 		float a = read(amplitude), w = read(wavelength), s = read(speed);
 		heights[2] = read(height);
-		float sc = read(scroll);
+		float sc = read(scroll), rp = read(ripple);
+		for (int i = 0; i < waveCount; i++)
+			waves[i].setShaderAmplitude(waveAmplitudes[i] * rp);
 		for (int i = 0; i < hearts.length; i++)
 		{
 			mists[i].setShaderAmplitude(a);
