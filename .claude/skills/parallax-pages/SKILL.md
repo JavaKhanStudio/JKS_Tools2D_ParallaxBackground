@@ -5,9 +5,11 @@ description: Design or improve a parallax background page for the JKS parallax l
 
 # Parallax pages
 
-**Version 1 (r92, after round 1's grades).** Round 1 graded pages placed from rules as "random values": they did not
-start from what each region shows. This version starts from the art. Rules marked *(open)* are still being graded;
-what round 1 backed and dropped, and the layer study behind this version: `docs/parallax-design.md` §3, §5, §6.
+**Version 2 (r128, after round 2's grades).** Version 1 (r92) started from the art instead of rules, and round 2
+backed it: every page written from the art graded at or above Simon's own (three wins, two ties). Round 2 also
+found that deeper speeds grade better than the samples' (step 5), and that shrinking full-frame planes hurts (step 2).
+Rules marked *(open)* are still being graded; the grades and the layer study behind this: `docs/parallax-design.md`
+§3, §5, §6, §7.
 
 ## What a page is
 
@@ -56,10 +58,11 @@ nothing there. README.md's "Snow, rain and smoke" says how wide a `VIEW` effect'
 2. **Say what kind of atlas it is.** It decides the layout:
    - **Full-frame planes** (1920x1080, or 1080-tall panoramas, art already at its height, farther planes' art
      higher up): every layer at its **natural size**, `sizeRatio = aspect x 9/16` (1.0 for 16:9), and decal Y 0.
-     They compose as the painter drew them. Don't rescale or shift them one by one.
+     They compose as the painter drew them. Don't rescale or shift them one by one, nor shrink them: at 0.75 as wide
+     their bottoms show (round 2: 3 against 4).
    - **Pieces on a full-frame canvas** (each piece starts at the bottom of its canvas, like OneNight's grounds):
      stack them like strips, keeping them 0.8 wide or more.
-   - **Strips** (5:1 and wider): stack them. The front strip at the bottom (decal Y 0 or below), each farther strip
+   - **Strips** (5:1 and wider): stack them; their width is free (round 2: 0.7 as wide graded the same). The front strip at the bottom (decal Y 0 or below), each farther strip
      higher, with its bottom edge under the **solid** band of the one in front. Height of a layer in world units =
      `40 x sizeRatio / aspect`; screen = 40 x 22.5.
 3. **Hide every cut edge.** Bottom edges under a nearer layer's solid band or below the screen. A region whose art
@@ -71,9 +74,11 @@ nothing there. README.md's "Snow, rain and smoke" says how wide a `VIEW` effect'
 5. **Speeds from the art.** Speed is proportional to 1/distance, and so is the size the painter drew things at: a
    tree drawn half as big is twice as far and moves half as fast. Set the front layer (0.07-0.1), then each layer
    `front / (how many times smaller its things are)`. Sky and far mountains, with nothing to compare: 1/10 to 1/20
-   of the front. With no size to read, a constant ratio x1.25-x1.4 a layer *(open: round 2 brackets x1.15/x1.6)*.
-   Speeds must strictly increase toward the front, and the front/back span stay between ~3x and ~15x (both backed
-   by round 1). Speed Y ~0.6 x speed X *(open)*.
+   of the front. With no size to read, a constant ratio x1.5-x1.6 a layer: round 2 graded x1.15, x1.33 and x1.6 at 2,
+   3 and 4 (the samples' x1.25-x1.33 is the low end; x2.0 is *open*). Speeds must strictly increase toward the front.
+   The span (front / back) must reach ~3x (under it: 2, twice); **err deep**: 41x on calm was round 2's only 5, and
+   12x and 4.5x scored 4. Its top depends on the page (45x scored 2 on Simon's scattered PurpleFairy in round 1):
+   round 3 brackets it, lint warns past 45x. Speed Y ~0.6 x speed X *(open)*.
 6. **Gradients cover, in the art's colours.** Set them to what they must blend with: the sky behind the farthest
    layer, the ground under the nearest one (Hiver's snow is the bottom gradient in the hills' `e0e8dd`). A layer
    with translucent parts shows the gradient boundary through it: use one gradient for the whole screen
