@@ -35,7 +35,8 @@
 	ripple); the mist's layer slider moves the mist in front of more layers. Depth haze mixes every layer behind the
 	mist toward its white, more for each layer further back (1 - (1 - haze)^layers), in A to C; the plain panel has
 	neither. The FOG itself only thins the mist picture, a band across the middle: without haze, nothing above or below
-	it is fogged.</p>
+	it is fogged: the mist's size and up/down sliders grow and move that band. The parallax set slider puts the same mist
+	into other pages (round1's calm, PurpleFairy and OneNight); every other slider acts on whichever set is shown.</p>
 	<script>
 	// Copy settings (r208): every slider, what it started at, and which ones moved, as JSON Simon pastes into a card.
 	function fogLabSettings() {
@@ -46,7 +47,7 @@
 			if (value !== start) changed[key] = { started: start, now: value };
 		});
 		return JSON.stringify({
-			lab: 'fog-lab', page: 'fog-lab/s01.jplax (the shaders round\'s s01)',
+			lab: 'fog-lab', set: document.querySelector('input[data-key=parallaxSet]').nextSibling.textContent,
 			panels: 'A ships (patch height 1), B half (0.5), C = patchHeightC, plain (no FOG, no haze)',
 			settings: settings,
 			changed: Object.keys(changed).length ? changed : 'nothing: the values the lab opens with'
