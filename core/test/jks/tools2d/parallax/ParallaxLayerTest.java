@@ -99,6 +99,7 @@ class ParallaxLayerTest
 	void aShaderLayerClonesAsAShaderLayer()
 	{
 		ParallaxLayer layer = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 0.4f, 6, -2);
+		layer.setShaderHaze(0.25f);
 		layer.setCurrentDistanceX(7);
 
 		ParallaxLayer copy = layer.clone();
@@ -111,6 +112,7 @@ class ParallaxLayerTest
 		assertEquals(0.4f, copy.getShaderAmplitude());
 		assertEquals(6, copy.getShaderWavelength());
 		assertEquals(-2, copy.getShaderSpeed());
+		assertEquals(0.25f, copy.getShaderHaze());
 		assertEquals(7, copy.getCurrentDistanceX());
 	}
 

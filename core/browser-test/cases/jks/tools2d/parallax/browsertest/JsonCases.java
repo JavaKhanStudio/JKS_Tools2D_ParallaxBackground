@@ -142,7 +142,7 @@ final class JsonCases
 	{
 		WholePage_Model page = Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"regionName\":\"sky\"},"
 				+ "{\"kind\":\"SHADER\",\"regionName\":\"sea\",\"shaderEffect\":\"FOG\",\"shaderAmplitude\":0.35,"
-				+ "\"shaderWavelength\":6.5,\"shaderSpeed\":-0.7}]}}");
+				+ "\"shaderWavelength\":6.5,\"shaderSpeed\":-0.7,\"shaderHaze\":0.3}]}}");
 
 		Parallax_Model sky = page.pageModel.pageList.get(0);
 		equal(Enum_ShaderEffect.WAVE, sky.shaderEffect, "an image layer reads the default effect");
@@ -154,6 +154,8 @@ final class JsonCases
 		isTrue(Float.floatToIntBits(0.35f) == Float.floatToIntBits(sea.shaderAmplitude), "amplitude " + sea.shaderAmplitude);
 		isTrue(Float.floatToIntBits(6.5f) == Float.floatToIntBits(sea.shaderWavelength), "wavelength " + sea.shaderWavelength);
 		isTrue(Float.floatToIntBits(-0.7f) == Float.floatToIntBits(sea.shaderSpeed), "speed " + sea.shaderSpeed);
+		isTrue(Float.floatToIntBits(0.3f) == Float.floatToIntBits(sea.shaderHaze), "haze " + sea.shaderHaze);
+		equal(0, sky.shaderHaze, 0, "an image layer reads no haze");
 	}
 
 	/** An effect added later must not load as another in an older game. */

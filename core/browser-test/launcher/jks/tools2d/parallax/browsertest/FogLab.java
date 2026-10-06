@@ -30,7 +30,8 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * layers. It opens on the settings Simon sent on r208 ({@link #SIMON}: shape A, a lighter, wider mist, no ripple). Depth haze
  * (r208, Simon: "the thing in the background that the fog completely blocks"): every layer behind the mist mixed toward
  * the mist's white, more the further back it is, in panels A to C; the lab draws the page one layer at a time to do it,
- * the reader is unchanged. Other sets (r208, Simon: "add some other parallax set to test"): round1's calm, PurpleFairy
+ * through the shipped shaders' u_haze (r211 put the haze in the reader, from a FOG layer's shaderHaze: the lab's mists
+ * store none, so the reader adds no haze of its own). Other sets (r208, Simon: "add some other parallax set to test"): round1's calm, PurpleFairy
  * and OneNight pages, s01's mist put into each, picked with a slider; the mist's size and height have sliders too, the
  * mist picture being a band (Simon: "fog seems to still mainly be in the middle"). "Copy settings"
  * (fog-lab.html) puts every slider, and what it started at, on the clipboard as JSON, for Simon to paste into a card.
@@ -60,8 +61,6 @@ public class FogLab extends ApplicationAdapter
 	static final float[] SIMON = { 0.25f, 8.25f, 0.45f, 40, 0 };
 	/** Depth haze to begin with: the share of the mist's white a layer one step behind it takes. */
 	static final float HAZE = 0.25f;
-	/** The haze's color: the mist's white. */
-	static final float FOG_R = 0.93f, FOG_G = 0.95f, FOG_B = 0.97f;
 
 	/** The FOG patch height per panel, in wavelengths; C's comes from its slider, the last panel draws plain. */
 	private final float[] heights = { 1, 0.5f, 0.25f, 1 };
@@ -353,7 +352,6 @@ public class FogLab extends ApplicationAdapter
 			batch.setShader(plainHaze());
 			batch.flush();
 			plainHaze.setUniformf("u_haze", effects.layerHaze);
-			plainHaze.setUniformf("u_fog", FOG_R, FOG_G, FOG_B);
 			layers.clear();
 			layers.add(layer);
 			heart.parallaxReader.draw(heart.worldCamera, batch);
@@ -368,10 +366,7 @@ public class FogLab extends ApplicationAdapter
 	{
 		if (plainHaze != null)
 			return plainHaze;
-		String source = "#ifdef GL_ES\nprecision mediump float;\n#endif\n"
-				+ "varying vec4 v_color;\nvarying vec2 v_texCoords;\nuniform sampler2D u_texture;\n"
-				+ "void main()\n{\n	gl_FragColor = v_color * texture2D(u_texture, v_texCoords);\n}\n";
-		plainHaze = PatchHeightEffects.compile(PatchHeightEffects.hazed(source), "plain");
+		plainHaze = PatchHeightEffects.compile(GdxLayerEffects.fragment(null), "plain");
 		return plainHaze;
 	}
 
@@ -416,7 +411,6 @@ public class FogLab extends ApplicationAdapter
 			if (layer.getShaderEffect() == Enum_ShaderEffect.FOG)
 				program.setUniformf("u_height", heights[panel]);
 			program.setUniformf("u_haze", layerHaze);
-			program.setUniformf("u_fog", FOG_R, FOG_G, FOG_B);
 			return true;
 		}
 
@@ -440,28 +434,20 @@ public class FogLab extends ApplicationAdapter
 			if (!source.contains(SHIPPED))
 				throw new IllegalStateException("GdxLayerEffects' FOG no longer has the line this lab scales: " + SHIPPED);
 			source = source.replace(SHIPPED, SCALED).replace("uniform vec3 u_effect;\n", "uniform vec3 u_effect;\nuniform float u_height;\n");
-			fog = compile(hazed(source), "FOG");
+			fog = compile(source, "FOG");
 			return fog;
 		}
 
 		private ShaderProgram wave()
 		{
 			if (wave == null)
-				wave = compile(hazed(GdxLayerEffects.fragment(Enum_ShaderEffect.WAVE)), "WAVE");
+				wave = compile(GdxLayerEffects.fragment(Enum_ShaderEffect.WAVE), "WAVE");
 			return wave;
 		}
 
 		/** The haze a layer {@code behind} layers behind the mist takes: none in front of it or in the plain panel. */
 		float haze(int behind)
 		{return panel == 3 || behind <= 0 ? 0 : 1 - (float) Math.pow(1 - hazePerLayer, behind);}
-
-		/** A fragment shader whose color is then mixed toward u_fog by u_haze, its alpha kept. */
-		static String hazed(String source)
-		{
-			return source.replace("void main()", "uniform float u_haze;\nuniform vec3 u_fog;\nvec4 fragColor;\nvoid effectMain()")
-					.replace("gl_FragColor", "fragColor")
-					+ "void main()\n{\n	effectMain();\n	gl_FragColor = vec4(mix(fragColor.rgb, u_fog, u_haze), fragColor.a);\n}\n";
-		}
 
 		static ShaderProgram compile(String fragment, String name)
 		{

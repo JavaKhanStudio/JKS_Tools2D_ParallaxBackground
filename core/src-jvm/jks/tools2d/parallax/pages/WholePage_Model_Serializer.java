@@ -25,13 +25,15 @@ import com.esotericsoftware.kryo.io.Output;
  * <li>version 8: the version 7 layout with each layer's sequenceSegments (a count, a varint, then per segment its
  * regionName, regionPosition and weight), sequenceSeed and sequenceLength (ints) stored after shaderSpeed. Older files
  * read no segments, 0 and 16.</li>
+ * <li>version 9: the version 8 layout with each layer's shaderHaze (a float) stored after sequenceLength. Older files
+ * read 0.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 8;
+	static final int CURRENT_VERSION = 9;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

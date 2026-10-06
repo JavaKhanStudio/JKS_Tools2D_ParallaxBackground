@@ -40,6 +40,8 @@ public class ParallaxLayer
 	/** The effect a SHADER layer's image is drawn through, and its numbers: see {@link Enum_ShaderEffect}. */
 	private Enum_ShaderEffect shaderEffect = Enum_ShaderEffect.WAVE;
 	private float shaderAmplitude, shaderWavelength, shaderSpeed;
+	/** A FOG layer's depth haze: see {@link jks.tools2d.parallax.pages.Parallax_Model#shaderHaze}. */
+	private float shaderHaze;
 
 	/** A SEQUENCE layer's segments as the page names them, kept so a page saved from its layers names them again. */
 	private List<Sequence_Segment> segments;
@@ -223,6 +225,7 @@ public class ParallaxLayer
 		shaderAmplitude = model.shaderAmplitude;
 		shaderWavelength = model.shaderWavelength;
 		shaderSpeed = model.shaderSpeed;
+		shaderHaze = model.shaderHaze;
 		if (kind == Enum_LayerKind.SEQUENCE)
 		{
 			List<Sequence_Segment> named = new ArrayList<>(model.sequenceSegments.size());
@@ -342,6 +345,7 @@ public class ParallaxLayer
 		copy.shaderAmplitude = shaderAmplitude;
 		copy.shaderWavelength = shaderWavelength;
 		copy.shaderSpeed = shaderSpeed;
+		copy.shaderHaze = shaderHaze;
 		// The segments and their weights are replaced, never changed: shared. The arrays a game's seed or a resize
 		// rewrites in place are the copy's own.
 		copy.segments = segments;
@@ -674,6 +678,24 @@ public class ParallaxLayer
 
 	public void setShaderSpeed(float shaderSpeed)
 	{this.shaderSpeed = shaderSpeed;}
+
+	/** A FOG layer's depth haze, as stored; {@link #getHazePerLayer} is what the reader draws with. */
+	public float getShaderHaze()
+	{return shaderHaze;}
+
+	public void setShaderHaze(float shaderHaze)
+	{this.shaderHaze = shaderHaze;}
+
+	/**
+	 * The share of the mist's white this layer gives a layer one step behind it, 0 to 1: its haze when it is a SHADER
+	 * layer drawn through FOG, 0 otherwise.
+	 */
+	public float getHazePerLayer()
+	{
+		if (kind != Enum_LayerKind.SHADER || shaderEffect != Enum_ShaderEffect.FOG || !(shaderHaze > 0))
+			return 0;
+		return Math.min(1, shaderHaze);
+	}
 
 	/**
 	 * Where the effect is after {@code seconds} of the reader's clock, in world units: {@code speed * seconds} wrapped

@@ -85,6 +85,10 @@ repair.
   only), `plax_effects.gd`'s `EFFECTS` and that round, strong enough that leaving it out fails
   (`tools/r180-shader-round/strength.sh`). The reader draws them through the engine's `LayerEffects`, never
   `Batch.setShader`, which `JmeBatch` throws on.
+- A FOG layer's depth haze (`shaderHaze`, format 9) ends every one of those shaders in `hazed()`, and draws an IMAGE
+  or SEQUENCE layer behind it through a `PLAIN` one (jME's `Plain` define): the mix and the mist's white are written
+  three times too, and `ParallaxPageReader.hazeOf` twice (Godot's `PlaxEffects.haze_of`). Run both frame checks on
+  `engines/godot/tests/haze`; `tools/r211-haze/strength.sh` proves leaving it out fails there.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
   `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's

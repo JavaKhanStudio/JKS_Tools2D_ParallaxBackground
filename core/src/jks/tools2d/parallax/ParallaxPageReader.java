@@ -24,7 +24,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * An EMPTY layer is drawn by the game: {@link #setLayerHook} registers what draws it, under the layer's name. A
  * PARTICLES layer draws its {@link ParallaxParticles} in its place: once per tile when pinned to the layer, once from
  * the view when anchored to it ({@link Enum_ParticleAnchor}). A SHADER layer's tiles are drawn through its effect, by
- * the {@link LayerEffects} of the engine ({@link #setLayerEffects}), at a phase taken from this reader's clock. A
+ * the {@link LayerEffects} of the engine ({@link #setLayerEffects}), at a phase taken from this reader's clock. A FOG
+ * layer with a depth haze mixes every layer of its page behind it toward the mist's white ({@link #hazeOf}), through
+ * the same effects. A
  * SEQUENCE layer's cycle is the one its page stores the seed of, unless the game passes its own
  * ({@link #setSequenceSeed}).
  */
@@ -164,7 +166,7 @@ public class ParallaxPageReader implements Disposable
 		{
 			if (setBatchColor(batch, 1))
 				for (int i = 0, n = layers.size(); i < n; i++)
-					drawLayer(layers.get(i), batch);
+					drawLayer(layers, i, batch);
 		}
 		else
 		{
@@ -175,9 +177,9 @@ public class ParallaxPageReader implements Disposable
 			for (int slot = 0; slot < total; slot++)
 			{
 				if (slot >= oldOffset && setBatchColor(batch, oldLayerAlpha))
-					drawLayer(layers.get(slot - oldOffset), batch);
+					drawLayer(layers, slot - oldOffset, batch);
 				if (slot >= newOffset && setBatchColor(batch, newLayerAlpha))
-					drawLayer(transferLayers.get(slot - newOffset), batch);
+					drawLayer(transferLayers, slot - newOffset, batch);
 			}
 		}
 
@@ -192,8 +194,28 @@ public class ParallaxPageReader implements Disposable
 		return a > 0;
 	}
 
-	private void drawLayer(ParallaxLayer layer, Batch batch)
+	/**
+	 * How much of the mist's white the layer at {@code index} of {@code page} (back to front) is mixed toward: 1 minus
+	 * the product, over every FOG layer in front of it, of {@code (1 - haze)} once per step between them. One FOG layer
+	 * of haze h, n layers in front: {@code 1 - (1 - h)^n}. 0 for a layer with no hazy FOG in front of it.
+	 */
+	public static float hazeOf(List<ParallaxLayer> page, int index)
 	{
+		// step: the product of (1 - haze) of the FOG layers passed; keep: what is left of the color, one more step back.
+		float keep = 1, step = 1;
+		for (int i = page.size() - 1; i > index; i--)
+		{
+			float haze = page.get(i).getHazePerLayer();
+			if (haze > 0)
+				step *= 1 - haze;
+			keep *= step;
+		}
+		return 1 - keep;
+	}
+
+	private void drawLayer(ArrayList<ParallaxLayer> page, int index, Batch batch)
+	{
+		ParallaxLayer layer = page.get(index);
 		float originX = viewLeft + layer.currentDistanceX;
 		float originY = viewBottom + drawingHeight + layer.currentDistanceY;
 
@@ -232,7 +254,10 @@ public class ParallaxPageReader implements Disposable
 			return;
 		}
 
-		boolean shaded = layer.kind == Enum_LayerKind.SHADER && getLayerEffects().begin(batch, layer, layer.getShaderPhase(effectTime));
+		// The depth haze is drawn on images: an EMPTY or PARTICLES layer behind a FOG layer counts as a step, drawn as is.
+		float haze = hazeOf(page, index);
+		boolean shaded = (layer.kind == Enum_LayerKind.SHADER || haze > 0)
+				&& getLayerEffects().begin(batch, layer, layer.getShaderPhase(effectTime), haze);
 
 		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
 

@@ -1,0 +1,57 @@
+{
+ "round": "haze",
+ "about": "Depth haze (r211, format 9): FOG layers with a shaderHaze mix every layer of their page behind them toward the mist's white (0.93, 0.95, 0.97), 1 - (1 - haze)^n at n layers back, in every repeat mode, through a SEQUENCE layer, two mists stacked, and a cross-fade while tinting. Written by core/test-data/haze/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "scenes": [
+  {
+   "id": "h01",
+   "page": "engines/godot/tests/haze/h01.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "haze-repeat-X",
+   "about": "c01 (repeat X): the mist between the two front layers hazes the five behind it by 0.25 a step (Simon's r208 start), a WAVE among them"
+  },
+  {
+   "id": "h02",
+   "page": "engines/godot/tests/haze/h02.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "haze-repeat-XY-sequence",
+   "about": "c02 (repeat X and Y, padded) with q02's SEQUENCE layer, scrolling up at 30 units/s: a padded mist of haze 0.35 in front of the cycle hazes it and every image behind",
+   "speedY": 30
+  },
+  {
+   "id": "h03",
+   "page": "engines/godot/tests/haze/h03.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "haze-repeat-Y-two-mists",
+   "about": "c03 (repeat Y, mirrored copies), scrolling up at 30 units/s: a mist of 0.2 in front of a FOG hill of 0.15, the layers behind both mixed by the two",
+   "speedY": 30
+  },
+  {
+   "id": "h04",
+   "page": "engines/godot/tests/haze/h04.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "haze-no-repeat",
+   "about": "c05 (no repeat): a mist of 0.3 in front of FOG and WAVE layers, a WAVE with no wavelength hazed all the same"
+  },
+  {
+   "id": "h05",
+   "page": "engines/godot/tests/haze/h01.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "haze-cross-fade-tinted",
+   "about": "h01 cross-fading into itself (its layers cloned) while tinting orange: each page hazes its own layers, faded and tinted, the haze's white untinted",
+   "transfer": {
+    "at": 4,
+    "seconds": 4
+   },
+   "tint": {
+    "at": 4,
+    "seconds": 4,
+    "color": [
+     1.0,
+     0.55,
+     0.3,
+     1.0
+    ]
+   }
+  }
+ ]
+}

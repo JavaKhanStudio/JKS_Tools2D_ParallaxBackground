@@ -72,6 +72,8 @@ final class ReaderCases
 				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ReaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
 				new BrowserCase("reader: aShaderLayerWithoutItsEffectIsDrawnPlain", () -> new ReaderCases().aShaderLayerWithoutItsEffectIsDrawnPlain()),
 				new BrowserCase("reader: shaderNumbersAreTheDrawnImages", () -> new ReaderCases().shaderNumbersAreTheDrawnImages()),
+				new BrowserCase("reader: depthHazeMixesTheLayersBehindAFogLayerMoreTheFurtherBack", () -> new ReaderCases().depthHazeMixesTheLayersBehindAFogLayerMoreTheFurtherBack()),
+				new BrowserCase("reader: noDepthHazeDrawsEveryImageLayerAsBefore", () -> new ReaderCases().noDepthHazeDrawsEveryImageLayerAsBefore()),
 				new BrowserCase("reader: sequenceDrawsJustTheSegmentsInViewInEveryRepeatMode", () -> new ReaderCases().sequenceDrawsJustTheSegmentsInViewInEveryRepeatMode()),
 				new BrowserCase("reader: sequenceWithAPadBackOverASegmentStillDrawsWhatShows", () -> new ReaderCases().sequenceWithAPadBackOverASegmentStillDrawsWhatShows()),
 				new BrowserCase("reader: sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce", () -> new ReaderCases().sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce()),
@@ -704,6 +706,107 @@ final class ReaderCases
 			open = false;
 			runs.get(runs.size() - 1)[1] = draws.size();
 		}
+	}
+
+	/** Stands for an engine's shaders with the depth haze: records each layer begun and the haze it was handed. */
+	private final class HazeEffects implements LayerEffects
+	{
+		final List<ParallaxLayer> layers = new ArrayList<>();
+		final List<Float> hazes = new ArrayList<>();
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+		{throw new AssertionError("the reader calls the begin that takes the haze");}
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze)
+		{
+			layers.add(layer);
+			hazes.add(haze);
+			return true;
+		}
+
+		@Override
+		public void end(Batch batch, ParallaxLayer layer)
+		{}
+
+		/** The haze {@code layer} was begun with; -1 when it was not begun. */
+		float hazeOf(ParallaxLayer layer)
+		{
+			int i = layers.indexOf(layer);
+			return i < 0 ? -1 : hazes.get(i);
+		}
+	}
+
+	/** A FOG layer of {@code haze}, 12 x 6.75 world units in a 40-wide world. */
+	private static ParallaxLayer mist(float haze)
+	{
+		ParallaxLayer layer = ParallaxLayer.shader(region(1920, 1080), 40, 0.3f, Enum_ShaderEffect.FOG, 0.5f, 3, 1);
+		layer.setShaderHaze(haze);
+		return layer;
+	}
+
+	/**
+	 * r211: each layer behind a FOG layer of haze h, n steps back, is drawn through the engine's effects with haze
+	 * 1 - (1 - h)^n; an EMPTY layer counts as a step; the FOG layer and the layers in front of it get none, and are
+	 * begun only when they are SHADER layers. Two FOG layers: the products multiply. A WAVE layer's haze is 0 whatever it
+	 * stores, and a haze above 1 is 1.
+	 */
+	void depthHazeMixesTheLayersBehindAFogLayerMoreTheFurtherBack()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		HazeEffects effects = new HazeEffects();
+		reader.setLayerEffects(effects);
+		ParallaxLayer far = layer(0), slot = ParallaxLayer.empty("slot", 0.3f), near = layer(0), fog = mist(0.25f), front = layer(0);
+		ParallaxLayer wave = shaded(0.5f, 3, 1);
+		wave.setShaderHaze(0.9f);
+		reader.addLayers(list(far, slot, near, wave, fog, front));
+		reader.draw(camera, batch);
+
+		equal(-1, effects.hazeOf(front), 0, "the layer in front of the mist is drawn as is");
+		equal(0, effects.hazeOf(fog), 0, "the mist does not haze itself");
+		equal(0.25f, effects.hazeOf(wave), 1e-6f, "one step behind: h");
+		equal(1 - 0.75f * 0.75f, effects.hazeOf(near), 1e-6f, "two steps: 1 - (1 - h)^2, the WAVE layer's haze is not one");
+		equal(-1, effects.hazeOf(slot), 0, "an EMPTY layer is not hazed");
+		equal(1 - 0.75f * 0.75f * 0.75f * 0.75f, effects.hazeOf(far), 1e-6f, "four steps, the EMPTY layer counted");
+
+		ParallaxPageReader two = reader(true, false);
+		HazeEffects both = new HazeEffects();
+		two.setLayerEffects(both);
+		ParallaxLayer back = layer(0), between = layer(0), thick = mist(3);
+		two.addLayers(list(back, mist(0.5f), between, mist(0.2f), thick));
+		two.draw(camera, batch);
+		equal(1, both.hazeOf(between), 1e-6f, "a haze above 1 is 1");
+		equal(1, ParallaxPageReader.hazeOf(two.layers, 0), 1e-6f, "and every layer behind it");
+
+		List<ParallaxLayer> page = list(layer(0), mist(0.5f), layer(0), mist(0.2f), layer(0));
+		equal(0.2f, ParallaxPageReader.hazeOf(page, 2), 1e-6f, "between them: the front one, one step");
+		equal(1 - 0.8f * 0.8f * 0.8f * 0.5f, ParallaxPageReader.hazeOf(page, 0), 1e-6f, "behind both: (1 - 0.2)^3 (1 - 0.5)^1");
+	}
+
+	/**
+	 * Haze 0, or no FOG layer: the IMAGE layers are never handed to the engine's effects, so they draw as before r211,
+	 * with no shader and no flush; a LayerEffects written before the haze still draws the SHADER layers.
+	 */
+	void noDepthHazeDrawsEveryImageLayerAsBefore()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		HazeEffects effects = new HazeEffects();
+		reader.setLayerEffects(effects);
+		ParallaxLayer back = layer(0), fog = mist(0);
+		reader.addLayers(list(back, fog));
+		reader.draw(camera, batch);
+		equal(-1, effects.hazeOf(back), 0, "haze 0 hands the layer behind to nobody");
+		equal(0, effects.hazeOf(fog), 0, "the FOG layer is drawn through its effect, haze 0");
+
+		ParallaxPageReader old = reader(true, false);
+		RecordingEffects before = new RecordingEffects();
+		old.setLayerEffects(before);
+		old.addLayers(list(layer(0), mist(0.5f)));
+		draws.clear();
+		old.draw(camera, batch);
+		equal(1, before.runs.size(), "a LayerEffects without the haze: the FOG layer only, through its effect");
+		isTrue(before.runs.get(0)[0] > 0, "the hazed layer behind it is drawn, plain");
 	}
 
 	/** A SHADER layer drawing a 1920x1080 region through WAVE, 12 x 6.75 world units in a 40-wide world. */

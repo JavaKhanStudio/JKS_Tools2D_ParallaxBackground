@@ -6,13 +6,15 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.Disposable;
 
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 
 /**
  * The SHADER layers' effects in libGDX: a batch shader per {@link Enum_ShaderEffect}, GLSL ES 1.0, so WebGL in a
  * browser game too. Compiled the first time a layer needs it; a shader that does not compile is said once in the log,
  * and its layers are drawn without it. Setting the shader flushes the batch: a SHADER layer costs a flush before and
- * after its tiles.
+ * after its tiles, and so does an IMAGE or SEQUENCE layer behind a FOG layer's depth haze, drawn through
+ * {@link #PLAIN}.
  * <p>
  * Each effect works on the image's own coordinates, taken from the texture coordinates: x and y in world units from the
  * image's bottom-left, as it is drawn. engines/godot/addons/jks_parallax/plax_effects.gd and engines/jme's
@@ -36,9 +38,14 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "	gl_Position = u_projTrans * " + ShaderProgram.POSITION_ATTRIBUTE + ";\n"
 			+ "}\n";
 
+	/** The mist's white, which the depth haze mixes a layer's color toward. */
+	public static final float HAZE_R = 0.93f, HAZE_G = 0.95f, HAZE_B = 0.97f;
+
 	/**
 	 * u_region: the region's u, v, u2, v2 (v at the image's top). u_size: the image's width and height in world units.
-	 * u_effect: amplitude, wavelength, phase. local(): where the fragment is in the image, in world units, y up.
+	 * u_effect: amplitude, wavelength, phase. u_haze: the depth haze, 0 to 1. local(): where the fragment is in the
+	 * image, in world units, y up. hazed(): the color mixed toward the mist's white by u_haze, its alpha kept; at 0 the
+	 * color itself.
 	 */
 	private static final String FRAGMENT_HEAD = "#ifdef GL_ES\n"
 			+ "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
@@ -53,7 +60,13 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "uniform vec4 u_region;\n"
 			+ "uniform vec2 u_size;\n"
 			+ "uniform vec3 u_effect;\n"
+			+ "uniform float u_haze;\n"
 			+ "const float TAU = 6.2831853;\n"
+			+ "const vec3 HAZE = vec3(0.93, 0.95, 0.97);\n"
+			+ "vec4 hazed(vec4 color)\n"
+			+ "{\n"
+			+ "	return vec4(mix(color.rgb, HAZE, u_haze), color.a);\n"
+			+ "}\n"
 			+ "vec2 local()\n"
 			+ "{\n"
 			+ "	return vec2((v_texCoords.x - u_region.x) / (u_region.z - u_region.x) * u_size.x,\n"
@@ -66,7 +79,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "{\n"
 			+ "	float shift = u_effect.x * sin(TAU * (local().y - u_effect.z) / u_effect.y);\n"
 			+ "	float u = clamp(v_texCoords.x + shift / u_size.x * (u_region.z - u_region.x), min(u_region.x, u_region.z), max(u_region.x, u_region.z));\n"
-			+ "	gl_FragColor = v_color * texture2D(u_texture, vec2(u, v_texCoords.y));\n"
+			+ "	gl_FragColor = hazed(v_color * texture2D(u_texture, vec2(u, v_texCoords.y)));\n"
 			+ "}\n";
 
 	/**
@@ -82,14 +95,24 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "		+ sin(TAU * (3.0 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;\n"
 			+ "	vec4 color = v_color * texture2D(u_texture, v_texCoords);\n"
 			+ "	color.a *= 1.0 - u_effect.x * n;\n"
-			+ "	gl_FragColor = color;\n"
+			+ "	gl_FragColor = hazed(color);\n"
+			+ "}\n";
+
+	/** No effect: an IMAGE or SEQUENCE layer drawn through the depth haze only. */
+	static final String PLAIN = FRAGMENT_HEAD
+			+ "void main()\n"
+			+ "{\n"
+			+ "	gl_FragColor = hazed(v_color * texture2D(u_texture, v_texCoords));\n"
 			+ "}\n";
 
 	private static final Enum_ShaderEffect[] EFFECTS = Enum_ShaderEffect.values();
+	/** The program of a layer drawn without an effect, after the effects' own. */
+	private static final int PLAIN_INDEX = EFFECTS.length;
 
-	private final ShaderProgram[] programs = new ShaderProgram[EFFECTS.length];
-	private final boolean[] failed = new boolean[EFFECTS.length];
-	private final int[] region = new int[EFFECTS.length], size = new int[EFFECTS.length], effect = new int[EFFECTS.length];
+	private final ShaderProgram[] programs = new ShaderProgram[EFFECTS.length + 1];
+	private final boolean[] failed = new boolean[EFFECTS.length + 1];
+	private final int[] region = new int[EFFECTS.length + 1], size = new int[EFFECTS.length + 1], effect = new int[EFFECTS.length + 1],
+			haze = new int[EFFECTS.length + 1];
 	private ShaderProgram previous;
 	private final float[] numbers = new float[9];
 
@@ -97,9 +120,11 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	public static String vertex()
 	{return VERTEX;}
 
-	/** The fragment shader of an effect, as compiled here. */
+	/** The fragment shader of an effect, as compiled here; null: of a layer drawn without one, through the haze only. */
 	public static String fragment(Enum_ShaderEffect effect)
 	{
+		if (effect == null)
+			return PLAIN;
 		switch (effect)
 		{
 			case FOG:
@@ -112,8 +137,13 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 
 	@Override
 	public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+	{return begin(batch, layer, phase, 0);}
+
+	/** A SHADER layer through its effect, any other through none; both through {@code haze}. */
+	@Override
+	public boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze)
 	{
-		int index = layer.getShaderEffect().ordinal();
+		int index = layer.getKind() == Enum_LayerKind.SHADER ? layer.getShaderEffect().ordinal() : PLAIN_INDEX;
 		ShaderProgram program = program(index);
 		if (program == null)
 			return false;
@@ -127,6 +157,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		program.setUniformf(region[index], numbers[0], numbers[1], numbers[2], numbers[3]);
 		program.setUniformf(size[index], numbers[4], numbers[5]);
 		program.setUniformf(effect[index], numbers[6], numbers[7], numbers[8]);
+		program.setUniformf(this.haze[index], Math.max(0, Math.min(1, haze)));
 		return true;
 	}
 
@@ -166,17 +197,19 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		if (programs[index] != null || failed[index])
 			return programs[index];
 
-		ShaderProgram program = new ShaderProgram(VERTEX, fragment(EFFECTS[index]));
+		boolean plain = index == PLAIN_INDEX;
+		ShaderProgram program = new ShaderProgram(VERTEX, fragment(plain ? null : EFFECTS[index]));
 		if (!program.isCompiled())
 		{
 			failed[index] = true;
-			Gdx.app.error("Parallax", "The " + EFFECTS[index] + " shader does not compile here, its layers are drawn without it: " + program.getLog());
+			Gdx.app.error("Parallax", "The " + (plain ? "depth haze" : EFFECTS[index]) + " shader does not compile here, its layers are drawn without it: " + program.getLog());
 			program.dispose();
 			return null;
 		}
 		region[index] = program.fetchUniformLocation("u_region", false);
 		size[index] = program.fetchUniformLocation("u_size", false);
 		effect[index] = program.fetchUniformLocation("u_effect", false);
+		haze[index] = program.fetchUniformLocation("u_haze", false);
 		programs[index] = program;
 		return program;
 	}

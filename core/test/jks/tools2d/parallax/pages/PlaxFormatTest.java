@@ -141,6 +141,7 @@ class PlaxFormatTest
 		assertEquals(0.6f, fog.shaderAmplitude, "its amplitude");
 		assertEquals(7.5f, fog.shaderWavelength, "its wavelength");
 		assertEquals(-1.25f, fog.shaderSpeed, "its speed");
+		assertEquals(0.25f, fog.shaderHaze, "its depth haze is stored since format 9");
 		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
 		assertEquals(Enum_LayerKind.SEQUENCE, ground.kind, "SEQUENCE is a kind since format 8");
 		assertEquals(3, ground.sequenceSegments.size(), "the segments are stored since format 8");
@@ -167,6 +168,25 @@ class PlaxFormatTest
 		return ground;
 	}
 
+	/** Format 8 has no depth haze: written there, a FOG layer reads haze 0. */
+	@Test
+	void format8FilesStillLoadWithoutHaze() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.add(shaderLayer());
+		original.pageModel.pageList.add(sequenceLayer());
+
+		byte[] written = write(original, 8);
+		assertEquals(8, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
+		assertEquals(0, fog.shaderHaze, "format 8 has no haze");
+		original.pageModel.pageList.get(original.pageModel.pageList.size() - 2).shaderHaze = 0;
+		assertPageEquals(original, reread);
+		assertEquals(24, reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1).sequenceLength);
+	}
+
 	/** Format 7 has no sequence fields: written there, a layer reads no segments, seed 0 and 16 slots. */
 	@Test
 	void format7FilesStillLoadWithoutSequences() throws IOException
@@ -189,6 +209,7 @@ class PlaxFormatTest
 		layer.sequenceSegments.clear();
 		layer.sequenceSeed = 0;
 		layer.sequenceLength = 16;
+		original.pageModel.pageList.get(original.pageModel.pageList.size() - 1).shaderHaze = 0;
 		assertPageEquals(original, reread);
 		assertEquals(Enum_ShaderEffect.FOG, reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1).shaderEffect);
 	}
@@ -204,6 +225,7 @@ class PlaxFormatTest
 		fog.shaderAmplitude = 0.6f;
 		fog.shaderWavelength = 7.5f;
 		fog.shaderSpeed = -1.25f;
+		fog.shaderHaze = 0.25f;
 		fog.sizeRatio = 0.8f;
 		fog.parallaxScalingSpeedX = 0.04f;
 		return fog;
@@ -461,6 +483,7 @@ class PlaxFormatTest
 			}
 			assertEquals(expected.sequenceSeed, actual.sequenceSeed, name);
 			assertEquals(expected.sequenceLength, actual.sequenceLength, name);
+			assertEquals(expected.shaderHaze, actual.shaderHaze, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

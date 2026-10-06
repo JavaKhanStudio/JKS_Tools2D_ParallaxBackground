@@ -49,6 +49,11 @@ public class Parallax_Model
 	public float shaderWavelength;
 	/** How fast a SHADER layer's effect moves, in world units per second. Stored since format 7. */
 	public float shaderSpeed;
+	/**
+	 * A FOG layer's depth haze, 0 to 1: each layer behind it is mixed toward the mist's white by
+	 * {@code 1 - (1 - shaderHaze)^n}, n how many layers behind it that layer is. 0 hazes nothing. Stored since format 9.
+	 */
+	public float shaderHaze;
 
 	/**
 	 * The images a SEQUENCE layer chains, each with its weight; the first one sets the layer's height. Stored since
@@ -168,6 +173,12 @@ public class Parallax_Model
 
 	public void setShaderSpeed(float shaderSpeed)
 	{this.shaderSpeed = shaderSpeed;}
+
+	public float getShaderHaze()
+	{return shaderHaze;}
+
+	public void setShaderHaze(float shaderHaze)
+	{this.shaderHaze = shaderHaze;}
 
 	public List<Sequence_Segment> getSequenceSegments()
 	{return sequenceSegments;}
