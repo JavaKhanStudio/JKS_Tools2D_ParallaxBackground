@@ -30,7 +30,9 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * layers. It opens on the settings Simon sent on r208 ({@link #SIMON}: shape A, a lighter, wider mist, no ripple). Depth haze
  * (r208, Simon: "the thing in the background that the fog completely blocks"): every layer behind the mist mixed toward
  * the mist's white, more the further back it is, in panels A to C; the lab draws the page one layer at a time to do it,
- * the reader is unchanged. "Copy settings"
+ * the reader is unchanged. Other sets (r208, Simon: "add some other parallax set to test"): round1's calm, PurpleFairy
+ * and OneNight pages, s01's mist put into each, picked with a slider; the mist's size and height have sliders too, the
+ * mist picture being a band (Simon: "fog seems to still mainly be in the middle"). "Copy settings"
  * (fog-lab.html) puts every slider, and what it started at, on the clipboard as JSON, for Simon to paste into a card.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.fogLabAct(seconds)} steps every heart at 1/60 s, so that
@@ -39,6 +41,15 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
 public class FogLab extends ApplicationAdapter
 {
 	static final String PAGE = "fog-lab/s01.jplax";
+	/**
+	 * The sets the slider picks from: s01 first, then round1's pages, which get a copy of s01's mist. Each: page, name,
+	 * how many of its layers the mist starts in front of (-1: s01's own), where the mist's middle starts (world units
+	 * up), how far below the panel the frame's bottom is (px: s01 sits high, round1's pages at the bottom).
+	 */
+	static final String[] SET_PAGES = { PAGE, "fog-lab/s02.jplax", "fog-lab/s05.jplax", "fog-lab/s06.jplax" };
+	static final String[] SET_NAMES = { "Hiver (s01)", "calm (round1 s02)", "PurpleFairy (round1 s05)", "OneNight (round1 s06)" };
+	static final int[] SET_MIST_INDEX = { -1, 6, 4, 4 };
+	static final float[] SET_MIST_MIDDLE = { 17.125f, 5.5f, 5.5f, 5.5f };
 	/** The round's world: 40 wide, 16:9, as tools/parallax-lab-shots.sh draws s01. */
 	static final float WORLD_WIDTH = 40, WORLD_HEIGHT = 22.5f;
 	/** Each panel: the round's 16:9 frame, cut below the page (s01 leaves its lower 42% to the white gradient). */
@@ -54,19 +65,24 @@ public class FogLab extends ApplicationAdapter
 
 	/** The FOG patch height per panel, in wavelengths; C's comes from its slider, the last panel draws plain. */
 	private final float[] heights = { 1, 0.5f, 0.25f, 1 };
-	private final Parallax_Heart[] hearts = new Parallax_Heart[4];
-	private final ParallaxLayer[] mists = new ParallaxLayer[4];
+	private final FogSet[] sets = new FogSet[SET_PAGES.length];
+	/** The set drawn, and its hearts and mists: one per panel. */
+	private FogSet set;
+	private Parallax_Heart[] hearts;
+	private ParallaxLayer[] mists;
 	/** s01's WAVE layers in every heart, and the amplitude each was saved with. */
 	private final ParallaxLayer[] waves = new ParallaxLayer[8];
 	private final float[] waveAmplitudes = new float[8];
 	private int waveCount;
-	private InputElement amplitude, wavelength, speed, height, scroll, ripple, order, haze;
+	private InputElement amplitude, wavelength, speed, height, scroll, ripple, order, haze, pick, size, rise;
 	/** Every heart's layers back to front, while the lab hands its reader one at a time. */
 	private final ArrayList<ParallaxLayer> drawn = new ArrayList<>();
 	private final PatchHeightEffects[] effects = new PatchHeightEffects[4];
 	private ShaderProgram plainHaze;
-	/** Where the mist sits in every heart's layers, 0 = at the back: the page's place to begin with. */
-	private int mistIndex, pageMistIndex;
+	/** Where the mist sits in s01's layers, 0 = at the back: the page's place, the slider's start. */
+	private int pageMistIndex;
+	/** s01's mist as saved: its size ratio. */
+	private float mistSizeRatio;
 	private Element readout;
 	private boolean clip;
 	private SpriteBatch batch;
@@ -75,33 +91,73 @@ public class FogLab extends ApplicationAdapter
 	public void create()
 	{
 		clip = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("clip"));
-		for (int i = 0; i < hearts.length; i++)
-		{
-			OrthographicCamera camera = new OrthographicCamera();
-			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
-			if (batch == null)
-				batch = new SpriteBatch();
-			hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
-			hearts[i].setPage(Utils_Page_Json.loadPage(PAGE));
+		batch = new SpriteBatch();
+		for (int i = 0; i < effects.length; i++)
 			effects[i] = new PatchHeightEffects(heights, i);
-			hearts[i].parallaxReader.setLayerEffects(effects[i]);
-			for (ParallaxLayer layer : hearts[i].parallaxReader.layers)
-				if ("mist".equals(layer.getName()))
-					mists[i] = layer;
-				else if (layer.getShaderEffect() == Enum_ShaderEffect.WAVE && layer.getKind() == Enum_LayerKind.SHADER)
-				{
-					waves[waveCount] = layer;
-					waveAmplitudes[waveCount++] = layer.getShaderAmplitude();
-				}
-			if (mists[i] == null)
-				throw new IllegalStateException(PAGE + " has no layer named mist");
-		}
-		pageMistIndex = mistIndex = hearts[0].parallaxReader.layers.indexOf(mists[0]);
-		ParallaxLayer mist = mists[0];
+		for (int k = 0; k < sets.length; k++)
+			sets[k] = new FogSet(k);
+		pageMistIndex = sets[0].mistIndex;
+		mistSizeRatio = sets[0].mists[0].getSizeRatio();
+		show(sets[0]);
 		heights[2] = SIMON[2];
-		buildControls(SIMON[0], SIMON[1], mist.getShaderSpeed());
+		buildControls(SIMON[0], SIMON[1], sets[0].mists[0].getShaderSpeed());
 		if (clip)
 			exportAct(this);
+	}
+
+	/** One set: its page in four hearts, the panels' readers handed the panels' effects, each with a mist. */
+	final class FogSet
+	{
+		final Parallax_Heart[] hearts = new Parallax_Heart[4];
+		final ParallaxLayer[] mists = new ParallaxLayer[4];
+		final int index;
+		int mistIndex;
+		/** What the sliders last put here: the mist moves only when they change. */
+		float size = -1, rise = Float.NaN;
+
+		FogSet(int index)
+		{
+			this.index = index;
+			for (int i = 0; i < hearts.length; i++)
+			{
+				OrthographicCamera camera = new OrthographicCamera();
+				camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
+				hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
+				hearts[i].setPage(Utils_Page_Json.loadPage(SET_PAGES[index]));
+				hearts[i].parallaxReader.setLayerEffects(effects[i]);
+				ArrayList<ParallaxLayer> layers = hearts[i].parallaxReader.layers;
+				if (index == 0)
+				{
+					for (ParallaxLayer layer : layers)
+						if ("mist".equals(layer.getName()))
+							mists[i] = layer;
+						else if (layer.getShaderEffect() == Enum_ShaderEffect.WAVE && layer.getKind() == Enum_LayerKind.SHADER)
+						{
+							waves[waveCount] = layer;
+							waveAmplitudes[waveCount++] = layer.getShaderAmplitude();
+						}
+					if (mists[i] == null)
+						throw new IllegalStateException(PAGE + " has no layer named mist");
+				}
+				else
+				{
+					mists[i] = sets[0].mists[i].clone();
+					layers.add(Math.min(SET_MIST_INDEX[index], layers.size()), mists[i]);
+				}
+			}
+			mistIndex = hearts[0].parallaxReader.layers.indexOf(mists[0]);
+		}
+
+		/** The frame's bottom below the panel's, in px: s01's page sits in the upper world, round1's at the bottom. */
+		int frameDrop()
+		{return index == 0 ? FRAME_HEIGHT - PANEL_HEIGHT : 0;}
+	}
+
+	private void show(FogSet next)
+	{
+		set = next;
+		hearts = next.hearts;
+		mists = next.mists;
 	}
 
 	private void buildControls(float a, float w, float s)
@@ -123,8 +179,11 @@ public class FogLab extends ApplicationAdapter
 		scroll = slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SIMON[3]);
 		ripple = slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, SIMON[4]);
 		int last = hearts[0].parallaxReader.layers.size() - 1;
-		order = slider(document, controls, "mistLayer", "mist's layer (0 = back, " + last + " = front; page: " + pageMistIndex + ")", 0, last, 1, pageMistIndex);
+		order = slider(document, controls, "mistLayer", "mist's layer (0 = back, front = the set's last)", 0, last, 1, pageMistIndex);
 		haze = slider(document, controls, "depthHaze", "depth haze (white per layer behind the mist)", 0, 0.6f, 0.05f, HAZE);
+		pick = slider(document, controls, "parallaxSet", "parallax set", 0, sets.length - 1, 1, 0);
+		size = slider(document, controls, "mistSize", "mist's size (x s01's: wider and taller)", 0.5f, 3, 0.05f, 1);
+		rise = slider(document, controls, "mistRise", "mist up/down (world units from the set's place)", -12, 12, 0.25f, 0);
 		readout = document.createDivElement();
 		readout.setId("fog-readout");
 		controls.appendChild(readout);
@@ -170,15 +229,37 @@ public class FogLab extends ApplicationAdapter
 		float a = read(amplitude), w = read(wavelength), s = read(speed);
 		heights[2] = read(height);
 		float sc = read(scroll), rp = read(ripple);
-		int index = Math.round(read(order));
-		if (index != mistIndex)
+		FogSet next = sets[Math.round(read(pick))];
+		((Element) pick.getNextSibling()).setInnerText(SET_NAMES[next.index]);
+		if (next != set)
+		{
+			show(next);
+			// The layer slider follows the set: its range, and where this set's mist is.
+			order.setAttribute("max", String.valueOf(next.hearts[0].parallaxReader.layers.size() - 1));
+			order.setValue(String.valueOf(next.mistIndex));
+		}
+		int last = hearts[0].parallaxReader.layers.size() - 1;
+		int index = Math.min(Math.round(read(order)), last);
+		if (index != set.mistIndex)
 		{
 			for (int i = 0; i < hearts.length; i++)
 			{
 				hearts[i].parallaxReader.layers.remove(mists[i]);
 				hearts[i].parallaxReader.layers.add(index, mists[i]);
 			}
-			mistIndex = index;
+			set.mistIndex = index;
+		}
+		float k0 = read(size), up = read(rise);
+		if (k0 != set.size || up != set.rise)
+		{
+			// Grown about its middle: the band stays where it was, taller and wider.
+			for (ParallaxLayer mist : mists)
+			{
+				mist.setSizeRatio(mistSizeRatio * k0);
+				mist.setCurrentDistanceY(SET_MIST_MIDDLE[set.index] + up - mist.getHeight() / 2);
+			}
+			set.size = k0;
+			set.rise = up;
 		}
 		for (int i = 0; i < waveCount; i++)
 			waves[i].setShaderAmplitude(waveAmplitudes[i] * rp);
@@ -193,9 +274,9 @@ public class FogLab extends ApplicationAdapter
 			hearts[i].screenSpeedConstantX = sc;
 		}
 		float band = mists[0].getHeight() * mists[0].getPackedHeightRatio();
-		readout.setInnerText("mist band: " + Math.round(band * 10) / 10f + " world units tall = "
+		readout.setInnerText(SET_NAMES[set.index] + ": mist band " + Math.round(band * 10) / 10f + " world units tall = "
 				+ Math.round(band / w * 100) / 100f + " wavelengths; world " + Math.round(hearts[0].getWorldWidth()) + " wide; mist in front of "
-				+ mistIndex + " of " + (hearts[0].parallaxReader.layers.size() - 1) + " layers");
+				+ set.mistIndex + " of " + last + " layers");
 	}
 
 	/** Steps every heart by {@code seconds}, at 1/60 s: the clip's clock. */
@@ -207,9 +288,19 @@ public class FogLab extends ApplicationAdapter
 				heart.act(1 / 60f);
 	}
 
+	/** Shows set {@code index}, as its slider does: tools/fog-lab.sh --sets. */
+	void pick(int index)
+	{
+		pick.setValue(String.valueOf(index));
+		applyControls();
+	}
+
 	private static native void exportAct(FogLab lab) /*-{
 		$wnd.fogLabAct = $entry(function(seconds) {
 			lab.@jks.tools2d.parallax.browsertest.FogLab::act(F)(seconds);
+		});
+		$wnd.fogLabPick = $entry(function(index) {
+			lab.@jks.tools2d.parallax.browsertest.FogLab::pick(I)(index);
 		});
 		$wnd.fogLabReady = true;
 	}-*/;
@@ -234,7 +325,7 @@ public class FogLab extends ApplicationAdapter
 			// A, B on top; C, no FOG below; a 4 px gap. GL's y goes up: a panel's top is its frame's top.
 			int x = (i % 2) * (FRAME_WIDTH + 4), top = i < 2 ? height : height - PANEL_HEIGHT - 4;
 			Gdx.gl.glScissor(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
-			Gdx.gl.glViewport(x, top - FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+			Gdx.gl.glViewport(x, top - PANEL_HEIGHT - set.frameDrop(), FRAME_WIDTH, FRAME_HEIGHT);
 			renderHazed(hearts[i], effects[i]);
 		}
 		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
@@ -258,7 +349,7 @@ public class FogLab extends ApplicationAdapter
 		for (int j = 0; j < drawn.size(); j++)
 		{
 			ParallaxLayer layer = drawn.get(j);
-			effects.layerHaze = effects.haze(mistIndex - j);
+			effects.layerHaze = effects.haze(set.mistIndex - j);
 			batch.setShader(plainHaze());
 			batch.flush();
 			plainHaze.setUniformf("u_haze", effects.layerHaze);
