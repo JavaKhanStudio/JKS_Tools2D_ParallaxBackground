@@ -112,6 +112,15 @@ numbers; `FOG` is a sum of three sines, not a hash, so every GPU computes the sa
 both effects in WebGL and checks `FOG`'s pixels against its formula. On a still page two `WAVE` and one `FOG` layer
 took a frame from 0.70 to 0.90 ms, a flush each (`tools/r180-shader-round/stress.sh`).
 
+Depth haze, r211 (format 9, Simon on r208): a `FOG` layer's `shaderHaze` mixes every layer of its page behind it
+toward the mist's white by `1 − (1 − haze)^n`, n layers back. `ParallaxPageReader.hazeOf` reckons it each frame from
+the layers in front (no allocation), and the reader hands it to `LayerEffects.begin(batch, layer, phase, haze)`: every
+effect shader ends in `hazed()`, and an `IMAGE` or `SEQUENCE` layer behind a haze goes through a `PLAIN` one (jME's
+`Plain` define, Godot's `"PLAIN"` material). A `LayerEffects` written before r211 keeps only the three-number `begin`,
+and draws no haze. `engines/godot/tests/haze` (written by `core/test-data/haze/make_round.py`) compares Godot and jME
+with libGDX in every repeat mode, through a `SEQUENCE` layer, two mists and a cross-fade (0.35 and 0.41 / 255);
+leaving the haze out moves its stills by 4.7 to 33 / 255 (`tools/r211-haze/strength.sh`), and fails both checks.
+
 ## Saying what an engine cannot draw
 
 `core/src` gets a table, `EffectSupport`: for each kind and each effect, whether libGDX, the browser, Godot and jME

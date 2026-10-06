@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # jme-parallax-shots.sh [ROUND_DIR...] — the jMonkeyEngine reader (engines/jme) against the libGDX runtime, frame by frame (r112).
 #
-#   tools/jme-parallax-shots.sh                          engines/godot/tests/round1, /conformance, /transfer, /effects, /shaders and /sequence
+#   tools/jme-parallax-shots.sh                          engines/godot/tests/round1, /conformance, /transfer, /effects, /shaders, /sequence and /haze
 #   tools/jme-parallax-shots.sh engines/godot/tests/round1
 #
 # The same rounds and stills as tools/godot-parallax-shots.sh: libGDX's (tools/parallax-lab-shots.sh, 0, 6 and 12 s into
@@ -16,7 +16,7 @@ ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/godot/tests/round1 engines/godot/tests/conformance engines/godot/tests/transfer engines/godot/tests/effects engines/godot/tests/shaders engines/godot/tests/sequence)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/godot/tests/round1 engines/godot/tests/conformance engines/godot/tests/transfer engines/godot/tests/effects engines/godot/tests/shaders engines/godot/tests/sequence engines/godot/tests/haze)
 ./gradlew -q :jme:shotsClasspath || exit 1
 CP="$(cat engines/jme/build/shots.classpath)"
 status=0

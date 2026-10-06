@@ -121,6 +121,7 @@ public final class Utils_Page_Json
 		layer.shaderAmplitude = readFloat(json, "shaderAmplitude", layer.shaderAmplitude);
 		layer.shaderWavelength = readFloat(json, "shaderWavelength", layer.shaderWavelength);
 		layer.shaderSpeed = readFloat(json, "shaderSpeed", layer.shaderSpeed);
+		layer.shaderHaze = readFloat(json, "shaderHaze", layer.shaderHaze);
 		JsonValue segments = json.get("sequenceSegments");
 		if (segments != null && segments.isArray())
 			for (JsonValue segment = segments.child; segment != null; segment = segment.next)

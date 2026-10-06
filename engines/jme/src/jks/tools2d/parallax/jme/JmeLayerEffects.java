@@ -13,12 +13,14 @@ import com.jme3.math.Vector4f;
 import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 
 /**
  * The SHADER layers' effects in jME: a ParallaxEffect material per layer (its numbers change every frame), which
  * {@link JmeBatch} draws the layer's run with. The numbers are {@link GdxLayerEffects#uniforms}, the shader
- * ParallaxEffect.frag: libGDX's, line for line. {@link PlaxBackground} sets it on its reader.
+ * ParallaxEffect.frag: libGDX's, line for line. An IMAGE or SEQUENCE layer behind a FOG layer's depth haze gets one too,
+ * with no effect (Plain). {@link PlaxBackground} sets it on its reader.
  */
 public class JmeLayerEffects implements LayerEffects
 {
@@ -28,6 +30,7 @@ public class JmeLayerEffects implements LayerEffects
 	private static final class Shaded
 	{
 		final Material material;
+		/** The effect, null for a layer drawn through the haze only. */
 		final Enum_ShaderEffect kind;
 		final Vector4f region = new Vector4f();
 		final Vector2f size = new Vector2f();
@@ -50,16 +53,22 @@ public class JmeLayerEffects implements LayerEffects
 
 	@Override
 	public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+	{return begin(batch, layer, phase, 0);}
+
+	@Override
+	public boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze)
 	{
 		if (!(batch instanceof JmeBatch))
 			return false;
+		Enum_ShaderEffect kind = layer.getKind() == Enum_LayerKind.SHADER ? layer.getShaderEffect() : null;
 		Shaded s = shaded.get(layer);
-		if (s == null || s.kind != layer.getShaderEffect())
+		if (s == null || s.kind != kind)
 		{
 			Material material = new Material(assets, MATERIAL);
-			material.setBoolean("Fog", layer.getShaderEffect() == Enum_ShaderEffect.FOG);
+			material.setBoolean("Fog", kind == Enum_ShaderEffect.FOG);
+			material.setBoolean("Plain", kind == null);
 			JmeBatch.renderAsRuns(material);
-			s = new Shaded(material, layer.getShaderEffect());
+			s = new Shaded(material, kind);
 			shaded.put(layer, s);
 		}
 		GdxLayerEffects.uniforms(layer, phase, numbers);
@@ -69,6 +78,7 @@ public class JmeLayerEffects implements LayerEffects
 		s.material.setVector4("Region", s.region);
 		s.material.setVector2("Size", s.size);
 		s.material.setVector3("Effect", s.effect);
+		s.material.setFloat("Haze", Math.max(0, Math.min(1, haze)));
 		((JmeBatch) batch).setEffect(s.material);
 		return true;
 	}

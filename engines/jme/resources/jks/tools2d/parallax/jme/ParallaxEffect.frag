@@ -7,11 +7,19 @@ uniform sampler2D m_ColorMap;
 uniform vec4 m_Region;
 uniform vec2 m_Size;
 uniform vec3 m_Effect;
+uniform float m_Haze;
 
 varying vec2 texCoord;
 varying vec4 vertColor;
 
 const float TAU = 6.2831853;
+const vec3 HAZE = vec3(0.93, 0.95, 0.97);
+
+// The color mixed toward the mist's white by the depth haze, its alpha kept; at 0 the color itself.
+vec4 hazed(vec4 color)
+{
+    return vec4(mix(color.rgb, HAZE, m_Haze), color.a);
+}
 
 // Where the fragment is in the image, in world units from its bottom-left.
 vec2 local()
@@ -22,7 +30,10 @@ vec2 local()
 
 void main()
 {
-#ifdef FOG
+#if defined(PLAIN)
+    // No effect: an IMAGE or SEQUENCE layer behind a FOG layer's depth haze.
+    gl_FragColor = hazed(vertColor * texture2D(m_ColorMap, texCoord));
+#elif defined(FOG)
     // FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines.
     vec2 p = (local() + vec2(m_Effect.z, 0.0)) / m_Effect.y;
     float n = (sin(TAU * p.x + 2.0 * sin(0.5 * TAU * p.y))
@@ -30,11 +41,11 @@ void main()
         + sin(TAU * (3.0 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
     vec4 color = vertColor * texture2D(m_ColorMap, texCoord);
     color.a *= 1.0 - m_Effect.x * n;
-    gl_FragColor = color;
+    gl_FragColor = hazed(color);
 #else
     // WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region.
     float shift = m_Effect.x * sin(TAU * (local().y - m_Effect.z) / m_Effect.y);
     float u = clamp(texCoord.x + shift / m_Size.x * (m_Region.z - m_Region.x), min(m_Region.x, m_Region.z), max(m_Region.x, m_Region.z));
-    gl_FragColor = vertColor * texture2D(m_ColorMap, vec2(u, texCoord.y));
+    gl_FragColor = hazed(vertColor * texture2D(m_ColorMap, vec2(u, texCoord.y)));
 #endif
 }

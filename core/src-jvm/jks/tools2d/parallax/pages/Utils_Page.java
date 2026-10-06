@@ -64,6 +64,7 @@ public final class Utils_Page
 		model.shaderAmplitude = page.getShaderAmplitude();
 		model.shaderWavelength = page.getShaderWavelength();
 		model.shaderSpeed = page.getShaderSpeed();
+		model.shaderHaze = page.getShaderHaze();
 		if (page.getSequenceSegments() != null)
 		{
 			for (Sequence_Segment segment : page.getSequenceSegments())

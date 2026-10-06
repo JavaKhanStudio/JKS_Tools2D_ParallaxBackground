@@ -6,7 +6,9 @@ extends RefCounted
 ##
 ## Each effect works on the image's own coordinates, taken from UV: x and y in page units from the image's bottom-left,
 ## as it is drawn. region: the region's u, v, u2, v2 (v at the image's top); size: the drawn image's width and height in
-## page units; effect: amplitude, wavelength, phase. TAU is Godot's own (2 pi).
+## page units; effect: amplitude, wavelength, phase; haze: the depth haze, 0 to 1, which hazed() mixes the color toward
+## the mist's white by, its alpha kept (GdxLayerEffects.HAZE_R/G/B). TAU is Godot's own (2 pi). "PLAIN" is no effect:
+## an IMAGE or SEQUENCE layer behind a FOG layer's depth haze.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
 const EFFECTS := ["WAVE", "FOG"]
@@ -15,6 +17,8 @@ const _HEAD := """shader_type canvas_item;
 uniform vec4 region;
 uniform vec2 size;
 uniform vec3 effect;
+uniform float haze;
+const vec3 HAZE = vec3(0.93, 0.95, 0.97);
 varying vec4 tint;
 void vertex() {
 	tint = COLOR;
@@ -22,13 +26,16 @@ void vertex() {
 vec2 local(vec2 uv) {
 	return vec2((uv.x - region.x) / (region.z - region.x) * size.x, (region.w - uv.y) / (region.w - region.y) * size.y);
 }
+vec4 hazed(vec4 color) {
+	return vec4(mix(color.rgb, HAZE, haze), color.a);
+}
 """
 
 ## WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region.
 const _WAVE := _HEAD + """void fragment() {
 	float shift = effect.x * sin(TAU * (local(UV).y - effect.z) / effect.y);
 	float u = clamp(UV.x + shift / size.x * (region.z - region.x), min(region.x, region.z), max(region.x, region.z));
-	COLOR = tint * texture(TEXTURE, vec2(u, UV.y));
+	COLOR = hazed(tint * texture(TEXTURE, vec2(u, UV.y)));
 }
 """
 
@@ -41,18 +48,24 @@ const _FOG := _HEAD + """void fragment() {
 		+ sin(TAU * (3.0 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
 	vec4 color = tint * texture(TEXTURE, UV);
 	color.a *= 1.0 - effect.x * n;
-	COLOR = color;
+	COLOR = hazed(color);
+}
+"""
+
+## PLAIN: no effect, the depth haze only.
+const _PLAIN := _HEAD + """void fragment() {
+	COLOR = hazed(tint * texture(TEXTURE, UV));
 }
 """
 
 static var _shaders := {}
 
 
-## A material of its own for a SHADER layer's canvas: its numbers change every frame.
+## A material of its own for a SHADER layer's canvas, or "PLAIN" for a hazed one: its numbers change every frame.
 static func material(effect_name: String) -> ShaderMaterial:
 	if not _shaders.has(effect_name):
 		var shader := Shader.new()
-		shader.code = _FOG if effect_name == "FOG" else _WAVE
+		shader.code = _FOG if effect_name == "FOG" else _PLAIN if effect_name == "PLAIN" else _WAVE
 		_shaders[effect_name] = shader
 	var m := ShaderMaterial.new()
 	m.shader = _shaders[effect_name]
@@ -82,3 +95,23 @@ static func apply(m: ShaderMaterial, l: Dictionary, seconds: float) -> void:
 		amplitude = clampf(amplitude, 0, 1)
 	m.set_shader_parameter("effect", Vector3(amplitude if on else 0.0, model.shaderWavelength if on else 1.0,
 			phase(model, seconds) if on else 0.0))
+
+
+## ParallaxLayer.getHazePerLayer: a FOG layer's depth haze, kept within 0..1; 0 for any other layer.
+static func haze_per_layer(model: Dictionary) -> float:
+	if model.kind != "SHADER" or model.shaderEffect != "FOG" or not float(model.shaderHaze) > 0:
+		return 0.0
+	return minf(1.0, model.shaderHaze)
+
+
+## ParallaxPageReader.hazeOf: 1 minus the product, over every FOG layer in front of layer `index` of `page` (back to
+## front, PlaxBackground's layers), of (1 - haze) once per step between them.
+static func haze_of(page: Array[Dictionary], index: int) -> float:
+	var keep := 1.0
+	var step := 1.0
+	for i in range(page.size() - 1, index, -1):
+		var h := haze_per_layer(page[i].model)
+		if h > 0:
+			step *= 1.0 - h
+		keep *= step
+	return 1.0 - keep

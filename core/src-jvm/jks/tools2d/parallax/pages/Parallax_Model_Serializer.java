@@ -69,6 +69,9 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			output.writeInt(model.sequenceSeed);
 			output.writeInt(model.sequenceLength);
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 9)
+			output.writeFloat(model.shaderHaze);
 	}
 
 	@Override
@@ -139,6 +142,9 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			model.sequenceSeed = input.readInt();
 			model.sequenceLength = input.readInt();
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 9)
+			model.shaderHaze = input.readFloat();
 
 		return model;
 	}

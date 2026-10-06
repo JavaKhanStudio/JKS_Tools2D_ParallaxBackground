@@ -66,6 +66,7 @@ public final class PageDump
 			}
 			line(out, at + "sequenceSeed", layer.sequenceSeed);
 			line(out, at + "sequenceLength", layer.sequenceLength);
+			line(out, at + "shaderHaze", layer.shaderHaze);
 		}
 		return out.toString();
 	}
