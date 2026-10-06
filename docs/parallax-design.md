@@ -75,7 +75,7 @@ What the lab cannot show: vertical scroll, cross-fades between pages (the demo d
 
 ## 4. The lab
 
-- `python3 tools/parallax_lab.py round1` (and `round2`) writes `demo/lab/round1`: 18 scenes, shuffled, named `s01`… so neither the
+- `python3 tools/parallax_lab.py round1` (`round2`, `round3`) writes `demo/lab/round1`: 18 scenes, shuffled, named `s01`… so neither the
   order nor the name says which is the control.
 - `./gradlew :demo:lab` shows the latest round, scrolling. **1-5** grades and moves on, **ENTER / BACKSPACE** next /
   previous, **SPACE** pause, **LEFT / RIGHT** scroll by hand, **UP / DOWN** speed, **R** restart, **H** shows what the
