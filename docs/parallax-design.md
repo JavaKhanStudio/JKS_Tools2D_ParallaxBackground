@@ -53,22 +53,23 @@ A 2D background gets its depth from three cues, strongest first:
 
 ## 3. Rules, and what backs them
 
-Status after round 1 (§5): **backed** = the broken variant was graded lower than its control; **not backed** = graded
+Status after rounds 1 (§5) and 2 (§7): **backed** = the broken variant was graded lower than its control; **not backed** = graded
 the same or higher, so it is no longer a rule; **open** = no signal yet. One grader, one pass, one-point differences:
 backed means "not contradicted", not proven.
 
 | # | Rule | Backed by | Round 1 test | Status |
 |---|------|-----------|--------------|--------|
 | R1 | Speeds strictly increase from back to front | physics, occlusion | PurpleFairy-inverted 2, OneNight-shuffled 1 (controls 3) | **backed** |
-| R2 | A constant ratio between neighbours (x1.25-x1.4) | physics; every designed sample | Hiver-linear 1 (control 1) | open: Hiver's control drew broken (§5); round 2 brackets x1.15 / x1.33 / x1.6 |
-| R3 | Front / back speed span between ~3x and ~15x | samples (2-9x) | Calm-compressed 1.8x: 2; PurpleFairy-exaggerated 45x: 2 (controls 3) | **backed** at both ends; round 2 brackets 4.5x and 41x |
+| R2 | A constant ratio between neighbours, x1.4-x1.6 when the art gives no sizes to read | physics; every designed sample | R1: Hiver-linear 1 (control 1). R2: PurpleFairy-art x1.15: 2, x1.33: 3, x1.6: 4 | **backed, steeper**: the grade rose with the ratio; Simon's x1.25-x1.33 is the low end. Round 3 tries x2.0 |
+| R3 | Front / back speed span at least ~3x; the top is the page's, not ~15x | samples (2-9x) | R1: Calm-compressed 1.8x: 2; PurpleFairy-exaggerated 45x: 2. R2: Calm-art 4.5x: 4, 12x: 4, 41x: **5**; PurpleFairy-art 2.3x: 2 | **backed** below 3x. **Not backed** above 15x: 41x on Calm-art was the only 5 of round 2, while 45x on Simon's PurpleFairy scored 2 in round 1. Round 3 brackets the top on both kinds of atlas |
 | R4 | Some parallax at all: layers not at one speed | physics | Calm-flat 2 (control 3); Hiver-flat 1 (control 1) | **backed** (Calm) |
 | R5 | Layer order by haze and contrast, not by region name | aerial perspective | Calm-agent 3 (= Simon's 3) | kept: it is how the art is read (§6), not a taste |
 | R6 | Gradients match the art's light | aerial perspective | Calm-whitesky **4**, OneNight-wrongsky 3 (controls 3) | **not backed**: a white sky behind Calm was graded above Calm's blue. Match the art's colours to hide seams (§6), not as a rule of taste |
-| R7 | A layer at least ~0.8 worlds wide when tiled | hypothesis | OneNight-small 3 (control 3) | **not backed** as a width; what matters is the art's kind (§6). Round 2 re-tests width on pages that fill the screen |
+| R7 | Full-frame planes at their natural size; strips any width | hypothesis, then §6 | R1: OneNight-small 3 (control 3). R2: CalmTree3-art-narrow 3 (art 4); Calm-art-narrow 4 (art 4) | **backed for full-frame planes** (shrunk, their bottoms show); width does not matter for strips |
 | R8 | Stagger starting offsets | samples | PurpleFairy-aligned 3 (control 3) | **not backed**: harmless, no longer a rule |
 | R9 | Each layer's bottom edge hidden by the layer in front or below the screen | layout | (every render) | kept, and extended: every CUT edge (bottom, top, crop) is hidden (§6) |
 | R10 | Speed Y ~0.6 x speed X | samples | not tested: the lab scrolls X only | open |
+| R11 | Start from the art (§6), not from rules or the editor's layout | round 1's "random values" | R2: every *-art page graded at or above Simon's: Hiver 4 / 3, Calm 4 / 3, OneNight 4 / 3, PurpleFairy 3 / 3, CalmTree3 4 / 4 | **backed**: three wins, two ties, no loss |
 
 What the lab cannot show: vertical scroll, cross-fades between pages (the demo does), and a game drawn over the page.
 
@@ -155,3 +156,30 @@ their seam across it.
 
 The pages written this way are `tools/parallax_lab.py` `*_from_art()`; `tools/parallax_lab.py study` writes them in
 order to `demo/lab/study`, and round 2 grades them next to Simon's.
+
+## 7. Round 2 results (r128)
+
+Graded by Simon on 2026-10-06, 1-5, `demo/lab/round2/grades.json` joined with `round.json`:
+
+| Atlas | Simon's page | From the art | Brackets |
+|-------|--------------|--------------|----------|
+| Hiver | 3 | **4** | |
+| calm | 3 | **4** | span 4.5x: 4, 12x (the art page): 4, 41x: **5**; 0.7 as wide: 4 |
+| OneNight | 3 | **4** | |
+| PurpleFairy | 3 | 3 (x1.33) | x1.15 a layer (span 2.3x): 2, x1.6 (span 17x): 4 |
+| calmTree3 | 4 | 4 | 0.75 as wide: 3 |
+
+- **Starting from the art beats or ties every one of Simon's pages** (R11): +1 on Hiver, Calm and OneNight, equal on
+  PurpleFairy and CalmTree3. No page from the art lost.
+- **The grader's scale held where it can be checked**: Calm and OneNight's controls were graded 3 in both rounds.
+  Hiver's control rose from 1 to 3 on the same page: round 1's verdict was about it leaving the lower half white
+  (§5), so that row says less than the other two.
+- **Deeper is better, further than the rules said** (R2, R3): on PurpleFairy the grade climbed with the ratio
+  (2, 3, 4), and on Calm the 41x span was round 2's only 5. Round 1's 45x scored 2 on Simon's PurpleFairy, which
+  scatters its planes (§6): the limit looks like the page's, not a number. Lint now warns only past 45x.
+- **Shallow is what hurts**: 2.3x was the round's only 2.
+- **Width matters only for full-frame planes** (R7): shrinking calmTree3's showed their bottoms (3 against 4);
+  shrinking calm's strips changed nothing.
+- **No page reached 5 without a deep span.** Round 3 (`demo/lab/round3`) writes pages from the skill (version 2) on
+  three atlases no page has been written for, at the new ratios, and brackets the top of the span: x2.0 a layer on
+  PurpleFairy, 100x on Calm.
