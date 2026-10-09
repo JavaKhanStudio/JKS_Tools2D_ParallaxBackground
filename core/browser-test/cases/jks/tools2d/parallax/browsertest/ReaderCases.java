@@ -936,10 +936,11 @@ final class ReaderCases
 		layer.setShaderAmplitude(1.5f);
 		layer.setShaderWavelength(4);
 		float[] numbers = GdxLayerEffects.uniforms(layer, 0.75f, new float[9]);
-		equal(0, numbers[0], 0, "u");
-		equal(0, numbers[1], 0, "v");
-		equal(3403f / 4096, numbers[2], 1e-6f, "u2");
-		equal(580f / 4096, numbers[3], 1e-6f, "v2");
+		// The region drawn: half a texel inside the atlas region (r218).
+		equal(0.5f / 4096, numbers[0], 1e-7f, "u");
+		equal(0.5f / 4096, numbers[1], 1e-7f, "v");
+		equal(3402.5f / 4096, numbers[2], 1e-6f, "u2");
+		equal(579.5f / 4096, numbers[3], 1e-6f, "v2");
 		equal(3403 * unit, numbers[4], 1e-4f, "the packed image's width, not the layer's");
 		equal(580 * unit, numbers[5], 1e-4f, "its height");
 		equal(1, numbers[6], 0, "FOG thins by 100% at most");

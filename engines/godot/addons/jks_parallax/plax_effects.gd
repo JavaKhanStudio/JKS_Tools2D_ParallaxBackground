@@ -81,13 +81,22 @@ static func phase(model: Dictionary, seconds: float) -> float:
 	return p + wavelength if p < 0 else p
 
 
+## What is drawn of an atlas region `r`, in texels: half a texel in on every side, as ParallaxLayer.insetByHalfATexel
+## (r218). A linear sample at a tile's edge then never reads the atlas pixel past it, transparent in an atlas packed
+## without duplicatePadding.
+static func drawn_rect(r: Dictionary) -> Rect2:
+	var rect := Rect2(r.x, r.y, r.width, r.height)
+	return rect.grow(-0.5) if r.width >= 2 and r.height >= 2 else rect
+
+
 ## GdxLayerEffects.uniforms: the numbers of a SHADER layer `l` of PlaxBackground, set on its material.
 static func apply(m: ShaderMaterial, l: Dictionary, seconds: float) -> void:
 	var r: Dictionary = l.region
 	var texture_size: Vector2 = r.texture.get_size()
 	var model: Dictionary = l.model
-	m.set_shader_parameter("region", Vector4(r.x / texture_size.x, r.y / texture_size.y,
-			(r.x + r.width) / texture_size.x, (r.y + r.height) / texture_size.y))
+	var drawn := drawn_rect(r)
+	m.set_shader_parameter("region", Vector4(drawn.position.x / texture_size.x, drawn.position.y / texture_size.y,
+			drawn.end.x / texture_size.x, drawn.end.y / texture_size.y))
 	m.set_shader_parameter("size", Vector2(l.width * l.packed_w, l.height * l.packed_h))
 	var on: bool = model.shaderWavelength > 0
 	var amplitude: float = model.shaderAmplitude

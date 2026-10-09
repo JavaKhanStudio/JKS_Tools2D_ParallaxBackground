@@ -13,6 +13,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -30,7 +31,7 @@ import jks.tools2d.parallax.pages.Utils_Etc2_Atlas;
 /**
  * What only a browser with WebGL can check, so not in BrowserSuite (its cases run on the JVM too, without GL): the SHADER
  * layers' effects compile as GLSL ES 1.0, and FOG draws what its formula says (r180); an atlas asking mipmaps of a
- * non-power-of-two page still draws (r212). Run by BrowserTestApp.
+ * non-power-of-two page still draws (r212); a tiled layer shows no line at its joins (r218). Run by BrowserTestApp.
  */
 final class WebGlCases
 {
@@ -43,7 +44,8 @@ final class WebGlCases
 				new BrowserCase("webgl: effectShadersCompile", WebGlCases::effectShadersCompile),
 				new BrowserCase("webgl: fogThinsAsItsFormulaSays", WebGlCases::fogThinsAsItsFormulaSays),
 				new BrowserCase("webgl: npotMipMapAtlasDrawsThroughLoad", WebGlCases::npotMipMapAtlasDrawsThroughLoad),
-				new BrowserCase("webgl: npotMipMapAtlasDrawsThroughAssetManager", WebGlCases::npotMipMapAtlasDrawsThroughAssetManager));
+				new BrowserCase("webgl: npotMipMapAtlasDrawsThroughAssetManager", WebGlCases::npotMipMapAtlasDrawsThroughAssetManager),
+				new BrowserCase("webgl: tileJoinsDoNotReadPastTheRegion", WebGlCases::tileJoinsDoNotReadPastTheRegion));
 	}
 
 	static void effectShadersCompile()
@@ -191,6 +193,82 @@ final class WebGlCases
 		{
 			batch.dispose();
 			frame.dispose();
+		}
+	}
+
+	/**
+	 * r218: a white 4x4 region with transparent texels on both sides, as in an atlas packed without duplicatePadding,
+	 * tiled on X four times magnified and filtered Linear over black. Sampling at a join used to mix in the transparent
+	 * texel next to the region: a grey column at every join. Every pixel of the strip's middle row must stay white.
+	 */
+	static void tileJoinsDoNotReadPastTheRegion()
+	{
+		Pixmap pixels = new Pixmap(8, 4, Format.RGBA8888);
+		pixels.setColor(0, 0, 0, 0);
+		pixels.fill();
+		pixels.setColor(Color.WHITE);
+		pixels.fillRectangle(2, 0, 4, 4);
+		Texture texture = new Texture(pixels);
+		pixels.dispose();
+		texture.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+		int size = 64;
+		FrameBuffer frame = new FrameBuffer(Format.RGBA8888, size, size, false);
+		SpriteBatch batch = new SpriteBatch();
+		ParallaxPageReader reader = new ParallaxPageReader();
+		try
+		{
+			OrthographicCamera camera = new OrthographicCamera();
+			camera.setToOrtho(false, 40, 40);
+			camera.update();
+			reader.setWorldSize(40, 40);
+			reader.setRepeatOnX(true);
+			List<ParallaxLayer> layers = new ArrayList<>();
+			// 10 units on a 40-unit, 64-pixel view: 16 pixels a tile, 4 per texel; joins at a quarter of a pixel.
+			ParallaxLayer layer = new ParallaxLayer(new TextureRegion(texture, 2, 0, 4, 4), true, 10, 0, 0, 1);
+			layer.setCurrentDistanceX(0.15f);
+			layers.add(layer);
+			reader.addLayers(layers);
+
+			frame.begin();
+			Gdx.gl.glClearColor(0, 0, 0, 1);
+			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+			batch.setProjectionMatrix(camera.combined);
+			batch.begin();
+			reader.draw(camera, batch);
+			batch.end();
+			byte[] frameBytes = ScreenUtils.getFrameBufferPixels(0, 0, size, size, false);
+			frame.end();
+
+			// The strip's rows: those with a white pixel anywhere (a column may be a join).
+			int top = -1, bottom = -1;
+			for (int y = 0; y < size; y++)
+				for (int x = 0; x < size; x++)
+					if ((frameBytes[(y * size + x) * 4] & 0xFF) > 250)
+					{
+						if (top < 0)
+							top = y;
+						bottom = y;
+						break;
+					}
+			isTrue(top >= 0, "the strip was not drawn");
+			int row = (top + bottom) / 2, darkest = 255, at = -1;
+			for (int x = 0; x < size; x++)
+			{
+				int level = frameBytes[(row * size + x) * 4] & 0xFF;
+				if (level < darkest)
+				{
+					darkest = level;
+					at = x;
+				}
+			}
+			isTrue(darkest >= 250, "a join drew " + darkest + "/255 at x " + at + " of row " + row);
+		}
+		finally
+		{
+			reader.dispose();
+			batch.dispose();
+			frame.dispose();
+			texture.dispose();
 		}
 	}
 }
