@@ -284,7 +284,9 @@ def layout(page, atlas_dir):
       (d) regions packed with their whitespace stripped and useOriginalSize off: they are stretched over the layer;
       (e) a layer tiled on X whose left and right edges differ (seam > 20) in the rows on screen: a cut every repeat.
           A SEQUENCE layer without padX is checked at every join its cycle can make: each segment's right edge against
-          each segment's left edge (itself included), segments weighing above 0 only.
+          each segment's left edge (itself included), segments weighing above 0 only. A join is a cut only when it
+          also steps more than the art does between most of its own neighbour columns (3 in 4, in the same rows):
+          hard alpha pixel art steps 27-75 from one column to the next everywhere, and loops as smoothly (r253).
     A layer counts as covering a band only if it spans the screen's width: tiled on X without padding, or 1 world
     wide or more. An EMPTY layer covers nothing: what its hook draws is the game's. A SEQUENCE layer is as high as its
     first segment makes it (docs/sequence-layers.md) and covers a row only as far as its least opaque segment does
@@ -329,9 +331,10 @@ def _measure_layers(page, regions, regions_tool):
         placed.append(p)
         if page.get('repeatOnX', True):
             seam = _seam_on_screen(img, p, regions_tool)
-            if seam > SEAM:
+            limit = _seam_limit([img], p)
+            if seam > limit:
                 problems.append(f"(e) layer {i} ({l['regionName']}#{l['regionPosition']}) is tiled on X but its left"
-                                f" and right edges differ (seam {seam} > {SEAM}): a cut shows every repeat")
+                                f" and right edges differ (seam {seam} > {_said(limit)}): a cut shows every repeat")
     if stripped and not original:
         problems.append(f'(d) layers {stripped} use regions packed with their whitespace stripped, and useOriginalSize'
                         ' is off: each is stretched over its whole layer')
@@ -376,12 +379,14 @@ def _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, strippe
     placed.append(p)
     if not page.get('repeatOnX', True) or l['padX'] > 0:
         return []
+    limits = {a: _seam_limit([img], p) for a, img in images}
     joins = [f'{a}>{b} {seam}' for a, left in images for b, right in images
-             for seam in [_join_on_screen(left, right, p)] if seam > SEAM]
+             for seam in [_join_on_screen(left, right, p)] if seam > max(limits[a], limits[b])]
     if not joins:
         return []
-    return [f"(e) layer {i} ({label(l)}) chains segments whose edges differ (seam > {SEAM}), a cut at each such join:"
-            f" {', '.join(joins)} (left>right seam)"]
+    limit = SEAM if all(v == SEAM for v in limits.values()) else f"{SEAM} and its segments' own step between columns"
+    return [f"(e) layer {i} ({label(l)}) chains segments whose edges differ (seam > {limit}), a cut at each such"
+            f" join: {', '.join(joins)} (left>right seam)"]
 
 
 def _resampled(rows, k, n):
@@ -423,6 +428,42 @@ def _place(page, i, l, img):
     bottom = l['decal_Y_Ratio'] * SCREEN_H / 100
     spans = page.get('repeatOnX', True) and l['padX'] <= 0 or width >= SCREEN_W
     return Placed(i, l, rows, bottom, width * img.height / img.width, spans, cut_top)
+
+
+def _rows_on_screen(img, p):
+    """The rows of img, the layer p draws, that are on screen; None when none is."""
+    low, high = max(0.0, -p.bottom / p.height), min(1.0, (SCREEN_H - p.bottom) / p.height)
+    rows = img.crop((0, round((1 - high) * img.height), img.width, round((1 - low) * img.height)))
+    return rows if high > low and rows.height else None
+
+
+def _column_steps(img):
+    """The mean difference (0-255) between neighbour columns of img, as parallax_regions.measure takes the seam between
+    its edges, at up to 256 places across it."""
+    w, h = img.size
+    px = img.load()
+    rows = range(0, h, max(1, h // 200))
+    xs = range(w - 1) if w <= 257 else sorted({round(k * (w - 2) / 255) for k in range(256)})
+    steps = []
+    for x in xs:
+        edge = [max(abs(a[c] - b[c]) for c in range(4)) for y in rows for a, b in [(px[x, y], px[x + 1, y])]
+                if a[3] > 16 or b[3] > 16]
+        if edge:
+            steps.append(sum(edge) / len(edge))
+    return steps
+
+
+def _seam_limit(images, p):
+    """How far a join of these images may step before it is a cut: SEAM, or more where the art itself steps more
+    between its neighbour columns: as much as 3 in 4 of them do, in the rows on screen (r253). Not their median: a
+    pixel-art strip's own joins step past it 1 time in 2, and one of them rolled to the edge is no cut."""
+    steps = sorted(s for img in images for rows in [_rows_on_screen(img, p)] if rows for s in _column_steps(rows))
+    return max(SEAM, round(steps[int(0.75 * len(steps))])) if steps else SEAM
+
+
+def _said(limit):
+    """The limit a seam was held to, as the fault says it."""
+    return str(limit) if limit == SEAM else f"{limit}, the art's own step between columns"
 
 
 def _seam_on_screen(img, p, regions_tool):
