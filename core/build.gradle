@@ -113,7 +113,7 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     // the other sets it puts the mist into (r208) are round1's s02, s05 and s06, with their atlases.
     def fogSets = ['s02', 's05', 's06'].collect { file("../engines/godot/tests/round1/${it}.jplax") }
     def fogAtlases = ['samples/transfer/calm', 'samples/Demos/PurpleFairy', 'samples/Demos/OneNight']
-    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png'; fogAtlases.each { include "${it}.*" } },
+    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'particles/**'; fogAtlases.each { include "${it}.*" } },
             file('../engines/godot/tests/shaders/s01.jplax'), fogSets)
     doLast {
         def assets = browserTestAssets.get().asFile
@@ -132,6 +132,15 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
             into assets
             filter { it.startsWith('filter: ') ? 'filter: Linear,Linear' : it }
         }
+        // The haze lab's (r215, HazeLab): core/test-data/haze/make_lab.py's page and atlas, its images beside it, and
+        // the snow's effect, which the page finds in the atlas's folder.
+        project.copy { from 'test-data/particles/snowflake.png', 'test-data/particles/snow-wide.p'; into assets }
+        project.copy {
+            from 'test-data/haze/HiverHazeLab.atlas'
+            into assets
+            filter { it.startsWith('../') && it.endsWith('.png') ? it.substring(it.lastIndexOf('/') + 1) : it }
+        }
+        project.copy { from 'test-data/haze/lab.jplax'; into new File(assets, 'haze-lab') }
     }
 }
 tasks.register('browserTestWar', JavaExec) {
