@@ -23,7 +23,9 @@ status=0
 for ROUND in "${ROUNDS[@]}"; do
 	OUT=$(shots_out "$ROOT/build/jme" "$ROUND"); mkdir -p "$OUT/jme"
 	tools/parallax-lab-shots.sh "$ROUND" "$OUT/gdx" >/dev/null || { echo "libGDX shots failed: $OUT/gdx/lab.log"; exit 1; }
-	RUN="env -u WAYLAND_DISPLAY java -Dparallax.jme.break=${BREAK:-} -cp \"$CP\" jks.tools2d.parallax.jme.JmeParallaxShots \"$ROUND\" \"$OUT/jme\" >\"$OUT/jme.log\" 2>&1"
+	# X11, cage's nested one: with no WAYLAND_DISPLAY, GLFW 3.4 tries the default wayland-0 first, Simon's desktop, not
+	# cage (r234). XDG_SESSION_TYPE=x11 makes it pick X11 without trying. tools/agent-screen-check.sh holds it.
+	RUN="env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 java -Dparallax.jme.break=${BREAK:-} -cp \"$CP\" jks.tools2d.parallax.jme.JmeParallaxShots \"$ROUND\" \"$OUT/jme\" >\"$OUT/jme.log\" 2>&1"
 	if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
 		timeout 300 bash -c "$RUN"
 	else

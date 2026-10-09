@@ -17,7 +17,9 @@ case "$ENGINE" in
 		RUN="$GODOT --path \"$ROOT/engines/godot\" --resolution 1280x720 res://tests/demo_keys.tscn -- \"$OUT/godot-keys.png\" >\"$OUT/godot-keys.log\" 2>&1" ;;
 	jme)
 		./gradlew -q :jme:shotsClasspath
-		RUN="env -u WAYLAND_DISPLAY java -Dparallax.jme.demoShot=\"$OUT/jme-keys.png\" -cp \"$(cat engines/jme/build/shots.classpath)\" jks.tools2d.parallax.jme.JmeParallaxDemo >\"$OUT/jme-keys.log\" 2>&1" ;;
+		# X11, cage's nested one: with no WAYLAND_DISPLAY, GLFW 3.4 tries the default wayland-0 first, Simon's desktop, not
+		# cage (r234). XDG_SESSION_TYPE=x11 makes it pick X11 without trying. tools/agent-screen-check.sh holds it.
+		RUN="env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 java -Dparallax.jme.demoShot=\"$OUT/jme-keys.png\" -cp \"$(cat engines/jme/build/shots.classpath)\" jks.tools2d.parallax.jme.JmeParallaxDemo >\"$OUT/jme-keys.log\" 2>&1" ;;
 	*)
 		echo "usage: tools/start-demo-check.sh [godot|jme]" >&2
 		exit 2 ;;
