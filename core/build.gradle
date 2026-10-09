@@ -132,6 +132,8 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
             into assets
             filter { it.startsWith('filter: ') ? 'filter: Linear,Linear' : it }
         }
+        // calm's atlas as it ships, mipmaps asked of its 5020x5160 page: WebGlCases loads it as a game would (r212).
+        project.copy { from 'test-data/samples/transfer/calm.atlas'; into assets; rename { 'calm-mipmap.atlas' } }
         // The haze lab's (r215, HazeLab): core/test-data/haze/make_lab.py's page and atlas, its images beside it, and
         // the snow's effect, which the page finds in the atlas's folder.
         project.copy { from 'test-data/particles/snowflake.png', 'test-data/particles/snow-wide.p'; into assets }
