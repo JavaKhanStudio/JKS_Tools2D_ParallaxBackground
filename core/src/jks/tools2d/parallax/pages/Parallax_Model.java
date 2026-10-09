@@ -50,8 +50,8 @@ public class Parallax_Model
 	/** How fast a SHADER layer's effect moves, in world units per second. Stored since format 7. */
 	public float shaderSpeed;
 	/**
-	 * A FOG layer's depth haze, 0 to 1: each layer behind it is mixed toward the mist's white by
-	 * {@code 1 - (1 - shaderHaze)^n}, n how many layers behind it that layer is. 0 hazes nothing. Stored since format 9.
+	 * A FOG layer's depth haze, 0 to 1, as format 9 stored it; no longer written nor drawn (r217): a page read from such
+	 * a file takes its largest as its fog's strength ({@link WholePage_Model#getFogStrength}).
 	 */
 	public float shaderHaze;
 

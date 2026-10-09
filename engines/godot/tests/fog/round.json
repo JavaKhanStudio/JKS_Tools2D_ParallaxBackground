@@ -1,0 +1,58 @@
+{
+ "round": "fog",
+ "about": "Page fog (r217, format 10): each IMAGE, SHADER and SEQUENCE layer mixed toward the page's fog colour by 1 - exp(-strength (1 / speed - 1 / front)), front the page's fastest speed ratio X, in every repeat mode, in colours, from a format 9 FOG layer's haze, and through a cross-fade between two fogs while tinting. Written by core/test-data/haze/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "scenes": [
+  {
+   "id": "f01",
+   "page": "engines/godot/tests/fog/f01.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "fog-repeat-X",
+   "about": "c01 (repeat X): a page fog of 0.03 in the mist's white, the back layer 0.90, a WAVE and a FOG layer fogged by their speed too"
+  },
+  {
+   "id": "f02",
+   "page": "engines/godot/tests/fog/f02.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "fog-repeat-XY-sequence-night",
+   "about": "c02 (repeat X and Y, padded) with q02's SEQUENCE layer, scrolling up at 30 units/s: a night-blue fog of 0.06 near-hides the back layers",
+   "speedY": 30
+  },
+  {
+   "id": "f03",
+   "page": "engines/godot/tests/fog/f03.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "fog-repeat-Y-warm",
+   "about": "c03 (repeat Y, mirrored copies), scrolling up at 30 units/s: a thin warm-grey fog of 0.015",
+   "speedY": 30
+  },
+  {
+   "id": "f04",
+   "page": "engines/godot/tests/fog/f04.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "fog-no-repeat-format-9",
+   "about": "c05 (no repeat) as format 9 wrote it: the mist's shaderHaze 0.3 and no page fog, read as a fog of 0.3 in the mist's white"
+  },
+  {
+   "id": "f05",
+   "page": "engines/godot/tests/fog/f01.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "fog-cross-fade-tinted",
+   "about": "f01 cross-fading into f02 (another fog, another colour) while tinting orange: each page fogs its own layers by its own fog, faded and tinted, the fog's colours untinted",
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/godot/tests/fog/f02.jplax"
+   },
+   "tint": {
+    "at": 4,
+    "seconds": 4,
+    "color": [
+     1.0,
+     0.55,
+     0.3,
+     1.0
+    ]
+   }
+  }
+ ]
+}

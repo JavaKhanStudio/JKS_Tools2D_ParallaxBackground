@@ -18,6 +18,7 @@ public final class Parallax_Utils_Page
 		ref.parallaxReader.addLayers(pageModel.getDrawing(ref.relativePath, ref.getWorldWidth(), ref.getWorldHeight()));
 		ref.parallaxReader.setRepeatOnX(pageModel.repeatOnX);
 		ref.parallaxReader.setRepeatOnY(pageModel.repeatOnY);
+		ref.parallaxReader.setFog(pageModel.getFogStrength(), pageModel.fogColor);
 
 		ref.topSquare = pageModel.buildTopSquareBackground(pageModel.topHalfSize);
 		ref.bottomSquare = pageModel.buildBottomSquareBackground(pageModel.bottomHalfSize);

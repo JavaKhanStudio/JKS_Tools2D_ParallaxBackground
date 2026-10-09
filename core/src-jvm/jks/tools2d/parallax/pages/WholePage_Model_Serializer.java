@@ -27,13 +27,16 @@ import com.esotericsoftware.kryo.io.Output;
  * read no segments, 0 and 16.</li>
  * <li>version 9: the version 8 layout with each layer's shaderHaze (a float) stored after sequenceLength. Older files
  * read 0.</li>
+ * <li>version 10: the version 9 layout without the layers' shaderHaze, and with the page's fogStrength (a float) and
+ * fogColor (a color) stored after useOriginalSize. Older files read the white mist and, as the strength, their largest
+ * FOG layer's shaderHaze (0 before 9).</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 9;
+	static final int CURRENT_VERSION = 10;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;
@@ -64,6 +67,11 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 		output.writeBoolean(page.repeatOnY);
 		if (writeVersion >= 4)
 			output.writeBoolean(page.useOriginalSize);
+		if (writeVersion >= 10)
+		{
+			output.writeFloat(page.getFogStrength());
+			kryo.writeObject(output, page.fogColor);
+		}
 
 		kryo.writeObject(output, page.pageModel);
 	}
@@ -99,6 +107,11 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 		page.repeatOnY = input.readBoolean();
 		if (version >= 4)
 			page.useOriginalSize = input.readBoolean();
+		if (version >= 10)
+		{
+			page.setFogStrength(input.readFloat());
+			page.fogColor = kryo.readObject(input, Color.class);
+		}
 
 		page.pageModel = kryo.readObject(input, Page_Model.class);
 		return page;

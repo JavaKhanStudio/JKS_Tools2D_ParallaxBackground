@@ -118,6 +118,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(particleLayer());
 		original.pageModel.pageList.add(shaderLayer());
 		original.pageModel.pageList.add(sequenceLayer());
+		original.fogColor = new Color(0.2f, 0.3f, 0.5f, 1);
 
 		byte[] rewritten = write(original);
 		// Byte 0 is Kryo's reference marker for the page itself.
@@ -141,7 +142,9 @@ class PlaxFormatTest
 		assertEquals(0.6f, fog.shaderAmplitude, "its amplitude");
 		assertEquals(7.5f, fog.shaderWavelength, "its wavelength");
 		assertEquals(-1.25f, fog.shaderSpeed, "its speed");
-		assertEquals(0.25f, fog.shaderHaze, "its depth haze is stored since format 9");
+		assertEquals(0, fog.shaderHaze, "its depth haze is no longer stored since format 10");
+		assertEquals(0.25f, reread.getFogStrength(), "it is the page's fog's strength, stored since format 10");
+		assertEquals(new Color(0.2f, 0.3f, 0.5f, 1), reread.fogColor, "and the fog's colour");
 		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
 		assertEquals(Enum_LayerKind.SEQUENCE, ground.kind, "SEQUENCE is a kind since format 8");
 		assertEquals(3, ground.sequenceSegments.size(), "the segments are stored since format 8");
@@ -166,6 +169,36 @@ class PlaxFormatTest
 		ground.padX = 0.5f;
 		ground.parallaxScalingSpeedX = 0.08f;
 		return ground;
+	}
+
+	/**
+	 * Format 9 stored a FOG layer's depth haze, not a page fog: read there, the layer keeps its haze and the page's fog
+	 * is the largest such haze, in the mist's white.
+	 */
+	@Test
+	void format9FilesLoadTheirHazeAsThePageFog() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.add(shaderLayer());
+		Parallax_Model thinner = shaderLayer();
+		thinner.shaderHaze = 0.1f;
+		original.pageModel.pageList.add(thinner);
+		original.fogColor = new Color(Color.RED);
+
+		byte[] written = write(original, 9);
+		assertEquals(9, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		assertEquals(0.25f, reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2).shaderHaze, "format 9 holds the haze");
+		assertEquals(0.25f, reread.getFogStrength(), "the largest haze is the page's fog");
+		assertEquals(new Color(WholePage_Model.FOG_R, WholePage_Model.FOG_G, WholePage_Model.FOG_B, 1), reread.fogColor,
+				"format 9 has no fog colour: the mist's white");
+		original.fogColor = reread.fogColor;
+		assertPageEquals(original, reread);
+
+		WholePage_Model upgraded = read(write(reread));
+		assertEquals(0.25f, upgraded.getFogStrength(), "written again, the fog is the page's");
+		assertEquals(0, upgraded.pageModel.pageList.get(upgraded.pageModel.pageList.size() - 2).shaderHaze, "and the haze gone");
 	}
 
 	/** Format 8 has no depth haze: written there, a FOG layer reads haze 0. */
@@ -417,8 +450,13 @@ class PlaxFormatTest
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
+		assertFalse(json.contains("shaderHaze"), "a FOG layer's haze is no longer written (format 10)");
+		assertTrue(json.contains("\"fogStrength\":0.25") && json.contains("\"fogColor\""), "the page's fog is: " + json);
 
 		assertPageEquals(original, JSON.readValue(json, WholePage_Model.class));
+		String legacy = json.replace("\"fogStrength\":0.25,", "").replace("\"shaderEffect\":\"FOG\",", "\"shaderEffect\":\"FOG\",\"shaderHaze\":0.4,");
+		assertFalse(legacy.contains("fogStrength"), legacy);
+		assertEquals(0.4f, JSON.readValue(legacy, WholePage_Model.class).getFogStrength(), "a format 9 .jplax: its FOG layer's haze is the fog");
 	}
 
 	static WholePage_Model read(byte[] bytes)
@@ -447,6 +485,8 @@ class PlaxFormatTest
 		assertEquals(expected.repeatOnX, actual.repeatOnX);
 		assertEquals(expected.repeatOnY, actual.repeatOnY);
 		assertEquals(expected.useOriginalSize, actual.useOriginalSize);
+		assertEquals(expected.getFogStrength(), actual.getFogStrength(), "fog strength");
+		assertEquals(expected.fogColor, actual.fogColor, "fog colour");
 		assertEquals(expected.pageModel.atlasName, actual.pageModel.atlasName);
 		assertEquals(expected.pageModel.outside, actual.pageModel.outside);
 		assertEquals(expected.pageModel.pageList.size(), actual.pageModel.pageList.size());
@@ -483,7 +523,6 @@ class PlaxFormatTest
 			}
 			assertEquals(expected.sequenceSeed, actual.sequenceSeed, name);
 			assertEquals(expected.sequenceLength, actual.sequenceLength, name);
-			assertEquals(expected.shaderHaze, actual.shaderHaze, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

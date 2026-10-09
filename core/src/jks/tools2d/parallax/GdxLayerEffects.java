@@ -1,6 +1,7 @@
 package jks.tools2d.parallax;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
@@ -13,8 +14,9 @@ import jks.tools2d.parallax.pages.Enum_ShaderEffect;
  * The SHADER layers' effects in libGDX: a batch shader per {@link Enum_ShaderEffect}, GLSL ES 1.0, so WebGL in a
  * browser game too. Compiled the first time a layer needs it; a shader that does not compile is said once in the log,
  * and its layers are drawn without it. Setting the shader flushes the batch: a SHADER layer costs a flush before and
- * after its tiles, and so does an IMAGE or SEQUENCE layer behind a FOG layer's depth haze, drawn through
- * {@link #PLAIN}.
+ * after its tiles, and so does an IMAGE or SEQUENCE layer the page's depth fog reaches, drawn through {@link #PLAIN}.
+ * A shader is kept bound from one layer to the next ({@link #release} puts the game's back): layers drawn one after the
+ * other through the same shader cost a flush each, not two shader switches.
  * <p>
  * Each effect works on the image's own coordinates, taken from the texture coordinates: x and y in world units from the
  * image's bottom-left, as it is drawn. engines/godot/addons/jks_parallax/plax_effects.gd and engines/jme's
@@ -38,14 +40,14 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "	gl_Position = u_projTrans * " + ShaderProgram.POSITION_ATTRIBUTE + ";\n"
 			+ "}\n";
 
-	/** The mist's white, which the depth haze mixes a layer's color toward. */
+	/** The mist's white: the fog's colour when none is given ({@link LayerEffects#begin(Batch, ParallaxLayer, float, float)}). */
 	public static final float HAZE_R = 0.93f, HAZE_G = 0.95f, HAZE_B = 0.97f;
 
 	/**
 	 * u_region: the region's u, v, u2, v2 (v at the image's top). u_size: the image's width and height in world units.
-	 * u_effect: amplitude, wavelength, phase. u_haze: the depth haze, 0 to 1. local(): where the fragment is in the
-	 * image, in world units, y up. hazed(): the color mixed toward the mist's white by u_haze, its alpha kept; at 0 the
-	 * color itself.
+	 * u_effect: amplitude, wavelength, phase. u_haze: the depth fog, 0 to 1. u_fog: the fog's colour. local(): where the
+	 * fragment is in the image, in world units, y up. hazed(): the color mixed toward u_fog by u_haze, its alpha kept; at
+	 * 0 the color itself.
 	 */
 	private static final String FRAGMENT_HEAD = "#ifdef GL_ES\n"
 			+ "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
@@ -61,11 +63,11 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "uniform vec2 u_size;\n"
 			+ "uniform vec3 u_effect;\n"
 			+ "uniform float u_haze;\n"
+			+ "uniform vec3 u_fog;\n"
 			+ "const float TAU = 6.2831853;\n"
-			+ "const vec3 HAZE = vec3(0.93, 0.95, 0.97);\n"
 			+ "vec4 hazed(vec4 color)\n"
 			+ "{\n"
-			+ "	return vec4(mix(color.rgb, HAZE, u_haze), color.a);\n"
+			+ "	return vec4(mix(color.rgb, u_fog, u_haze), color.a);\n"
 			+ "}\n"
 			+ "vec2 local()\n"
 			+ "{\n"
@@ -99,7 +101,21 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "	gl_FragColor = hazed(color);\n"
 			+ "}\n";
 
-	/** No effect: an IMAGE or SEQUENCE layer drawn through the depth haze only. */
+	/**
+	 * The page fog ({@link LayerEffects#beginPageFog}): the tint a uniform, the batch color's red the layer's fog, its
+	 * green which page's fog colour, its alpha the layer's. Mixed as hazed() does.
+	 */
+	static final String PAGE_FOG = FRAGMENT_HEAD
+			+ "uniform vec3 u_tint;\n"
+			+ "uniform vec3 u_fogIncoming;\n"
+			+ "void main()\n"
+			+ "{\n"
+			+ "	vec4 color = vec4(u_tint, v_color.a) * texture2D(u_texture, v_texCoords);\n"
+			+ "	vec3 fog = v_color.g > 0.5 ? u_fogIncoming : u_fog;\n"
+			+ "	gl_FragColor = vec4(mix(color.rgb, fog, v_color.r), color.a);\n"
+			+ "}\n";
+
+	/** No effect: an IMAGE or SEQUENCE layer drawn through the depth fog only. */
 	static final String PLAIN = FRAGMENT_HEAD
 			+ "void main()\n"
 			+ "{\n"
@@ -113,15 +129,22 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	private final ShaderProgram[] programs = new ShaderProgram[EFFECTS.length + 1];
 	private final boolean[] failed = new boolean[EFFECTS.length + 1];
 	private final int[] region = new int[EFFECTS.length + 1], size = new int[EFFECTS.length + 1], effect = new int[EFFECTS.length + 1],
-			haze = new int[EFFECTS.length + 1];
+			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1];
+	/** The batch's shader before the first begin, and whether one of ours is still bound in its place. */
 	private ShaderProgram previous;
+	private boolean holding;
+	/** The page fog's shader, and whether it is the one {@link #release} comes back to. */
+	private ShaderProgram pageFog;
+	private boolean pageFogFailed, inPageFog;
+	/** Its uniforms' locations: -1 for one the GPU's compiler dropped, which is then not set. */
+	private int pageFogTint, pageFogColor, pageFogIncoming;
 	private final float[] numbers = new float[9];
 
 	/** The vertex shader of every effect: SpriteBatch's own. */
 	public static String vertex()
 	{return VERTEX;}
 
-	/** The fragment shader of an effect, as compiled here; null: of a layer drawn without one, through the haze only. */
+	/** The fragment shader of an effect, as compiled here; null: of a layer drawn without one, through the fog only. */
 	public static String fragment(Enum_ShaderEffect effect)
 	{
 		if (effect == null)
@@ -138,19 +161,34 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 
 	@Override
 	public boolean begin(Batch batch, ParallaxLayer layer, float phase)
-	{return begin(batch, layer, phase, 0);}
+	{return begin(batch, layer, phase, 0, HAZE_R, HAZE_G, HAZE_B);}
 
-	/** A SHADER layer through its effect, any other through none; both through {@code haze}. */
 	@Override
 	public boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze)
+	{return begin(batch, layer, phase, haze, HAZE_R, HAZE_G, HAZE_B);}
+
+	@Override
+	public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fog, Color fogColor)
+	{return begin(batch, layer, phase, fog, fogColor.r, fogColor.g, fogColor.b);}
+
+	/** A SHADER layer through its effect, any other through none; both mixed toward the fog's colour by {@code haze}. */
+	private boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze, float fogR, float fogG, float fogB)
 	{
 		int index = layer.getKind() == Enum_LayerKind.SHADER ? layer.getShaderEffect().ordinal() : PLAIN_INDEX;
 		ShaderProgram program = program(index);
 		if (program == null)
 			return false;
 
-		previous = batch.getShader();
-		batch.setShader(program);
+		if (!holding)
+		{
+			previous = batch.getShader();
+			holding = true;
+		}
+		if (batch.getShader() == program)
+			// Still bound from the layer before: what it drew goes out with its numbers before they change.
+			batch.flush();
+		else
+			batch.setShader(program);
 		// Bound by setShader while the batch draws; bound here when it does not, for the uniforms.
 		if (!batch.isDrawing())
 			program.bind();
@@ -159,14 +197,73 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		program.setUniformf(size[index], numbers[4], numbers[5]);
 		program.setUniformf(effect[index], numbers[6], numbers[7], numbers[8]);
 		program.setUniformf(this.haze[index], Math.max(0, Math.min(1, haze)));
+		program.setUniformf(fog[index], fogR, fogG, fogB);
+		return true;
+	}
+
+	/** Leaves the layer's shader bound for the next layer: {@link #release} puts the game's back. */
+	@Override
+	public void end(Batch batch, ParallaxLayer layer)
+	{}
+
+	@Override
+	public void release(Batch batch)
+	{
+		if (!holding)
+			return;
+		if (inPageFog)
+		{
+			if (batch.getShader() != pageFog)
+				batch.setShader(pageFog);
+			return;
+		}
+		batch.setShader(previous);
+		previous = null;
+		holding = false;
+	}
+
+	@Override
+	public boolean beginPageFog(Batch batch, Color tint, Color fog, Color incomingFog)
+	{
+		if (pageFog == null && !pageFogFailed)
+		{
+			pageFog = new ShaderProgram(VERTEX, PAGE_FOG);
+			if (!pageFog.isCompiled())
+			{
+				pageFogFailed = true;
+				Gdx.app.error("Parallax", "The page fog's shader does not compile here, its layers are fogged one by one: " + pageFog.getLog());
+				pageFog.dispose();
+				pageFog = null;
+			}
+			else
+			{
+				pageFogTint = pageFog.fetchUniformLocation("u_tint", false);
+				pageFogColor = pageFog.fetchUniformLocation("u_fog", false);
+				pageFogIncoming = pageFog.fetchUniformLocation("u_fogIncoming", false);
+			}
+		}
+		if (pageFog == null)
+			return false;
+		if (!holding)
+		{
+			previous = batch.getShader();
+			holding = true;
+		}
+		inPageFog = true;
+		batch.setShader(pageFog);
+		if (!batch.isDrawing())
+			pageFog.bind();
+		pageFog.setUniformf(pageFogTint, tint.r, tint.g, tint.b);
+		pageFog.setUniformf(pageFogColor, fog.r, fog.g, fog.b);
+		pageFog.setUniformf(pageFogIncoming, incomingFog.r, incomingFog.g, incomingFog.b);
 		return true;
 	}
 
 	@Override
-	public void end(Batch batch, ParallaxLayer layer)
+	public void endPageFog(Batch batch)
 	{
-		batch.setShader(previous);
-		previous = null;
+		inPageFog = false;
+		release(batch);
 	}
 
 	/**
@@ -203,7 +300,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		if (!program.isCompiled())
 		{
 			failed[index] = true;
-			Gdx.app.error("Parallax", "The " + (plain ? "depth haze" : EFFECTS[index]) + " shader does not compile here, its layers are drawn without it: " + program.getLog());
+			Gdx.app.error("Parallax", "The " + (plain ? "depth fog" : EFFECTS[index]) + " shader does not compile here, its layers are drawn without it: " + program.getLog());
 			program.dispose();
 			return null;
 		}
@@ -211,6 +308,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		size[index] = program.fetchUniformLocation("u_size", false);
 		effect[index] = program.fetchUniformLocation("u_effect", false);
 		haze[index] = program.fetchUniformLocation("u_haze", false);
+		fog[index] = program.fetchUniformLocation("u_fog", false);
 		programs[index] = program;
 		return program;
 	}
@@ -218,6 +316,9 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	@Override
 	public void dispose()
 	{
+		if (pageFog != null)
+			pageFog.dispose();
+		pageFog = null;
 		for (int i = 0; i < programs.length; i++)
 		{
 			if (programs[i] != null)

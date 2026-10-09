@@ -41,7 +41,7 @@ public class ParallaxLayer
 	/** The effect a SHADER layer's image is drawn through, and its numbers: see {@link Enum_ShaderEffect}. */
 	private Enum_ShaderEffect shaderEffect = Enum_ShaderEffect.WAVE;
 	private float shaderAmplitude, shaderWavelength, shaderSpeed;
-	/** A FOG layer's depth haze: see {@link jks.tools2d.parallax.pages.Parallax_Model#shaderHaze}. */
+	/** A FOG layer's depth haze, format 9's, no longer drawn: see {@link jks.tools2d.parallax.pages.Parallax_Model#shaderHaze}. */
 	private float shaderHaze;
 
 	/** A SEQUENCE layer's segments as the page names them, kept so a page saved from its layers names them again. */
@@ -689,7 +689,10 @@ public class ParallaxLayer
 	public void setShaderSpeed(float shaderSpeed)
 	{this.shaderSpeed = shaderSpeed;}
 
-	/** A FOG layer's depth haze, as stored; {@link #getHazePerLayer} is what the reader draws with. */
+	/**
+	 * A FOG layer's depth haze, format 9's: the reader no longer draws it. Saved through Utils_Page.buildFromPage, it
+	 * becomes the page's fog strength when the page sets none ({@link jks.tools2d.parallax.pages.WholePage_Model#getFogStrength}).
+	 */
 	public float getShaderHaze()
 	{return shaderHaze;}
 
@@ -700,6 +703,7 @@ public class ParallaxLayer
 	 * The share of the mist's white this layer gives a layer one step behind it, 0 to 1: its haze when it is a SHADER
 	 * layer drawn through FOG, 0 otherwise.
 	 */
+	@Deprecated
 	public float getHazePerLayer()
 	{
 		if (kind != Enum_LayerKind.SHADER || shaderEffect != Enum_ShaderEffect.FOG || !(shaderHaze > 0))

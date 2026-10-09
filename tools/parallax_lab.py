@@ -41,7 +41,7 @@ LAYER_FIELDS = ['regionName', 'regionPosition', 'flipX', 'flipY', 'parallaxScali
                 'shaderEffect', 'shaderAmplitude', 'shaderWavelength', 'shaderSpeed', 'shaderHaze',
                 'sequenceSegments', 'sequenceSeed', 'sequenceLength']
 PAGE_FIELDS = ['topHalf_top', 'topHalf_bottom', 'topHalfSize', 'bottomHalf_top', 'bottomHalf_bottom',
-               'bottomHalfSize', 'repeatOnX', 'repeatOnY', 'useOriginalSize']
+               'bottomHalfSize', 'repeatOnX', 'repeatOnY', 'useOriginalSize', 'fogStrength', 'fogColor']
 
 SAMPLES = {
     'Hiver': ('demo/assets/hiver/Hiver.plaxpj', 'demo/assets'),

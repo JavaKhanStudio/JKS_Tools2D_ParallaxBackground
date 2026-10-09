@@ -42,6 +42,7 @@ final class WebGlCases
 	{
 		return Arrays.asList(
 				new BrowserCase("webgl: effectShadersCompile", WebGlCases::effectShadersCompile),
+				new BrowserCase("webgl: pageFogMixesAsItsFormulaSays", WebGlCases::pageFogMixesAsItsFormulaSays),
 				new BrowserCase("webgl: fogThinsAsItsFormulaSays", WebGlCases::fogThinsAsItsFormulaSays),
 				new BrowserCase("webgl: npotMipMapAtlasDrawsThroughLoad", WebGlCases::npotMipMapAtlasDrawsThroughLoad),
 				new BrowserCase("webgl: npotMipMapAtlasDrawsThroughAssetManager", WebGlCases::npotMipMapAtlasDrawsThroughAssetManager),
@@ -119,6 +120,64 @@ final class WebGlCases
 				}
 			frame.end();
 			isTrue(worst <= 2, "FOG off by " + worst + "/255 at " + at);
+		}
+		finally
+		{
+			reader.dispose();
+			batch.dispose();
+			frame.dispose();
+			texture.dispose();
+		}
+	}
+
+	/**
+	 * r217: a black IMAGE layer at speed 0.01 under a front at 0.1, in a page fog of 0.03 and (0.2, 0.3, 0.5): drawn
+	 * through GdxLayerEffects' page fog shader (its fog in the batch color), each pixel is the fog's colour times
+	 * 1 - exp(-0.03 x 90), at 8 bits. Compiles that shader in WebGL.
+	 */
+	static void pageFogMixesAsItsFormulaSays()
+	{
+		int size = 16;
+		Pixmap black = new Pixmap(4, 4, Format.RGBA8888);
+		black.setColor(Color.BLACK);
+		black.fill();
+		Texture texture = new Texture(black);
+		black.dispose();
+		FrameBuffer frame = new FrameBuffer(Format.RGBA8888, size, size, false);
+		SpriteBatch batch = new SpriteBatch();
+		ParallaxPageReader reader = new ParallaxPageReader();
+		try
+		{
+			OrthographicCamera camera = new OrthographicCamera();
+			camera.setToOrtho(false, 40, 40);
+			camera.update();
+			reader.setWorldSize(40, 40);
+			List<ParallaxLayer> layers = new ArrayList<>();
+			layers.add(new ParallaxLayer(new TextureRegion(texture), true, 40, 0.01f, 0.01f, 1));
+			ParallaxLayer front = ParallaxLayer.empty("front", 1);
+			front.setParallaxSpeedRatioX(0.1f);
+			layers.add(front);
+			reader.addLayers(layers);
+			reader.setFog(0.03f, new Color(0.2f, 0.3f, 0.5f, 1));
+
+			frame.begin();
+			Gdx.gl.glClearColor(1, 1, 1, 1);
+			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+			batch.setProjectionMatrix(camera.combined);
+			batch.begin();
+			// SpriteBatch.getShader() is its default shader when no custom one is set, never null.
+			ShaderProgram before = batch.getShader();
+			reader.draw(camera, batch);
+			isTrue(batch.getShader() == before, "the reader gave the batch its own shader back");
+			batch.end();
+			byte[] pixel = ScreenUtils.getFrameBufferPixels(size / 2, size / 2, 1, 1, false);
+			frame.end();
+
+			double fog = 1 - Math.exp(-0.03 * (1 / 0.01f - 1 / 0.1f));
+			int[] expected = { (int) Math.round(255 * 0.2 * fog), (int) Math.round(255 * 0.3 * fog), (int) Math.round(255 * 0.5 * fog) };
+			int[] got = { pixel[0] & 0xFF, pixel[1] & 0xFF, pixel[2] & 0xFF };
+			for (int c = 0; c < 3; c++)
+				isTrue(Math.abs(got[c] - expected[c]) <= 2, "page fog " + got[0] + "," + got[1] + "," + got[2] + " for " + expected[0] + "," + expected[1] + "," + expected[2]);
 		}
 		finally
 		{

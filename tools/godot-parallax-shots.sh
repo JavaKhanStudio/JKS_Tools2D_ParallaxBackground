@@ -23,7 +23,7 @@ ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/godot/tests/round1 engines/godot/tests/conformance engines/godot/tests/transfer engines/godot/tests/pixelart engines/godot/tests/effects engines/godot/tests/particles engines/godot/tests/shaders engines/godot/tests/sequence engines/godot/tests/haze)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/godot/tests/round1 engines/godot/tests/conformance engines/godot/tests/transfer engines/godot/tests/pixelart engines/godot/tests/effects engines/godot/tests/particles engines/godot/tests/shaders engines/godot/tests/sequence engines/godot/tests/fog)
 GODOT="${GODOT:-godot}"
 status=0
 for ROUND in "${ROUNDS[@]}"; do

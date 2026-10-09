@@ -70,7 +70,8 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			output.writeInt(model.sequenceLength);
 		}
 
-		if (WholePage_Model_Serializer.currentVersion(kryo) >= 9)
+		// Format 9 only: from 10 the fog is the page's (WholePage_Model.getFogStrength reads this one from older files).
+		if (WholePage_Model_Serializer.currentVersion(kryo) == 9)
 			output.writeFloat(model.shaderHaze);
 	}
 
@@ -143,7 +144,7 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			model.sequenceLength = input.readInt();
 		}
 
-		if (WholePage_Model_Serializer.currentVersion(kryo) >= 9)
+		if (WholePage_Model_Serializer.currentVersion(kryo) == 9)
 			model.shaderHaze = input.readFloat();
 
 		return model;

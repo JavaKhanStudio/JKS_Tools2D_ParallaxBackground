@@ -98,6 +98,15 @@ A **page** (`WholePage_Model`) is one complete background:
 - **Two gradient squares** (`SquareBackground`) drawn behind the layers, one covering the top of the screen and one
   the bottom, each going from a bottom color to a top color.
 - **Repeat on X / Y**: whether layers are tiled horizontally, vertically, both, or drawn once.
+- **Fog** (`fogStrength`, `fogColor`, format 10): a depth fog over the whole page. Each `IMAGE`, `SEQUENCE` and
+  `SHADER` layer is mixed toward the fog's colour, its colour only, by `1 − exp(−strength × (1 / speed − 1 / front))`,
+  speed its speed ratio X and front the page's fastest one, both as sizes: the slower a layer scrolls, the farther it
+  is and the more it is fogged. The front layer is untouched, a still layer behind it is all fog, and 0 is no fog.
+  Strength is per unit of `1 / speed`: on a page whose speeds run 0.1 down to 0.01, 0.03 fogs the back layer by 93%,
+  0.06 near-hides it. The colour is the mist's white (0.93, 0.95, 0.97) unless set; the page's tint does not change
+  it. `EMPTY` and `PARTICLES` layers are drawn as is. In libGDX the fogged page is drawn through one shader (the fog
+  rides in the batch colour), so it costs no flush per layer; a cross-fade fogs each page by its own fog. Pages saved
+  before format 10 have no fog, except a format 9 page whose `FOG` layer had a depth haze: that haze is its strength.
 - **Original size** (`useOriginalSize`): for an atlas packed with its whitespace stripped (TexturePacker's default),
   whether a layer takes the region's original size and draws the packed image at its offset inside it, as libGDX's
   `AtlasSprite` does. Pages the editor creates have it on. Pages saved before `.plax` format 4 have it off: their
@@ -121,7 +130,7 @@ Layers live in **world units**: the world is 40 units wide and its height follow
 | Particles: libGDX, Godot | A `PARTICLES` layer's effect, one file per engine, relative to the page's atlas folder: a libGDX `.p` (its images are regions of the page's atlas), and a Godot scene (`.tscn`). An engine whose file is missing draws nothing for the layer. |
 | Particles: anchor        | `LAYER`: the effect is pinned to the box's bottom-left corner, scrolled and tiled with it (a chimney's smoke, a waterfall's spray). `VIEW`: emitted once from the view, at the layer's decal from its bottom-left corner, whatever the page repeats on; its particles drift by the layer's scroll (snow or rain that never runs out). |
 | Shader: effect, amplitude, wavelength, speed | A `SHADER` layer's effect, `WAVE` or `FOG`, and its numbers, in world units and seconds, measured on the image as drawn. `WAVE`: each row of the image shifted sideways by `amplitude × sin(2π (y − speed × t) / wavelength)`, y from the image's bottom, so the ripple runs up at `speed` (down when negative). `FOG`: the image's opacity thinned by up to `amplitude` (0 to 1) in soft patches `wavelength` wide that drift left at `speed`, and come back the same only every 8 wavelengths across. A wavelength of 0 draws the image without its effect. |
-| Shader: depth haze       | A `FOG` layer's haze, 0 to 1 (format 9): every layer of the page behind it is mixed toward the mist's white (0.93, 0.95, 0.97), its colour only, by `1 − (1 − haze)^n`, n how many layers behind the `FOG` layer it is, so the far layers fade most; the layers in front are untouched, and 0 hazes nothing. Two hazy `FOG` layers multiply what they leave. An `EMPTY` or `PARTICLES` layer counts as a step but is drawn as is; an `IMAGE` or `SEQUENCE` layer behind the haze costs a batch flush, as a `SHADER` layer does. Other effects ignore it. |
+| Shader: depth haze       | Format 9 only, no longer drawn nor written: a `FOG` layer's haze, 0 to 1, which mixed the layers behind it toward the mist's white. Read from a format 9 file, the largest one becomes the page's fog strength (see the page's **Fog**). |
 | Sequence: segments, seed, length | A `SEQUENCE` layer's images (its segments: region name and position, and a whole-number weight each), the seed its cycle is drawn from and how many segments the cycle holds before it repeats (16 when unset). The first segment is `40 x sizeRatio` wide and sets the layer's height; every other is as wide as that height and its own image make it, so segments of different widths chain unstretched, Pad X apart. Each slot of the cycle picks a segment by its weight out of the sum of the weights, whatever came before it (B weighing 30 of 100 is 30% of the slots); a weight of 0 is never picked. The same seed draws the same cycle in every engine; a game passes its own with `ParallaxPageReader.setSequenceSeed`. Flip and Mirror flip each segment in its own slot; the slots keep their order. |
 | Mirror                   | Doubles the strip with a reflection of it, on a page that repeats on one axis only. Repeating on X, a second row is drawn on top of the strip, upside down (the strip's top edge is the axis); on Y, a second column to its right, reversed left to right. Repeating on both axes or neither, it draws nothing. Use it for a band that reads the same reflected (clouds, water, foliage); it does not hide the seams between repeats: an upside-down copy of a foreground layer shows. |
 
@@ -198,6 +207,12 @@ More:
   does not compile is said once in the log, and its layers are drawn without it. A game drawing through its own
   shaders or engine sets `ParallaxPageReader.setLayerEffects`; the reader disposes the shaders it made itself in
   `dispose()` (`Parallax_Heart.dispose()` calls it).
+- **Depth fog:** a page's fog (see "Concepts") is set by the page itself; a game changes it with
+  `heart.parallaxReader.setFog(strength, color)` (the page on screen; a cross-fade brings in the next page's own), or
+  on the `WholePage_Model` (`setFogStrength`, `fogColor`) before showing it, as with Godot's `PlaxPage.fog_strength` /
+  `fog_color` and jME's `PlaxBackground.setPage`. On the editor repository's `./gradlew :demo:stress --args="--fog 0.02"` a fogged
+  page costs what an unfogged one does: 10 layers 0.63 / 0.67 ms, 40 layers 1.18 / 1.25 ms. An engine's own
+  `LayerEffects` that draws no page fog (`beginPageFog` false) is begun once per fogged layer, a flush each, instead.
 - **Ground that does not repeat:** a `SEQUENCE` layer chains several images (rock, rock, bridge, river...) along one
   layer, each picked by its weight (docs/sequence-layers.md). The page stores the weights and a seed, and the cycle of
   segments is drawn once when the page's layers are built, from integers only (a 32-bit xorshift, `SequenceCycle`), so
@@ -352,9 +367,11 @@ page's `useOriginalSize`, format 5 each layer's `kind` (by name) and `name`, and
 `particlesLibgdx`, `particlesGodot` (paths, null when unset) and `particlesAnchor` (by name), and format 7 each
 layer's `shaderEffect` (by name), `shaderAmplitude`, `shaderWavelength` and `shaderSpeed`, and format 8 each layer's
 `sequenceSegments` (a count, then each segment's `regionName`, `regionPosition` and `weight`), `sequenceSeed` and
-`sequenceLength`, and format 9 each layer's `shaderHaze`; format 1 files (written by the 2019-2023 editor) and formats 2 to 8 still load, with
+`sequenceLength`, and format 9 each layer's `shaderHaze`, and format 10 the page's `fogStrength` and `fogColor` (after
+`useOriginalSize`) and no `shaderHaze` any more; format 1 files (written by the 2019-2023 editor) and formats 2 to 9 still load, with
 `useOriginalSize` off before 4, every layer an `IMAGE` before 5, no particle effect before 6, `WAVE` with no numbers
-before 7, no segments, seed 0 and length 16 before 8 and no haze before 9, as do `.jplax` and `.plaxpj` files without those fields (a
+before 7, no segments, seed 0 and length 16 before 8, and before 10 the mist's white and, as the fog's strength, the
+largest `shaderHaze` of a `FOG` layer (0 before 9), as do `.jplax` and `.plaxpj` files without those fields (a
 segment without a weight weighs 1). A layer kind, a particle anchor or a shader effect a reader does not know fails the load, naming it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
 exported from. Kryo registration order defines the class ids stored in the files, so `GVars_Serialization.prepareKryo`
 must only ever be appended to.

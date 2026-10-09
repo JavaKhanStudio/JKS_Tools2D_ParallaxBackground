@@ -81,9 +81,13 @@ class FrameAllocationTest
 				reader.setRepeatOnY(onY);
 				reader.addLayers(layers(1));
 				reader.setLayerEffects(batch);
+				// A fog on both pages: through the page fog's shader on X, through each layer's begin otherwise.
+				batch.pageFog = onX;
+				reader.setFog(0.02f, Color.SLATE);
 				reader.setSequenceSeed(5);
 				reader.setLayerHook("hooked", (hookBatch, layer, x, y, width, height) -> hookBatch.draw(HOOKED, x, y, width, height));
 				WholePage_Model next = page(layers(2));
+				next.setFogStrength(0.03f);
 
 				// Warm up: the JIT, and the one-time allocations of starting a transfer, are not per frame.
 				float speedX = onX ? 300 : 0, speedY = onY ? 40 : 0;
@@ -94,6 +98,7 @@ class FrameAllocationTest
 
 				long before = threads.getCurrentThreadAllocatedBytes();
 				batch.draws = 0;
+				batch.pageFogs = 0;
 				frames(reader, camera, batch, FRAMES, speedX, speedY);
 				long allocated = threads.getCurrentThreadAllocatedBytes() - before;
 
@@ -102,6 +107,10 @@ class FrameAllocationTest
 				assertTrue(batch.draws >= FRAMES * LAYERS, mode + ": both pages were drawn, " + batch.draws + " draws");
 				assertTrue(batch.particles >= FRAMES * 10, mode + ": particles were drawn, " + batch.particles);
 				assertTrue(batch.shaded >= FRAMES * 10, mode + ": SHADER layers were drawn through their effect, " + batch.shaded);
+				if (onX)
+					assertTrue(batch.pageFogs >= FRAMES, mode + ": the page fog was drawn, " + batch.pageFogs);
+				else
+					assertTrue(batch.shaded >= FRAMES * LAYERS, mode + ": the fogged layers were begun one by one, " + batch.shaded);
 				// The counter itself costs a few bytes; a per-frame allocation costs FRAMES times at least 16.
 				assertTrue(allocated < FRAMES * 16L, mode + ": " + allocated + " bytes allocated over " + FRAMES + " frames");
 			}
@@ -188,8 +197,18 @@ class FrameAllocationTest
 	 */
 	private static final class CountingBatch implements Batch, LayerEffects
 	{
-		long draws, particles, shaded;
+		long draws, particles, shaded, pageFogs;
+		/** Whether it draws the page fog in one shader, as GdxLayerEffects does, or is begun per fogged layer. */
+		boolean pageFog;
 		private final float[] numbers = new float[9];
+
+		@Override
+		public boolean beginPageFog(Batch batch, Color tint, Color fog, Color incomingFog)
+		{
+			if (pageFog)
+				pageFogs++;
+			return pageFog;
+		}
 
 		@Override
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase)

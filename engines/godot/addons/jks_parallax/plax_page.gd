@@ -33,6 +33,11 @@ var bottom_half_size := 0.5
 var repeat_on_x := true
 var repeat_on_y := false
 var use_original_size := false
+## The depth fog (WholePage_Model.getFogStrength, format 10): 0 or more; PlaxEffects.fog_of mixes each layer toward
+## fog_color by it, more the slower the layer. Read from a page saved before format 10, it is the largest FOG layer's
+## shaderHaze.
+var fog_strength := 0.0
+var fog_color := Color(0.93, 0.95, 0.97)
 var atlas_name := ""
 ## Back to front. Each is a Dictionary with the keys of Parallax_Model (regionName, regionPosition, flipX, ...).
 var layers: Array[Dictionary] = []
@@ -60,6 +65,9 @@ func _read(json: Dictionary, inside) -> bool:
 	repeat_on_x = bool(json.get("repeatOnX", repeat_on_x))
 	repeat_on_y = bool(json.get("repeatOnY", repeat_on_y))
 	use_original_size = bool(json.get("useOriginalSize", use_original_size))
+	fog_color = _color(json.get("fogColor"), fog_color)
+	if json.has("fogStrength") and json.fogStrength != null:
+		fog_strength = maxf(0.0, float(json.fogStrength))
 	var page_model = json.get("pageModel")
 	if typeof(page_model) != TYPE_DICTIONARY:
 		return true
@@ -92,6 +100,10 @@ func _read(json: Dictionary, inside) -> bool:
 			push_error("PlaxPage: shader effect %s is not known here: the page was written by a newer version" % layer.shaderEffect)
 			return false
 		layers.append(layer)
+	if not json.has("fogStrength"):
+		for layer in layers:
+			if layer.kind == "SHADER" and layer.shaderEffect == "FOG" and float(layer.shaderHaze) > fog_strength:
+				fog_strength = minf(1.0, layer.shaderHaze)
 	return true
 
 

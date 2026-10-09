@@ -5,7 +5,7 @@ round's snowflake on a page of its own) and core/test-data/haze/lab.jplax: the h
 0.25 on its mist) with an EMPTY layer the lab's hook draws in, and p01's snow (a PARTICLES layer), both behind the mist,
 which the shipped haze leaves as they are.
 Run from the repository root: python3 core/test-data/haze/make_lab.py"""
-import copy, json
+import copy, json, subprocess
 
 HERE = 'core/test-data/haze'
 
@@ -15,7 +15,8 @@ snow = open('core/test-data/particles/HiverSnow.atlas').read().strip().split('\n
 snow[0] = '../particles/' + snow[0]
 open(f'{HERE}/HiverHazeLab.atlas', 'w').write('\n'.join(fog) + '\n\n' + '\n'.join(snow) + '\n')
 
-page = json.load(open('engines/godot/tests/haze/h01.jplax'))
+# r217 replaced the haze round by the fog round: h01 is read from the last commit that held it.
+page = json.loads(subprocess.check_output(['git', 'show', '9db9e6b:engines/godot/tests/haze/h01.jplax']))
 layers = page['pageModel']['pageList']
 assert layers[5]['name'] == 'mist'
 # What a game draws in an EMPTY layer: the lab's hook draws dark towers in each tile, three layers behind the mist.

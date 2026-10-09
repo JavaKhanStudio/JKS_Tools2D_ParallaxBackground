@@ -2,7 +2,7 @@
 # The FOG lab (r204, doubt d15): the shaders round's s01 page drawn four times by the real reader, compiled with GWT,
 # in WebGL: its mist band through FOG with patches as tall as wide (A, what ships), half as tall (B), as tall as a
 # slider says (C), and plain. Sliders: amplitude, wavelength, speed, C's height, the camera's scroll, the trees' WAVE ripple,
-# the mist's layer, the depth haze behind the mist, the parallax set, the mist's size and height. It opens on Simon's r208 settings.
+# the mist's layer, the page fog's strength and colour (r217), the parallax set, the mist's size and height. It opens on Simon's r208 settings.
 #   tools/fog-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/fog-lab.sh --shot F.png    one still, headless (6 s into the scroll)
 #   tools/fog-lab.sh --clip F.mp4    a clip, headless: 12 s at 30 fps, stepped at game speed (window.fogLabAct)
@@ -112,8 +112,8 @@ with sync_playwright() as p:
         page.wait_for_function("document.getElementById('fog-copy-state').textContent !== ''")
         import json
         got = json.loads(page.input_value("#fog-copy-json"))
-        keys = {"mistAmplitude", "mistWavelength", "mistSpeed", "patchHeightC", "cameraScroll", "treesWaveRipple", "mistLayer", "depthHaze",
-                "parallaxSet", "mistSize", "mistRise"}
+        keys = {"mistAmplitude", "mistWavelength", "mistSpeed", "patchHeightC", "cameraScroll", "treesWaveRipple", "mistLayer", "fogStrength",
+                "fogColor", "parallaxSet", "mistSize", "mistRise"}
         moved = {"patchHeightC": {"started": 0.45, "now": 0.6}, "mistLayer": {"started": 5, "now": 7}}
         if set(got["settings"]) != keys or got["changed"] != moved:
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))

@@ -247,7 +247,7 @@ the build. Read what you wrote; nothing else will.
 
 [tags.shader]
 label = "Shader"
-description = "SHADER layers' effects and a FOG layer's depth haze, in libGDX, Godot and jME"
+description = "SHADER layers' effects and the page's depth fog, in libGDX, Godot and jME"
 color = "#c8a2f0"
 sort = 15
 context = """
@@ -258,14 +258,20 @@ The reader calls the engine's LayerEffects (core/src/.../LayerEffects.java, jME'
 tiles, NEVER Batch.setShader: JmeBatch.setShader throws, so it works in libGDX and breaks every jME game.
 Enum_ShaderEffect is APPEND ONLY (stored by name since format 7); a new effect also goes in plax_effects.gd's EFFECTS
 and in the round engines/godot/tests/shaders.
-DEPTH HAZE (shaderHaze, format 9): every shader above ends in hazed(), and an IMAGE or SEQUENCE layer behind a FOG
-layer is drawn through a PLAIN one (jME's PLAIN define, Godot's "PLAIN" material). The mix and the mist's white are
-in all three; ParallaxPageReader.hazeOf is copied in plax_effects.gd haze_of. Change one, change the other.
+PAGE FOG (fogStrength, fogColor, format 10, r217; format 9's FOG-layer shaderHaze is read as its strength): every
+shader above ends in hazed() toward u_fog, and an IMAGE or SEQUENCE layer is drawn through a PLAIN one in jME (Plain
+define) and Godot ("PLAIN" material). libGDX draws them through ONE PAGE_FOG shader, the layer's fog in the batch
+colour's red and its page in the green (LayerEffects.beginPageFog): a flush per layer cost 0.08 ms CPU each on
+:demo:stress. The reader puts the tint back in the batch colour after each such layer: forget it and the next SHADER
+layer draws black or red (ReaderCases.pageFogDrawsTheImageLayersInOneShaderTheirFogInTheBatchColor). Set uniforms by
+fetchUniformLocation(name, false): a by-name setUniformf throws when a GPU drops one. ParallaxPageReader.fogOf and
+frontSpeedOf are copied in plax_effects.gd fog_of / front_speed_of. Change one, change the other.
 A Godot shader error is only a log line and the layer draws plain: read godot.log after a run (TAU is a Godot
 built-in; that name collision once moved the stills 2-11/255 with nothing failing).
 Gates: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh, given engines/godot/tests/shaders
-engines/godot/tests/haze as arguments (no argument runs every round; both fail past a mean 2/255; CI's godot-frames job runs them). A round only proves an
+engines/godot/tests/fog as arguments (no argument runs every round; both fail past a mean 2/255; CI's godot-frames job runs them). A round only proves an
 effect that moves its stills by more than that: tools/r180-shader-round/strength.sh (effects) and
-tools/r211-haze/strength.sh (haze) fail under 2.5/255. A new effect or a weaker scene: run them.
+tools/r217-fog/strength.sh (fog) fail under 2.5/255, and tools/r217-fog/mutate.sh puts a wrong fog in one engine at a
+time and fails unless the fog round does. A new effect or a weaker scene: run them.
 A new stored field is a format bump: the format, browser JSON and Godot readers (AGENTS.md ".plax is a file format").
 """

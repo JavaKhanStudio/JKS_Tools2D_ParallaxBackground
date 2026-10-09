@@ -424,7 +424,7 @@ public class TransfertLab extends ApplicationAdapter
 				+ "	else if (u_mask.y < 1.5)\n"
 				+ "		color.a *= m;\n"
 				+ "	else\n"
-				+ "		color.rgb = mix(color.rgb, HAZE, m);\n"
+				+ "		color.rgb = mix(color.rgb, vec3(0.93, 0.95, 0.97), m);\n"
 				+ "	gl_FragColor = hazed(color);\n"
 				+ "}\n";
 		masked = new ShaderProgram(GdxLayerEffects.vertex(), source);

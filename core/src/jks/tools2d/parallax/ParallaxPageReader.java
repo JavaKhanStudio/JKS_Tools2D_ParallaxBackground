@@ -24,9 +24,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * An EMPTY layer is drawn by the game: {@link #setLayerHook} registers what draws it, under the layer's name. A
  * PARTICLES layer draws its {@link ParallaxParticles} in its place: once per tile when pinned to the layer, once from
  * the view when anchored to it ({@link Enum_ParticleAnchor}). A SHADER layer's tiles are drawn through its effect, by
- * the {@link LayerEffects} of the engine ({@link #setLayerEffects}), at a phase taken from this reader's clock. A FOG
- * layer with a depth haze mixes every layer of its page behind it toward the mist's white ({@link #hazeOf}), through
- * the same effects. A
+ * the {@link LayerEffects} of the engine ({@link #setLayerEffects}), at a phase taken from this reader's clock. A page's
+ * depth fog ({@link #setFog}) mixes each IMAGE, SEQUENCE and SHADER layer toward the fog's colour, more the slower the
+ * layer scrolls ({@link #fogOf}), through the same effects. A
  * SEQUENCE layer's cycle is the one its page stores the seed of, unless the game passes its own
  * ({@link #setSequenceSeed}).
  */
@@ -63,6 +63,20 @@ public class ParallaxPageReader implements Disposable
 	/** Seconds acted since the reader was made: the SHADER layers' clock, shared by both pages of a cross-fade. */
 	private double effectTime;
 
+	/** The depth fog of the page on screen ({@link #setFog}), and of the page a cross-fade brings in. */
+	private float fogStrength, transferFogStrength;
+	private final Color fogColor = new Color(WholePage_Model.FOG_R, WholePage_Model.FOG_G, WholePage_Model.FOG_B, 1);
+	private final Color transferFogColor = new Color(fogColor);
+	/** Each page's fastest speed ratio X ({@link #frontSpeedOf}), refreshed each draw. */
+	private float frontSpeed, transferFrontSpeed;
+	/**
+	 * This draw's fog is the engine's page fog ({@link LayerEffects#beginPageFog}): the IMAGE and SEQUENCE layers' fog in
+	 * the batch color, one shader for all; and whether it is on now (a hook or particles turn it off).
+	 */
+	private boolean pageFog, pageFogOn;
+	/** The batch alpha of the layer drawn through the page fog, given back with the tint after it. */
+	private float packedAlpha;
+
 	/** The game's seed for the SEQUENCE layers, when {@link #hasSequenceSeed}: see {@link #setSequenceSeed}. */
 	private int sequenceSeed;
 	private boolean hasSequenceSeed;
@@ -98,6 +112,8 @@ public class ParallaxPageReader implements Disposable
 		List<ParallaxLayer> newLayers = pageModel.getDrawing(relativePath, worldWidth, worldHeight);
 		if (newLayers == null || newLayers.isEmpty())
 			return;
+		transferFogStrength = pageModel.getFogStrength();
+		transferFogColor.set(pageModel.fogColor);
 
 		// Transferring into the page on screen: its layers must not be moved and drawn twice per frame.
 		for (ParallaxLayer layer : newLayers)
@@ -112,12 +128,37 @@ public class ParallaxPageReader implements Disposable
 		if (inXSecondes <= 0)
 		{
 			layers = transferLayers;
+			takeTransferFog();
 			resetTransfert();
 			return;
 		}
 
 		transfertType = Enum_TransfertType.EACH_FRAME;
 		newLayerFadeSpeed = oldLayerFadeSpeed = 1 / inXSecondes;
+	}
+
+	/**
+	 * The depth fog of the page on screen: its strength, 0 or more (0: no fog), and its colour, which the page's tint
+	 * does not change; see {@link WholePage_Model#getFogStrength}. A heart sets its page's; a cross-fade brings in the
+	 * incoming page's.
+	 */
+	public void setFog(float strength, Color color)
+	{
+		fogStrength = strength > 0 ? strength : 0;
+		if (color != null)
+			fogColor.set(color);
+	}
+
+	public float getFogStrength()
+	{return fogStrength;}
+
+	public Color getFogColor()
+	{return fogColor;}
+
+	private void takeTransferFog()
+	{
+		fogStrength = transferFogStrength;
+		fogColor.set(transferFogColor);
 	}
 
 	/** Tints every layer toward {@code color} over {@code inXSecondes}. */
@@ -161,12 +202,17 @@ public class ParallaxPageReader implements Disposable
 		viewLeft = worldCamera.position.x - viewWidth / 2;
 		viewBottom = worldCamera.position.y - viewHeight / 2;
 
+		frontSpeed = frontSpeedOf(layers);
+		transferFrontSpeed = frontSpeedOf(transferLayers);
+		pageFogOn = pageFog = (fogStrength > 0 || (transferFogStrength > 0 && !transferLayers.isEmpty()))
+				&& getLayerEffects().beginPageFog(batch, tint, fogColor, transferFogColor);
+
 		// A layer at alpha 0 still costs its pixels on the GPU, and during a transfer a flush when the pages' atlases differ.
 		if (transferLayers.isEmpty())
 		{
 			if (setBatchColor(batch, 1))
 				for (int i = 0, n = layers.size(); i < n; i++)
-					drawLayer(layers, i, batch);
+					drawLayer(layers, i, batch, false);
 		}
 		else
 		{
@@ -177,13 +223,30 @@ public class ParallaxPageReader implements Disposable
 			for (int slot = 0; slot < total; slot++)
 			{
 				if (slot >= oldOffset && setBatchColor(batch, oldLayerAlpha))
-					drawLayer(layers, slot - oldOffset, batch);
+					drawLayer(layers, slot - oldOffset, batch, false);
 				if (slot >= newOffset && setBatchColor(batch, newLayerAlpha))
-					drawLayer(transferLayers, slot - newOffset, batch);
+					drawLayer(transferLayers, slot - newOffset, batch, true);
 			}
 		}
 
+		endPageFog(batch);
+		release(batch);
 		batch.setColor(Color.WHITE);
+	}
+
+	/** Puts the game's shader back before a hook or particles, which draw with it. */
+	private void endPageFog(Batch batch)
+	{
+		if (pageFogOn)
+			effects.endPageFog(batch);
+		pageFogOn = false;
+	}
+
+	/** Lets the engine's effects put back a shader they kept bound across layers: before a layer they do not draw. */
+	private void release(Batch batch)
+	{
+		if (effects != null)
+			effects.release(batch);
 	}
 
 	/** Sets the tint at that opacity, and says whether anything drawn with it would show. */
@@ -195,10 +258,38 @@ public class ParallaxPageReader implements Disposable
 	}
 
 	/**
+	 * How much of the fog's colour a layer is mixed toward, 0 to 1: {@code 1 - exp(-strength * (1 / speed - 1 / front))},
+	 * speed the layer's speed ratio X and front the page's fastest ({@link #frontSpeedOf}), both as magnitudes: the
+	 * slower a layer scrolls, the farther it is, and the more it is fogged. 0 for the front layer, for no fog, and for a
+	 * page that does not scroll; 1 for a still layer in front of a scrolling one.
+	 */
+	public static float fogOf(float strength, float front, ParallaxLayer layer)
+	{
+		if (!(strength > 0) || !(front > 0))
+			return 0;
+		float speed = Math.abs(layer.getParallaxSpeedRatioX());
+		if (!(speed > 0))
+			return 1;
+		float depth = 1 / speed - 1 / front;
+		return depth > 0 ? 1 - (float) Math.exp(-strength * depth) : 0;
+	}
+
+	/** The fastest speed ratio X of {@code page}, as a magnitude: its front, for {@link #fogOf}. 0 for no layer. */
+	public static float frontSpeedOf(List<ParallaxLayer> page)
+	{
+		float front = 0;
+		for (int i = 0, n = page.size(); i < n; i++)
+			front = Math.max(front, Math.abs(page.get(i).getParallaxSpeedRatioX()));
+		return front;
+	}
+
+	/**
+	 * Format 9's depth haze, which the reader no longer draws (r217: the page's fog replaced it); kept for the haze lab.
 	 * How much of the mist's white the layer at {@code index} of {@code page} (back to front) is mixed toward: 1 minus
 	 * the product, over every FOG layer in front of it, of {@code (1 - haze)} once per step between them. One FOG layer
 	 * of haze h, n layers in front: {@code 1 - (1 - h)^n}. 0 for a layer with no hazy FOG in front of it.
 	 */
+	@Deprecated
 	public static float hazeOf(List<ParallaxLayer> page, int index)
 	{
 		// step: the product of (1 - haze) of the FOG layers passed; keep: what is left of the color, one more step back.
@@ -213,7 +304,7 @@ public class ParallaxPageReader implements Disposable
 		return 1 - keep;
 	}
 
-	private void drawLayer(ArrayList<ParallaxLayer> page, int index, Batch batch)
+	private void drawLayer(ArrayList<ParallaxLayer> page, int index, Batch batch, boolean incoming)
 	{
 		ParallaxLayer layer = page.get(index);
 		float originX = viewLeft + layer.currentDistanceX;
@@ -225,6 +316,8 @@ public class ParallaxPageReader implements Disposable
 			LayerHook hook = layer.name == null ? null : hooks.get(layer.name);
 			if (hook != null)
 			{
+				endPageFog(batch);
+				release(batch);
 				hookColor.set(batch.getColor());
 				tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, hook);
 				batch.setColor(hookColor);
@@ -237,6 +330,8 @@ public class ParallaxPageReader implements Disposable
 			ParallaxParticles particles = layer.getParticles();
 			if (particles == null || particles.isEmpty())
 				return;
+			endPageFog(batch);
+			release(batch);
 			int srcColor = batch.getBlendSrcFunc(), dstColor = batch.getBlendDstFunc();
 			int srcAlpha = batch.getBlendSrcFuncAlpha(), dstAlpha = batch.getBlendDstFuncAlpha();
 			if (layer.getAnchor() == Enum_ParticleAnchor.VIEW)
@@ -254,10 +349,28 @@ public class ParallaxPageReader implements Disposable
 			return;
 		}
 
-		// The depth haze is drawn on images: an EMPTY or PARTICLES layer behind a FOG layer counts as a step, drawn as is.
-		float haze = hazeOf(page, index);
-		boolean shaded = (layer.kind == Enum_LayerKind.SHADER || haze > 0)
-				&& getLayerEffects().begin(batch, layer, layer.getShaderPhase(effectTime), haze);
+		// The fog is drawn on images: an EMPTY or PARTICLES layer is drawn as is.
+		float fog = incoming ? fogOf(transferFogStrength, transferFrontSpeed, layer) : fogOf(fogStrength, frontSpeed, layer);
+		boolean shaded, packed = false;
+		if (pageFog && layer.kind != Enum_LayerKind.SHADER)
+		{
+			// The page fog's shader, the layer's fog and page in the batch color: no flush from one layer to the next.
+			if (!pageFogOn)
+				pageFogOn = effects.beginPageFog(batch, tint, fogColor, transferFogColor);
+			release(batch);
+			packedAlpha = batch.getColor().a;
+			packed = pageFogOn;
+			if (packed)
+				batch.setColor(fog, incoming ? 1 : 0, 0, packedAlpha);
+			shaded = false;
+		}
+		else
+		{
+			shaded = (layer.kind == Enum_LayerKind.SHADER || fog > 0)
+					&& getLayerEffects().begin(batch, layer, layer.getShaderPhase(effectTime), fog, incoming ? transferFogColor : fogColor);
+			if (!shaded)
+				release(batch);
+		}
 
 		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
 
@@ -272,6 +385,9 @@ public class ParallaxPageReader implements Disposable
 
 		if (shaded)
 			effects.end(batch, layer);
+		else if (packed)
+			// The next layer is drawn with the tint at this alpha, which draw() sets only once outside a cross-fade.
+			batch.setColor(tint.r, tint.g, tint.b, packedAlpha);
 	}
 
 	/**
@@ -359,6 +475,7 @@ public class ParallaxPageReader implements Disposable
 			if (newLayerAlpha >= 1)
 			{
 				layers = transferLayers;
+				takeTransferFog();
 				resetTransfert();
 			}
 		}

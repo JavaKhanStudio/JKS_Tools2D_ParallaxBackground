@@ -60,6 +60,10 @@ public final class Utils_Page_Json
 		page.repeatOnX = json.getBoolean("repeatOnX", page.repeatOnX);
 		page.repeatOnY = json.getBoolean("repeatOnY", page.repeatOnY);
 		page.useOriginalSize = json.getBoolean("useOriginalSize", page.useOriginalSize);
+		// Without one (before format 10) the fog's strength is the largest FOG layer's shaderHaze, read below.
+		if (json.has("fogStrength"))
+			page.setFogStrength(readFloat(json, "fogStrength", 0));
+		page.fogColor = readColor(json.get("fogColor"), page.fogColor);
 
 		JsonValue pageModel = json.get("pageModel");
 		if (pageModel == null || pageModel.isNull())

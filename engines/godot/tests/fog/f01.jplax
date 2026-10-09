@@ -137,8 +137,7 @@
     "shaderEffect": "FOG",
     "shaderAmplitude": 1.0,
     "shaderWavelength": 5,
-    "shaderSpeed": 1.5,
-    "shaderHaze": 0.25
+    "shaderSpeed": 1.5
    },
    {
     "regionName": "parallax4",
@@ -179,5 +178,6 @@
    }
   ]
  },
- "useOriginalSize": true
+ "useOriginalSize": true,
+ "fogStrength": 0.03
 }

@@ -31,10 +31,10 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * The haze lab (r215, doubt d17): the depth haze (r211) leaves EMPTY and PARTICLES layers as they are, and mixes toward
  * an untinted white when the page is tinted; this shows the two other ways side by side. Its page
  * (core/test-data/haze/make_lab.py) is the haze round's h01 with a game's towers (an EMPTY layer, drawn by the lab's hook)
- * and p01's snow (a PARTICLES layer), both behind the mist. A draws it as the reader ships; B hazes the towers and the
- * snow too; C mixes toward the mist's white times the page's tint; D does both. A is Parallax_Heart.render as is; B to D
- * hand the reader one layer at a time, each through the shipped shaders with the mist's white made a uniform, as
- * {@link FogLab} does. Sliders: the mist's haze (stored on it: A moves too), the tint and how strong, the camera's scroll,
+ * and p01's snow (a PARTICLES layer), both behind the mist. A draws it as the reader shipped it until r217 (the page fog
+ * replaced the haze: every panel is the lab's own drawing, and the readers' fog is off); B hazes the towers and the
+ * snow too; C mixes toward the mist's white times the page's tint; D does both. Every panel hands the reader one layer
+ * at a time, each through the shipped shaders, the white their fog colour. Sliders: the mist's haze (stored on it: A moves too), the tint and how strong, the camera's scroll,
  * the towers' brightness. Opened with haze-lab.html: tools/haze-lab.sh.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.hazeLabAct(seconds)} steps every heart at 1/60 s.
@@ -49,7 +49,7 @@ public class HazeLab extends ApplicationAdapter
 	static final int FRAME_WIDTH = FogLab.FRAME_WIDTH, FRAME_HEIGHT = FogLab.FRAME_HEIGHT, PANEL_HEIGHT = FogLab.PANEL_HEIGHT;
 	/** The s01 page sits in the upper world: the frame's bottom is this far below the panel's. */
 	static final int FRAME_DROP = FRAME_HEIGHT - PANEL_HEIGHT;
-	static final String[] TITLES = { "A: ships today (towers and snow not hazed, white untinted)", "B: towers and snow hazed too",
+	static final String[] TITLES = { "A: as r211 shipped (towers and snow not hazed, white untinted)", "B: towers and snow hazed too",
 			"C: haze white x the page's tint", "D: both (B and C)" };
 	/** Per panel: are EMPTY and PARTICLES layers hazed, is the haze's white tinted. */
 	static final boolean[] HAZE_HOOKS = { false, true, false, true };
@@ -108,9 +108,10 @@ public class HazeLab extends ApplicationAdapter
 			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i].setPage(Utils_Page_Json.loadPage(PAGE));
+			// The page's FOG layer has a haze, which a reader since r217 draws as a page fog: this lab draws the old haze.
+			hearts[i].parallaxReader.setFog(0, null);
 			hearts[i].parallaxReader.setLayerHook(TOWERS, towers);
-			if (i > 0)
-				hearts[i].parallaxReader.setLayerEffects(effects[i] = new LabEffects());
+			hearts[i].parallaxReader.setLayerEffects(effects[i] = new LabEffects());
 			ArrayList<ParallaxLayer> layers = hearts[i].parallaxReader.layers;
 			// The snow is random in each panel: drawn the same, it would still differ.
 			if (same)
@@ -256,10 +257,7 @@ public class HazeLab extends ApplicationAdapter
 			int x = (i % 2) * (FRAME_WIDTH + 4), top = i < 2 ? height : height - PANEL_HEIGHT - 4;
 			Gdx.gl.glScissor(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
 			Gdx.gl.glViewport(x, top - PANEL_HEIGHT - FRAME_DROP, FRAME_WIDTH, FRAME_HEIGHT);
-			if (i == 0)
-				hearts[i].render();
-			else
-				renderLab(hearts[i], effects[i], !same && HAZE_HOOKS[i], !same && TINT_WHITE[i]);
+			renderLab(hearts[i], effects[i], !same && HAZE_HOOKS[i], !same && TINT_WHITE[i]);
 		}
 		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
 		Gdx.gl.glViewport(0, 0, width, height);
@@ -298,7 +296,7 @@ public class HazeLab extends ApplicationAdapter
 			batch.setShader(program);
 			batch.flush();
 			program.setUniformf("u_haze", effects.haze);
-			program.setUniformf("u_white", white[0], white[1], white[2]);
+			program.setUniformf("u_fog", white[0], white[1], white[2]);
 			layers.clear();
 			layers.add(layer);
 			heart.parallaxReader.draw(heart.worldCamera, batch);
@@ -317,13 +315,11 @@ public class HazeLab extends ApplicationAdapter
 	}
 
 	/**
-	 * The reader's effects, compiled from GdxLayerEffects' own sources with the mist's white a uniform, u_white, and the
+	 * The reader's effects, compiled from GdxLayerEffects' own sources, the mist's white set as their u_fog, and the
 	 * haze the lab's, not the reader's (it is handed one layer, so it reckons none).
 	 */
 	static final class LabEffects implements LayerEffects
 	{
-		static final String SHIPPED = "const vec3 HAZE = vec3(0.93, 0.95, 0.97);\n";
-		static final String UNIFORM = "uniform vec3 u_white;\n#define HAZE u_white\n";
 
 		float haze;
 		float[] white;
@@ -353,7 +349,7 @@ public class HazeLab extends ApplicationAdapter
 			program.setUniformf("u_size", numbers[4], numbers[5]);
 			program.setUniformf("u_effect", numbers[6], numbers[7], numbers[8]);
 			program.setUniformf("u_haze", haze);
-			program.setUniformf("u_white", white[0], white[1], white[2]);
+			program.setUniformf("u_fog", white[0], white[1], white[2]);
 			return true;
 		}
 
@@ -364,13 +360,10 @@ public class HazeLab extends ApplicationAdapter
 			previous = null;
 		}
 
-		/** GdxLayerEffects' fragment for {@code effect} (null: PLAIN), its white made u_white. */
+		/** GdxLayerEffects' fragment for {@code effect} (null: PLAIN): the white is its u_fog. */
 		static ShaderProgram compile(Enum_ShaderEffect effect)
 		{
-			String source = GdxLayerEffects.fragment(effect);
-			if (!source.contains(SHIPPED))
-				throw new IllegalStateException("GdxLayerEffects no longer has the line this lab makes a uniform: " + SHIPPED);
-			ShaderProgram program = new ShaderProgram(GdxLayerEffects.vertex(), source.replace(SHIPPED, UNIFORM));
+			ShaderProgram program = new ShaderProgram(GdxLayerEffects.vertex(), GdxLayerEffects.fragment(effect));
 			if (!program.isCompiled())
 				throw new IllegalStateException("the haze lab's " + effect + " does not compile: " + program.getLog());
 			return program;
