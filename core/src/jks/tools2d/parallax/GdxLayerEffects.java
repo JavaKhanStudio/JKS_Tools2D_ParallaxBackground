@@ -169,13 +169,13 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	}
 
 	/**
-	 * The numbers a SHADER layer's effect is drawn with, the same in every engine, into {@code out}: the region's u, v,
-	 * u2, v2; the image's width and height in world units; amplitude, wavelength and phase. A wavelength not positive
+	 * The numbers a SHADER layer's effect is drawn with, the same in every engine, into {@code out}: the drawn region's
+	 * u, v, u2, v2 (half a texel inside the atlas region, {@link ParallaxLayer#getDrawnRegion}); the image's width and height in world units; amplitude, wavelength and phase. A wavelength not positive
 	 * draws no effect: amplitude 0, wavelength 1. FOG's amplitude is kept within 0..1.
 	 */
 	public static float[] uniforms(ParallaxLayer layer, float phase, float[] out)
 	{
-		TextureRegion image = layer.getRegion();
+		TextureRegion image = layer.getDrawnRegion();
 		out[0] = image.getU();
 		out[1] = image.getV();
 		out[2] = image.getU2();

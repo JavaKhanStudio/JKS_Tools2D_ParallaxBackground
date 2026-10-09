@@ -774,7 +774,7 @@ func _draw_region(l: Dictionary, x: float, y: float, width: float, height: float
 	var left: float = x + width * ((1 - l.trim_left - l.packed_w) if fx else l.trim_left)
 	var bottom: float = y + height * ((1 - l.trim_bottom - l.packed_h) if fy else l.trim_bottom)
 	var r: Dictionary = l.region
-	var src := Rect2(r.x, r.y, r.width, r.height)
+	var src := PlaxEffects.drawn_rect(r)
 	var px := Vector2(draw_w, draw_h) * _ppu
 	var origin := Vector2(left * _ppu, _screen_h - (bottom + draw_h) * _ppu)
 	if fx or fy:

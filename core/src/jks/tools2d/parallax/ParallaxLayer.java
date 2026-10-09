@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -64,6 +65,13 @@ public class ParallaxLayer
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
 	private TextureRegion region;
+	/**
+	 * What is drawn of each of {@code texRegion}: the region inset by half a texel on every side (r218). Linear filtering
+	 * at a tile's edge otherwise mixes in the atlas pixel next to it, transparent in an atlas packed without
+	 * duplicatePadding: each join then showed a thin line of what is behind the layer, often the dark gradient. Replaced
+	 * with texRegion, never changed: a copy shares it.
+	 */
+	private List<TextureRegion> drawnRegions;
 
 	private final boolean isWidth;
 	private final float worldDimension;
@@ -250,7 +258,7 @@ public class ParallaxLayer
 		if (kind == Enum_LayerKind.SEQUENCE)
 			drawCycle(batch, x, y, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, flipX, flipY);
 		else if (drawsImage())
-			drawRegion(batch, region, x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, flipX, flipY);
+			drawRegion(batch, drawnRegions.get(0), x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, flipX, flipY);
 	}
 
 	/** Draws the mirrored copy: flipped vertically when tiling on X, horizontally when tiling on Y. */
@@ -261,7 +269,7 @@ public class ParallaxLayer
 		if (kind == Enum_LayerKind.SEQUENCE)
 			drawCycle(batch, x, y, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, fx, fy);
 		else if (drawsImage())
-			drawRegion(batch, region, x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, fx, fy);
+			drawRegion(batch, drawnRegions.get(0), x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, fx, fy);
 	}
 
 	/**
@@ -305,7 +313,7 @@ public class ParallaxLayer
 			float width = height * segmentAspect[segment];
 			if (left + width <= fromX)
 				continue;
-			drawRegion(batch, texRegion.get(segment), left, y, width, height, segmentTrimLeft[segment], segmentTrimBottom[segment],
+			drawRegion(batch, drawnRegions.get(segment), left, y, width, height, segmentTrimLeft[segment], segmentTrimBottom[segment],
 					segmentPackedWidth[segment], segmentPackedHeight[segment], fx, fy);
 		}
 	}
@@ -335,6 +343,8 @@ public class ParallaxLayer
 		ParallaxLayer copy = !drawsImage() ? new ParallaxLayer(kind, name, sizeRatio)
 				: new ParallaxLayer(kind, new ArrayList<>(texRegion), isWidth, worldDimension, parallaxSpeedRatioX, parallaxSpeedRatioY, sizeRatio);
 		copy.name = name;
+		if (drawsImage())
+			copy.drawnRegions = drawnRegions;
 		// Its own effect: both play during a cross-fade, and one effect updated twice a frame would run double speed.
 		if (particles != null)
 			copy.setParticles(new ParallaxParticles(particles));
@@ -789,6 +799,13 @@ public class ParallaxLayer
 	public TextureRegion getRegion()
 	{return region;}
 
+	/**
+	 * What is drawn of {@link #getRegion()}: inset by half a texel on every side (r218). Effects map texture coordinates
+	 * through this one, so their pattern lands where the quad's texels do.
+	 */
+	public TextureRegion getDrawnRegion()
+	{return drawnRegions == null ? null : drawnRegions.get(0);}
+
 	public boolean isUseOriginalSize()
 	{return useOriginalSize;}
 
@@ -810,6 +827,10 @@ public class ParallaxLayer
 
 		this.texRegion = texRegion;
 		this.region = texRegion.get(0);
+		List<TextureRegion> drawn = new ArrayList<>(texRegion.size());
+		for (int i = 0, n = texRegion.size(); i < n; i++)
+			drawn.add(insetByHalfATexel(texRegion.get(i)));
+		this.drawnRegions = drawn;
 
 		float imageWidth = region.getRegionWidth();
 		float imageHeight = region.getRegionHeight();
@@ -885,4 +906,21 @@ public class ParallaxLayer
 
 	public void setTexRegion(TextureRegion texRegion)
 	{setTexRegion(singletonList(texRegion));}
+
+	/**
+	 * {@code region} with its edges moved half a texel inwards: a linear sample at the drawn quad's edge then reads the
+	 * edge texel alone, never the one past it. Stretches the image by one texel, a third of a pixel on a 3000-texel
+	 * layer drawn screen-wide. A region without a texture (a test's) or under 2 texels wide is drawn as is.
+	 */
+	static TextureRegion insetByHalfATexel(TextureRegion region)
+	{
+		Texture texture = region.getTexture();
+		if (texture == null || Math.abs(region.getRegionWidth()) < 2 || Math.abs(region.getRegionHeight()) < 2)
+			return region;
+		float du = Math.signum(region.getU2() - region.getU()) * 0.5f / texture.getWidth();
+		float dv = Math.signum(region.getV2() - region.getV()) * 0.5f / texture.getHeight();
+		TextureRegion inset = new TextureRegion(region);
+		inset.setRegion(region.getU() + du, region.getV() + dv, region.getU2() - du, region.getV2() - dv);
+		return inset;
+	}
 }
