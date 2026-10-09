@@ -709,15 +709,16 @@ public class ParallaxLayer
 
 	/**
 	 * Where the effect is after {@code seconds} of the reader's clock, in world units: {@code speed * seconds} wrapped
-	 * to one wavelength, after which both effects repeat, so a shader is handed a small number however long the game
-	 * runs. 0 when the wavelength is not positive.
+	 * to where the effect repeats, one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD} for FOG, so a shader
+	 * is handed a small number however long the game runs. 0 when the wavelength is not positive.
 	 */
 	public float getShaderPhase(double seconds)
 	{
 		if (!(shaderWavelength > 0))
 			return 0;
-		double phase = (seconds * shaderSpeed) % shaderWavelength;
-		return (float) (phase < 0 ? phase + shaderWavelength : phase);
+		double period = (double) shaderWavelength * (shaderEffect == null ? 1 : shaderEffect.period());
+		double phase = (seconds * shaderSpeed) % period;
+		return (float) (phase < 0 ? phase + period : phase);
 	}
 
 	/** A SEQUENCE layer's segments as the page names them, each with its weight; null for other kinds. */

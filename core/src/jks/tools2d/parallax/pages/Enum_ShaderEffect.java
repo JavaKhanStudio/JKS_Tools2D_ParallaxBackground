@@ -18,7 +18,14 @@ public enum Enum_ShaderEffect
 	/**
 	 * Drifting fog: the image's opacity is thinned by up to {@code amplitude} (0 to 1) in soft patches about
 	 * {@code wavelength} wide, which drift left at {@code speed}. A plain white image is a moving fog over the layers
-	 * behind it.
+	 * behind it. The patches come back the same only every {@link #FOG_PERIOD} wavelengths across (r216).
 	 */
-	FOG,
+	FOG;
+
+	/** How many wavelengths FOG's patches run before they repeat: its x frequencies are 7, 17 and 23 per 8. */
+	public static final int FOG_PERIOD = 8;
+
+	/** How many wavelengths this effect runs before it repeats: its phase is wrapped there. */
+	public int period()
+	{return this == FOG ? FOG_PERIOD : 1;}
 }
