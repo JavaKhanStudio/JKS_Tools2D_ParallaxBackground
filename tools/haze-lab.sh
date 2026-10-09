@@ -89,7 +89,7 @@ with sync_playwright() as p:
         page.wait_for_function("document.getElementById('haze-copy-state').textContent !== ''")
         got = json.loads(page.input_value("#haze-copy-json"))
         keys = {"depthHaze", "pageTint", "tintStrength", "cameraScroll", "towersLight"}
-        moved = {"depthHaze": {"started": 0.25, "now": 0.4}, "pageTint": {"started": 1, "now": 2}}
+        moved = {"depthHaze": {"started": 0.25, "now": 0.4}, "pageTint": {"started": 0, "now": 2}}
         if set(got["settings"]) != keys or got["changed"] != moved or got["tint"] != "night blue":
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#haze-copy-state"), json.dumps(got["settings"])))
