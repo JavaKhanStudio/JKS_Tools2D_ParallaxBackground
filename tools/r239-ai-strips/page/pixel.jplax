@@ -1,0 +1,113 @@
+{
+ "topHalf_top": {
+  "r": 0.5607843,
+  "g": 0.7058824,
+  "b": 0.8784314,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 0.8823529,
+  "g": 0.9098039,
+  "b": 0.9411765,
+  "a": 1.0
+ },
+ "topHalfSize": 0.0,
+ "bottomHalf_top": {
+  "r": 0.1176471,
+  "g": 0.1686275,
+  "b": 0.1568627,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 0.1176471,
+  "g": 0.1686275,
+  "b": 0.1568627,
+  "a": 1.0
+ },
+ "bottomHalfSize": 1.0,
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "pageModel": {
+  "atlasName": "pixel.atlas",
+  "outside": false,
+  "pageList": [
+   {
+    "regionName": "mountains",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.01,
+    "parallaxScalingSpeedY": 0.006,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 14.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "hills",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.02,
+    "parallaxScalingSpeedY": 0.012,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 4.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.04,
+    "parallaxScalingSpeedY": 0.024,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 0.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false,
+    "kind": "SEQUENCE",
+    "name": "pines",
+    "sequenceSeed": 239,
+    "sequenceLength": 8,
+    "sequenceSegments": [
+     {
+      "regionName": "pines0",
+      "regionPosition": 0,
+      "weight": 1
+     },
+     {
+      "regionName": "pines1",
+      "regionPosition": 0,
+      "weight": 1
+     },
+     {
+      "regionName": "pines2",
+      "regionPosition": 0,
+      "weight": 1
+     },
+     {
+      "regionName": "pines3",
+      "regionPosition": 0,
+      "weight": 1
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,47 @@
+pixel.png
+size: 256, 582
+format: RGBA8888
+filter: Nearest,Nearest
+repeat: none
+mountains
+  rotate: false
+  xy: 0, 0
+  size: 256, 96
+  orig: 256, 96
+  offset: 0, 0
+  index: -1
+hills
+  rotate: false
+  xy: 0, 97
+  size: 256, 96
+  orig: 256, 96
+  offset: 0, 0
+  index: -1
+pines0
+  rotate: false
+  xy: 0, 194
+  size: 256, 96
+  orig: 256, 96
+  offset: 0, 0
+  index: -1
+pines1
+  rotate: false
+  xy: 0, 291
+  size: 256, 96
+  orig: 256, 96
+  offset: 0, 0
+  index: -1
+pines2
+  rotate: false
+  xy: 0, 388
+  size: 256, 96
+  orig: 256, 96
+  offset: 0, 0
+  index: -1
+pines3
+  rotate: false
+  xy: 0, 485
+  size: 256, 96
+  orig: 256, 96
+  offset: 0, 0
+  index: -1

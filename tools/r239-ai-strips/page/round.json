@@ -1,0 +1,20 @@
+{
+ "round": "r239-ai-strips",
+ "about": "r239: the generated strips as a real page, and the round that renders it with core.",
+ "scenes": [
+  {
+   "id": "g01",
+   "page": "tools/r239-ai-strips/page/painted.jplax",
+   "atlasDir": "tools/r239-ai-strips/page",
+   "name": "painted",
+   "about": "SD1.5 strips painted over periodic silhouettes, circular padding; pines a SEQUENCE of 4 variants"
+  },
+  {
+   "id": "g02",
+   "page": "tools/r239-ai-strips/page/pixel.jplax",
+   "atlasDir": "tools/r239-ai-strips/page",
+   "name": "pixel",
+   "about": "the same strips cut to pixel art (/4, 10 colours, hard alpha), drawn Nearest"
+  }
+ ]
+}
