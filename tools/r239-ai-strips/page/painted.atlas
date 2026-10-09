@@ -1,0 +1,47 @@
+painted.png
+size: 1024, 2310
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+mountains
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+hills
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+pines0
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+pines1
+  rotate: false
+  xy: 0, 1155
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+pines2
+  rotate: false
+  xy: 0, 1540
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+pines3
+  rotate: false
+  xy: 0, 1925
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
