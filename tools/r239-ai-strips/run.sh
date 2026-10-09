@@ -7,6 +7,7 @@
 # Needs a ComfyUI checkout with its venv (COMFYUI_DIR, default ~/ComfyUI) holding dreamshaper_8.safetensors
 # (SD 1.5), and ~1.5 GB of free VRAM; nothing is downloaded. ~14 s a strip on an RTX 5060 laptop.
 # Writes the strips to OUT, then the atlases, pages and round to tools/r239-ai-strips/page.
+# True pixel art (SDXL + PixelArt_XL, cut one art pixel per cell): run-xl.sh, r243.
 set -eu
 cd "$(dirname "$0")/../.."
 OUT="${1:-build/r239}"

@@ -15,6 +15,13 @@
    "atlasDir": "tools/r239-ai-strips/page",
    "name": "pixel",
    "about": "the same strips cut to pixel art (/4, 10 colours, hard alpha), drawn Nearest"
+  },
+  {
+   "id": "g03",
+   "page": "tools/r239-ai-strips/page/pixel-xl.jplax",
+   "atlasDir": "tools/r239-ai-strips/page",
+   "name": "pixel-xl",
+   "about": "r243: SDXL + PixelArt_XL, one PNG pixel per art pixel (16 px cells), 12 colours a layer, drawn Nearest"
   }
  ]
 }

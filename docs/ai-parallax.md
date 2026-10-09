@@ -38,8 +38,37 @@ server, and leaves the install as it is.
   lint), and a page is made from their output.
 - **Pixel-perfect.** Two meanings, two answers. *Loops to the pixel*: yes, see the numbers. *Pixel art*: the SD 1.5
   downscale (`--pixel`) looks like a painting made small. SDXL with the `PixelArt_XL` LoRA (also on disk) paints real
-  pixel art (16 px cells, clean outlines) and loops the same way, but it took **363 s** a strip with ollama loaded
-  (SDXL gets offloaded in parts). It also painted clouds into the sky, so the sky can't be keyed out yet. Queued.
+  pixel art (16 px cells, clean outlines) and loops the same way. r243 cuts it to true pixel art: see below.
+
+## True pixel art (r243)
+
+`tools/r239-ai-strips/run-xl.sh build/r243` paints mountains, hills and pines with SDXL (`sdXL_v10VAEFix`) and the
+`PixelArt_XL` LoRA at strength 1.0, img2img at denoise 0.7 over `sil.py`'s silhouettes drawn at 1536x576, circular X.
+`pixel.py` then cuts each one to **one PNG pixel per art pixel**, and `make_page.py --xl` packs them as
+`page/pixel-xl.atlas` (`Nearest`), the round's scene `g03`.
+
+- **The grid is read from the picture.** Colour steps between neighbour columns pile up on the cell borders: folded
+  at the right period, the step profile has one tall peak (8 to 10 times its mean). All three strips: 16 px cells,
+  phase 15, 96x35 art pixels. The smallest period within 85% of the best score is taken, or twice the cell (half the
+  borders, the same peak) would win. A cell becomes the median of its inner half, since the VAE blurs the borders.
+  The count across is rounded to divide the width, and sampling wraps, so the small strip loops too.
+- **The sky is keyed, then gated by the silhouette.** SDXL paints a sky in two tones, a haze range and clouds, whatever
+  the prompt asks (it was asked for a flat sky and given "clouds" as a negative). A colour key alone can't tell a pale
+  ridge from that sky. `--mask` makes a cell opaque only if it keys AND lies within one cell of `sil.py`'s silhouette,
+  so nothing SD paints in the open sky survives: the hills strip's clouds are gone with no prompt work.
+- **One palette per layer, 12 colours.** A palette shared by three layers of different hues starved each of them: with
+  16 shared colours the mountains were left 6, and the pines lost their trunks and highlights. The segments of *one*
+  `SEQUENCE` layer still share one (`--palette`).
+- **Loops:** `seam.py` alpha step at the join is 0 (inside 0) for mountains and hills, 14.6 (inside 21.9) for pines.
+  Lint's (e) flags the pines (seam 58 > 20), but that check's fixed limit is below the strip's own inner column steps
+  (27 to 75): r253.
+- **Time**, 28 steps at 1536x576 on the RTX 5060 laptop (8 GB): with ollama holding about 4.1 GB, **79 s, 77 s and
+  43 s** (mountains, hills, pines; the sampling alone is 63 s at 2.3 s an iteration). r239's 363 s, under
+  the same ollama load, is not explained (not measured again). With the GPU free: FREE_TIMES.
+
+Still wrong: a 1-cell speck can float in the sky next to the silhouette (a cell inside the mask's one-cell slack that
+keys as art): the island cut of r242 removes it. And SDXL drifts off the silhouette: it painted the low crests between
+the mountains as sky, so the far range reads as a flat band. ControlNet (r244) may hold the shape.
 
 ## Traps (each one cost a wrong result first)
 
@@ -70,8 +99,7 @@ server, and leaves the install as it is.
 Tasks under r239, tagged `#assets`:
 
 1. r242: `layer.py` drops the alpha islands that don't touch the layer's mass (the bird).
-2. r243: pixel art through SDXL + `PixelArt_XL`: a sky that can be keyed out, the cell grid found and sampled one art
-   pixel per cell, and the time measured on a free GPU.
+2. r243 (done): pixel art through SDXL + `PixelArt_XL`, see "True pixel art".
 3. r244: ControlNet lineart over the silhouette at denoise 0.8 to 0.9, against img2img at 0.65: more detail, same shape?
 4. r245 (`#runtime`): lint (`tools/parallax_lab.py`) skips `SEQUENCE` layers in its layout checks, so it neither
    counts them as covering (a false (b) on this page) nor checks their joins.
