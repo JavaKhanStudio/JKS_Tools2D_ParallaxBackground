@@ -7,18 +7,19 @@ import com.google.gwt.dom.client.Document;
 
 /**
  * The browser suite's page: a small libGDX canvas, so the cases run in a real WebGL browser app, as a game's would.
- * fog-lab.html, the page with a {@code #fog-lab}: the FOG lab instead (r204, {@link FogLab}).
+ * fog-lab.html, the page with a {@code #fog-lab}: the FOG lab instead (r204, {@link FogLab}); haze-lab.html, with a
+ * {@code #haze-lab}: the haze lab (r215, {@link HazeLab}).
  */
 public class BrowserTestLauncher extends GwtApplication
 {
-	private static boolean fogLab()
-	{return Document.get().getElementById("fog-lab") != null;}
+	private static boolean has(String id)
+	{return Document.get().getElementById(id) != null;}
 
 	@Override
 	public GwtApplicationConfiguration getConfig()
-	{return fogLab() ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, 2 * FogLab.PANEL_HEIGHT + 4) : new GwtApplicationConfiguration(320, 60);}
+	{return has("fog-lab") || has("haze-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, 2 * FogLab.PANEL_HEIGHT + 4) : new GwtApplicationConfiguration(320, 60);}
 
 	@Override
 	public ApplicationListener createApplicationListener()
-	{return fogLab() ? new FogLab() : new BrowserTestApp();}
+	{return has("fog-lab") ? new FogLab() : has("haze-lab") ? new HazeLab() : new BrowserTestApp();}
 }
