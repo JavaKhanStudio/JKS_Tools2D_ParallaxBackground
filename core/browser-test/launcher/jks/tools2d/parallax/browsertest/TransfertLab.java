@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
+import com.google.gwt.dom.client.SelectElement;
 
 import java.util.ArrayList;
 
@@ -57,7 +58,17 @@ public class TransfertLab extends ApplicationAdapter
 	static final String[] GRADE_NAMES = { "dusk", "night blue", "black" };
 	static final float[][] GRADES = { { 1, 0.5f, 0.35f }, { 0.25f, 0.3f, 0.6f }, { 0, 0, 0 } };
 	/** What the lab opens on. */
-	static final float SECONDS = 3, HOLD = 1.5f, PAIR = 0, SCROLL = 40, STAGGER = 0.5f, GRADE = 0, PATCH = 5, SOFT = 0.08f;
+	static final float SECONDS = 3, HOLD = 1.5f, SCROLL = 40, STAGGER = 0.5f, PATCH = 5, SOFT = 0.08f;
+	static final int PAIR = 0, GRADE = 0;
+
+	/** Each pair as its choice names it, an arrow between: "calm \u2194 OneNight". */
+	static String[] pairNames()
+	{
+		String[] names = new String[PAIRS.length];
+		for (int i = 0; i < PAIRS.length; i++)
+			names[i] = PAGE_NAMES[PAIRS[i][0]] + " \u2194 " + PAGE_NAMES[PAIRS[i][1]];
+		return names;
+	}
 
 	/** Mask modes of the lab's shader: keep where the noise is over the ramp, under it, or haze by it. */
 	static final int OUTGOING = 0, INCOMING = 1, HAZE = 2;
@@ -66,7 +77,8 @@ public class TransfertLab extends ApplicationAdapter
 	/** Each heart's own copy of every page: a page's layers belong to the heart that shows them. */
 	private final WholePage_Model[][] models = new WholePage_Model[4][PAGES.length];
 	private final ArrayList<ParallaxLayer> one = new ArrayList<>(1), none = new ArrayList<>(0);
-	private InputElement seconds, hold, pair, scroll, stagger, grade, patch, soft;
+	private InputElement seconds, hold, scroll, stagger, patch, soft;
+	private SelectElement pair, grade;
 	private Element readout;
 	private ShaderProgram masked;
 	private SpriteBatch batch;
@@ -108,11 +120,11 @@ public class TransfertLab extends ApplicationAdapter
 		Document document = Document.get();
 		LabControls.panelLabels(document, "transfert-labels", TITLES);
 		Element controls = document.getElementById("transfert-controls");
-		pair = LabControls.slider(document, controls, "pagePair", "pages", 0, PAIRS.length - 1, 1, PAIR);
+		pair = LabControls.choice(document, controls, "pagePair", "pages", pairNames(), PAIR);
 		seconds = LabControls.slider(document, controls, "seconds", "transfert length (s)", 0.5f, 8, 0.25f, SECONDS);
 		hold = LabControls.slider(document, controls, "hold", "hold between transferts (s)", 0.5f, 5, 0.25f, HOLD);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
-		grade = LabControls.slider(document, controls, "gradeColour", "B: grade colour", 0, GRADES.length - 1, 1, GRADE);
+		grade = LabControls.choice(document, controls, "gradeColour", "B: grade colour", GRADE_NAMES, GRADE);
 		stagger = LabControls.slider(document, controls, "depthStagger", "C, D: depth stagger (0 = every layer at once)", 0, 2, 0.1f, STAGGER);
 		patch = LabControls.slider(document, controls, "patches", "C, D: patches across the panel", 1, 16, 0.5f, PATCH);
 		soft = LabControls.slider(document, controls, "softEdge", "C, D: patch edge softness", 0.01f, 0.4f, 0.01f, SOFT);
@@ -125,9 +137,7 @@ public class TransfertLab extends ApplicationAdapter
 	/** Puts the sliders into the hearts; a new pair starts over on its first page. */
 	private void applyControls()
 	{
-		int p = Math.round(LabControls.read(pair));
-		((Element) pair.getNextSibling()).setInnerText(PAGE_NAMES[PAIRS[p][0]] + " <-> " + PAGE_NAMES[PAIRS[p][1]]);
-		((Element) grade.getNextSibling()).setInnerText(GRADE_NAMES[Math.round(LabControls.read(grade))]);
+		int p = LabControls.read(pair);
 		LabControls.read(seconds);
 		LabControls.read(hold);
 		LabControls.read(stagger);
@@ -170,7 +180,7 @@ public class TransfertLab extends ApplicationAdapter
 				int into = PAIRS[shown][1 - side];
 				for (int i = 0; i < hearts.length; i++)
 					hearts[i].transfertIntoPage(models[i][into], duration);
-				float[] g = GRADES[Math.round(LabControls.read(grade))];
+				float[] g = GRADES[LabControls.read(grade)];
 				hearts[1].parallaxReader.addColorTransfert(new Color(g[0], g[1], g[2], 1), duration / 2);
 				inTransfert = true;
 				since = 0;

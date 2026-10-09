@@ -9,7 +9,7 @@
 #   tools/effects-lab.sh --lab L --shot F.png    one still, headless (6 s into the scroll)
 #   tools/effects-lab.sh --lab L --copy F.png    checks "Copy settings", headless: moves the lab's first slider and the
 #                                                scroll, clicks, fails unless the JSON names every slider and the two moved
-#   tools/effects-lab.sh ... --slider K=V        before --shot/--copy: start slider K (its data-key) at V; repeatable
+#   tools/effects-lab.sh ... --slider K=V        before --shot/--copy: start control K (its data-key) at V, a choice at its option's index
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python
 # Playwright.
 # on-screen: with no --shot/--copy this is the lab, a window Simon asked for (r224); the other modes are headless Chrome.
@@ -80,15 +80,15 @@ with sync_playwright() as p:
         sys.exit("the lab never started: %s" % errors)
     for pair in sliders.split():
         key, value = pair.split("=", 1)
-        if not page.query_selector("input[data-key=%s]" % key):
+        if not page.query_selector("[data-key=%s]" % key):
             sys.exit("no slider %s in the %s lab" % (key, lab))
-        page.eval_on_selector("input[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
-    keys = page.eval_on_selector_all("#effects-controls input[data-key]", "es => es.map(e => e.dataset.key)")
+        page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
+    keys = page.eval_on_selector_all("#effects-controls [data-key]", "es => es.map(e => e.dataset.key)")
     if mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        first = page.eval_on_selector("#effects-controls input[data-key]", "e => [e.dataset.key, Number(e.dataset.start), Number(e.max)]")
-        page.eval_on_selector("input[data-key=%s]" % first[0], "(e, v) => { e.value = v; }", str(first[2]))
-        page.eval_on_selector("input[data-key=cameraScroll]", "e => { e.value = '80'; }")
+        first = page.eval_on_selector("#effects-controls input[type=range][data-key]", "e => [e.dataset.key, Number(e.dataset.start), Number(e.max)]")
+        page.eval_on_selector("[data-key=%s]" % first[0], "(e, v) => { e.value = v; }", str(first[2]))
+        page.eval_on_selector("[data-key=cameraScroll]", "e => { e.value = '80'; }")
         page.evaluate("window.effectsLabAct(6)")
         page.click("#effects-copy")
         page.wait_for_function("document.getElementById('effects-copy-state').textContent !== ''")

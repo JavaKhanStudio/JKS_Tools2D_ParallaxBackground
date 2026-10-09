@@ -1,8 +1,9 @@
-// The labs' Copy settings (r208, one copy since r232): every slider in #<lab>-controls, what it started at, and which
-// ones moved, as JSON Simon pastes into a card. head() gives the lab's own fields, written before the settings.
+// The labs' Copy settings (r208, one copy since r232): every slider and choice (its option's index, r248) in
+// #<lab>-controls, what it started at, and which ones moved, as JSON Simon pastes into a card. head() gives the lab's
+// own fields, written before the settings.
 function labSettings(lab, head) {
 	var settings = {}, changed = {};
-	document.querySelectorAll('#' + lab + '-controls input[data-key]').forEach(function (input) {
+	document.querySelectorAll('#' + lab + '-controls [data-key]').forEach(function (input) {
 		var key = input.dataset.key, value = Number(input.value), start = Number(input.dataset.start);
 		settings[key] = value;
 		if (value !== start) changed[key] = { started: start, now: value };

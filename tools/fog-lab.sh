@@ -8,7 +8,7 @@
 #   tools/fog-lab.sh --clip F.mp4    a clip, headless: 12 s at 30 fps, stepped at game speed (window.fogLabAct)
 #   tools/fog-lab.sh --sets DIR      one still per parallax set (r208: s01, round1's calm, PurpleFairy, OneNight), and the
 #                                    last with the mist's size at 2.5x, headless: DIR/set0.png ...
-#   tools/fog-lab.sh --slider K=V   before --shot/--clip/--sets: start slider K (its data-key) at V; repeatable
+#   tools/fog-lab.sh --slider K=V   before --shot/--clip/--sets: start control K (its data-key) at V, a choice at its option's index
 #   tools/fog-lab.sh --copy F.png    checks "Copy settings", headless: moves C's slider and the mist to the front,
 #                                    clicks, fails unless the JSON names every slider and the two moved; F is the page
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, for --shot and
@@ -82,9 +82,9 @@ with sync_playwright() as p:
         sys.exit("the lab never started: %s" % errors)
     for kv in sliders.split():
         key, value = kv.split("=", 1)
-        if page.query_selector("input[data-key=%s]" % key) is None:
+        if page.query_selector("[data-key=%s]" % key) is None:
             sys.exit("no slider %s" % key)
-        page.eval_on_selector("input[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
+        page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
     def shot(path):
         # two animation frames: the step lands in the next render
         page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
@@ -95,19 +95,19 @@ with sync_playwright() as p:
     elif mode == "sets":
         # Every set the slider picks, one still each, then the last one with the mist grown to cover the frame.
         names = []
-        for i in range(int(page.get_attribute("input[data-key=parallaxSet]", "max"))+1):
+        for i in range(int(page.eval_on_selector("[data-key=parallaxSet]", "e => e.options.length"))):
             page.evaluate("window.fogLabPick(%d)" % i)
             page.evaluate("window.fogLabAct(6)")
             names.append(page.text_content("#fog-readout"))
             shot(frames + "/set%d.png" % i)
-        page.eval_on_selector("input[data-key=mistSize]", "e => { e.value = '2.5'; }")
+        page.eval_on_selector("[data-key=mistSize]", "e => { e.value = '2.5'; }")
         page.evaluate("window.fogLabAct(1)")
         shot(frames + "/set%d.png" % (i + 1))
         print("\n".join(names))
     elif mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        page.eval_on_selector("input[data-key=patchHeightC]", "e => { e.value = '0.6'; }")
-        page.eval_on_selector("input[data-key=mistLayer]", "e => { e.value = '7'; }")
+        page.eval_on_selector("[data-key=patchHeightC]", "e => { e.value = '0.6'; }")
+        page.eval_on_selector("[data-key=mistLayer]", "e => { e.value = '7'; }")
         page.evaluate("window.fogLabAct(6)")
         page.click("#fog-copy")
         page.wait_for_function("document.getElementById('fog-copy-state').textContent !== ''")

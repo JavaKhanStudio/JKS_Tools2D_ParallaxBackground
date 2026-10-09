@@ -3,11 +3,15 @@ package jks.tools2d.parallax.browsertest;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
+import com.google.gwt.dom.client.OptionElement;
+import com.google.gwt.dom.client.SelectElement;
 
 /**
  * The labs' controls (r232), one kit for every lab, styled by webapp/lab.css: a slider is its name beside it, the
  * value after it, several to a row. A name says what the slider moves; its explanation, the part in brackets, is the
- * slider's tooltip. Each lab's "Copy settings" reads the {@code data-key} and {@code data-start} put on the input.
+ * slider's tooltip. A choice among names (a set, a colour, a pair of pages) is a {@link #choice} instead, a select in
+ * the slider's and its value's room (r248). Each lab's "Copy settings" reads the {@code data-key} and
+ * {@code data-start} put on either, the index of the option for a choice.
  */
 final class LabControls
 {
@@ -59,6 +63,40 @@ final class LabControls
 		into.appendChild(row);
 		return input;
 	}
+
+	/**
+	 * A choice in {@code into}, among {@code options}, the {@code value}-th picked: a select whose option values are
+	 * their indices, so a driver sets it as a slider ({@code e.value = '2'}) and Copy settings reads a number.
+	 */
+	static SelectElement choice(Document document, Element into, String key, String name, String[] options, int value)
+	{
+		Element row = document.createLabelElement();
+		row.setClassName("ctl ctl-choice");
+		row.setTitle(name);
+		Element label = document.createSpanElement();
+		label.setClassName("ctl-name");
+		int bracket = name.indexOf(" (");
+		label.setInnerText(bracket < 0 ? name : name.substring(0, bracket));
+		SelectElement select = document.createSelectElement();
+		for (int i = 0; i < options.length; i++)
+		{
+			OptionElement option = document.createOptionElement();
+			option.setValue(String.valueOf(i));
+			option.setText(options[i]);
+			select.add(option, null);
+		}
+		select.setSelectedIndex(value);
+		select.setAttribute("data-key", key);
+		select.setAttribute("data-start", String.valueOf(value));
+		row.appendChild(label);
+		row.appendChild(select);
+		into.appendChild(row);
+		return select;
+	}
+
+	/** The index of the option picked; the first when a driver set a value no option has. */
+	static int read(SelectElement select)
+	{return Math.max(0, select.getSelectedIndex());}
 
 	static float read(InputElement input)
 	{

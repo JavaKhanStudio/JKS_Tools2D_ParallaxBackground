@@ -117,9 +117,11 @@ repair.
   the JVM. A test of what a browser game calls goes there; GWT floats are JavaScript doubles, so compare floats by
   `Float.floatToIntBits`, never by their printed text.
 - The HTML labs (`core/browser-test/webapp/*-lab.html`, r232) share one kit: `lab.css`, `lab.js` (Copy settings) and
-  `LabControls.slider`, whose name shows up to its first " (", the rest a tooltip. A new lab uses them, and
+  `LabControls.slider`, whose name shows up to its first " (", the rest a tooltip; a pick among names is a
+  `LabControls.choice` (a select, its option's index as the value: r248), never a slider. A new lab uses them, and
   `tools/r232-lab-kit/shots.sh OUT` (add the lab to its `shots.py`) fails a lab whose sliders need a scroll in the
-  1580x800 window, a text under 14px, a value out of its box, or a page wider than a 390px phone.
+  1580x800 window, a text under 14px, a value or a choice's name out of its box, a slider over names, or a page wider
+  than a 390px phone.
 
 ## Words
 

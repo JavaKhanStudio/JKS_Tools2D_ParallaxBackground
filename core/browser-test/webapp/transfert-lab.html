@@ -37,8 +37,8 @@
 	<script>
 	labCopy('transfert', function () {
 		return {
-			lab: 'transfert-lab', pages: document.querySelector('input[data-key=pagePair]').nextSibling.textContent,
-			grade: document.querySelector('input[data-key=gradeColour]').nextSibling.textContent,
+			lab: 'transfert-lab', pages: document.querySelector('select[data-key=pagePair]').selectedOptions[0].textContent,
+			grade: document.querySelector('select[data-key=gradeColour]').selectedOptions[0].textContent,
 			panels: 'A the transfert as it ships, B through a colour grade (tint), C fog creep, D dissolve'
 		};
 	});

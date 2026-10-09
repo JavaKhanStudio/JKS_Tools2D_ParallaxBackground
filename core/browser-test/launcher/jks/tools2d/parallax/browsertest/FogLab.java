@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
+import com.google.gwt.dom.client.SelectElement;
 
 import java.util.ArrayList;
 
@@ -80,7 +81,8 @@ public class FogLab extends ApplicationAdapter
 	private final ParallaxLayer[] waves = new ParallaxLayer[8];
 	private final float[] waveAmplitudes = new float[8];
 	private int waveCount;
-	private InputElement amplitude, wavelength, speed, height, scroll, ripple, order, fog, fogColor, pick, size, rise;
+	private InputElement amplitude, wavelength, speed, height, scroll, ripple, order, fog, size, rise;
+	private SelectElement fogColor, pick;
 	private final PatchHeightEffects[] effects = new PatchHeightEffects[4];
 	/** Where the mist sits in s01's layers, 0 = at the back: the page's place, the slider's start. */
 	private int pageMistIndex;
@@ -177,8 +179,8 @@ public class FogLab extends ApplicationAdapter
 		int last = hearts[0].parallaxReader.layers.size() - 1;
 		order = LabControls.slider(document, controls, "mistLayer", "mist's layer (0 = back, front = the set's last)", 0, last, 1, pageMistIndex);
 		fog = LabControls.slider(document, controls, "fogStrength", "page fog strength (1 - exp(-s (1/speed - 1/front)))", 0, 0.2f, 0.0025f, FOG);
-		fogColor = LabControls.slider(document, controls, "fogColor", "page fog colour", 0, FOG_COLORS.length - 1, 1, 0);
-		pick = LabControls.slider(document, controls, "parallaxSet", "parallax set", 0, sets.length - 1, 1, 0);
+		fogColor = LabControls.choice(document, controls, "fogColor", "page fog colour", FOG_COLOR_NAMES, 0);
+		pick = LabControls.choice(document, controls, "parallaxSet", "parallax set", SET_NAMES, 0);
 		size = LabControls.slider(document, controls, "mistSize", "mist's size (x s01's: wider and taller)", 0.5f, 3, 0.05f, 1);
 		rise = LabControls.slider(document, controls, "mistRise", "mist up/down (world units from the set's place)", -12, 12, 0.25f, 0);
 		readout = LabControls.readout(document, controls, "fog-readout");
@@ -193,8 +195,7 @@ public class FogLab extends ApplicationAdapter
 		float a = LabControls.read(amplitude), w = LabControls.read(wavelength), s = LabControls.read(speed);
 		heights[2] = LabControls.read(height);
 		float sc = LabControls.read(scroll), rp = LabControls.read(ripple);
-		FogSet next = sets[Math.round(LabControls.read(pick))];
-		((Element) pick.getNextSibling()).setInnerText(SET_NAMES[next.index]);
+		FogSet next = sets[LabControls.read(pick)];
 		if (next != set)
 		{
 			show(next);
@@ -228,8 +229,7 @@ public class FogLab extends ApplicationAdapter
 		for (int i = 0; i < waveCount; i++)
 			waves[i].setShaderAmplitude(waveAmplitudes[i] * rp);
 		float strength = LabControls.read(fog);
-		int colour = Math.round(LabControls.read(fogColor));
-		((Element) fogColor.getNextSibling()).setInnerText(FOG_COLOR_NAMES[colour]);
+		int colour = LabControls.read(fogColor);
 		for (int i = 0; i < hearts.length; i++)
 		{
 			// The last panel: no FOG layer, no fog.

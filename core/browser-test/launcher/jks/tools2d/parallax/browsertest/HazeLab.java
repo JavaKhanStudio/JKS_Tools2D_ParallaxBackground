@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
+import com.google.gwt.dom.client.SelectElement;
 
 import java.util.ArrayList;
 
@@ -58,7 +59,8 @@ public class HazeLab extends ApplicationAdapter
 	static final String[] TINT_NAMES = { "none", "orange (h05)", "night blue", "dusk pink", "green" };
 	static final float[][] TINTS = { { 1, 1, 1 }, { 1, 0.55f, 0.3f }, { 0.45f, 0.55f, 1 }, { 1, 0.6f, 0.75f }, { 0.6f, 1, 0.5f } };
 	/** What the lab opens on: the round's haze, untinted (a tint multiplies every layer, the snow too: r224), scrolled 40 units/s, dark towers. */
-	static final float HAZE = 0.25f, TINT = 0, STRENGTH = 1, SCROLL = 40, TOWERS_LIGHT = 0.15f;
+	static final float HAZE = 0.25f, STRENGTH = 1, SCROLL = 40, TOWERS_LIGHT = 0.15f;
+	static final int TINT = 0;
 
 	private final Parallax_Heart[] hearts = new Parallax_Heart[4];
 	private final ParallaxLayer[] mists = new ParallaxLayer[4];
@@ -66,7 +68,8 @@ public class HazeLab extends ApplicationAdapter
 	private final ArrayList<ParallaxLayer> drawn = new ArrayList<>();
 	private final Color tint = new Color(Color.WHITE);
 	private final float[] white = new float[3];
-	private InputElement haze, tintPick, strength, scroll, light;
+	private InputElement haze, strength, scroll, light;
+	private SelectElement tintPick;
 	private Element readout;
 	private ShaderProgram plain;
 	private SpriteBatch batch;
@@ -142,7 +145,7 @@ public class HazeLab extends ApplicationAdapter
 		}
 		Element controls = document.getElementById("haze-controls");
 		haze = LabControls.slider(document, controls, "depthHaze", "the mist's depth haze (white per layer behind it)", 0, 0.6f, 0.05f, HAZE);
-		tintPick = LabControls.slider(document, controls, "pageTint", "page tint", 0, TINTS.length - 1, 1, TINT);
+		tintPick = LabControls.choice(document, controls, "pageTint", "page tint", TINT_NAMES, TINT);
 		strength = LabControls.slider(document, controls, "tintStrength", "tint strength (0 = white)", 0, 1, 0.05f, STRENGTH);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
 		light = LabControls.slider(document, controls, "towersLight", "towers' brightness (the hook's color)", 0, 1, 0.05f, TOWERS_LIGHT);
@@ -156,8 +159,7 @@ public class HazeLab extends ApplicationAdapter
 	private void applyControls()
 	{
 		float h = LabControls.read(haze), k = LabControls.read(strength), sc = LabControls.read(scroll);
-		int pick = Math.round(LabControls.read(tintPick));
-		((Element) tintPick.getNextSibling()).setInnerText(TINT_NAMES[pick]);
+		int pick = LabControls.read(tintPick);
 		towersLight = LabControls.read(light);
 		float[] t = TINTS[pick];
 		tint.set(1 + (t[0] - 1) * k, 1 + (t[1] - 1) * k, 1 + (t[2] - 1) * k, 1);
