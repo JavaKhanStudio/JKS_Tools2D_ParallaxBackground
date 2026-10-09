@@ -26,6 +26,9 @@ import com.badlogic.gdx.utils.Array;
  * A PNG atlas asking mipmaps of a page whose sides are not powers of two (the 2019 samples' {@code filter:
  * MipMap,MipMap} on a 5020x5160 page) gets none on WebGL 1 and OpenGL ES 2, which refuse glGenerateMipmap on such a
  * texture and leave it incomplete: every layer from it drew black (r212). Those pages load as Linear,Linear there.
+ * <p>
+ * Their second {@code MipMap}, the mag filter, no GL takes: libGDX passes it to glTexParameter and gets GL_INVALID_ENUM
+ * on desktop too. Every atlas loaded here magnifies with that filter's texel half instead (r228).
  */
 public final class Utils_Etc2_Atlas
 {
@@ -62,11 +65,14 @@ public final class Utils_Etc2_Atlas
 
 	/**
 	 * Drops the mipmaps {@code data}'s pages may not have: all of an ETC2 copy's (their .zktx carries them), and, when
-	 * {@code npotRefused}, a non-power-of-two page's, which then filters Linear,Linear.
+	 * {@code npotRefused}, a non-power-of-two page's, which then filters Linear,Linear. A MipMap mag filter becomes
+	 * {@link #magnifying} it.
 	 */
 	static void fit(TextureAtlasData data, boolean etc2, boolean npotRefused)
 	{
 		for (Page page : data.getPages())
+		{
+			page.magFilter = magnifying(page.magFilter);
 			if (etc2)
 				page.useMipMaps = false;
 			else if (npotRefused && page.useMipMaps
@@ -76,17 +82,38 @@ public final class Utils_Etc2_Atlas
 				page.minFilter = TextureFilter.Linear;
 				page.magFilter = TextureFilter.Linear;
 			}
+		}
 	}
 
 	/**
-	 * Makes {@code manager} load every {@code .etc2.atlas} through {@link Loader}, and, where the GL cannot mipmap a
-	 * non-power-of-two texture, every {@code .atlas} the manager's own TextureAtlasLoader would have loaded.
+	 * {@code filter} as GL_TEXTURE_MAG_FILTER takes it: a MipMap filter is no magnifying one, and every GL answers it
+	 * with GL_INVALID_ENUM and keeps Linear (r228). The level half is dropped, the texel half kept.
+	 */
+	static TextureFilter magnifying(TextureFilter filter)
+	{
+		switch (filter)
+		{
+			case MipMapNearestNearest:
+			case MipMapNearestLinear:
+				return TextureFilter.Nearest;
+			case MipMap:
+			case MipMapLinearNearest:
+			case MipMapLinearLinear:
+				return TextureFilter.Linear;
+			default:
+				return filter;
+		}
+	}
+
+	/**
+	 * Makes {@code manager} load every {@code .etc2.atlas} through {@link Loader}, and every {@code .atlas} the manager's
+	 * own TextureAtlasLoader would have loaded: its mag filter fitted, its mipmaps dropped where the GL cannot make them.
 	 */
 	public static void register(AssetManager manager)
 	{
 		if (!(manager.getLoader(TextureAtlas.class, "x" + SUFFIX) instanceof Loader))
 			manager.setLoader(TextureAtlas.class, SUFFIX, new Loader(manager.getFileHandleResolver()));
-		if (npotMipMapsRefused() && manager.getLoader(TextureAtlas.class, "x.atlas").getClass() == TextureAtlasLoader.class)
+		if (manager.getLoader(TextureAtlas.class, "x.atlas").getClass() == TextureAtlasLoader.class)
 			manager.setLoader(TextureAtlas.class, ".atlas", new Loader(manager.getFileHandleResolver()));
 	}
 

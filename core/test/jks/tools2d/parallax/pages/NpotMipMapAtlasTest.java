@@ -15,7 +15,8 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas.TextureAtlasData.Page;
 
 /**
  * r212: WebGL 1 and OpenGL ES 2 cannot mipmap a non-power-of-two page, and draw it black. Utils_Etc2_Atlas.fit drops
- * those mipmaps there, and only those. The browser draws it in WebGlCases.npotMipMapAtlasDraws*.
+ * those mipmaps there, and only those. The browser draws it in WebGlCases.npotMipMapAtlasDraws*. Its mag filter,
+ * MipMap too, is fitted everywhere (r228).
  */
 class NpotMipMapAtlasTest
 {
@@ -42,6 +43,20 @@ class NpotMipMapAtlasTest
 		Page page = firstPage("test-data/samples/transfer/calm.atlas", false, false);
 		assertTrue(page.useMipMaps);
 		assertEquals(TextureFilter.MipMap, page.minFilter);
+		assertEquals(TextureFilter.Linear, page.magFilter);
+	}
+
+	/** r228: a MipMap mag filter is GL_INVALID_ENUM on every GL; the texel half of it is what magnifies. */
+	@Test
+	void aMipMapMagFilterKeepsOnlyItsTexelHalf()
+	{
+		assertEquals(TextureFilter.Nearest, Utils_Etc2_Atlas.magnifying(TextureFilter.MipMapNearestNearest));
+		assertEquals(TextureFilter.Nearest, Utils_Etc2_Atlas.magnifying(TextureFilter.MipMapNearestLinear));
+		assertEquals(TextureFilter.Linear, Utils_Etc2_Atlas.magnifying(TextureFilter.MipMapLinearNearest));
+		assertEquals(TextureFilter.Linear, Utils_Etc2_Atlas.magnifying(TextureFilter.MipMapLinearLinear));
+		assertEquals(TextureFilter.Linear, Utils_Etc2_Atlas.magnifying(TextureFilter.MipMap));
+		assertEquals(TextureFilter.Nearest, Utils_Etc2_Atlas.magnifying(TextureFilter.Nearest));
+		assertEquals(TextureFilter.Linear, Utils_Etc2_Atlas.magnifying(TextureFilter.Linear));
 	}
 
 	@Test

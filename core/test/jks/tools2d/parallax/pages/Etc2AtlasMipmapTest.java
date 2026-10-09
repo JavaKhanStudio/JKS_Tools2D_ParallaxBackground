@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.nio.IntBuffer;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Files;
@@ -19,6 +21,8 @@ import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.assets.loaders.resolvers.AbsoluteFileHandleResolver;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.utils.GdxNativesLoader;
@@ -29,13 +33,19 @@ import jks.tools2d.parallax.heart.Gvars_Parallax;
  * r173: the ETC2 copy of an atlas carries its mip chain in its .zktx pages, so loading it must not call
  * glGenerateMipmap, which OpenGL ES 3 refuses on a compressed texture. Gdx.gl is a proxy that counts the calls; the
  * atlas is the editor's own ETC2 export of City (r125), mipmapped, 11 levels in its one page.
+ * <p>
+ * r228: the 2019 samples' {@code filter: MipMap,MipMap} makes a MipMap the mag filter, which every GL refuses with
+ * GL_INVALID_ENUM. The same proxy counts the glTexParameteri calls that set one, on a 4x4 copy of that atlas header.
  */
 class Etc2AtlasMipmapTest
 {
 	private static final File ETC2 = new File("test-data/etc2");
 	private static final int LEVELS = 11;
 
-	private int generateMipmap, compressedLevels;
+	private int generateMipmap, compressedLevels, mipMapMag;
+
+	@TempDir
+	Path mipMapMagFolder;
 
 	@BeforeAll
 	static void natives()
@@ -55,6 +65,9 @@ class Etc2AtlasMipmapTest
 				generateMipmap++;
 			if (method.getName().equals("glCompressedTexImage2D"))
 				compressedLevels++;
+			if (method.getName().equals("glTexParameteri") && (Integer) args[1] == GL20.GL_TEXTURE_MAG_FILTER
+					&& (Integer) args[2] >= GL20.GL_NEAREST_MIPMAP_NEAREST && (Integer) args[2] <= GL20.GL_LINEAR_MIPMAP_LINEAR)
+				mipMapMag++;
 			if (method.getName().equals("glGetIntegerv"))
 				((IntBuffer) args[1]).put(0, 4);
 			if (method.getReturnType() == int.class)
@@ -120,6 +133,59 @@ class Etc2AtlasMipmapTest
 		assertEquals(LEVELS, compressedLevels);
 		assertFiltersKept(page.getLoadedAtlas());
 		manager.dispose();
+	}
+
+	/** calm.atlas's header over a 4x4 page: {@code filter: MipMap,MipMap}. */
+	private File mipMapMagAtlas()
+	{
+		File folder = mipMapMagFolder.toFile();
+		Pixmap pixmap = new Pixmap(4, 4, Pixmap.Format.RGBA8888);
+		PixmapIO.writePNG(new FileHandle(new File(folder, "tiny.png")), pixmap);
+		pixmap.dispose();
+		new FileHandle(new File(folder, "tiny.atlas")).writeString("tiny.png\nsize: 4, 4\nformat: RGBA8888\nfilter: MipMap,MipMap\n"
+				+ "repeat: none\ntiny\n  rotate: false\n  xy: 0, 0\n  size: 4, 4\n  orig: 4, 4\n  offset: 0, 0\n  index: -1\n", false);
+		return new File(folder, "tiny.atlas");
+	}
+
+	/** The call r228 is about, without the fix: libGDX hands the MipMap mag filter to the GL. */
+	@Test
+	void libgdxAloneSetsAMipMapMagFilter()
+	{
+		TextureAtlas atlas = new TextureAtlas(new FileHandle(mipMapMagAtlas()));
+		assertEquals(1, mipMapMag);
+		atlas.dispose();
+	}
+
+	@Test
+	void aPageFromAFolderSetsNoMipMapMagFilter()
+	{
+		mipMapMagAtlas();
+		WholePage_Model page = new WholePage_Model("tiny.atlas");
+		page.preload(mipMapMagFolder.toString(), 40, 40);
+
+		assertEquals(0, mipMapMag);
+		assertMagLinearMinKept(page.getLoadedAtlas());
+		page.disposeOwnedAtlas();
+	}
+
+	@Test
+	void aPageThroughTheAssetManagerSetsNoMipMapMagFilter()
+	{
+		AssetManager manager = new AssetManager(new AbsoluteFileHandleResolver());
+		Gvars_Parallax.setManager(manager);
+		WholePage_Model page = new WholePage_Model(mipMapMagAtlas().getAbsolutePath());
+		page.preload(40, 40);
+
+		assertEquals(0, mipMapMag);
+		assertMagLinearMinKept(page.getLoadedAtlas());
+		manager.dispose();
+	}
+
+	private static void assertMagLinearMinKept(TextureAtlas atlas)
+	{
+		Texture texture = atlas.getTextures().first();
+		assertEquals(Texture.TextureFilter.MipMap, texture.getMinFilter());
+		assertEquals(Texture.TextureFilter.Linear, texture.getMagFilter());
 	}
 
 	private static void assertFiltersKept(TextureAtlas atlas)
