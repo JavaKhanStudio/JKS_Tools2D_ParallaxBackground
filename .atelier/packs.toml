@@ -240,3 +240,28 @@ trim them, and keep the 2014 inceptionYear in core/build.gradle's pom.
 Javadoc runs with `Xdoclint:none` (core/build.gradle), so a broken or missing tag will NOT fail
 the build. Read what you wrote; nothing else will.
 """
+
+[tags.shader]
+label = "Shader"
+description = "SHADER layers' effects and a FOG layer's depth haze, in libGDX, Godot and jME"
+color = "#c8a2f0"
+sort = 15
+context = """
+EVERY EFFECT IS WRITTEN THREE TIMES, LINE FOR LINE: core/src/jks/tools2d/parallax/GdxLayerEffects.java (GLSL ES 1.0,
+WebGL too), engines/godot/addons/jks_parallax/plax_effects.gd, engines/jme/resources/jks/tools2d/parallax/jme/
+ParallaxEffect.frag (+ .j3md defines), all fed GdxLayerEffects.uniforms. Change one, change all three.
+The reader calls the engine's LayerEffects (core/src/.../LayerEffects.java, jME's JmeLayerEffects) around a layer's
+tiles, NEVER Batch.setShader: JmeBatch.setShader throws, so it works in libGDX and breaks every jME game.
+Enum_ShaderEffect is APPEND ONLY (stored by name since format 7); a new effect also goes in plax_effects.gd's EFFECTS
+and in the round engines/godot/tests/shaders.
+DEPTH HAZE (shaderHaze, format 9): every shader above ends in hazed(), and an IMAGE or SEQUENCE layer behind a FOG
+layer is drawn through a PLAIN one (jME's PLAIN define, Godot's "PLAIN" material). The mix and the mist's white are
+in all three; ParallaxPageReader.hazeOf is copied in plax_effects.gd haze_of. Change one, change the other.
+A Godot shader error is only a log line and the layer draws plain: read godot.log after a run (TAU is a Godot
+built-in; that name collision once moved the stills 2-11/255 with nothing failing).
+Gates: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh, given engines/godot/tests/shaders
+engines/godot/tests/haze as arguments (no argument runs every round; both fail past a mean 2/255; CI's godot-frames job runs them). A round only proves an
+effect that moves its stills by more than that: tools/r180-shader-round/strength.sh (effects) and
+tools/r211-haze/strength.sh (haze) fail under 2.5/255. A new effect or a weaker scene: run them.
+A new stored field is a format bump: the format, browser JSON and Godot readers (AGENTS.md ".plax is a file format").
+"""
