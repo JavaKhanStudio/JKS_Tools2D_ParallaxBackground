@@ -283,8 +283,12 @@ def layout(page, atlas_dir):
       (c) a band of the screen that no layer and no gradient covers (a white gradient is the editor's default: unset);
       (d) regions packed with their whitespace stripped and useOriginalSize off: they are stretched over the layer;
       (e) a layer tiled on X whose left and right edges differ (seam > 20) in the rows on screen: a cut every repeat.
+          A SEQUENCE layer without padX is checked at every join its cycle can make: each segment's right edge against
+          each segment's left edge (itself included), segments weighing above 0 only.
     A layer counts as covering a band only if it spans the screen's width: tiled on X without padding, or 1 world
-    wide or more. An EMPTY layer covers nothing: what its hook draws is the game's."""
+    wide or more. An EMPTY layer covers nothing: what its hook draws is the game's. A SEQUENCE layer is as high as its
+    first segment makes it (docs/sequence-layers.md) and covers a row only as far as its least opaque segment does
+    there; its top is cut (a) if any segment's is."""
     try:
         import parallax_regions as regions_tool
     except ImportError:  # no Pillow
@@ -307,6 +311,9 @@ def _measure_layers(page, regions, regions_tool):
     original = page.get('useOriginalSize', False)
     sheets, placed, problems, stripped = {}, [], [], []
     for i, l in enumerate(layers(page)):
+        if l.get('kind') == 'SEQUENCE':
+            problems += _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, stripped)
+            continue
         if not has_image(l):  # it covers nothing: its hook or its particles draw there, never a solid band
             continue
         if l.get('kind') == 'SHADER' and l.get('shaderEffect') == 'FOG' and l.get('shaderAmplitude', 0) > 0:
@@ -317,14 +324,7 @@ def _measure_layers(page, regions, regions_tool):
             problems.append(f"layer {i}: no region {l['regionName']}#{l['regionPosition']}"
                             f" in {page['pageModel']['atlasName']}")
             continue
-        img = regions_tool.image_of(r, sheets)
-        (w, h), (ow, oh), (ox, oy) = r['size'], r['orig'], r['offset']
-        if (w, h) != (ow, oh) or (ox, oy) != (0, 0):
-            stripped.append(i)
-            if not original:  # the packed image alone, stretched over the whole layer
-                img = img.crop((ox, oh - oy - h, ox + w, oh - oy))
-        if l.get('flipY'):
-            img = img.transpose(regions_tool.Image.FLIP_TOP_BOTTOM)
+        img = _image(page, i, l, r, regions_tool, sheets, stripped)
         p = _place(page, i, l, img)
         placed.append(p)
         if page.get('repeatOnX', True):
@@ -336,6 +336,73 @@ def _measure_layers(page, regions, regions_tool):
         problems.append(f'(d) layers {stripped} use regions packed with their whitespace stripped, and useOriginalSize'
                         ' is off: each is stretched over its whole layer')
     return placed, problems
+
+
+def _image(page, i, l, r, regions_tool, sheets, stripped):
+    """Region r as layer i draws it: notes it in stripped if its whitespace was stripped."""
+    img = regions_tool.image_of(r, sheets)
+    (w, h), (ow, oh), (ox, oy) = r['size'], r['orig'], r['offset']
+    if (w, h) != (ow, oh) or (ox, oy) != (0, 0):
+        if i not in stripped:
+            stripped.append(i)
+        if not page.get('useOriginalSize', False):  # the packed image alone, stretched over the whole layer
+            img = img.crop((ox, oh - oy - h, ox + w, oh - oy))
+    if l.get('flipY'):
+        img = img.transpose(regions_tool.Image.FLIP_TOP_BOTTOM)
+    return img
+
+
+def _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, stripped):
+    """A SEQUENCE layer placed as its segments together make it, and its joins (e). A missing region is
+    sequence_faults' to say."""
+    segments = [s for s in l.get('sequenceSegments') or []]
+    weighed = [s for s in segments if s.get('weight', 1) > 0] or segments
+    images = []
+    for s in weighed:
+        r = regions.get((s['regionName'], s.get('regionPosition', 0)))
+        if r is None:
+            return []
+        images.append((s['regionName'], _image(page, i, l, r, regions_tool, sheets, stripped)))
+    if not images:
+        return []
+    first = regions.get((segments[0]['regionName'], segments[0].get('regionPosition', 0)))
+    if first is None:
+        return []
+    each = [_place(page, i, l, img) for _, img in images]
+    height = _place(page, i, l, _image(page, i, l, first, regions_tool, sheets, stripped)).height
+    rows = [min(_resampled(p.rows, k, len(each[0].rows)) for p in each) for k in range(len(each[0].rows))]
+    cut = any(p.cut_top and p.rows[-1] < SOLID for p in each)
+    p = each[0]._replace(rows=rows, height=height, cut_top=cut)
+    placed.append(p)
+    if not page.get('repeatOnX', True) or l['padX'] > 0:
+        return []
+    joins = [f'{a}>{b} {seam}' for a, left in images for b, right in images
+             for seam in [_join_on_screen(left, right, p)] if seam > SEAM]
+    if not joins:
+        return []
+    return [f"(e) layer {i} ({label(l)}) chains segments whose edges differ (seam > {SEAM}), a cut at each such join:"
+            f" {', '.join(joins)} (left>right seam)"]
+
+
+def _resampled(rows, k, n):
+    """Row k of n, read from rows (bottom to top) of another length."""
+    return rows[min(len(rows) - 1, k * len(rows) // n)]
+
+
+def _join_on_screen(left, right, p):
+    """The mean difference (0-255) between left's right column and right's left column, both at the layer's height,
+    in the rows on screen, as parallax_regions.measure takes a region's seam."""
+    low, high = max(0.0, -p.bottom / p.height), min(1.0, (SCREEN_H - p.bottom) / p.height)
+    if high <= low:
+        return 0
+    h = min(200, max(left.height, right.height))
+    a = left.crop((left.width - 1, 0, left.width, left.height)).resize((1, h)).load()
+    b = right.crop((0, 0, 1, right.height)).resize((1, h)).load()
+    edge = []
+    for y in range(round((1 - high) * h), round((1 - low) * h)):
+        if a[0, y][3] > 16 or b[0, y][3] > 16:
+            edge.append(max(abs(a[0, y][c] - b[0, y][c]) for c in range(4)))
+    return round(sum(edge) / len(edge)) if edge else 0
 
 
 def _opaque(full, img, y):
@@ -393,7 +460,7 @@ def _edge_faults(placed):
     """Faults (a) and (b): a layer's top or bottom edge that shows."""
     problems = []
     for k, p in enumerate(placed):
-        name = f"{p.layer['regionName']}#{p.layer['regionPosition']}"
+        name = label(p.layer)
         top = p.bottom + p.height
         eps = p.height / len(p.rows) / 2
         if p.cut_top and p.rows[-1] < SOLID and _on_screen(top) and not _covered_by_nearer(placed, k, top - eps):

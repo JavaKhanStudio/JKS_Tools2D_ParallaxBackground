@@ -77,7 +77,8 @@ class SequenceLayers(unittest.TestCase):
         self.strip = lab.layers(self.page)[4]
 
     def faults(self, page, atlas_dir=None):
-        return [p for p in lab.lint(page, atlas_dir) if 'SEQUENCE' in p]
+        """sequence_faults' lines, not layout()'s (which start with their letter: SequenceLayout's)."""
+        return [p for p in lab.lint(page, atlas_dir) if 'SEQUENCE' in p and not p.startswith('(')]
 
     def test_load_keeps_the_sequence_fields(self):
         self.assertEqual(('SEQUENCE', 12, 3), (self.strip['kind'], self.strip['sequenceLength'],
@@ -118,6 +119,48 @@ class SequenceLayers(unittest.TestCase):
     def test_an_unnamed_sequence_reads_as_its_segments(self):
         strip = dict(self.strip, name=None)
         self.assertEqual('SEQUENCE tower+river+stone', lab.label(strip))
+
+
+
+class SequenceLayout(unittest.TestCase):
+    """layout() measures a SEQUENCE layer from its segments (r245): it covers what every segment covers, and each join
+    its cycle can make is checked for a seam."""
+    PAINTED = 'tools/r239-ai-strips/page/painted.jplax'
+    Q01 = 'engines/godot/tests/sequence/q01.jplax'
+
+    def layout(self, path, change=None):
+        page = lab.load(path)
+        if change:
+            change(lab.layers(page))
+        return lab.layout(page, lab.find_atlas_dir(path, page))
+
+    def test_a_sequence_in_front_covers_the_edge_behind_it(self):
+        self.assertEqual([], self.layout(self.PAINTED), 'the pines cover the hills\' bottom edge (r239, render 06)')
+        self.assertEqual(['(b) layer 1 (hills#0): its art reaches its bottom edge, on screen at 4% of its height, and'
+                          ' no nearer layer covers that edge'], self.layout(self.PAINTED, lambda ls: ls.pop()),
+                         'without the pines the edge shows: the check is not blind')
+
+    def test_two_segments_whose_edges_differ_are_named(self):
+        def stone_and_bridge(ls):
+            ls[8]['sequenceSegments'] = [s for s in ls[8]['sequenceSegments'] if s['regionName'] in ('stone', 'bridge')]
+        faults = [p for p in self.layout(self.Q01, stone_and_bridge) if p.startswith('(e) layer 8')]
+        self.assertEqual(1, len(faults), faults)
+        for join in ('stone>bridge', 'bridge>stone', 'stone>stone', 'bridge>bridge'):
+            self.assertIn(join, faults[0])
+
+    def test_padding_between_segments_makes_no_join(self):
+        def pad(ls):
+            ls[8]['padX'] = 1.0
+        self.assertEqual([], [p for p in self.layout(self.Q01, pad) if p.startswith('(e) layer 8')])
+
+    def test_a_weight_0_segment_makes_no_join(self):
+        def only_stone(ls):
+            for s in ls[8]['sequenceSegments']:
+                s['weight'] = 1 if s['regionName'] == 'stone' else 0
+        faults = [p for p in self.layout(self.Q01, only_stone) if p.startswith('(e) layer 8')]
+        self.assertEqual(1, len(faults), faults)
+        self.assertIn(': stone>stone ', faults[0])
+        self.assertNotIn('bridge', faults[0])
 
 
 if __name__ == '__main__':
