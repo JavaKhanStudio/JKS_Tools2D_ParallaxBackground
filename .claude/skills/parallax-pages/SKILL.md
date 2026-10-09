@@ -9,7 +9,7 @@ description: Design or improve a parallax background page for the JKS parallax l
 backed it: every page written from the art graded at or above Simon's own (three wins, two ties). Round 2 also
 found that deeper speeds grade better than the samples' (step 5), and that shrinking full-frame planes hurts (step 2).
 Round 3 ran version 2 on three atlases it had never seen (graded 5, 4 and 4; 4 against Simon's 2 on Printemps), and
-found no top to the speed span up to 100x (step 5). Rules marked *(open)* are still being graded; the grades and the
+found no top to the speed span up to 100x (step 5); round 4 none up to 250x. Rules marked *(open)* are still being graded; the grades and the
 layer study behind this: `docs/parallax-design.md` §3, §5, §6, §7, §8.
 
 ## What a page is
@@ -84,8 +84,10 @@ nothing there. README.md's "Snow, rain and smoke" says how wide a `VIEW` effect'
    x1.6 at 2, 3 and 4, round 3 x1.6 above x1.33 (5 against 4) and x2.0 level with x1.6 (the samples' x1.25-x1.33 is
    the low end). Speeds must strictly increase toward the front. The span (front / back) must reach ~3x (under it: 2,
    twice); **err deep**: in round 3 the deeper span won three brackets and tied one (calm 100x over 41x, Pure 43x over
-   10x, Boss 25x over 7x), and no top was found up to 100x. A page that scatters its planes can still fail deep (45x
-   scored 2 on Simon's PurpleFairy in round 1): the limit is the page's. Lint warns past 100x, the deepest graded.
+   10x, Boss 25x over 7x), and in round 4 250x won on Pure (5) and tied 100x on calm: no top up to 250x. Past ~40x
+   the gain flattens (Pure 100x graded under 43x): 40x-250x do not hurt, deeper does not keep winning. A page that
+   scatters its planes can still fail deep (45x scored 2 on Simon's PurpleFairy in round 1): the limit is the page's.
+   Lint warns past 250x, the deepest graded.
    Speed Y ~0.6 x speed X *(open)*.
 6. **Gradients cover, in the art's colours.** Set them to what they must blend with: the sky behind the farthest
    layer, the ground under the nearest one (Hiver's snow is the bottom gradient in the hills' `e0e8dd`). A layer
