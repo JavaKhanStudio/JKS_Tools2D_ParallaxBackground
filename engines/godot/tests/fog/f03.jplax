@@ -25,7 +25,7 @@
   "a": 1.0
  },
  "bottomHalfSize": 0.5,
- "repeatOnX": true,
+ "repeatOnX": false,
  "repeatOnY": true,
  "pageModel": {
   "atlasName": "HiverHaze.atlas",
@@ -39,13 +39,19 @@
     "parallaxScalingSpeedX": 0.01,
     "parallaxScalingSpeedY": 0.01,
     "speedXAtRest": 0.0,
-    "sizeRatio": 0.5,
-    "decal_X_Ratio": 0.0,
-    "decal_Y_Ratio": 67.5,
-    "padX": 2.0,
+    "sizeRatio": 0.4,
+    "decal_X_Ratio": 0,
+    "decal_Y_Ratio": -20,
+    "padX": 1.0,
     "padXFactor": 0.0,
     "padY": 0.0,
-    "padYFactor": 0.0
+    "padYFactor": 0.0,
+    "mirror": true,
+    "kind": "SHADER",
+    "shaderEffect": "WAVE",
+    "shaderAmplitude": 0.2,
+    "shaderWavelength": 0.6,
+    "shaderSpeed": 1.0
    },
    {
     "regionName": "parallax4",
@@ -55,13 +61,14 @@
     "parallaxScalingSpeedX": 0.012499999,
     "parallaxScalingSpeedY": 0.012499999,
     "speedXAtRest": 0.0,
-    "sizeRatio": 0.58,
-    "decal_X_Ratio": 10.0,
-    "decal_Y_Ratio": 70.0,
-    "padX": 3.0,
+    "sizeRatio": 0.4,
+    "decal_X_Ratio": 12,
+    "decal_Y_Ratio": -15,
+    "padX": 1.0,
     "padXFactor": 0.0,
-    "padY": 1.5,
-    "padYFactor": 0.0
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
    },
    {
     "regionName": "parallax4",
@@ -71,13 +78,14 @@
     "parallaxScalingSpeedX": 0.015624999,
     "parallaxScalingSpeedY": 0.015624999,
     "speedXAtRest": 0.0,
-    "sizeRatio": 0.66,
-    "decal_X_Ratio": 20.0,
-    "decal_Y_Ratio": 63.0,
-    "padX": 4.0,
+    "sizeRatio": 0.4,
+    "decal_X_Ratio": 24,
+    "decal_Y_Ratio": -10,
+    "padX": 1.0,
     "padXFactor": 0.0,
-    "padY": 3.0,
-    "padYFactor": 0.0
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": true
    },
    {
     "regionName": "parallax4",
@@ -87,13 +95,14 @@
     "parallaxScalingSpeedX": 0.019531248,
     "parallaxScalingSpeedY": 0.019531248,
     "speedXAtRest": 0.0,
-    "sizeRatio": 0.74,
-    "decal_X_Ratio": 30.0,
-    "decal_Y_Ratio": 63.0,
-    "padX": 5.0,
+    "sizeRatio": 0.4,
+    "decal_X_Ratio": 36,
+    "decal_Y_Ratio": -5,
+    "padX": 1.0,
     "padXFactor": 0.0,
-    "padY": 4.5,
-    "padYFactor": 0.0
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
    },
    {
     "regionName": "parallax4",
@@ -103,80 +112,19 @@
     "parallaxScalingSpeedX": 0.024,
     "parallaxScalingSpeedY": 0.015624999,
     "speedXAtRest": 0.0,
-    "sizeRatio": 0.8200000000000001,
-    "decal_X_Ratio": 20.0,
-    "decal_Y_Ratio": 58.0,
-    "padX": 6.0,
+    "sizeRatio": 0.4,
+    "decal_X_Ratio": 48,
+    "decal_Y_Ratio": 0,
+    "padX": 1.0,
     "padXFactor": 0.0,
-    "padY": 6.0,
-    "padYFactor": 0.0
-   },
-   {
-    "regionName": "",
-    "regionPosition": 0,
-    "flipX": false,
-    "flipY": false,
-    "parallaxScalingSpeedX": 0.04,
-    "parallaxScalingSpeedY": 0.04,
-    "speedXAtRest": 0.0,
-    "sizeRatio": 0.22,
-    "decal_X_Ratio": 0,
-    "decal_Y_Ratio": 10,
-    "padX": 2.0,
-    "padXFactor": 0.0,
-    "padY": 3.0,
+    "padY": 0.0,
     "padYFactor": 0.0,
-    "mirror": false,
-    "name": "tiles",
-    "kind": "SEQUENCE",
-    "sequenceSeed": 7,
-    "sequenceLength": 4,
-    "sequenceSegments": [
-     {
-      "regionName": "river",
-      "regionPosition": 0,
-      "weight": 1
-     },
-     {
-      "regionName": "bridge",
-      "regionPosition": 0,
-      "weight": 0
-     },
-     {
-      "regionName": "tower",
-      "regionPosition": 0,
-      "weight": 2
-     },
-     {
-      "regionName": "stone",
-      "regionPosition": 0,
-      "weight": 1
-     }
-    ]
-   },
-   {
-    "regionName": "mist",
-    "regionPosition": 0,
-    "flipX": false,
-    "flipY": false,
-    "parallaxScalingSpeedX": 0.035,
-    "parallaxScalingSpeedY": 0.035,
-    "speedXAtRest": 0.0,
-    "sizeRatio": 0.7,
-    "decal_X_Ratio": 10,
-    "decal_Y_Ratio": 30,
-    "padX": 3.0,
-    "padXFactor": 0.0,
-    "padY": 2.0,
-    "padYFactor": 0.0,
-    "mirror": false,
-    "name": "mist",
+    "mirror": true,
     "kind": "SHADER",
     "shaderEffect": "FOG",
-    "shaderAmplitude": 0.7,
-    "shaderWavelength": 3.5,
-    "shaderSpeed": -2,
-    "shaderHaze": 0.35
+    "shaderAmplitude": 0.6,
+    "shaderWavelength": 2.5,
+    "shaderSpeed": 0.9
    },
    {
     "regionName": "parallax4",
@@ -186,13 +134,37 @@
     "parallaxScalingSpeedX": 0.038000003,
     "parallaxScalingSpeedY": 0.030517576,
     "speedXAtRest": 0.0,
-    "sizeRatio": 0.9,
-    "decal_X_Ratio": -23.5,
-    "decal_Y_Ratio": 56.0,
-    "padX": 7.0,
+    "sizeRatio": 0.4,
+    "decal_X_Ratio": 60,
+    "decal_Y_Ratio": 5,
+    "padX": 1.0,
     "padXFactor": 0.0,
-    "padY": 7.5,
-    "padYFactor": 0.0
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "mist",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.03,
+    "parallaxScalingSpeedY": 0.03,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.5,
+    "decal_X_Ratio": 20,
+    "decal_Y_Ratio": 0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": true,
+    "name": "mist",
+    "kind": "SHADER",
+    "shaderEffect": "FOG",
+    "shaderAmplitude": 0.9,
+    "shaderWavelength": 4,
+    "shaderSpeed": 1.2
    },
    {
     "regionName": "parallax4",
@@ -202,14 +174,22 @@
     "parallaxScalingSpeedX": 0.041,
     "parallaxScalingSpeedY": 0.030517576,
     "speedXAtRest": 0.0,
-    "sizeRatio": 0.98,
-    "decal_X_Ratio": 50.0,
-    "decal_Y_Ratio": 45.0,
-    "padX": 8.0,
+    "sizeRatio": 0.4,
+    "decal_X_Ratio": 72,
+    "decal_Y_Ratio": 10,
+    "padX": 1.0,
     "padXFactor": 0.0,
-    "padY": 9.0,
-    "padYFactor": 0.0
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": true
    }
   ]
+ },
+ "fogStrength": 0.015,
+ "fogColor": {
+  "r": 0.75,
+  "g": 0.7,
+  "b": 0.65,
+  "a": 1.0
  }
 }

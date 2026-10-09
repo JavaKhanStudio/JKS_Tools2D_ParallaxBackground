@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jks.tools2d.parallax.ParallaxLayer;
 
@@ -61,5 +62,12 @@ public final class Json_MixIns
 
 		@JsonIgnore
 		public abstract String getCompleteRegionName();
+
+		/** Read from a format 9 page, never written: the fog is the page's since format 10 (r217). */
+		@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+		public float shaderHaze;
+
+		@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+		public abstract float getShaderHaze();
 	}
 }

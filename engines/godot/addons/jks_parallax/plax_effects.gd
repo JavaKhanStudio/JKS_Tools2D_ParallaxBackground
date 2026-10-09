@@ -6,9 +6,9 @@ extends RefCounted
 ##
 ## Each effect works on the image's own coordinates, taken from UV: x and y in page units from the image's bottom-left,
 ## as it is drawn. region: the region's u, v, u2, v2 (v at the image's top); size: the drawn image's width and height in
-## page units; effect: amplitude, wavelength, phase; haze: the depth haze, 0 to 1, which hazed() mixes the color toward
-## the mist's white by, its alpha kept (GdxLayerEffects.HAZE_R/G/B). TAU is Godot's own (2 pi). "PLAIN" is no effect:
-## an IMAGE or SEQUENCE layer behind a FOG layer's depth haze.
+## page units; effect: amplitude, wavelength, phase; haze: the depth fog at the layer, 0 to 1, which hazed() mixes the
+## color toward fog_color by, its alpha kept (fog_of). TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or
+## SEQUENCE layer the page's depth fog reaches.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
 const EFFECTS := ["WAVE", "FOG"]
@@ -20,7 +20,7 @@ uniform vec4 region;
 uniform vec2 size;
 uniform vec3 effect;
 uniform float haze;
-const vec3 HAZE = vec3(0.93, 0.95, 0.97);
+uniform vec3 fog_color = vec3(0.93, 0.95, 0.97);
 varying vec4 tint;
 void vertex() {
 	tint = COLOR;
@@ -29,7 +29,7 @@ vec2 local(vec2 uv) {
 	return vec2((uv.x - region.x) / (region.z - region.x) * size.x, (region.w - uv.y) / (region.w - region.y) * size.y);
 }
 vec4 hazed(vec4 color) {
-	return vec4(mix(color.rgb, HAZE, haze), color.a);
+	return vec4(mix(color.rgb, fog_color, haze), color.a);
 }
 """
 
@@ -54,7 +54,7 @@ const _FOG := _HEAD + """void fragment() {
 }
 """
 
-## PLAIN: no effect, the depth haze only.
+## PLAIN: no effect, the depth fog only.
 const _PLAIN := _HEAD + """void fragment() {
 	COLOR = hazed(tint * texture(TEXTURE, UV));
 }
@@ -63,7 +63,7 @@ const _PLAIN := _HEAD + """void fragment() {
 static var _shaders := {}
 
 
-## A material of its own for a SHADER layer's canvas, or "PLAIN" for a hazed one: its numbers change every frame.
+## A material of its own for a SHADER layer's canvas, or "PLAIN" for a fogged one: its numbers change every frame.
 static func material(effect_name: String) -> ShaderMaterial:
 	if not _shaders.has(effect_name):
 		var shader := Shader.new()
@@ -110,21 +110,22 @@ static func apply(m: ShaderMaterial, l: Dictionary, seconds: float) -> void:
 			phase(model, seconds) if on else 0.0))
 
 
-## ParallaxLayer.getHazePerLayer: a FOG layer's depth haze, kept within 0..1; 0 for any other layer.
-static func haze_per_layer(model: Dictionary) -> float:
-	if model.kind != "SHADER" or model.shaderEffect != "FOG" or not float(model.shaderHaze) > 0:
+## ParallaxPageReader.fogOf: how much of the fog's colour layer `model` is mixed toward, 0 to 1:
+## 1 - exp(-strength * (1 / speed - 1 / front)), speed its speed ratio X and front the page's fastest (front_speed_of),
+## as magnitudes. 0 for the front layer, for no fog and for a page that does not scroll; 1 for a still layer.
+static func fog_of(strength: float, front: float, model: Dictionary) -> float:
+	if not strength > 0 or not front > 0:
 		return 0.0
-	return minf(1.0, model.shaderHaze)
+	var speed := absf(float(model.parallaxScalingSpeedX))
+	if not speed > 0:
+		return 1.0
+	var depth := 1.0 / speed - 1.0 / front
+	return 1.0 - exp(-strength * depth) if depth > 0 else 0.0
 
 
-## ParallaxPageReader.hazeOf: 1 minus the product, over every FOG layer in front of layer `index` of `page` (back to
-## front, PlaxBackground's layers), of (1 - haze) once per step between them.
-static func haze_of(page: Array[Dictionary], index: int) -> float:
-	var keep := 1.0
-	var step := 1.0
-	for i in range(page.size() - 1, index, -1):
-		var h := haze_per_layer(page[i].model)
-		if h > 0:
-			step *= 1.0 - h
-		keep *= step
-	return 1.0 - keep
+## ParallaxPageReader.frontSpeedOf: the fastest speed ratio X of `page` (PlaxBackground's layers), as a magnitude.
+static func front_speed_of(page: Array[Dictionary]) -> float:
+	var front := 0.0
+	for l in page:
+		front = maxf(front, absf(float(l.model.parallaxScalingSpeedX)))
+	return front

@@ -32,10 +32,10 @@
 	wide and read as vertical streaks on any band. B halves the heights: patches about as tall as wide. C is the same
 	with a patch height a page would store (a fourth number, an editor slider). The scroll and every slider act on all
 	four panels at once. The lab opens on Simon's r208 settings (shape A, amplitude 0.25, wavelength 8.25, no tree
-	ripple); the mist's layer slider moves the mist in front of more layers. Depth haze mixes every layer behind the
-	mist toward its white, more for each layer further back (1 - (1 - haze)^layers), in A to C; the plain panel has
-	neither. The FOG itself only thins the mist picture, a band across the middle: without haze, nothing above or below
-	it is fogged: the mist's size and up/down sliders grow and move that band. The parallax set slider puts the same mist
+	ripple); the mist's layer slider moves the mist in front of more layers. The page fog (r217) mixes every layer
+	toward the fog's colour, more the slower it scrolls (1 - exp(-strength (1/speed - 1/front))), in A to C; the plain
+	panel has neither. The readout gives each layer's fog. The FOG itself only thins the mist picture, a band across the
+	middle: without the page fog, nothing above or below it is fogged: the mist's size and up/down sliders grow and move that band. The parallax set slider puts the same mist
 	into other pages (round1's calm, PurpleFairy and OneNight); every other slider acts on whichever set is shown.</p>
 	<script>
 	// Copy settings (r208): every slider, what it started at, and which ones moved, as JSON Simon pastes into a card.
@@ -48,7 +48,7 @@
 		});
 		return JSON.stringify({
 			lab: 'fog-lab', set: document.querySelector('input[data-key=parallaxSet]').nextSibling.textContent,
-			panels: 'A ships (patch height 1), B half (0.5), C = patchHeightC, plain (no FOG, no haze)',
+			panels: 'A ships (patch height 1), B half (0.5), C = patchHeightC, plain (no FOG, no page fog)',
 			settings: settings,
 			changed: Object.keys(changed).length ? changed : 'nothing: the values the lab opens with'
 		}, null, 2);

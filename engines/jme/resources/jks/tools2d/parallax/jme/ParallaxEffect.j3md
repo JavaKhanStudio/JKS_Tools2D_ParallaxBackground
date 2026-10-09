@@ -1,4 +1,4 @@
-// A SHADER layer's effect (Enum_ShaderEffect), and the depth haze, on JmeBatch's quads: core's GdxLayerEffects, in jME. JmeLayerEffects sets
+// A SHADER layer's effect (Enum_ShaderEffect), and the depth fog, on JmeBatch's quads: core's GdxLayerEffects, in jME. JmeLayerEffects sets
 // the parameters from GdxLayerEffects.uniforms. Blending, culling and depth are set as JmeBatch sets its own materials'.
 MaterialDef ParallaxEffect {
 
@@ -12,10 +12,12 @@ MaterialDef ParallaxEffect {
         Vector3 Effect
         // FOG; WAVE when false.
         Boolean Fog
-        // No effect: a layer drawn through the depth haze only.
+        // No effect: a layer drawn through the depth fog only.
         Boolean Plain
-        // The depth haze, 0 to 1: the color mixed toward the mist's white.
+        // The depth fog at the layer, 0 to 1: the color mixed toward FogColor.
         Float Haze : 0.0
+        // The page's fog colour.
+        Vector3 FogColor : 0.93 0.95 0.97
     }
 
     Technique {

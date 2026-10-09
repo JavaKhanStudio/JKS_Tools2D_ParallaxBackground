@@ -3,6 +3,7 @@ package jks.tools2d.parallax.jme;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
@@ -19,7 +20,7 @@ import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 /**
  * The SHADER layers' effects in jME: a ParallaxEffect material per layer (its numbers change every frame), which
  * {@link JmeBatch} draws the layer's run with. The numbers are {@link GdxLayerEffects#uniforms}, the shader
- * ParallaxEffect.frag: libGDX's, line for line. An IMAGE or SEQUENCE layer behind a FOG layer's depth haze gets one too,
+ * ParallaxEffect.frag: libGDX's, line for line. An IMAGE or SEQUENCE layer the page's depth fog reaches gets one too,
  * with no effect (Plain). {@link PlaxBackground} sets it on its reader.
  */
 public class JmeLayerEffects implements LayerEffects
@@ -30,11 +31,12 @@ public class JmeLayerEffects implements LayerEffects
 	private static final class Shaded
 	{
 		final Material material;
-		/** The effect, null for a layer drawn through the haze only. */
+		/** The effect, null for a layer drawn through the fog only. */
 		final Enum_ShaderEffect kind;
 		final Vector4f region = new Vector4f();
 		final Vector2f size = new Vector2f();
 		final Vector3f effect = new Vector3f();
+		final Vector3f fog = new Vector3f();
 
 		Shaded(Material material, Enum_ShaderEffect kind)
 		{
@@ -53,10 +55,17 @@ public class JmeLayerEffects implements LayerEffects
 
 	@Override
 	public boolean begin(Batch batch, ParallaxLayer layer, float phase)
-	{return begin(batch, layer, phase, 0);}
+	{return begin(batch, layer, phase, 0, GdxLayerEffects.HAZE_R, GdxLayerEffects.HAZE_G, GdxLayerEffects.HAZE_B);}
 
 	@Override
 	public boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze)
+	{return begin(batch, layer, phase, haze, GdxLayerEffects.HAZE_R, GdxLayerEffects.HAZE_G, GdxLayerEffects.HAZE_B);}
+
+	@Override
+	public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fog, Color fogColor)
+	{return begin(batch, layer, phase, fog, fogColor.r, fogColor.g, fogColor.b);}
+
+	private boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze, float fogR, float fogG, float fogB)
 	{
 		if (!(batch instanceof JmeBatch))
 			return false;
@@ -79,6 +88,8 @@ public class JmeLayerEffects implements LayerEffects
 		s.material.setVector2("Size", s.size);
 		s.material.setVector3("Effect", s.effect);
 		s.material.setFloat("Haze", Math.max(0, Math.min(1, haze)));
+		s.fog.set(fogR, fogG, fogB);
+		s.material.setVector3("FogColor", s.fog);
 		((JmeBatch) batch).setEffect(s.material);
 		return true;
 	}

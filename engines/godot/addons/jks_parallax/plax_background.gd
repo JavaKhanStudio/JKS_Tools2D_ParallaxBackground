@@ -37,9 +37,9 @@ extends CanvasLayer
 ## to a GPUParticles2D for that). A layer with no scene draws nothing, and the reader warns once.
 ##
 ## A SHADER layer is drawn as an image layer, through its effect (PlaxEffects, the shaders of core's GdxLayerEffects),
-## which moves on act()'s clock. A FOG layer with a depth haze (shaderHaze) mixes the image layers of its page behind it
-## toward the mist's white (PlaxEffects.haze_of), through the same shaders; an EMPTY or PARTICLES layer counts as a step
-## and is drawn as is.
+## which moves on act()'s clock. The page's depth fog (PlaxPage.fog_strength, fog_color) mixes each IMAGE, SEQUENCE and
+## SHADER layer toward the fog's colour, more the slower it scrolls (PlaxEffects.fog_of), through the same shaders, each
+## page of a cross-fade by its own fog; an EMPTY or PARTICLES layer is drawn as is.
 ##
 ## A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set, by PlaxPage.draw_cycle
 ## from the page's seed: the same picks as core's SequenceCycle. The cycle is the layer's tile. A game draws a new ground
@@ -298,10 +298,11 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		_reset_position(l)
 		_add_canvas(l)
 		built.append(l)
-	# The depth haze of each layer, from the FOG layers in front of it: what ParallaxPageReader.drawLayer reckons.
-	for i in built.size():
-		var l := built[i]
-		l.haze = PlaxEffects.haze_of(built, i)
+	# The depth fog of each layer, by its speed against the page's front: what ParallaxPageReader.drawLayer reckons.
+	var front := PlaxEffects.front_speed_of(built)
+	for l in built:
+		l.haze = 0.0 if l.model.kind == "EMPTY" or l.model.kind == "PARTICLES" else PlaxEffects.fog_of(from_page.fog_strength, front, l.model)
+		l.fog_color = Vector3(from_page.fog_color.r, from_page.fog_color.g, from_page.fog_color.b)
 		if l.haze > 0 and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE"):
 			l.canvas.material = PlaxEffects.material("PLAIN")
 	return built
@@ -628,6 +629,7 @@ func _draw_layer(l: Dictionary) -> void:
 		PlaxEffects.apply(l.canvas.material, l, _effect_time)
 	if l.canvas.material:
 		l.canvas.material.set_shader_parameter("haze", l.haze)
+		l.canvas.material.set_shader_parameter("fog_color", l.fog_color)
 	_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h)
 	if m.mirror and _repeat_x != _repeat_y:
 		# A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.

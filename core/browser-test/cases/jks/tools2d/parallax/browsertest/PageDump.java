@@ -28,6 +28,8 @@ public final class PageDump
 		line(out, "repeatOnX", page.repeatOnX);
 		line(out, "repeatOnY", page.repeatOnY);
 		line(out, "useOriginalSize", page.useOriginalSize);
+		line(out, "fogStrength", page.getFogStrength());
+		line(out, "fogColor", page.fogColor);
 		line(out, "atlasName", page.pageModel.atlasName);
 		line(out, "outside", page.pageModel.outside);
 		line(out, "layers", (Object) page.pageModel.pageList.size());

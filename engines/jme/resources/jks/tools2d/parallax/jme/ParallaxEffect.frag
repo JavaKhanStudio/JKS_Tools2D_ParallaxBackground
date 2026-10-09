@@ -8,17 +8,17 @@ uniform vec4 m_Region;
 uniform vec2 m_Size;
 uniform vec3 m_Effect;
 uniform float m_Haze;
+uniform vec3 m_FogColor;
 
 varying vec2 texCoord;
 varying vec4 vertColor;
 
 const float TAU = 6.2831853;
-const vec3 HAZE = vec3(0.93, 0.95, 0.97);
 
-// The color mixed toward the mist's white by the depth haze, its alpha kept; at 0 the color itself.
+// The color mixed toward the fog's colour by the depth fog, its alpha kept; at 0 the color itself.
 vec4 hazed(vec4 color)
 {
-    return vec4(mix(color.rgb, HAZE, m_Haze), color.a);
+    return vec4(mix(color.rgb, m_FogColor, m_Haze), color.a);
 }
 
 // Where the fragment is in the image, in world units from its bottom-left.
@@ -31,7 +31,7 @@ vec2 local()
 void main()
 {
 #if defined(PLAIN)
-    // No effect: an IMAGE or SEQUENCE layer behind a FOG layer's depth haze.
+    // No effect: an IMAGE or SEQUENCE layer the page's depth fog reaches.
     gl_FragColor = hazed(vertColor * texture2D(m_ColorMap, texCoord));
 #elif defined(FOG)
     // FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines, x at 7, 17 and 23 per 8 wavelengths.

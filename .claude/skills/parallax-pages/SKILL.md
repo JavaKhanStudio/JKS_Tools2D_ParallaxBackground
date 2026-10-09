@@ -29,12 +29,16 @@ them. The world is 40 units wide; its height follows the screen (22.5 at 16:9). 
 | `kind`, `name` | `IMAGE` (the default; `name` null) or `EMPTY` (format 5): a layer with no image, `regionName` null. It is the world's width x `sizeRatio` by the world's height x `sizeRatio`, keeps its speeds, `speedXAtRest`, decal and pads, ignores `mirror`, and draws only through the hook the game registers under its `name` (`ParallaxPageReader.setLayerHook`, Godot's `set_layer_hook`). `PARTICLES` (format 6): the same imageless box, drawing a particle effect instead of a hook. |
 | `particlesLibgdx`, `particlesGodot`, `particlesAnchor` | A `PARTICLES` layer's effect files: a libGDX `.p` beside the atlas, its images packed in the atlas, and a Godot scene; each engine draws its own, jME none. `particlesAnchor`: `LAYER` (default) pins the effect to the box's bottom-left corner on every tile (smoke, spray), `VIEW` emits it once from the view at the layer's decal (snow, rain). |
 | `shaderEffect`, `shaderAmplitude`, `shaderWavelength`, `shaderSpeed` | `kind` `SHADER` (format 7): an image layer like any other, `regionName` set, drawn through `WAVE` (rows shifted sideways by `amplitude` world units, `wavelength` apart, running up at `speed`: water, heat) or `FOG` (opacity thinned by up to `amplitude`, 0-1, in patches `wavelength` wide drifting at `speed`: a white band is a moving fog). Wavelength 0 draws no effect; lint says so, and when a FOG amplitude leaves 0-1. libGDX, the browser, Godot and jME draw the same frames. |
-| `shaderHaze` | On a `FOG` layer (format 9), 0-1: every layer behind it is mixed toward the mist's white by `1 - (1 - haze)^n`, n layers back, so the far layers fade most (Simon's lab start: 0.25). Depth for a misty page without repainting its layers. |
+| `shaderHaze` | Format 9 only, no longer drawn nor written (r217): read from an old file, the largest becomes the page's `fogStrength`. Write `fogStrength` instead. |
 | `sequenceSegments`, `sequenceSeed`, `sequenceLength` | `kind` `SEQUENCE` (format 8): `regionName` empty, `sequenceSegments` a list of `{regionName, regionPosition, weight}` from the atlas, chained side by side in a cycle of `sequenceLength` segments picked from `sequenceSeed` by weight, then tiled as one image (the first segment sets the height; docs/sequence-layers.md). With the atlas, lint names a segment whose region it lacks (core then fails to load the page), and says when there is no segment, a length under 1 (read as 1) or no weight above 0 (each weighs 1). |
 
 Page: `topHalf_top/bottom`, `bottomHalf_top/bottom` (RGBA 0-1), `topHalfSize`/`bottomHalfSize` (share of the screen
 left **uncovered**: 0.5 = half), `repeatOnX/Y`, `useOriginalSize` (true for new pages on atlases packed with
-whitespace stripped), `pageModel.atlasName` (file name; the atlas sits next to the page).
+whitespace stripped), `pageModel.atlasName` (file name; the atlas sits next to the page), `fogStrength` and `fogColor`
+(format 10, r217): a depth fog mixing each image layer toward `fogColor` (RGBA 0-1, the mist's white 0.93, 0.95, 0.97
+when absent) by `1 - exp(-fogStrength * (1/speed - 1/front))`, speed its `parallaxScalingSpeedX` and front the page's
+fastest: depth for a misty page without repainting its layers. Per unit of `1/speed`, so it follows the page's speeds:
+speeds 0.1 down to 0.01, 0.03 fogs the back 93%, 0.06 near-hides it; the front layer is never fogged.
 `tools/parallax_lab.py` has `layer()`, `empty()` and `page_of()` helpers that write all of it.
 
 **An EMPTY layer** is a depth the game fills: a sprite, particles, a flock of birds that must pass in front of one

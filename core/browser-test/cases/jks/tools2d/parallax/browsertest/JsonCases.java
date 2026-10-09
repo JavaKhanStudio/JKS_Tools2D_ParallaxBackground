@@ -7,6 +7,8 @@ import static jks.tools2d.parallax.browsertest.Check.isTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.badlogic.gdx.graphics.Color;
+
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import jks.tools2d.parallax.pages.Enum_LayerKind;
@@ -36,6 +38,7 @@ final class JsonCases
 		cases.add(new BrowserCase("json: unknownAnchorFails", JsonCases::unknownAnchorFails));
 		cases.add(new BrowserCase("json: shaderLayerKeepsItsEffectAndNumbers", JsonCases::shaderLayerKeepsItsEffectAndNumbers));
 		cases.add(new BrowserCase("json: unknownEffectFails", JsonCases::unknownEffectFails));
+		cases.add(new BrowserCase("json: pageFogKeepsItsStrengthAndColour", JsonCases::pageFogKeepsItsStrengthAndColour));
 		cases.add(new BrowserCase("json: sequenceLayerKeepsItsSegmentsSeedAndLength", JsonCases::sequenceLayerKeepsItsSegmentsSeedAndLength));
 		return cases;
 	}
@@ -156,6 +159,20 @@ final class JsonCases
 		isTrue(Float.floatToIntBits(-0.7f) == Float.floatToIntBits(sea.shaderSpeed), "speed " + sea.shaderSpeed);
 		isTrue(Float.floatToIntBits(0.3f) == Float.floatToIntBits(sea.shaderHaze), "haze " + sea.shaderHaze);
 		equal(0, sky.shaderHaze, 0, "an image layer reads no haze");
+		isTrue(Float.floatToIntBits(0.3f) == Float.floatToIntBits(page.getFogStrength()), "before format 10, the FOG layer's haze is the page's fog " + page.getFogStrength());
+	}
+
+	/** Format 10: the page's fog, its strength and colour; a page without one has none, in the mist's white. */
+	static void pageFogKeepsItsStrengthAndColour()
+	{
+		WholePage_Model page = Utils_Page_Json.readPage("{\"fogStrength\":0.035,\"fogColor\":{\"r\":0.2,\"g\":0.25,\"b\":0.4,\"a\":1},"
+				+ "\"pageModel\":{\"pageList\":[{\"kind\":\"SHADER\",\"shaderEffect\":\"FOG\",\"shaderHaze\":0.3}]}}");
+		isTrue(Float.floatToIntBits(0.035f) == Float.floatToIntBits(page.getFogStrength()), "strength " + page.getFogStrength());
+		isTrue(page.fogColor.equals(new Color(0.2f, 0.25f, 0.4f, 1)), "colour " + page.fogColor);
+
+		WholePage_Model none = Utils_Page_Json.readPage("{\"pageModel\":{\"pageList\":[{\"regionName\":\"sky\"}]}}");
+		equal(0, none.getFogStrength(), 0, "no fog");
+		isTrue(none.fogColor.equals(new Color(WholePage_Model.FOG_R, WholePage_Model.FOG_G, WholePage_Model.FOG_B, 1)), "the mist's white " + none.fogColor);
 	}
 
 	/** An effect added later must not load as another in an older game. */

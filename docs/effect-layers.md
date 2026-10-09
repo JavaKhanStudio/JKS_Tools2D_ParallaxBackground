@@ -112,14 +112,27 @@ numbers; `FOG` is a sum of three sines, not a hash, so every GPU computes the sa
 both effects in WebGL and checks `FOG`'s pixels against its formula. On a still page two `WAVE` and one `FOG` layer
 took a frame from 0.70 to 0.90 ms, a flush each (`tools/r180-shader-round/stress.sh`).
 
-Depth haze, r211 (format 9, Simon on r208): a `FOG` layer's `shaderHaze` mixes every layer of its page behind it
-toward the mist's white by `1 − (1 − haze)^n`, n layers back. `ParallaxPageReader.hazeOf` reckons it each frame from
-the layers in front (no allocation), and the reader hands it to `LayerEffects.begin(batch, layer, phase, haze)`: every
-effect shader ends in `hazed()`, and an `IMAGE` or `SEQUENCE` layer behind a haze goes through a `PLAIN` one (jME's
-`Plain` define, Godot's `"PLAIN"` material). A `LayerEffects` written before r211 keeps only the three-number `begin`,
-and draws no haze. `engines/godot/tests/haze` (written by `core/test-data/haze/make_round.py`) compares Godot and jME
-with libGDX in every repeat mode, through a `SEQUENCE` layer, two mists and a cross-fade (0.35 and 0.41 / 255);
-leaving the haze out moves its stills by 4.7 to 33 / 255 (`tools/r211-haze/strength.sh`), and fails both checks.
+Depth haze, r211 (format 9, Simon on r208): a `FOG` layer's `shaderHaze` mixed every layer of its page behind it
+toward the mist's white by `1 − (1 − haze)^n`, n layers back. Replaced by the page fog in r217.
+
+Page fog, r217 (format 10, Simon on r212: "allow the fog to get harder, affecting each layer more intensely ... make
+the fog a global shader"): the page stores `fogStrength` and `fogColor`, and each `IMAGE`, `SEQUENCE` and `SHADER` layer
+is mixed toward the colour by `1 − exp(−strength (1 / speed − 1 / front))`, speed its speed ratio X, front the page's
+fastest (Simon chose the speed over the stack order, and a colour of the page's own, untinted, over the white times the
+tint). A format 9 page's largest haze becomes its strength; `shaderHaze` is no longer written. `EMPTY` and `PARTICLES`
+layers are drawn as is. Every effect shader ends in `hazed()` toward `u_fog`; the reader hands each layer its fog
+through `LayerEffects.begin(batch, layer, phase, fog, fogColor)`, and an `IMAGE` or `SEQUENCE` layer goes through a
+`PLAIN` shader (jME's `Plain` define, Godot's `"PLAIN"` material). That was a flush per layer, and on the editor
+repository's `:demo:stress` a frame went from 0.64 to 1.45 ms at 10 layers, 1.2 to 5.4 ms at 40: the flushes, not
+the shader switches, which keeping the shader bound did not change. So libGDX draws a fogged page's image layers
+through one `PAGE_FOG` shader (`LayerEffects.beginPageFog`): the batch colour carries the layer's fog in its red and
+its page in its green, the tint and both pages' fog colours are uniforms; a `SHADER` layer, a hook or particles
+switch away from it and back. Fogged, 0.67 ms at 10 layers and 1.25 at 40, as unfogged. jME and Godot draw a
+material per layer anyway. `engines/godot/tests/fog` (written by `core/test-data/haze/make_round.py`) compares Godot
+and jME with libGDX in every repeat mode, in three colours, through a `SEQUENCE` layer, from a format 9 page and
+through a cross-fade between two fogs while tinting (0.35 and 0.13 / 255); leaving the fog out moves its stills by
+6.9 to 46 / 255 (`tools/r217-fog/strength.sh`), and `tools/r217-fog/mutate.sh` fails a wrong colour or depth in
+Godot, jME or libGDX's page shader.
 
 ## Saying what an engine cannot draw
 

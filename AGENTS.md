@@ -85,10 +85,13 @@ repair.
   only), `plax_effects.gd`'s `EFFECTS` and that round, strong enough that leaving it out fails
   (`tools/r180-shader-round/strength.sh`). The reader draws them through the engine's `LayerEffects`, never
   `Batch.setShader`, which `JmeBatch` throws on.
-- A FOG layer's depth haze (`shaderHaze`, format 9) ends every one of those shaders in `hazed()`, and draws an IMAGE
-  or SEQUENCE layer behind it through a `PLAIN` one (jME's `Plain` define): the mix and the mist's white are written
-  three times too, and `ParallaxPageReader.hazeOf` twice (Godot's `PlaxEffects.haze_of`). Run both frame checks on
-  `engines/godot/tests/haze`; `tools/r211-haze/strength.sh` proves leaving it out fails there.
+- A page's depth fog (`fogStrength`, `fogColor`, format 10; format 9's `shaderHaze` is read as its strength) ends
+  every one of those shaders in `hazed()`, toward the fog's colour (`u_fog`), and draws an IMAGE or SEQUENCE layer
+  through a `PLAIN` one (jME's `Plain` define, Godot's `"PLAIN"` material); libGDX instead draws them all through one
+  `PAGE_FOG` shader, each layer's fog in the batch colour (`LayerEffects.beginPageFog`), so a fogged page costs no
+  flush per layer. The mix is written three times, `ParallaxPageReader.fogOf`/`frontSpeedOf` twice (Godot's
+  `PlaxEffects.fog_of`/`front_speed_of`). Run both frame checks on `engines/godot/tests/fog`;
+  `tools/r217-fog/strength.sh` proves leaving it out fails there, `tools/r217-fog/mutate.sh` that a wrong copy does.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
   `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's

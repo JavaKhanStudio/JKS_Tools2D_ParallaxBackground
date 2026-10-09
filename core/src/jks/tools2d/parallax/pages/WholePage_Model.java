@@ -45,6 +45,19 @@ public class WholePage_Model
 	 */
 	public boolean useOriginalSize;
 
+	/**
+	 * The page's depth fog, a colour of its own (the mist's white unless set), not tinted by the page's tint: see
+	 * {@link #getFogStrength}. Stored since format 10.
+	 */
+	public Color fogColor = new Color(FOG_R, FOG_G, FOG_B, 1);
+
+	/** The fog's default colour, the mist's white. */
+	public static final float FOG_R = 0.93f, FOG_G = 0.95f, FOG_B = 0.97f;
+
+	/** The fog's strength once set or read from a format 10 file; before that, {@link #getFogStrength} derives it. */
+	private float fogStrength;
+	private boolean fogStrengthSet;
+
 	public Page_Model pageModel;
 
 	public List<ParallaxLayer> preloadValue;
@@ -112,6 +125,31 @@ public class WholePage_Model
 		}
 
 		return preloadValue;
+	}
+
+	/**
+	 * How thick the page's depth fog is, 0 (none) or more: a layer is mixed toward {@link #fogColor} by
+	 * {@code 1 - exp(-strength * (1 / speed - 1 / front))}, speed its speed ratio X and front the page's fastest, so the
+	 * slower (farther) a layer, the more it is fogged ({@link jks.tools2d.parallax.ParallaxPageReader#fogOf}). Read
+	 * from a file before format 10, where the fog was a FOG layer's depth haze, it is the largest such haze.
+	 */
+	public float getFogStrength()
+	{
+		if (fogStrengthSet)
+			return fogStrength;
+		float legacy = 0;
+		if (pageModel != null && pageModel.pageList != null)
+			for (Parallax_Model layer : pageModel.pageList)
+				if (layer.kind == Enum_LayerKind.SHADER && layer.shaderEffect == Enum_ShaderEffect.FOG && layer.shaderHaze > legacy)
+					legacy = Math.min(1, layer.shaderHaze);
+		return legacy;
+	}
+
+	/** Sets the fog's strength, kept at 0 or more. */
+	public void setFogStrength(float strength)
+	{
+		fogStrength = strength > 0 ? strength : 0;
+		fogStrengthSet = true;
 	}
 
 	/** @see SquareBackground */
