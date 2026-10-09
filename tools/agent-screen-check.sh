@@ -67,7 +67,7 @@ sentinel jme-demo tools/start-demo-check.sh jme
 if command -v "${GODOT:-godot}" >/dev/null; then sentinel godot-shots tools/godot-parallax-shots.sh engines/godot/tests/transfer; fi
 # The labs' open mode, with DISPLAY and WAYLAND_DISPLAY both empty: the branch that points Chrome at wayland-0 (r237).
 # An agent's must refuse before Chrome; the board's Open button (neither ATELIER_AGENT nor CLAUDECODE) must reach it.
-labs=("tools/fog-lab.sh" "tools/haze-lab.sh" "tools/transfert-lab.sh" "tools/browser-test.sh --open")
+labs=("tools/fog-lab.sh" "tools/haze-lab.sh" "tools/transfert-lab.sh" "tools/effects-lab.sh --lab fog" "tools/browser-test.sh --open")
 if ! ./gradlew -q :core:browserTestWar >"$OUT/war.log" 2>&1; then echo "FAIL: :core:browserTestWar, see $OUT/war.log"; status=1; trap - EXIT; fi
 for lab in "${labs[@]}"; do
 	name=$(basename "${lab%% *}" .sh)
