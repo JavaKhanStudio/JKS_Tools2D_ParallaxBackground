@@ -18,6 +18,7 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
+if [ $MODE = open ]; then . tools/agent-window-guard.sh; refuse_agent_window tools/browser-test.sh; fi
 
 CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || command -v chromium-browser)}"
 [ -n "$CHROME" ] || { echo "no Chrome found: set CHROME=" >&2; exit 2; }

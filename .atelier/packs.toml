@@ -210,6 +210,9 @@ Inside cage that rail is gone: cage hands its children its own variables. Never 
 alone there: GLFW 3.4 (LWJGL 3.3.6) then tries the default wayland-0, which is Simon's gnome-shell, and
 106 jME windows reached his screen that way (r234). Add XDG_SESSION_TYPE=x11 to pick cage's nested X.
 agent-screen-check.sh runs every such launch against a sentinel wayland-0 (--only-sentinel: that alone).
+The labs' open mode (fog/haze/transfert-lab.sh with no argument, browser-test.sh --open) points Chrome
+at wayland-0 when the env has no display: tools/agent-window-guard.sh refuses it under ATELIER_AGENT or
+CLAUDECODE=1 (r237). A new script that opens a window Simon asked for sources it the same way.
 The editor and demo are another repository since the split (r130-r133, docs/repo-split.md):
 JKS_Tools2D_ParallaxEditor, board parallax-editor. The library's gates read core/test-data
 and draw their libGDX frames with :shots (shots/, ParallaxShots). The editor's build takes core
