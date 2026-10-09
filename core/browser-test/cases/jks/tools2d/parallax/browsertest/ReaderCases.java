@@ -69,6 +69,7 @@ final class ReaderCases
 				new BrowserCase("reader: aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame", () -> new ReaderCases().aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame()),
 				new BrowserCase("reader: shaderLayerIsTiledThroughItsEffectInEveryRepeatMode", () -> new ReaderCases().shaderLayerIsTiledThroughItsEffectInEveryRepeatMode()),
 				new BrowserCase("reader: shaderPhaseFollowsTheReaderClockAndWraps", () -> new ReaderCases().shaderPhaseFollowsTheReaderClockAndWraps()),
+				new BrowserCase("reader: fogPhaseWrapsAtItsPeriod", () -> new ReaderCases().fogPhaseWrapsAtItsPeriod()),
 				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ReaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
 				new BrowserCase("reader: aShaderLayerWithoutItsEffectIsDrawnPlain", () -> new ReaderCases().aShaderLayerWithoutItsEffectIsDrawnPlain()),
 				new BrowserCase("reader: shaderNumbersAreTheDrawnImages", () -> new ReaderCases().shaderNumbersAreTheDrawnImages()),
@@ -885,6 +886,20 @@ final class ReaderCases
 		equal(1, effects.runs.get(0)[2], 1e-3f, "2 s at 2 units/s is 4, one past a wavelength of 3");
 		equal(2, effects.runs.get(1)[2], 1e-3f, "-4 wraps to 2");
 		equal(0, effects.runs.get(2)[2], 0, "no wavelength, no phase");
+	}
+
+	/**
+	 * FOG's phase wraps at {@link Enum_ShaderEffect#FOG_PERIOD} wavelengths, where its patches repeat (r216): wrapped at
+	 * one, as WAVE's, the patches would jump every wavelength the fog drifts.
+	 */
+	void fogPhaseWrapsAtItsPeriod()
+	{
+		ParallaxLayer fog = ParallaxLayer.shader(region(1920, 1080), 40, 0.3f, Enum_ShaderEffect.FOG, 0.5f, 3, 2);
+		equal(4, fog.getShaderPhase(2), 1e-4f, "4 is past one wavelength of 3, inside 8");
+		equal(23, fog.getShaderPhase(11.5), 1e-4f, "23 is inside 8 wavelengths of 3");
+		equal(1, fog.getShaderPhase(12.5), 1e-4f, "25 wraps to 1 past 24");
+		equal(20, fog.getShaderPhase(-2), 1e-4f, "-4 wraps to 20");
+		equal(1, shaded(0.5f, 3, 2).getShaderPhase(2), 1e-4f, "WAVE still wraps at one wavelength");
 	}
 
 	/** During a cross-fade both pages' SHADER layers are drawn through their effect at the same phase, faded. */

@@ -34,11 +34,11 @@ void main()
     // No effect: an IMAGE or SEQUENCE layer behind a FOG layer's depth haze.
     gl_FragColor = hazed(vertColor * texture2D(m_ColorMap, texCoord));
 #elif defined(FOG)
-    // FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines.
+    // FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines, x at 7, 17 and 23 per 8 wavelengths.
     vec2 p = (local() + vec2(m_Effect.z, 0.0)) / m_Effect.y;
-    float n = (sin(TAU * p.x + 2.0 * sin(0.5 * TAU * p.y))
-        + sin(TAU * (2.0 * p.x - 0.5 * p.y) + 1.3)
-        + sin(TAU * (3.0 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
+    float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
+        + sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
+        + sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
     vec4 color = vertColor * texture2D(m_ColorMap, texCoord);
     color.a *= 1.0 - m_Effect.x * n;
     gl_FragColor = hazed(color);

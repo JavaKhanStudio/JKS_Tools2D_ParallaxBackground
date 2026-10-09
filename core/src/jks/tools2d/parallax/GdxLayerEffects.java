@@ -84,15 +84,16 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 
 	/**
 	 * FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines (no hash: the same on every GPU), whose
-	 * x frequencies are 1, 2 and 3 per wavelength, so that the phase wraps at one wavelength without a jump.
+	 * x frequencies are 7, 17 and 23 per 8 wavelengths: the patches come back only every 8 wavelengths (r216, at 1, 2
+	 * and 3 per wavelength they came back every one), and the phase wraps there without a jump.
 	 */
 	static final String FOG = FRAGMENT_HEAD
 			+ "void main()\n"
 			+ "{\n"
 			+ "	vec2 p = (local() + vec2(u_effect.z, 0.0)) / u_effect.y;\n"
-			+ "	float n = (sin(TAU * p.x + 2.0 * sin(0.5 * TAU * p.y))\n"
-			+ "		+ sin(TAU * (2.0 * p.x - 0.5 * p.y) + 1.3)\n"
-			+ "		+ sin(TAU * (3.0 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;\n"
+			+ "	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))\n"
+			+ "		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)\n"
+			+ "		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;\n"
 			+ "	vec4 color = v_color * texture2D(u_texture, v_texCoords);\n"
 			+ "	color.a *= 1.0 - u_effect.x * n;\n"
 			+ "	gl_FragColor = hazed(color);\n"

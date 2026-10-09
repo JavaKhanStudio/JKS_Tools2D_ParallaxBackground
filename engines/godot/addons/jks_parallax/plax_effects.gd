@@ -12,6 +12,8 @@ extends RefCounted
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
 const EFFECTS := ["WAVE", "FOG"]
+## Enum_ShaderEffect.FOG_PERIOD: how many wavelengths FOG's patches run before they repeat.
+const FOG_PERIOD := 8
 
 const _HEAD := """shader_type canvas_item;
 uniform vec4 region;
@@ -39,13 +41,13 @@ const _WAVE := _HEAD + """void fragment() {
 }
 """
 
-## FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines whose x frequencies are 1, 2 and 3 per
-## wavelength.
+## FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines whose x frequencies are 7, 17 and 23 per
+## 8 wavelengths (FOG_PERIOD).
 const _FOG := _HEAD + """void fragment() {
 	vec2 p = (local(UV) + vec2(effect.z, 0.0)) / effect.y;
-	float n = (sin(TAU * p.x + 2.0 * sin(0.5 * TAU * p.y))
-		+ sin(TAU * (2.0 * p.x - 0.5 * p.y) + 1.3)
-		+ sin(TAU * (3.0 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
+	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
+		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
+		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
 	vec4 color = tint * texture(TEXTURE, UV);
 	color.a *= 1.0 - effect.x * n;
 	COLOR = hazed(color);
@@ -72,13 +74,15 @@ static func material(effect_name: String) -> ShaderMaterial:
 	return m
 
 
-## ParallaxLayer.getShaderPhase: speed * seconds wrapped to one wavelength, never negative; 0 without a wavelength.
+## ParallaxLayer.getShaderPhase: speed * seconds wrapped to where the effect repeats (one wavelength, FOG_PERIOD for
+## FOG), never negative; 0 without a wavelength.
 static func phase(model: Dictionary, seconds: float) -> float:
 	var wavelength: float = model.shaderWavelength
 	if not wavelength > 0:
 		return 0.0
-	var p := fmod(seconds * float(model.shaderSpeed), wavelength)
-	return p + wavelength if p < 0 else p
+	var period := wavelength * (FOG_PERIOD if model.shaderEffect == "FOG" else 1)
+	var p := fmod(seconds * float(model.shaderSpeed), period)
+	return p + period if p < 0 else p
 
 
 ## What is drawn of an atlas region `r`, in texels: half a texel in on every side, as ParallaxLayer.insetByHalfATexel

@@ -8,6 +8,7 @@
 #   tools/fog-lab.sh --clip F.mp4    a clip, headless: 12 s at 30 fps, stepped at game speed (window.fogLabAct)
 #   tools/fog-lab.sh --sets DIR      one still per parallax set (r208: s01, round1's calm, PurpleFairy, OneNight), and the
 #                                    last with the mist's size at 2.5x, headless: DIR/set0.png ...
+#   tools/fog-lab.sh --slider K=V   before --shot/--clip/--sets: start slider K (its data-key) at V; repeatable
 #   tools/fog-lab.sh --copy F.png    checks "Copy settings", headless: moves C's slider and the mist to the front,
 #                                    clicks, fails unless the JSON names every slider and the two moved; F is the page
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, for --shot and
@@ -15,13 +16,14 @@
 # on-screen: with no argument this is the fog lab, a window Simon asked for; --shot and --clip are headless Chrome.
 set -u
 cd "$(dirname "$0")/.." || exit 1
-MODE=open OUT="" BUILD=1
+MODE=open OUT="" BUILD=1 SLIDERS=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--shot) MODE=shot; OUT="$(realpath -m "$2")"; shift ;;
 		--clip) MODE=clip; OUT="$(realpath -m "$2")"; shift ;;
 		--copy) MODE=copy; OUT="$(realpath -m "$2")"; shift ;;
 		--sets) MODE=sets; OUT="$(realpath -m "$2")"; shift ;;
+		--slider) SLIDERS="$SLIDERS $2"; shift ;;
 		--no-build) BUILD=0 ;;
 		*) echo "unknown argument: $1" >&2; exit 2 ;;
 	esac
@@ -62,10 +64,10 @@ fi
 # it, one frame per 1/30 s of game time, so the clip plays at game speed.
 FRAMES=$(mktemp -d)
 trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT
-python3 - "$URL?clip=1" "$CHROME" "$FRAMES" "$MODE" <<'PY' || exit 1
+python3 - "$URL?clip=1" "$CHROME" "$FRAMES" "$MODE" "$SLIDERS" <<'PY' || exit 1
 import sys
 from playwright.sync_api import sync_playwright
-url, chrome, frames, mode = sys.argv[1:]
+url, chrome, frames, mode, sliders = sys.argv[1:]
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
     page = browser.new_page(viewport={"width": 1540, "height": 700})
@@ -77,6 +79,11 @@ with sync_playwright() as p:
         page.wait_for_function("window.fogLabReady === true", timeout=60000)
     except Exception:
         sys.exit("the lab never started: %s" % errors)
+    for kv in sliders.split():
+        key, value = kv.split("=", 1)
+        if page.query_selector("input[data-key=%s]" % key) is None:
+            sys.exit("no slider %s" % key)
+        page.eval_on_selector("input[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
     def shot(path):
         # two animation frames: the step lands in the next render
         page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")

@@ -108,8 +108,8 @@ final class WebGlCases
 					int level = pixel[0] & 0xFF;
 					float x = (px + 0.5f) * 40 / size / 10, y = (py + 0.5f) * 40 / size / 10;
 					double tau = 2 * Math.PI;
-					double n = (Math.sin(tau * x + 2 * Math.sin(0.5 * tau * y)) + Math.sin(tau * (2 * x - 0.5 * y) + 1.3)
-							+ Math.sin(tau * (3 * x + 0.8 * y) + 2.9)) / 6 + 0.5;
+					double n = (Math.sin(tau * 0.875 * x + 2 * Math.sin(0.5 * tau * y)) + Math.sin(tau * (2.125 * x - 0.5 * y) + 1.3)
+							+ Math.sin(tau * (2.875 * x + 0.8 * y) + 2.9)) / 6 + 0.5;
 					int expected = (int) Math.round(255 * (1 - n));
 					if (Math.abs(level - expected) > worst)
 					{
