@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
+import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -29,7 +30,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * reader's own transfert ({@link Parallax_Heart#transfertIntoPage}: both pages scroll, the gradients fade); they differ
  * in how they draw it.
  * <ul>
- * <li>A: as it ships, {@link Parallax_Heart#render}: each layer slot fades from the old page's layer to the new one's.</li>
+ * <li>A: as it ships, {@link Parallax_Heart#render}: each layer slot fades from the old page's layer to the new one's, in
+ * the library's depth stagger ({@link TransfertStyle#depthStagger}, r249) at the stagger slider's value.</li>
  * <li>B: the same, through a colour grade, with what a game has today: {@link ParallaxPageReader#addColorTransfert}
  * tints the page toward the grade colour over the first half, back to white over the second. The tint multiplies, so
  * it can darken and colour, never lighten.</li>
@@ -52,7 +54,7 @@ public class TransfertLab extends ApplicationAdapter
 	static final String[] PAGE_NAMES = { "calm", "PurpleFairy", "OneNight" };
 	/** The pairs the slider picks: each goes from its first page into its second and back. */
 	static final int[][] PAIRS = { { 0, 2 }, { 2, 1 }, { 1, 0 } };
-	static final String[] TITLES = { "A: the transfert as it ships (each layer cross-fades)", "B: through a colour grade (tint, shipped API)",
+	static final String[] TITLES = { "A: the transfert as it ships (each layer cross-fades, depth stagger)", "B: through a colour grade (tint, shipped API)",
 			"C: fog creep (the mist rolls in, the page swaps under it)", "D: dissolve (patches, back layers first)" };
 	/** B's grade colours: what the tint goes through at the middle of the transfert. */
 	static final String[] GRADE_NAMES = { "dusk", "night blue", "black" };
@@ -125,7 +127,7 @@ public class TransfertLab extends ApplicationAdapter
 		hold = LabControls.slider(document, controls, "hold", "hold between transferts (s)", 0.5f, 5, 0.25f, HOLD);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
 		grade = LabControls.choice(document, controls, "gradeColour", "B: grade colour", GRADE_NAMES, GRADE);
-		stagger = LabControls.slider(document, controls, "depthStagger", "C, D: depth stagger (0 = every layer at once)", 0, 2, 0.1f, STAGGER);
+		stagger = LabControls.slider(document, controls, "depthStagger", "A, C, D: depth stagger (0 = every layer at once)", 0, TransfertStyle.MAX_STAGGER, 0.1f, STAGGER);
 		patch = LabControls.slider(document, controls, "patches", "C, D: patches across the panel", 1, 16, 0.5f, PATCH);
 		soft = LabControls.slider(document, controls, "softEdge", "C, D: patch edge softness", 0.01f, 0.4f, 0.01f, SOFT);
 		readout = LabControls.readout(document, controls, "transfert-readout");
@@ -179,7 +181,7 @@ public class TransfertLab extends ApplicationAdapter
 				duration = LabControls.read(seconds);
 				int into = PAIRS[shown][1 - side];
 				for (int i = 0; i < hearts.length; i++)
-					hearts[i].transfertIntoPage(models[i][into], duration);
+					hearts[i].transfertIntoPage(models[i][into], duration, i == 0 ? style() : TransfertStyle.FADE);
 				float[] g = GRADES[LabControls.read(grade)];
 				hearts[1].parallaxReader.addColorTransfert(new Color(g[0], g[1], g[2], 1), duration / 2);
 				inTransfert = true;
@@ -253,12 +255,13 @@ public class TransfertLab extends ApplicationAdapter
 		Gdx.gl.glViewport(0, 0, width, height);
 	}
 
+	/** The library's depth stagger at the slider's value: A draws its transferts in it, C and D take its windows. */
+	private TransfertStyle style()
+	{return TransfertStyle.depthStagger(LabControls.read(stagger));}
+
 	/** How far along layer slot {@code slot} of {@code total} (0 at the back) is when the whole is at {@code ramp}. */
 	private float rampOf(float ramp, int slot, int total)
-	{
-		float s = LabControls.read(stagger), k = total > 1 ? slot / (float) (total - 1) : 0;
-		return Math.max(0, Math.min(1, ramp * (1 + s) - s * k));
-	}
+	{return style().slotRamp(ramp, slot, total);}
 
 	/**
 	 * C: the first half, the old page's layers hazed toward the mist's white in patches, the far ones first, over a

@@ -28,6 +28,7 @@ import jks.tools2d.parallax.ParallaxParticles;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.SequenceCycle;
+import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
@@ -83,7 +84,10 @@ final class ReaderCases
 				new BrowserCase("reader: sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce", () -> new ReaderCases().sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce()),
 				new BrowserCase("reader: sequenceMirrorFlipsEachSegmentInItsSlot", () -> new ReaderCases().sequenceMirrorFlipsEachSegmentInItsSlot()),
 				new BrowserCase("reader: sequenceCycleOfAKnownSeedIsPinned", () -> new ReaderCases().sequenceCycleOfAKnownSeedIsPinned()),
-				new BrowserCase("reader: aGameSeedRedrawsTheSequencesOfBothPages", () -> new ReaderCases().aGameSeedRedrawsTheSequencesOfBothPages()));
+				new BrowserCase("reader: aGameSeedRedrawsTheSequencesOfBothPages", () -> new ReaderCases().aGameSeedRedrawsTheSequencesOfBothPages()),
+				new BrowserCase("reader: depthStaggerFadesEachSlotInItsOwnWindowInEveryRepeatMode", () -> new ReaderCases().depthStaggerFadesEachSlotInItsOwnWindowInEveryRepeatMode()),
+				new BrowserCase("reader: depthStaggerMatchesPagesOfUnequalLayerCountsFromTheFront", () -> new ReaderCases().depthStaggerMatchesPagesOfUnequalLayerCountsFromTheFront()),
+				new BrowserCase("reader: aTransfertWithoutAStyleFadesEverySlotAtOnce", () -> new ReaderCases().aTransfertWithoutAStyleFadesEverySlotAtOnce()));
 	}
 
 	/** A region of the given pixel size, without any texture behind it. */
@@ -1423,5 +1427,121 @@ final class ReaderCases
 		for (int slot = 0; slot < cycle.length; slot++)
 			cycle[slot] = layer.getCycleSegment(slot);
 		return Arrays.toString(cycle);
+	}
+
+	/** {@code n} layers told apart by their width: layer i is {@code base + 0.05 i} of the 40-wide world. */
+	private static List<ParallaxLayer> widened(float base, int n)
+	{
+		List<ParallaxLayer> page = new ArrayList<>();
+		for (int i = 0; i < n; i++)
+		{
+			ParallaxLayer layer = layer(0);
+			layer.setSizeRatio(base + 0.05f * i);
+			page.add(layer);
+		}
+		return page;
+	}
+
+	/** The transfert lab's rampOf (TransfertLab, r220), written out again: what slot k of n is at when the whole is at t. */
+	private static float labRamp(float t, float stagger, int slot, int total)
+	{
+		float k = total > 1 ? slot / (float) (total - 1) : 0;
+		return Math.max(0, Math.min(1, t * (1 + stagger) - stagger * k));
+	}
+
+	/**
+	 * Every draw of the layer {@code base + 0.05 i} wide is at {@code alpha}, and there is at least one; none at alpha 0
+	 * (a layer at alpha 0 is not drawn).
+	 */
+	private void drawnAt(float base, int i, float alpha, String what)
+	{
+		float width = 40 * (base + 0.05f * i);
+		int found = 0;
+		for (float[] draw : draws)
+			if (Math.abs(draw[2] - width) < 1e-3f)
+			{
+				found++;
+				equal(alpha, draw[5], 1e-5f, what + ": alpha");
+			}
+		if (alpha > 0)
+			isTrue(found > 0, what + ": drawn");
+		else
+			equal(0, found, what + ": drawn at alpha 0");
+	}
+
+	void depthStaggerFadesEachSlotInItsOwnWindowInEveryRepeatMode()
+	{
+		float stagger = 1;
+		for (int mode = 0; mode < 4; mode++)
+		{
+			String repeat = new String[] { "X", "Y", "XY", "none" }[mode];
+			ParallaxPageReader reader = reader(mode != 1 && mode != 3, mode == 1 || mode == 2);
+			reader.addLayers(widened(0.3f, 3));
+			reader.addLayersTransfert(page(widened(0.5f, 3)), null, 1, TransfertStyle.depthStagger(stagger));
+			same(TransfertStyle.Kind.DEPTH_STAGGER, reader.getTransfertStyle().getKind(), "the style under way");
+			for (float t : new float[] { 0.25f, 0.5f, 0.75f })
+			{
+				// A quarter of the 1 s transfert a step: the fade is at t exactly.
+				reader.act(0.25f, 0, 0);
+				draws.clear();
+				reader.draw(camera, batch);
+				for (int slot = 0; slot < 3; slot++)
+				{
+					float ramp = labRamp(t, stagger, slot, 3);
+					drawnAt(0.3f, slot, 1 - ramp, repeat + " at " + t + ", outgoing slot " + slot);
+					drawnAt(0.5f, slot, ramp, repeat + " at " + t + ", incoming slot " + slot);
+				}
+			}
+			reader.act(0.25f, 0, 0);
+			isFalse(reader.isInTransfer(), repeat + ": every slot is in when the transfert ends");
+			same(TransfertStyle.FADE, reader.getTransfertStyle(), "no style outside a transfert");
+		}
+	}
+
+	void depthStaggerMatchesPagesOfUnequalLayerCountsFromTheFront()
+	{
+		float stagger = 2;
+		for (int more = 0; more < 2; more++)
+		{
+			// 2 layers into 4, then 4 into 2: the page with fewer fills the front slots, 2 and 3 of 4.
+			int oldCount = more == 0 ? 2 : 4, newCount = more == 0 ? 4 : 2;
+			ParallaxPageReader reader = reader(true, false);
+			reader.addLayers(widened(0.3f, oldCount));
+			reader.addLayersTransfert(page(widened(0.6f, newCount)), null, 1, TransfertStyle.depthStagger(stagger));
+			reader.act(0.5f, 0, 0);
+			draws.clear();
+			reader.draw(camera, batch);
+			for (int slot = 0; slot < 4; slot++)
+			{
+				float ramp = labRamp(0.5f, stagger, slot, 4);
+				if (slot >= 4 - oldCount)
+					drawnAt(0.3f, slot - (4 - oldCount), 1 - ramp, oldCount + " into " + newCount + ", outgoing slot " + slot);
+				if (slot >= 4 - newCount)
+					drawnAt(0.6f, slot - (4 - newCount), ramp, oldCount + " into " + newCount + ", incoming slot " + slot);
+			}
+		}
+	}
+
+	void aTransfertWithoutAStyleFadesEverySlotAtOnce()
+	{
+		same(TransfertStyle.FADE, TransfertStyle.depthStagger(0), "a stagger of 0 is FADE");
+		equal(TransfertStyle.MAX_STAGGER, TransfertStyle.depthStagger(5).getStagger(), 0, "the stagger is clamped");
+		for (int call = 0; call < 3; call++)
+		{
+			ParallaxPageReader reader = reader(true, true);
+			reader.addLayers(widened(0.3f, 3));
+			if (call == 0)
+				reader.addLayersTransfert(page(widened(0.5f, 3)), 1);
+			else
+				reader.addLayersTransfert(page(widened(0.5f, 3)), null, 1, call == 1 ? null : TransfertStyle.FADE);
+			reader.act(0.25f, 0, 0);
+			draws.clear();
+			reader.draw(camera, batch);
+			for (int slot = 0; slot < 3; slot++)
+			{
+				drawnAt(0.3f, slot, 0.75f, "call " + call + ", outgoing slot " + slot);
+				drawnAt(0.5f, slot, 0.25f, "call " + call + ", incoming slot " + slot);
+			}
+		}
 	}
 }

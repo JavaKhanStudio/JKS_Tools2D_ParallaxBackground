@@ -24,6 +24,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import org.lwjgl.glfw.GLFW;
 
+import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
@@ -42,7 +43,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * the working directory (the repository root). Each scene scrolls at 60 units/s stepped at 1/60 s and is saved
  * {@code <id>-t0/-t6/-t12.png}, 0, 6 and 12 s in, 1280x720. A scene may also:
  * {@code "transfer": {"at": 4, "seconds": 4, "page": ..., "atlasDir": ...}} cross-fade into that page (no page: into the
- * page on screen; a list of them: one after the other, r98), {@code "tint": {"at": 4, "seconds": 4, "color": [r, g, b,
+ * page on screen; a list of them: one after the other, r98; {@code "style": {"kind": "DEPTH_STAGGER", "stagger": 1}}: drawn
+ * in that {@link TransfertStyle}, r249), {@code "tint": {"at": 4, "seconds": 4, "color": [r, g, b,
  * a]}} tint, both started {@code at} seconds into the scroll (r94, engines/godot/tests/transfer); {@code "speedY": 30}
  * also scroll up, and {@code "resize": {"at": 3, "size": [720, 1280]}} resize the window mid-scroll (r95,
  * engines/godot/tests/conformance); {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY
@@ -87,6 +89,7 @@ public class ParallaxShots extends ApplicationAdapter
 	{
 		float at, seconds;
 		String page, atlasDir;
+		TransfertStyle style = TransfertStyle.FADE;
 	}
 
 	public ParallaxShots(Path roundDir, Path shotsDir)
@@ -150,6 +153,7 @@ public class ParallaxShots extends ApplicationAdapter
 					transfer.seconds = t.getFloat("seconds");
 					transfer.page = t.getString("page", null);
 					transfer.atlasDir = t.getString("atlasDir", scene.atlasDir);
+					transfer.style = style(t.get("style"));
 					scene.transfers.add(transfer);
 				}
 			JsonValue hooks = s.get("hooks");
@@ -232,7 +236,7 @@ public class ParallaxShots extends ApplicationAdapter
 							into = Utils_Page_Json.loadPage(new FileHandle(Paths.get(transfer.page).toFile()));
 							heart.relativePath = Paths.get(transfer.atlasDir).toAbsolutePath().toString();
 						}
-						heart.transfertIntoPage(into, transfer.seconds);
+						heart.transfertIntoPage(into, transfer.seconds, transfer.style);
 					}
 					if (!resized && scene.resizeAt >= 0 && time >= scene.resizeAt)
 					{
@@ -303,5 +307,13 @@ public class ParallaxShots extends ApplicationAdapter
 	{
 		heart.dispose();
 		Gvars_Parallax.getManager().dispose();
+	}
+
+	/** A transfer's {@code "style": {"kind": "DEPTH_STAGGER", "stagger": 1}}; none, or another kind: FADE. */
+	static TransfertStyle style(JsonValue style)
+	{
+		if (style != null && "DEPTH_STAGGER".equals(style.getString("kind", null)))
+			return TransfertStyle.depthStagger(style.getFloat("stagger", 0));
+		return TransfertStyle.FADE;
 	}
 }

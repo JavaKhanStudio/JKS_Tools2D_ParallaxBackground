@@ -177,6 +177,12 @@ More:
 - **Change page with a cross-fade:** `heart.transfertIntoPage(Utils_Page.loadPage("backgrounds/night.plax"), 3f)`.
   Layers are matched from the front, and matching layers keep scrolling seamlessly. This works best between variants
   of the same scene (day/night, winter/spring).
+- **Choose how the cross-fade looks:** `heart.transfertIntoPage(page, 3f, style)`. `TransfertStyle.FADE` (what the
+  two-argument call does) fades every layer at once; `TransfertStyle.depthStagger(0.5f)` fades each layer slot over its
+  own window, the back ones first, the front ones last: the stagger, 0 to 2, is how far apart those windows are (at 1,
+  the back slot is all in half way, when the front one starts; 0 is `FADE`). The style is the game's call: a page does
+  not store it. Godot: `bg.transfert_into(page, atlas, 3.0, PlaxTransfertStyle.depth_stagger(0.5))`; jME:
+  `bg.transfertIntoPage(page, atlas, 3, style)`.
 - **Tint every layer:** `heart.parallaxReader.addColorTransfert(color, seconds)`.
 - **Draw your own things between layers:** give the page an `EMPTY` layer named, say, `birds`, at the depth they fly
   at, and register what draws it: `heart.parallaxReader.setLayerHook("birds", (batch, layer, x, y, width, height) ->

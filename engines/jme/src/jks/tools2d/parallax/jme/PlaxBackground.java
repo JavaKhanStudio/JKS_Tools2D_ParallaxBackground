@@ -21,6 +21,7 @@ import com.jme3.scene.Spatial.CullHint;
 
 import jks.tools2d.parallax.LayerHook;
 import jks.tools2d.parallax.ParallaxPageReader;
+import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.Utils_Parallax;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.pages.Utils_Page;
@@ -158,10 +159,17 @@ public class PlaxBackground extends BaseAppState
 
 	/** Cross-fades into {@code model} over {@code seconds}, as Parallax_Heart.transfertIntoPage. */
 	public void transfertIntoPage(WholePage_Model model, TextureAtlas atlas, float seconds)
+	{transfertIntoPage(model, atlas, seconds, TransfertStyle.FADE);}
+
+	/**
+	 * Cross-fades into {@code model} over {@code seconds}, its layers drawn as {@code style} says (null: every slot at
+	 * once), as Parallax_Heart.transfertIntoPage(page, seconds, style).
+	 */
+	public void transfertIntoPage(WholePage_Model model, TextureAtlas atlas, float seconds, TransfertStyle style)
 	{
 		build(model, atlas);
 		transfertPage = model;
-		reader.addLayersTransfert(model, seconds);
+		reader.addLayersTransfert(model, null, seconds, style);
 		if (top != null)
 			top.transfertInto(model.topHalf_top, model.topHalf_bottom, seconds);
 		if (bottom != null)

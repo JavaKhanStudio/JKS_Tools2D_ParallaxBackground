@@ -2,7 +2,7 @@ extends Node
 ## Stills of every scene of a lab round, as shots/.../ParallaxShots takes them with libGDX: the same page, the
 ## same 60 units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. tools/godot-parallax-shots.sh runs it and
 ## compares the two sets. A scene's "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same
-## step as the lab, its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
+## step as the lab (a transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1}, r249), its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
 ## the page's EMPTY layers: each stretches the atlas region it names over every tile it is handed (r177). Its
 ## "sequenceSeed" draws the SEQUENCE layers from that game seed (r183).
 ##   godot --path engines/godot res://tests/shots.tscn -- <repo root> <round dir> <out dir>
@@ -86,12 +86,21 @@ static func _set_hooks(bg: PlaxBackground, hooks: Dictionary) -> void:
 
 ## Into the scene's transfer page, or into the page on screen when it names none.
 static func _transfer(bg: PlaxBackground, root: String, scene: Dictionary, transfer: Dictionary) -> void:
+	var style := _style(transfer.get("style", {}))
 	if not transfer.has("page"):
-		bg.transfert_into(bg.page, bg.atlas, transfer.seconds)
+		bg.transfert_into(bg.page, bg.atlas, transfer.seconds, style)
 		return
 	var page := PlaxPage.load_page(root.path_join(transfer.page))
 	var atlas_dir: String = root.path_join(transfer.get("atlasDir", scene.atlasDir))
-	bg.transfert_into(page, PlaxAtlas.load_atlas(atlas_dir.path_join(page.atlas_name)), transfer.seconds)
+	bg.transfert_into(page, PlaxAtlas.load_atlas(atlas_dir.path_join(page.atlas_name)), transfer.seconds, style)
+
+
+## A transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1}; none, or another kind: a plain fade (null), as
+## ParallaxShots.style.
+static func _style(style: Dictionary) -> PlaxTransfertStyle:
+	if style.get("kind", "") == "DEPTH_STAGGER":
+		return PlaxTransfertStyle.depth_stagger(style.get("stagger", 0.0))
+	return null
 
 
 static func _f32(value: float) -> float:
