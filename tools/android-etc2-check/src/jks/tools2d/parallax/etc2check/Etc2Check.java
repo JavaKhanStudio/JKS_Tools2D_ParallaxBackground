@@ -32,6 +32,10 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * error is caught by GLProfiler, with the GL call that raised it. A last pass loads each ETC2 atlas through libGDX's
  * own {@code new TextureAtlas(file)}, which asks for glGenerateMipmap: what the page loader avoids since r173. The
  * report is {@code results.txt}, also logged under the tag ETC2; its last line is {@code ETC2 DONE}.
+ * <p>
+ * r206: started with a hold ({@code "hiver etc2"}, {@code "hiver png"}, or {@code "none"} for nothing loaded), it loads
+ * that one page in that one mode and keeps drawing it, scrolling, until stopped, after logging {@code ETC2 HOLDING}:
+ * what {@code dumpsys meminfo} then reads as GL mtrack is that page's video memory (tools/android-etc2-memory.sh).
  */
 public class Etc2Check extends ApplicationAdapter
 {
@@ -44,6 +48,15 @@ public class Etc2Check extends ApplicationAdapter
 	private GLProfiler profiler;
 	private int run;
 	private boolean failed;
+	private final String hold;
+	private Parallax_Heart held;
+
+	public Etc2Check()
+	{this(null);}
+
+	/** @param hold {@code "<page> png"}, {@code "<page> etc2"} or {@code "none"}; null runs the check. */
+	public Etc2Check(String hold)
+	{this.hold = hold;}
 
 	@Override
 	public void create()
@@ -64,11 +77,41 @@ public class Etc2Check extends ApplicationAdapter
 				+ Gdx.graphics.getBackBufferWidth() + "x" + Gdx.graphics.getBackBufferHeight());
 		line("extensions with ETC/compressed: " + extensions());
 		line("pages " + pages);
+		if (hold != null)
+			startHold();
+	}
+
+	/** Loads the held page in its mode, or nothing for {@code none}, and says so once it is on the GPU. */
+	private void startHold()
+	{
+		String[] parts = hold.split(" ");
+		if (parts.length == 2)
+		{
+			Gvars_Parallax.setManager(new AssetManager());
+			Gvars_Parallax.setCompressedAtlases(parts[1].equals("etc2"));
+			WholePage_Model model = Utils_Page.loadPage(parts[0] + ".plax");
+			held = new Parallax_Heart();
+			held.setPage(model);
+			held.screenSpeedConstantX = 60;
+			for (Texture texture : model.getLoadedAtlas().getTextures())
+				line("  " + describe(texture));
+		}
+		line("ETC2 HOLDING " + hold + ", GL errors " + (errors.isEmpty() ? "none" : errors));
 	}
 
 	@Override
 	public void render()
 	{
+		if (hold != null)
+		{
+			ScreenUtils.clear(Color.BLACK);
+			if (held != null)
+			{
+				held.act(STEP);
+				held.render();
+			}
+			return;
+		}
 		if (run < pages.size() * 2)
 		{
 			String page = pages.get(run / 2);
