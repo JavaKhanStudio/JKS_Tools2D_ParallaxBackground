@@ -57,8 +57,8 @@ public class HazeLab extends ApplicationAdapter
 	/** The tints the slider picks from: the haze round's orange (h05), a night blue, a dusk pink, a sick green. */
 	static final String[] TINT_NAMES = { "none", "orange (h05)", "night blue", "dusk pink", "green" };
 	static final float[][] TINTS = { { 1, 1, 1 }, { 1, 0.55f, 0.3f }, { 0.45f, 0.55f, 1 }, { 1, 0.6f, 0.75f }, { 0.6f, 1, 0.5f } };
-	/** What the lab opens on: the round's haze, the orange tint at full strength, scrolled 40 units/s, dark towers. */
-	static final float HAZE = 0.25f, TINT = 1, STRENGTH = 1, SCROLL = 40, TOWERS_LIGHT = 0.15f;
+	/** What the lab opens on: the round's haze, untinted (a tint multiplies every layer, the snow too: r224), scrolled 40 units/s, dark towers. */
+	static final float HAZE = 0.25f, TINT = 0, STRENGTH = 1, SCROLL = 40, TOWERS_LIGHT = 0.15f;
 
 	private final Parallax_Heart[] hearts = new Parallax_Heart[4];
 	private final ParallaxLayer[] mists = new ParallaxLayer[4];
