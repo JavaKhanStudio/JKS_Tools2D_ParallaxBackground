@@ -13,7 +13,7 @@ import com.google.gwt.dom.client.Element;
 /**
  * Runs {@link BrowserSuite} and {@link WebGlCases} once the assets are loaded and writes one row per case into the page, then a summary line
  * {@code <pre id="summary">} that tools/browser-test.sh reads: "browser-tests: N passed, M failed". The canvas stays
- * green when every case passed, red otherwise.
+ * green when every case passed, red otherwise. webapp/lab.css styles the rows (r232).
  */
 public class BrowserTestApp extends ApplicationAdapter
 {
@@ -24,7 +24,7 @@ public class BrowserTestApp extends ApplicationAdapter
 	{
 		Document document = Document.get();
 		Element table = document.createTableElement();
-		table.setAttribute("style", "font: 13px monospace; border-collapse: collapse");
+		table.setClassName("lab-results");
 		int ok = 0, failed = 0;
 		List<BrowserCase> cases = new ArrayList<>(BrowserSuite.all(new AssetFixtures()));
 		cases.addAll(WebGlCases.all());
@@ -41,7 +41,6 @@ public class BrowserTestApp extends ApplicationAdapter
 				failed++;
 			Element row = document.createTRElement();
 			row.setAttribute("class", error == null ? "pass" : "fail");
-			row.setAttribute("style", "background:" + (error == null ? "#e6f4ea" : "#fce8e6"));
 			row.appendChild(cell(document, error == null ? "PASS" : "FAIL"));
 			row.appendChild(cell(document, test.name));
 			row.appendChild(cell(document, error == null ? "" : error));
@@ -52,7 +51,7 @@ public class BrowserTestApp extends ApplicationAdapter
 		summary.setId("summary");
 		summary.setInnerText("browser-tests: " + ok + " passed, " + failed + " failed");
 		Element browser = document.createDivElement();
-		browser.setAttribute("style", "color: #666; margin-bottom: 8px");
+		browser.setClassName("lab-muted");
 		browser.setInnerText(navigator());
 		document.getBody().appendChild(summary);
 		document.getBody().appendChild(browser);
@@ -63,7 +62,6 @@ public class BrowserTestApp extends ApplicationAdapter
 	private static Element cell(Document document, String text)
 	{
 		Element cell = document.createTDElement();
-		cell.setAttribute("style", "padding: 2px 8px; border-bottom: 1px solid #ddd");
 		cell.setInnerText(text);
 		return cell;
 	}

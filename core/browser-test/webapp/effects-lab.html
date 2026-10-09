@@ -2,34 +2,27 @@
 <html>
 <head>
 	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Effects lab (r224)</title>
-	<style>
-		body { margin: 8px; font: 13px sans-serif; background: #222; color: #ddd; }
-		h1 { font: bold 16px sans-serif; margin: 0 0 6px; }
-		#effects-lab { position: relative; width: 1524px; height: 250px; }
-		#effects-labels { position: absolute; inset: 0; display: grid; grid-template-columns: 764px 760px; pointer-events: none; }
-		.panel-label { padding: 4px 8px; font: bold 14px sans-serif; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
-		#effects-controls { margin-top: 8px; width: 1524px; }
-		.row { display: grid; grid-template-columns: 420px 1fr 80px; align-items: center; gap: 8px; }
-		#effects-readout { margin-top: 6px; color: #aaa; }
-		#effects-about { width: 1200px; color: #bbb; line-height: 1.4; }
-		#effects-copy-row { margin-top: 8px; display: flex; gap: 10px; align-items: center; }
-		#effects-copy { font: bold 14px sans-serif; padding: 6px 14px; }
-		#effects-copy-json { width: 1200px; height: 300px; margin-top: 6px; font: 12px monospace; background: #111; color: #ddd; }
-	</style>
+	<link rel="stylesheet" href="lab.css">
 	<!-- EffectsLab (r224): ?lab=fog, ?lab=snow or ?lab=all, the feature on the left, the same page without it on the right. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
-<body>
-	<h1 id="effects-title">Effects lab</h1>
-	<div id="effects-lab">
+<body class="lab">
+	<header class="lab-bar">
+		<h1 id="effects-title">Effects lab</h1>
+		<span id="effects-copy-state" class="lab-copy-state"></span>
+		<button id="effects-copy" class="lab-copy">Copy settings</button>
+	</header>
+	<div id="effects-lab" class="lab-stage lab-row">
 		<div id="embed-browsertests"></div>
-		<div id="effects-labels"></div>
+		<div id="effects-labels" class="lab-labels"></div>
 	</div>
-	<div id="effects-controls"></div>
-	<div id="effects-copy-row"><button id="effects-copy">Copy settings</button><span id="effects-copy-state"></span></div>
-	<textarea id="effects-copy-json" hidden readonly></textarea>
-	<p id="effects-about">One lab per effect, and one with them all (r224). <b>fog</b>: the page fog (r217) mixes each
+	<div id="effects-controls" class="lab-controls"></div>
+	<textarea id="effects-copy-json" class="lab-copy-json" hidden readonly></textarea>
+	<details class="lab-about">
+		<summary>What this lab shows</summary>
+		<p id="effects-about">One lab per effect, and one with them all (r224). <b>fog</b>: the page fog (r217) mixes each
 	layer toward the fog's colour by 1 - exp(-strength (1/speed - 1/front)), so the slower a layer scrolls the more it
 	is fogged, the front layer never; the readout gives each layer's fog. <b>snow</b>: a PARTICLES layer's snow
 	(the particles round's snow-wide.p): its density, flake size, wind, its place among the layers, its drift and its
@@ -37,34 +30,14 @@
 	trees' WAVE, a game's towers drawn in an EMPTY layer, and the snow; the right panel is the same page with none.
 	Each page is drawn by the real reader, compiled to JavaScript, as a browser game draws it. The cost line gives the
 	frame time and, per panel, its draw calls and the CPU time to submit them (the GPU's time is in the frame time).</p>
+	</details>
+	<script src="lab.js"></script>
 	<script>
-	// Copy settings: every slider, what it started at, and which ones moved, as JSON Simon pastes into a card.
-	function effectsLabSettings() {
-		var settings = {}, changed = {};
-		document.querySelectorAll('#effects-controls input[data-key]').forEach(function (input) {
-			var key = input.dataset.key, value = Number(input.value), start = Number(input.dataset.start);
-			settings[key] = value;
-			if (value !== start) changed[key] = { started: start, now: value };
-		});
-		return JSON.stringify({
+	labCopy('effects', function () {
+		return {
 			lab: 'effects-lab ' + (new URLSearchParams(location.search).get('lab') || 'fog'),
-			readout: document.getElementById('effects-readout').textContent,
-			settings: settings,
-			changed: Object.keys(changed).length ? changed : 'nothing: the values the lab opens with'
-		}, null, 2);
-	}
-	document.getElementById('effects-copy').addEventListener('click', async function () {
-		var text = effectsLabSettings(), box = document.getElementById('effects-copy-json'), state = document.getElementById('effects-copy-state');
-		box.value = text;
-		box.hidden = false;
-		box.focus({ preventScroll: true });
-		box.select();
-		try {
-			await navigator.clipboard.writeText(text);
-			state.textContent = 'copied: paste it on the card';
-		} catch (e) {
-			state.textContent = 'selected: Ctrl+C';
-		}
+			readout: document.getElementById('effects-readout').textContent
+		};
 	});
 	</script>
 </body>

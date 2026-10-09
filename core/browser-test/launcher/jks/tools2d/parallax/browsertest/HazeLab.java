@@ -141,57 +141,24 @@ public class HazeLab extends ApplicationAdapter
 			labels.appendChild(label);
 		}
 		Element controls = document.getElementById("haze-controls");
-		haze = slider(document, controls, "depthHaze", "the mist's depth haze (white per layer behind it)", 0, 0.6f, 0.05f, HAZE);
-		tintPick = slider(document, controls, "pageTint", "page tint", 0, TINTS.length - 1, 1, TINT);
-		strength = slider(document, controls, "tintStrength", "tint strength (0 = white)", 0, 1, 0.05f, STRENGTH);
-		scroll = slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
-		light = slider(document, controls, "towersLight", "towers' brightness (the hook's color)", 0, 1, 0.05f, TOWERS_LIGHT);
-		readout = document.createDivElement();
-		readout.setId("haze-readout");
-		controls.appendChild(readout);
+		haze = LabControls.slider(document, controls, "depthHaze", "the mist's depth haze (white per layer behind it)", 0, 0.6f, 0.05f, HAZE);
+		tintPick = LabControls.slider(document, controls, "pageTint", "page tint", 0, TINTS.length - 1, 1, TINT);
+		strength = LabControls.slider(document, controls, "tintStrength", "tint strength (0 = white)", 0, 1, 0.05f, STRENGTH);
+		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
+		light = LabControls.slider(document, controls, "towersLight", "towers' brightness (the hook's color)", 0, 1, 0.05f, TOWERS_LIGHT);
+		readout = LabControls.readout(document, controls, "haze-readout");
 	}
 
-	private static String text(float value)
-	{return String.valueOf(Math.round(value * 100) / 100.0);}
 
-	/** A slider row; {@code key} and the value it starts at go on the input, read by haze-lab.html's "Copy settings". */
-	private static InputElement slider(Document document, Element into, String key, String name, float min, float max, float step, float value)
-	{
-		Element row = document.createLabelElement();
-		row.setClassName("row");
-		Element label = document.createSpanElement();
-		label.setInnerText(name);
-		InputElement input = document.createTextInputElement();
-		input.setAttribute("type", "range");
-		input.setAttribute("min", text(min));
-		input.setAttribute("max", text(max));
-		input.setAttribute("step", text(step));
-		input.setValue(text(value));
-		input.setAttribute("data-key", key);
-		input.setAttribute("data-start", text(value));
-		Element shown = document.createSpanElement();
-		shown.setClassName("value");
-		row.appendChild(label);
-		row.appendChild(input);
-		row.appendChild(shown);
-		into.appendChild(row);
-		return input;
-	}
 
-	private static float read(InputElement input)
-	{
-		float value = Float.parseFloat(input.getValue());
-		((Element) input.getNextSibling()).setInnerText(input.getValue());
-		return value;
-	}
 
 	/** Puts the sliders into every heart. */
 	private void applyControls()
 	{
-		float h = read(haze), k = read(strength), sc = read(scroll);
-		int pick = Math.round(read(tintPick));
+		float h = LabControls.read(haze), k = LabControls.read(strength), sc = LabControls.read(scroll);
+		int pick = Math.round(LabControls.read(tintPick));
 		((Element) tintPick.getNextSibling()).setInnerText(TINT_NAMES[pick]);
-		towersLight = read(light);
+		towersLight = LabControls.read(light);
 		float[] t = TINTS[pick];
 		tint.set(1 + (t[0] - 1) * k, 1 + (t[1] - 1) * k, 1 + (t[2] - 1) * k, 1);
 		for (int i = 0; i < hearts.length; i++)
@@ -209,11 +176,11 @@ public class HazeLab extends ApplicationAdapter
 			if (of <= 0)
 				continue;
 			String name = layer.getName() != null ? layer.getName() : layer.getKind() == Enum_LayerKind.SHADER ? "wave" : "image";
-			line.append(name).append(' ').append(text(of)).append(hooked(layer) ? " (A and C: none)" : "").append(", ");
+			line.append(name).append(' ').append(LabControls.text(of)).append(hooked(layer) ? " (A and C: none)" : "").append(", ");
 		}
-		line.append("tint ").append(text(tint.r)).append(' ').append(text(tint.g)).append(' ').append(text(tint.b))
-				.append("; haze white in C and D ").append(text(GdxLayerEffects.HAZE_R * tint.r)).append(' ')
-				.append(text(GdxLayerEffects.HAZE_G * tint.g)).append(' ').append(text(GdxLayerEffects.HAZE_B * tint.b));
+		line.append("tint ").append(LabControls.text(tint.r)).append(' ').append(LabControls.text(tint.g)).append(' ').append(LabControls.text(tint.b))
+				.append("; haze white in C and D ").append(LabControls.text(GdxLayerEffects.HAZE_R * tint.r)).append(' ')
+				.append(LabControls.text(GdxLayerEffects.HAZE_G * tint.g)).append(' ').append(LabControls.text(GdxLayerEffects.HAZE_B * tint.b));
 		readout.setInnerText(line.toString());
 	}
 

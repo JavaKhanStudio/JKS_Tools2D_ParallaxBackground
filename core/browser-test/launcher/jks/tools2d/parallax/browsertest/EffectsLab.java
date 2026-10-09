@@ -209,48 +209,39 @@ public class EffectsLab extends ApplicationAdapter
 		Document document = Document.get();
 		document.setTitle("Effects lab: " + lab.feature + " (r224)");
 		document.getElementById("effects-title").setInnerText("Effects lab: " + lab.feature);
-		Element labels = document.getElementById("effects-labels");
-		for (String title : new String[] { "A: " + lab.left, "B: " + lab.right })
-		{
-			Element label = document.createDivElement();
-			label.setClassName("panel-label");
-			label.setInnerText(title);
-			labels.appendChild(label);
-		}
+		LabControls.panelLabels(document, "effects-labels", "A: " + lab.left, "B: " + lab.right);
 		Element controls = document.getElementById("effects-controls");
 		if (lab != Lab.SNOW)
 		{
-			fog = slider(document, controls, "fogStrength", "page fog strength (1 - exp(-s (1/speed - 1/front)))", 0, 0.2f, 0.0025f, FOG);
-			fogR = slider(document, controls, "fogRed", "fog colour: red", 0, 1, 0.01f, WholePage_Model.FOG_R);
-			fogG = slider(document, controls, "fogGreen", "fog colour: green", 0, 1, 0.01f, WholePage_Model.FOG_G);
-			fogB = slider(document, controls, "fogBlue", "fog colour: blue", 0, 1, 0.01f, WholePage_Model.FOG_B);
+			fog = LabControls.slider(document, controls, "fogStrength", "page fog strength (1 - exp(-s (1/speed - 1/front)))", 0, 0.2f, 0.0025f, FOG);
+			fogR = LabControls.slider(document, controls, "fogRed", "fog colour: red", 0, 1, 0.01f, WholePage_Model.FOG_R);
+			fogG = LabControls.slider(document, controls, "fogGreen", "fog colour: green", 0, 1, 0.01f, WholePage_Model.FOG_G);
+			fogB = LabControls.slider(document, controls, "fogBlue", "fog colour: blue", 0, 1, 0.01f, WholePage_Model.FOG_B);
 		}
 		if (lab != Lab.FOG)
 		{
-			density = slider(document, controls, "snowDensity", "snow density (x the .p's flakes a second)", 0, 4, 0.05f, 1);
-			size = slider(document, controls, "flakeSize", "flake size (x the .p's)", 0.25f, 4, 0.05f, 1);
-			wind = slider(document, controls, "snowWind", "wind (world units/s, + = right)", -4, 4, 0.1f, 0);
+			density = LabControls.slider(document, controls, "snowDensity", "snow density (x the .p's flakes a second)", 0, 4, 0.05f, 1);
+			size = LabControls.slider(document, controls, "flakeSize", "flake size (x the .p's)", 0.25f, 4, 0.05f, 1);
+			wind = LabControls.slider(document, controls, "snowWind", "wind (world units/s, + = right)", -4, 4, 0.1f, 0);
 		}
 		if (lab == Lab.SNOW)
 		{
 			ArrayList<ParallaxLayer> layers = set.hearts[0].parallaxReader.layers;
 			ParallaxLayer snow = snow(set.hearts[0]);
-			snowLayer = slider(document, controls, "snowLayer", "snow's layer (0 = back, front = the last)", 0, layers.size() - 1, 1, layers.indexOf(snow));
-			snowSpeed = slider(document, controls, "snowSpeedX", "snow's speed ratio X (its drift with the scroll)", 0, 0.1f, 0.001f, snow.getParallaxSpeedRatioX());
-			anchor = slider(document, controls, "snowAnchor", "anchor (0 = VIEW: snow that never runs out, 1 = LAYER: tiled with the box)", 0, 1, 1,
+			snowLayer = LabControls.slider(document, controls, "snowLayer", "snow's layer (0 = back, front = the last)", 0, layers.size() - 1, 1, layers.indexOf(snow));
+			snowSpeed = LabControls.slider(document, controls, "snowSpeedX", "snow's speed ratio X (its drift with the scroll)", 0, 0.1f, 0.001f, snow.getParallaxSpeedRatioX());
+			anchor = LabControls.slider(document, controls, "snowAnchor", "anchor (0 = VIEW: snow that never runs out, 1 = LAYER: tiled with the box)", 0, 1, 1,
 					snow.getAnchor() == Enum_ParticleAnchor.LAYER ? 1 : 0);
 		}
 		if (lab == Lab.ALL)
 		{
-			mist = slider(document, controls, "mistAmplitude", "the FOG mist's amplitude (thinning, 0..1)", 0, 1, 0.05f, mistOf(set.hearts[0]).getShaderAmplitude());
-			ripple = slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, 1);
+			mist = LabControls.slider(document, controls, "mistAmplitude", "the FOG mist's amplitude (thinning, 0..1)", 0, 1, 0.05f, mistOf(set.hearts[0]).getShaderAmplitude());
+			ripple = LabControls.slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, 1);
 		}
-		scroll = slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
+		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
 		if (sets.length > 1)
-			pick = slider(document, controls, "parallaxSet", "parallax set", 0, sets.length - 1, 1, 0);
-		readout = document.createDivElement();
-		readout.setId("effects-readout");
-		controls.appendChild(readout);
+			pick = LabControls.slider(document, controls, "parallaxSet", "parallax set", 0, sets.length - 1, 1, 0);
+		readout = LabControls.readout(document, controls, "effects-readout");
 	}
 
 	private static ParallaxLayer mistOf(Parallax_Heart heart)
@@ -261,56 +252,25 @@ public class EffectsLab extends ApplicationAdapter
 		throw new IllegalStateException(ALL_PAGE + " has no layer named " + MIST);
 	}
 
-	private static String text(float value)
-	{return String.valueOf(Math.round(value * 10000) / 10000.0);}
 
-	/** A slider row; {@code key} and the value it starts at go on the input, read by effects-lab.html's "Copy settings". */
-	private static InputElement slider(Document document, Element into, String key, String name, float min, float max, float step, float value)
-	{
-		Element row = document.createLabelElement();
-		row.setClassName("row");
-		Element label = document.createSpanElement();
-		label.setInnerText(name);
-		InputElement input = document.createTextInputElement();
-		input.setAttribute("type", "range");
-		input.setAttribute("min", text(min));
-		input.setAttribute("max", text(max));
-		input.setAttribute("step", text(step));
-		input.setValue(text(value));
-		input.setAttribute("data-key", key);
-		input.setAttribute("data-start", text(value));
-		Element shown = document.createSpanElement();
-		shown.setClassName("value");
-		row.appendChild(label);
-		row.appendChild(input);
-		row.appendChild(shown);
-		into.appendChild(row);
-		return input;
-	}
 
-	private static float read(InputElement input)
-	{
-		float value = Float.parseFloat(input.getValue());
-		((Element) input.getNextSibling()).setInnerText(input.getValue());
-		return value;
-	}
 
 	/** Puts the sliders into both hearts. */
 	private void applyControls()
 	{
 		if (pick != null)
 		{
-			set = sets[Math.round(read(pick))];
+			set = sets[Math.round(LabControls.read(pick))];
 			((Element) pick.getNextSibling()).setInnerText(FOG_NAMES[set.index]);
 		}
-		float sc = read(scroll);
+		float sc = LabControls.read(scroll);
 		for (Parallax_Heart heart : set.hearts)
 			heart.screenSpeedConstantX = sc;
 		StringBuilder line = new StringBuilder();
 		if (fog != null)
 		{
-			fogColor.set(read(fogR), read(fogG), read(fogB), 1);
-			float strength = read(fog);
+			fogColor.set(LabControls.read(fogR), LabControls.read(fogG), LabControls.read(fogB), 1);
+			float strength = LabControls.read(fog);
 			set.hearts[0].parallaxReader.setFog(strength, fogColor);
 			// "all" draws none of the effects on the right; "fog" none of the fog.
 			set.hearts[1].parallaxReader.setFog(0, fogColor);
@@ -320,8 +280,8 @@ public class EffectsLab extends ApplicationAdapter
 			applySnow(line);
 		if (mist != null)
 		{
-			mistOf(set.hearts[0]).setShaderAmplitude(read(mist));
-			float rp = read(ripple);
+			mistOf(set.hearts[0]).setShaderAmplitude(LabControls.read(mist));
+			float rp = LabControls.read(ripple);
 			for (int i = 0; i < waves.size(); i++)
 				waves.get(i).setShaderAmplitude(waveAmplitudes.get(i) * rp);
 		}
@@ -340,21 +300,21 @@ public class EffectsLab extends ApplicationAdapter
 
 	private void applySnow(StringBuilder line)
 	{
-		float d = read(density), s = read(size), w = read(wind);
+		float d = LabControls.read(density), s = LabControls.read(size), w = LabControls.read(wind);
 		ParallaxLayer snow = snow(set.hearts[0]);
 		if (snow == null || snowBase == null)
 			return;
 		if (snowLayer != null)
 		{
 			ArrayList<ParallaxLayer> layers = set.hearts[0].parallaxReader.layers;
-			int index = Math.min(Math.round(read(snowLayer)), layers.size() - 1);
+			int index = Math.min(Math.round(LabControls.read(snowLayer)), layers.size() - 1);
 			if (layers.indexOf(snow) != index)
 			{
 				layers.remove(snow);
 				layers.add(index, snow);
 			}
-			snow.setParallaxSpeedRatioX(read(snowSpeed));
-			boolean layerAnchor = Math.round(read(anchor)) == 1;
+			snow.setParallaxSpeedRatioX(LabControls.read(snowSpeed));
+			boolean layerAnchor = Math.round(LabControls.read(anchor)) == 1;
 			((Element) anchor.getNextSibling()).setInnerText(layerAnchor ? "LAYER" : "VIEW");
 			snow.setAnchor(layerAnchor ? Enum_ParticleAnchor.LAYER : Enum_ParticleAnchor.VIEW);
 		}
@@ -436,9 +396,9 @@ public class EffectsLab extends ApplicationAdapter
 		frameSeconds += Gdx.graphics.getDeltaTime();
 		if (frameSeconds < 1 && !(clip && frames >= 1))
 			return;
-		costLine = (clip ? "cost (stepped, not timed): " : "frame " + text(1000 * frameSeconds / frames) + " ms; ")
-				+ "A " + panelCalls[0] + " draw calls, " + text(panelMillis[0] / frames) + " ms CPU; B " + panelCalls[1]
-				+ " draw calls, " + text(panelMillis[1] / frames) + " ms CPU";
+		costLine = (clip ? "cost (stepped, not timed): " : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ")
+				+ "A " + panelCalls[0] + " draw calls, " + LabControls.text(panelMillis[0] / frames) + " ms CPU; B " + panelCalls[1]
+				+ " draw calls, " + LabControls.text(panelMillis[1] / frames) + " ms CPU";
 		frames = frameSeconds = 0;
 		panelMillis[0] = panelMillis[1] = 0;
 	}

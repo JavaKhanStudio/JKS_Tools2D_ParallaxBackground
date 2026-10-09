@@ -166,74 +166,34 @@ public class FogLab extends ApplicationAdapter
 	private void buildControls(float a, float w, float s)
 	{
 		Document document = Document.get();
-		Element labels = document.getElementById("fog-labels");
-		for (int i = 0; i < TITLES.length; i++)
-		{
-			Element label = document.createDivElement();
-			label.setClassName("panel-label");
-			label.setInnerText(TITLES[i]);
-			labels.appendChild(label);
-		}
+		LabControls.panelLabels(document, "fog-labels", TITLES);
 		Element controls = document.getElementById("fog-controls");
-		amplitude = slider(document, controls, "mistAmplitude", "amplitude (thinning, 0..1)", 0, 1, 0.05f, a);
-		wavelength = slider(document, controls, "mistWavelength", "wavelength (patch width, world units)", 0.5f, 20, 0.25f, w);
-		speed = slider(document, controls, "mistSpeed", "speed (world units/s)", 0, 6, 0.1f, s);
-		height = slider(document, controls, "patchHeightC", "C's patch height (x wavelength)", 0.05f, 1.5f, 0.05f, heights[2]);
-		scroll = slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SIMON[3]);
-		ripple = slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, SIMON[4]);
+		amplitude = LabControls.slider(document, controls, "mistAmplitude", "amplitude (thinning, 0..1)", 0, 1, 0.05f, a);
+		wavelength = LabControls.slider(document, controls, "mistWavelength", "wavelength (patch width, world units)", 0.5f, 20, 0.25f, w);
+		speed = LabControls.slider(document, controls, "mistSpeed", "speed (world units/s)", 0, 6, 0.1f, s);
+		height = LabControls.slider(document, controls, "patchHeightC", "C's patch height (x wavelength)", 0.05f, 1.5f, 0.05f, heights[2]);
+		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SIMON[3]);
+		ripple = LabControls.slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, SIMON[4]);
 		int last = hearts[0].parallaxReader.layers.size() - 1;
-		order = slider(document, controls, "mistLayer", "mist's layer (0 = back, front = the set's last)", 0, last, 1, pageMistIndex);
-		fog = slider(document, controls, "fogStrength", "page fog strength (1 - exp(-s (1/speed - 1/front)))", 0, 0.2f, 0.0025f, FOG);
-		fogColor = slider(document, controls, "fogColor", "page fog colour", 0, FOG_COLORS.length - 1, 1, 0);
-		pick = slider(document, controls, "parallaxSet", "parallax set", 0, sets.length - 1, 1, 0);
-		size = slider(document, controls, "mistSize", "mist's size (x s01's: wider and taller)", 0.5f, 3, 0.05f, 1);
-		rise = slider(document, controls, "mistRise", "mist up/down (world units from the set's place)", -12, 12, 0.25f, 0);
-		readout = document.createDivElement();
-		readout.setId("fog-readout");
-		controls.appendChild(readout);
+		order = LabControls.slider(document, controls, "mistLayer", "mist's layer (0 = back, front = the set's last)", 0, last, 1, pageMistIndex);
+		fog = LabControls.slider(document, controls, "fogStrength", "page fog strength (1 - exp(-s (1/speed - 1/front)))", 0, 0.2f, 0.0025f, FOG);
+		fogColor = LabControls.slider(document, controls, "fogColor", "page fog colour", 0, FOG_COLORS.length - 1, 1, 0);
+		pick = LabControls.slider(document, controls, "parallaxSet", "parallax set", 0, sets.length - 1, 1, 0);
+		size = LabControls.slider(document, controls, "mistSize", "mist's size (x s01's: wider and taller)", 0.5f, 3, 0.05f, 1);
+		rise = LabControls.slider(document, controls, "mistRise", "mist up/down (world units from the set's place)", -12, 12, 0.25f, 0);
+		readout = LabControls.readout(document, controls, "fog-readout");
 	}
 
-	private static String text(float value)
-	{return String.valueOf(Math.round(value * 10000) / 10000.0);}
 
-	/** A slider row; {@code key} and the value it starts at go on the input, read by fog-lab.html's "Copy settings". */
-	private static InputElement slider(Document document, Element into, String key, String name, float min, float max, float step, float value)
-	{
-		Element row = document.createLabelElement();
-		row.setClassName("row");
-		Element text = document.createSpanElement();
-		text.setInnerText(name);
-		InputElement input = document.createTextInputElement();
-		input.setAttribute("type", "range");
-		input.setAttribute("min", text(min));
-		input.setAttribute("max", text(max));
-		input.setAttribute("step", text(step));
-		input.setValue(text(value));
-		input.setAttribute("data-key", key);
-		input.setAttribute("data-start", text(value));
-		Element shown = document.createSpanElement();
-		shown.setClassName("value");
-		row.appendChild(text);
-		row.appendChild(input);
-		row.appendChild(shown);
-		into.appendChild(row);
-		return input;
-	}
 
-	private static float read(InputElement input)
-	{
-		float value = Float.parseFloat(input.getValue());
-		((Element) input.getNextSibling()).setInnerText(input.getValue());
-		return value;
-	}
 
 	/** Puts the sliders into every heart. */
 	private void applyControls()
 	{
-		float a = read(amplitude), w = read(wavelength), s = read(speed);
-		heights[2] = read(height);
-		float sc = read(scroll), rp = read(ripple);
-		FogSet next = sets[Math.round(read(pick))];
+		float a = LabControls.read(amplitude), w = LabControls.read(wavelength), s = LabControls.read(speed);
+		heights[2] = LabControls.read(height);
+		float sc = LabControls.read(scroll), rp = LabControls.read(ripple);
+		FogSet next = sets[Math.round(LabControls.read(pick))];
 		((Element) pick.getNextSibling()).setInnerText(SET_NAMES[next.index]);
 		if (next != set)
 		{
@@ -243,7 +203,7 @@ public class FogLab extends ApplicationAdapter
 			order.setValue(String.valueOf(next.mistIndex));
 		}
 		int last = hearts[0].parallaxReader.layers.size() - 1;
-		int index = Math.min(Math.round(read(order)), last);
+		int index = Math.min(Math.round(LabControls.read(order)), last);
 		if (index != set.mistIndex)
 		{
 			for (int i = 0; i < hearts.length; i++)
@@ -253,7 +213,7 @@ public class FogLab extends ApplicationAdapter
 			}
 			set.mistIndex = index;
 		}
-		float k0 = read(size), up = read(rise);
+		float k0 = LabControls.read(size), up = LabControls.read(rise);
 		if (k0 != set.size || up != set.rise)
 		{
 			// Grown about its middle: the band stays where it was, taller and wider.
@@ -267,8 +227,8 @@ public class FogLab extends ApplicationAdapter
 		}
 		for (int i = 0; i < waveCount; i++)
 			waves[i].setShaderAmplitude(waveAmplitudes[i] * rp);
-		float strength = read(fog);
-		int colour = Math.round(read(fogColor));
+		float strength = LabControls.read(fog);
+		int colour = Math.round(LabControls.read(fogColor));
 		((Element) fogColor.getNextSibling()).setInnerText(FOG_COLOR_NAMES[colour]);
 		for (int i = 0; i < hearts.length; i++)
 		{
