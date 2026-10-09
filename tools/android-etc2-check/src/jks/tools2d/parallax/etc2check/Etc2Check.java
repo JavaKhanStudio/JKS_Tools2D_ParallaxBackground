@@ -2,6 +2,7 @@ package jks.tools2d.parallax.etc2check;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -202,7 +203,7 @@ public class Etc2Check extends ApplicationAdapter
 	}
 
 	private static String mib(long bytes)
-	{return String.format("%.2f MiB", bytes / 1048576.0);}
+	{return String.format(Locale.ROOT, "%.2f MiB", bytes / 1048576.0);}
 
 	/** The GL call GLProfiler's interceptor was in when the error was read, and who made it. */
 	private static String glCall()
