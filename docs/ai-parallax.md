@@ -60,11 +60,13 @@ server, and leaves the install as it is.
   16 shared colours the mountains were left 6, and the pines lost their trunks and highlights. The segments of *one*
   `SEQUENCE` layer still share one (`--palette`).
 - **Loops:** `seam.py` alpha step at the join is 0 (inside 0) for mountains and hills, 14.6 (inside 21.9) for pines.
-  Lint's (e) flags the pines (seam 58 > 20), but that check's fixed limit is below the strip's own inner column steps
-  (27 to 75): r253.
+  Lint passes the page: its (e) once flagged the pines (seam 58 > 20, a fixed limit below the strip's own inner
+  column steps, 27 to 75) until r253 held a seam to the art's own steps.
 - **Time**, 28 steps at 1536x576 on the RTX 5060 laptop (8 GB): with ollama holding about 4.1 GB, **79 s, 77 s and
   43 s** (mountains, hills, pines; the sampling alone is 63 s at 2.3 s an iteration). r239's 363 s, under
-  the same ollama load, is not explained (not measured again). With the GPU free: FREE_TIMES.
+  the same ollama load, is not explained (not measured again). With the GPU free: not measured
+  yet. Something renewed ollama's models every few minutes through the session (`gemma3:4b`, `nomic-embed-text`),
+  and ollama is not stopped without asking Simon: r255.
 
 Still wrong: a 1-cell speck can float in the sky next to the silhouette (a cell inside the mask's one-cell slack that
 keys as art): the island cut of r242 removes it. And SDXL drifts off the silhouette: it painted the low crests between
