@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Transfert lab (r220): the cross-fade between pages, and three effects that could carry it</title>
+	<style>
+		body { margin: 8px; font: 13px sans-serif; background: #222; color: #ddd; }
+		#transfert-lab { position: relative; width: 1524px; height: 504px; }
+		#transfert-labels { position: absolute; inset: 0; display: grid; grid-template-columns: 764px 760px; grid-template-rows: 254px 250px; pointer-events: none; }
+		.panel-label { padding: 4px 8px; font: bold 14px sans-serif; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+		#transfert-controls { margin-top: 8px; width: 1524px; }
+		.row { display: grid; grid-template-columns: 300px 1fr 160px; align-items: center; gap: 8px; }
+		#transfert-readout { margin-top: 6px; color: #aaa; }
+		#transfert-about { width: 1200px; color: #bbb; line-height: 1.4; }
+		#transfert-copy-row { margin-top: 8px; display: flex; gap: 10px; align-items: center; }
+		#transfert-copy { font: bold 14px sans-serif; padding: 6px 14px; }
+		#transfert-copy-json { width: 1200px; height: 300px; margin-top: 6px; font: 12px monospace; background: #111; color: #ddd; }
+	</style>
+	<!-- TransfertLab (r220): two of round1's pages, back and forth, the transfert drawn four ways. -->
+	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+</head>
+<body>
+	<div id="transfert-lab">
+		<div id="embed-browsertests"></div>
+		<div id="transfert-labels"></div>
+	</div>
+	<div id="transfert-controls"></div>
+	<div id="transfert-copy-row"><button id="transfert-copy">Copy settings</button><span id="transfert-copy-state"></span></div>
+	<textarea id="transfert-copy-json" hidden readonly></textarea>
+	<p id="transfert-about">The transfert is the library's cross-fade from one page into another
+	(Parallax_Heart.transfertIntoPage): both pages keep scrolling, each layer slot fades from the old page's layer into
+	the new one's, and the gradients fade too. Every panel runs that same transfert between the two pages the slider
+	picks, back and forth; they only draw it differently. A is the library as it ships. B adds a colour grade a game can
+	already do: the reader's tint (addColorTransfert) goes to the grade colour over the first half and back to white over
+	the second; a tint multiplies, so it darkens and colours but never lightens. C and D are effects this lab draws with
+	its own shader, from FOG's noise: in C the mist's white rolls in in patches, far layers first, the page is swapped
+	under the full fog, then it clears, near layers first; in D the new page's layers eat the old ones in patches, slot by
+	slot, back slots first. The stagger slider spreads C and D over the depth, the patches and softness sliders shape
+	their mask. None of B to D is in the library's format yet.</p>
+	<script>
+	// Copy settings: every slider, what it started at, and which ones moved, as JSON Simon pastes into a card.
+	function transfertLabSettings() {
+		var settings = {}, changed = {};
+		document.querySelectorAll('#transfert-controls input[data-key]').forEach(function (input) {
+			var key = input.dataset.key, value = Number(input.value), start = Number(input.dataset.start);
+			settings[key] = value;
+			if (value !== start) changed[key] = { started: start, now: value };
+		});
+		return JSON.stringify({
+			lab: 'transfert-lab', pages: document.querySelector('input[data-key=pagePair]').nextSibling.textContent,
+			grade: document.querySelector('input[data-key=gradeColour]').nextSibling.textContent,
+			panels: 'A the transfert as it ships, B through a colour grade (tint), C fog creep, D dissolve',
+			settings: settings,
+			changed: Object.keys(changed).length ? changed : 'nothing: the values the lab opens with'
+		}, null, 2);
+	}
+	document.getElementById('transfert-copy').addEventListener('click', async function () {
+		var text = transfertLabSettings(), box = document.getElementById('transfert-copy-json'), state = document.getElementById('transfert-copy-state');
+		box.value = text;
+		box.hidden = false;
+		box.focus({ preventScroll: true });
+		box.select();
+		try {
+			await navigator.clipboard.writeText(text);
+			state.textContent = 'copied: paste it on the card';
+		} catch (e) {
+			state.textContent = 'selected: Ctrl+C';
+		}
+	});
+	</script>
+</body>
+</html>
