@@ -9,8 +9,11 @@
 #   3. runs every cage launch that strips the cage's Wayland (the jME frame check and demo check, the Godot frame check
 #      when godot is installed) under a runtime dir whose wayland-0 is a sentinel socket, as Simon's gnome-shell is:
 #      anything connecting to it would have opened on his screen (r234: `env -u WAYLAND_DISPLAY` inside cage sent
-#      GLFW 3.4 to wayland-0, and 106 jME windows to gnome-shell). --only-sentinel runs this one alone.
-# Exit 0 when all hold. Needs cage, Xwayland, python3.
+#      GLFW 3.4 to wayland-0, and 106 jME windows to gnome-shell); and the labs' open mode (fog, haze, transfert,
+#      browser-test.sh --open) with DISPLAY and WAYLAND_DISPLAY empty: under ATELIER_AGENT or CLAUDECODE=1 it must refuse
+#      without touching wayland-0, without either (the board's Open button) it must reach it (r237).
+#      --only-sentinel runs this one alone.
+# Exit 0 when all hold. Needs cage, Xwayland, python3, Chrome.
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd) || exit 2
 cd "$ROOT" || exit 2
@@ -62,4 +65,32 @@ sentinel() {
 sentinel jme-shots tools/jme-parallax-shots.sh engines/godot/tests/transfer
 sentinel jme-demo tools/start-demo-check.sh jme
 if command -v "${GODOT:-godot}" >/dev/null; then sentinel godot-shots tools/godot-parallax-shots.sh engines/godot/tests/transfer; fi
+# The labs' open mode, with DISPLAY and WAYLAND_DISPLAY both empty: the branch that points Chrome at wayland-0 (r237).
+# An agent's must refuse before Chrome; the board's Open button (neither ATELIER_AGENT nor CLAUDECODE) must reach it.
+labs=("tools/fog-lab.sh" "tools/haze-lab.sh" "tools/transfert-lab.sh" "tools/browser-test.sh --open")
+if ! ./gradlew -q :core:browserTestWar >"$OUT/war.log" 2>&1; then echo "FAIL: :core:browserTestWar, see $OUT/war.log"; status=1; trap - EXIT; fi
+for lab in "${labs[@]}"; do
+	name=$(basename "${lab%% *}" .sh)
+	for who in "ATELIER_AGENT=screen-check" "CLAUDECODE=1"; do
+		rm -f "$OUT/sentinel.log"
+		env -u ATELIER_AGENT -u CLAUDECODE -u ATELIER_NO_OFFSCREEN DISPLAY= WAYLAND_DISPLAY= XDG_RUNTIME_DIR="$RT" "$who" \
+			timeout 60 $lab --no-build >"$OUT/$name-agent.log" 2>&1
+		code=$?
+		if [ -s "$OUT/sentinel.log" ]; then
+			echo "FAIL: $name's open mode under ${who%%=*} connected to wayland-0, Simon's screen"; status=1
+		elif [ $code = 2 ] && grep -q "opens no window" "$OUT/$name-agent.log"; then
+			echo "ok: $name's open mode refuses under ${who%%=*}"
+		else
+			echo "FAIL: $name's open mode under ${who%%=*} exited $code without refusing, see $OUT/$name-agent.log"; status=1; trap - EXIT
+		fi
+	done
+	rm -f "$OUT/sentinel.log"
+	env -u ATELIER_AGENT -u CLAUDECODE -u ATELIER_NO_OFFSCREEN DISPLAY= WAYLAND_DISPLAY= XDG_RUNTIME_DIR="$RT" \
+		timeout 60 $lab --no-build >"$OUT/$name-board.log" 2>&1
+	if [ -s "$OUT/sentinel.log" ]; then
+		echo "ok: $name's open mode from the board still opens (reached wayland-0)"
+	else
+		echo "FAIL: $name's open mode from the board never reached wayland-0, see $OUT/$name-board.log"; status=1; trap - EXIT
+	fi
+done
 exit $status
