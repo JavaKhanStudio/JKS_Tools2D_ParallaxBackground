@@ -163,5 +163,35 @@ class SequenceLayout(unittest.TestCase):
         self.assertNotIn('bridge', faults[0])
 
 
+
+class PixelArtSeams(unittest.TestCase):
+    """(e) on hard-alpha pixel art (r253): pixel-xl's pines (r243) step 27-75 between neighbour columns everywhere and
+    loop as smoothly; a fixed limit of 20 called their edge (58) a cut."""
+    PATH = 'tools/r239-ai-strips/page/pixel-xl.jplax'
+
+    def setUp(self):
+        self.page = lab.load(self.PATH)
+        self.atlas_dir = lab.find_atlas_dir(self.PATH, self.page)
+
+    def test_a_pixel_art_strip_that_loops_has_no_seam(self):
+        self.assertEqual([], [p for p in lab.layout(self.page, self.atlas_dir) if p.startswith('(e)')])
+
+    def test_a_real_cut_in_pixel_art_is_still_one(self):
+        """The pines with their right half's colours inverted: the edges differ far more than the columns inside."""
+        import parallax_regions as regions_tool
+        regions = {(r['name'], r['pos']): r for r in regions_tool.read_atlas(
+            os.path.join(lab.ROOT, self.atlas_dir, self.page['pageModel']['atlasName']))}
+        i, pines = 2, lab.layers(self.page)[2]
+        img = regions_tool.image_of(regions[(pines['regionName'], pines['regionPosition'])], {})
+        w, h = img.size
+        right = img.crop((w // 2, 0, w, h))
+        r, g, b, a = right.split()
+        img.paste(regions_tool.Image.merge('RGBA', [c.point(lambda v: 255 - v) for c in (r, g, b)] + [a]), (w // 2, 0))
+        p = lab._place(self.page, i, pines, img)
+        seam, limit = lab._seam_on_screen(img, p, regions_tool), lab._seam_limit([img], p)
+        self.assertGreater(limit, lab.SEAM, 'the art steps more than 20: the limit is its own')
+        self.assertGreater(seam, limit, f'seam {seam}, limit {limit}')
+
+
 if __name__ == '__main__':
     unittest.main()
