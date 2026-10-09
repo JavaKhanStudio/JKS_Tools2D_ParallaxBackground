@@ -165,9 +165,10 @@ def lint(page, atlas_dir=None):
         span = max(s) / min(x for x in s if x > 0)
         if span < 2.5:
             problems.append(f'speed span {span:.1f}x (front/back): under ~3x the scene reads as one flat plane')
-        if round(span) > 100:
-            problems.append(f'speed span {span:.0f}x: past 100x, the deepest span graded, nothing is known; the back may'
-                            ' look painted on (round 3: 100x on calm from the art beat 41x, deeper won or tied every bracket)')
+        if round(span) > 250:
+            problems.append(f'speed span {span:.0f}x: past 250x, the deepest span graded, nothing is known; the back may'
+                            ' look painted on (round 4: 250x won on Pure and tied on calm, but past ~40x deeper no longer'
+                            ' wins every time)')
         steps = [s[i] / s[i - 1] for i in range(1, n) if s[i - 1] > 0 and s[i] > 0]
         flat = [i + 1 for i, r in enumerate(steps) if r < 1.02]
         if flat and not drops:

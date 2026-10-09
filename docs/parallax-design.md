@@ -61,7 +61,7 @@ backed means "not contradicted", not proven.
 |---|------|-----------|--------------|--------|
 | R1 | Speeds strictly increase from back to front | physics, occlusion | PurpleFairy-inverted 2, OneNight-shuffled 1 (controls 3) | **backed** |
 | R2 | A constant ratio between neighbours, x1.4-x1.6 when the art gives no sizes to read | physics; every designed sample | R1: Hiver-linear 1 (control 1). R2: PurpleFairy-art x1.15: 2, x1.33: 3, x1.6: 4 | **backed, steeper**: the grade rose with the ratio; Simon's x1.25-x1.33 is the low end. R3: Pure-art x1.6: **5**, x1.33: 4; PurpleFairy x2.0: 3 = x1.6: 3. x1.6 to x2.0 |
-| R3 | Front / back speed span at least ~3x; the top is the page's, not ~15x | samples (2-9x) | R1: Calm-compressed 1.8x: 2; PurpleFairy-exaggerated 45x: 2. R2: Calm-art 4.5x: 4, 12x: 4, 41x: **5**; PurpleFairy-art 2.3x: 2 | **backed** below 3x. **No top found up to 100x**: in round 3 the deeper span won 3 brackets and tied 1 (Calm 100x: 4, 41x: 3; Pure 43x: 5, 10x: 4; Boss 25x: 4, 7x: 3; PurpleFairy 64x: 3, 17x: 3). Round 1's 45x scored 2 on Simon's scattered PurpleFairy: the limit is the page's, not a number |
+| R3 | Front / back speed span at least ~3x; the top is the page's, not ~15x | samples (2-9x) | R1: Calm-compressed 1.8x: 2; PurpleFairy-exaggerated 45x: 2. R2: Calm-art 4.5x: 4, 12x: 4, 41x: **5**; PurpleFairy-art 2.3x: 2 | **backed** below 3x. **No top found up to 250x**: in round 3 the deeper span won 3 brackets and tied 1 (Calm 100x: 4, 41x: 3; Pure 43x: 5, 10x: 4; Boss 25x: 4, 7x: 3; PurpleFairy 64x: 3, 17x: 3); in round 4 250x won or tied (Pure 250x: **5**, 43x: 4, 100x: 3; Calm 250x: 3, 100x: 3). Past ~40x deeper no longer wins every time: err deep, the gain flattens. Round 1's 45x scored 2 on Simon's scattered PurpleFairy: the limit is the page's, not a number |
 | R4 | Some parallax at all: layers not at one speed | physics | Calm-flat 2 (control 3); Hiver-flat 1 (control 1) | **backed** (Calm) |
 | R5 | Layer order by haze and contrast, not by region name | aerial perspective | Calm-agent 3 (= Simon's 3) | kept: it is how the art is read (§6), not a taste |
 | R6 | Gradients match the art's light | aerial perspective | Calm-whitesky **4**, OneNight-wrongsky 3 (controls 3) | **not backed**: a white sky behind Calm was graded above Calm's blue. Match the art's colours to hide seams (§6), not as a rule of taste |
@@ -209,5 +209,27 @@ its 6 s stills, unblinded and sorted by grade, are on r213):
 - **The skill works on atlases it never saw** (R11): its three pages graded 5, 4 and 4, Pure's the round's only 5,
   and Printemps from the skill beat Simon's Printemps by two (his leaves the lower half white, as Hiver did in round 1).
 - **Still open**: where the span tops out past 100x (at that depth the back layer barely moves: a deeper one may not
-  read as different), and speed Y (R10), which the lab cannot scroll. Round 4 would be one bracket, 100x against
-  ~250x on two pages from the art; whether it is worth Simon's grading is asked on its own card.
+  read as different), and speed Y (R10), which the lab cannot scroll. Round 4 (§9) graded 100x against 250x.
+
+## 9. Round 4 results (r231)
+
+Graded by Simon on 2026-10-10, 1-5, `demo/lab/round4/grades.json` joined with `round.json` (in the editor repository,
+built by r227: `tools/parallax_lab.py round4`). One question: is there a top to the speed span past 100x?
+
+| Atlas | Anchor (its round 3 grade) | 43x | 100x | 250x |
+|-------|----------------------------|-----|------|------|
+| calm | Calm-art-100x (4) | | 3 | 3 (front kept, the rest pushed back: `deepen_back`) |
+| Pure | Pure-art 43x (5) | 4 | 3 (x1.78 a layer) | **5** (x1.99 a layer) |
+| Printemps | Printemps-art 25x (4): 3 | | | |
+
+- **The scale moved down again, by one**: all three anchors lost exactly a point (Calm-art-100x 4 to 3, Pure-art 5 to
+  4, Printemps-art 4 to 3), as in round 3. Read the round within itself.
+- **No top up to 250x** (R3): 250x won on Pure (5, the round's only one) and tied on calm. Lint now warns only past
+  250x, the deepest span graded.
+- **But deeper no longer wins every time**: on Pure, 100x graded under 43x (3 against 4), then 250x above both. Past
+  ~40x the back of the page barely moves, and one grade a page is noisy: what the round backs is that 40x to 250x do
+  not hurt, not that deeper keeps winning. The cause of Pure's dip at 100x is not known.
+- Pure's 250x is x1.99 a layer, the top of the skill's x1.6-x2.0 (step 5): x2.0 is now graded level or above x1.6
+  twice.
+- **Still open**: speed Y (R10), which the lab cannot scroll; the span past 250x is not worth a round: the gain has
+  flattened.
