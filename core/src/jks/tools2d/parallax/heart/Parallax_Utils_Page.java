@@ -1,5 +1,6 @@
 package jks.tools2d.parallax.heart;
 
+import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 public final class Parallax_Utils_Page
@@ -25,13 +26,17 @@ public final class Parallax_Utils_Page
 	}
 
 	public static void transfertIntoPage(Parallax_Heart ref, WholePage_Model pageModel, float inXSecondes)
+	{transfertIntoPage(ref, pageModel, inXSecondes, TransfertStyle.FADE);}
+
+	/** Cross-fades into {@code pageModel}, its layers drawn as {@code style} says; the gradients fade as with any style. */
+	public static void transfertIntoPage(Parallax_Heart ref, WholePage_Model pageModel, float inXSecondes, TransfertStyle style)
 	{
 		// A transfer interrupted by a new one never becomes the current page.
 		if (ref.currentTransfertPage != ref.currentPage)
 			release(ref, ref.currentTransfertPage, pageModel);
 		ref.currentTransfertPage = pageModel;
 
-		ref.parallaxReader.addLayersTransfert(pageModel, ref.relativePath, inXSecondes);
+		ref.parallaxReader.addLayersTransfert(pageModel, ref.relativePath, inXSecondes, style);
 		if (ref.topSquare != null)
 			ref.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes);
 		if (ref.bottomSquare != null)

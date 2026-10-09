@@ -46,6 +46,8 @@ public class ParallaxPageReader implements Disposable
 	/** Opacity of the incoming page (0 → 1) and of the outgoing one (1 → 0) during a page transfer. */
 	private float newLayerAlpha = 0, oldLayerAlpha = 1;
 	private float newLayerFadeSpeed, oldLayerFadeSpeed;
+	/** How the transfert under way is drawn: {@link TransfertStyle#FADE} outside one. */
+	private TransfertStyle transfertStyle = TransfertStyle.FADE;
 
 	private final Color tint = new Color(Color.WHITE);
 	private final Color tintFrom = new Color(Color.WHITE);
@@ -106,6 +108,13 @@ public class ParallaxPageReader implements Disposable
 	 * or from the internal assets when it is null or empty (see {@link WholePage_Model#getDrawing(String, float, float)}).
 	 */
 	public void addLayersTransfert(WholePage_Model pageModel, String relativePath, float inXSecondes)
+	{addLayersTransfert(pageModel, relativePath, inXSecondes, TransfertStyle.FADE);}
+
+	/**
+	 * Cross-fades into the layers of {@code pageModel}, drawn as {@code style} says (null: {@link TransfertStyle#FADE}).
+	 * A page not built yet takes its atlas from {@code relativePath}, as {@link #addLayersTransfert(WholePage_Model, String, float)}.
+	 */
+	public void addLayersTransfert(WholePage_Model pageModel, String relativePath, float inXSecondes, TransfertStyle style)
 	{
 		resetTransfert();
 
@@ -134,6 +143,7 @@ public class ParallaxPageReader implements Disposable
 		}
 
 		transfertType = Enum_TransfertType.EACH_FRAME;
+		transfertStyle = style == null ? TransfertStyle.FADE : style;
 		newLayerFadeSpeed = oldLayerFadeSpeed = 1 / inXSecondes;
 	}
 
@@ -219,12 +229,15 @@ public class ParallaxPageReader implements Disposable
 			int total = Math.max(layers.size(), transferLayers.size());
 			int oldOffset = total - layers.size();
 			int newOffset = total - transferLayers.size();
+			boolean staggered = transfertStyle.getKind() == TransfertStyle.Kind.DEPTH_STAGGER;
 
 			for (int slot = 0; slot < total; slot++)
 			{
-				if (slot >= oldOffset && setBatchColor(batch, oldLayerAlpha))
+				// Depth stagger: each slot at its own point of the transfert, the back ones ahead.
+				float ramp = staggered ? transfertStyle.slotRamp(newLayerAlpha, slot, total) : newLayerAlpha;
+				if (slot >= oldOffset && setBatchColor(batch, staggered ? 1 - ramp : oldLayerAlpha))
 					drawLayer(layers, slot - oldOffset, batch, false);
-				if (slot >= newOffset && setBatchColor(batch, newLayerAlpha))
+				if (slot >= newOffset && setBatchColor(batch, ramp))
 					drawLayer(transferLayers, slot - newOffset, batch, true);
 			}
 		}
@@ -448,6 +461,7 @@ public class ParallaxPageReader implements Disposable
 	{
 		transferLayers = new ArrayList<>();
 		transfertType = Enum_TransfertType.NONE;
+		transfertStyle = TransfertStyle.FADE;
 		newLayerAlpha = 0;
 		oldLayerAlpha = 1;
 	}
@@ -604,6 +618,10 @@ public class ParallaxPageReader implements Disposable
 
 	public boolean isInTransfer()
 	{return transfertType != Enum_TransfertType.NONE;}
+
+	/** How the transfert under way is drawn; {@link TransfertStyle#FADE} outside one. */
+	public TransfertStyle getTransfertStyle()
+	{return transfertStyle;}
 
 	public float getDrawingHeight()
 	{return drawingHeight;}

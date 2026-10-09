@@ -17,6 +17,7 @@ extends CanvasLayer
 ## ParallaxPageReader.addColorTransfert:
 ##
 ##   bg.transfert_into(PlaxPage.load_page(path), PlaxAtlas.load_atlas(atlas_path), 2.0)
+##   bg.transfert_into(page, atlas, 3.0, PlaxTransfertStyle.depth_stagger(0.5))   # back layers first
 ##   bg.tint_to(Color(1, 0.6, 0.4), 2.0)
 ##
 ## An EMPTY layer (kind "EMPTY") is drawn by the game, as ParallaxPageReader.setLayerHook:
@@ -82,6 +83,8 @@ var _repeat_y := false
 var _new_alpha := 0.0
 var _old_alpha := 1.0
 var _fade_speed := 0.0
+# How the cross-fade under way is drawn (ParallaxPageReader.transfertStyle): null outside one, and for a plain fade.
+var _style: PlaxTransfertStyle = null
 var _tint_from := Color.WHITE
 var _tint_to := Color.WHITE
 var _tint_duration := 0.0
@@ -169,8 +172,10 @@ func set_page(new_page: PlaxPage, new_atlas: PlaxAtlas) -> void:
 ## Cross-fades into `new_page` over `seconds` (0: at once), as Parallax_Heart.transfertIntoPage. The pages are matched
 ## from their front layer: an incoming layer takes the distance its counterpart has scrolled, so nothing jumps. The
 ## gradients' colors fade too; the repeat and the gradients' sizes stay those of the page given to set_page. A fade
-## started during another drops the page that was fading in.
-func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float) -> void:
+## started during another drops the page that was fading in. `style` (null: every layer slot at once) is how the layers
+## fade, as Parallax_Heart.transfertIntoPage(page, seconds, style): PlaxTransfertStyle.depth_stagger(s) fades each slot
+## in its own window, the back ones first.
+func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float, style: PlaxTransfertStyle = null) -> void:
 	if page == null:
 		set_page(new_page, new_atlas)
 		return
@@ -188,6 +193,7 @@ func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float) ->
 			_finish_transfert()
 		else:
 			_fade_speed = 1.0 / seconds
+			_style = style
 	_fade_gradients(
 		[new_page.top_half_top, new_page.top_half_bottom, new_page.bottom_half_top, new_page.bottom_half_bottom],
 		seconds)
@@ -361,6 +367,7 @@ static func _measure_region(region: Dictionary, use_original_size: bool) -> Dict
 ## What draws the layer: a canvas calling _draw_layer, or for a PARTICLES layer the node holding its instances.
 func _add_canvas(l: Dictionary) -> void:
 	l.incoming = false
+	l.slot = 0
 	l.canvas = Node2D.new()
 	if l.model.kind == "SHADER":
 		l.canvas.material = PlaxEffects.material(l.model.shaderEffect)
@@ -376,9 +383,12 @@ func _order_canvases() -> void:
 	var old_offset := total - layers.size()
 	var new_offset := total - transfer_layers.size()
 	for slot in total:
+		# Its slot, for a depth stagger (_alpha_of).
 		if slot >= old_offset:
+			layers[slot - old_offset].slot = slot
 			order.append(layers[slot - old_offset])
 		if slot >= new_offset:
+			transfer_layers[slot - new_offset].slot = slot
 			order.append(transfer_layers[slot - new_offset])
 	for i in order.size():
 		var canvas: Node2D = order[i].canvas
@@ -439,6 +449,7 @@ func _reset_transfert() -> void:
 	transfer_page = null
 	transfer_atlas = null
 	transfer_layers = []
+	_style = null
 	_new_alpha = 0
 	_old_alpha = 1
 
@@ -595,11 +606,15 @@ func _update_scale() -> void:
 	_screen_h = screen.y
 
 
-## The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's.
+## The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's; with a
+## depth stagger, its slot's, each slot at its own point of the fade (ParallaxPageReader.draw).
 func _alpha_of(l: Dictionary) -> float:
 	if transfer_layers.is_empty():
 		return 1.0
-	return _new_alpha if l.incoming else _old_alpha
+	if _style == null or _style.kind != "DEPTH_STAGGER":
+		return _new_alpha if l.incoming else _old_alpha
+	var ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
+	return ramp if l.incoming else 1.0 - ramp
 
 
 ## The tint at that opacity, and whether anything drawn with it would show (ParallaxPageReader.setBatchColor).

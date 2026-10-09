@@ -10,6 +10,7 @@ import com.badlogic.gdx.utils.Disposable;
 import jks.tools2d.parallax.GwtIncompatible;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parallax;
+import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
@@ -122,6 +123,14 @@ public class Parallax_Heart implements Disposable
 
 	public void transfertIntoPage(WholePage_Model model, float intoXSec)
 	{Parallax_Utils_Page.transfertIntoPage(this, model, intoXSec);}
+
+	/**
+	 * Cross-fades into {@code model} over {@code intoXSec}, drawn as {@code style} says: {@link TransfertStyle#FADE}
+	 * (what the two-argument call does), or {@link TransfertStyle#depthStagger} (each layer slot in its own window, back
+	 * ones first). null is FADE.
+	 */
+	public void transfertIntoPage(WholePage_Model model, float intoXSec, TransfertStyle style)
+	{Parallax_Utils_Page.transfertIntoPage(this, model, intoXSec, style);}
 
 	public void act(float delta)
 	{

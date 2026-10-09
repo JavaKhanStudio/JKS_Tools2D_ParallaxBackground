@@ -19,6 +19,7 @@ import com.jme3.asset.plugins.FileLocator;
 import com.jme3.system.AppSettings;
 import com.jme3.system.lwjgl.LwjglWindow;
 
+import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
@@ -42,6 +43,7 @@ public class JmeParallaxShots extends SimpleApplication
 	{
 		float at, seconds;
 		String page, atlasDir;
+		TransfertStyle style = TransfertStyle.FADE;
 	}
 
 	private static final class Scene
@@ -151,6 +153,7 @@ public class JmeParallaxShots extends SimpleApplication
 					into.seconds = t.getFloat("seconds");
 					into.page = t.getString("page", null);
 					into.atlasDir = t.getString("atlasDir", scene.atlasDir);
+					into.style = style(t.get("style"));
 					scene.transfers.add(into);
 				}
 			JsonValue hooks = s.get("hooks");
@@ -225,7 +228,7 @@ public class JmeParallaxShots extends SimpleApplication
 					into = PlaxBackground.loadPage(assetManager, transfer.page);
 					atlas = JmeAtlas.load(assetManager, transfer.atlasDir + "/" + into.pageModel.atlasName);
 				}
-				bg.transfertIntoPage(into, atlas, transfer.seconds);
+				bg.transfertIntoPage(into, atlas, transfer.seconds, transfer.style);
 			}
 			if (!resized && scene.resizeAt >= 0 && time >= scene.resizeAt)
 			{
@@ -312,5 +315,13 @@ public class JmeParallaxShots extends SimpleApplication
 		if (cam.getWidth() != width || cam.getHeight() != height)
 			return false;
 		return settleFrames-- <= 0;
+	}
+
+	/** A transfer's {@code "style": {"kind": "DEPTH_STAGGER", "stagger": 1}}; none, or another kind: FADE. */
+	static TransfertStyle style(JsonValue style)
+	{
+		if (style != null && "DEPTH_STAGGER".equals(style.getString("kind", null)))
+			return TransfertStyle.depthStagger(style.getFloat("stagger", 0));
+		return TransfertStyle.FADE;
 	}
 }
