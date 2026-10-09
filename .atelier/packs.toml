@@ -159,7 +159,9 @@ texture cannot glGenerateMipmap. Fixtures: core/test-data/etc2 (byte copies of a
 export, never re-exported), Etc2AtlasMipmapTest. On Android (r140, the atelier-phone emulator,
 GLES 3.1): tools/android-etc2-check.sh loads City PNG and ETC2 as a game does and fails on any
 GL error; libGDX's own TextureAtlas loader still raises GL_INVALID_OPERATION from glGenerateMipmap
-there. The emulator cannot prove the memory (its host driver unpacks ETC2): a real phone can.
+there, and on a real Adreno 650 (r206) too. The emulator cannot prove the memory (its host driver
+unpacks ETC2): tools/android-etc2-memory.sh does on a Qualcomm phone, from the kgsl driver's
+page_alloc (Samsung's GL mtrack leaves textures out): Hiver 65.8 MiB PNG, 17.9 MiB ETC2.
 PIXMAPS AND TEXTURES ARE NATIVE MEMORY: dispose what you load; the AssetManager owns what it
 loaded.
 """
