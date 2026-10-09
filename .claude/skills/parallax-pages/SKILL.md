@@ -5,11 +5,12 @@ description: Design or improve a parallax background page for the JKS parallax l
 
 # Parallax pages
 
-**Version 2 (r128, after round 2's grades).** Version 1 (r92) started from the art instead of rules, and round 2
+**Version 3 (r213, after round 3's grades).** Version 1 (r92) started from the art instead of rules, and round 2
 backed it: every page written from the art graded at or above Simon's own (three wins, two ties). Round 2 also
 found that deeper speeds grade better than the samples' (step 5), and that shrinking full-frame planes hurts (step 2).
-Rules marked *(open)* are still being graded; the grades and the layer study behind this: `docs/parallax-design.md`
-§3, §5, §6, §7.
+Round 3 ran version 2 on three atlases it had never seen (graded 5, 4 and 4; 4 against Simon's 2 on Printemps), and
+found no top to the speed span up to 100x (step 5). Rules marked *(open)* are still being graded; the grades and the
+layer study behind this: `docs/parallax-design.md` §3, §5, §6, §7, §8.
 
 ## What a page is
 
@@ -75,11 +76,13 @@ nothing there. README.md's "Snow, rain and smoke" says how wide a `VIEW` effect'
 5. **Speeds from the art.** Speed is proportional to 1/distance, and so is the size the painter drew things at: a
    tree drawn half as big is twice as far and moves half as fast. Set the front layer (0.07-0.1), then each layer
    `front / (how many times smaller its things are)`. Sky and far mountains, with nothing to compare: 1/10 to 1/20
-   of the front. With no size to read, a constant ratio x1.5-x1.6 a layer: round 2 graded x1.15, x1.33 and x1.6 at 2,
-   3 and 4 (the samples' x1.25-x1.33 is the low end; x2.0 is *open*). Speeds must strictly increase toward the front.
-   The span (front / back) must reach ~3x (under it: 2, twice); **err deep**: 41x on calm was round 2's only 5, and
-   12x and 4.5x scored 4. Its top depends on the page (45x scored 2 on Simon's scattered PurpleFairy in round 1):
-   round 3 brackets it, lint warns past 45x. Speed Y ~0.6 x speed X *(open)*.
+   of the front. With no size to read, a constant ratio x1.6 a layer, up to x2.0: round 2 graded x1.15, x1.33 and
+   x1.6 at 2, 3 and 4, round 3 x1.6 above x1.33 (5 against 4) and x2.0 level with x1.6 (the samples' x1.25-x1.33 is
+   the low end). Speeds must strictly increase toward the front. The span (front / back) must reach ~3x (under it: 2,
+   twice); **err deep**: in round 3 the deeper span won three brackets and tied one (calm 100x over 41x, Pure 43x over
+   10x, Boss 25x over 7x), and no top was found up to 100x. A page that scatters its planes can still fail deep (45x
+   scored 2 on Simon's PurpleFairy in round 1): the limit is the page's. Lint warns past 100x, the deepest graded.
+   Speed Y ~0.6 x speed X *(open)*.
 6. **Gradients cover, in the art's colours.** Set them to what they must blend with: the sky behind the farthest
    layer, the ground under the nearest one (Hiver's snow is the bottom gradient in the hills' `e0e8dd`). A layer
    with translucent parts shows the gradient boundary through it: use one gradient for the whole screen

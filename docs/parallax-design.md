@@ -53,15 +53,15 @@ A 2D background gets its depth from three cues, strongest first:
 
 ## 3. Rules, and what backs them
 
-Status after rounds 1 (§5) and 2 (§7): **backed** = the broken variant was graded lower than its control; **not backed** = graded
+Status after rounds 1 (§5), 2 (§7) and 3 (§8): **backed** = the broken variant was graded lower than its control; **not backed** = graded
 the same or higher, so it is no longer a rule; **open** = no signal yet. One grader, one pass, one-point differences:
 backed means "not contradicted", not proven.
 
 | # | Rule | Backed by | Round 1 test | Status |
 |---|------|-----------|--------------|--------|
 | R1 | Speeds strictly increase from back to front | physics, occlusion | PurpleFairy-inverted 2, OneNight-shuffled 1 (controls 3) | **backed** |
-| R2 | A constant ratio between neighbours, x1.4-x1.6 when the art gives no sizes to read | physics; every designed sample | R1: Hiver-linear 1 (control 1). R2: PurpleFairy-art x1.15: 2, x1.33: 3, x1.6: 4 | **backed, steeper**: the grade rose with the ratio; Simon's x1.25-x1.33 is the low end. Round 3 tries x2.0 |
-| R3 | Front / back speed span at least ~3x; the top is the page's, not ~15x | samples (2-9x) | R1: Calm-compressed 1.8x: 2; PurpleFairy-exaggerated 45x: 2. R2: Calm-art 4.5x: 4, 12x: 4, 41x: **5**; PurpleFairy-art 2.3x: 2 | **backed** below 3x. **Not backed** above 15x: 41x on Calm-art was the only 5 of round 2, while 45x on Simon's PurpleFairy scored 2 in round 1. Round 3 brackets the top on both kinds of atlas |
+| R2 | A constant ratio between neighbours, x1.4-x1.6 when the art gives no sizes to read | physics; every designed sample | R1: Hiver-linear 1 (control 1). R2: PurpleFairy-art x1.15: 2, x1.33: 3, x1.6: 4 | **backed, steeper**: the grade rose with the ratio; Simon's x1.25-x1.33 is the low end. R3: Pure-art x1.6: **5**, x1.33: 4; PurpleFairy x2.0: 3 = x1.6: 3. x1.6 to x2.0 |
+| R3 | Front / back speed span at least ~3x; the top is the page's, not ~15x | samples (2-9x) | R1: Calm-compressed 1.8x: 2; PurpleFairy-exaggerated 45x: 2. R2: Calm-art 4.5x: 4, 12x: 4, 41x: **5**; PurpleFairy-art 2.3x: 2 | **backed** below 3x. **No top found up to 100x**: in round 3 the deeper span won 3 brackets and tied 1 (Calm 100x: 4, 41x: 3; Pure 43x: 5, 10x: 4; Boss 25x: 4, 7x: 3; PurpleFairy 64x: 3, 17x: 3). Round 1's 45x scored 2 on Simon's scattered PurpleFairy: the limit is the page's, not a number |
 | R4 | Some parallax at all: layers not at one speed | physics | Calm-flat 2 (control 3); Hiver-flat 1 (control 1) | **backed** (Calm) |
 | R5 | Layer order by haze and contrast, not by region name | aerial perspective | Calm-agent 3 (= Simon's 3) | kept: it is how the art is read (§6), not a taste |
 | R6 | Gradients match the art's light | aerial perspective | Calm-whitesky **4**, OneNight-wrongsky 3 (controls 3) | **not backed**: a white sky behind Calm was graded above Calm's blue. Match the art's colours to hide seams (§6), not as a rule of taste |
@@ -69,7 +69,7 @@ backed means "not contradicted", not proven.
 | R8 | Stagger starting offsets | samples | PurpleFairy-aligned 3 (control 3) | **not backed**: harmless, no longer a rule |
 | R9 | Each layer's bottom edge hidden by the layer in front or below the screen | layout | (every render) | kept, and extended: every CUT edge (bottom, top, crop) is hidden (§6) |
 | R10 | Speed Y ~0.6 x speed X | samples | not tested: the lab scrolls X only | open |
-| R11 | Start from the art (§6), not from rules or the editor's layout | round 1's "random values" | R2: every *-art page graded at or above Simon's: Hiver 4 / 3, Calm 4 / 3, OneNight 4 / 3, PurpleFairy 3 / 3, CalmTree3 4 / 4 | **backed**: three wins, two ties, no loss |
+| R11 | Start from the art (§6), not from rules or the editor's layout | round 1's "random values" | R2: every *-art page graded at or above Simon's: Hiver 4 / 3, Calm 4 / 3, OneNight 4 / 3, PurpleFairy 3 / 3, CalmTree3 4 / 4 | **backed**: three wins, two ties, no loss. R3: the skill (version 2) on three atlases never paged: Pure 5, Printemps 4 against Simon's 2, Boss 4 |
 
 What the lab cannot show: vertical scroll, cross-fades between pages (the demo does), and a game drawn over the page.
 
@@ -183,3 +183,31 @@ Graded by Simon on 2026-10-06, 1-5, `demo/lab/round2/grades.json` joined with `r
 - **No page reached 5 without a deep span.** Round 3 (`demo/lab/round3`) writes pages from the skill (version 2) on
   three atlases no page has been written for, at the new ratios, and brackets the top of the span: x2.0 a layer on
   PurpleFairy, 100x on Calm.
+
+## 8. Round 3 results (r213)
+
+Graded by Simon on 2026-10-09, 1-5, `demo/lab/round3/grades.json` joined with `round.json` (in the editor repository;
+its 6 s stills, unblinded and sorted by grade, are on r213):
+
+| Atlas | Simon's page | From the skill / the art | Brackets |
+|-------|--------------|--------------------------|----------|
+| calm | | art-deep 41x: 3 (anchor: 5 in round 2) | 100x: **4** |
+| PurpleFairy | | art x1.6, 17x: 3 (anchor: 4 in round 2) | x2.0, 64x: 3 |
+| OneNight | | art-deep 40x: 3 (the art page, 10x, was 4 in round 2) | |
+| calmTree3 | | art-deep 66x: 4 (the art page, 20x, was 4 in round 2) | |
+| Pure | | **skill x1.6, 43x: 5** | x1.33, 10x: 4 |
+| Printemps | 2 | skill 25x: **4** | |
+| Boss | | skill 25x: 4 | 7x: 3 |
+
+- **Simon's scale moved down**: both anchors, the same pages as in round 2, lost a point or two (calm-art-deep 5 to 3,
+  PurpleFairy x1.6 4 to 3). Round 3 is read within itself; a grade across rounds says little. OneNight at 40x (3)
+  and calmTree3 at 66x (4) against round 2's 4 are therefore no loss for the deeper span, and calmTree3 may be a gain.
+- **No top to the span yet** (R3): within the round the deeper page won three brackets and tied one, the deepest of
+  all (calm, 100x) beating 41x. Pure x1.6 and x1.33, and calm 100x and 41x, look alike in a still: the motion made
+  the difference. Lint now warns only past 100x, the deepest span graded: past it, nothing is known.
+- **x1.6 to x2.0 a layer** (R2): x1.6 beat x1.33 on Pure, x2.0 tied x1.6 on PurpleFairy.
+- **The skill works on atlases it never saw** (R11): its three pages graded 5, 4 and 4, Pure's the round's only 5,
+  and Printemps from the skill beat Simon's Printemps by two (his leaves the lower half white, as Hiver did in round 1).
+- **Still open**: where the span tops out past 100x (at that depth the back layer barely moves: a deeper one may not
+  read as different), and speed Y (R10), which the lab cannot scroll. Round 4 would be one bracket, 100x against
+  ~250x on two pages from the art; whether it is worth Simon's grading is asked on its own card.
