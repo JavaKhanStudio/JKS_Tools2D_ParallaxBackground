@@ -37,7 +37,7 @@
 	<script>
 	labCopy('fog', function () {
 		return {
-			lab: 'fog-lab', set: document.querySelector('input[data-key=parallaxSet]').nextSibling.textContent,
+			lab: 'fog-lab', set: document.querySelector('select[data-key=parallaxSet]').selectedOptions[0].textContent,
 			panels: 'A ships (patch height 1), B half (0.5), C = patchHeightC, plain (no FOG, no page fog)'
 		};
 	});

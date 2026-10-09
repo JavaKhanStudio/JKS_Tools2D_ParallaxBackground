@@ -9,7 +9,7 @@
 #   tools/transfert-lab.sh --clip F.mp4  a clip, headless: one cycle there and back at 30 fps, stepped at game speed
 #   tools/transfert-lab.sh --copy F.png  checks "Copy settings", headless: moves the pages and the stagger, clicks, fails
 #                                        unless the JSON names every slider and the two moved; F is the page
-#   tools/transfert-lab.sh --slider K=V  before a headless mode: start slider K (its data-key) at V; repeatable
+#   tools/transfert-lab.sh --slider K=V  before a headless mode: start control K (its data-key) at V, a choice at its option's index
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python
 # Playwright and ffmpeg (--clip).
 # on-screen: with no argument this is the transfert lab, a window Simon asked for (r220); the other modes are headless Chrome.
@@ -79,12 +79,12 @@ with sync_playwright() as p:
         sys.exit("the lab never started: %s" % errors)
     for kv in sliders.split():
         key, value = kv.split("=", 1)
-        if page.query_selector("input[data-key=%s]" % key) is None:
+        if page.query_selector("[data-key=%s]" % key) is None:
             sys.exit("no slider %s" % key)
-        page.eval_on_selector("input[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
+        page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
     page.evaluate("window.transfertLabAct(0)")
-    seconds = float(page.input_value("input[data-key=seconds]"))
-    hold = float(page.input_value("input[data-key=hold]"))
+    seconds = float(page.input_value("[data-key=seconds]"))
+    hold = float(page.input_value("[data-key=hold]"))
     def shot(path):
         # two animation frames: the step lands in the next render
         page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
@@ -107,15 +107,15 @@ with sync_playwright() as p:
         print("back050: %s" % page.text_content("#transfert-readout"))
     elif mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        page.eval_on_selector("input[data-key=pagePair]", "e => { e.value = '2'; }")
-        page.eval_on_selector("input[data-key=depthStagger]", "e => { e.value = '1.2'; }")
+        page.eval_on_selector("[data-key=pagePair]", "e => { e.value = '2'; }")
+        page.eval_on_selector("[data-key=depthStagger]", "e => { e.value = '1.2'; }")
         act(1)
         page.click("#transfert-copy")
         page.wait_for_function("document.getElementById('transfert-copy-state').textContent !== ''")
         got = json.loads(page.input_value("#transfert-copy-json"))
         keys = {"pagePair", "seconds", "hold", "cameraScroll", "gradeColour", "depthStagger", "patches", "softEdge"}
         moved = {"pagePair": {"started": 0, "now": 2}, "depthStagger": {"started": 0.5, "now": 1.2}}
-        if set(got["settings"]) != keys or got["changed"] != moved or got["pages"] != "PurpleFairy <-> calm":
+        if set(got["settings"]) != keys or got["changed"] != moved or got["pages"] != "PurpleFairy \u2194 calm":
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#transfert-copy-state"), json.dumps(got["settings"])))
         page.screenshot(path=frames + "/still.png", full_page=True)

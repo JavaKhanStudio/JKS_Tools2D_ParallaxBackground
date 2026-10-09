@@ -83,8 +83,8 @@ with sync_playwright() as p:
         page.screenshot(path=path, full_page=True)
     if mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        page.eval_on_selector("input[data-key=depthHaze]", "e => { e.value = '0.4'; }")
-        page.eval_on_selector("input[data-key=pageTint]", "e => { e.value = '2'; }")
+        page.eval_on_selector("[data-key=depthHaze]", "e => { e.value = '0.4'; }")
+        page.eval_on_selector("[data-key=pageTint]", "e => { e.value = '2'; }")
         page.evaluate("window.hazeLabAct(6)")
         page.click("#haze-copy")
         page.wait_for_function("document.getElementById('haze-copy-state').textContent !== ''")

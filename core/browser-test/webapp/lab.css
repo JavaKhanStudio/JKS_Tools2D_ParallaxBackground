@@ -1,7 +1,8 @@
 /*
  * The labs' one look (r232): fog-lab, haze-lab, transfert-lab, effects-lab and the browser tests' page.
  * A lab is a bar (its name, Copy settings), the stage (the canvas, the panels' titles over it), the controls (sliders
- * built by LabControls.java, several to a row, each name beside its slider and its value after it), the readout,
+ * built by LabControls.java, several to a row, each name beside its slider and its value after it; a choice among
+ * names, r248, a select in the slider's and the value's room), the readout,
  * then what the lab shows, folded. At 1580x800, the window tools/*-lab.sh opens, every slider is in view without a
  * scroll; under 720px the canvas shrinks to the phone's width and the sliders stack. tools/r232-lab-kit/shots.sh
  * renders both and fails when a lab breaks either.
@@ -99,6 +100,24 @@ body.lab {
 .ctl-value { min-width: 2.5em; font: 14px ui-monospace, "Cascadia Mono", monospace; color: var(--accent); text-align: right; white-space: nowrap; }
 .ctl input[type=range] { width: 100%; margin: 0; accent-color: var(--accent); cursor: pointer; }
 .ctl:hover .ctl-name { color: #fff; }
+/* A choice: its select takes the slider's and the value's columns, the picked name in the value's colour. */
+.ctl-choice select {
+	grid-column: 2 / -1;
+	width: 100%;
+	min-width: 0;
+	height: 26px;
+	padding: 0 6px;
+	border: 1px solid var(--line);
+	border-radius: 5px;
+	background: #1f2227;
+	color: var(--accent);
+	/* names, not numbers: the UI's font, narrower than the values' monospace */
+	font: 14px system-ui, -apple-system, "Segoe UI", sans-serif;
+	cursor: pointer;
+}
+.ctl-choice select:hover { border-color: var(--accent); }
+.ctl-choice select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ctl-choice select option { background: var(--panel); color: var(--text); }
 .lab-readout {
 	grid-column: 1 / -1;
 	margin-top: 4px;
@@ -140,4 +159,5 @@ body.lab {
 	.panel-label { padding: 2px 4px; font-size: 11px; }
 	.lab-controls { padding: 4px 8px; }
 	.ctl { grid-template-columns: minmax(5em, 9em) minmax(70px, 1fr) max-content; min-height: 36px; }
+	.ctl-choice select { height: 32px; }
 }

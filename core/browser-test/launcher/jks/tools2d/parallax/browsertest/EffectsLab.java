@@ -15,6 +15,7 @@ import com.badlogic.gdx.utils.Array;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
+import com.google.gwt.dom.client.SelectElement;
 
 import java.util.ArrayList;
 
@@ -50,6 +51,8 @@ public class EffectsLab extends ApplicationAdapter
 	/** The fog lab's sets: s01, then round1's calm, PurpleFairy and OneNight, as the FOG lab has them. */
 	static final String[] FOG_PAGES = FogLab.SET_PAGES;
 	static final String[] FOG_NAMES = FogLab.SET_NAMES;
+	/** The snow's anchors, as the anchor choice indexes them. */
+	static final String[] ANCHOR_NAMES = { "VIEW", "LAYER" };
 	/** What the labs open on: s01's back layer 1 - exp(-0.03 x 75.6) = 0.90 fogged, the mist's white, 40 units/s. */
 	static final float FOG = 0.03f, SCROLL = 40;
 
@@ -130,7 +133,8 @@ public class EffectsLab extends ApplicationAdapter
 	private final ArrayList<ParallaxLayer> waves = new ArrayList<>();
 	private final ArrayList<Float> waveAmplitudes = new ArrayList<>();
 	private final Color fogColor = new Color();
-	private InputElement fog, fogR, fogG, fogB, scroll, pick, density, size, wind, snowLayer, snowSpeed, anchor, mist, ripple;
+	private InputElement fog, fogR, fogG, fogB, scroll, density, size, wind, snowLayer, snowSpeed, mist, ripple;
+	private SelectElement pick, anchor;
 	private Element readout;
 	/** The snow's emitters as the .p has them: emission high min/max, max count, X scale high min/max. */
 	private float[] snowBase;
@@ -230,7 +234,7 @@ public class EffectsLab extends ApplicationAdapter
 			ParallaxLayer snow = snow(set.hearts[0]);
 			snowLayer = LabControls.slider(document, controls, "snowLayer", "snow's layer (0 = back, front = the last)", 0, layers.size() - 1, 1, layers.indexOf(snow));
 			snowSpeed = LabControls.slider(document, controls, "snowSpeedX", "snow's speed ratio X (its drift with the scroll)", 0, 0.1f, 0.001f, snow.getParallaxSpeedRatioX());
-			anchor = LabControls.slider(document, controls, "snowAnchor", "anchor (0 = VIEW: snow that never runs out, 1 = LAYER: tiled with the box)", 0, 1, 1,
+			anchor = LabControls.choice(document, controls, "snowAnchor", "anchor (VIEW: snow that never runs out, LAYER: tiled with the box)", ANCHOR_NAMES,
 					snow.getAnchor() == Enum_ParticleAnchor.LAYER ? 1 : 0);
 		}
 		if (lab == Lab.ALL)
@@ -240,7 +244,7 @@ public class EffectsLab extends ApplicationAdapter
 		}
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
 		if (sets.length > 1)
-			pick = LabControls.slider(document, controls, "parallaxSet", "parallax set", 0, sets.length - 1, 1, 0);
+			pick = LabControls.choice(document, controls, "parallaxSet", "parallax set", FOG_NAMES, 0);
 		readout = LabControls.readout(document, controls, "effects-readout");
 	}
 
@@ -260,8 +264,7 @@ public class EffectsLab extends ApplicationAdapter
 	{
 		if (pick != null)
 		{
-			set = sets[Math.round(LabControls.read(pick))];
-			((Element) pick.getNextSibling()).setInnerText(FOG_NAMES[set.index]);
+			set = sets[LabControls.read(pick)];
 		}
 		float sc = LabControls.read(scroll);
 		for (Parallax_Heart heart : set.hearts)
@@ -314,8 +317,7 @@ public class EffectsLab extends ApplicationAdapter
 				layers.add(index, snow);
 			}
 			snow.setParallaxSpeedRatioX(LabControls.read(snowSpeed));
-			boolean layerAnchor = Math.round(LabControls.read(anchor)) == 1;
-			((Element) anchor.getNextSibling()).setInnerText(layerAnchor ? "LAYER" : "VIEW");
+			boolean layerAnchor = LabControls.read(anchor) == 1;
 			snow.setAnchor(layerAnchor ? Enum_ParticleAnchor.LAYER : Enum_ParticleAnchor.VIEW);
 		}
 		Array<ParticleEmitter> emitters = snow.getParticles().getEmitters();

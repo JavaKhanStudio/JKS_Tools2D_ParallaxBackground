@@ -34,7 +34,7 @@
 	<script>
 	labCopy('haze', function () {
 		return {
-			lab: 'haze-lab', tint: document.querySelector('input[data-key=pageTint]').nextSibling.textContent,
+			lab: 'haze-lab', tint: document.querySelector('select[data-key=pageTint]').selectedOptions[0].textContent,
 			panels: 'A ships (towers and snow not hazed, white untinted), B towers and snow hazed, C white x tint, D both'
 		};
 	});

@@ -18,14 +18,26 @@ SIZES = {"desktop": (1580, 710), "phone": (390, 844)}
 
 # What the page measures of itself: the lowest slider's bottom, the smallest control text, the page's width.
 MEASURE = """() => {
-    const inputs = [...document.querySelectorAll('input[type=range]')];
-    const texts = [...document.querySelectorAll('input[type=range]')].flatMap(i => [...i.parentElement.children].filter(c => c !== i));
+    const inputs = [...document.querySelectorAll('input[type=range], .ctl select')];
+    const texts = [...document.querySelectorAll('input[type=range]')].flatMap(i => [...i.parentElement.children].filter(c => c !== i))
+        .concat([...document.querySelectorAll('.ctl select')].flatMap(s => [...s.parentElement.children]));
+    // A select clips its picked name without a scrollbar: measure the longest option's text against the room left of
+    // the arrow (r248).
+    const ctx = document.createElement('canvas').getContext('2d');
+    const cut = s => { const st = getComputedStyle(s); ctx.font = st.font;
+        const room = s.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight) - 20;
+        return Math.max(...[...s.options].map(o => ctx.measureText(o.text).width)) > room; };
     return {
         sliders: inputs.length,
+        choices: [...document.querySelectorAll('.ctl select')].map(s => s.dataset.key),
+        // A slider whose value reads as a name picks among names: it should be a choice (r248).
+        namedSliders: [...document.querySelectorAll('input[type=range]')].filter(i => i.nextElementSibling
+            && i.nextElementSibling.textContent.trim() !== '' && isNaN(Number(i.nextElementSibling.textContent))).map(i => i.dataset.key),
         lastSliderBottom: inputs.length ? Math.max(...inputs.map(i => i.getBoundingClientRect().bottom)) : 0,
         smallestControlText: texts.length ? Math.min(...texts.map(t => parseFloat(getComputedStyle(t).fontSize))) : null,
-        overrun: [...document.querySelectorAll('.ctl')].filter(c => [...c.children].some(k => k.scrollWidth > k.clientWidth + 1 || k.getBoundingClientRect().right > c.getBoundingClientRect().right + 1))
-            .map(c => c.querySelector('input').dataset.key),
+        overrun: [...document.querySelectorAll('.ctl')].filter(c => [...c.children].some(k => k.scrollWidth > k.clientWidth + 1 || k.getBoundingClientRect().right > c.getBoundingClientRect().right + 1
+                || k.tagName === 'SELECT' && cut(k)))
+            .map(c => c.querySelector('[data-key]').dataset.key),
         brokenCells: [...document.querySelectorAll('.lab-results td:first-child')].filter(t => { const r = document.createRange(); r.selectNodeContents(t); return r.getClientRects().length > 1; }).length,
         scrollWidth: document.documentElement.scrollWidth,
         innerWidth: innerWidth,
@@ -60,6 +72,8 @@ with sync_playwright() as p:
                 failures.append("%s %s: control text at %spx" % (name, size, m["smallestControlText"]))
             if m["overrun"]:
                 failures.append("%s %s: a value runs out of its slider's box: %s" % (name, size, m["overrun"]))
+            if m["namedSliders"]:
+                failures.append("%s %s: sliders over names, not choices: %s" % (name, size, m["namedSliders"]))
             if m["brokenCells"]:
                 failures.append("%s %s: %d PASS/FAIL cells broken over lines" % (name, size, m["brokenCells"]))
             if size == "phone" and m["scrollWidth"] > m["innerWidth"]:
