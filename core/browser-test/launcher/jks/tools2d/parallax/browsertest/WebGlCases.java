@@ -13,7 +13,9 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
@@ -23,10 +25,12 @@ import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
+import jks.tools2d.parallax.pages.Utils_Etc2_Atlas;
 
 /**
  * What only a browser with WebGL can check, so not in BrowserSuite (its cases run on the JVM too, without GL): the SHADER
- * layers' effects compile as GLSL ES 1.0, and FOG draws what its formula says (r180). Run by BrowserTestApp.
+ * layers' effects compile as GLSL ES 1.0, and FOG draws what its formula says (r180); an atlas asking mipmaps of a
+ * non-power-of-two page still draws (r212). Run by BrowserTestApp.
  */
 final class WebGlCases
 {
@@ -37,7 +41,9 @@ final class WebGlCases
 	{
 		return Arrays.asList(
 				new BrowserCase("webgl: effectShadersCompile", WebGlCases::effectShadersCompile),
-				new BrowserCase("webgl: fogThinsAsItsFormulaSays", WebGlCases::fogThinsAsItsFormulaSays));
+				new BrowserCase("webgl: fogThinsAsItsFormulaSays", WebGlCases::fogThinsAsItsFormulaSays),
+				new BrowserCase("webgl: npotMipMapAtlasDrawsThroughLoad", WebGlCases::npotMipMapAtlasDrawsThroughLoad),
+				new BrowserCase("webgl: npotMipMapAtlasDrawsThroughAssetManager", WebGlCases::npotMipMapAtlasDrawsThroughAssetManager));
 	}
 
 	static void effectShadersCompile()
@@ -118,6 +124,73 @@ final class WebGlCases
 			batch.dispose();
 			frame.dispose();
 			texture.dispose();
+		}
+	}
+
+	/** calm.atlas as it ships ({@code filter: MipMap,MipMap}, a 5020x5160 page), loaded as the heart's getDrawing does. */
+	static void npotMipMapAtlasDrawsThroughLoad()
+	{
+		TextureAtlas atlas = Utils_Etc2_Atlas.load(Gdx.files.internal("calm-mipmap.atlas"));
+		try
+		{checkDraws(atlas);}
+		finally
+		{atlas.dispose();}
+	}
+
+	/** The same atlas through an AssetManager, as WholePage_Model.preload() loads it. */
+	static void npotMipMapAtlasDrawsThroughAssetManager()
+	{
+		AssetManager manager = new AssetManager();
+		try
+		{
+			Utils_Etc2_Atlas.register(manager);
+			manager.load("calm-mipmap.atlas", TextureAtlas.class);
+			manager.finishLoadingAsset("calm-mipmap.atlas");
+			checkDraws(manager.get("calm-mipmap.atlas", TextureAtlas.class));
+		}
+		finally
+		{manager.dispose();}
+	}
+
+	/**
+	 * Draws the atlas's Clouds over black and counts the pixels that are not: WebGL 1 leaves a mipmapped
+	 * non-power-of-two texture incomplete, and an incomplete texture samples black.
+	 */
+	private static void checkDraws(TextureAtlas atlas)
+	{
+		while (Gdx.gl.glGetError() != GL20.GL_NO_ERROR)
+			;
+		int size = 32;
+		FrameBuffer frame = new FrameBuffer(Format.RGBA8888, size, size, false);
+		SpriteBatch batch = new SpriteBatch();
+		try
+		{
+			TextureRegion clouds = atlas.findRegion("Clouds");
+			isTrue(clouds != null, "calm-mipmap.atlas has no Clouds");
+			OrthographicCamera camera = new OrthographicCamera();
+			camera.setToOrtho(false, size, size);
+			camera.update();
+			frame.begin();
+			Gdx.gl.glClearColor(0, 0, 0, 1);
+			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+			batch.setProjectionMatrix(camera.combined);
+			batch.begin();
+			batch.draw(clouds, 0, 0, size, size);
+			batch.end();
+			byte[] pixels = ScreenUtils.getFrameBufferPixels(0, 0, size, size, false);
+			frame.end();
+			int lit = 0;
+			for (int i = 0; i < pixels.length; i += 4)
+				if ((pixels[i] & 0xFF) > 16 || (pixels[i + 1] & 0xFF) > 16 || (pixels[i + 2] & 0xFF) > 16)
+					lit++;
+			int error = Gdx.gl.glGetError();
+			isTrue(lit > size * size / 4, lit + " of " + size * size + " pixels not black; GL error " + error);
+			isTrue(error == GL20.GL_NO_ERROR, "GL error " + error + " loading or drawing it");
+		}
+		finally
+		{
+			batch.dispose();
+			frame.dispose();
 		}
 	}
 }

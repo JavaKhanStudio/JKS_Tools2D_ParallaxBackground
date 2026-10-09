@@ -130,8 +130,7 @@ public class WholePage_Model
 		String atlas = Gvars_Parallax.atlasFile(pageModel.atlasName);
 		if (!atlas.equals(pageModel.atlasName) && !manager.getFileHandleResolver().resolve(atlas).exists())
 			atlas = pageModel.atlasName;
-		if (Utils_Etc2_Atlas.isEtc2Atlas(atlas))
-			Utils_Etc2_Atlas.register(manager);
+		Utils_Etc2_Atlas.register(manager);
 		manager.load(atlas, TextureAtlas.class);
 		manager.finishLoadingAsset(atlas);
 		final FileHandleResolver assets = manager.getFileHandleResolver();
