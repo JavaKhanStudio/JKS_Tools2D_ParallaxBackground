@@ -9,6 +9,8 @@
                                                 span and width, shuffled blind (default demo/lab/round2)
   tools/parallax_lab.py round3 [OUT_DIR]        round 3: pages from the skill (version 2) on Printemps, boss and pure,
                                                 and the top of the speed span bracketed (default demo/lab/round3)
+  tools/parallax_lab.py round4 [OUT_DIR]        round 4: the speed span past 100x, 100x against 250x on calm and pure,
+                                                round 3's best as anchors (default demo/lab/round4)
   tools/parallax_lab.py study [OUT_DIR]         the pages written from the art (r92), in order, to render and look
                                                 at (default demo/lab/study)
   tools/parallax_lab.py round1 [OUT_DIR]        round 1: Simon's pages, each rule broken once, and pages written from
@@ -485,6 +487,15 @@ def rescale_span(page, factor):
     return p
 
 
+def deepen_back(page, factor):
+    """Keeps the front speed and multiplies the span (in log space) by factor: only the layers behind it move."""
+    p = copy.deepcopy(page)
+    s = speeds(p)
+    front = max(s)
+    set_speeds(p, [front * (v / front) ** factor for v in s])
+    return p
+
+
 def linear(page):
     """Same back and front speeds, evenly spaced instead of by a constant ratio."""
     p = copy.deepcopy(page)
@@ -857,6 +868,27 @@ def round3(out_dir):
                                       'background.')
 
 
+def round4(out_dir):
+    """Round 4 (parallax:r227): is there a top to the speed span past 100x? Round 3's deeper span won or tied every
+    bracket up to 100x. Calm and pure at 100x and 250x, next to round 3's anchors: Pure-art (43x, graded 5),
+    Printemps-art (25x, 4) and Calm-art-100x (4) again, to watch the grading scale."""
+    s = {name: load(path) for name, (path, _) in SAMPLES.items()}
+    d = {name: atlas_dir for name, (_, atlas_dir) in SAMPLES.items()}
+    calm_dir, pure_dir = 'editor/Files/transfer', 'editor/Files/Demos/Day/pureTest'
+    calm = math.log(12)  # calm_from_art's span
+    scenes = [
+        ('Calm-art-100x', rescale_span(calm_from_art(), math.log(100) / calm), calm_dir, 'anchor: graded 4 in round 3 (span 100x)'),
+        ('Calm-art-250x', deepen_back(rescale_span(calm_from_art(), math.log(100) / calm), math.log(250) / math.log(100)),
+         calm_dir, 'Calm-art-100x with its front kept and the rest pushed back: span 100x -> 250x'),
+        ('Pure-art', pure_from_art(), pure_dir, 'anchor: graded 5 in round 3 (x1.6 a layer, 43x)'),
+        ('Pure-art-100x', pure_from_art(ratio=100 ** (1 / 8)), pure_dir, 'x1.78 a layer (span 100x)'),
+        ('Pure-art-250x', pure_from_art(ratio=250 ** (1 / 8)), pure_dir, 'x1.99 a layer (span 250x)'),
+        ('Printemps-art', printemps_from_art(), d['Printemps'], 'anchor: graded 4 in round 3 (25x)'),
+    ]
+    write_round(out_dir, scenes, 227, 'Round 4 (parallax:r227): is there a top to the speed span past 100x? Grade 1-5 '
+                                      'on how good the scene feels as a game background.')
+
+
 def find_atlas_dir(path, page):
     """The folder of a page's atlas: next to the page, else the one a round.json beside it names, else the one sample
     folder that holds an atlas of that name. None when it is not found once."""
@@ -900,6 +932,8 @@ def main(argv):
     if cmd == 'study':
         study(argv[2] if len(argv) > 2 else 'demo/lab/study')
         return 0
+    if cmd == 'round4':
+        return round4(argv[2] if len(argv) > 2 else 'demo/lab/round4')
     if cmd == 'round3':
         return round3(argv[2] if len(argv) > 2 else 'demo/lab/round3')
     if cmd == 'round2':
