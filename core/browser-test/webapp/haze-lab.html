@@ -2,66 +2,41 @@
 <html>
 <head>
 	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Haze lab (d17): haze the towers and snow too, tint the haze?</title>
-	<style>
-		body { margin: 8px; font: 13px sans-serif; background: #222; color: #ddd; }
-		#haze-lab { position: relative; width: 1524px; height: 504px; }
-		#haze-labels { position: absolute; inset: 0; display: grid; grid-template-columns: 764px 760px; grid-template-rows: 254px 250px; pointer-events: none; }
-		.panel-label { padding: 4px 8px; font: bold 14px sans-serif; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
-		#haze-controls { margin-top: 8px; width: 1524px; }
-		.row { display: grid; grid-template-columns: 280px 1fr 60px; align-items: center; gap: 8px; }
-		#haze-readout { margin-top: 6px; color: #aaa; }
-		#haze-about { width: 1200px; color: #bbb; line-height: 1.4; }
-		#haze-copy-row { margin-top: 8px; display: flex; gap: 10px; align-items: center; }
-		#haze-copy { font: bold 14px sans-serif; padding: 6px 14px; }
-		#haze-copy-json { width: 1200px; height: 360px; margin-top: 6px; font: 12px monospace; background: #111; color: #ddd; }
-	</style>
+	<link rel="stylesheet" href="lab.css">
 	<!-- HazeLab (r215): the haze round's h01 with towers (EMPTY) and snow (PARTICLES) behind the mist, hazed four ways. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
-<body>
-	<div id="haze-lab">
+<body class="lab">
+	<header class="lab-bar">
+		<h1>Haze lab <span class="lab-question">haze the towers and snow too, tint the haze?</span></h1>
+		<span id="haze-copy-state" class="lab-copy-state"></span>
+		<button id="haze-copy" class="lab-copy">Copy settings</button>
+	</header>
+	<div id="haze-lab" class="lab-stage">
 		<div id="embed-browsertests"></div>
-		<div id="haze-labels"></div>
+		<div id="haze-labels" class="lab-labels"></div>
 	</div>
-	<div id="haze-controls"></div>
-	<div id="haze-copy-row"><button id="haze-copy">Copy settings</button><span id="haze-copy-state"></span></div>
-	<textarea id="haze-copy-json" hidden readonly></textarea>
-	<p id="haze-about">The depth haze (r211) mixes every layer behind a hazy mist toward the mist's white, more for each
+	<div id="haze-controls" class="lab-controls"></div>
+	<textarea id="haze-copy-json" class="lab-copy-json" hidden readonly></textarea>
+	<details class="lab-about">
+		<summary>What this lab shows</summary>
+		<p id="haze-about">The depth haze (r211) mixes every layer behind a hazy mist toward the mist's white, more for each
 	layer further back (1 - (1 - haze)^layers). As it ships (A), a game's own drawing in an EMPTY layer (here: the dark
 	towers) and a PARTICLES layer (the snow) stay as they are, sharp in front of a whitened hill; and when the page is
 	tinted, the layers are tinted but the haze's white is not, so far layers drift back toward white. B hazes the towers and
 	the snow like the images around them (in a game: one more shader switch for each such layer, and the Godot and jME
 	readers ported). C mixes toward the mist's white times the page's tint. D does both. The haze, tint and scroll act on
 	all four panels at once; the readout gives each layer's haze.</p>
+	</details>
+	<script src="lab.js"></script>
 	<script>
-	// Copy settings: every slider, what it started at, and which ones moved, as JSON Simon pastes into a card.
-	function hazeLabSettings() {
-		var settings = {}, changed = {};
-		document.querySelectorAll('#haze-controls input[data-key]').forEach(function (input) {
-			var key = input.dataset.key, value = Number(input.value), start = Number(input.dataset.start);
-			settings[key] = value;
-			if (value !== start) changed[key] = { started: start, now: value };
-		});
-		return JSON.stringify({
+	labCopy('haze', function () {
+		return {
 			lab: 'haze-lab', tint: document.querySelector('input[data-key=pageTint]').nextSibling.textContent,
-			panels: 'A ships (towers and snow not hazed, white untinted), B towers and snow hazed, C white x tint, D both',
-			settings: settings,
-			changed: Object.keys(changed).length ? changed : 'nothing: the values the lab opens with'
-		}, null, 2);
-	}
-	document.getElementById('haze-copy').addEventListener('click', async function () {
-		var text = hazeLabSettings(), box = document.getElementById('haze-copy-json'), state = document.getElementById('haze-copy-state');
-		box.value = text;
-		box.hidden = false;
-		box.focus();
-		box.select();
-		try {
-			await navigator.clipboard.writeText(text);
-			state.textContent = 'copied: paste it on the card';
-		} catch (e) {
-			state.textContent = 'selected: Ctrl+C';
-		}
+			panels: 'A ships (towers and snow not hazed, white untinted), B towers and snow hazed, C white x tint, D both'
+		};
 	});
 	</script>
 </body>

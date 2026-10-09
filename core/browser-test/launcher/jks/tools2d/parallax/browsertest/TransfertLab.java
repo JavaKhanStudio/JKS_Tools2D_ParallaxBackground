@@ -106,73 +106,33 @@ public class TransfertLab extends ApplicationAdapter
 	private void buildControls()
 	{
 		Document document = Document.get();
-		Element labels = document.getElementById("transfert-labels");
-		for (String title : TITLES)
-		{
-			Element label = document.createDivElement();
-			label.setClassName("panel-label");
-			label.setInnerText(title);
-			labels.appendChild(label);
-		}
+		LabControls.panelLabels(document, "transfert-labels", TITLES);
 		Element controls = document.getElementById("transfert-controls");
-		pair = slider(document, controls, "pagePair", "pages", 0, PAIRS.length - 1, 1, PAIR);
-		seconds = slider(document, controls, "seconds", "transfert length (s)", 0.5f, 8, 0.25f, SECONDS);
-		hold = slider(document, controls, "hold", "hold between transferts (s)", 0.5f, 5, 0.25f, HOLD);
-		scroll = slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
-		grade = slider(document, controls, "gradeColour", "B: grade colour", 0, GRADES.length - 1, 1, GRADE);
-		stagger = slider(document, controls, "depthStagger", "C, D: depth stagger (0 = every layer at once)", 0, 2, 0.1f, STAGGER);
-		patch = slider(document, controls, "patches", "C, D: patches across the panel", 1, 16, 0.5f, PATCH);
-		soft = slider(document, controls, "softEdge", "C, D: patch edge softness", 0.01f, 0.4f, 0.01f, SOFT);
-		readout = document.createDivElement();
-		readout.setId("transfert-readout");
-		controls.appendChild(readout);
+		pair = LabControls.slider(document, controls, "pagePair", "pages", 0, PAIRS.length - 1, 1, PAIR);
+		seconds = LabControls.slider(document, controls, "seconds", "transfert length (s)", 0.5f, 8, 0.25f, SECONDS);
+		hold = LabControls.slider(document, controls, "hold", "hold between transferts (s)", 0.5f, 5, 0.25f, HOLD);
+		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
+		grade = LabControls.slider(document, controls, "gradeColour", "B: grade colour", 0, GRADES.length - 1, 1, GRADE);
+		stagger = LabControls.slider(document, controls, "depthStagger", "C, D: depth stagger (0 = every layer at once)", 0, 2, 0.1f, STAGGER);
+		patch = LabControls.slider(document, controls, "patches", "C, D: patches across the panel", 1, 16, 0.5f, PATCH);
+		soft = LabControls.slider(document, controls, "softEdge", "C, D: patch edge softness", 0.01f, 0.4f, 0.01f, SOFT);
+		readout = LabControls.readout(document, controls, "transfert-readout");
 	}
 
-	private static String text(float value)
-	{return String.valueOf(Math.round(value * 100) / 100.0);}
 
-	/** A slider row; {@code key} and the value it starts at go on the input, read by "Copy settings". */
-	private static InputElement slider(Document document, Element into, String key, String name, float min, float max, float step, float value)
-	{
-		Element row = document.createLabelElement();
-		row.setClassName("row");
-		Element label = document.createSpanElement();
-		label.setInnerText(name);
-		InputElement input = document.createTextInputElement();
-		input.setAttribute("type", "range");
-		input.setAttribute("min", text(min));
-		input.setAttribute("max", text(max));
-		input.setAttribute("step", text(step));
-		input.setValue(text(value));
-		input.setAttribute("data-key", key);
-		input.setAttribute("data-start", text(value));
-		Element shown = document.createSpanElement();
-		shown.setClassName("value");
-		row.appendChild(label);
-		row.appendChild(input);
-		row.appendChild(shown);
-		into.appendChild(row);
-		return input;
-	}
 
-	private static float read(InputElement input)
-	{
-		float value = Float.parseFloat(input.getValue());
-		((Element) input.getNextSibling()).setInnerText(input.getValue());
-		return value;
-	}
 
 	/** Puts the sliders into the hearts; a new pair starts over on its first page. */
 	private void applyControls()
 	{
-		int p = Math.round(read(pair));
+		int p = Math.round(LabControls.read(pair));
 		((Element) pair.getNextSibling()).setInnerText(PAGE_NAMES[PAIRS[p][0]] + " <-> " + PAGE_NAMES[PAIRS[p][1]]);
-		((Element) grade.getNextSibling()).setInnerText(GRADE_NAMES[Math.round(read(grade))]);
-		read(seconds);
-		read(hold);
-		read(stagger);
-		read(patch);
-		read(soft);
+		((Element) grade.getNextSibling()).setInnerText(GRADE_NAMES[Math.round(LabControls.read(grade))]);
+		LabControls.read(seconds);
+		LabControls.read(hold);
+		LabControls.read(stagger);
+		LabControls.read(patch);
+		LabControls.read(soft);
 		if (p != shown)
 		{
 			shown = p;
@@ -183,14 +143,14 @@ public class TransfertLab extends ApplicationAdapter
 				hearts[i].parallaxReader.addColorTransfert(Color.WHITE, 0);
 			}
 			inTransfert = false;
-			holdLeft = read(hold);
+			holdLeft = LabControls.read(hold);
 		}
-		float sc = read(scroll);
+		float sc = LabControls.read(scroll);
 		for (Parallax_Heart heart : hearts)
 			heart.screenSpeedConstantX = sc;
 		readout.setInnerText(PAGE_NAMES[PAIRS[shown][side]] + (inTransfert
 				? " -> " + PAGE_NAMES[PAIRS[shown][1 - side]] + ", " + Math.round(100 * progress()) + "% into the transfert"
-				: ", on hold " + text(Math.max(0, holdLeft)) + " s"));
+				: ", on hold " + LabControls.text(Math.max(0, holdLeft)) + " s"));
 	}
 
 	/** How far into the transfert, 0 to 1; 0 on hold. */
@@ -206,11 +166,11 @@ public class TransfertLab extends ApplicationAdapter
 			holdLeft -= delta;
 			if (holdLeft <= 0)
 			{
-				duration = read(seconds);
+				duration = LabControls.read(seconds);
 				int into = PAIRS[shown][1 - side];
 				for (int i = 0; i < hearts.length; i++)
 					hearts[i].transfertIntoPage(models[i][into], duration);
-				float[] g = GRADES[Math.round(read(grade))];
+				float[] g = GRADES[Math.round(LabControls.read(grade))];
 				hearts[1].parallaxReader.addColorTransfert(new Color(g[0], g[1], g[2], 1), duration / 2);
 				inTransfert = true;
 				since = 0;
@@ -226,7 +186,7 @@ public class TransfertLab extends ApplicationAdapter
 			{
 				inTransfert = false;
 				side = 1 - side;
-				holdLeft = read(hold);
+				holdLeft = LabControls.read(hold);
 			}
 		}
 		for (Parallax_Heart heart : hearts)
@@ -286,7 +246,7 @@ public class TransfertLab extends ApplicationAdapter
 	/** How far along layer slot {@code slot} of {@code total} (0 at the back) is when the whole is at {@code ramp}. */
 	private float rampOf(float ramp, int slot, int total)
 	{
-		float s = read(stagger), k = total > 1 ? slot / (float) (total - 1) : 0;
+		float s = LabControls.read(stagger), k = total > 1 ? slot / (float) (total - 1) : 0;
 		return Math.max(0, Math.min(1, ramp * (1 + s) - s * k));
 	}
 
@@ -360,7 +320,7 @@ public class TransfertLab extends ApplicationAdapter
 		batch.begin();
 		ShaderProgram program = masked();
 		batch.setShader(program);
-		float px = FRAME_WIDTH / read(patch);
+		float px = FRAME_WIDTH / LabControls.read(patch);
 		program.setUniformf("u_noise", panelX, panelY, px);
 		program.setUniformf("u_drift", clock * 0.15f);
 		program.setUniformf("u_haze", 0);
@@ -376,7 +336,7 @@ public class TransfertLab extends ApplicationAdapter
 	private void mask(int mode, float ramp)
 	{
 		batch.flush();
-		masked.setUniformf("u_mask", ramp, mode, read(soft));
+		masked.setUniformf("u_mask", ramp, mode, LabControls.read(soft));
 	}
 
 	/** The reader, handed {@code layer} alone, draws it: at full opacity, in the page's tint. */

@@ -1,0 +1,143 @@
+/*
+ * The labs' one look (r232): fog-lab, haze-lab, transfert-lab, effects-lab and the browser tests' page.
+ * A lab is a bar (its name, Copy settings), the stage (the canvas, the panels' titles over it), the controls (sliders
+ * built by LabControls.java, several to a row, each name beside its slider and its value after it), the readout,
+ * then what the lab shows, folded. At 1580x800, the window tools/*-lab.sh opens, every slider is in view without a
+ * scroll; under 720px the canvas shrinks to the phone's width and the sliders stack. tools/r232-lab-kit/shots.sh
+ * renders both and fails when a lab breaks either.
+ */
+:root {
+	color-scheme: dark;
+	--bg: #1b1d21;
+	--panel: #25282e;
+	--line: #3a3f48;
+	--text: #e8e9ec;
+	--muted: #a9afba;
+	--accent: #7cb3ff;
+	--pass: #7bd88f;
+	--fail: #ff8a80;
+}
+
+* { box-sizing: border-box; }
+
+body.lab {
+	margin: 0;
+	padding: 8px 12px 16px;
+	background: var(--bg);
+	color: var(--text);
+	font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.lab-bar, .lab-stage, .lab-controls, .lab-copy-json, .lab-about { max-width: 1524px; }
+
+/* The bar: the lab's name and question on the left, Copy settings on the right. */
+.lab-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 12px;
+	min-height: 34px;
+	margin-bottom: 6px;
+}
+.lab-bar h1 { margin: 0; font-size: 17px; font-weight: 600; }
+.lab-bar .lab-question { color: var(--muted); font-weight: 400; }
+.lab-copy-state { color: var(--muted); }
+.lab-copy {
+	margin-left: auto;
+	padding: 6px 16px;
+	border: 1px solid var(--accent);
+	border-radius: 6px;
+	background: var(--accent);
+	color: #0d1b2e;
+	font: 600 14px system-ui, sans-serif;
+	cursor: pointer;
+}
+.lab-copy:hover { filter: brightness(1.1); }
+
+/* The stage: the canvas, as wide as the page allows, and the panels' titles laid over it on the same grid. */
+.lab-stage { position: relative; }
+/* GWT puts the canvas in a table sized in px, inline: the kit's size wins. */
+.lab-stage table { width: 100% !important; height: auto !important; table-layout: fixed; border-collapse: collapse; }
+.lab-stage td { padding: 0; }
+.lab-stage canvas { display: block; width: 100% !important; height: auto !important; }
+.lab-labels {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	grid-template-columns: 764fr 760fr;
+	grid-template-rows: 254fr 250fr;
+	pointer-events: none;
+}
+.lab-stage.lab-row .lab-labels { grid-template-rows: 1fr; }
+.panel-label {
+	padding: 4px 8px;
+	font: 600 15px system-ui, sans-serif;
+	color: #fff;
+	text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000;
+}
+
+/* The controls: as many columns as fit, a slider each. */
+.lab-controls {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+	gap: 2px 24px;
+	margin-top: 8px;
+	padding: 6px 12px;
+	border-radius: 8px;
+	background: var(--panel);
+}
+.ctl {
+	display: grid;
+	/* A name (a set, a pair of pages) as the value takes its room from the name's column, never from beside it. */
+	grid-template-columns: minmax(5em, 10.5em) minmax(70px, 1fr) max-content;
+	align-items: center;
+	gap: 10px;
+	min-height: 30px;
+	cursor: pointer;
+}
+.ctl-name { font-size: 14px; line-height: 1.2; }
+.ctl-value { min-width: 2.5em; font: 14px ui-monospace, "Cascadia Mono", monospace; color: var(--accent); text-align: right; white-space: nowrap; }
+.ctl input[type=range] { width: 100%; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.ctl:hover .ctl-name { color: #fff; }
+.lab-readout {
+	grid-column: 1 / -1;
+	margin-top: 4px;
+	padding: 5px 0 1px;
+	border-top: 1px solid var(--line);
+	color: var(--muted);
+	font-size: 14px;
+}
+
+.lab-copy-json {
+	display: block;
+	width: 100%;
+	height: 300px;
+	margin-top: 8px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	background: #111317;
+	color: var(--text);
+	font: 13px ui-monospace, monospace;
+}
+.lab-copy-json[hidden] { display: none; }
+
+.lab-about { margin-top: 10px; color: var(--muted); }
+.lab-about summary { color: var(--text); cursor: pointer; }
+.lab-about p { max-width: 78em; margin: 6px 0 0; line-height: 1.5; }
+
+/* The browser tests' page: the summary, the browser, one row per case. */
+#summary { margin: 8px 0 2px; font: 600 15px ui-monospace, monospace; }
+.lab-muted { color: var(--muted); margin-bottom: 8px; overflow-wrap: anywhere; }
+.lab-results { width: 100%; max-width: 1100px; border-collapse: collapse; font: 13px ui-monospace, monospace; }
+.lab-results td { padding: 3px 8px; border-bottom: 1px solid var(--line); vertical-align: top; word-break: break-word; }
+.lab-results td:first-child { white-space: nowrap; word-break: normal; }
+.lab-results tr.pass td:first-child { color: var(--pass); }
+.lab-results tr.fail { background: #3b2225; }
+.lab-results tr.fail td:first-child { color: var(--fail); font-weight: 600; }
+
+@media (max-width: 719px) {
+	body.lab { padding: 6px 8px 12px; }
+	.panel-label { padding: 2px 4px; font-size: 11px; }
+	.lab-controls { padding: 4px 8px; }
+	.ctl { grid-template-columns: minmax(5em, 9em) minmax(70px, 1fr) max-content; min-height: 36px; }
+}
