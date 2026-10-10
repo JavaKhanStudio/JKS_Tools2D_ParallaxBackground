@@ -8,9 +8,9 @@
 
 A parallax background library for [libGDX](https://libgdx.com) games, with readers for Godot 4 and jMonkeyEngine 3.
 
-You compose a parallax in the **editor** (a desktop tool with a repository of its own,
-[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor)) from an atlas and/or PNG
-images, tune each layer while it scrolls, then export a `.plax` file. Your game loads that file with the **core**
+A parallax **page** is a file: its layers, back to front, over an atlas and/or PNG images. You write it by hand as a
+`.jplax` (JSON, see [File formats](#file-formats)), or compose it in the **editor**, a separate commercial desktop
+tool, which tunes each layer while it scrolls and exports a `.plax`. Your game loads that file with the **core**
 library, which scrolls, tiles and draws the layers behind your game.
 
 ## Get it
@@ -62,10 +62,9 @@ Then see [Using the library in a game](#using-the-library-in-a-game). A jMonkeyE
 
 ### The editor, to design a parallax
 
-The editor and its sample projects are in
-[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor): its README says how to
-download, run and use it.
-Releases of this library up to 2.5 also attach `ParallaxEditor-<version>.zip`.
+The editor is a separate commercial product, not part of this repository or its releases. You do not need it: a page
+is a `.jplax` JSON file you can write by hand (see [File formats](#file-formats)), and the library loads it as it
+loads one the editor exported.
 
 ## Build and run
 
@@ -357,19 +356,14 @@ art shifts its colours slightly. The Godot and jME readers load the PNG atlas; G
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
-pages built without a heart. The editor repository's `demo/` is a complete example.
-
-## Using the editor
-
-How to use the editor (its screens, loose images and export, flatten, ETC2 and pixel-art exports, driving it from
-another program) is in the README of [JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor).
+pages built without a heart.
 
 ## File formats
 
 | Extension | Content                                              | Written by    | Read by                   |
 |-----------|------------------------------------------------------|---------------|---------------------------|
 | `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), jME games (`engines/jme`), editor |
-| `.jplax`  | Exported page, JSON (Jackson)                        | Export        | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), jME games, editor, other tools |
+| `.jplax`  | Exported page, JSON (Jackson)                        | Export, hand  | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), jME games, editor, other tools |
 | `.plaxpj` | Project: page, loose images, default values, pixel art, ETC2 (JSON) | Save project  | editor, browser games (`Utils_Page_Json`), Godot games, jME games |
 | `.etc2.atlas` + `.zktx` | ETC2 copy of an exported atlas: same regions, pages as gzipped KTX (ETC2 RGBA8, mip chain) | Export with ETC2 | libGDX games with `Gvars_Parallax.setCompressedAtlases(true)` |
 
@@ -443,5 +437,4 @@ Apache License 2.0, see [LICENSE](LICENSE).
 
 Started in 2017 as a fork of [ParallaxBackground-libgdx](https://github.com/fooble/ParallaxBackground-libgdx) by
 **Rahul Verma**, Copyright 2014, licensed under the Apache License 2.0. See [NOTICE](NOTICE) for the other
-third-party code the editor included (the editor now lives in
-[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), with its own NOTICE).
+third-party code the editor included (the editor is now a separate product, with its own NOTICE).

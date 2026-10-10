@@ -11,7 +11,7 @@ more than one engine? This is the analysis. Nothing has been moved yet.
 | What | Where it goes | Who needs a new one |
 |------|---------------|---------------------|
 | `core`, the libGDX runtime | Maven Central, `io.github.javakhanstudio:parallax-background` | a libGDX game |
-| `editor` | `ParallaxEditor-X.Y.Z.zip` on the GitHub release | a page author |
+| `editor` | its own repository's releases (private and commercial since r269) | a page author |
 | `engines/godot/addons/jks_parallax` | `jks-parallax-godot-X.Y.Z.zip`, and the Godot Asset Library listing (d11) | a Godot game |
 | `demo` | nowhere, it is a sample | nobody |
 
@@ -120,7 +120,7 @@ So moving `demo/` and `editor/` out as they are leaves `core`'s tests and both f
    stills are byte for byte those `ParallaxLab --shots` drew.
 2. The editor repository: `git filter-repo` keeps the history of `editor/`, `demo/` and their tools; its build takes
    `core` from Central or the sibling checkout; its CI builds and zips the editor.
-   **Done (r132):** [JavaKhanStudio/JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor),
+   **Done (r132):** JavaKhanStudio/JKS_Tools2D_ParallaxEditor (private since r269),
    default branch `develop`: 134 commits of history, made by `tools/r132-editor-split.sh`, then its own build, CI,
    README, RELEASING.md and AGENTS.md on top. It takes `parallax-background:$parallaxVersion` from Central (the snapshot
    repository on `develop`), or builds `core` from `../JKS_Tools2D_ParallaxBackground` when that checkout is there;

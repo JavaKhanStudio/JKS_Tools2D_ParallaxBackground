@@ -27,10 +27,9 @@ repair.
 - A Java 12+ API in `core/src` fails the build with an error about that API, not about the release level.
 - Every dependency version, and the published `version`, is in `gradle.properties`.
 - Repositories go in `settings.gradle` only: `FAIL_ON_PROJECT_REPOS` fails the build on a module-level one.
-- The editor and the demo are
-  [JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor), a repository and an
-  Atelier board (`parallax-editor`) of their own since the split (r130-r133, docs/repo-split.md). Beside this
-  checkout, its build compiles this `core` instead of Maven's: run a `core` change in `:editor:run` or `:demo:stress`
+- The editor and the demo are JKS_Tools2D_ParallaxEditor, a private repository (a commercial product since r269:
+  never link to it or offer it as a download) and an Atelier board (`parallax-editor`) of their own since the split
+  (r130-r133, docs/repo-split.md). Beside this checkout, its build compiles this `core` instead of Maven's: run a `core` change in `:editor:run` or `:demo:stress`
   there. Nothing here may point into it.
 - CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`,
   `tools/offscreen-lint.sh`.

@@ -128,8 +128,8 @@ jobs:
               echo "This version is not on Maven Central: add the jar to your game yourself."
             fi
             echo
-            echo "**Design a parallax** — the editor has its own repository and downloads:"
-            echo "[JKS_Tools2D_ParallaxEditor](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxEditor)."
+            echo "**Design a parallax** — a page is a \`.jplax\` JSON file you can write by hand: see the README's"
+            echo "[File formats](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground#file-formats)."
             echo
             echo "**Use a parallax in a Godot 4 game** — \`jks-parallax-godot-$VERSION.zip\`: unzip it at the root of your"
             echo "project (it holds \`addons/jks_parallax/\`)."
