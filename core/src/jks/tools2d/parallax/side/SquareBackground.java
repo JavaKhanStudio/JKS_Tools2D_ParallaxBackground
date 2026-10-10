@@ -66,7 +66,8 @@ public class SquareBackground
 
 	/**
 	 * {@link #transfertInto(Color, Color, float)} as the layers' {@code style} goes ({@link TransfertStyle#gradient}):
-	 * through its colour for {@link TransfertStyle#throughColor}, straight for every other. null is FADE.
+	 * through its colour for {@link TransfertStyle#throughColor} and {@link TransfertStyle#fogCreep}, straight for every
+	 * other. null is FADE.
 	 */
 	public void transfertInto(Color topTransfert, Color bottomTransfert, float inXSecondes, TransfertStyle style)
 	{

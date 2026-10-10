@@ -30,7 +30,7 @@ mutate() {
 	grep -qF -- "$3" "${FILES[$1]}" || { echo "mutation '$4' did not apply"; restore; exit 2; }
 	run "$4" "$5"
 }
-mutate 0 's/and _style.kind == "THROUGH_COLOR"$/and _style.kind == "NONE"/' '_style.kind == "NONE"' \
+mutate 0 's/and _style != null and _style.grades()$/and _style != null and false/' '_style != null and false' \
 	"Godot fading instead of grading" tools/godot-parallax-shots.sh
 mutate 1 's/progress) if _gradient_style$/progress) if false/' 'progress) if false' \
 	"Godot's gradients fading straight" tools/godot-parallax-shots.sh

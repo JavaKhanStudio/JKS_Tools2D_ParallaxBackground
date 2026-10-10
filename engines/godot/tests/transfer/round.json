@@ -1,6 +1,6 @@
 {
  "round": "transfer",
- "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it; t06 starts a second at 5 s (r98); t07 and t08 fade each layer slot in its own window, back slots first (depth stagger, r249); t09 and t10 dissolve (r250); t11 and t12 go through a colour (r251). Read by shots/.../ParallaxShots and engines/godot/tests/shots.gd.",
+ "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it; t06 starts a second at 5 s (r98); t07 and t08 fade each layer slot in its own window, back slots first (depth stagger, r249); t09 and t10 dissolve (r250); t11 and t12 go through a colour (r251); t13 and t14 creep into a mist and out of it (r252). Read by shots/.../ParallaxShots and engines/godot/tests/shots.gd.",
  "scenes": [
   {
    "id": "t01",
@@ -101,6 +101,22 @@
    "name": "through-orange-from-a-fogged-page-staggered",
    "about": "f01 (a page fog, a WAVE and a FOG layer) through a warm orange into Calm, stagger 1 (r251): at t6 the back slots are Calm coming out of the orange, the front ones f01 going into it, mixed toward the orange after their fog",
    "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "THROUGH_COLOR", "color": "ff9a40", "stagger": 1}}
+  },
+  {
+   "id": "t13",
+   "page": "engines/godot/tests/conformance/c04.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "fog-creep-in-far-first",
+   "about": "t01 as a fog creep into the page fog's white mist (r252), stagger 1, started at 4.6 s: at t6, 35% in, Hiver's far slots all mist, its near ones going into it, the gradients white; Calm not drawn yet",
+   "transfer": {"at": 4.6, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "FOG_CREEP", "color": "eef2f7", "stagger": 1}}
+  },
+  {
+   "id": "t14",
+   "page": "engines/godot/tests/fog/f01.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "fog-creep-out-near-first-from-a-fogged-page",
+   "about": "f01 (a page fog, a WAVE and a FOG layer) as a fog creep into a grey-blue mist, into Calm, stagger 1 (r252), started at 3.4 s: at t6, 65% in, Calm coming out of the mist, its near slots clear first, its far ones still under it",
+   "transfer": {"at": 3.4, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "FOG_CREEP", "color": "b8c4d4", "stagger": 1}}
   }
  ]
 }

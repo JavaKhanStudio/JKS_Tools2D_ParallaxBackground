@@ -27,14 +27,15 @@ two of round1's pages, drawn five ways (A, B, C on top, D and E below):
 |---|---|---|
 | A | the transfert as it ships | yes |
 | B | the transfert through a colour grade: the tint goes to the grade colour over the first half, back to white over the second | yes: a game can call both today. The tint multiplies, so it darkens and colours, never lightens: no fade through white |
-| C | fog creep: the mist's white rolls in in patches, far layers first, the page is swapped under the full fog, the fog clears near layers first | no: the lab's own shader |
+| C | fog creep: the whole page sinks into a mist, far layers first, the page is swapped at full mist, then the new one comes out of it, near layers first; no patches | yes: `TransfertStyle.fogCreep` (r252) |
 | D | dissolve: in each slot the new page's layer eats the old one in patches, back slots first | yes: `TransfertStyle.dissolve` (r250) |
 | E | through a colour: in each slot the old page's layer goes to the colour, then the new one comes out of it, the gradients too; white possible | yes: `TransfertStyle.throughColor` (r251) |
 
-C is GdxLayerEffects' PLAIN shader with a mask taken from FOG's noise (r216's sum of sines, so the same on every GPU), in
-screen pixels; D the same mask in the library's shaders (`dissolved()`, over the camera view), in all three engines. E is the haze's mix toward a second colour in the same shaders (`u_grade`, after the fog). Sliders: the pages, the
-transfert's length, the hold, the scroll, B's grade colour, E's colour, the depth stagger (A, C, D, E), and for C and D
-the patch size and the edge softness. "Copy settings" hands them back as JSON.
+D is a mask taken from FOG's noise (r216's sum of sines, so the same on every GPU) in the library's shaders
+(`dissolved()`, over the camera view), in all three engines. E is the haze's mix toward a second colour in the same
+shaders (`u_grade`, after the fog); C the same mix toward its mist, by a depth-ordered, eased amount
+(`TransfertStyle.gradeAt`). Sliders: the pages, the transfert's length, the hold, the scroll, B's grade colour, C's
+mist, E's colour, the depth stagger (A, C, D, E), and for D the patch size and the edge softness. "Copy settings" hands them back as JSON.
 
 ## Ways to carry a transfert, and what each costs
 
@@ -50,11 +51,14 @@ page is written three times and checked by a frame round.
    a grade colour and amount are the haze's mix with another colour, so it costs the haze's flush per layer and its
    three copies. Fade through white is the haze at 1. Shipped in r251 as `TransfertStyle.throughColor` (E); lift and
    desaturate are not.
-3. **Fog creep** (C). The depth haze plus a noise mask: the shaders already have FOG's noise and `hazed()`. Costs a
-   flush per layer during the transfert only, a mask uniform in the three shaders, and the swap at full fog (no
-   cross-fade needed under it).
-4. **Dissolve** (D). Each slot's two layers drawn with complementary masks: the same mask as C, alpha instead of
-   colour. Same costs as C; two layers per slot are already drawn during a transfert, so no extra fill.
+3. **Fog creep** (C). First sketched as the depth haze through a noise mask (patches rolling in); Simon asked for it
+   subtler, "as if the whole scene was disappearing in the fog", and unlike the dissolve (r252). Shipped as
+   `TransfertStyle.fogCreep`: through colour's grade toward a mist, no mask, each slot's amount eased and ordered by
+   depth (far layers in first, out last), every slot all mist at the middle where the page swaps. A flush per layer
+   during the transfert only; no new shader.
+4. **Dissolve** (D). Each slot's two layers drawn with complementary masks from FOG's noise. A flush per layer during
+   the transfert and a mask uniform in the three shaders; two layers per slot are already drawn during a transfert, so
+   no extra fill.
 5. **An effect that creeps in.** A page's own SHADER layers ramp their numbers during the transfert: a WAVE whose
    amplitude rises to blur the old page (a heat shimmer), a FOG whose amplitude rises to thin it out. Needs the reader
    to drive a layer's amplitude from the transfert's progress; no new shader. It only works for pages that hold those

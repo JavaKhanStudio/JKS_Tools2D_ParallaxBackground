@@ -9,11 +9,12 @@ import com.badlogic.gdx.graphics.Color;
  * slot over its own window, the back ones first. {@link #dissolve} has each slot's incoming layer eat the outgoing one
  * in patches, through the engine's shaders ({@link LayerEffects#setDissolve}). {@link #throughColor} goes from each
  * slot's outgoing layer to a colour, white possible, then from that colour to its incoming one
- * ({@link LayerEffects#setGrade}), the gradients with it. A style is immutable: keep one and pass it to every
+ * ({@link LayerEffects#setGrade}), the gradients with it. {@link #fogCreep} sinks the whole page into a mist, far layers
+ * first, and has the new page come out of it, near layers first. A style is immutable: keep one and pass it to every
  * transfert.
  * <p>
  * Godot's copy is engines/godot/addons/jks_parallax/plax_transfert_style.gd: change {@link #slotRamp},
- * {@link #gradeOf} and {@link #gradient} there too.
+ * {@link #gradeOf}, {@link #gradeAt}, {@link #showsIncoming} and {@link #gradient} there too.
  */
 public final class TransfertStyle
 {
@@ -33,6 +34,12 @@ public final class TransfertStyle
 		 * out of it ({@link #gradeOf}), over the slot's window as DEPTH_STAGGER's ({@link #getStagger}).
 		 */
 		THROUGH_COLOR,
+		/**
+		 * The whole page sinks into a mist ({@link #getColorR} G, B), the far layers first, until nothing is left of it at
+		 * the transfert's middle, where the incoming page takes its place; then the mist clears, the near layers first
+		 * ({@link #gradeAt}). The far slots ahead by {@link #getStagger}.
+		 */
+		FOG_CREEP,
 	}
 
 	/** The largest stagger: the back slot is done when the front one starts at a third of the transfert. */
@@ -103,6 +110,22 @@ public final class TransfertStyle
 				Math.max(0, Math.min(1, color.r)), Math.max(0, Math.min(1, color.g)), Math.max(0, Math.min(1, color.b)));
 	}
 
+	/**
+	 * Fog creep (the transfert lab's C, reworked on r252): the whole page sinks into {@code mist} (its alpha ignored, each
+	 * channel clamped to 0..1; {@link GdxLayerEffects#HAZE_R} G, B the page fog's white, a page's {@code fogColor} its
+	 * own), every layer mixed toward it, the far ones ahead of the near ones by {@code stagger} (0: all together, clamped
+	 * to 0..{@link #MAX_STAGGER}), until the page is all mist at the transfert's middle. The incoming page is swapped in
+	 * there, all at once, and comes out of the mist, the near layers first ({@link #gradeAt}); the gradients go into it
+	 * and out at the far layer's pace ({@link #gradient}). No patches: the mist is even across the view. Mixed in after
+	 * the page's fog, as {@link #throughColor}'s colour; an engine that draws no grade, and EMPTY and PARTICLES layers,
+	 * fade out to the gradients instead.
+	 */
+	public static TransfertStyle fogCreep(Color mist, float stagger)
+	{
+		return new TransfertStyle(Kind.FOG_CREEP, Math.max(0, Math.min(MAX_STAGGER, stagger)), 0, 0,
+				Math.max(0, Math.min(1, mist.r)), Math.max(0, Math.min(1, mist.g)), Math.max(0, Math.min(1, mist.b)));
+	}
+
 	public Kind getKind()
 	{return kind;}
 
@@ -118,7 +141,7 @@ public final class TransfertStyle
 	public float getSoftness()
 	{return softness;}
 
-	/** THROUGH_COLOR's colour, red, green and blue, 0 to 1; 0 for every other style. */
+	/** THROUGH_COLOR's colour or FOG_CREEP's mist, red, green and blue, 0 to 1; 0 for every other style. */
 	public float getColorR()
 	{return colorR;}
 
@@ -140,18 +163,43 @@ public final class TransfertStyle
 	public static boolean incomingShows(float ramp)
 	{return ramp >= 0.5f;}
 
+	/** Whether the style draws its layers mixed toward its colour ({@link #gradeAt}): THROUGH_COLOR and FOG_CREEP. */
+	public boolean grades()
+	{return kind == Kind.THROUGH_COLOR || kind == Kind.FOG_CREEP;}
+
+	/**
+	 * Whether layer slot {@code slot} of {@code total} (0 at the back) draws its incoming layer, rather than its outgoing
+	 * one, when the transfert is at {@code progress}, 0 to 1: THROUGH_COLOR halfway through the slot's window
+	 * ({@link #incomingShows}), FOG_CREEP every slot at once, halfway through the transfert.
+	 */
+	public boolean showsIncoming(float progress, int slot, int total)
+	{return kind == Kind.FOG_CREEP ? progress >= 0.5f : incomingShows(slotRamp(progress, slot, total));}
+
+	/**
+	 * How much of the colour layer slot {@code slot} of {@code total} (0 at the back) is mixed toward when the transfert
+	 * is at {@code progress}, 0 to 1. THROUGH_COLOR: {@link #gradeOf} its {@link #slotRamp}. FOG_CREEP: the slot's ramp
+	 * over the way in, {@code 2 progress}, and back over the way out, {@code 2 - 2 progress}, eased (smoothstep): the far
+	 * slots reach the mist first and leave it last, every slot is all mist at the middle.
+	 */
+	public float gradeAt(float progress, int slot, int total)
+	{
+		if (kind != Kind.FOG_CREEP)
+			return gradeOf(slotRamp(progress, slot, total));
+		float r = slotRamp(progress < 0.5f ? 2 * progress : 2 - 2 * progress, slot, total);
+		return r * r * (3 - 2 * r);
+	}
+
 	/**
 	 * A gradient's colour {@code progress}, 0 to 1, into a transfert from {@code from} to {@code to}, into {@code out}:
-	 * the two mixed, as with any style but THROUGH_COLOR, which goes from {@code from} to its colour, then to
-	 * {@code to}, at the pace of the back slot (the gradients are behind it). SquareBackground, jME's JmeGradient and
+	 * the two mixed, as with any style but THROUGH_COLOR and FOG_CREEP, which go from {@code from} to their colour, then
+	 * to {@code to}, at the pace of the back slot (the gradients are behind it). SquareBackground, jME's JmeGradient and
 	 * Godot's plax_background.gd _act_gradients draw with it.
 	 */
 	public Color gradient(Color from, Color to, float progress, Color out)
 	{
-		if (kind != Kind.THROUGH_COLOR)
+		if (!grades())
 			return out.set(from).lerp(to, progress);
-		float ramp = slotRamp(progress, 0, 1);
-		return out.set(incomingShows(ramp) ? to : from).lerp(colorR, colorG, colorB, 1, gradeOf(ramp));
+		return out.set(showsIncoming(progress, 0, 1) ? to : from).lerp(colorR, colorG, colorB, 1, gradeAt(progress, 0, 1));
 	}
 
 	/**
@@ -191,7 +239,7 @@ public final class TransfertStyle
 			return "FADE";
 		if (kind == Kind.DISSOLVE)
 			return kind + "(" + patches + ", " + softness + ", " + stagger + ")";
-		if (kind == Kind.THROUGH_COLOR)
+		if (kind == Kind.THROUGH_COLOR || kind == Kind.FOG_CREEP)
 			return kind + "(" + colorR + ", " + colorG + ", " + colorB + ", " + stagger + ")";
 		return kind + "(" + stagger + ")";
 	}

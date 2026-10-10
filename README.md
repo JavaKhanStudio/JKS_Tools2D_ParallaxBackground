@@ -188,9 +188,13 @@ More:
   is mixed toward it until it is all that colour halfway through the slot's window, then the new layer comes out of it,
   and the gradients go through it too (stagger 0: the whole screen that colour at the middle). The colour is mixed in
   after the page's fog; the cost is the dissolve's, a flush per layer during the transfert only, and an `EMPTY` or
-  `PARTICLES` layer fades out to the gradients instead. The style is the game's call: a page does not store it. Godot:
-  `bg.transfert_into(page, atlas, 3.0, PlaxTransfertStyle.depth_stagger(0.5))`, `PlaxTransfertStyle.dissolve(5, 0.08,
-  0.5)` or `PlaxTransfertStyle.through_color(Color.WHITE, 0)`; jME: `bg.transfertIntoPage(page, atlas, 3, style)`.
+  `PARTICLES` layer fades out to the gradients instead. `TransfertStyle.fogCreep(mist, 1)` sinks the whole page into a
+  mist (`mist`, say the page's `fogColor`), the far layers first by the stagger, until it is all mist at the middle,
+  where the new page is swapped in; it comes out of the mist near layers first, the gradients too. No patches: the mist
+  is even across the view, and it costs what `throughColor` does. The style is the game's call: a page does not store
+  it. Godot: `bg.transfert_into(page, atlas, 3.0, PlaxTransfertStyle.depth_stagger(0.5))`,
+  `PlaxTransfertStyle.dissolve(5, 0.08, 0.5)`, `PlaxTransfertStyle.through_color(Color.WHITE, 0)` or
+  `PlaxTransfertStyle.fog_creep(mist, 1)`; jME: `bg.transfertIntoPage(page, atlas, 3, style)`.
 - **Tint every layer:** `heart.parallaxReader.addColorTransfert(color, seconds)`.
 - **Draw your own things between layers:** give the page an `EMPTY` layer named, say, `birds`, at the depth they fly
   at, and register what draws it: `heart.parallaxReader.setLayerHook("birds", (batch, layer, x, y, width, height) ->

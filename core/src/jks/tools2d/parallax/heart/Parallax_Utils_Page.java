@@ -30,7 +30,7 @@ public final class Parallax_Utils_Page
 
 	/**
 	 * Cross-fades into {@code pageModel}, its layers drawn as {@code style} says; the gradients fade straight, or through
-	 * a {@link TransfertStyle#throughColor}'s colour.
+	 * a {@link TransfertStyle#throughColor}'s colour or a {@link TransfertStyle#fogCreep}'s mist.
 	 */
 	public static void transfertIntoPage(Parallax_Heart ref, WholePage_Model pageModel, float inXSecondes, TransfertStyle style)
 	{

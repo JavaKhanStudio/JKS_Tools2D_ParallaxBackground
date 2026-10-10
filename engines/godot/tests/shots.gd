@@ -2,7 +2,7 @@ extends Node
 ## Stills of every scene of a lab round, as shots/.../ParallaxShots takes them with libGDX: the same page, the
 ## same 60 units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. tools/godot-parallax-shots.sh runs it and
 ## compares the two sets. A scene's "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same
-## step as the lab (a transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1}, r249; "DISSOLVE", r250; "THROUGH_COLOR", r251), its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
+## step as the lab (a transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1}, r249; "DISSOLVE", r250; "THROUGH_COLOR", r251; "FOG_CREEP", r252), its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
 ## the page's EMPTY layers: each stretches the atlas region it names over every tile it is handed (r177). Its
 ## "sequenceSeed" draws the SEQUENCE layers from that game seed (r183).
 ##   godot --path engines/godot res://tests/shots.tscn -- <repo root> <round dir> <out dir>
@@ -96,8 +96,8 @@ static func _transfer(bg: PlaxBackground, root: String, scene: Dictionary, trans
 
 
 ## A transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1} or {"kind": "DISSOLVE", "patches": 5,
-## "softness": 0.08, "stagger": 0.5} or {"kind": "THROUGH_COLOR", "color": "ffffff", "stagger": 0}; none, or another
-## kind: a plain fade (null), as ParallaxShots.style.
+## "softness": 0.08, "stagger": 0.5} or {"kind": "THROUGH_COLOR", "color": "ffffff", "stagger": 0} or {"kind":
+## "FOG_CREEP", "color": "eef2f7", "stagger": 1}; none, or another kind: a plain fade (null), as ParallaxShots.style.
 static func _style(style: Dictionary) -> PlaxTransfertStyle:
 	if style.get("kind", "") == "DEPTH_STAGGER":
 		return PlaxTransfertStyle.depth_stagger(style.get("stagger", 0.0))
@@ -105,6 +105,8 @@ static func _style(style: Dictionary) -> PlaxTransfertStyle:
 		return PlaxTransfertStyle.dissolve(style.get("patches", 5.0), style.get("softness", 0.08), style.get("stagger", 0.0))
 	if style.get("kind", "") == "THROUGH_COLOR":
 		return PlaxTransfertStyle.through_color(Color.html(style.get("color", "ffffff")), style.get("stagger", 0.0))
+	if style.get("kind", "") == "FOG_CREEP":
+		return PlaxTransfertStyle.fog_creep(Color.html(style.get("color", "ffffff")), style.get("stagger", 0.0))
 	return null
 
 

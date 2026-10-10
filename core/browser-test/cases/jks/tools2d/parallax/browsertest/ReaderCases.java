@@ -94,7 +94,9 @@ final class ReaderCases
 				new BrowserCase("reader: throughColorGradesOneSideOfEachSlotInEveryRepeatMode", () -> new ReaderCases().throughColorGradesOneSideOfEachSlotInEveryRepeatMode()),
 				new BrowserCase("reader: throughColorFadesWhatTheEngineCannotGrade", () -> new ReaderCases().throughColorFadesWhatTheEngineCannotGrade()),
 				new BrowserCase("reader: throughColorKeepsEachPagesFogAndTheTint", () -> new ReaderCases().throughColorKeepsEachPagesFogAndTheTint()),
-				new BrowserCase("reader: throughColorTakesTheGradientsThroughItsColor", () -> new ReaderCases().throughColorTakesTheGradientsThroughItsColor()));
+				new BrowserCase("reader: throughColorTakesTheGradientsThroughItsColor", () -> new ReaderCases().throughColorTakesTheGradientsThroughItsColor()),
+				new BrowserCase("reader: fogCreepSinksTheFarLayersFirstAndSwapsAtTheMiddleInEveryRepeatMode", () -> new ReaderCases().fogCreepSinksTheFarLayersFirstAndSwapsAtTheMiddleInEveryRepeatMode()),
+				new BrowserCase("reader: fogCreepTakesTheGradientsAtTheFarLayersPace", () -> new ReaderCases().fogCreepTakesTheGradientsAtTheFarLayersPace()));
 	}
 
 	/** A region of the given pixel size, without any texture behind it. */
@@ -2021,5 +2023,96 @@ final class ReaderCases
 		isTrue(out.equals(new Color(0.2f, 0.1f, 0.25f, 1)), "a plain fade: straight, " + out);
 		TransfertStyle.depthStagger(1).gradient(from, to, 0.5f, out);
 		isTrue(out.equals(new Color(0.2f, 0.1f, 0.25f, 1)), "a depth stagger: straight too, " + out);
+	}
+
+	/**
+	 * How much mist a fog creep's slot is under at {@code t}: its window's ramp over 2t going in, 2 - 2t coming out,
+	 * smoothstepped; the far slots ahead by {@code stagger}.
+	 */
+	private static float labCreep(float t, float stagger, int slot, int total)
+	{
+		float r = labRamp(t < 0.5f ? 2 * t : 2 - 2 * t, stagger, slot, total);
+		return r * r * (3 - 2 * r);
+	}
+
+	/**
+	 * r252: a fog creep begins the outgoing page's layers until the transfert's middle and the incoming page's after, every
+	 * slot at once, never both; each under the mist by as much as labCreep says, the far slots deeper going in and still
+	 * deeper coming out; every slot all mist at the middle. No page fog's shared shader, the grade set back after each.
+	 */
+	void fogCreepSinksTheFarLayersFirstAndSwapsAtTheMiddleInEveryRepeatMode()
+	{
+		float stagger = 1;
+		TransfertStyle style = TransfertStyle.fogCreep(new Color(0.9f, 0.95f, 1.5f, 0.2f), stagger);
+		same(TransfertStyle.Kind.FOG_CREEP, style.getKind(), "a fog creep");
+		equal(1, style.getColorB(), 0, "a channel clamped to 1");
+		for (int mode = 0; mode < 4; mode++)
+		{
+			String repeat = new String[] { "X", "Y", "XY", "none" }[mode];
+			ParallaxPageReader reader = reader(mode != 1 && mode != 3, mode == 1 || mode == 2);
+			GradeEffects effects = new GradeEffects();
+			reader.setLayerEffects(effects);
+			List<ParallaxLayer> from = widened(0.3f, 3), into = widened(0.5f, 3);
+			reader.addLayers(from);
+			reader.addLayersTransfert(page(into), null, 1, style);
+			for (float t : new float[] { 0.125f, 0.25f, 0.375f, 0.5f, 0.625f, 0.75f, 0.875f })
+			{
+				reader.act(0.125f, 0, 0);
+				effects.clear();
+				draws.clear();
+				reader.draw(camera, batch);
+				boolean incoming = t >= 0.5f;
+				float deeper = 2;
+				for (int slot = 0; slot < 3; slot++)
+				{
+					String what = repeat + " at " + t + " slot " + slot;
+					isTrue(effects.gradeOf((incoming ? from : into).get(slot)) == null, what + ": the other page not begun");
+					drawnAt(incoming ? 0.3f : 0.5f, slot, 0, what);
+					float[] grade = effects.gradeOf((incoming ? into : from).get(slot));
+					isTrue(grade != null, what + ": begun");
+					equal(0.9f, grade[0], 0, what + ": red");
+					equal(0.95f, grade[1], 0, what + ": green");
+					equal(1, grade[2], 0, what + ": blue");
+					equal(labCreep(t, stagger, slot, 3), grade[3], 1e-6f, what + ": the slot's mist");
+					isTrue(grade[3] <= deeper, what + ": no deeper in the mist than the slot behind it");
+					if (t == 0.5f)
+						equal(1, grade[3], 0, what + ": all mist at the middle");
+					deeper = grade[3];
+					drawnAt(incoming ? 0.5f : 0.3f, slot, 1, what);
+				}
+				equal(3, effects.layers.size(), repeat + " at " + t + ": one begin per slot");
+				equal(0, effects.grade[3], 0, repeat + " at " + t + ": no grade left on after the draw");
+				equal(0, effects.pageFogs, repeat + ": no page fog in a fog creep");
+			}
+			reader.act(0.125f, 0, 0);
+			isFalse(reader.isInTransfer(), repeat + ": the transfert is over");
+			effects.clear();
+			draws.clear();
+			reader.draw(camera, batch);
+			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun after the transfert");
+			drawnAt(0.5f, 0, 1, repeat + ": the new page, plain");
+		}
+		// The far slot is under some mist before the near one is, and still is after the near one has cleared.
+		isTrue(labCreep(0.125f, stagger, 0, 3) > 0 && labCreep(0.125f, stagger, 2, 3) == 0, "the far layers first");
+		isTrue(labCreep(0.875f, stagger, 0, 3) > 0 && labCreep(0.875f, stagger, 2, 3) == 0, "the near layers clear first");
+	}
+
+	/** A fog creep's gradients: into the mist at the far slot's pace, all mist at the middle, out of it into the new colour. */
+	void fogCreepTakesTheGradientsAtTheFarLayersPace()
+	{
+		Color from = new Color(0, 0, 0.5f, 1), to = new Color(0.4f, 0.2f, 0, 1), out = new Color();
+		TransfertStyle mist = TransfertStyle.fogCreep(Color.WHITE, 0);
+		mist.gradient(from, to, 0.25f, out);
+		isTrue(out.equals(new Color(0.5f, 0.5f, 0.75f, 1)), "a quarter in: halfway from the old colour to the mist, " + out);
+		mist.gradient(from, to, 0.5f, out);
+		isTrue(out.equals(Color.WHITE), "the middle: the mist, " + out);
+		mist.gradient(from, to, 0.75f, out);
+		isTrue(out.equals(new Color(0.7f, 0.6f, 0.5f, 1)), "three quarters in: halfway from the mist to the new colour, " + out);
+		mist.gradient(from, to, 0.125f, out);
+		isTrue(out.b > 0.5f && out.b < 0.6f, "an eighth in: eased, under a fifth of the way to the mist, " + out);
+		mist.gradient(from, to, 1, out);
+		isTrue(out.equals(to), "the end: the new colour, " + out);
+		TransfertStyle.fogCreep(Color.WHITE, 1).gradient(from, to, 0.25f, out);
+		isTrue(out.equals(Color.WHITE), "stagger 1: the far slot's pace, all mist a quarter in, " + out);
 	}
 }

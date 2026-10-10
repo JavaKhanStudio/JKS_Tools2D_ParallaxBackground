@@ -178,7 +178,8 @@ func set_page(new_page: PlaxPage, new_atlas: PlaxAtlas) -> void:
 ## fade, as Parallax_Heart.transfertIntoPage(page, seconds, style): PlaxTransfertStyle.depth_stagger(s) fades each slot
 ## in its own window, the back ones first; PlaxTransfertStyle.dissolve(patches, softness, s) has each slot's incoming
 ## layer eat the outgoing one in patches; PlaxTransfertStyle.through_color(color, s) goes through a colour, white
-## possible, the gradients too.
+## possible, the gradients too; PlaxTransfertStyle.fog_creep(mist, s) sinks the page into a mist and brings the new one
+## out of it.
 func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float, style: PlaxTransfertStyle = null) -> void:
 	if page == null:
 		set_page(new_page, new_atlas)
@@ -618,19 +619,19 @@ func _update_scale() -> void:
 ## The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's; with a
 ## depth stagger, its slot's, each slot at its own point of the fade (ParallaxPageReader.draw). In a dissolve a layer
 ## the mask draws (_masked) is at full opacity while its share of the slot is above 0; an EMPTY or PARTICLES one fades
-## to its share (ParallaxPageReader.drawDissolved). Through a colour only one side of a slot shows, the outgoing layer
-## until halfway through its window, the incoming one after: at full opacity when graded (_graded), else faded out by
+## to its share (ParallaxPageReader.drawDissolved). Through a colour or in a fog creep only one side of a slot shows,
+## the outgoing layer until the slot is all colour, the incoming one after (PlaxTransfertStyle.shows_incoming): at full opacity when graded (_graded), else faded out by
 ## as much as the grade (ParallaxPageReader.drawGraded).
 func _alpha_of(l: Dictionary) -> float:
 	if transfer_layers.is_empty():
 		return 1.0
 	if _style == null or _style.kind == "FADE":
 		return _new_alpha if l.incoming else _old_alpha
-	if _style.kind == "THROUGH_COLOR":
-		var ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
-		if PlaxTransfertStyle.incoming_shows(ramp) != l.incoming:
+	if _style.grades():
+		var total := maxi(layers.size(), transfer_layers.size())
+		if _style.shows_incoming(_new_alpha, l.slot, total) != l.incoming:
 			return 0.0
-		return 1.0 if _graded(l) else 1.0 - PlaxTransfertStyle.grade_of(ramp)
+		return 1.0 if _graded(l) else 1.0 - _style.grade_at(_new_alpha, l.slot, total)
 	var share := _share_of(l)
 	return (1.0 if share > 0 else 0.0) if _masked(l) else share
 
@@ -647,9 +648,10 @@ func _masked(l: Dictionary) -> bool:
 			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER"))
 
 
-## Whether a transfert through a colour mixes the layer toward it now: an IMAGE, SEQUENCE or SHADER one, during one.
+## Whether a transfert through a colour or a fog creep mixes the layer toward it now: an IMAGE, SEQUENCE or SHADER one,
+## during one.
 func _graded(l: Dictionary) -> bool:
-	return (not transfer_layers.is_empty() and _style != null and _style.kind == "THROUGH_COLOR"
+	return (not transfer_layers.is_empty() and _style != null and _style.grades()
 			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER"))
 
 
@@ -699,8 +701,8 @@ func _draw_layer(l: Dictionary) -> void:
 		if l.canvas.material == null:
 			l.canvas.material = PlaxEffects.material("PLAIN")
 			l.dissolve_plain = true
-		var graded_ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
-		PlaxEffects.set_grade(l.canvas.material, _style.color, PlaxTransfertStyle.grade_of(graded_ramp))
+		PlaxEffects.set_grade(l.canvas.material, _style.color,
+				_style.grade_at(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size())))
 	if m.kind == "SHADER":
 		PlaxEffects.apply(l.canvas.material, l, _effect_time)
 	if l.canvas.material:

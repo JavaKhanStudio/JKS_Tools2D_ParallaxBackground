@@ -8,7 +8,8 @@ extends RefCounted
 ## FADE (or no style): every layer slot fades at once. DEPTH_STAGGER: each slot over its own window, the back ones first.
 ## DISSOLVE: in each slot the incoming layer eats the outgoing one in patches (PlaxEffects' dissolved()), over the same
 ## windows. THROUGH_COLOR: in each slot the outgoing layer goes to a colour, then the incoming one comes out of it
-## (PlaxEffects' grade), the gradients too, over the same windows.
+## (PlaxEffects' grade), the gradients too, over the same windows. FOG_CREEP: the whole page sinks into a mist, far
+## layers first, the incoming page swapped in at the middle and coming out of it, near layers first (the same grade).
 
 ## TransfertStyle.MAX_STAGGER.
 const MAX_STAGGER := 2.0
@@ -19,14 +20,14 @@ const MIN_SOFTNESS := 0.01
 const MAX_SOFTNESS := 0.5
 const DISSOLVE_DRIFT := 0.15
 
-## "FADE", "DEPTH_STAGGER", "DISSOLVE" or "THROUGH_COLOR", as TransfertStyle.Kind.
+## "FADE", "DEPTH_STAGGER", "DISSOLVE", "THROUGH_COLOR" or "FOG_CREEP", as TransfertStyle.Kind.
 var kind := "FADE"
 ## How far apart the slots' windows are, 0 to MAX_STAGGER; 0 for FADE.
 var stagger := 0.0
 ## A dissolve's patches across the view, and how soft their edges are; 0 for every other style.
 var patches := 0.0
 var softness := 0.0
-## THROUGH_COLOR's colour, opaque; black for every other style.
+## THROUGH_COLOR's colour or FOG_CREEP's mist, opaque; black for every other style.
 var color := Color.BLACK
 
 
@@ -68,6 +69,17 @@ static func through_color(through: Color, value: float) -> PlaxTransfertStyle:
 	return style
 
 
+## TransfertStyle.fogCreep: the whole page mixed toward `mist` (its alpha ignored, clamped to 0..1), the far layers
+## ahead by `value` (clamped to 0..MAX_STAGGER), all mist at the middle, where the incoming page comes in and out of it,
+## the near layers first.
+static func fog_creep(mist: Color, value: float) -> PlaxTransfertStyle:
+	var style := PlaxTransfertStyle.new()
+	style.kind = "FOG_CREEP"
+	style.stagger = clampf(value, 0, MAX_STAGGER)
+	style.color = Color(clampf(mist.r, 0, 1), clampf(mist.g, 0, 1), clampf(mist.b, 0, 1), 1)
+	return style
+
+
 ## TransfertStyle.gradeOf: how much of the colour a layer of a slot at `ramp` is mixed toward, 0 to 1, peaking at 1
 ## halfway.
 static func grade_of(ramp: float) -> float:
@@ -79,13 +91,32 @@ static func incoming_shows(ramp: float) -> bool:
 	return ramp >= 0.5
 
 
-## TransfertStyle.gradient: a gradient's colour `progress` into a fade from `from` to `to`; THROUGH_COLOR's goes
-## through its colour at the back slot's pace.
+## TransfertStyle.grades: whether the style mixes its layers toward its colour, THROUGH_COLOR and FOG_CREEP.
+func grades() -> bool:
+	return kind == "THROUGH_COLOR" or kind == "FOG_CREEP"
+
+
+## TransfertStyle.showsIncoming: whether slot `slot` of `total` draws its incoming layer at `progress`; THROUGH_COLOR
+## halfway through the slot's window, FOG_CREEP every slot halfway through the fade.
+func shows_incoming(progress: float, slot: int, total: int) -> bool:
+	return progress >= 0.5 if kind == "FOG_CREEP" else incoming_shows(slot_ramp(progress, slot, total))
+
+
+## TransfertStyle.gradeAt: how much of the colour slot `slot` of `total` is mixed toward at `progress`. FOG_CREEP: the
+## slot's ramp over 2 progress going in, 2 - 2 progress coming out, smoothstepped.
+func grade_at(progress: float, slot: int, total: int) -> float:
+	if kind != "FOG_CREEP":
+		return grade_of(slot_ramp(progress, slot, total))
+	var r := slot_ramp(2 * progress if progress < 0.5 else 2 - 2 * progress, slot, total)
+	return r * r * (3 - 2 * r)
+
+
+## TransfertStyle.gradient: a gradient's colour `progress` into a fade from `from` to `to`; THROUGH_COLOR's and
+## FOG_CREEP's go through their colour at the back slot's pace.
 func gradient(from: Color, to: Color, progress: float) -> Color:
-	if kind != "THROUGH_COLOR":
+	if not grades():
 		return from.lerp(to, progress)
-	var ramp := slot_ramp(progress, 0, 1)
-	return (to if incoming_shows(ramp) else from).lerp(color, grade_of(ramp))
+	return (to if shows_incoming(progress, 0, 1) else from).lerp(color, grade_at(progress, 0, 1))
 
 
 ## TransfertStyle.cellsUp: the dissolve's noise cells up a view `view_w` by `view_h`, stretched 2.5 times.

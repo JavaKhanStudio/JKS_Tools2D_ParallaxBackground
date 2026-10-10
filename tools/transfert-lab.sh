@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # The transfert lab (r220): two of round1's pages, back and forth, the transfert (the cross-fade between pages) drawn
-# four times by the real reader, compiled with GWT, in WebGL: A as it ships, B through a colour grade (the reader's tint,
-# shipped API), C fog creep (the lab's own shader, from FOG's noise) and D the library's dissolve (r250). Sliders: the pages, the transfert's
-# length, the hold between, the scroll, B's grade colour, C and D's depth stagger, patches and edge softness.
+# five times by the real reader, compiled with GWT, in WebGL: A as it ships, B through a colour grade (the reader's tint,
+# shipped API), C the library's fog creep (r252), D its dissolve (r250) and E its transfert through a colour (r251).
+# Sliders: the pages, the transfert's length, the hold between, the scroll, B's grade colour, C's mist, E's colour, the
+# depth stagger, D's patches and edge softness.
 #   tools/transfert-lab.sh               the lab: a Chrome window, served until it closes
 #   tools/transfert-lab.sh --sheet DIR   stills, headless: DIR/p000.png, p025, p050, p075 at those percents of the first
 #                                        transfert, p100 just after it, and back050 halfway through the way back
@@ -113,9 +114,9 @@ with sync_playwright() as p:
         page.click("#transfert-copy")
         page.wait_for_function("document.getElementById('transfert-copy-state').textContent !== ''")
         got = json.loads(page.input_value("#transfert-copy-json"))
-        keys = {"pagePair", "seconds", "hold", "cameraScroll", "gradeColour", "throughColour", "depthStagger", "patches", "softEdge"}
+        keys = {"pagePair", "seconds", "hold", "cameraScroll", "gradeColour", "mistColour", "throughColour", "depthStagger", "patches", "softEdge"}
         moved = {"pagePair": {"started": 0, "now": 2}, "depthStagger": {"started": 0.5, "now": 1.2}}
-        if set(got["settings"]) != keys or got["changed"] != moved or got["pages"] != "PurpleFairy \u2194 calm" or got["through"] != "white":
+        if set(got["settings"]) != keys or got["changed"] != moved or got["pages"] != "PurpleFairy \u2194 calm" or got["through"] != "white" or got["mist"] != "white":
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#transfert-copy-state"), json.dumps(got["settings"])))
         page.screenshot(path=frames + "/still.png", full_page=True)
