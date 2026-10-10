@@ -25,7 +25,14 @@ public enum Enum_ShaderEffect
 	/** How many wavelengths FOG's patches run before they repeat: its x frequencies are 7, 17 and 23 per 8. */
 	public static final int FOG_PERIOD = 8;
 
+	/** How many wavelengths FOG's patches run up before they repeat: its y terms come back every 2, 2 and 1.25 (r262). */
+	public static final int FOG_PERIOD_Y = 10;
+
 	/** How many wavelengths this effect runs before it repeats: its phase is wrapped there. */
 	public int period()
 	{return this == FOG ? FOG_PERIOD : 1;}
+
+	/** How many wavelengths this effect runs up before it repeats. */
+	public int periodY()
+	{return this == FOG ? FOG_PERIOD_Y : 1;}
 }

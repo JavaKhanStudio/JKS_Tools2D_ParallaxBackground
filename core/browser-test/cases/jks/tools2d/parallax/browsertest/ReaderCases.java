@@ -73,6 +73,7 @@ final class ReaderCases
 				new BrowserCase("reader: shaderPhaseFollowsTheReaderClockAndWraps", () -> new ReaderCases().shaderPhaseFollowsTheReaderClockAndWraps()),
 				new BrowserCase("reader: fogPhaseWrapsAtItsPeriod", () -> new ReaderCases().fogPhaseWrapsAtItsPeriod()),
 				new BrowserCase("reader: fogNoiseRunsOnAcrossTheTiles", () -> new ReaderCases().fogNoiseRunsOnAcrossTheTiles()),
+				new BrowserCase("reader: fogNoiseRunsOnUpTheTiles", () -> new ReaderCases().fogNoiseRunsOnUpTheTiles()),
 				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ReaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
 				new BrowserCase("reader: aShaderLayerWithoutItsEffectIsDrawnPlain", () -> new ReaderCases().aShaderLayerWithoutItsEffectIsDrawnPlain()),
 				new BrowserCase("reader: shaderNumbersAreTheDrawnImages", () -> new ReaderCases().shaderNumbersAreTheDrawnImages()),
@@ -1112,14 +1113,83 @@ final class ReaderCases
 		ParallaxLayer flipped = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 1, 10, 0);
 		flipped.setFlipX(true);
 		equal(20, flipped.getEffectStartX(), 1e-4f, "flipped on X: from the image's right edge");
-		float[] numbers = GdxLayerEffects.uniforms(flipped, 0, 33, new float[12]);
+		float[] numbers = GdxLayerEffects.uniforms(flipped, 0, 33, 12, 0, new float[15]);
 		equal(33, numbers[9], 0, "the view's width");
 		equal(20, numbers[10], 1e-4f, "where the noise starts");
 		equal(-1, numbers[11], 0, "running leftward");
-		equal(1, GdxLayerEffects.uniforms(fog, 0, 33, numbers)[11], 0, "rightward unflipped");
+		equal(1, GdxLayerEffects.uniforms(fog, 0, 33, 12, 0, numbers)[11], 0, "rightward unflipped");
 
 		fog.resetPosition();
 		equal(0, fog.getEffectStartX(), 1e-4f, "reset: from the decal again");
+	}
+
+	/**
+	 * r262: the same on Y. getEffectStartY is the unwrapped scroll up, modulo 10 wavelengths (FOG's y terms repeat every
+	 * 2, 2 and 1.25), plus the image's edge in its tile; the shader takes it above the reader's drawing height, which
+	 * the reader hands its effects with the view's size.
+	 */
+	void fogNoiseRunsOnUpTheTiles()
+	{
+		// 20 wide, 11.25 tall, a period up of 100: a tile edge is no whole number of periods.
+		ParallaxLayer fog = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 1, 10, 0);
+		fog.setParallaxSpeedRatioY(1);
+		float height = fog.getHeight();
+		equal(11.25f, height, 1e-4f, "the layer's tile");
+		equal(100, fog.getShaderPeriodY(), 0, "10 wavelengths up");
+		equal(0, fog.getEffectStartY(), 0, "unscrolled: the noise starts at the image's bottom edge");
+
+		float scrolled = 0;
+		for (int i = 0; i < 13; i++)
+		{
+			fog.act(1, 0, 15, false, true);
+			scrolled -= 15;
+			isTrue(Math.abs(fog.getScrollY()) < height, "the position itself still wraps within a tile, " + fog.getScrollY());
+			float apart = (fog.getEffectStartY() - scrolled) % 100;
+			isTrue(Math.abs(apart) < 1e-3f || Math.abs(Math.abs(apart) - 100) < 1e-3f,
+					"after " + -scrolled + " units the noise starts " + fog.getEffectStartY() + ", the unwrapped " + scrolled + " modulo 100");
+			isTrue(Math.abs(fog.getEffectStartY()) < 100 + height, "and stays a small number");
+		}
+		equal(0, fog.getEffectStartX(), 0, "X untouched by a wrap on Y");
+
+		ParallaxLayer still = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 1, 10, 0);
+		still.setParallaxSpeedRatioY(1);
+		still.act(1, 0, 15, false, false);
+		equal(-15, still.getEffectStartY(), 1e-4f, "not tiled on Y: never wrapped, the noise its image had");
+
+		ParallaxLayer flipped = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 1, 10, 0);
+		flipped.setFlipY(true);
+		equal(11.25f, flipped.getEffectStartY(), 1e-4f, "flipped on Y: from the image's top edge");
+		float[] numbers = GdxLayerEffects.uniforms(flipped, 0, 33, 12, 2, new float[15]);
+		equal(12, numbers[12], 0, "the view's height");
+		equal(13.25f, numbers[13], 1e-4f, "where the noise starts, above the drawing height");
+		equal(-1, numbers[14], 0, "running down");
+		equal(1, GdxLayerEffects.uniforms(fog, 0, 33, 12, 2, numbers)[14], 0, "upward unflipped");
+
+		ParallaxPageReader reader = reader(false, true);
+		reader.setDrawingHeight(3);
+		final float[] view = new float[3];
+		reader.setLayerEffects(new LayerEffects()
+		{
+			@Override
+			public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+			{return false;}
+
+			@Override
+			public void end(Batch batch, ParallaxLayer layer)
+			{}
+
+			@Override
+			public void setView(float width, float height, float floor)
+			{
+				view[0] = width;
+				view[1] = height;
+				view[2] = floor;
+			}
+		});
+		reader.draw(camera, batch);
+		equal(40, view[0], 1e-4f, "the reader hands its effects the view's width");
+		equal(22.5f, view[1], 1e-4f, "its height");
+		equal(3, view[2], 0, "and its drawing height");
 	}
 
 	/** During a cross-fade both pages' SHADER layers are drawn through their effect at the same phase, faded. */

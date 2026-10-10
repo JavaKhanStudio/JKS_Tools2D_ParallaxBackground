@@ -217,7 +217,7 @@ More:
   `WholePage_Model.forceLoad(atlas)` builds no effect; `forceLoad(atlas, files)` finds them with `files`.
 - **Water and fog:** a `SHADER` layer is an image layer drawn through one of the effects the library ships: `WAVE`, a
   horizontal ripple (water, heat), and `FOG`, drifting patches that thin the image's opacity (a plain white band is a
-  fog over the layers behind it; on a layer repeating on X its patches run on across the tiles, with no cut at a tile
+  fog over the layers behind it; on a layer repeating on X or Y its patches run on across the tiles, with no cut at a tile
   edge). Each is written for libGDX (GLSL ES 1.0, so WebGL too: `GdxLayerEffects`), Godot
   and jME, and the three draw the same frames (`engines/godot/tests/shaders`). The effect works on the layer's own
   image, not on what is behind it, and moves on the reader's clock: both pages of a cross-fade show it at the same

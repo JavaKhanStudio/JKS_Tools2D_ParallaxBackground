@@ -47,6 +47,14 @@
    "atlasDir": "core/test-data/shaders",
    "name": "fog-across-the-tiles",
    "about": "r229: the mist alone, 20 of 40 units wide, its noise period (40) twice the image, tiling on X over near-black gradients: the noise runs on across every tile edge, also after the layer wraps (t6, t12), instead of starting again at each"
+  },
+  {
+   "id": "s07",
+   "page": "engines/godot/tests/shaders/s07.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "speedY": 30,
+   "name": "fog-up-the-tiles",
+   "about": "r262: an even slab through FOG, 20 of 40 units wide and 5 tall, its noise period up (50) ten times the image, tiling on Y and scrolled up so it wraps there (t6, t12): the noise runs on across every tile edge on Y instead of starting again at each"
   }
  ]
 }

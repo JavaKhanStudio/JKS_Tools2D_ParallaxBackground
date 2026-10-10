@@ -58,7 +58,9 @@ final class WebGlCases
 			if (!program.isCompiled())
 				failed.add(effect + ": " + program.getLog());
 			else
-				for (String uniform : new String[] { "u_region", "u_size", "u_effect" })
+				// The numbers each reads: FOG places its noise by the view (along(), r229, r262), not inside the image.
+				for (String uniform : effect == Enum_ShaderEffect.FOG ? new String[] { "u_effect", "u_across", "u_up" }
+						: new String[] { "u_region", "u_size", "u_effect" })
 					if (program.fetchUniformLocation(uniform, false) < 0)
 						failed.add(effect + " has no " + uniform);
 			program.dispose();
