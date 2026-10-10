@@ -65,7 +65,7 @@ A reader is three pieces, and the third is where the work is:
   `transfert_into(page, atlas, seconds)` (`transfertIntoPage`) and `tint_to(color, seconds)` (`addColorTransfert`).
 
 Usage is in the README (*In Godot 4*). `godot --path engines/godot` is the libGDX demo game (the editor repository's `demo/`) in Godot: Hiver and Printemps, SPACE cross-fades, T picks its
-style (the depth stagger, then the plain fade, named on the screen), N tints, LEFT/RIGHT scroll, R resets
+style (the depth stagger, the plain fade, the dissolve, through white, the fog creep, named on the screen), N tints, LEFT/RIGHT scroll, R resets
 (`tools/start-demo-check.sh` presses SPACE and N off screen; `tools/start-demo-check.sh godot mid` saves a frame
 halfway through the transfert). `./gradlew :jme:run` has the same keys.
 
