@@ -1,0 +1,10 @@
+{
+ "round": "r273-wave-seam-y",
+ "about": "r273: black and white vertical stripes through WAVE (amplitude 0.3, speed 0), 20 of 40 units wide and 5 tall, tiling on Y only, scrolled up (speedY 30) so it wraps on Y. w15: wavelength 1.5, which does not divide the image's height: a ripple taken inside one tile (local().y) jumps sideways at every tile edge on Y. w10: wavelength 1, five to the image: no cut either way. Written by tools/r273-wave-seam-y/make.py, rendered with tools/parallax-lab-shots.sh tools/r273-wave-seam-y OUT; tools/r273-wave-seam-y/seam.py OUT/*.png measures the worst row step.",
+ "scenes": [
+  {"id": "w15", "page": "tools/r273-wave-seam-y/w15.jplax", "atlasDir": "tools/r273-wave-seam-y", "speedY": 30,
+   "name": "wavelength-not-dividing-the-image", "about": "wavelength 1.5 against an image 5 tall"},
+  {"id": "w10", "page": "tools/r273-wave-seam-y/w10.jplax", "atlasDir": "tools/r273-wave-seam-y", "speedY": 30,
+   "name": "wavelength-dividing-the-image", "about": "wavelength 1: five to the image, the control"}
+ ]
+}
