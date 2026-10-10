@@ -1,0 +1,60 @@
+{
+ "topHalf_top": {
+  "r": 0.05,
+  "g": 0.07,
+  "b": 0.12,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 0.05,
+  "g": 0.07,
+  "b": 0.12,
+  "a": 1.0
+ },
+ "topHalfSize": 0.5,
+ "bottomHalf_top": {
+  "r": 0.05,
+  "g": 0.07,
+  "b": 0.12,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 0.05,
+  "g": 0.07,
+  "b": 0.12,
+  "a": 1.0
+ },
+ "bottomHalfSize": 0.5,
+ "repeatOnX": false,
+ "repeatOnY": true,
+ "pageModel": {
+  "atlasName": "stripes.atlas",
+  "outside": false,
+  "pageList": [
+   {
+    "regionName": "stripes",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.03,
+    "parallaxScalingSpeedY": 0.03,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.5,
+    "decal_X_Ratio": 25,
+    "decal_Y_Ratio": 0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false,
+    "name": "stripes",
+    "kind": "SHADER",
+    "shaderEffect": "WAVE",
+    "shaderAmplitude": 0.3,
+    "shaderWavelength": 1.0,
+    "shaderSpeed": 0.0
+   }
+  ]
+ },
+ "useOriginalSize": true
+}
