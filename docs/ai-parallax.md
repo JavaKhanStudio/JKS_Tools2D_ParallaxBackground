@@ -5,6 +5,10 @@ pieces are not all the same? Yes, with a local Stable Diffusion and four passes.
 machine. `tools/r239-ai-strips/run.sh` reproduces it bit for bit, and `tools/r239-ai-strips/page` is the page it makes,
 drawn by `core` (`tools/parallax-lab-shots.sh tools/r239-ai-strips/page build/lab/r239`).
 
+**From a theme to a page, in one command (r246):** `tools/ai-page.sh --theme "snowy pine valley at dawn" --colours
+8f9bb8,6f88a0,1c3036 OUT` runs the four passes below for each depth, packs the atlas, writes the `.jplax` by the
+`parallax-pages` skill's rules (its "Generating a page" section), lints it and renders it. `--help` has the rest.
+
 ## What works
 
 | Pass | Tool | What it does |
@@ -102,14 +106,28 @@ it (r244); an SDXL ControlNet is untried.
 - **SD grows pines** past their silhouette, up to the strip's top row, where they are cut flat. Leave headroom.
 - **seam.py on pixel art.** The ratio means nothing there: the median step inside a cell is 0. Look at the alpha step,
   and with your eyes.
+- **The seed grows the trees, not the prompt** (r246). Over one pine shape, seed 13 paints real pines and seed 130 leaves
+  `sil.py`'s smooth spikes, with or without the theme in the prompt. `ai_page.py` measures the cut's outline (mean
+  second difference of its top edge: trees 4.4 to 5.1, spikes 1.9 to 2.3, the bare shape 1.1) and repaints a pine
+  strip under 3.5 on the next seed.
+- **Snow under a pale sky keys half clear** (r246): the colour key reads it as sky, and the layer shows holes. And at
+  0.65 SD paints a horizon behind a hill strip (a snowy plain, lakes), which the key keeps. `layer.py --mask --grow`
+  takes `sil.py`'s shape too: opaque 8 px inside it (SD moves an outline by a few px: less lets sky in at the peaks),
+  keyed by colour within `--grow` px of it (8, the pines 40: they grow past it), clear beyond.
+- **A join on a tree's flank** (r246): the strip loops, but its join fell where the outline steps steeply, above three
+  quarters of the strip's own column steps, and a `SEQUENCE` repeats that join at every segment: lint (e) at 21 and 22
+  against 20. `sil.py --quiet-join` turns the shape so the join falls on its flattest 16 px; variants turn by their
+  kept seed's, so they still fit.
+- **The sky colour is the prompt's**, always pale: a sunset or a night needs `--sky` (and so the fog colour, the sky's
+  horizon). `--keep` lays the page out again from the strips already painted.
 
 ## Still wrong in the frames
 
 - r242's "bird" in the mountain strip was not painted by SD: `layer.py` drew black a pale ridge too far from any solid
   pixel to take an edge colour (0/0). Fixed. `run.sh`'s negative prompt names birds, animals and creatures: a creature
   would stand still in a scrolling background. Nothing yet catches one SD paints *inside* a layer's mass.
-- Each layer is painted on its own: nothing makes their colours agree. The page's depth fog (`fogStrength`, r217) can
-  give the distance, so layers could be painted at full contrast.
+- Each layer is painted on its own: nothing makes their colours agree but `--colours`, which the init image carries.
+  `ai-page.sh` paints them at full contrast and gives the distance with the page's depth fog (`fogStrength`, r217).
 
 ## Plan
 
@@ -122,5 +140,4 @@ Tasks under r239, tagged `#assets`:
    does no better: spikes, and a painted sky.
 4. r245 (`#runtime`): lint (`tools/parallax_lab.py`) skips `SEQUENCE` layers in its layout checks, so it neither
    counts them as covering (a false (b) on this page) nor checks their joins.
-5. r246, after r242 to r244: from a prompt to a page. `run.sh` as one tool (theme, layer count, size, pixel or
-   painted), and a section in the `parallax-pages` skill, once 1 to 3 have settled what goes in it.
+5. r246 (done): from a theme to a page, `tools/ai-page.sh`, and the `parallax-pages` skill's "Generating a page".
