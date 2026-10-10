@@ -262,7 +262,7 @@ def _atlas_regions(page, atlas_dir):
 
 SCREEN_W, SCREEN_H = 40.0, 22.5  # the lab's world at 1280x720, the camera's view before any scroll
 SOLID, SEAM = 0.99, 20
-EDGE_PROBE = 1e-3  # world units above a bottom edge where (b) asks what covers it
+EDGE_PROBE = 1e-3  # world units inside a layer's top or bottom edge where (a) and (b) ask what covers it
 COVERED = 0.9  # a layer edge behind nearer layers this opaque at its height does not show
 EDGE = SCREEN_H / 200  # an edge within half a percent of the screen's top or bottom is off it
 
@@ -396,8 +396,8 @@ def _resampled(rows, k, n):
 
 
 def _join_on_screen(left, right, p):
-    """The mean step on screen (0-255, parallax_regions.step) between left's right column and right's left column, both at the layer's height,
-    in the rows on screen, as parallax_regions.measure takes a region's seam."""
+    """The mean step on screen (0-255, parallax_regions.step) between left's right column and right's left
+    column, both at the layer's height, in the rows on screen, as parallax_regions.measure takes a region's seam."""
     low, high = max(0.0, -p.bottom / p.height), min(1.0, (SCREEN_H - p.bottom) / p.height)
     if high <= low:
         return 0
@@ -440,8 +440,8 @@ def _rows_on_screen(img, p):
 
 
 def _column_steps(img):
-    """The mean step on screen (0-255, parallax_regions.step) between neighbour columns of img, as parallax_regions.measure takes the seam between
-    its edges, at up to 256 places across it."""
+    """The mean step on screen (0-255, parallax_regions.step) between neighbour columns of img, as
+    parallax_regions.measure takes the seam between its edges, at up to 256 places across it."""
     from parallax_regions import step
     w, h = img.size
     px = img.load()
@@ -506,12 +506,11 @@ def _edge_faults(placed):
     for k, p in enumerate(placed):
         name = label(p.layer)
         top = p.bottom + p.height
-        eps = p.height / len(p.rows) / 2
-        if p.cut_top and p.rows[-1] < SOLID and _on_screen(top) and not _covered_by_nearer(placed, k, top - eps):
+        # At the edge itself, not half this layer's row inside it: a nearer pixel-art layer's rows are finer, and
+        # the row half ours inside may be thinner or more solid than the one on the edge (r281 bottom, r282 top).
+        if p.cut_top and p.rows[-1] < SOLID and _on_screen(top) and not _covered_by_nearer(placed, k, top - EDGE_PROBE):
             problems.append(f'(a) layer {p.index} ({name}): its art touches its top edge without filling it, and that'
                             f' edge is on screen at {_pct(top)}% of its height: the art shows cut flat')
-        # At the edge itself, not half this layer's row above it: a nearer pixel-art layer's rows are finer, and the row
-        # half ours above may be a thinner one than the solid one on the edge (r281).
         if p.rows[0] > 0 and _on_screen(p.bottom) and not _covered_by_nearer(placed, k, p.bottom + EDGE_PROBE):
             problems.append(f'(b) layer {p.index} ({name}): its art reaches its bottom edge, on screen at'
                             f' {_pct(p.bottom)}% of its height, and no nearer layer covers that edge')

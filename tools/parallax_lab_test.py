@@ -215,7 +215,8 @@ class FaintAlphaSeams(unittest.TestCase):
         self.assertLess(seam, 25, f'seam {seam}')
 
     def test_a_hard_colour_cut_is_still_one(self):
-        white, black = self.strip((255, 255, 255, 255), (255, 255, 255, 255)), self.strip((0, 0, 0, 255), (0, 0, 0, 255))
+        white = self.strip((255, 255, 255, 255), (255, 255, 255, 255))
+        black = self.strip((0, 0, 0, 255), (0, 0, 0, 255))
         self.assertGreater(lab._join_on_screen(white, black, self.p), lab.SEAM)
 
     def test_the_art_s_own_steps_are_weighed_the_same(self):
@@ -254,6 +255,25 @@ class PixelArtCover(unittest.TestCase):
     def test_a_band_ending_under_the_edge_does_not(self):
         """The same front with only three solid rows (to 1.25): the edge at 1.33 is in its 0.89 row."""
         self.assertEqual(1, len(self.faults([1.0] * 3 + [0.89] * 2 + [0.7] * 30)))
+
+
+class PixelArtCoverTop(unittest.TestCase):
+    """(a) on the same layers turned over (r282): a 17-row layer from 0 to 14.17 whose art touches its top edge without
+    filling it, before a 35-row front from 0 to 14.58. The front's row 34 holds the edge (14.17), its row 33 the point
+    half a back row below it (13.75)."""
+
+    def faults(self, row33, row34):
+        behind = lab.Placed(2, {'regionName': 'l2', 'regionPosition': 0}, [1.0] * 16 + [0.5], 0.0, 14.17, True, True)
+        front = lab.Placed(3, {'regionName': 'l3', 'regionPosition': 0}, [1.0] * 33 + [row33, row34], 0.0, 14.58,
+                           True, False)
+        return [f for f in lab._edge_faults([behind, front]) if f.startswith('(a) layer 2')]
+
+    def test_a_solid_row_on_the_edge_covers_it(self):
+        self.assertEqual([], self.faults(0.5, 1.0))
+
+    def test_a_thin_row_on_the_edge_does_not(self):
+        """Solid half a back row below, thin on the edge: the cut shows."""
+        self.assertEqual(1, len(self.faults(1.0, 0.5)))
 
 
 if __name__ == '__main__':
