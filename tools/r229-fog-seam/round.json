@@ -1,0 +1,20 @@
+{
+ "round": "r229-fog-seam",
+ "about": "r229: the shaders round's mist alone, amplitude 1, half the world wide (20 of 40 units, so it tiles twice across the view), over near-black gradients. w5: wavelength 5, a noise period of 40, twice the image: the noise should jump at every tile edge. w25: wavelength 2.5, a period of 20, the image's width: no jump expected. Rendered with tools/parallax-lab-shots.sh tools/r229-fog-seam OUT.",
+ "scenes": [
+  {
+   "id": "w5",
+   "page": "tools/r229-fog-seam/w5.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "period-twice-the-image",
+   "about": "wavelength 5: the noise repeats every 40 units, the image every 20"
+  },
+  {
+   "id": "w25",
+   "page": "tools/r229-fog-seam/w25.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "period-the-image",
+   "about": "wavelength 2.5: the noise repeats every 20 units, as the image does"
+  }
+ ]
+}
