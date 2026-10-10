@@ -12,6 +12,7 @@ uniform vec3 m_FogColor;
 uniform vec4 m_Dissolve;
 uniform vec2 m_Cells;
 uniform vec4 m_Grade;
+uniform vec3 m_Across;
 
 varying vec2 texCoord;
 varying vec4 vertColor;
@@ -48,6 +49,13 @@ vec2 local()
         (m_Region.w - texCoord.y) / (m_Region.w - m_Region.y) * m_Size.y);
 }
 
+// Where the fragment is along the layer, in world units: local().x carried on across its tiles (ParallaxLayer.getEffectStartX),
+// so FOG's noise has no seam at a tile edge (r229).
+float along()
+{
+    return m_Across.z * (viewPos.x * m_Across.x - m_Across.y);
+}
+
 void main()
 {
 #if defined(PLAIN)
@@ -55,7 +63,7 @@ void main()
     gl_FragColor = hazed(vertColor * texture2D(m_ColorMap, texCoord));
 #elif defined(FOG)
     // FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines, x at 7, 17 and 23 per 8 wavelengths.
-    vec2 p = (local() + vec2(m_Effect.z, 0.0)) / m_Effect.y;
+    vec2 p = (vec2(along(), local().y) + vec2(m_Effect.z, 0.0)) / m_Effect.y;
     float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
         + sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
         + sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;

@@ -65,6 +65,14 @@ public interface LayerEffects
 	default void endPageFog(Batch batch)
 	{}
 
+	/**
+	 * The width of the view the layers begun next are drawn in, in world units: FOG's noise is laid across it, from where
+	 * each layer's starts ({@link ParallaxLayer#getEffectStartX}), so it runs on across the tiles (r229). The reader calls
+	 * it every frame before its layers.
+	 */
+	default void setViewWidth(float width)
+	{}
+
 	/** {@link #setDissolve} sides: no mask; the outgoing layer, kept where the mask is not; the incoming, where it is. */
 	int DISSOLVE_NONE = 0, DISSOLVE_OUTGOING = 1, DISSOLVE_INCOMING = 2;
 

@@ -84,7 +84,9 @@ repair.
   three, and run both frame checks on `engines/godot/tests/shaders`; a new effect goes in `Enum_ShaderEffect` (append
   only), `plax_effects.gd`'s `EFFECTS` and that round, strong enough that leaving it out fails
   (`tools/r180-shader-round/strength.sh`). The reader draws them through the engine's `LayerEffects`, never
-  `Batch.setShader`, which `JmeBatch` throws on.
+  `Batch.setShader`, which `JmeBatch` throws on. FOG's x is `along()`, the view's x minus
+  `ParallaxLayer.getEffectStartX` (what `act()` wrapped kept in `wrappedX`, Godot's `wrapped_x`), not the tile's own:
+  the noise runs on across the tiles (r229, round `shaders` s06, `tools/r229-fog-seam/mutate.sh`).
 - A page's depth fog (`fogStrength`, `fogColor`, format 10; format 9's `shaderHaze` is read as its strength) ends
   every one of those shaders in `hazed()`, toward the fog's colour (`u_fog`), and draws an IMAGE or SEQUENCE layer
   through a `PLAIN` one (jME's `Plain` define, Godot's `"PLAIN"` material); libGDX instead draws them all through one

@@ -24,6 +24,8 @@ MaterialDef ParallaxEffect {
         Vector2 Cells : 0.0 0.0
         // A transfert through a colour: the colour, and how much the layer is mixed toward it after the fog.
         Vector4 Grade : 0.0 0.0 0.0 0.0
+        // FOG across the layer: the view's width in world units, where the noise starts from its left, 1 or -1 (flipped).
+        Vector3 Across : 0.0 0.0 1.0
     }
 
     Technique {

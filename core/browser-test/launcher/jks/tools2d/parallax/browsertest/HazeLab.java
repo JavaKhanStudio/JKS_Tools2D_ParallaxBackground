@@ -293,7 +293,13 @@ public class HazeLab extends ApplicationAdapter
 		float haze;
 		float[] white;
 		private final ShaderProgram[] programs = new ShaderProgram[Enum_ShaderEffect.values().length];
-		private final float[] numbers = new float[9];
+		private final float[] numbers = new float[12];
+		private float viewWidth;
+
+		@Override
+		public void setViewWidth(float width)
+		{viewWidth = width;}
+
 		private ShaderProgram previous;
 
 		@Override
@@ -313,10 +319,12 @@ public class HazeLab extends ApplicationAdapter
 			batch.setShader(program);
 			if (!batch.isDrawing())
 				program.bind();
-			GdxLayerEffects.uniforms(layer, phase, numbers);
+			GdxLayerEffects.uniforms(layer, phase, viewWidth, numbers);
 			program.setUniformf("u_region", numbers[0], numbers[1], numbers[2], numbers[3]);
 			program.setUniformf("u_size", numbers[4], numbers[5]);
 			program.setUniformf("u_effect", numbers[6], numbers[7], numbers[8]);
+			// Only FOG reads it: a WAVE program has none, and a by-name set would throw.
+			program.setUniformf(program.fetchUniformLocation("u_across", false), numbers[9], numbers[10], numbers[11]);
 			program.setUniformf("u_haze", haze);
 			program.setUniformf("u_fog", white[0], white[1], white[2]);
 			return true;

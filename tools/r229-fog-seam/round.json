@@ -1,6 +1,6 @@
 {
  "round": "r229-fog-seam",
- "about": "r229: the shaders round's mist alone, amplitude 1, half the world wide (20 of 40 units, so it tiles twice across the view), over near-black gradients. w5: wavelength 5, a noise period of 40, twice the image: the noise should jump at every tile edge. w25: wavelength 2.5, a period of 20, the image's width: no jump expected. Rendered with tools/parallax-lab-shots.sh tools/r229-fog-seam OUT.",
+ "about": "r229: the shaders round's mist alone, amplitude 1, half the world wide (20 of 40 units, so it tiles twice across the view), over near-black gradients. w5: wavelength 5, a noise period of 40, twice the image: before r229's fix the noise jumped at every tile edge; it now runs on across them (the shaders round's s06 is this page). w25: wavelength 2.5, a period of 20, the image's width: no jump either way. Rendered with tools/parallax-lab-shots.sh tools/r229-fog-seam OUT; tools/r229-fog-seam/seam.py OUT/*.png measures the worst column step.",
  "scenes": [
   {
    "id": "w5",

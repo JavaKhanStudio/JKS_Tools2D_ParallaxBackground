@@ -95,6 +95,11 @@ public class ParallaxLayer
 	protected float parallaxSpeedRatioY;
 
 	protected float currentDistanceX, currentDistanceY;
+	/**
+	 * How far act() has wrapped currentDistanceX back on X, kept within the effect's period ({@link #getShaderPeriod}):
+	 * FOG's noise runs on across the tiles from {@link #getEffectStartX} (r229).
+	 */
+	protected float wrappedX;
 
 	protected float padX;
 	protected float padXFactor;
@@ -247,6 +252,7 @@ public class ParallaxLayer
 	{
 		currentDistanceX = decalPercentX * (worldWidth / 100);
 		currentDistanceY = decalPercentY * (worldHeight / 100);
+		wrappedX = 0;
 	}
 
 	/**
@@ -385,6 +391,7 @@ public class ParallaxLayer
 		copy.packedHeightRatio = packedHeightRatio;
 		copy.currentDistanceX = currentDistanceX;
 		copy.currentDistanceY = currentDistanceY;
+		copy.wrappedX = wrappedX;
 		copy.padX = padX;
 		copy.padXFactor = padXFactor;
 		copy.padY = padY;
@@ -414,7 +421,12 @@ public class ParallaxLayer
 		// Keep the offset within one tile so the tiling loops stay short and floats stay precise.
 		float totalWidth = getTotalWidth();
 		if (onX && totalWidth > 0)
+		{
+			float before = currentDistanceX;
 			currentDistanceX %= totalWidth;
+			float period = getShaderPeriod();
+			wrappedX = period > 0 ? (wrappedX + before - currentDistanceX) % period : 0;
+		}
 
 		float totalHeight = getTotalHeight();
 		if (onY && totalHeight > 0)
@@ -723,6 +735,23 @@ public class ParallaxLayer
 		double period = (double) shaderWavelength * (shaderEffect == null ? 1 : shaderEffect.period());
 		double phase = (seconds * shaderSpeed) % period;
 		return (float) (phase < 0 ? phase + period : phase);
+	}
+
+	/** Where the effect repeats, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD} for FOG; 0 without a wavelength. */
+	public float getShaderPeriod()
+	{return shaderWavelength > 0 ? shaderWavelength * (shaderEffect == null ? 1 : shaderEffect.period()) : 0;}
+
+	/**
+	 * Where FOG's noise starts on X, in world units from the view's left edge, wrapped to {@link #getShaderPeriod}: the
+	 * left edge of the image of the tile at currentDistanceX, its right edge when flipped on X (the noise then runs
+	 * leftward), carried back by what act() wrapped. The noise runs on from there across every tile, so a tile edge is no
+	 * seam (r229); a layer that never wraps on X keeps the noise its image always had.
+	 */
+	public float getEffectStartX()
+	{
+		float start = currentDistanceX + wrappedX + getRegionWidth() * (flipX ? 1 - trimLeft : trimLeft);
+		float period = getShaderPeriod();
+		return period > 0 ? start % period : start;
 	}
 
 	/** A SEQUENCE layer's segments as the page names them, each with its weight; null for other kinds. */

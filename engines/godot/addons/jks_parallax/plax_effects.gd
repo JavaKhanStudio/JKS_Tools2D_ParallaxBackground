@@ -10,7 +10,9 @@ extends RefCounted
 ## color toward fog_color by, then toward grade's rgb by its a (a transfert through a colour, set_grade), its alpha
 ## times dissolved() (fog_of). dissolve, cells: a transfert's dissolve (side 0 none,
 ## 1 outgoing, 2 incoming; ramp, softness, drift; the noise's cells across and up the view), which dissolved() reads at
-## SCREEN_UV, y turned up as libGDX's view. TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
+## SCREEN_UV, y turned up as libGDX's view. across: the view's width in page units, where the layer's noise starts from
+## its left (effect_start_x), 1 or -1 (flipped on X); along() reads it at SCREEN_UV: where the fragment is along the
+## layer, local().x carried on across its tiles, so FOG has no seam at a tile edge (r229). TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
 ## the page's depth fog reaches, or any a dissolve masks or a transfert through a colour grades.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
@@ -27,12 +29,16 @@ uniform vec3 fog_color = vec3(0.93, 0.95, 0.97);
 uniform vec4 dissolve;
 uniform vec2 cells;
 uniform vec4 grade;
+uniform vec3 across = vec3(0.0, 0.0, 1.0);
 varying vec4 tint;
 void vertex() {
 	tint = COLOR;
 }
 vec2 local(vec2 uv) {
 	return vec2((uv.x - region.x) / (region.z - region.x) * size.x, (region.w - uv.y) / (region.w - region.y) * size.y);
+}
+float along(vec2 screen_uv) {
+	return across.z * (screen_uv.x * across.x - across.y);
 }
 float dissolved(vec2 screen_uv) {
 	if (dissolve.x < 0.5)
@@ -61,7 +67,7 @@ const _WAVE := _HEAD + """void fragment() {
 ## FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines whose x frequencies are 7, 17 and 23 per
 ## 8 wavelengths (FOG_PERIOD).
 const _FOG := _HEAD + """void fragment() {
-	vec2 p = (local(UV) + vec2(effect.z, 0.0)) / effect.y;
+	vec2 p = (vec2(along(SCREEN_UV), local(UV).y) + vec2(effect.z, 0.0)) / effect.y;
 	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
 		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
 		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
@@ -102,6 +108,24 @@ static func phase(model: Dictionary, seconds: float) -> float:
 	return p + period if p < 0 else p
 
 
+## ParallaxLayer.getShaderPeriod: where the effect repeats, one wavelength, FOG_PERIOD for FOG; 0 without a wavelength.
+static func period(model: Dictionary) -> float:
+	var wavelength: float = model.get("shaderWavelength", 0.0)
+	if not wavelength > 0:
+		return 0.0
+	return wavelength * (FOG_PERIOD if model.get("shaderEffect", "") == "FOG" else 1)
+
+
+## ParallaxLayer.getEffectStartX: where FOG's noise starts on X, in page units from the view's left, wrapped to the
+## period: the image's left edge in the tile at distance_x (its right edge flipped on X), carried back by what
+## _act_layer wrapped.
+static func effect_start_x(l: Dictionary) -> float:
+	var trim: float = (1 - l.trim_left) if l.model.flipX else l.trim_left
+	var start: float = l.distance_x + l.wrapped_x + l.width * trim
+	var p := period(l.model)
+	return fmod(start, p) if p > 0 else start
+
+
 ## What is drawn of an atlas region `r`, in texels: half a texel in on every side, as ParallaxLayer.insetByHalfATexel
 ## (r218). A linear sample at a tile's edge then never reads the atlas pixel past it, transparent in an atlas packed
 ## without duplicatePadding.
@@ -110,8 +134,9 @@ static func drawn_rect(r: Dictionary) -> Rect2:
 	return rect.grow(-0.5) if r.width >= 2 and r.height >= 2 else rect
 
 
-## GdxLayerEffects.uniforms: the numbers of a SHADER layer `l` of PlaxBackground, set on its material.
-static func apply(m: ShaderMaterial, l: Dictionary, seconds: float) -> void:
+## GdxLayerEffects.uniforms: the numbers of a SHADER layer `l` of PlaxBackground, set on its material; `view_w` the
+## view's width in page units.
+static func apply(m: ShaderMaterial, l: Dictionary, seconds: float, view_w: float) -> void:
 	var r: Dictionary = l.region
 	var texture_size: Vector2 = r.texture.get_size()
 	var model: Dictionary = l.model
@@ -125,6 +150,7 @@ static func apply(m: ShaderMaterial, l: Dictionary, seconds: float) -> void:
 		amplitude = clampf(amplitude, 0, 1)
 	m.set_shader_parameter("effect", Vector3(amplitude if on else 0.0, model.shaderWavelength if on else 1.0,
 			phase(model, seconds) if on else 0.0))
+	m.set_shader_parameter("across", Vector3(view_w, effect_start_x(l), -1.0 if model.flipX else 1.0))
 
 
 ## LayerEffects.setDissolve on a layer's material: `side` 0 (none), 1 (outgoing) or 2 (incoming), at the slot's `ramp`,

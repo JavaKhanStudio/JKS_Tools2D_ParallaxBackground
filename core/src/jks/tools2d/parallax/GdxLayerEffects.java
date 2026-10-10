@@ -53,6 +53,9 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	 * at 0, no grade and no dissolve the color itself. u_dissolve, u_cells: a transfert's dissolve
 	 * ({@link LayerEffects#setDissolve}): side (0 none, 1 outgoing, 2 incoming), ramp, softness, drift; the noise's cells
 	 * across and up the view. dissolved(): FOG's noise over the view, the layer's share of the slot at the ramp.
+	 * u_across: the view's width in world units, where the layer's noise starts from the view's left
+	 * ({@link ParallaxLayer#getEffectStartX}), 1 or -1 (flipped on X). along(): where the fragment is along the layer
+	 * in world units, local().x carried on across its tiles, so FOG's noise has no seam at a tile edge (r229).
 	 */
 	private static final String FRAGMENT_HEAD = "#ifdef GL_ES\n"
 			+ "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
@@ -72,6 +75,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "uniform vec4 u_dissolve;\n"
 			+ "uniform vec2 u_cells;\n"
 			+ "uniform vec4 u_grade;\n"
+			+ "uniform vec3 u_across;\n"
 			+ "varying vec2 v_view;\n"
 			+ "const float TAU = 6.2831853;\n"
 			+ "float dissolved()\n"
@@ -94,6 +98,10 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "{\n"
 			+ "	return vec2((v_texCoords.x - u_region.x) / (u_region.z - u_region.x) * u_size.x,\n"
 			+ "		(u_region.w - v_texCoords.y) / (u_region.w - u_region.y) * u_size.y);\n"
+			+ "}\n"
+			+ "float along()\n"
+			+ "{\n"
+			+ "	return u_across.z * (v_view.x * u_across.x - u_across.y);\n"
 			+ "}\n";
 
 	/** WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region. */
@@ -108,12 +116,13 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	/**
 	 * FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines (no hash: the same on every GPU), whose
 	 * x frequencies are 7, 17 and 23 per 8 wavelengths: the patches come back only every 8 wavelengths (r216, at 1, 2
-	 * and 3 per wavelength they came back every one), and the phase wraps there without a jump.
+	 * and 3 per wavelength they came back every one), and the phase wraps there without a jump. Across the layer, not
+	 * inside one tile: a tile edge is no seam (r229).
 	 */
 	static final String FOG = FRAGMENT_HEAD
 			+ "void main()\n"
 			+ "{\n"
-			+ "	vec2 p = (local() + vec2(u_effect.z, 0.0)) / u_effect.y;\n"
+			+ "	vec2 p = (vec2(along(), local().y) + vec2(u_effect.z, 0.0)) / u_effect.y;\n"
 			+ "	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))\n"
 			+ "		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)\n"
 			+ "		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;\n"
@@ -151,7 +160,9 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	private final boolean[] failed = new boolean[EFFECTS.length + 1];
 	private final int[] region = new int[EFFECTS.length + 1], size = new int[EFFECTS.length + 1], effect = new int[EFFECTS.length + 1],
 			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1], dissolve = new int[EFFECTS.length + 1],
-			cells = new int[EFFECTS.length + 1], grade = new int[EFFECTS.length + 1];
+			cells = new int[EFFECTS.length + 1], grade = new int[EFFECTS.length + 1], across = new int[EFFECTS.length + 1];
+	/** The view's width in world units, which FOG's noise is laid across ({@link #setViewWidth}). */
+	private float viewWidth;
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}): side, ramp, softness, drift; cells. */
 	private float dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift, cellsX, cellsY;
 	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
@@ -164,7 +175,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	private boolean pageFogFailed, inPageFog;
 	/** Its uniforms' locations: -1 for one the GPU's compiler dropped, which is then not set. */
 	private int pageFogTint, pageFogColor, pageFogIncoming;
-	private final float[] numbers = new float[9];
+	private final float[] numbers = new float[12];
 
 	/** The vertex shader of every effect: SpriteBatch's own. */
 	public static String vertex()
@@ -218,10 +229,11 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		// Bound by setShader while the batch draws; bound here when it does not, for the uniforms.
 		if (!batch.isDrawing())
 			program.bind();
-		uniforms(layer, phase, numbers);
+		uniforms(layer, phase, viewWidth, numbers);
 		program.setUniformf(region[index], numbers[0], numbers[1], numbers[2], numbers[3]);
 		program.setUniformf(size[index], numbers[4], numbers[5]);
 		program.setUniformf(effect[index], numbers[6], numbers[7], numbers[8]);
+		program.setUniformf(across[index], numbers[9], numbers[10], numbers[11]);
 		program.setUniformf(this.haze[index], Math.max(0, Math.min(1, haze)));
 		program.setUniformf(fog[index], fogR, fogG, fogB);
 		program.setUniformf(dissolve[index], dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift);
@@ -229,6 +241,10 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		program.setUniformf(grade[index], gradeR, gradeG, gradeB, Math.max(0, Math.min(1, gradeAmount)));
 		return true;
 	}
+
+	@Override
+	public void setViewWidth(float width)
+	{viewWidth = width;}
 
 	@Override
 	public boolean setGrade(float r, float g, float b, float amount)
@@ -341,6 +357,20 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		return out;
 	}
 
+	/**
+	 * {@link #uniforms(ParallaxLayer, float, float[])}, then where FOG's noise lies across the layer, into
+	 * {@code out[9..11]}: the view's width in world units, where the noise starts from the view's left
+	 * ({@link ParallaxLayer#getEffectStartX}), and 1, or -1 for a layer flipped on X.
+	 */
+	public static float[] uniforms(ParallaxLayer layer, float phase, float viewWidth, float[] out)
+	{
+		uniforms(layer, phase, out);
+		out[9] = viewWidth;
+		out[10] = layer.getEffectStartX();
+		out[11] = layer.isFlipX() ? -1 : 1;
+		return out;
+	}
+
 	private ShaderProgram program(int index)
 	{
 		if (programs[index] != null || failed[index])
@@ -363,6 +393,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		dissolve[index] = program.fetchUniformLocation("u_dissolve", false);
 		cells[index] = program.fetchUniformLocation("u_cells", false);
 		grade[index] = program.fetchUniformLocation("u_grade", false);
+		across[index] = program.fetchUniformLocation("u_across", false);
 		programs[index] = program;
 		return program;
 	}

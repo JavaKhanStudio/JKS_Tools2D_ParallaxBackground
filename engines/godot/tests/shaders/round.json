@@ -40,6 +40,13 @@
    "about": "s01 cross-fading into itself (its layers cloned) while tinting orange: both pages shade on one clock, faded and tinted",
    "transfer": {"at": 4, "seconds": 4},
    "tint": {"at": 4, "seconds": 4, "color": [1.0, 0.55, 0.3, 1.0]}
+  },
+  {
+   "id": "s06",
+   "page": "engines/godot/tests/shaders/s06.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "fog-across-the-tiles",
+   "about": "r229: the mist alone, 20 of 40 units wide, its noise period (40) twice the image, tiling on X over near-black gradients: the noise runs on across every tile edge, also after the layer wraps (t6, t12), instead of starting again at each"
   }
  ]
 }
