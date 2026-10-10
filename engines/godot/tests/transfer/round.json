@@ -1,6 +1,6 @@
 {
  "round": "transfer",
- "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it; t06 starts a second at 5 s (r98); t07 and t08 fade each layer slot in its own window, back slots first (depth stagger, r249); t09 and t10 dissolve (r250); t11 and t12 go through a colour (r251); t13 and t14 creep into a mist and out of it (r252); t15 dissolves a fogged page with WAVE and FOG layers (r256). Read by shots/.../ParallaxShots and engines/godot/tests/shots.gd.",
+ "about": "Cross-fades and tints (r94): each scene starts one 4 s in and lasts 4 s, so t6 is mid-fade and t12 after it; t06 starts a second at 5 s (r98); t07 and t08 fade each layer slot in its own window, back slots first (depth stagger, r249); t09 and t10 dissolve (r250); t11 and t12 go through a colour (r251); t13 and t14 creep into a mist and out of it (r252); t15 dissolves a fogged page with WAVE and FOG layers (r256); t16 goes through a colour far from its page's heavy fog (r258). Read by shots/.../ParallaxShots and engines/godot/tests/shots.gd.",
  "scenes": [
   {
    "id": "t01",
@@ -125,6 +125,14 @@
    "name": "dissolve-from-a-fogged-page",
    "about": "f01 (a page fog, two WAVE layers and a FOG one) dissolving into Calm at t09's values, started at 3 s (r256): at t6, 75% in, the WAVE and FOG layers mostly eaten through their own shaders (a shader without the mask moves t6 by 4.6 to 7.8 / 255), the fogged IMAGE ones through PLAIN with their fog, Calm's unfogged ones through PLAIN too",
    "transfer": {"at": 3, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}}
+  },
+  {
+   "id": "t16",
+   "page": "engines/godot/tests/fog/f02.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "through-gold-from-a-night-fog",
+   "about": "f02 (a night-blue fog of 0.06, the back layers near hidden, a SEQUENCE layer) through a pale gold into Calm, every slot at once, started at 4.5 s (r258): at t6 every layer of f02 well into the gold over its fog, so the fog mixed in after the grade instead of before shows as blue left over the gold",
+   "transfer": {"at": 4.5, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "THROUGH_COLOR", "color": "ffe0a0", "stagger": 0}}
   }
  ]
 }
