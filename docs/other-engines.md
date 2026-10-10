@@ -64,8 +64,10 @@ A reader is three pieces, and the third is where the work is:
   `Parallax_Heart`: `speed_constant_x/y`, `speed_consumable_x/y`, `act(delta)`, `reset_positions()`,
   `transfert_into(page, atlas, seconds)` (`transfertIntoPage`) and `tint_to(color, seconds)` (`addColorTransfert`).
 
-Usage is in the README (*In Godot 4*). `godot --path engines/godot` is the libGDX demo game (the editor repository's `demo/`) in Godot: Hiver and Printemps, SPACE cross-fades, N tints, LEFT/RIGHT
-scroll, R resets (`tools/start-demo-check.sh` presses SPACE and N off screen).
+Usage is in the README (*In Godot 4*). `godot --path engines/godot` is the libGDX demo game (the editor repository's `demo/`) in Godot: Hiver and Printemps, SPACE cross-fades, T picks its
+style (the depth stagger, then the plain fade, named on the screen), N tints, LEFT/RIGHT scroll, R resets
+(`tools/start-demo-check.sh` presses SPACE and N off screen; `tools/start-demo-check.sh godot mid` saves a frame
+halfway through the transfert). `./gradlew :jme:run` has the same keys.
 
 **How it is checked.** `tools/godot-parallax-shots.sh` renders the same pages in libGDX (`shots/`'s `ParallaxShots`, the grading lab's `--shots` split out in r130)
 and in Godot (`engines/godot/tests/shots.gd`), with the same 60 units/s scroll stepped at 1/60 s, 0, 6 and 12 s in,

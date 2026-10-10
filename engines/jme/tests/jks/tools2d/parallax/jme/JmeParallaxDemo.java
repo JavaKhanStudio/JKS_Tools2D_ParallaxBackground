@@ -16,26 +16,35 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
 
+import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
  * The jME twin of the editor repository's demo/ (ParallaxDemo): Hiver and Printemps, read from their .plax files, behind a spinning cube.
- * SPACE winter/spring, N night tint, LEFT / RIGHT scroll, R reset. {@code ./gradlew :jme:run} (from the repository
- * root: it reads core/test-data/samples). {@code -Dparallax.jme.demoShot=out.png} presses SPACE and N, saves the frame once both
- * fades are over, and quits (tools/start-demo-check.sh).
+ * SPACE winter/spring, T transfert style (depth stagger or fade), N night tint, LEFT / RIGHT scroll, R reset.
+ * {@code ./gradlew :jme:run} (from the repository root: it reads core/test-data/samples).
+ * {@code -Dparallax.jme.demoShot=out.png} presses SPACE and N, saves the frame once both fades are over, and quits
+ * (tools/start-demo-check.sh); with {@code -Dparallax.jme.demoShotMid=true}, SPACE alone and the frame halfway through.
  */
 public class JmeParallaxDemo extends SimpleApplication implements ActionListener
 {
 	private static final float TRANSFER_SECONDS = 3;
 	private static final float MANUAL_SPEED = 400;
 	private static final Color NIGHT_TINT = new Color(0.45f, 0.5f, 0.85f, 1);
+	/** What SPACE switches through, T picks: the back layers change first, then the front ones (TransfertStyle). */
+	private static final TransfertStyle[] STYLES = {TransfertStyle.depthStagger(1), TransfertStyle.FADE};
+	private static final String[] STYLE_NAMES = {"depth stagger", "fade"};
+	private static final String HUD = "SPACE: winter/spring   T: style (%s)   N: night tint   LEFT/RIGHT: scroll   R: reset";
 
 	private PlaxBackground bg;
 	private WholePage_Model winter, spring;
 	private TextureAtlas winterAtlas, springAtlas;
 	private boolean showingWinter = true, night, left, right;
+	private int style;
+	private BitmapText hud;
 	private Geometry cube;
 	private final String demoShot = System.getProperty("parallax.jme.demoShot");
+	private final boolean demoShotMid = Boolean.getBoolean("parallax.jme.demoShotMid");
 	private final FrameGrab grab = new FrameGrab();
 	private float elapsed;
 	private boolean pressed;
@@ -76,17 +85,18 @@ public class JmeParallaxDemo extends SimpleApplication implements ActionListener
 		cube.setMaterial(material);
 		rootNode.attachChild(cube);
 
-		BitmapText hud = new BitmapText(guiFont);
-		hud.setText("SPACE: winter/spring   N: night tint   LEFT/RIGHT: scroll   R: reset");
+		hud = new BitmapText(guiFont);
+		hud.setText(String.format(HUD, STYLE_NAMES[style]));
 		hud.setLocalTranslation(10, cam.getHeight() - 10, 0);
 		guiNode.attachChild(hud);
 
 		inputManager.addMapping("season", new KeyTrigger(KeyInput.KEY_SPACE));
+		inputManager.addMapping("style", new KeyTrigger(KeyInput.KEY_T));
 		inputManager.addMapping("night", new KeyTrigger(KeyInput.KEY_N));
 		inputManager.addMapping("reset", new KeyTrigger(KeyInput.KEY_R));
 		inputManager.addMapping("left", new KeyTrigger(KeyInput.KEY_LEFT));
 		inputManager.addMapping("right", new KeyTrigger(KeyInput.KEY_RIGHT));
-		inputManager.addListener(this, "season", "night", "reset", "left", "right");
+		inputManager.addListener(this, "season", "style", "night", "reset", "left", "right");
 		guiViewPort.addProcessor(grab);
 	}
 
@@ -102,7 +112,13 @@ public class JmeParallaxDemo extends SimpleApplication implements ActionListener
 		else if (name.equals("season"))
 		{
 			showingWinter = !showingWinter;
-			bg.transfertIntoPage(showingWinter ? winter : spring, showingWinter ? winterAtlas : springAtlas, TRANSFER_SECONDS);
+			bg.transfertIntoPage(showingWinter ? winter : spring, showingWinter ? winterAtlas : springAtlas, TRANSFER_SECONDS,
+				STYLES[style]);
+		}
+		else if (name.equals("style"))
+		{
+			style = (style + 1) % STYLES.length;
+			hud.setText(String.format(HUD, STYLE_NAMES[style]));
 		}
 		else if (name.equals("night"))
 		{
@@ -129,9 +145,10 @@ public class JmeParallaxDemo extends SimpleApplication implements ActionListener
 			{
 				pressed = true;
 				onAction("season", true, 0);
-				onAction("night", true, 0);
+				if (!demoShotMid)
+					onAction("night", true, 0);
 			}
-			else if (elapsed > 0.5f + TRANSFER_SECONDS + 0.5f)
+			else if (pressed && elapsed > 0.5f + (demoShotMid ? TRANSFER_SECONDS / 2 : TRANSFER_SECONDS + 0.5f))
 			{
 				if (grab.isPending())
 					return;

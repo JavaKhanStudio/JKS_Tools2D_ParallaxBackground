@@ -1,11 +1,13 @@
 extends Node
 ## The Godot twin of the editor repository's demo/ (ParallaxDemo): Hiver and Printemps cross-faded on demand, through the reader.
-## SPACE winter/spring, N night tint, LEFT / RIGHT scroll, R reset. A page given after "--" is shown alone:
+## SPACE winter/spring, T transfert style (depth stagger or fade), N night tint, LEFT / RIGHT scroll, R reset. A page given after "--" is shown alone:
 ##   godot --path engines/godot -- /abs/path/page.jplax [/abs/path/atlas_dir]
 
 const TRANSFER_SECONDS := 3.0
 const MANUAL_SPEED := 400.0
 const NIGHT_TINT := Color(0.45, 0.5, 0.85)
+## What SPACE switches through, T picks: the back layers change first, then the front ones (PlaxTransfertStyle).
+const STYLE_NAMES := ["depth stagger", "fade"]
 
 var bg := PlaxBackground.new()
 var hud := Label.new()
@@ -15,6 +17,8 @@ var winter_atlas: PlaxAtlas
 var spring_atlas: PlaxAtlas
 var showing_winter := true
 var night := false
+var styles: Array[PlaxTransfertStyle] = [PlaxTransfertStyle.depth_stagger(1), PlaxTransfertStyle.fade()]
+var style_index := 0
 
 
 func _ready() -> void:
@@ -41,7 +45,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_SPACE:
 			showing_winter = not showing_winter
 			bg.transfert_into(winter if showing_winter else spring,
-				winter_atlas if showing_winter else spring_atlas, TRANSFER_SECONDS)
+				winter_atlas if showing_winter else spring_atlas, TRANSFER_SECONDS, styles[style_index])
+		KEY_T:
+			style_index = (style_index + 1) % styles.size()
 		KEY_N:
 			night = not night
 			bg.tint_to(NIGHT_TINT if night else Color.WHITE, TRANSFER_SECONDS)
@@ -54,5 +60,5 @@ func _process(_delta: float) -> void:
 		bg.speed_consumable_x = -MANUAL_SPEED
 	elif Input.is_key_pressed(KEY_RIGHT):
 		bg.speed_consumable_x = MANUAL_SPEED
-	hud.text = "SPACE: winter/spring   N: night tint   LEFT/RIGHT: scroll   R: reset   %d fps" \
-		% Engine.get_frames_per_second()
+	hud.text = "SPACE: winter/spring   T: style (%s)   N: night tint   LEFT/RIGHT: scroll   R: reset   %d fps" \
+		% [STYLE_NAMES[style_index], Engine.get_frames_per_second()]
