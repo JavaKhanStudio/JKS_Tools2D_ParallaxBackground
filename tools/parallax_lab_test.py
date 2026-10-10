@@ -235,5 +235,26 @@ class FaintAlphaSeams(unittest.TestCase):
         self.assertLess(regions_tool.measure(img)['seam'], 25)
 
 
+class PixelArtCover(unittest.TestCase):
+    """(b) on a pixel-art page (r281, r239's postapo-pixel): a 17-row layer whose art fills its bottom edge at 1.33,
+    before a 35-row front from 0 whose bottom four rows (to 1.67) are solid and the fifth 0.89 opaque. The edge is
+    covered; half the back layer's row above it (1.75) is in the front's thinner fifth row."""
+
+    def placed(self, front_rows):
+        behind = lab.Placed(2, {'regionName': 'l2', 'regionPosition': 0}, [1.0] * 17, 1.33, 14.17, True, False)
+        front = lab.Placed(3, {'regionName': 'l3', 'regionPosition': 0}, front_rows, 0.0, 14.58, True, False)
+        return [behind, front]
+
+    def faults(self, front_rows):
+        return [f for f in lab._edge_faults(self.placed(front_rows)) if f.startswith('(b) layer 2')]
+
+    def test_a_solid_band_on_the_edge_covers_it(self):
+        self.assertEqual([], self.faults([1.0] * 4 + [0.89] + [0.7] * 30))
+
+    def test_a_band_ending_under_the_edge_does_not(self):
+        """The same front with only three solid rows (to 1.25): the edge at 1.33 is in its 0.89 row."""
+        self.assertEqual(1, len(self.faults([1.0] * 3 + [0.89] * 2 + [0.7] * 30)))
+
+
 if __name__ == '__main__':
     unittest.main()
