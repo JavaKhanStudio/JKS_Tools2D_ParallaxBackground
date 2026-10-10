@@ -79,6 +79,13 @@ def image_of(region, pages):
     return full
 
 
+def step(a, b):
+    """How far two RGBA pixels differ on screen (0-255): their colours premultiplied by their alpha, and their alphas.
+    A pixel at alpha 0 keeps whatever colour the cut left (255,0,0 or 0,0,0): straight colours made a faint alpha-20
+    haze ending against one a step of 255 (r280)."""
+    return max(abs(a[3] - b[3]), *(abs(a[c] * a[3] - b[c] * b[3]) / 255 for c in range(3)))
+
+
 def measure(img):
     w, h = img.size
     small = img.resize((min(w, 400), min(h, 200)), Image.NEAREST) if w > 400 or h > 200 else img
@@ -106,7 +113,7 @@ def measure(img):
     for y in range(0, h, max(1, h // 200)):
         a, b = full[0, y], full[w - 1, y]
         if a[3] > 16 or b[3] > 16:
-            edge.append(max(abs(a[i] - b[i]) for i in range(4)))
+            edge.append(step(a, b))
     seam = round(sum(edge) / len(edge)) if edge else 0
     return {'aspect': round(w / h, 2), 'seam': seam, 'art': [pct(art[-1] + 1), pct(art[0])] if art else None,
             'solid': round(100 * solid / sh), 'bottom': round(100 * rows[-1]),

@@ -395,18 +395,19 @@ def _resampled(rows, k, n):
 
 
 def _join_on_screen(left, right, p):
-    """The mean difference (0-255) between left's right column and right's left column, both at the layer's height,
+    """The mean step on screen (0-255, parallax_regions.step) between left's right column and right's left column, both at the layer's height,
     in the rows on screen, as parallax_regions.measure takes a region's seam."""
     low, high = max(0.0, -p.bottom / p.height), min(1.0, (SCREEN_H - p.bottom) / p.height)
     if high <= low:
         return 0
+    from parallax_regions import step
     h = min(200, max(left.height, right.height))
     a = left.crop((left.width - 1, 0, left.width, left.height)).resize((1, h)).load()
     b = right.crop((0, 0, 1, right.height)).resize((1, h)).load()
     edge = []
     for y in range(round((1 - high) * h), round((1 - low) * h)):
         if a[0, y][3] > 16 or b[0, y][3] > 16:
-            edge.append(max(abs(a[0, y][c] - b[0, y][c]) for c in range(4)))
+            edge.append(step(a[0, y], b[0, y]))
     return round(sum(edge) / len(edge)) if edge else 0
 
 
@@ -438,15 +439,16 @@ def _rows_on_screen(img, p):
 
 
 def _column_steps(img):
-    """The mean difference (0-255) between neighbour columns of img, as parallax_regions.measure takes the seam between
+    """The mean step on screen (0-255, parallax_regions.step) between neighbour columns of img, as parallax_regions.measure takes the seam between
     its edges, at up to 256 places across it."""
+    from parallax_regions import step
     w, h = img.size
     px = img.load()
     rows = range(0, h, max(1, h // 200))
     xs = range(w - 1) if w <= 257 else sorted({round(k * (w - 2) / 255) for k in range(256)})
     steps = []
     for x in xs:
-        edge = [max(abs(a[c] - b[c]) for c in range(4)) for y in rows for a, b in [(px[x, y], px[x + 1, y])]
+        edge = [step(a, b) for y in rows for a, b in [(px[x, y], px[x + 1, y])]
                 if a[3] > 16 or b[3] > 16]
         if edge:
             steps.append(sum(edge) / len(edge))
