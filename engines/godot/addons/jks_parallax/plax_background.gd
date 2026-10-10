@@ -437,6 +437,8 @@ func _sync_transfer_positions() -> void:
 				- from.model.decal_Y_Ratio * (_world_height / 100.0))
 		to.travel_x = to.distance_x
 		to.travel_y = to.distance_y
+		# Its own noise, from its own tile: what the outgoing layer wrapped is not its.
+		to.wrapped_x = 0.0
 
 
 func _finish_transfert() -> void:
@@ -509,6 +511,7 @@ func _reset_position(l: Dictionary) -> void:
 	# The same, never wrapped: which tile a PARTICLES instance belongs to, and how far a VIEW one's particles drifted.
 	l.travel_x = l.distance_x
 	l.travel_y = l.distance_y
+	l.wrapped_x = 0.0
 
 
 func _process(delta: float) -> void:
@@ -554,7 +557,11 @@ func _act_layer(l: Dictionary, delta: float, speed_x: float, speed_y: float) -> 
 	# Kept within one tile so the tiling loops stay short and floats stay precise.
 	var total_w: float = l.width + m.padX
 	if _repeat_x and total_w > 0:
+		var before: float = l.distance_x
 		l.distance_x = fmod(l.distance_x, total_w)
+		# What was wrapped, within the effect's period: FOG's noise runs on across the tiles (ParallaxLayer.wrappedX).
+		var period := PlaxEffects.period(m)
+		l.wrapped_x = fmod(l.wrapped_x + before - l.distance_x, period) if period > 0 else 0.0
 	var total_h: float = l.height + m.padY
 	if _repeat_y and total_h > 0:
 		l.distance_y = fmod(l.distance_y, total_h)
@@ -565,6 +572,7 @@ func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool
 	l.model = model
 	l.distance_x = 0.0
 	l.distance_y = 0.0
+	l.wrapped_x = 0.0
 	_size_layer(l)
 	return l
 
@@ -704,7 +712,7 @@ func _draw_layer(l: Dictionary) -> void:
 		PlaxEffects.set_grade(l.canvas.material, _style.color,
 				_style.grade_at(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size())))
 	if m.kind == "SHADER":
-		PlaxEffects.apply(l.canvas.material, l, _effect_time)
+		PlaxEffects.apply(l.canvas.material, l, _effect_time, view_w)
 	if l.canvas.material:
 		l.canvas.material.set_shader_parameter("haze", l.haze)
 		l.canvas.material.set_shader_parameter("fog_color", l.fog_color)

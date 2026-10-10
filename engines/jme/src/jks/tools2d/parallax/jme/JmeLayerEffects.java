@@ -42,6 +42,7 @@ public class JmeLayerEffects implements LayerEffects
 		final Vector4f dissolve = new Vector4f();
 		final Vector2f cells = new Vector2f();
 		final Vector4f grade = new Vector4f();
+		final Vector3f across = new Vector3f();
 
 		Shaded(Material material, Enum_ShaderEffect kind)
 		{
@@ -53,7 +54,9 @@ public class JmeLayerEffects implements LayerEffects
 	private final AssetManager assets;
 	/** By layer, dropped with it: a page's layers go when the game stops showing it. */
 	private final Map<ParallaxLayer, Shaded> shaded = new WeakHashMap<>();
-	private final float[] numbers = new float[9];
+	private final float[] numbers = new float[12];
+	/** The view's width in world units, which FOG's noise is laid across ({@link #setViewWidth}). */
+	private float viewWidth;
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}). */
 	private float side, ramp, softness, drift, cellsX, cellsY;
 	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
@@ -89,13 +92,15 @@ public class JmeLayerEffects implements LayerEffects
 			s = new Shaded(material, kind);
 			shaded.put(layer, s);
 		}
-		GdxLayerEffects.uniforms(layer, phase, numbers);
+		GdxLayerEffects.uniforms(layer, phase, viewWidth, numbers);
 		s.region.set(numbers[0], numbers[1], numbers[2], numbers[3]);
 		s.size.set(numbers[4], numbers[5]);
 		s.effect.set(numbers[6], numbers[7], numbers[8]);
 		s.material.setVector4("Region", s.region);
 		s.material.setVector2("Size", s.size);
 		s.material.setVector3("Effect", s.effect);
+		s.across.set(numbers[9], numbers[10], numbers[11]);
+		s.material.setVector3("Across", s.across);
 		s.material.setFloat("Haze", Math.max(0, Math.min(1, haze)));
 		s.fog.set(fogR, fogG, fogB);
 		s.material.setVector3("FogColor", s.fog);
@@ -120,6 +125,10 @@ public class JmeLayerEffects implements LayerEffects
 		this.cellsY = cellsY;
 		return true;
 	}
+
+	@Override
+	public void setViewWidth(float width)
+	{viewWidth = width;}
 
 	@Override
 	public boolean setGrade(float r, float g, float b, float amount)

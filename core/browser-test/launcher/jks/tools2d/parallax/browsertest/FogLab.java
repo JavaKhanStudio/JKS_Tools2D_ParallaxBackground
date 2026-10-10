@@ -316,8 +316,8 @@ public class FogLab extends ApplicationAdapter
 	 */
 	static final class PatchHeightEffects implements LayerEffects
 	{
-		static final String SHIPPED = "vec2 p = (local() + vec2(u_effect.z, 0.0)) / u_effect.y;";
-		static final String SCALED = "vec2 p = (local() + vec2(u_effect.z, 0.0)) / (u_effect.y * vec2(1.0, u_height));";
+		static final String SHIPPED = "vec2 p = (vec2(along(), local().y) + vec2(u_effect.z, 0.0)) / u_effect.y;";
+		static final String SCALED = "vec2 p = (vec2(along(), local().y) + vec2(u_effect.z, 0.0)) / (u_effect.y * vec2(1.0, u_height));";
 
 		private final float[] heights;
 		private final int panel;
@@ -325,7 +325,13 @@ public class FogLab extends ApplicationAdapter
 		/** The layer begun is drawn by {@link #shipped}. */
 		private boolean byShipped;
 		private final GdxLayerEffects shipped = new GdxLayerEffects();
-		private final float[] numbers = new float[9];
+		private final float[] numbers = new float[12];
+		private float viewWidth;
+
+		@Override
+		public void setViewWidth(float width)
+		{viewWidth = width;}
+
 		private ShaderProgram fog, previous;
 
 		PatchHeightEffects(float[] heights, int panel)
@@ -350,10 +356,12 @@ public class FogLab extends ApplicationAdapter
 			batch.setShader(program);
 			if (!batch.isDrawing())
 				program.bind();
-			GdxLayerEffects.uniforms(layer, phase, numbers);
+			GdxLayerEffects.uniforms(layer, phase, viewWidth, numbers);
 			program.setUniformf("u_region", numbers[0], numbers[1], numbers[2], numbers[3]);
 			program.setUniformf("u_size", numbers[4], numbers[5]);
 			program.setUniformf("u_effect", numbers[6], numbers[7], numbers[8]);
+			// Only FOG reads it: a WAVE program has none, and a by-name set would throw.
+			program.setUniformf(program.fetchUniformLocation("u_across", false), numbers[9], numbers[10], numbers[11]);
 			if (layer.getShaderEffect() == Enum_ShaderEffect.FOG)
 				program.setUniformf("u_height", heights[panel]);
 			program.setUniformf("u_haze", fogAmount);

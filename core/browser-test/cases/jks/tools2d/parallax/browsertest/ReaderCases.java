@@ -72,6 +72,7 @@ final class ReaderCases
 				new BrowserCase("reader: shaderLayerIsTiledThroughItsEffectInEveryRepeatMode", () -> new ReaderCases().shaderLayerIsTiledThroughItsEffectInEveryRepeatMode()),
 				new BrowserCase("reader: shaderPhaseFollowsTheReaderClockAndWraps", () -> new ReaderCases().shaderPhaseFollowsTheReaderClockAndWraps()),
 				new BrowserCase("reader: fogPhaseWrapsAtItsPeriod", () -> new ReaderCases().fogPhaseWrapsAtItsPeriod()),
+				new BrowserCase("reader: fogNoiseRunsOnAcrossTheTiles", () -> new ReaderCases().fogNoiseRunsOnAcrossTheTiles()),
 				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ReaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
 				new BrowserCase("reader: aShaderLayerWithoutItsEffectIsDrawnPlain", () -> new ReaderCases().aShaderLayerWithoutItsEffectIsDrawnPlain()),
 				new BrowserCase("reader: shaderNumbersAreTheDrawnImages", () -> new ReaderCases().shaderNumbersAreTheDrawnImages()),
@@ -1074,6 +1075,51 @@ final class ReaderCases
 		equal(1, fog.getShaderPhase(12.5), 1e-4f, "25 wraps to 1 past 24");
 		equal(20, fog.getShaderPhase(-2), 1e-4f, "-4 wraps to 20");
 		equal(1, shaded(0.5f, 3, 2).getShaderPhase(2), 1e-4f, "WAVE still wraps at one wavelength");
+	}
+
+	/**
+	 * r229: FOG's noise starts where the layer would be had it never wrapped on X, kept within its period, so it runs on
+	 * across the tiles instead of starting again at each one: getEffectStartX is the unwrapped scroll, modulo 8
+	 * wavelengths, plus the image's edge in its tile; the view's width and the direction go to the shader with it.
+	 */
+	void fogNoiseRunsOnAcrossTheTiles()
+	{
+		// 20 wide, a period of 80: a tile edge is no whole number of periods.
+		ParallaxLayer fog = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 1, 10, 0);
+		fog.setParallaxSpeedRatioX(1);
+		float width = fog.getWidth();
+		equal(20, width, 1e-4f, "the layer's tile");
+		equal(80, fog.getShaderPeriod(), 0, "8 wavelengths");
+		equal(0, fog.getEffectStartX(), 0, "unscrolled: the noise starts at the image's left edge");
+
+		float scrolled = 0;
+		for (int i = 0; i < 11; i++)
+		{
+			fog.act(1, 25, 0, true, false);
+			scrolled -= 25;
+			isTrue(Math.abs(fog.getScrollX()) < width, "the position itself still wraps within a tile, " + fog.getScrollX());
+			float apart = (fog.getEffectStartX() - scrolled) % 80;
+			isTrue(Math.abs(apart) < 1e-3f || Math.abs(Math.abs(apart) - 80) < 1e-3f,
+					"after " + -scrolled + " units the noise starts " + fog.getEffectStartX() + ", the unwrapped " + scrolled + " modulo 80");
+			isTrue(Math.abs(fog.getEffectStartX()) < 80 + width, "and stays a small number");
+		}
+
+		ParallaxLayer still = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 1, 10, 0);
+		still.setParallaxSpeedRatioX(1);
+		still.act(1, 25, 0, false, false);
+		equal(-25, still.getEffectStartX(), 1e-4f, "not tiled on X: never wrapped, the noise its image had");
+
+		ParallaxLayer flipped = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.FOG, 1, 10, 0);
+		flipped.setFlipX(true);
+		equal(20, flipped.getEffectStartX(), 1e-4f, "flipped on X: from the image's right edge");
+		float[] numbers = GdxLayerEffects.uniforms(flipped, 0, 33, new float[12]);
+		equal(33, numbers[9], 0, "the view's width");
+		equal(20, numbers[10], 1e-4f, "where the noise starts");
+		equal(-1, numbers[11], 0, "running leftward");
+		equal(1, GdxLayerEffects.uniforms(fog, 0, 33, numbers)[11], 0, "rightward unflipped");
+
+		fog.resetPosition();
+		equal(0, fog.getEffectStartX(), 1e-4f, "reset: from the decal again");
 	}
 
 	/** During a cross-fade both pages' SHADER layers are drawn through their effect at the same phase, faded. */

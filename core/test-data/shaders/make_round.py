@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Writes the shaders round (r180, docs/effect-layers.md phase 3): core/test-data/shaders/mist.png and HiverFog.atlas
 (Hiver's regions, then a white mist band on a page of its own), and engines/godot/tests/shaders/s01-s04.jplax, each a
-conformance page (c01, c02, c03, c05) with a layer turned into a WAVE and a mist band drawn through FOG.
+conformance page (c01, c02, c03, c05) with a layer turned into a WAVE and a mist band drawn through FOG, and s06.jplax,
+the mist alone tiling on X (r229).
 Run from the repository root: python3 core/test-data/shaders/make_round.py (needs Pillow)."""
 import json, math
 from PIL import Image
@@ -89,3 +90,13 @@ def s04(layers):
 
 for source, out, change in [('c01', 's01', s01), ('c02', 's02', s02), ('c03', 's03', s03), ('c05', 's04', s04)]:
     page(source, out, change)
+
+# s06 (r229): the mist alone, half the world wide, its noise period (8 wavelengths of 5) twice the image, over near-black
+# gradients: before r229 it cut at every tile edge; now it runs on across them. tools/r229-fog-seam's w5.
+dark = {'r': 0.05, 'g': 0.07, 'b': 0.12, 'a': 1.0}
+json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
+           'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
+           'repeatOnX': True, 'repeatOnY': False,
+           'pageModel': {'atlasName': 'HiverFog.atlas', 'outside': False,
+                         'pageList': [mist_layer(0.5, 0, 20, 0.03, 1.0, 5, 1.5)]},
+           'useOriginalSize': True}, open(f'{ROUND}/s06.jplax', 'w'), indent=1)
