@@ -55,6 +55,14 @@
    "speedY": 30,
    "name": "fog-up-the-tiles",
    "about": "r262: an even slab through FOG, 20 of 40 units wide and 5 tall, its noise period up (50) ten times the image, tiling on Y and scrolled up so it wraps there (t6, t12): the noise runs on across every tile edge on Y instead of starting again at each"
+  },
+  {
+   "id": "s08",
+   "page": "engines/godot/tests/shaders/s08.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "speedY": 30,
+   "name": "wave-up-the-tiles",
+   "about": "r273: black and white vertical stripes through WAVE (amplitude 0.3), 20 of 40 units wide and 5 tall, its wavelength (1.5) not dividing the image, tiling on Y and scrolled up so it wraps there (t6, t12): the ripple runs on across every tile edge on Y instead of jumping sideways at each"
   }
  ]
 }

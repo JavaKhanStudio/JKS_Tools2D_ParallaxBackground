@@ -13,7 +13,7 @@ extends RefCounted
 ## SCREEN_UV, y turned up as libGDX's view. across: the view's width in page units, where the layer's noise starts from
 ## its left (effect_start_x), 1 or -1 (flipped on X); along() reads it at SCREEN_UV: where the fragment is along the
 ## layer, local() carried on across its tiles, so FOG has no seam at a tile edge (r229); up: the same up the view, from
-## its bottom (effect_start_y), -1 flipped on Y (r262). TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
+## its bottom (effect_start_y), -1 flipped on Y (r262), which WAVE's ripple reads too (r273). TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
 ## the page's depth fog reaches, or any a dissolve masks or a transfert through a colour grades.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
@@ -60,9 +60,10 @@ vec4 hazed(vec4 color, vec2 screen_uv) {
 }
 """
 
-## WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region.
+## WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region; y is
+## along().y, running on up across the tiles (r273).
 const _WAVE := _HEAD + """void fragment() {
-	float shift = effect.x * sin(TAU * (local(UV).y - effect.z) / effect.y);
+	float shift = effect.x * sin(TAU * (along(SCREEN_UV).y - effect.z) / effect.y);
 	float u = clamp(UV.x + shift / size.x * (region.z - region.x), min(region.x, region.z), max(region.x, region.z));
 	COLOR = hazed(tint * texture(TEXTURE, vec2(u, UV.y)), SCREEN_UV);
 }

@@ -2,7 +2,8 @@
 """Writes the shaders round (r180, docs/effect-layers.md phase 3): core/test-data/shaders/mist.png and HiverFog.atlas
 (Hiver's regions, then a white mist band on a page of its own), and engines/godot/tests/shaders/s01-s04.jplax, each a
 conformance page (c01, c02, c03, c05) with a layer turned into a WAVE and a mist band drawn through FOG, s06.jplax,
-the mist alone tiling on X (r229), and s07.jplax, an even slab (slab.png, slab.atlas) through FOG tiling on Y (r262).
+the mist alone tiling on X (r229), s07.jplax, an even slab (slab.png, slab.atlas) through FOG tiling on Y (r262), and
+s08.jplax, vertical stripes (stripes.png, stripes.atlas) through WAVE tiling on Y (r273).
 Run from the repository root: python3 core/test-data/shaders/make_round.py (needs Pillow)."""
 import json, math
 from PIL import Image
@@ -126,3 +127,33 @@ json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
            'repeatOnX': False, 'repeatOnY': True,
            'pageModel': {'atlasName': 'slab.atlas', 'outside': False, 'pageList': [slab]},
            'useOriginalSize': True}, open(f'{ROUND}/s07.jplax', 'w'), indent=1)
+
+# s08 (r273): black and white vertical stripes 32 px apart (every row the same: seamless on Y) through WAVE, amplitude
+# 0.3, half the world wide and 5 tall, tiling on Y only; the round scrolls it up (speedY) so it wraps on Y. Its
+# wavelength, 1.5, does not divide the image's 5 units: before r273 the ripple (inside one tile, local().y) jumped
+# sideways at every tile edge on Y. tools/r273-wave-seam-y's w15.
+SW, SH = 512, 128
+stripes = Image.new('RGBA', (SW, SH))
+stripes.putdata([(255, 255, 255, 255) if (x // 32) % 2 == 0 else (0, 0, 0, 255) for y in range(SH) for x in range(SW)])
+stripes.save(f'{HERE}/stripes.png')
+open(f'{HERE}/stripes.atlas', 'w').write(f'''
+stripes.png
+size: {SW}, {SH}
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+stripes
+  rotate: false
+  xy: 0, 0
+  size: {SW}, {SH}
+  orig: {SW}, {SH}
+  offset: 0, 0
+  index: -1
+''')
+wave = mist_layer(0.5, 25, 0, 0.03, 0.3, 1.5, 0.0, regionName='stripes', name='stripes')
+wave['shaderEffect'] = 'WAVE'
+json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
+           'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
+           'repeatOnX': False, 'repeatOnY': True,
+           'pageModel': {'atlasName': 'stripes.atlas', 'outside': False, 'pageList': [wave]},
+           'useOriginalSize': True}, open(f'{ROUND}/s08.jplax', 'w'), indent=1)

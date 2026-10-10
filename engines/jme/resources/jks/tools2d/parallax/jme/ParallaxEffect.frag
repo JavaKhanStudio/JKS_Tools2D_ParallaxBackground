@@ -51,7 +51,7 @@ vec2 local()
 }
 
 // Where the fragment is along the layer, in world units: local() carried on across its tiles (ParallaxLayer.getEffectStartX,
-// getEffectStartY), so FOG's noise has no seam at a tile edge, on X (r229) or Y (r262).
+// getEffectStartY), so FOG's noise has no seam at a tile edge, on X (r229) or Y (r262), nor WAVE's ripple on Y (r273).
 vec2 along()
 {
     return vec2(m_Across.z * (viewPos.x * m_Across.x - m_Across.y), m_Up.z * (viewPos.y * m_Up.x - m_Up.y));
@@ -72,8 +72,9 @@ void main()
     color.a *= 1.0 - m_Effect.x * n;
     gl_FragColor = hazed(color);
 #else
-    // WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region.
-    float shift = m_Effect.x * sin(TAU * (local().y - m_Effect.z) / m_Effect.y);
+    // WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region; y is
+    // along().y, running on up across the tiles (r273).
+    float shift = m_Effect.x * sin(TAU * (along().y - m_Effect.z) / m_Effect.y);
     float u = clamp(texCoord.x + shift / m_Size.x * (m_Region.z - m_Region.x), min(m_Region.x, m_Region.z), max(m_Region.x, m_Region.z));
     gl_FragColor = hazed(vertColor * texture2D(m_ColorMap, vec2(u, texCoord.y)));
 #endif

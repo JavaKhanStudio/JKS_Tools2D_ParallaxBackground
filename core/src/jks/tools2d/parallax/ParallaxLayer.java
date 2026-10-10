@@ -768,9 +768,9 @@ public class ParallaxLayer
 	{return shaderWavelength > 0 ? shaderWavelength * (shaderEffect == null ? 1 : shaderEffect.periodY()) : 0;}
 
 	/**
-	 * {@link #getEffectStartX} on Y: where FOG's noise starts, in world units above the layers' y 0, wrapped to
+	 * {@link #getEffectStartX} on Y: where FOG's noise and WAVE's ripple start, in world units above the layers' y 0, wrapped to
 	 * {@link #getShaderPeriodY}: the bottom edge of the image of the tile at currentDistanceY, its top edge when flipped
-	 * on Y (the noise then runs down), carried back by what act() wrapped, so a tile edge on Y is no seam either (r262).
+	 * on Y (the noise then runs down), carried back by what act() wrapped, so a tile edge on Y is no seam either (r262, WAVE r273).
 	 */
 	public float getEffectStartY()
 	{

@@ -56,7 +56,8 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	 * u_across: the view's width in world units, where the layer's noise starts from the view's left
 	 * ({@link ParallaxLayer#getEffectStartX}), 1 or -1 (flipped on X). along(): where the fragment is along the layer
 	 * in world units, local() carried on across its tiles, so FOG's noise has no seam at a tile edge (r229). u_up: the
-	 * same up the view, from its bottom ({@link ParallaxLayer#getEffectStartY}), -1 flipped on Y (r262).
+	 * same up the view, from its bottom ({@link ParallaxLayer#getEffectStartY}), -1 flipped on Y (r262): FOG's noise and
+	 * WAVE's ripple run on up across the tiles (r273).
 	 */
 	private static final String FRAGMENT_HEAD = "#ifdef GL_ES\n"
 			+ "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
@@ -106,11 +107,15 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "	return vec2(u_across.z * (v_view.x * u_across.x - u_across.y), u_up.z * (v_view.y * u_up.x - u_up.y));\n"
 			+ "}\n";
 
-	/** WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region. */
+	/**
+	 * WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region. y is
+	 * along().y, not local().y: the ripple runs on up across the tiles, so a wavelength that does not divide the image's
+	 * height jumps at no tile edge on Y (r273).
+	 */
 	static final String WAVE = FRAGMENT_HEAD
 			+ "void main()\n"
 			+ "{\n"
-			+ "	float shift = u_effect.x * sin(TAU * (local().y - u_effect.z) / u_effect.y);\n"
+			+ "	float shift = u_effect.x * sin(TAU * (along().y - u_effect.z) / u_effect.y);\n"
 			+ "	float u = clamp(v_texCoords.x + shift / u_size.x * (u_region.z - u_region.x), min(u_region.x, u_region.z), max(u_region.x, u_region.z));\n"
 			+ "	gl_FragColor = hazed(v_color * texture2D(u_texture, vec2(u, v_texCoords.y)));\n"
 			+ "}\n";

@@ -87,7 +87,7 @@ repair.
   `ParallaxLayer.getEffectStartX` (what `act()` wrapped kept in `wrappedX`, Godot's `wrapped_x`), its y minus the
   drawing height and `getEffectStartY` (`wrappedY`, `wrapped_y`), not the tile's own: the noise runs on across the
   tiles (r229 on X, round `shaders` s06, `tools/r229-fog-seam/mutate.sh`; r262 on Y, s07,
-  `tools/r262-fog-seam-y/mutate.sh`).
+  `tools/r262-fog-seam-y/mutate.sh`). WAVE's y is `along().y` too (r273, s08, `tools/r273-wave-seam-y/mutate.sh`).
 - A page's depth fog (`fogStrength`, `fogColor`, format 10; format 9's `shaderHaze` is read as its strength) ends
   every one of those shaders in `hazed()`, toward the fog's colour (`u_fog`), and draws an IMAGE or SEQUENCE layer
   through a `PLAIN` one (jME's `Plain` define, Godot's `"PLAIN"` material); libGDX instead draws them all through one
