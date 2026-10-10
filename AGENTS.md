@@ -100,7 +100,7 @@ repair.
 - A transfert through a colour (`TransfertStyle.throughColor`, r251, no format change) is in `hazed()` too: after the
   fog, mixed toward `u_grade`'s rgb by its a (jME `m_Grade`, Godot `grade`), set per layer through
   `LayerEffects.setGrade`; the gradients take `TransfertStyle.gradient` (SquareBackground, JmeGradient, Godot's
-  `_act_gradients`). Run both frame checks on `engines/godot/tests/transfer` (t11, t12);
+  `_act_gradients`). Run both frame checks on `engines/godot/tests/transfer` (t11, t12, t16);
   `tools/r251-through-color/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A fog creep (`TransfertStyle.fogCreep`, r252, no format change) is that same grade toward a mist, with its own
   amounts: `TransfertStyle.gradeAt`/`showsIncoming` (eased, far slots first, every slot swapped at the middle), copied
