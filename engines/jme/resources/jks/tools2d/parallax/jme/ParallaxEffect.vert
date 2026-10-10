@@ -8,6 +8,8 @@ attribute vec4 inColor;
 
 varying vec2 texCoord;
 varying vec4 vertColor;
+// Where the vertex is in the camera view, 0 to 1, y up: the dissolve's noise is laid over it.
+varying vec2 viewPos;
 
 void main()
 {
@@ -16,4 +18,5 @@ void main()
     vertColor = inColor;
     vertColor.a = vertColor.a * (255.0 / 254.0);
     gl_Position = g_WorldViewProjectionMatrix * vec4(inPosition, 1.0);
+    viewPos = gl_Position.xy / gl_Position.w * 0.5 + 0.5;
 }

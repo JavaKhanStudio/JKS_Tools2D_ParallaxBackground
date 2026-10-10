@@ -78,6 +78,12 @@ public class ParallaxPageReader implements Disposable
 	private boolean pageFog, pageFogOn;
 	/** The batch alpha of the layer drawn through the page fog, given back with the tint after it. */
 	private float packedAlpha;
+	/**
+	 * A dissolve's layer is being drawn through the engine's mask ({@link LayerEffects#setDissolve}), and the opacity it
+	 * fades at when the engine cannot begin it after all.
+	 */
+	private boolean dissolving;
+	private float dissolveFallback;
 
 	/** The game's seed for the SEQUENCE layers, when {@link #hasSequenceSeed}: see {@link #setSequenceSeed}. */
 	private int sequenceSeed;
@@ -214,7 +220,9 @@ public class ParallaxPageReader implements Disposable
 
 		frontSpeed = frontSpeedOf(layers);
 		transferFrontSpeed = frontSpeedOf(transferLayers);
-		pageFogOn = pageFog = (fogStrength > 0 || (transferFogStrength > 0 && !transferLayers.isEmpty()))
+		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();
+		// A dissolve begins each layer with its own mask: no page fog's shared shader then.
+		pageFogOn = pageFog = !dissolve && (fogStrength > 0 || (transferFogStrength > 0 && !transferLayers.isEmpty()))
 				&& getLayerEffects().beginPageFog(batch, tint, fogColor, transferFogColor);
 
 		// A layer at alpha 0 still costs its pixels on the GPU, and during a transfer a flush when the pages' atlases differ.
@@ -229,12 +237,20 @@ public class ParallaxPageReader implements Disposable
 			int total = Math.max(layers.size(), transferLayers.size());
 			int oldOffset = total - layers.size();
 			int newOffset = total - transferLayers.size();
-			boolean staggered = transfertStyle.getKind() == TransfertStyle.Kind.DEPTH_STAGGER;
+			boolean staggered = transfertStyle.getKind() != TransfertStyle.Kind.FADE;
 
 			for (int slot = 0; slot < total; slot++)
 			{
-				// Depth stagger: each slot at its own point of the transfert, the back ones ahead.
+				// Depth stagger and dissolve: each slot at its own point of the transfert, the back ones ahead.
 				float ramp = staggered ? transfertStyle.slotRamp(newLayerAlpha, slot, total) : newLayerAlpha;
+				if (dissolve)
+				{
+					if (slot >= oldOffset)
+						drawDissolved(layers, slot - oldOffset, batch, false, ramp);
+					if (slot >= newOffset)
+						drawDissolved(transferLayers, slot - newOffset, batch, true, ramp);
+					continue;
+				}
 				if (slot >= oldOffset && setBatchColor(batch, staggered ? 1 - ramp : oldLayerAlpha))
 					drawLayer(layers, slot - oldOffset, batch, false);
 				if (slot >= newOffset && setBatchColor(batch, ramp))
@@ -245,6 +261,29 @@ public class ParallaxPageReader implements Disposable
 		endPageFog(batch);
 		release(batch);
 		batch.setColor(Color.WHITE);
+	}
+
+	/**
+	 * A dissolve's layer: an IMAGE, SEQUENCE or SHADER one at full opacity through the engine's mask, its share of the
+	 * slot at {@code ramp}; an EMPTY or PARTICLES one, or any when the engine draws no dissolve, faded to that share. Not
+	 * drawn when its share is none.
+	 */
+	private void drawDissolved(ArrayList<ParallaxLayer> page, int index, Batch batch, boolean incoming, float ramp)
+	{
+		float share = incoming ? ramp : 1 - ramp;
+		if (!(share > 0))
+			return;
+		Enum_LayerKind kind = page.get(index).kind;
+		dissolving = kind != Enum_LayerKind.EMPTY && kind != Enum_LayerKind.PARTICLES
+				&& getLayerEffects().setDissolve(incoming ? LayerEffects.DISSOLVE_INCOMING : LayerEffects.DISSOLVE_OUTGOING, ramp,
+						transfertStyle.getSoftness(), TransfertStyle.drift(effectTime), transfertStyle.getPatches(),
+						transfertStyle.cellsUp(viewWidth, viewHeight));
+		dissolveFallback = share;
+		if (setBatchColor(batch, dissolving ? 1 : share))
+			drawLayer(page, index, batch, incoming);
+		if (dissolving)
+			effects.setDissolve(LayerEffects.DISSOLVE_NONE, 0, 0, 0, 0, 0);
+		dissolving = false;
 	}
 
 	/** Puts the game's shader back before a hook or particles, which draw with it. */
@@ -379,10 +418,15 @@ public class ParallaxPageReader implements Disposable
 		}
 		else
 		{
-			shaded = (layer.kind == Enum_LayerKind.SHADER || fog > 0)
+			shaded = (layer.kind == Enum_LayerKind.SHADER || fog > 0 || dissolving)
 					&& getLayerEffects().begin(batch, layer, layer.getShaderPhase(effectTime), fog, incoming ? transferFogColor : fogColor);
 			if (!shaded)
+			{
 				release(batch);
+				if (dissolving)
+					// The engine could not mask it: the layer fades to its share instead.
+					setBatchColor(batch, dissolveFallback);
+			}
 		}
 
 		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);

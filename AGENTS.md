@@ -92,6 +92,11 @@ repair.
   flush per layer. The mix is written three times, `ParallaxPageReader.fogOf`/`frontSpeedOf` twice (Godot's
   `PlaxEffects.fog_of`/`front_speed_of`). Run both frame checks on `engines/godot/tests/fog`;
   `tools/r217-fog/strength.sh` proves leaving it out fails there, `tools/r217-fog/mutate.sh` that a wrong copy does.
+- A transfert's dissolve (`TransfertStyle.dissolve`, r250, no format change) is in those shaders' `hazed()` too: its
+  alpha times `dissolved()`, FOG's noise over the camera view (libGDX's and jME's vertex `v_view`/`viewPos`, Godot's
+  `SCREEN_UV` with y turned up), set per layer through `LayerEffects.setDissolve`; the reader skips the page fog's
+  shared shader during one. Run both frame checks on `engines/godot/tests/transfer` (t09, t10);
+  `tools/r250-dissolve/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
   `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's

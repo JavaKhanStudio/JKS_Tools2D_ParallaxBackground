@@ -21,7 +21,8 @@ import jks.tools2d.parallax.pages.Enum_ShaderEffect;
  * The SHADER layers' effects in jME: a ParallaxEffect material per layer (its numbers change every frame), which
  * {@link JmeBatch} draws the layer's run with. The numbers are {@link GdxLayerEffects#uniforms}, the shader
  * ParallaxEffect.frag: libGDX's, line for line. An IMAGE or SEQUENCE layer the page's depth fog reaches gets one too,
- * with no effect (Plain). {@link PlaxBackground} sets it on its reader.
+ * with no effect (Plain), and so does any layer a transfert's dissolve masks ({@link #setDissolve}). {@link PlaxBackground}
+ * sets it on its reader.
  */
 public class JmeLayerEffects implements LayerEffects
 {
@@ -37,6 +38,8 @@ public class JmeLayerEffects implements LayerEffects
 		final Vector2f size = new Vector2f();
 		final Vector3f effect = new Vector3f();
 		final Vector3f fog = new Vector3f();
+		final Vector4f dissolve = new Vector4f();
+		final Vector2f cells = new Vector2f();
 
 		Shaded(Material material, Enum_ShaderEffect kind)
 		{
@@ -49,6 +52,8 @@ public class JmeLayerEffects implements LayerEffects
 	/** By layer, dropped with it: a page's layers go when the game stops showing it. */
 	private final Map<ParallaxLayer, Shaded> shaded = new WeakHashMap<>();
 	private final float[] numbers = new float[9];
+	/** The dissolve the next layers begun draw through ({@link #setDissolve}). */
+	private float side, ramp, softness, drift, cellsX, cellsY;
 
 	public JmeLayerEffects(AssetManager assets)
 	{this.assets = assets;}
@@ -90,7 +95,23 @@ public class JmeLayerEffects implements LayerEffects
 		s.material.setFloat("Haze", Math.max(0, Math.min(1, haze)));
 		s.fog.set(fogR, fogG, fogB);
 		s.material.setVector3("FogColor", s.fog);
+		s.dissolve.set(side, ramp, softness, drift);
+		s.cells.set(cellsX, cellsY);
+		s.material.setVector4("Dissolve", s.dissolve);
+		s.material.setVector2("Cells", s.cells);
 		((JmeBatch) batch).setEffect(s.material);
+		return true;
+	}
+
+	@Override
+	public boolean setDissolve(int side, float ramp, float softness, float drift, float cellsX, float cellsY)
+	{
+		this.side = side;
+		this.ramp = ramp;
+		this.softness = softness;
+		this.drift = drift;
+		this.cellsX = cellsX;
+		this.cellsY = cellsY;
 		return true;
 	}
 

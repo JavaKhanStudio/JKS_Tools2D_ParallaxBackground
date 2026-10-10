@@ -64,4 +64,18 @@ public interface LayerEffects
 	/** Ends {@link #beginPageFog}: the batch draws with the shader it had before it. */
 	default void endPageFog(Batch batch)
 	{}
+
+	/** {@link #setDissolve} sides: no mask; the outgoing layer, kept where the mask is not; the incoming, where it is. */
+	int DISSOLVE_NONE = 0, DISSOLVE_OUTGOING = 1, DISSOLVE_INCOMING = 2;
+
+	/**
+	 * Makes the layers begun next, until it is called again with {@link #DISSOLVE_NONE}, draw through a dissolve's mask
+	 * ({@link TransfertStyle#dissolve}): m, 0 to 1, rises where FOG's noise over the camera view, {@code cellsX} by
+	 * {@code cellsY} cells across it, shifted {@code drift} cells on x, is under {@code ramp}, with {@code softness} of
+	 * soft edge; {@link #DISSOLVE_OUTGOING} multiplies the layer's alpha by 1 - m, {@link #DISSOLVE_INCOMING} by m.
+	 * {@link TransfertStyle#cellsUp} and {@link TransfertStyle#drift} reckon the numbers. The reader then begins every IMAGE, SEQUENCE and SHADER
+	 * layer, fog or not. False when this engine draws no dissolve: the reader fades the layers instead.
+	 */
+	default boolean setDissolve(int side, float ramp, float softness, float drift, float cellsX, float cellsY)
+	{return false;}
 }

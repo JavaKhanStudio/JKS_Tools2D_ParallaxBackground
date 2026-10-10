@@ -174,12 +174,14 @@ func set_page(new_page: PlaxPage, new_atlas: PlaxAtlas) -> void:
 ## gradients' colors fade too; the repeat and the gradients' sizes stay those of the page given to set_page. A fade
 ## started during another drops the page that was fading in. `style` (null: every layer slot at once) is how the layers
 ## fade, as Parallax_Heart.transfertIntoPage(page, seconds, style): PlaxTransfertStyle.depth_stagger(s) fades each slot
-## in its own window, the back ones first.
+## in its own window, the back ones first; PlaxTransfertStyle.dissolve(patches, softness, s) has each slot's incoming
+## layer eat the outgoing one in patches.
 func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float, style: PlaxTransfertStyle = null) -> void:
 	if page == null:
 		set_page(new_page, new_atlas)
 		return
 	_drop(transfer_layers)
+	_unmask(layers)
 	_reset_transfert()
 	var incoming := _build_layers(new_page, new_atlas)
 	if not incoming.is_empty():
@@ -437,6 +439,7 @@ func _finish_transfert() -> void:
 	page = transfer_page
 	atlas = transfer_atlas
 	_drop(layers)
+	_unmask(transfer_layers)
 	layers = transfer_layers
 	for l in layers:
 		l.incoming = false
@@ -607,14 +610,38 @@ func _update_scale() -> void:
 
 
 ## The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's; with a
-## depth stagger, its slot's, each slot at its own point of the fade (ParallaxPageReader.draw).
+## depth stagger, its slot's, each slot at its own point of the fade (ParallaxPageReader.draw). In a dissolve a layer
+## the mask draws (_masked) is at full opacity while its share of the slot is above 0; an EMPTY or PARTICLES one fades
+## to its share (ParallaxPageReader.drawDissolved).
 func _alpha_of(l: Dictionary) -> float:
 	if transfer_layers.is_empty():
 		return 1.0
-	if _style == null or _style.kind != "DEPTH_STAGGER":
+	if _style == null or _style.kind == "FADE":
 		return _new_alpha if l.incoming else _old_alpha
+	var share := _share_of(l)
+	return (1.0 if share > 0 else 0.0) if _masked(l) else share
+
+
+## The layer's share of its slot, 0 to 1: its slot's ramp, the outgoing layer's 1 minus it.
+func _share_of(l: Dictionary) -> float:
 	var ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
 	return ramp if l.incoming else 1.0 - ramp
+
+
+## Whether a dissolve draws the layer through its mask now: an IMAGE, SEQUENCE or SHADER one, during a dissolve.
+func _masked(l: Dictionary) -> bool:
+	return (not transfer_layers.is_empty() and _style != null and _style.kind == "DISSOLVE"
+			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER"))
+
+
+## Takes the dissolve's mask off `page`'s layers: the PLAIN material it gave a layer that had none goes.
+func _unmask(page: Array[Dictionary]) -> void:
+	for l in page:
+		if l.get("dissolve_plain", false):
+			l.canvas.material = null
+			l.dissolve_plain = false
+		elif l.has("canvas") and l.canvas.material is ShaderMaterial:
+			PlaxEffects.set_dissolve(l.canvas.material, 0, 0, 0, 0, 0, 0)
 
 
 ## The tint at that opacity, and whether anything drawn with it would show (ParallaxPageReader.setBatchColor).
@@ -640,6 +667,13 @@ func _draw_layer(l: Dictionary) -> void:
 		if hook.is_valid():
 			_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h, hook)
 		return
+	if _masked(l):
+		if l.canvas.material == null:
+			l.canvas.material = PlaxEffects.material("PLAIN")
+			l.dissolve_plain = true
+		var ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
+		PlaxEffects.set_dissolve(l.canvas.material, 2 if l.incoming else 1, ramp, _style.softness,
+				PlaxTransfertStyle.drift(_effect_time), _style.patches, _style.cells_up(view_w, view_h))
 	if m.kind == "SHADER":
 		PlaxEffects.apply(l.canvas.material, l, _effect_time)
 	if l.canvas.material:

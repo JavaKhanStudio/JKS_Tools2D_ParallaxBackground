@@ -25,19 +25,21 @@ import jks.tools2d.parallax.pages.Enum_ShaderEffect;
  */
 public class GdxLayerEffects implements LayerEffects, Disposable
 {
-	/** SpriteBatch's own vertex shader. */
+	/** SpriteBatch's own vertex shader, and v_view: where the vertex is in the camera view, 0 to 1, y up. */
 	static final String VERTEX = "attribute vec4 " + ShaderProgram.POSITION_ATTRIBUTE + ";\n"
 			+ "attribute vec4 " + ShaderProgram.COLOR_ATTRIBUTE + ";\n"
 			+ "attribute vec2 " + ShaderProgram.TEXCOORD_ATTRIBUTE + "0;\n"
 			+ "uniform mat4 u_projTrans;\n"
 			+ "varying vec4 v_color;\n"
 			+ "varying vec2 v_texCoords;\n"
+			+ "varying vec2 v_view;\n"
 			+ "void main()\n"
 			+ "{\n"
 			+ "	v_color = " + ShaderProgram.COLOR_ATTRIBUTE + ";\n"
 			+ "	v_color.a = v_color.a * (255.0 / 254.0);\n"
 			+ "	v_texCoords = " + ShaderProgram.TEXCOORD_ATTRIBUTE + "0;\n"
 			+ "	gl_Position = u_projTrans * " + ShaderProgram.POSITION_ATTRIBUTE + ";\n"
+			+ "	v_view = gl_Position.xy / gl_Position.w * 0.5 + 0.5;\n"
 			+ "}\n";
 
 	/** The mist's white: the fog's colour when none is given ({@link LayerEffects#begin(Batch, ParallaxLayer, float, float)}). */
@@ -46,8 +48,10 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	/**
 	 * u_region: the region's u, v, u2, v2 (v at the image's top). u_size: the image's width and height in world units.
 	 * u_effect: amplitude, wavelength, phase. u_haze: the depth fog, 0 to 1. u_fog: the fog's colour. local(): where the
-	 * fragment is in the image, in world units, y up. hazed(): the color mixed toward u_fog by u_haze, its alpha kept; at
-	 * 0 the color itself.
+	 * fragment is in the image, in world units, y up. hazed(): the color mixed toward u_fog by u_haze, its alpha times
+	 * dissolved(); at 0 and no dissolve the color itself. u_dissolve, u_cells: a transfert's dissolve
+	 * ({@link LayerEffects#setDissolve}): side (0 none, 1 outgoing, 2 incoming), ramp, softness, drift; the noise's cells
+	 * across and up the view. dissolved(): FOG's noise over the view, the layer's share of the slot at the ramp.
 	 */
 	private static final String FRAGMENT_HEAD = "#ifdef GL_ES\n"
 			+ "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
@@ -64,10 +68,25 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "uniform vec3 u_effect;\n"
 			+ "uniform float u_haze;\n"
 			+ "uniform vec3 u_fog;\n"
+			+ "uniform vec4 u_dissolve;\n"
+			+ "uniform vec2 u_cells;\n"
+			+ "varying vec2 v_view;\n"
 			+ "const float TAU = 6.2831853;\n"
+			+ "float dissolved()\n"
+			+ "{\n"
+			+ "	if (u_dissolve.x < 0.5)\n"
+			+ "		return 1.0;\n"
+			+ "	vec2 p = v_view * u_cells + vec2(u_dissolve.w, 0.0);\n"
+			+ "	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))\n"
+			+ "		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)\n"
+			+ "		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;\n"
+			+ "	float e = u_dissolve.z;\n"
+			+ "	float m = smoothstep(n - e, n + e, u_dissolve.y * (1.0 + 2.0 * e) - e);\n"
+			+ "	return u_dissolve.x < 1.5 ? 1.0 - m : m;\n"
+			+ "}\n"
 			+ "vec4 hazed(vec4 color)\n"
 			+ "{\n"
-			+ "	return vec4(mix(color.rgb, u_fog, u_haze), color.a);\n"
+			+ "	return vec4(mix(color.rgb, u_fog, u_haze), color.a * dissolved());\n"
 			+ "}\n"
 			+ "vec2 local()\n"
 			+ "{\n"
@@ -129,7 +148,10 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	private final ShaderProgram[] programs = new ShaderProgram[EFFECTS.length + 1];
 	private final boolean[] failed = new boolean[EFFECTS.length + 1];
 	private final int[] region = new int[EFFECTS.length + 1], size = new int[EFFECTS.length + 1], effect = new int[EFFECTS.length + 1],
-			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1];
+			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1], dissolve = new int[EFFECTS.length + 1],
+			cells = new int[EFFECTS.length + 1];
+	/** The dissolve the next layers begun draw through ({@link #setDissolve}): side, ramp, softness, drift; cells. */
+	private float dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift, cellsX, cellsY;
 	/** The batch's shader before the first begin, and whether one of ours is still bound in its place. */
 	private ShaderProgram previous;
 	private boolean holding;
@@ -198,6 +220,20 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		program.setUniformf(effect[index], numbers[6], numbers[7], numbers[8]);
 		program.setUniformf(this.haze[index], Math.max(0, Math.min(1, haze)));
 		program.setUniformf(fog[index], fogR, fogG, fogB);
+		program.setUniformf(dissolve[index], dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift);
+		program.setUniformf(cells[index], cellsX, cellsY);
+		return true;
+	}
+
+	@Override
+	public boolean setDissolve(int side, float ramp, float softness, float drift, float cellsX, float cellsY)
+	{
+		dissolveSide = side;
+		dissolveRamp = ramp;
+		dissolveSoftness = softness;
+		dissolveDrift = drift;
+		this.cellsX = cellsX;
+		this.cellsY = cellsY;
 		return true;
 	}
 
@@ -309,6 +345,8 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		effect[index] = program.fetchUniformLocation("u_effect", false);
 		haze[index] = program.fetchUniformLocation("u_haze", false);
 		fog[index] = program.fetchUniformLocation("u_fog", false);
+		dissolve[index] = program.fetchUniformLocation("u_dissolve", false);
+		cells[index] = program.fetchUniformLocation("u_cells", false);
 		programs[index] = program;
 		return program;
 	}

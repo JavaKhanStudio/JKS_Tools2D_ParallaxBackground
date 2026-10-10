@@ -9,16 +9,35 @@ uniform vec2 m_Size;
 uniform vec3 m_Effect;
 uniform float m_Haze;
 uniform vec3 m_FogColor;
+uniform vec4 m_Dissolve;
+uniform vec2 m_Cells;
 
 varying vec2 texCoord;
 varying vec4 vertColor;
+varying vec2 viewPos;
 
 const float TAU = 6.2831853;
 
-// The color mixed toward the fog's colour by the depth fog, its alpha kept; at 0 the color itself.
+// A transfert's dissolve (LayerEffects.setDissolve): m_Dissolve side (0 none, 1 outgoing, 2 incoming), ramp, softness,
+// drift; FOG's noise over the view, m_Cells cells across and up it. The layer's share of the slot, 0 to 1.
+float dissolved()
+{
+    if (m_Dissolve.x < 0.5)
+        return 1.0;
+    vec2 p = viewPos * m_Cells + vec2(m_Dissolve.w, 0.0);
+    float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
+        + sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
+        + sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
+    float e = m_Dissolve.z;
+    float m = smoothstep(n - e, n + e, m_Dissolve.y * (1.0 + 2.0 * e) - e);
+    return m_Dissolve.x < 1.5 ? 1.0 - m : m;
+}
+
+// The color mixed toward the fog's colour by the depth fog, its alpha times dissolved(); at 0 and no dissolve the color
+// itself.
 vec4 hazed(vec4 color)
 {
-    return vec4(mix(color.rgb, m_FogColor, m_Haze), color.a);
+    return vec4(mix(color.rgb, m_FogColor, m_Haze), color.a * dissolved());
 }
 
 // Where the fragment is in the image, in world units from its bottom-left.
