@@ -193,5 +193,47 @@ class PixelArtSeams(unittest.TestCase):
         self.assertGreater(seam, limit, f'seam {seam}, limit {limit}')
 
 
+class FaintAlphaSeams(unittest.TestCase):
+    """(e) weighs a join as it shows on screen (r280): a pixel at alpha 0 keeps whatever colour the cut left (layer.py
+    writes 255,0,0 or 0,0,0 there), so a faint alpha-20 haze ending against it is a step of about 20, not of 255."""
+    W, H = 64, 200
+
+    def strip(self, opaque, band):
+        """Rows 0-149 (the top) as opaque, the bottom 50 as band; RGBA tuples."""
+        from PIL import Image
+        img = Image.new('RGBA', (self.W, self.H), opaque)
+        img.paste(Image.new('RGBA', (self.W, 50), band), (0, 150))
+        return img
+
+    def setUp(self):
+        self.p = lab.Placed(0, {}, [1.0], 0.0, lab.SCREEN_H, True, False)
+        self.haze = self.strip((0, 0, 0, 0), (230, 235, 240, 20))
+        self.cut = self.strip((0, 0, 0, 0), (255, 0, 0, 0))
+
+    def test_a_faint_haze_ending_at_a_join_is_a_faint_step(self):
+        seam = lab._join_on_screen(self.haze, self.cut, self.p)
+        self.assertLess(seam, 25, f'seam {seam}')
+
+    def test_a_hard_colour_cut_is_still_one(self):
+        white, black = self.strip((255, 255, 255, 255), (255, 255, 255, 255)), self.strip((0, 0, 0, 255), (0, 0, 0, 255))
+        self.assertGreater(lab._join_on_screen(white, black, self.p), lab.SEAM)
+
+    def test_the_art_s_own_steps_are_weighed_the_same(self):
+        """A layer whose columns alternate a faint haze and a cut alpha 0 red steps about 20 between them, not 255."""
+        from PIL import Image
+        img = Image.new('RGBA', (self.W, self.H), (255, 0, 0, 0))
+        for x in range(0, self.W, 2):
+            img.paste(Image.new('RGBA', (1, self.H), (230, 235, 240, 20)), (x, 0))
+        self.assertTrue(all(s < 25 for s in lab._column_steps(img)), lab._column_steps(img)[:4])
+
+    def test_a_single_layer_s_seam_is_weighed_the_same(self):
+        """parallax_regions.measure's seam, between a region's two edges: haze on the left, alpha 0 red on the right."""
+        import parallax_regions as regions_tool
+        from PIL import Image
+        img = Image.new('RGBA', (self.W, self.H), (230, 235, 240, 20))
+        img.paste(Image.new('RGBA', (1, self.H), (255, 0, 0, 0)), (self.W - 1, 0))
+        self.assertLess(regions_tool.measure(img)['seam'], 25)
+
+
 if __name__ == '__main__':
     unittest.main()
