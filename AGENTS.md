@@ -95,7 +95,7 @@ repair.
 - A transfert's dissolve (`TransfertStyle.dissolve`, r250, no format change) is in those shaders' `hazed()` too: its
   alpha times `dissolved()`, FOG's noise over the camera view (libGDX's and jME's vertex `v_view`/`viewPos`, Godot's
   `SCREEN_UV` with y turned up), set per layer through `LayerEffects.setDissolve`; the reader skips the page fog's
-  shared shader during one. Run both frame checks on `engines/godot/tests/transfer` (t09, t10);
+  shared shader during one. Run both frame checks on `engines/godot/tests/transfer` (t09, t10; t15 a fogged page with WAVE and FOG layers);
   `tools/r250-dissolve/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A transfert through a colour (`TransfertStyle.throughColor`, r251, no format change) is in `hazed()` too: after the
   fog, mixed toward `u_grade`'s rgb by its a (jME `m_Grade`, Godot `grade`), set per layer through
