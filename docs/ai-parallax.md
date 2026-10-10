@@ -39,7 +39,11 @@ server, and leaves the install as it is.
   stay `sil.py`'s sine spikes with no tree in them, where img2img's lower IoU is SD growing real pines past the crude
   shape. And the higher denoise paints the sky: grey bands and clouds the key keeps (both strips at 0.9, pines at 0.8,
   art up to the top row), and a light rim along the line on the hills. `tools/r239-ai-strips/r244-control.sh` paints
-  the three ways; its `compare.png` is on r244. A weaker hint (strength 0.5, first 60% of the steps) is untested: r257.
+  the ways; its `compare.png` is on r244 and r257. A weaker hint (strength 0.5, first 60% of the steps, denoise 0.8:
+  r257) does not beat img2img 0.65 either: the pines are still the sine spikes, no tree in them (IoU 0.952), and the
+  freed sky gets painted all the same, a grey cloud band and a blue mountain range behind the pines, a grey haze and
+  clouds over the hills (IoU 0.991), so `layer.py` refuses both (art cut flat at the top edge, 228 and 318 columns).
+  Seams 0.56 hills, 1.16 pines. Weak or full, the hint at 0.8 paints no trees: img2img 0.65 stays, `run.sh` unchanged.
 - **Several passes.** Yes, these four. Each one can be checked on its own (`seam.py`, `layer.py`'s top-row check,
   lint), and a page is made from their output.
 - **Pixel-perfect.** Two meanings, two answers. *Loops to the pixel*: yes, see the numbers. *Pixel art*: the SD 1.5
@@ -112,7 +116,8 @@ Tasks under r239, tagged `#assets`:
 1. r242: `layer.py` drops the alpha islands that don't touch the layer's mass (the bird).
 2. r243 (done): pixel art through SDXL + `PixelArt_XL`, see "True pixel art".
 3. r244 (done): ControlNet lineart over the silhouette at 0.8 to 0.9 holds the outline and loses the trees: img2img 0.65
-   stays (see "What each idea from the card came to").
+   stays (see "What each idea from the card came to"). r257 (done): a weak hint (0.5, first 60%) at 0.8
+   does no better: spikes, and a painted sky.
 4. r245 (`#runtime`): lint (`tools/parallax_lab.py`) skips `SEQUENCE` layers in its layout checks, so it neither
    counts them as covering (a false (b) on this page) nor checks their joins.
 5. r246, after r242 to r244: from a prompt to a page. `run.sh` as one tool (theme, layer count, size, pixel or
