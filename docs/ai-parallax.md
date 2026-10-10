@@ -114,6 +114,12 @@ it (r244); an SDXL ControlNet is untried.
   0.65 SD paints a horizon behind a hill strip (a snowy plain, lakes), which the key keeps. `layer.py --mask --grow`
   takes `sil.py`'s shape too: opaque 8 px inside it (SD moves an outline by a few px: less lets sky in at the peaks),
   keyed by colour within `--grow` px of it (8, the pines 40: they grow past it), clear beyond.
+- **The foot of a gap between trees** (r263): SD paints a gap deeper than the silhouette, and its foot, sky or far
+  haze, stood opaque inside the shape: a pale spot in a dark treeline (snow `l3v2` at 451,338: 156 such px within 12 px, 0 now), and sky shards along the
+  desert mesas and snowy peaks. `layer.py --gap 0.6` (the default) places each pixel on the line from the sky (0) to
+  the mass's median colour (1); the pixels under 0.6, and not whiter than the sky (snow), that reach the clear sky
+  through each other are keyed along it, so the foot fades clear and the edge takes the trees' colour.
+  `tools/r263-gap/pale.py` counts what stays pale and opaque near a point.
 - **A join on a tree's flank** (r246): the strip loops, but its join fell where the outline steps steeply, above three
   quarters of the strip's own column steps, and a `SEQUENCE` repeats that join at every segment: lint (e) at 21 and 22
   against 20. `sil.py --quiet-join` turns the shape so the join falls on its flattest 16 px; variants turn by their
@@ -133,8 +139,7 @@ it (r244); an SDXL ControlNet is untried.
   plants (`plant.py`: birds and deer on mountains, hills, pines, snowy pines, among painted trees, in pixel art); 15
   strips it was not tuned on (r244, r239-run) pass too. `mutate.sh` takes each rule out in turn and the sweep fails.
   Missed by design: a creature on the silhouette's edge, and one the colour, shape and size of the layer's own flecks
-  (a white bird among snow flecks). Not the check's job, and seen while making it: a gap between trees whose foot SD
-  painted sky, which the silhouette mask makes opaque, draws a pale spot in a dark treeline (r246's snow `l3v2`, r263).
+  (a white bird among snow flecks).
 - Each layer is painted on its own: nothing makes their colours agree but `--colours`, which the init image carries.
   `ai-page.sh` paints them at full contrast and gives the distance with the page's depth fog (`fogStrength`, r217).
 
