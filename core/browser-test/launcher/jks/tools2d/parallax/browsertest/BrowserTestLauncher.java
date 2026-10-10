@@ -20,7 +20,8 @@ public class BrowserTestLauncher extends GwtApplication
 	@Override
 	public GwtApplicationConfiguration getConfig()
 	{return has("effects-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, FogLab.PANEL_HEIGHT)
-			: has("fog-lab") || has("haze-lab") || has("transfert-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, 2 * FogLab.PANEL_HEIGHT + 4) : new GwtApplicationConfiguration(320, 60);}
+			: has("transfert-lab") ? new GwtApplicationConfiguration(TransfertLab.COLUMNS * (FogLab.FRAME_WIDTH + 4) - 4, 2 * FogLab.PANEL_HEIGHT + 4)
+			: has("fog-lab") || has("haze-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, 2 * FogLab.PANEL_HEIGHT + 4) : new GwtApplicationConfiguration(320, 60);}
 
 	@Override
 	public ApplicationListener createApplicationListener()

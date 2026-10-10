@@ -184,9 +184,13 @@ More:
   has each slot's new layer eat the old one in patches: about 5 patches across the view, their edges 0.08 soft (0.01
   sharp, 0.5 a blur), the slots over the stagger's windows. A dissolve draws each layer through a shader, a flush per
   layer, during the transfert only; an `EMPTY` or `PARTICLES` layer, which no shader of the reader's draws, fades
-  instead. The style is the game's call: a page does not store it. Godot:
-  `bg.transfert_into(page, atlas, 3.0, PlaxTransfertStyle.depth_stagger(0.5))` or `PlaxTransfertStyle.dissolve(5, 0.08,
-  0.5)`; jME: `bg.transfertIntoPage(page, atlas, 3, style)`.
+  instead. `TransfertStyle.throughColor(Color.WHITE, 0)` goes through a colour, white possible: each slot's old layer
+  is mixed toward it until it is all that colour halfway through the slot's window, then the new layer comes out of it,
+  and the gradients go through it too (stagger 0: the whole screen that colour at the middle). The colour is mixed in
+  after the page's fog; the cost is the dissolve's, a flush per layer during the transfert only, and an `EMPTY` or
+  `PARTICLES` layer fades out to the gradients instead. The style is the game's call: a page does not store it. Godot:
+  `bg.transfert_into(page, atlas, 3.0, PlaxTransfertStyle.depth_stagger(0.5))`, `PlaxTransfertStyle.dissolve(5, 0.08,
+  0.5)` or `PlaxTransfertStyle.through_color(Color.WHITE, 0)`; jME: `bg.transfertIntoPage(page, atlas, 3, style)`.
 - **Tint every layer:** `heart.parallaxReader.addColorTransfert(color, seconds)`.
 - **Draw your own things between layers:** give the page an `EMPTY` layer named, say, `birds`, at the depth they fly
   at, and register what draws it: `heart.parallaxReader.setLayerHook("birds", (batch, layer, x, y, width, height) ->

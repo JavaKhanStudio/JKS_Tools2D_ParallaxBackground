@@ -20,8 +20,8 @@ is what exists, what the lab shows, and what each way would cost.
 
 ## The lab
 
-`tools/transfert-lab.sh` (Labs screen: transfert-lab) runs the same transfert in four panels, back and forth between
-two of round1's pages, drawn four ways:
+`tools/transfert-lab.sh` (Labs screen: transfert-lab) runs the same transfert in five panels, back and forth between
+two of round1's pages, drawn five ways (A, B, C on top, D and E below):
 
 | Panel | What | In the library today? |
 |---|---|---|
@@ -29,10 +29,12 @@ two of round1's pages, drawn four ways:
 | B | the transfert through a colour grade: the tint goes to the grade colour over the first half, back to white over the second | yes: a game can call both today. The tint multiplies, so it darkens and colours, never lightens: no fade through white |
 | C | fog creep: the mist's white rolls in in patches, far layers first, the page is swapped under the full fog, the fog clears near layers first | no: the lab's own shader |
 | D | dissolve: in each slot the new page's layer eats the old one in patches, back slots first | yes: `TransfertStyle.dissolve` (r250) |
+| E | through a colour: in each slot the old page's layer goes to the colour, then the new one comes out of it, the gradients too; white possible | yes: `TransfertStyle.throughColor` (r251) |
 
 C is GdxLayerEffects' PLAIN shader with a mask taken from FOG's noise (r216's sum of sines, so the same on every GPU), in
-screen pixels; D the same mask in the library's shaders (`dissolved()`, over the camera view), in all three engines. Sliders: the pages, the transfert's length, the hold, the scroll, B's grade colour, and for C and
-D the depth stagger, the patch size and the edge softness. "Copy settings" hands them back as JSON.
+screen pixels; D the same mask in the library's shaders (`dissolved()`, over the camera view), in all three engines. E is the haze's mix toward a second colour in the same shaders (`u_grade`, after the fog). Sliders: the pages, the
+transfert's length, the hold, the scroll, B's grade colour, E's colour, the depth stagger (A, C, D, E), and for C and D
+the patch size and the edge softness. "Copy settings" hands them back as JSON.
 
 ## Ways to carry a transfert, and what each costs
 
@@ -46,7 +48,8 @@ page is written three times and checked by a frame round.
 2. **Fade through a colour** (colour grade). B shows what a tint can do; a real grade (fade to white, lift, desaturate)
    needs the layers drawn through a shader, as the depth haze already does with PLAIN (`u_haze` mixes toward a colour):
    a grade colour and amount are the haze's mix with another colour, so it costs the haze's flush per layer and its
-   three copies. Fade through white is the haze at 1.
+   three copies. Fade through white is the haze at 1. Shipped in r251 as `TransfertStyle.throughColor` (E); lift and
+   desaturate are not.
 3. **Fog creep** (C). The depth haze plus a noise mask: the shaders already have FOG's noise and `hazed()`. Costs a
    flush per layer during the transfert only, a mask uniform in the three shaders, and the swap at full fog (no
    cross-fade needed under it).

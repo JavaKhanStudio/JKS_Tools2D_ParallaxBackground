@@ -14,6 +14,8 @@ import com.jme3.scene.VertexBuffer.Type;
 import com.jme3.scene.VertexBuffer.Usage;
 import com.jme3.util.BufferUtils;
 
+import jks.tools2d.parallax.TransfertStyle;
+
 /**
  * core's {@code SquareBackground}, drawn by jME: a vertical gradient over the top or the bottom part of the screen, in
  * pixels. {@code screenPercentage} is the part left uncovered. Drawn opaque, as libGDX's ShapeRenderer draws it (no
@@ -32,6 +34,7 @@ final class JmeGradient
 	private final Color topTarget = new Color(), bottomTarget = new Color();
 	private float transfertDuration, transfertElapsed;
 	private boolean inTransfert;
+	private TransfertStyle style = TransfertStyle.FADE;
 
 	JmeGradient(AssetManager assets, Color top, Color bottom, float screenPercentage, boolean isTop, float z)
 	{
@@ -63,9 +66,10 @@ final class JmeGradient
 	Geometry geometry()
 	{return geometry;}
 
-	/** Fades both colours toward these over {@code seconds}, as SquareBackground.transfertInto. */
-	void transfertInto(Color top, Color bottom, float seconds)
+	/** Fades both colours toward these over {@code seconds} as {@code style} goes, as SquareBackground.transfertInto. */
+	void transfertInto(Color top, Color bottom, float seconds, TransfertStyle style)
 	{
+		this.style = style == null ? TransfertStyle.FADE : style;
 		topFrom.set(topColor);
 		bottomFrom.set(bottomColor);
 		topTarget.set(top);
@@ -83,8 +87,8 @@ final class JmeGradient
 			return;
 		transfertElapsed += delta;
 		float progress = transfertDuration > 0 ? Math.min(1, transfertElapsed / transfertDuration) : 1;
-		topColor.set(topFrom).lerp(topTarget, progress);
-		bottomColor.set(bottomFrom).lerp(bottomTarget, progress);
+		style.gradient(topFrom, topTarget, progress, topColor);
+		style.gradient(bottomFrom, bottomTarget, progress, bottomColor);
 		if (progress >= 1)
 			inTransfert = false;
 	}

@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
+import jks.tools2d.parallax.TransfertStyle;
+
 /**
  * Vertical gradient drawn behind the layers, covering the top or the bottom part of the screen (in screen pixels).
  * <p>
@@ -24,6 +26,7 @@ public class SquareBackground
 	private final Color topTarget = new Color(), bottomTarget = new Color();
 	private float transfertDuration, transfertElapsed;
 	private boolean inTransfert;
+	private TransfertStyle style = TransfertStyle.FADE;
 
 	public SquareBackground(Color top, Color bottom, float screenPercentage, boolean isTop)
 	{
@@ -59,6 +62,13 @@ public class SquareBackground
 
 	/** Fades both gradient colors (alpha included) toward the given ones over {@code inXSecondes}. */
 	public void transfertInto(Color topTransfert, Color bottomTransfert, float inXSecondes)
+	{transfertInto(topTransfert, bottomTransfert, inXSecondes, TransfertStyle.FADE);}
+
+	/**
+	 * {@link #transfertInto(Color, Color, float)} as the layers' {@code style} goes ({@link TransfertStyle#gradient}):
+	 * through its colour for {@link TransfertStyle#throughColor}, straight for every other. null is FADE.
+	 */
+	public void transfertInto(Color topTransfert, Color bottomTransfert, float inXSecondes, TransfertStyle style)
 	{
 		if (topTransfert == null || bottomTransfert == null)
 			return;
@@ -70,6 +80,7 @@ public class SquareBackground
 		transfertElapsed = 0;
 		transfertDuration = inXSecondes;
 		inTransfert = true;
+		this.style = style == null ? TransfertStyle.FADE : style;
 
 		if (inXSecondes <= 0)
 			act(0);
@@ -82,8 +93,8 @@ public class SquareBackground
 
 		transfertElapsed += delta;
 		float progress = transfertDuration > 0 ? Math.min(1, transfertElapsed / transfertDuration) : 1;
-		topColor.set(topFrom).lerp(topTarget, progress);
-		bottomColor.set(bottomFrom).lerp(bottomTarget, progress);
+		style.gradient(topFrom, topTarget, progress, topColor);
+		style.gradient(bottomFrom, bottomTarget, progress, bottomColor);
 
 		if (progress >= 1)
 			inTransfert = false;

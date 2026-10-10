@@ -97,6 +97,11 @@ repair.
   `SCREEN_UV` with y turned up), set per layer through `LayerEffects.setDissolve`; the reader skips the page fog's
   shared shader during one. Run both frame checks on `engines/godot/tests/transfer` (t09, t10);
   `tools/r250-dissolve/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
+- A transfert through a colour (`TransfertStyle.throughColor`, r251, no format change) is in `hazed()` too: after the
+  fog, mixed toward `u_grade`'s rgb by its a (jME `m_Grade`, Godot `grade`), set per layer through
+  `LayerEffects.setGrade`; the gradients take `TransfertStyle.gradient` (SquareBackground, JmeGradient, Godot's
+  `_act_gradients`). Run both frame checks on `engines/godot/tests/transfer` (t11, t12);
+  `tools/r251-through-color/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
   `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's

@@ -84,6 +84,12 @@ public class ParallaxPageReader implements Disposable
 	 */
 	private boolean dissolving;
 	private float dissolveFallback;
+	/**
+	 * A transfert through a colour's layer is being drawn mixed toward it by the engine ({@link LayerEffects#setGrade}),
+	 * and the opacity it fades at when the engine cannot begin it after all.
+	 */
+	private boolean grading;
+	private float gradeFallback;
 
 	/** The game's seed for the SEQUENCE layers, when {@link #hasSequenceSeed}: see {@link #setSequenceSeed}. */
 	private int sequenceSeed;
@@ -221,8 +227,10 @@ public class ParallaxPageReader implements Disposable
 		frontSpeed = frontSpeedOf(layers);
 		transferFrontSpeed = frontSpeedOf(transferLayers);
 		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();
-		// A dissolve begins each layer with its own mask: no page fog's shared shader then.
-		pageFogOn = pageFog = !dissolve && (fogStrength > 0 || (transferFogStrength > 0 && !transferLayers.isEmpty()))
+		boolean throughColor = transfertStyle.getKind() == TransfertStyle.Kind.THROUGH_COLOR && !transferLayers.isEmpty();
+		// A dissolve begins each layer with its own mask, a transfert through a colour with its own grade: no page fog's
+		// shared shader then.
+		pageFogOn = pageFog = !dissolve && !throughColor && (fogStrength > 0 || (transferFogStrength > 0 && !transferLayers.isEmpty()))
 				&& getLayerEffects().beginPageFog(batch, tint, fogColor, transferFogColor);
 
 		// A layer at alpha 0 still costs its pixels on the GPU, and during a transfer a flush when the pages' atlases differ.
@@ -249,6 +257,15 @@ public class ParallaxPageReader implements Disposable
 						drawDissolved(layers, slot - oldOffset, batch, false, ramp);
 					if (slot >= newOffset)
 						drawDissolved(transferLayers, slot - newOffset, batch, true, ramp);
+					continue;
+				}
+				if (throughColor)
+				{
+					// The outgoing layer until halfway through the slot's window, the incoming one after: both the colour there.
+					if (!TransfertStyle.incomingShows(ramp) && slot >= oldOffset)
+						drawGraded(layers, slot - oldOffset, batch, false, ramp);
+					else if (TransfertStyle.incomingShows(ramp) && slot >= newOffset)
+						drawGraded(transferLayers, slot - newOffset, batch, true, ramp);
 					continue;
 				}
 				if (slot >= oldOffset && setBatchColor(batch, staggered ? 1 - ramp : oldLayerAlpha))
@@ -284,6 +301,25 @@ public class ParallaxPageReader implements Disposable
 		if (dissolving)
 			effects.setDissolve(LayerEffects.DISSOLVE_NONE, 0, 0, 0, 0, 0);
 		dissolving = false;
+	}
+
+	/**
+	 * A transfert through a colour's layer: an IMAGE, SEQUENCE or SHADER one at full opacity, mixed toward the colour by
+	 * the engine as far as the slot at {@code ramp} is ({@link TransfertStyle#gradeOf}); an EMPTY or PARTICLES one, or
+	 * any when the engine draws no grade, faded out by as much, to the gradients going through the colour behind it.
+	 */
+	private void drawGraded(ArrayList<ParallaxLayer> page, int index, Batch batch, boolean incoming, float ramp)
+	{
+		float grade = TransfertStyle.gradeOf(ramp);
+		Enum_LayerKind kind = page.get(index).kind;
+		grading = kind != Enum_LayerKind.EMPTY && kind != Enum_LayerKind.PARTICLES
+				&& getLayerEffects().setGrade(transfertStyle.getColorR(), transfertStyle.getColorG(), transfertStyle.getColorB(), grade);
+		gradeFallback = 1 - grade;
+		if (setBatchColor(batch, grading ? 1 : gradeFallback))
+			drawLayer(page, index, batch, incoming);
+		if (grading)
+			effects.setGrade(0, 0, 0, 0);
+		grading = false;
 	}
 
 	/** Puts the game's shader back before a hook or particles, which draw with it. */
@@ -418,7 +454,7 @@ public class ParallaxPageReader implements Disposable
 		}
 		else
 		{
-			shaded = (layer.kind == Enum_LayerKind.SHADER || fog > 0 || dissolving)
+			shaded = (layer.kind == Enum_LayerKind.SHADER || fog > 0 || dissolving || grading)
 					&& getLayerEffects().begin(batch, layer, layer.getShaderPhase(effectTime), fog, incoming ? transferFogColor : fogColor);
 			if (!shaded)
 			{
@@ -426,6 +462,9 @@ public class ParallaxPageReader implements Disposable
 				if (dissolving)
 					// The engine could not mask it: the layer fades to its share instead.
 					setBatchColor(batch, dissolveFallback);
+				else if (grading)
+					// Nor mix it toward the colour: the layer fades out to the gradients instead.
+					setBatchColor(batch, gradeFallback);
 			}
 		}
 

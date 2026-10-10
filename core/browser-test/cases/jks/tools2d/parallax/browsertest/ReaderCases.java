@@ -90,7 +90,11 @@ final class ReaderCases
 				new BrowserCase("reader: aTransfertWithoutAStyleFadesEverySlotAtOnce", () -> new ReaderCases().aTransfertWithoutAStyleFadesEverySlotAtOnce()),
 				new BrowserCase("reader: dissolveMasksEachSlotOnlyWhileInTransferInEveryRepeatMode", () -> new ReaderCases().dissolveMasksEachSlotOnlyWhileInTransferInEveryRepeatMode()),
 				new BrowserCase("reader: dissolveFadesWhatTheEngineCannotMask", () -> new ReaderCases().dissolveFadesWhatTheEngineCannotMask()),
-				new BrowserCase("reader: dissolveKeepsEachPagesFogAndTheTint", () -> new ReaderCases().dissolveKeepsEachPagesFogAndTheTint()));
+				new BrowserCase("reader: dissolveKeepsEachPagesFogAndTheTint", () -> new ReaderCases().dissolveKeepsEachPagesFogAndTheTint()),
+				new BrowserCase("reader: throughColorGradesOneSideOfEachSlotInEveryRepeatMode", () -> new ReaderCases().throughColorGradesOneSideOfEachSlotInEveryRepeatMode()),
+				new BrowserCase("reader: throughColorFadesWhatTheEngineCannotGrade", () -> new ReaderCases().throughColorFadesWhatTheEngineCannotGrade()),
+				new BrowserCase("reader: throughColorKeepsEachPagesFogAndTheTint", () -> new ReaderCases().throughColorKeepsEachPagesFogAndTheTint()),
+				new BrowserCase("reader: throughColorTakesTheGradientsThroughItsColor", () -> new ReaderCases().throughColorTakesTheGradientsThroughItsColor()));
 	}
 
 	/** A region of the given pixel size, without any texture behind it. */
@@ -1764,5 +1768,258 @@ final class ReaderCases
 			equal(1, draw[5], 0, "at full opacity: the mask does the rest");
 		}
 		isTrue(batch.getColor().equals(Color.WHITE), "the batch white after the draw");
+	}
+
+	/**
+	 * Stands for an engine that grades: records each layer begun, the grade it was begun under (r, g, b, amount) and its
+	 * fog; checks every begin is ended, and the grade changes between layers only.
+	 */
+	private final class GradeEffects implements LayerEffects
+	{
+		final List<ParallaxLayer> layers = new ArrayList<>();
+		final List<float[]> grades = new ArrayList<>();
+		final List<Float> fogs = new ArrayList<>();
+		final float[] grade = new float[4];
+		int setCalls, pageFogs;
+		private boolean open;
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+		{throw new AssertionError("the reader calls the begin that takes the fog");}
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fog, Color fogColor)
+		{
+			isFalse(open, "a layer begun inside another");
+			open = true;
+			layers.add(layer);
+			grades.add(Arrays.copyOf(grade, grade.length));
+			fogs.add(fog);
+			return true;
+		}
+
+		@Override
+		public void end(Batch batch, ParallaxLayer layer)
+		{
+			isTrue(open, "ended without a begin");
+			open = false;
+		}
+
+		@Override
+		public boolean beginPageFog(Batch batch, Color tint, Color fog, Color incomingFog)
+		{
+			pageFogs++;
+			return false;
+		}
+
+		@Override
+		public boolean setGrade(float r, float g, float b, float amount)
+		{
+			isFalse(open, "the grade changed inside a layer");
+			setCalls++;
+			grade[0] = r;
+			grade[1] = g;
+			grade[2] = b;
+			grade[3] = amount;
+			return true;
+		}
+
+		/** The grade {@code layer} was last begun under; null when it was not begun. */
+		float[] gradeOf(ParallaxLayer layer)
+		{
+			int i = layers.lastIndexOf(layer);
+			return i < 0 ? null : grades.get(i);
+		}
+
+		void clear()
+		{
+			layers.clear();
+			grades.clear();
+			fogs.clear();
+			setCalls = 0;
+		}
+	}
+
+	/** How much of the colour a slot at {@code ramp} is: up to 1 halfway through its window, back to 0 at its end. */
+	private static float labGrade(float ramp)
+	{return 1 - Math.abs(2 * ramp - 1);}
+
+	/**
+	 * r251: a transfert through a colour begins, in each slot, the outgoing layer until halfway through the slot's window
+	 * and the incoming one after, never both, at full opacity, under the colour by as much as labGrade says, the grade
+	 * set back to 0 after each; no page fog's shared shader. Outside the transfert, nothing begun and no grade set.
+	 */
+	void throughColorGradesOneSideOfEachSlotInEveryRepeatMode()
+	{
+		float stagger = 1;
+		TransfertStyle style = TransfertStyle.throughColor(new Color(1, 0.6f, 2, 0.1f), stagger);
+		same(TransfertStyle.Kind.THROUGH_COLOR, style.getKind(), "through a colour");
+		equal(1, style.getColorB(), 0, "a channel clamped to 1");
+		for (int mode = 0; mode < 4; mode++)
+		{
+			String repeat = new String[] { "X", "Y", "XY", "none" }[mode];
+			ParallaxPageReader reader = reader(mode != 1 && mode != 3, mode == 1 || mode == 2);
+			GradeEffects effects = new GradeEffects();
+			reader.setLayerEffects(effects);
+			List<ParallaxLayer> from = widened(0.3f, 3), into = widened(0.5f, 3);
+			reader.addLayers(from);
+			reader.draw(camera, batch);
+			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun before the transfert");
+			reader.addLayersTransfert(page(into), null, 1, style);
+			same(style, reader.getTransfertStyle(), "the style under way");
+			for (float t : new float[] { 0.25f, 0.5f, 0.75f })
+			{
+				reader.act(0.25f, 0, 0);
+				isTrue(reader.isInTransfer(), repeat + " at " + t + ": in transfer");
+				effects.clear();
+				draws.clear();
+				reader.draw(camera, batch);
+				int shown = 0;
+				for (int slot = 0; slot < 3; slot++)
+				{
+					float ramp = labRamp(t, stagger, slot, 3);
+					boolean incoming = ramp >= 0.5f;
+					for (int side = 0; side < 2; side++)
+					{
+						ParallaxLayer layer = (side == 0 ? from : into).get(slot);
+						String what = repeat + " at " + t + (side == 0 ? ", outgoing" : ", incoming") + " slot " + slot;
+						float[] grade = effects.gradeOf(layer);
+						if (incoming != (side == 1))
+						{
+							isTrue(grade == null, what + ": the other side of the slot is not begun");
+							drawnAt(side == 0 ? 0.3f : 0.5f, slot, 0, what);
+							continue;
+						}
+						shown++;
+						isTrue(grade != null, what + ": begun");
+						equal(1, grade[0], 0, what + ": red");
+						equal(0.6f, grade[1], 0, what + ": green");
+						equal(1, grade[2], 0, what + ": blue");
+						equal(labGrade(ramp), grade[3], 1e-6f, what + ": the slot's grade");
+						drawnAt(side == 0 ? 0.3f : 0.5f, slot, 1, what);
+					}
+				}
+				equal(3, shown, repeat + " at " + t + ": one side of each slot");
+				equal(shown, effects.layers.size(), repeat + " at " + t + ": one begin per layer shown");
+				equal(2 * shown, effects.setCalls, repeat + " at " + t + ": a grade set, and set back to 0, per layer");
+				equal(0, effects.grade[3], 0, repeat + " at " + t + ": no grade left on after the draw");
+				equal(0, effects.pageFogs, repeat + ": no page fog through a colour");
+			}
+			reader.act(0.25f, 0, 0);
+			isFalse(reader.isInTransfer(), repeat + ": the transfert is over");
+			effects.clear();
+			draws.clear();
+			reader.draw(camera, batch);
+			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun after the transfert");
+			drawnAt(0.5f, 0, 1, repeat + ": the new page, plain");
+		}
+	}
+
+	/**
+	 * An engine that draws no grade (setGrade false, as a LayerEffects written before it), and an EMPTY layer in any
+	 * engine: the side of the slot shown fades out by the grade, to the gradients going through the colour.
+	 */
+	void throughColorFadesWhatTheEngineCannotGrade()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		RecordingEffects before = new RecordingEffects();
+		reader.setLayerEffects(before);
+		reader.addLayers(widened(0.3f, 3));
+		reader.addLayersTransfert(page(widened(0.5f, 3)), null, 1, TransfertStyle.throughColor(Color.WHITE, 2));
+		reader.act(0.5f, 0, 0);
+		draws.clear();
+		reader.draw(camera, batch);
+		for (int slot = 0; slot < 3; slot++)
+		{
+			float ramp = labRamp(0.5f, 2, slot, 3);
+			boolean incoming = ramp >= 0.5f;
+			drawnAt(0.3f, slot, incoming ? 0 : 1 - labGrade(ramp), "no grade in the engine, outgoing slot " + slot);
+			drawnAt(0.5f, slot, incoming ? 1 - labGrade(ramp) : 0, "no grade in the engine, incoming slot " + slot);
+		}
+		equal(0, before.runs.size(), "nothing begun");
+
+		ParallaxPageReader hooked = reader(true, false);
+		GradeEffects effects = new GradeEffects();
+		hooked.setLayerEffects(effects);
+		final float[] alpha = { -1 };
+		hooked.setLayerHook("slot", new LayerHook()
+		{
+			@Override
+			public void draw(Batch batch, ParallaxLayer layer, float x, float y, float width, float height)
+			{alpha[0] = batch.getColor().a;}
+		});
+		ParallaxLayer back = layer(0);
+		hooked.addLayers(list(ParallaxLayer.empty("slot", 0.3f), back));
+		hooked.addLayersTransfert(page(list(layer(0), layer(0))), null, 1, TransfertStyle.throughColor(Color.WHITE, 0));
+		hooked.act(0.25f, 0, 0);
+		hooked.draw(camera, batch);
+		equal(0.5f, alpha[0], 1e-6f, "the hook fades out by the grade");
+		isTrue(effects.gradeOf(back) != null, "the image layer is graded");
+		equal(1, effects.layers.size(), "the EMPTY layer is not begun");
+	}
+
+	/**
+	 * Each page's layers keep their own fog under the grade (the shaders mix the colour in after it), begun one by one
+	 * (no page fog's shared shader), a SHADER layer through its effect; drawn in the tint; the batch white after.
+	 */
+	void throughColorKeepsEachPagesFogAndTheTint()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		GradeEffects effects = new GradeEffects();
+		reader.setLayerEffects(effects);
+		reader.setFog(0.1f, Color.WHITE);
+		reader.addColorTransfert(new Color(0.5f, 1, 1, 1), 0);
+		ParallaxLayer oldBack = atSpeed(0.01f), oldFront = atSpeed(0.1f);
+		reader.addLayers(list(oldBack, oldFront));
+		ParallaxLayer newBack = atSpeed(0.01f), newFront = atSpeed(0.2f), wave = shaded(0.5f, 3, 1);
+		WholePage_Model next = page(list(newBack, wave, newFront));
+		next.setFogStrength(0.02f);
+		reader.addLayersTransfert(next, null, 2, TransfertStyle.throughColor(Color.WHITE, 0));
+		reader.act(0.5f, 0, 0);
+		draws.clear();
+		reader.draw(camera, batch);
+		equal(fog(0.1f, 0.01f, 0.1f), effects.fogs.get(effects.layers.indexOf(oldBack)), 1e-6f, "the outgoing page: its own fog");
+		equal(0, effects.fogs.get(effects.layers.indexOf(oldFront)), 0, "a front layer begun with no fog");
+		equal(0.5f, effects.gradeOf(oldBack)[3], 1e-6f, "a quarter in: half the colour");
+		isTrue(effects.gradeOf(newBack) == null, "the incoming page not drawn yet");
+		reader.act(1, 0, 0);
+		effects.clear();
+		draws.clear();
+		reader.draw(camera, batch);
+		equal(fog(0.02f, 0.01f, 0.2f), effects.fogs.get(effects.layers.indexOf(newBack)), 1e-6f, "the incoming page: its own");
+		equal(0.5f, effects.gradeOf(newBack)[3], 1e-6f, "three quarters in: half the colour");
+		isTrue(effects.gradeOf(wave) != null, "a SHADER layer through its effect and the grade");
+		isTrue(effects.gradeOf(oldBack) == null, "the outgoing page no longer drawn");
+		equal(0, effects.pageFogs, "no page fog through a colour");
+		for (float[] draw : draws)
+		{
+			equal(0.5f, draw[4], 0, "drawn in the tint");
+			equal(1, draw[5], 0, "at full opacity: the grade does the rest");
+		}
+		isTrue(batch.getColor().equals(Color.WHITE), "the batch white after the draw");
+	}
+
+	/**
+	 * The gradients: straight from the old colour to the new with any style but THROUGH_COLOR, which goes to its colour
+	 * by the middle, at the back slot's pace (stagger 1: twice as fast), and out of it into the new one.
+	 */
+	void throughColorTakesTheGradientsThroughItsColor()
+	{
+		Color from = new Color(0, 0, 0.5f, 1), to = new Color(0.4f, 0.2f, 0, 1), out = new Color();
+		TransfertStyle white = TransfertStyle.throughColor(Color.WHITE, 0);
+		white.gradient(from, to, 0.25f, out);
+		isTrue(out.equals(new Color(0.5f, 0.5f, 0.75f, 1)), "a quarter in: halfway from the old colour to white, " + out);
+		white.gradient(from, to, 0.5f, out);
+		isTrue(out.equals(Color.WHITE), "the middle: white, " + out);
+		white.gradient(from, to, 0.75f, out);
+		isTrue(out.equals(new Color(0.7f, 0.6f, 0.5f, 1)), "three quarters in: halfway from white to the new colour, " + out);
+		white.gradient(from, to, 1, out);
+		isTrue(out.equals(to), "the end: the new colour, " + out);
+		TransfertStyle.throughColor(Color.WHITE, 1).gradient(from, to, 0.25f, out);
+		isTrue(out.equals(Color.WHITE), "stagger 1: the back slot's pace, white a quarter in, " + out);
+		TransfertStyle.FADE.gradient(from, to, 0.5f, out);
+		isTrue(out.equals(new Color(0.2f, 0.1f, 0.25f, 1)), "a plain fade: straight, " + out);
+		TransfertStyle.depthStagger(1).gradient(from, to, 0.5f, out);
+		isTrue(out.equals(new Color(0.2f, 0.1f, 0.25f, 1)), "a depth stagger: straight too, " + out);
 	}
 }

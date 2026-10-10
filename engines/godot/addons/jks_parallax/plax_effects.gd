@@ -7,10 +7,11 @@ extends RefCounted
 ## Each effect works on the image's own coordinates, taken from UV: x and y in page units from the image's bottom-left,
 ## as it is drawn. region: the region's u, v, u2, v2 (v at the image's top); size: the drawn image's width and height in
 ## page units; effect: amplitude, wavelength, phase; haze: the depth fog at the layer, 0 to 1, which hazed() mixes the
-## color toward fog_color by, its alpha times dissolved() (fog_of). dissolve, cells: a transfert's dissolve (side 0 none,
+## color toward fog_color by, then toward grade's rgb by its a (a transfert through a colour, set_grade), its alpha
+## times dissolved() (fog_of). dissolve, cells: a transfert's dissolve (side 0 none,
 ## 1 outgoing, 2 incoming; ramp, softness, drift; the noise's cells across and up the view), which dissolved() reads at
 ## SCREEN_UV, y turned up as libGDX's view. TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
-## the page's depth fog reaches, or any a dissolve masks.
+## the page's depth fog reaches, or any a dissolve masks or a transfert through a colour grades.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
 const EFFECTS := ["WAVE", "FOG"]
@@ -25,6 +26,7 @@ uniform float haze;
 uniform vec3 fog_color = vec3(0.93, 0.95, 0.97);
 uniform vec4 dissolve;
 uniform vec2 cells;
+uniform vec4 grade;
 varying vec4 tint;
 void vertex() {
 	tint = COLOR;
@@ -44,7 +46,7 @@ float dissolved(vec2 screen_uv) {
 	return dissolve.x < 1.5 ? 1.0 - m : m;
 }
 vec4 hazed(vec4 color, vec2 screen_uv) {
-	return vec4(mix(color.rgb, fog_color, haze), color.a * dissolved(screen_uv));
+	return vec4(mix(mix(color.rgb, fog_color, haze), grade.rgb, grade.a), color.a * dissolved(screen_uv));
 }
 """
 
@@ -131,6 +133,11 @@ static func set_dissolve(m: ShaderMaterial, side: int, ramp: float, softness: fl
 		cells_y: float) -> void:
 	m.set_shader_parameter("dissolve", Vector4(side, ramp, softness, drift))
 	m.set_shader_parameter("cells", Vector2(cells_x, cells_y))
+
+
+## LayerEffects.setGrade on a layer's material: mixed toward `color` by `amount`, 0 to 1, after the fog.
+static func set_grade(m: ShaderMaterial, color: Color, amount: float) -> void:
+	m.set_shader_parameter("grade", Vector4(color.r, color.g, color.b, clampf(amount, 0, 1)))
 
 
 ## ParallaxPageReader.fogOf: how much of the fog's colour layer `model` is mixed toward, 0 to 1:

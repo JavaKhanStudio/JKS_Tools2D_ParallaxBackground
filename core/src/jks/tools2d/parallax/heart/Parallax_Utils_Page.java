@@ -28,7 +28,10 @@ public final class Parallax_Utils_Page
 	public static void transfertIntoPage(Parallax_Heart ref, WholePage_Model pageModel, float inXSecondes)
 	{transfertIntoPage(ref, pageModel, inXSecondes, TransfertStyle.FADE);}
 
-	/** Cross-fades into {@code pageModel}, its layers drawn as {@code style} says; the gradients fade as with any style. */
+	/**
+	 * Cross-fades into {@code pageModel}, its layers drawn as {@code style} says; the gradients fade straight, or through
+	 * a {@link TransfertStyle#throughColor}'s colour.
+	 */
 	public static void transfertIntoPage(Parallax_Heart ref, WholePage_Model pageModel, float inXSecondes, TransfertStyle style)
 	{
 		// A transfer interrupted by a new one never becomes the current page.
@@ -38,9 +41,9 @@ public final class Parallax_Utils_Page
 
 		ref.parallaxReader.addLayersTransfert(pageModel, ref.relativePath, inXSecondes, style);
 		if (ref.topSquare != null)
-			ref.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes);
+			ref.topSquare.transfertInto(pageModel.topHalf_top, pageModel.topHalf_bottom, inXSecondes, style);
 		if (ref.bottomSquare != null)
-			ref.bottomSquare.transfertInto(pageModel.bottomHalf_top, pageModel.bottomHalf_bottom, inXSecondes);
+			ref.bottomSquare.transfertInto(pageModel.bottomHalf_top, pageModel.bottomHalf_bottom, inXSecondes, style);
 		if (!ref.parallaxReader.isInTransfer())
 			transferFinished(ref);
 	}

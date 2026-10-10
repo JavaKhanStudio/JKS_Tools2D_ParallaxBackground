@@ -70,6 +70,8 @@ body.lab {
 	pointer-events: none;
 }
 .lab-stage.lab-row .lab-labels { grid-template-rows: 1fr; }
+/* Three panels a row (the transfert lab, r251). */
+.lab-stage.lab-three .lab-labels { grid-template-columns: 764fr 764fr 760fr; }
 .panel-label {
 	padding: 4px 8px;
 	font: 600 15px system-ui, sans-serif;
@@ -157,6 +159,8 @@ body.lab {
 @media (max-width: 719px) {
 	body.lab { padding: 6px 8px 12px; }
 	.panel-label { padding: 2px 4px; font-size: 11px; }
+	/* A third of a phone is too narrow for a title's lines: one line each, cut, the panel under it in view. */
+	.lab-three .panel-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.lab-controls { padding: 4px 8px; }
 	.ctl { grid-template-columns: minmax(5em, 9em) minmax(70px, 1fr) max-content; min-height: 36px; }
 	.ctl-choice select { height: 32px; }
