@@ -12,13 +12,16 @@ extends RefCounted
 ## 1 outgoing, 2 incoming; ramp, softness, drift; the noise's cells across and up the view), which dissolved() reads at
 ## SCREEN_UV, y turned up as libGDX's view. across: the view's width in page units, where the layer's noise starts from
 ## its left (effect_start_x), 1 or -1 (flipped on X); along() reads it at SCREEN_UV: where the fragment is along the
-## layer, local().x carried on across its tiles, so FOG has no seam at a tile edge (r229). TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
+## layer, local() carried on across its tiles, so FOG has no seam at a tile edge (r229); up: the same up the view, from
+## its bottom (effect_start_y), -1 flipped on Y (r262). TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
 ## the page's depth fog reaches, or any a dissolve masks or a transfert through a colour grades.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
 const EFFECTS := ["WAVE", "FOG"]
 ## Enum_ShaderEffect.FOG_PERIOD: how many wavelengths FOG's patches run before they repeat.
 const FOG_PERIOD := 8
+## Enum_ShaderEffect.FOG_PERIOD_Y: how many wavelengths they run up before they repeat (r262).
+const FOG_PERIOD_Y := 10
 
 const _HEAD := """shader_type canvas_item;
 uniform vec4 region;
@@ -30,6 +33,7 @@ uniform vec4 dissolve;
 uniform vec2 cells;
 uniform vec4 grade;
 uniform vec3 across = vec3(0.0, 0.0, 1.0);
+uniform vec3 up = vec3(0.0, 0.0, 1.0);
 varying vec4 tint;
 void vertex() {
 	tint = COLOR;
@@ -37,8 +41,8 @@ void vertex() {
 vec2 local(vec2 uv) {
 	return vec2((uv.x - region.x) / (region.z - region.x) * size.x, (region.w - uv.y) / (region.w - region.y) * size.y);
 }
-float along(vec2 screen_uv) {
-	return across.z * (screen_uv.x * across.x - across.y);
+vec2 along(vec2 screen_uv) {
+	return vec2(across.z * (screen_uv.x * across.x - across.y), up.z * ((1.0 - screen_uv.y) * up.x - up.y));
 }
 float dissolved(vec2 screen_uv) {
 	if (dissolve.x < 0.5)
@@ -67,7 +71,7 @@ const _WAVE := _HEAD + """void fragment() {
 ## FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines whose x frequencies are 7, 17 and 23 per
 ## 8 wavelengths (FOG_PERIOD).
 const _FOG := _HEAD + """void fragment() {
-	vec2 p = (vec2(along(SCREEN_UV), local(UV).y) + vec2(effect.z, 0.0)) / effect.y;
+	vec2 p = (along(SCREEN_UV) + vec2(effect.z, 0.0)) / effect.y;
 	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
 		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
 		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
@@ -126,6 +130,24 @@ static func effect_start_x(l: Dictionary) -> float:
 	return fmod(start, p) if p > 0 else start
 
 
+## ParallaxLayer.getShaderPeriodY: where the effect repeats up, one wavelength, FOG_PERIOD_Y for FOG; 0 without one.
+static func period_y(model: Dictionary) -> float:
+	var wavelength: float = model.get("shaderWavelength", 0.0)
+	if not wavelength > 0:
+		return 0.0
+	return wavelength * (FOG_PERIOD_Y if model.get("shaderEffect", "") == "FOG" else 1)
+
+
+## ParallaxLayer.getEffectStartY: where FOG's noise starts on Y, in page units from the view's bottom, wrapped to
+## period_y: the image's bottom edge in the tile at distance_y (its top edge flipped on Y), carried back by what
+## _act_layer wrapped (r262).
+static func effect_start_y(l: Dictionary) -> float:
+	var trim: float = (1 - l.trim_bottom) if l.model.flipY else l.trim_bottom
+	var start: float = l.distance_y + l.wrapped_y + l.height * trim
+	var p := period_y(l.model)
+	return fmod(start, p) if p > 0 else start
+
+
 ## What is drawn of an atlas region `r`, in texels: half a texel in on every side, as ParallaxLayer.insetByHalfATexel
 ## (r218). A linear sample at a tile's edge then never reads the atlas pixel past it, transparent in an atlas packed
 ## without duplicatePadding.
@@ -134,9 +156,9 @@ static func drawn_rect(r: Dictionary) -> Rect2:
 	return rect.grow(-0.5) if r.width >= 2 and r.height >= 2 else rect
 
 
-## GdxLayerEffects.uniforms: the numbers of a SHADER layer `l` of PlaxBackground, set on its material; `view_w` the
-## view's width in page units.
-static func apply(m: ShaderMaterial, l: Dictionary, seconds: float, view_w: float) -> void:
+## GdxLayerEffects.uniforms: the numbers of a SHADER layer `l` of PlaxBackground, set on its material; `view_w` and
+## `view_h` the view's size in page units.
+static func apply(m: ShaderMaterial, l: Dictionary, seconds: float, view_w: float, view_h: float) -> void:
 	var r: Dictionary = l.region
 	var texture_size: Vector2 = r.texture.get_size()
 	var model: Dictionary = l.model
@@ -151,6 +173,7 @@ static func apply(m: ShaderMaterial, l: Dictionary, seconds: float, view_w: floa
 	m.set_shader_parameter("effect", Vector3(amplitude if on else 0.0, model.shaderWavelength if on else 1.0,
 			phase(model, seconds) if on else 0.0))
 	m.set_shader_parameter("across", Vector3(view_w, effect_start_x(l), -1.0 if model.flipX else 1.0))
+	m.set_shader_parameter("up", Vector3(view_h, effect_start_y(l), -1.0 if model.flipY else 1.0))
 
 
 ## LayerEffects.setDissolve on a layer's material: `side` 0 (none), 1 (outgoing) or 2 (incoming), at the slot's `ramp`,

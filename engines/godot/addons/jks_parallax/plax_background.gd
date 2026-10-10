@@ -439,6 +439,7 @@ func _sync_transfer_positions() -> void:
 		to.travel_y = to.distance_y
 		# Its own noise, from its own tile: what the outgoing layer wrapped is not its.
 		to.wrapped_x = 0.0
+		to.wrapped_y = 0.0
 
 
 func _finish_transfert() -> void:
@@ -512,6 +513,7 @@ func _reset_position(l: Dictionary) -> void:
 	l.travel_x = l.distance_x
 	l.travel_y = l.distance_y
 	l.wrapped_x = 0.0
+	l.wrapped_y = 0.0
 
 
 func _process(delta: float) -> void:
@@ -564,7 +566,11 @@ func _act_layer(l: Dictionary, delta: float, speed_x: float, speed_y: float) -> 
 		l.wrapped_x = fmod(l.wrapped_x + before - l.distance_x, period) if period > 0 else 0.0
 	var total_h: float = l.height + m.padY
 	if _repeat_y and total_h > 0:
+		var below: float = l.distance_y
 		l.distance_y = fmod(l.distance_y, total_h)
+		# The same on Y, within its period up (ParallaxLayer.wrappedY, r262).
+		var period_y := PlaxEffects.period_y(m)
+		l.wrapped_y = fmod(l.wrapped_y + below - l.distance_y, period_y) if period_y > 0 else 0.0
 
 
 func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool) -> Dictionary:
@@ -573,6 +579,7 @@ func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool
 	l.distance_x = 0.0
 	l.distance_y = 0.0
 	l.wrapped_x = 0.0
+	l.wrapped_y = 0.0
 	_size_layer(l)
 	return l
 
@@ -712,7 +719,7 @@ func _draw_layer(l: Dictionary) -> void:
 		PlaxEffects.set_grade(l.canvas.material, _style.color,
 				_style.grade_at(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size())))
 	if m.kind == "SHADER":
-		PlaxEffects.apply(l.canvas.material, l, _effect_time, view_w)
+		PlaxEffects.apply(l.canvas.material, l, _effect_time, view_w, view_h)
 	if l.canvas.material:
 		l.canvas.material.set_shader_parameter("haze", l.haze)
 		l.canvas.material.set_shader_parameter("fog_color", l.fog_color)

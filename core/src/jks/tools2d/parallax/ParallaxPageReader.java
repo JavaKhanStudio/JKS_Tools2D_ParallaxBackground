@@ -216,6 +216,7 @@ public class ParallaxPageReader implements Disposable
 			to.setScrollY(from.getScrollY());
 			// Its own noise, from its own tile: what the outgoing layer wrapped is not its.
 			to.wrappedX = 0;
+			to.wrappedY = 0;
 		}
 	}
 
@@ -226,7 +227,7 @@ public class ParallaxPageReader implements Disposable
 		viewLeft = worldCamera.position.x - viewWidth / 2;
 		viewBottom = worldCamera.position.y - viewHeight / 2;
 
-		getLayerEffects().setViewWidth(viewWidth);
+		getLayerEffects().setView(viewWidth, viewHeight, drawingHeight);
 		frontSpeed = frontSpeedOf(layers);
 		transferFrontSpeed = frontSpeedOf(transferLayers);
 		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();

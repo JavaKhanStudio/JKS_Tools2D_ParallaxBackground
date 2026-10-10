@@ -1,0 +1,10 @@
+{
+ "round": "r262-fog-seam-y",
+ "about": "r262: an even white slab through FOG, amplitude 1, 20 of 40 units wide and 5 tall, tiling on Y only, scrolled up too (speedY 30) so it wraps on Y. y5 (the shaders round's s07): wavelength 5, FOG's y period 50 units, ten times the image: before r262 it cut at every tile edge on Y; the noise now runs on across them. y05: wavelength 0.5, a y period of 5, the image's height: no cut either way. Rendered with tools/parallax-lab-shots.sh tools/r262-fog-seam-y OUT; tools/r262-fog-seam-y/seam.py OUT/*.png measures the worst row step.",
+ "scenes": [
+  {"id": "y5", "page": "engines/godot/tests/shaders/s07.jplax", "atlasDir": "core/test-data/shaders", "speedY": 30,
+   "name": "y-period-ten-images", "about": "wavelength 5: the noise repeats every 50 units up, the image every 5"},
+  {"id": "y05", "page": "tools/r262-fog-seam-y/y05.jplax", "atlasDir": "core/test-data/shaders", "speedY": 30,
+   "name": "y-period-the-image", "about": "wavelength 0.5: the noise repeats every 5 units up, as the image does"}
+ ]
+}

@@ -100,6 +100,8 @@ public class ParallaxLayer
 	 * FOG's noise runs on across the tiles from {@link #getEffectStartX} (r229).
 	 */
 	protected float wrappedX;
+	/** The same on Y, within {@link #getShaderPeriodY}, for {@link #getEffectStartY} (r262). */
+	protected float wrappedY;
 
 	protected float padX;
 	protected float padXFactor;
@@ -253,6 +255,7 @@ public class ParallaxLayer
 		currentDistanceX = decalPercentX * (worldWidth / 100);
 		currentDistanceY = decalPercentY * (worldHeight / 100);
 		wrappedX = 0;
+		wrappedY = 0;
 	}
 
 	/**
@@ -392,6 +395,7 @@ public class ParallaxLayer
 		copy.currentDistanceX = currentDistanceX;
 		copy.currentDistanceY = currentDistanceY;
 		copy.wrappedX = wrappedX;
+		copy.wrappedY = wrappedY;
 		copy.padX = padX;
 		copy.padXFactor = padXFactor;
 		copy.padY = padY;
@@ -430,7 +434,12 @@ public class ParallaxLayer
 
 		float totalHeight = getTotalHeight();
 		if (onY && totalHeight > 0)
+		{
+			float before = currentDistanceY;
 			currentDistanceY %= totalHeight;
+			float period = getShaderPeriodY();
+			wrappedY = period > 0 ? (wrappedY + before - currentDistanceY) % period : 0;
+		}
 	}
 
 	/** The layer's tile: its image, or a SEQUENCE layer's whole cycle, without the padX after its last slot. */
@@ -751,6 +760,22 @@ public class ParallaxLayer
 	{
 		float start = currentDistanceX + wrappedX + getRegionWidth() * (flipX ? 1 - trimLeft : trimLeft);
 		float period = getShaderPeriod();
+		return period > 0 ? start % period : start;
+	}
+
+	/** Where the effect repeats up, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD_Y} for FOG; 0 without a wavelength. */
+	public float getShaderPeriodY()
+	{return shaderWavelength > 0 ? shaderWavelength * (shaderEffect == null ? 1 : shaderEffect.periodY()) : 0;}
+
+	/**
+	 * {@link #getEffectStartX} on Y: where FOG's noise starts, in world units above the layers' y 0, wrapped to
+	 * {@link #getShaderPeriodY}: the bottom edge of the image of the tile at currentDistanceY, its top edge when flipped
+	 * on Y (the noise then runs down), carried back by what act() wrapped, so a tile edge on Y is no seam either (r262).
+	 */
+	public float getEffectStartY()
+	{
+		float start = currentDistanceY + wrappedY + getRegionHeight() * (flipY ? 1 - trimBottom : trimBottom);
+		float period = getShaderPeriodY();
 		return period > 0 ? start % period : start;
 	}
 

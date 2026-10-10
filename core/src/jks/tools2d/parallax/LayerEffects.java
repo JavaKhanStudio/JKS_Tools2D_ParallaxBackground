@@ -66,11 +66,12 @@ public interface LayerEffects
 	{}
 
 	/**
-	 * The width of the view the layers begun next are drawn in, in world units: FOG's noise is laid across it, from where
-	 * each layer's starts ({@link ParallaxLayer#getEffectStartX}), so it runs on across the tiles (r229). The reader calls
-	 * it every frame before its layers.
+	 * The size of the view the layers begun next are drawn in, in world units, and how far above its bottom the layers'
+	 * y 0 is (the reader's drawing height): FOG's noise is laid across it, from where each layer's starts
+	 * ({@link ParallaxLayer#getEffectStartX}, {@link ParallaxLayer#getEffectStartY}), so it runs on across the tiles, on X
+	 * (r229) and Y (r262). The reader calls it every frame before its layers.
 	 */
-	default void setViewWidth(float width)
+	default void setView(float width, float height, float floor)
 	{}
 
 	/** {@link #setDissolve} sides: no mask; the outgoing layer, kept where the mask is not; the incoming, where it is. */

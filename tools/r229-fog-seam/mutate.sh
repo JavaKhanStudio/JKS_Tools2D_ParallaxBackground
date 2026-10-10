@@ -24,13 +24,13 @@ run() {
 	fi
 	restore
 }
-sed -i 's/vec2(along(SCREEN_UV), local(UV).y)/local(UV)/' "$FX"
-grep -q "vec2 p = (local(UV) + vec2" "$FX" || { echo "mutation 1 did not apply"; exit 2; }
+sed -i 's/vec2 p = (along(SCREEN_UV) + vec2/vec2 p = (vec2(local(UV).x, along(SCREEN_UV).y) + vec2/' "$FX"
+grep -q "vec2(local(UV).x, along(SCREEN_UV).y)" "$FX" || { echo "mutation 1 did not apply"; exit 2; }
 run "the noise inside one tile in Godot" tools/godot-parallax-shots.sh
 sed -i 's/l.wrapped_x = fmod(l.wrapped_x + before - l.distance_x, period) if period > 0 else 0.0/l.wrapped_x = 0.0/' "$BG"
 grep -q "^		l.wrapped_x = 0.0$" "$BG" || { echo "mutation 2 did not apply"; exit 2; }
 run "Godot's wrap not carried" tools/godot-parallax-shots.sh
-sed -i 's/vec2(along(), local().y)/local()/' "$FRAG"
-grep -q "vec2 p = (local() + vec2" "$FRAG" || { echo "mutation 3 did not apply"; exit 2; }
+sed -i 's/vec2 p = (along() + vec2/vec2 p = (vec2(local().x, along().y) + vec2/' "$FRAG"
+grep -q "vec2(local().x, along().y)" "$FRAG" || { echo "mutation 3 did not apply"; exit 2; }
 run "the noise inside one tile in jME" tools/jme-parallax-shots.sh
 exit $status

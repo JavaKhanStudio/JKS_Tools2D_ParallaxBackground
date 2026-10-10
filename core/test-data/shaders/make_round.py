@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Writes the shaders round (r180, docs/effect-layers.md phase 3): core/test-data/shaders/mist.png and HiverFog.atlas
 (Hiver's regions, then a white mist band on a page of its own), and engines/godot/tests/shaders/s01-s04.jplax, each a
-conformance page (c01, c02, c03, c05) with a layer turned into a WAVE and a mist band drawn through FOG, and s06.jplax,
-the mist alone tiling on X (r229).
+conformance page (c01, c02, c03, c05) with a layer turned into a WAVE and a mist band drawn through FOG, s06.jplax,
+the mist alone tiling on X (r229), and s07.jplax, an even slab (slab.png, slab.atlas) through FOG tiling on Y (r262).
 Run from the repository root: python3 core/test-data/shaders/make_round.py (needs Pillow)."""
 import json, math
 from PIL import Image
@@ -100,3 +100,29 @@ json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
            'pageModel': {'atlasName': 'HiverFog.atlas', 'outside': False,
                          'pageList': [mist_layer(0.5, 0, 20, 0.03, 1.0, 5, 1.5)]},
            'useOriginalSize': True}, open(f'{ROUND}/s06.jplax', 'w'), indent=1)
+
+# s07 (r262): an even white slab (alpha 230 on every row: the mist fades to 0 at its top and bottom, which hides a cut on
+# Y) through FOG, half the world wide and 5 tall, tiling on Y only, over near-black gradients; the round scrolls it up
+# (speedY) so it wraps on Y. Its noise period up (10 wavelengths of 5) is ten times the image: before r262 it cut at
+# every tile edge on Y. tools/r262-fog-seam-y's y5.
+Image.new('RGBA', (W, H), (255, 255, 255, 230)).save(f'{HERE}/slab.png')
+open(f'{HERE}/slab.atlas', 'w').write(f'''
+slab.png
+size: {W}, {H}
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+slab
+  rotate: false
+  xy: 0, 0
+  size: {W}, {H}
+  orig: {W}, {H}
+  offset: 0, 0
+  index: -1
+''')
+slab = mist_layer(0.5, 25, 0, 0.03, 1.0, 5, 1.5, regionName='slab', name='slab')
+json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
+           'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
+           'repeatOnX': False, 'repeatOnY': True,
+           'pageModel': {'atlasName': 'slab.atlas', 'outside': False, 'pageList': [slab]},
+           'useOriginalSize': True}, open(f'{ROUND}/s07.jplax', 'w'), indent=1)

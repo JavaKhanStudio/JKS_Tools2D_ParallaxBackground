@@ -43,6 +43,7 @@ public class JmeLayerEffects implements LayerEffects
 		final Vector2f cells = new Vector2f();
 		final Vector4f grade = new Vector4f();
 		final Vector3f across = new Vector3f();
+		final Vector3f up = new Vector3f();
 
 		Shaded(Material material, Enum_ShaderEffect kind)
 		{
@@ -54,9 +55,9 @@ public class JmeLayerEffects implements LayerEffects
 	private final AssetManager assets;
 	/** By layer, dropped with it: a page's layers go when the game stops showing it. */
 	private final Map<ParallaxLayer, Shaded> shaded = new WeakHashMap<>();
-	private final float[] numbers = new float[12];
-	/** The view's width in world units, which FOG's noise is laid across ({@link #setViewWidth}). */
-	private float viewWidth;
+	private final float[] numbers = new float[15];
+	/** The view's size in world units, which FOG's noise is laid across, and where the layers' y 0 is ({@link #setView}). */
+	private float viewWidth, viewHeight, viewFloor;
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}). */
 	private float side, ramp, softness, drift, cellsX, cellsY;
 	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
@@ -92,7 +93,7 @@ public class JmeLayerEffects implements LayerEffects
 			s = new Shaded(material, kind);
 			shaded.put(layer, s);
 		}
-		GdxLayerEffects.uniforms(layer, phase, viewWidth, numbers);
+		GdxLayerEffects.uniforms(layer, phase, viewWidth, viewHeight, viewFloor, numbers);
 		s.region.set(numbers[0], numbers[1], numbers[2], numbers[3]);
 		s.size.set(numbers[4], numbers[5]);
 		s.effect.set(numbers[6], numbers[7], numbers[8]);
@@ -101,6 +102,8 @@ public class JmeLayerEffects implements LayerEffects
 		s.material.setVector3("Effect", s.effect);
 		s.across.set(numbers[9], numbers[10], numbers[11]);
 		s.material.setVector3("Across", s.across);
+		s.up.set(numbers[12], numbers[13], numbers[14]);
+		s.material.setVector3("Up", s.up);
 		s.material.setFloat("Haze", Math.max(0, Math.min(1, haze)));
 		s.fog.set(fogR, fogG, fogB);
 		s.material.setVector3("FogColor", s.fog);
@@ -127,8 +130,12 @@ public class JmeLayerEffects implements LayerEffects
 	}
 
 	@Override
-	public void setViewWidth(float width)
-	{viewWidth = width;}
+	public void setView(float width, float height, float floor)
+	{
+		viewWidth = width;
+		viewHeight = height;
+		viewFloor = floor;
+	}
 
 	@Override
 	public boolean setGrade(float r, float g, float b, float amount)
