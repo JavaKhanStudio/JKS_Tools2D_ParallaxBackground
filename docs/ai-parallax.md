@@ -12,7 +12,7 @@ drawn by `core` (`tools/parallax-lab-shots.sh tools/r239-ai-strips/page build/la
 | 1. Shape | `sil.py` | Draws the layer's silhouette (ridge, hills, treeline) as a sum of sines of whole frequencies over the width, with trees placed on a cylinder. It loops by construction, like an SVG would, and it stays editable: a seed and a few numbers. |
 | 2. Paint | `gen.py img2img --tile x` | SD 1.5 (`dreamshaper_8`) repaints the flat silhouette at denoise 0.65, with every convolution of the UNet and the VAE padded **circularly along X** (circular padding). The model paints on a cylinder, so the strip's right edge runs on into its left one. Spikes come out as real pines. |
 | 3. Vary | `sil.py --edges-of` + `gen.py variants` | More strips, **edge-locked variants**, that start and end on the first one's columns: a new silhouette whose ends are the first one's, painted only in the middle (noise mask), then the first strip's outer 8 px laid back exactly. **Any variant can follow any other**, so one `SEQUENCE` layer chains them in a different order every cycle. |
-| 4. Cut | `layer.py` | Keys the flat sky out to alpha, takes edge colours from solid neighbours (no light rim), and fails on art cut at the top row. `--pixel 4 --colours 10`: box-downscales, quantises to one palette (`--palette`: shared by all segments of a sequence) and cuts alpha hard, for a page drawn `Nearest`. |
+| 4. Cut | `layer.py` | Keys the flat sky out to alpha, takes edge colours from solid neighbours (no light rim), cuts the alpha islands apart from the layer's mass (around the loop; `--keep-islands` for clouds), and fails on art cut at the top row. `--pixel 4 --colours 10`: box-downscales, quantises to one palette (`--palette`: shared by all segments of a sequence) and cuts alpha hard, for a page drawn `Nearest`. |
 
 Measured on the cut layers (`seam.py`: the colour step at the join divided by the median step inside the picture;
 1 means the join is as smooth as the picture itself):
@@ -81,7 +81,7 @@ server, and leaves the install as it is.
   strip is reproducible only under the same GPU load.
 
 Still wrong: a 1-cell speck can float in the sky next to the silhouette (a cell inside the mask's one-cell slack that
-keys as art): the island cut of r242 removes it. And SDXL drifts off the silhouette: it painted the low crests between
+keys as art): `pixel.py`'s island cut removes it since r242. And SDXL drifts off the silhouette: it painted the low crests between
 the mountains as sky, so the far range reads as a flat band. SD 1.5 lineart held an outline but painted no detail in
 it (r244); an SDXL ControlNet is untried.
 
@@ -105,7 +105,9 @@ it (r244); an SDXL ControlNet is untried.
 
 ## Still wrong in the frames
 
-- SD adds objects nobody asked for: a black bird in the mountain strip, keyed in as part of the layer.
+- r242's "bird" in the mountain strip was not painted by SD: `layer.py` drew black a pale ridge too far from any solid
+  pixel to take an edge colour (0/0). Fixed. `run.sh`'s negative prompt names birds, animals and creatures: a creature
+  would stand still in a scrolling background. Nothing yet catches one SD paints *inside* a layer's mass.
 - Each layer is painted on its own: nothing makes their colours agree. The page's depth fog (`fogStrength`, r217) can
   give the distance, so layers could be painted at full contrast.
 
@@ -113,7 +115,7 @@ it (r244); an SDXL ControlNet is untried.
 
 Tasks under r239, tagged `#assets`:
 
-1. r242: `layer.py` drops the alpha islands that don't touch the layer's mass (the bird).
+1. r242 (done): the bird was `layer.py`'s own black fill; fixed, and `layer.py`/`pixel.py` drop the alpha islands.
 2. r243 (done): pixel art through SDXL + `PixelArt_XL`, see "True pixel art".
 3. r244 (done): ControlNet lineart over the silhouette at 0.8 to 0.9 holds the outline and loses the trees: img2img 0.65
    stays (see "What each idea from the card came to"). r257 (done): a weak hint (0.5, first 60%) at 0.8

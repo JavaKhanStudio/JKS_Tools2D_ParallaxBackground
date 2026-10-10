@@ -14,7 +14,8 @@ OUT="${1:-build/r239}"
 DIR=tools/r239-ai-strips
 PY="${COMFYUI_DIR:-$HOME/ComfyUI}/venv/bin/python"
 mkdir -p "$OUT"
-NEG="text, watermark, frame, border, people, buildings, foreground grass"
+# No creature: a bird or an animal would be a still thing in a scrolling background (r242).
+NEG="text, watermark, frame, border, people, buildings, foreground grass, birds, animals, creatures"
 STYLE="2d game parallax background layer"
 paint() { # KIND SEED PROMPT
 	python3 $DIR/sil.py "$1" "$OUT/$1" --seed 3

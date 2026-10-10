@@ -6,12 +6,16 @@ The sky colour is read from the strip's top rows; a pixel's alpha rises from 0 t
 moves away from it (between --near and --far, in 0..255 RGB distance; --far defaults to the
 layer's own contrast). The strip loops already, and
 this is per pixel, so the alpha loops too.
+Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
+faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
+meant to be scattered (clouds).
 --pixel N: pixel art. Box-downscale by N, quantise to --colours colours (one palette for the
 layer, or --palette's), and cut alpha hard at 50%: every pixel is one palette colour, fully opaque or fully clear.
 The PNG is the small one; the page draws it scaled N times with the Nearest filter.
 """
 import argparse
 import sys
+from collections import deque
 
 import numpy as np
 from PIL import Image
@@ -25,12 +29,38 @@ def blur(a):
     return out / 9
 
 
+def islands(mask):
+    """Each 4-connected component of mask but the largest, as one mask; column 0 touches column w-1."""
+    h, w = mask.shape
+    label = np.zeros(mask.shape, np.int32)
+    sizes = [0]
+    for y0, x0 in zip(*np.nonzero(mask)):
+        if label[y0, x0]:
+            continue
+        n = len(sizes)
+        label[y0, x0] = n
+        todo, size = deque([(y0, x0)]), 0
+        while todo:
+            y, x = todo.popleft()
+            size += 1
+            for ny, nx in ((y - 1, x), (y + 1, x), (y, (x - 1) % w), (y, (x + 1) % w)):
+                if 0 <= ny < h and mask[ny, nx] and not label[ny, nx]:
+                    label[ny, nx] = n
+                    todo.append((ny, nx))
+        sizes.append(size)
+    if len(sizes) <= 2:
+        return np.zeros(mask.shape, bool)
+    main = int(np.argmax(sizes))
+    return (label > 0) & (label != main)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
     ap.add_argument("out")
     ap.add_argument("--near", type=float, default=18)
     ap.add_argument("--far", type=float, default=0, help="0: 0.85 x the layer's median distance from the sky")
+    ap.add_argument("--keep-islands", action="store_true", help="keep alpha islands apart from the main mass")
     ap.add_argument("--pixel", type=int, default=0)
     ap.add_argument("--colours", type=int, default=12)
     ap.add_argument("--palette", help="--pixel: build the palette from this cut layer's opaque colours (one for all segments)")
@@ -42,6 +72,13 @@ def main():
     # sky, half hill as solid, a light line along the silhouette.
     far = a.far if a.far else 0.85 * float(np.median(d[d > 48])) if (d > 48).any() else 48
     alpha = np.clip((d - a.near) / (far - a.near), 0, 1)
+    if not a.keep_islands:
+        cut = islands(alpha > 0.5)
+        if cut.any():
+            # The island's faint edge goes with it: alpha within 3 px of it, outside the main mass.
+            near = blur(blur(blur(cut.astype(np.float32)))) > 0
+            alpha[near & ~((alpha > 0.5) & ~cut)] = 0
+            print(f"{a.out}: {int(cut.sum())} px of alpha islands cut", file=sys.stderr)
     # Un-mix the sky out of the edge pixels, so a light fringe does not ring the layer.
     a3 = np.maximum(alpha, 1e-3)[..., None]
     rgb = np.clip((img - sky * (1 - a3)) / a3, 0, 255)
@@ -52,7 +89,10 @@ def main():
     fill, wsum = rgb * solid[..., None], solid.copy()
     for _ in range(6):  # spread the solid colours outward, ~2^6 px
         fill, wsum = blur(fill), blur(wsum)
-    rgb = np.where(solid[..., None] > 0, rgb, fill / np.maximum(wsum, 1e-6)[..., None])
+    # Past their reach (a pale ridge, alpha under 0.95 over more than ~6 px) the un-mixed colour stays:
+    # fill / wsum there is 0 / 0, and was drawn black (r242's "bird").
+    reached = (wsum > 1e-6)[..., None]
+    rgb = np.where(solid[..., None] > 0, rgb, np.where(reached, fill / np.maximum(wsum, 1e-6)[..., None], rgb))
     rgba = np.dstack([rgb, alpha * 255]).astype(np.uint8)
     out = Image.fromarray(rgba, "RGBA")
     if a.pixel > 1:
