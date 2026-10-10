@@ -8,8 +8,8 @@
 Passes, each one r239's (docs/ai-parallax.md): sil.py draws a shape that loops for each depth, back to front
 (mountains far, hills between, the front --front: pines or hills); gen.py paints it with --tile x; painted, the front
 layer gets --variants more strips that start and end on its columns and becomes a SEQUENCE; layer.py (painted) or
-pixel.py (pixel, SDXL + PixelArt_XL) keys the sky out. A strip whose art reaches its top row is painted again on the
-next seed, up to --tries times.
+pixel.py (pixel, SDXL + PixelArt_XL) keys the sky out. A strip whose art reaches its top row, or that holds a creature
+(creature.py, r261), is painted again on the next seed, up to --tries times.
 
 The page, from the skill (.claude/skills/parallax-pages, steps 2, 3, 5, 6) and r217's fog:
   - speeds: the front at --front-speed, each layer behind it half as fast (x2.0, the top of the graded ratios), the
@@ -153,7 +153,8 @@ def main():
     log = lambda s: print(s, file=sys.stderr, flush=True)  # noqa: E731
 
     def paint(k, kind, seed, prefix):
-        """sil.py, gen.py, then the cut: the cut layer's path, or None when it reaches its top row."""
+        """sil.py, gen.py, then the cut: the cut layer's path, or None when it reaches its top row or holds a
+        creature."""
         depth = "distant" if k == 0 else "foreground" if k == a.layers - 1 else "middle distance"
         if pixel:
             gen = [PY, f"{d}/gen.py", "img2img", "--ckpt", "sdXL_v10VAEFix.safetensors", "--lora",
@@ -198,8 +199,8 @@ def main():
                 break
             log(f"layer {k} ({kind}) seed {seed}: refused, painting again")
         else:
-            sys.exit(f"layer {k} ({kind}): {a.tries} strips refused (art on the top row, or pines without trees);"
-                     " another --seed, or more --tries")
+            sys.exit(f"layer {k} ({kind}): {a.tries} strips refused (art on the top row, a creature, or pines without"
+                     " trees); another --seed, or more --tries")
         layers.append([got])
         seed_file = os.path.join(strips, f"l{k}_seed.txt")
         seeds.append(int(open(seed_file).read()) if os.path.exists(seed_file) else seed)
