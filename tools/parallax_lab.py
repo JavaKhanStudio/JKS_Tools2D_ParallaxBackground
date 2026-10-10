@@ -262,6 +262,7 @@ def _atlas_regions(page, atlas_dir):
 
 SCREEN_W, SCREEN_H = 40.0, 22.5  # the lab's world at 1280x720, the camera's view before any scroll
 SOLID, SEAM = 0.99, 20
+EDGE_PROBE = 1e-3  # world units above a bottom edge where (b) asks what covers it
 COVERED = 0.9  # a layer edge behind nearer layers this opaque at its height does not show
 EDGE = SCREEN_H / 200  # an edge within half a percent of the screen's top or bottom is off it
 
@@ -509,7 +510,9 @@ def _edge_faults(placed):
         if p.cut_top and p.rows[-1] < SOLID and _on_screen(top) and not _covered_by_nearer(placed, k, top - eps):
             problems.append(f'(a) layer {p.index} ({name}): its art touches its top edge without filling it, and that'
                             f' edge is on screen at {_pct(top)}% of its height: the art shows cut flat')
-        if p.rows[0] > 0 and _on_screen(p.bottom) and not _covered_by_nearer(placed, k, p.bottom + eps):
+        # At the edge itself, not half this layer's row above it: a nearer pixel-art layer's rows are finer, and the row
+        # half ours above may be a thinner one than the solid one on the edge (r281).
+        if p.rows[0] > 0 and _on_screen(p.bottom) and not _covered_by_nearer(placed, k, p.bottom + EDGE_PROBE):
             problems.append(f'(b) layer {p.index} ({name}): its art reaches its bottom edge, on screen at'
                             f' {_pct(p.bottom)}% of its height, and no nearer layer covers that edge')
     return problems
