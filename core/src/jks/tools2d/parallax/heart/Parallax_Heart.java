@@ -127,8 +127,9 @@ public class Parallax_Heart implements Disposable
 	/**
 	 * Cross-fades into {@code model} over {@code intoXSec}, drawn as {@code style} says: {@link TransfertStyle#FADE}
 	 * (what the two-argument call does), {@link TransfertStyle#depthStagger} (each layer slot in its own window, back
-	 * ones first), {@link TransfertStyle#dissolve} (patches) or {@link TransfertStyle#throughColor} (through a colour,
-	 * white possible, the gradients too). null is FADE.
+	 * ones first), {@link TransfertStyle#dissolve} (patches), {@link TransfertStyle#throughColor} (through a colour,
+	 * white possible, the gradients too) or {@link TransfertStyle#fogCreep} (the page sinks into a mist, far layers
+	 * first, and the new one comes out of it). null is FADE.
 	 */
 	public void transfertIntoPage(WholePage_Model model, float intoXSec, TransfertStyle style)
 	{Parallax_Utils_Page.transfertIntoPage(this, model, intoXSec, style);}

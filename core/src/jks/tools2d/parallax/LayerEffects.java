@@ -82,7 +82,8 @@ public interface LayerEffects
 	/**
 	 * Makes the layers begun next, until it is called again with {@code amount} 0, mixed toward {@code r}, {@code g},
 	 * {@code b} by {@code amount}, 0 to 1, after the page's fog, their alpha kept: a transfert through a colour
-	 * ({@link TransfertStyle#throughColor}, {@link TransfertStyle#gradeOf}). The reader then begins every IMAGE,
+	 * or a fog creep ({@link TransfertStyle#throughColor}, {@link TransfertStyle#fogCreep},
+	 * {@link TransfertStyle#gradeAt}). The reader then begins every IMAGE,
 	 * SEQUENCE and SHADER layer, fog or not. False when this engine draws no grade: the reader fades the layers out to
 	 * the gradients instead.
 	 */

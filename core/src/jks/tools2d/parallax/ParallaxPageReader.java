@@ -227,9 +227,9 @@ public class ParallaxPageReader implements Disposable
 		frontSpeed = frontSpeedOf(layers);
 		transferFrontSpeed = frontSpeedOf(transferLayers);
 		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();
-		boolean throughColor = transfertStyle.getKind() == TransfertStyle.Kind.THROUGH_COLOR && !transferLayers.isEmpty();
-		// A dissolve begins each layer with its own mask, a transfert through a colour with its own grade: no page fog's
-		// shared shader then.
+		boolean throughColor = transfertStyle.grades() && !transferLayers.isEmpty();
+		// A dissolve begins each layer with its own mask, a transfert through a colour or a fog creep with its own grade:
+		// no page fog's shared shader then.
 		pageFogOn = pageFog = !dissolve && !throughColor && (fogStrength > 0 || (transferFogStrength > 0 && !transferLayers.isEmpty()))
 				&& getLayerEffects().beginPageFog(batch, tint, fogColor, transferFogColor);
 
@@ -261,11 +261,14 @@ public class ParallaxPageReader implements Disposable
 				}
 				if (throughColor)
 				{
-					// The outgoing layer until halfway through the slot's window, the incoming one after: both the colour there.
-					if (!TransfertStyle.incomingShows(ramp) && slot >= oldOffset)
-						drawGraded(layers, slot - oldOffset, batch, false, ramp);
-					else if (TransfertStyle.incomingShows(ramp) && slot >= newOffset)
-						drawGraded(transferLayers, slot - newOffset, batch, true, ramp);
+					// The outgoing layer until the slot is all colour (halfway through its window; a fog creep's, halfway through
+					// the transfert), the incoming one after.
+					boolean incoming = transfertStyle.showsIncoming(newLayerAlpha, slot, total);
+					float grade = transfertStyle.gradeAt(newLayerAlpha, slot, total);
+					if (!incoming && slot >= oldOffset)
+						drawGraded(layers, slot - oldOffset, batch, false, grade);
+					else if (incoming && slot >= newOffset)
+						drawGraded(transferLayers, slot - newOffset, batch, true, grade);
 					continue;
 				}
 				if (slot >= oldOffset && setBatchColor(batch, staggered ? 1 - ramp : oldLayerAlpha))
@@ -304,13 +307,12 @@ public class ParallaxPageReader implements Disposable
 	}
 
 	/**
-	 * A transfert through a colour's layer: an IMAGE, SEQUENCE or SHADER one at full opacity, mixed toward the colour by
-	 * the engine as far as the slot at {@code ramp} is ({@link TransfertStyle#gradeOf}); an EMPTY or PARTICLES one, or
-	 * any when the engine draws no grade, faded out by as much, to the gradients going through the colour behind it.
+	 * A transfert through a colour's or a fog creep's layer: an IMAGE, SEQUENCE or SHADER one at full opacity, mixed
+	 * toward the colour by the engine by {@code grade} ({@link TransfertStyle#gradeAt}); an EMPTY or PARTICLES one, or any
+	 * when the engine draws no grade, faded out by as much, to the gradients going through the colour behind it.
 	 */
-	private void drawGraded(ArrayList<ParallaxLayer> page, int index, Batch batch, boolean incoming, float ramp)
+	private void drawGraded(ArrayList<ParallaxLayer> page, int index, Batch batch, boolean incoming, float grade)
 	{
-		float grade = TransfertStyle.gradeOf(ramp);
 		Enum_LayerKind kind = page.get(index).kind;
 		grading = kind != Enum_LayerKind.EMPTY && kind != Enum_LayerKind.PARTICLES
 				&& getLayerEffects().setGrade(transfertStyle.getColorR(), transfertStyle.getColorG(), transfertStyle.getColorB(), grade);
