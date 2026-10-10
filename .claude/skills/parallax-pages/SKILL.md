@@ -148,6 +148,13 @@ What is yours to choose, from the theme:
 - **`--sky top,horizon`**: SD always paints a pale sky. Sunset, night, a storm: say it here. The fog takes the horizon.
 - **`--keep`** lays the page out again from the strips already painted: another `--sky`, `--fog` or `--front-speed`
   costs seconds, not a repaint. Another look needs another `--seed`.
+- **`--kinds`** sets every depth's shape, back to front: `mountains`, `hills`, `pines`, `dunes`, `sea` (a flat
+  horizon band), `ruins` (broken towers), `palms`. A beach is `mountains,sea,dunes,palms`, a ruined city
+  `mountains,ruins,ruins,ruins` (`tools/r239-ai-strips/examples.sh`). Keep a word that has its own layer out of the
+  theme: "turquoise sea" in a beach's theme paints sea haze into the palms' sky, which keys to a faint band ending at a
+  SEQUENCE join.
+
+`tools/ai-film.sh OUT/page FILM 8 30` films the page: core's frames off screen, `FILM/a01.mp4` and a 640px `.gif`.
 
 Look at every frame (`OUT/shots/a01-t*.png`) for what lint cannot see: pines that stayed smooth spikes (the tool
 repaints a painted one under an outline roughness of 3.5; a borderline one passes), a horizon or clouds painted behind a layer, a

@@ -52,9 +52,15 @@ NEG = "text, watermark, frame, border, people, buildings, foreground grass, bird
 NEG_XL = "clouds, sun, moon, birds, animals, creatures, gradient, text, watermark, frame, border, people, buildings"
 # run.sh's words for each shape: the pines' grow trees past the shape, "forest treeline" alone leaves its spikes.
 WORDS = {"mountains": "rocky mountain range", "hills": "rolling hills with small trees",
-         "pines": "dark pine forest treeline silhouette"}
-GROW = {"mountains": 8, "hills": 8, "pines": 40}  # px the cut may reach past the shape (layer.py --grow)
+         "pines": "dark pine forest treeline silhouette", "dunes": "sand dunes", "sea": "calm sea, flat horizon",
+         "ruins": "ruined city skyline, broken skyscrapers silhouette", "palms": "palm trees silhouette on a sandy shore"}
+GROW = {"mountains": 8, "hills": 8, "pines": 40, "dunes": 8, "sea": 4, "ruins": 16, "palms": 24}  # layer.py --grow, px
 DEFAULT_COLOURS = ["7a869e", "4f7a5a", "1f3a30"]  # sil.py's kinds, at full contrast: the fog gives the distance
+
+
+def negative(neg, kind):
+    """The negative prompt for a shape: a ruined skyline is buildings."""
+    return neg.replace(", buildings", "") if kind == "ruins" else neg
 
 
 def kinds(n, front):
@@ -125,7 +131,9 @@ def main():
     ap.add_argument("--theme", required=True, help="what the page shows, in a few words: it goes in every prompt")
     ap.add_argument("--layers", type=int, default=4, help="2-6 (lint wants 3 or more)")
     ap.add_argument("--style", choices=["painted", "pixel"], default="painted")
-    ap.add_argument("--front", choices=["pines", "hills"], default="pines", help="the front layer's shape")
+    ap.add_argument("--front", choices=sorted(WORDS), default="pines", help="the front layer's shape")
+    ap.add_argument("--kinds", help="every depth's shape, back to front, comma separated (sets --layers and --front):"
+                    " e.g. mountains,sea,dunes,palms for a beach, mountains,ruins,ruins for a ruined city")
     ap.add_argument("--colours", help="hex colours per depth, back to front, comma separated (3 are spread)")
     ap.add_argument("--sky", help="the sky gradient, top,horizon hex; default the painted sky")
     ap.add_argument("--seed", type=int, default=1)
@@ -138,6 +146,11 @@ def main():
                     " (another --sky, --fog or --front-speed, with the same --seed)")
     ap.add_argument("--no-shots", action="store_true")
     a = ap.parse_args()
+    if a.kinds:
+        given = a.kinds.split(",")
+        if any(k not in WORDS for k in given):
+            ap.error(f"--kinds: each one of {', '.join(sorted(WORDS))}")
+        a.layers, a.front = len(given), given[-1]
     if not 2 <= a.layers <= 6:
         ap.error("--layers: 2 to 6")
     out = os.path.abspath(a.out)
@@ -146,7 +159,7 @@ def main():
     os.makedirs(page_dir, exist_ok=True)
     name = a.name or re.sub(r"[^a-z0-9]+", "-", a.theme.lower()).strip("-")[:40]
     pixel = a.style == "pixel"
-    ks = kinds(a.layers, a.front)
+    ks = a.kinds.split(",") if a.kinds else kinds(a.layers, a.front)
     cols = colours(a.colours.split(",") if a.colours else None, a.layers)
     w, h = (1536, 576) if pixel else (1024, 384)
     d = HERE
@@ -159,10 +172,10 @@ def main():
         if pixel:
             gen = [PY, f"{d}/gen.py", "img2img", "--ckpt", "sdXL_v10VAEFix.safetensors", "--lora",
                    "PixelArt_XL.safetensors", "--lora-strength", "1.0", "--w", str(w), "--h", str(h), "--denoise", "0.7",
-                   "--negative", NEG_XL, "--prompt", f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
+                   "--negative", negative(NEG_XL, kind), "--prompt", f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
                    f"{WORDS[kind]}, empty plain flat pale sky, solid background colour"]
         else:
-            gen = [PY, f"{d}/gen.py", "img2img", "--denoise", "0.65", "--negative", NEG, "--prompt",
+            gen = [PY, f"{d}/gen.py", "img2img", "--denoise", "0.65", "--negative", negative(NEG, kind), "--prompt",
                    f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
         if a.keep and os.path.exists(f"{prefix}_ai.png"):
             return cut(prefix, kind)
@@ -220,7 +233,7 @@ def main():
                 run(["python3", f"{d}/sil.py", ks[front], p, "--seed", str(vs), "--edges-of", str(seeds[front]),
                      "--colour", cols[front], "--quiet-join"], p + "_sil.log")
                 code = run([PY, f"{d}/gen.py", "variants", "--src", f"{src}_ai.png", "--init", f"{p}_init.png", "--tile",
-                            "x", "--n", "1", "--edge", "96", "--denoise", "0.65", "--seed", str(vs), "--negative", NEG,
+                            "x", "--n", "1", "--edge", "96", "--denoise", "0.65", "--seed", str(vs), "--negative", negative(NEG, ks[front]),
                             "--prompt", f"2d game parallax background layer, {a.theme}, foreground {WORDS[ks[front]]}, "
                             "painterly, plain pale sky", "--out", f"{p}_ai.png"], p + "_gen.log")
                 if code:
