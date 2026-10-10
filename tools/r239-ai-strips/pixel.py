@@ -10,13 +10,16 @@ count across is rounded so it divides the width exactly, and sampling wraps: the
 the small one does too.
 Then the sky is keyed out hard (colour distance from the top rows' colour, cut halfway to the
 layer's own distance) and the opaque pixels are quantised to --colours colours, or to --palette's
-(the cut layers of one page share it). Art on the top row exits 3, as layer.py does.
+(the cut layers of one page share it). Opaque cells apart from the layer's main mass are cleared,
+as layer.py does (r242), and art on the top row exits 3.
 """
 import argparse
 import sys
 
 import numpy as np
 from PIL import Image
+
+from layer import islands
 
 
 def steps(img, axis):
@@ -83,6 +86,10 @@ def main():
     d = np.linalg.norm(small - sky, axis=2)
     far = float(np.median(d[d > 48])) if (d > 48).any() else 48
     opaque = (d > far / 2) & inside
+    speck = islands(opaque)
+    if speck.any():
+        print(f"{a.out}: {int(speck.sum())} cells of alpha islands cut", file=sys.stderr)
+    opaque &= ~speck
     rgb = Image.fromarray(small.round().clip(0, 255).astype(np.uint8))
     src = Image.fromarray(small[opaque].round().clip(0, 255).astype(np.uint8)[None])
     if a.palette:
