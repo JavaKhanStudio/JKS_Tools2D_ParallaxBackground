@@ -113,9 +113,9 @@ with sync_playwright() as p:
         page.click("#transfert-copy")
         page.wait_for_function("document.getElementById('transfert-copy-state').textContent !== ''")
         got = json.loads(page.input_value("#transfert-copy-json"))
-        keys = {"pagePair", "seconds", "hold", "cameraScroll", "gradeColour", "depthStagger", "patches", "softEdge"}
+        keys = {"pagePair", "seconds", "hold", "cameraScroll", "gradeColour", "throughColour", "depthStagger", "patches", "softEdge"}
         moved = {"pagePair": {"started": 0, "now": 2}, "depthStagger": {"started": 0.5, "now": 1.2}}
-        if set(got["settings"]) != keys or got["changed"] != moved or got["pages"] != "PurpleFairy \u2194 calm":
+        if set(got["settings"]) != keys or got["changed"] != moved or got["pages"] != "PurpleFairy \u2194 calm" or got["through"] != "white":
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#transfert-copy-state"), json.dumps(got["settings"])))
         page.screenshot(path=frames + "/still.png", full_page=True)

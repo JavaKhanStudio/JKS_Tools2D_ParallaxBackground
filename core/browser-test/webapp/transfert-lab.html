@@ -3,18 +3,18 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Transfert lab (r220): the cross-fade between pages, and three effects that could carry it</title>
+	<title>Transfert lab (r220): the cross-fade between pages, and the effects that can carry it</title>
 	<link rel="stylesheet" href="lab.css">
-	<!-- TransfertLab (r220): two of round1's pages, back and forth, the transfert drawn four ways. -->
+	<!-- TransfertLab (r220): two of round1's pages, back and forth, the transfert drawn five ways. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
 	<header class="lab-bar">
-		<h1>Transfert lab <span class="lab-question">the cross-fade between pages, and three effects that could carry it</span></h1>
+		<h1>Transfert lab <span class="lab-question">the cross-fade between pages, and the effects that can carry it</span></h1>
 		<span id="transfert-copy-state" class="lab-copy-state"></span>
 		<button id="transfert-copy" class="lab-copy">Copy settings</button>
 	</header>
-	<div id="transfert-lab" class="lab-stage">
+	<div id="transfert-lab" class="lab-stage lab-three">
 		<div id="embed-browsertests"></div>
 		<div id="transfert-labels" class="lab-labels"></div>
 	</div>
@@ -31,9 +31,11 @@
 	the second; a tint multiplies, so it darkens and colours but never lightens. C is an effect this lab draws with its
 	own shader, from FOG's noise: the mist's white rolls in in patches, far layers first, the page is swapped under the
 	full fog, then it clears, near layers first. D is the library's dissolve (TransfertStyle.dissolve, r250): the new
-	page's layers eat the old ones in patches, slot by slot, back slots first. The stagger slider spreads A, C and D over
-	the depth, the library's own windows in all three; the patches and softness sliders shape C and D's mask. C is not in
-	the library yet.</p>
+	page's layers eat the old ones in patches, slot by slot, back slots first. E is the library's transfert through a
+	colour (TransfertStyle.throughColor, r251): each layer slot's old layer is mixed toward E's colour until it is all
+	that colour halfway through its window, then the new layer comes out of it, the gradients too; unlike B's tint it
+	can go to white. The stagger slider spreads A, C, D and E over the depth, the library's own windows in all four; the
+	patches and softness sliders shape C and D's mask. C is not in the library yet.</p>
 	</details>
 	<script src="lab.js"></script>
 	<script>
@@ -41,7 +43,8 @@
 		return {
 			lab: 'transfert-lab', pages: document.querySelector('select[data-key=pagePair]').selectedOptions[0].textContent,
 			grade: document.querySelector('select[data-key=gradeColour]').selectedOptions[0].textContent,
-			panels: 'A the transfert as it ships (depth stagger), B through a colour grade (tint), C fog creep, D dissolve'
+			through: document.querySelector('select[data-key=throughColour]').selectedOptions[0].textContent,
+			panels: 'A the transfert as it ships (depth stagger), B through a colour grade (tint), C fog creep, D dissolve, E through a colour (library)'
 		};
 	});
 	</script>

@@ -39,7 +39,11 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * the fog clears, near layers first.</li>
  * <li>D: dissolve: in every layer slot, the new page's layer eats the old one in patches, back slots first: the
  * library's {@link TransfertStyle#dissolve} (r250) at the patch, softness and stagger sliders' values.</li>
+ * <li>E: through a colour: in every layer slot, the old page's layer goes to the colour, then the new one comes out of
+ * it, and the gradients with them: the library's {@link TransfertStyle#throughColor} (r251), which, unlike B's tint,
+ * can go to white, at E's colour and the stagger slider's value.</li>
  * </ul>
+ * A, B and C on top, D and E below.
  * C is this lab's shader, not the library's: GdxLayerEffects' PLAIN with a mask from FOG's noise (r216), in screen
  * pixels. The lab hands the reader one layer at a time, as {@link FogLab} does. Opened with transfert-lab.html:
  * tools/transfert-lab.sh.
@@ -56,13 +60,19 @@ public class TransfertLab extends ApplicationAdapter
 	/** The pairs the slider picks: each goes from its first page into its second and back. */
 	static final int[][] PAIRS = { { 0, 2 }, { 2, 1 }, { 1, 0 } };
 	static final String[] TITLES = { "A: the transfert as it ships (each layer cross-fades, depth stagger)", "B: through a colour grade (tint, shipped API)",
-			"C: fog creep (the mist rolls in, the page swaps under it)", "D: dissolve (patches, back layers first)" };
+			"C: fog creep (the mist rolls in, the page swaps under it)", "D: dissolve (patches, back layers first)",
+			"E: through a colour (the library's, white possible)" };
 	/** B's grade colours: what the tint goes through at the middle of the transfert. */
 	static final String[] GRADE_NAMES = { "dusk", "night blue", "black" };
 	static final float[][] GRADES = { { 1, 0.5f, 0.35f }, { 0.25f, 0.3f, 0.6f }, { 0, 0, 0 } };
+	/** E's colours: what each layer slot and the gradients go through; white first, which B's tint cannot reach. */
+	static final String[] THROUGH_NAMES = { "white", "dusk", "night blue", "black" };
+	static final float[][] THROUGH = { { 1, 1, 1 }, GRADES[0], GRADES[1], GRADES[2] };
+	/** Panels a row: A, B, C on top, D, E below. */
+	static final int COLUMNS = 3;
 	/** What the lab opens on. */
 	static final float SECONDS = 3, HOLD = 1.5f, SCROLL = 40, STAGGER = 0.5f, PATCH = 5, SOFT = 0.08f;
-	static final int PAIR = 0, GRADE = 0;
+	static final int PAIR = 0, GRADE = 0, THROUGH_COLOR = 0;
 
 	/** Each pair as its choice names it, an arrow between: "calm \u2194 OneNight". */
 	static String[] pairNames()
@@ -76,12 +86,12 @@ public class TransfertLab extends ApplicationAdapter
 	/** Mask modes of the lab's shader: keep where the noise is over the ramp, under it, or haze by it. */
 	static final int OUTGOING = 0, INCOMING = 1, HAZE = 2;
 
-	private final Parallax_Heart[] hearts = new Parallax_Heart[4];
+	private final Parallax_Heart[] hearts = new Parallax_Heart[TITLES.length];
 	/** Each heart's own copy of every page: a page's layers belong to the heart that shows them. */
-	private final WholePage_Model[][] models = new WholePage_Model[4][PAGES.length];
+	private final WholePage_Model[][] models = new WholePage_Model[TITLES.length][PAGES.length];
 	private final ArrayList<ParallaxLayer> one = new ArrayList<>(1), none = new ArrayList<>(0);
 	private InputElement seconds, hold, scroll, stagger, patch, soft;
-	private SelectElement pair, grade;
+	private SelectElement pair, grade, through;
 	private Element readout;
 	private ShaderProgram masked;
 	private SpriteBatch batch;
@@ -128,7 +138,8 @@ public class TransfertLab extends ApplicationAdapter
 		hold = LabControls.slider(document, controls, "hold", "hold between transferts (s)", 0.5f, 5, 0.25f, HOLD);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
 		grade = LabControls.choice(document, controls, "gradeColour", "B: grade colour", GRADE_NAMES, GRADE);
-		stagger = LabControls.slider(document, controls, "depthStagger", "A, C, D: depth stagger (0 = every layer at once)", 0, TransfertStyle.MAX_STAGGER, 0.1f, STAGGER);
+		through = LabControls.choice(document, controls, "throughColour", "E: through colour", THROUGH_NAMES, THROUGH_COLOR);
+		stagger = LabControls.slider(document, controls, "depthStagger", "A, C, D, E: depth stagger (0 = every layer at once)", 0, TransfertStyle.MAX_STAGGER, 0.1f, STAGGER);
 		patch = LabControls.slider(document, controls, "patches", "C, D: patches across the panel", 1, 16, 0.5f, PATCH);
 		soft = LabControls.slider(document, controls, "softEdge", "C, D: patch edge softness", 0.01f, 0.4f, 0.01f, SOFT);
 		readout = LabControls.readout(document, controls, "transfert-readout");
@@ -182,7 +193,7 @@ public class TransfertLab extends ApplicationAdapter
 				duration = LabControls.read(seconds);
 				int into = PAIRS[shown][1 - side];
 				for (int i = 0; i < hearts.length; i++)
-					hearts[i].transfertIntoPage(models[i][into], duration, i == 0 ? style() : i == 3 ? dissolve() : TransfertStyle.FADE);
+					hearts[i].transfertIntoPage(models[i][into], duration, i == 0 ? style() : i == 3 ? dissolve() : i == 4 ? throughColor() : TransfertStyle.FADE);
 				float[] g = GRADES[LabControls.read(grade)];
 				hearts[1].parallaxReader.addColorTransfert(new Color(g[0], g[1], g[2], 1), duration / 2);
 				inTransfert = true;
@@ -240,8 +251,8 @@ public class TransfertLab extends ApplicationAdapter
 		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
 		for (int i = 0; i < hearts.length; i++)
 		{
-			// A, B on top; C, D below; a 4 px gap. round1's pages sit at the bottom of the world: no frame drop.
-			int x = (i % 2) * (FRAME_WIDTH + 4), top = i < 2 ? height : height - PANEL_HEIGHT - 4;
+			// A, B, C on top; D, E below; a 4 px gap. round1's pages sit at the bottom of the world: no frame drop.
+			int x = (i % COLUMNS) * (FRAME_WIDTH + 4), top = i < COLUMNS ? height : height - PANEL_HEIGHT - 4;
 			Gdx.gl.glScissor(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
 			Gdx.gl.glViewport(x, top - PANEL_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 			// The reader may end the transfert a frame before the lab's clock does: then the new page is all there is.
@@ -261,6 +272,13 @@ public class TransfertLab extends ApplicationAdapter
 	/** D: the library's dissolve at the patch, softness and stagger sliders' values. */
 	private TransfertStyle dissolve()
 	{return TransfertStyle.dissolve(LabControls.read(patch), LabControls.read(soft), LabControls.read(stagger));}
+
+	/** E: the library's transfert through E's colour, at the stagger slider's value. */
+	private TransfertStyle throughColor()
+	{
+		float[] c = THROUGH[LabControls.read(through)];
+		return TransfertStyle.throughColor(new Color(c[0], c[1], c[2], 1), LabControls.read(stagger));
+	}
 
 	/** How far along layer slot {@code slot} of {@code total} (0 at the back) is when the whole is at {@code ramp}. */
 	private float rampOf(float ramp, int slot, int total)

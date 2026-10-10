@@ -78,4 +78,14 @@ public interface LayerEffects
 	 */
 	default boolean setDissolve(int side, float ramp, float softness, float drift, float cellsX, float cellsY)
 	{return false;}
+
+	/**
+	 * Makes the layers begun next, until it is called again with {@code amount} 0, mixed toward {@code r}, {@code g},
+	 * {@code b} by {@code amount}, 0 to 1, after the page's fog, their alpha kept: a transfert through a colour
+	 * ({@link TransfertStyle#throughColor}, {@link TransfertStyle#gradeOf}). The reader then begins every IMAGE,
+	 * SEQUENCE and SHADER layer, fog or not. False when this engine draws no grade: the reader fades the layers out to
+	 * the gradients instead.
+	 */
+	default boolean setGrade(float r, float g, float b, float amount)
+	{return false;}
 }

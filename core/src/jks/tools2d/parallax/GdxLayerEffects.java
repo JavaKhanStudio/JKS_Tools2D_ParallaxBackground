@@ -48,8 +48,9 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	/**
 	 * u_region: the region's u, v, u2, v2 (v at the image's top). u_size: the image's width and height in world units.
 	 * u_effect: amplitude, wavelength, phase. u_haze: the depth fog, 0 to 1. u_fog: the fog's colour. local(): where the
-	 * fragment is in the image, in world units, y up. hazed(): the color mixed toward u_fog by u_haze, its alpha times
-	 * dissolved(); at 0 and no dissolve the color itself. u_dissolve, u_cells: a transfert's dissolve
+	 * fragment is in the image, in world units, y up. hazed(): the color mixed toward u_fog by u_haze, then toward
+	 * u_grade's rgb by its a (a transfert through a colour, {@link LayerEffects#setGrade}), its alpha times dissolved();
+	 * at 0, no grade and no dissolve the color itself. u_dissolve, u_cells: a transfert's dissolve
 	 * ({@link LayerEffects#setDissolve}): side (0 none, 1 outgoing, 2 incoming), ramp, softness, drift; the noise's cells
 	 * across and up the view. dissolved(): FOG's noise over the view, the layer's share of the slot at the ramp.
 	 */
@@ -70,6 +71,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "uniform vec3 u_fog;\n"
 			+ "uniform vec4 u_dissolve;\n"
 			+ "uniform vec2 u_cells;\n"
+			+ "uniform vec4 u_grade;\n"
 			+ "varying vec2 v_view;\n"
 			+ "const float TAU = 6.2831853;\n"
 			+ "float dissolved()\n"
@@ -86,7 +88,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "}\n"
 			+ "vec4 hazed(vec4 color)\n"
 			+ "{\n"
-			+ "	return vec4(mix(color.rgb, u_fog, u_haze), color.a * dissolved());\n"
+			+ "	return vec4(mix(mix(color.rgb, u_fog, u_haze), u_grade.rgb, u_grade.a), color.a * dissolved());\n"
 			+ "}\n"
 			+ "vec2 local()\n"
 			+ "{\n"
@@ -149,9 +151,11 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	private final boolean[] failed = new boolean[EFFECTS.length + 1];
 	private final int[] region = new int[EFFECTS.length + 1], size = new int[EFFECTS.length + 1], effect = new int[EFFECTS.length + 1],
 			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1], dissolve = new int[EFFECTS.length + 1],
-			cells = new int[EFFECTS.length + 1];
+			cells = new int[EFFECTS.length + 1], grade = new int[EFFECTS.length + 1];
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}): side, ramp, softness, drift; cells. */
 	private float dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift, cellsX, cellsY;
+	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
+	private float gradeR, gradeG, gradeB, gradeAmount;
 	/** The batch's shader before the first begin, and whether one of ours is still bound in its place. */
 	private ShaderProgram previous;
 	private boolean holding;
@@ -222,6 +226,17 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		program.setUniformf(fog[index], fogR, fogG, fogB);
 		program.setUniformf(dissolve[index], dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift);
 		program.setUniformf(cells[index], cellsX, cellsY);
+		program.setUniformf(grade[index], gradeR, gradeG, gradeB, Math.max(0, Math.min(1, gradeAmount)));
+		return true;
+	}
+
+	@Override
+	public boolean setGrade(float r, float g, float b, float amount)
+	{
+		gradeR = r;
+		gradeG = g;
+		gradeB = b;
+		gradeAmount = amount;
 		return true;
 	}
 
@@ -347,6 +362,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		fog[index] = program.fetchUniformLocation("u_fog", false);
 		dissolve[index] = program.fetchUniformLocation("u_dissolve", false);
 		cells[index] = program.fetchUniformLocation("u_cells", false);
+		grade[index] = program.fetchUniformLocation("u_grade", false);
 		programs[index] = program;
 		return program;
 	}

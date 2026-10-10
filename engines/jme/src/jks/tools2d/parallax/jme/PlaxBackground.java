@@ -171,9 +171,9 @@ public class PlaxBackground extends BaseAppState
 		transfertPage = model;
 		reader.addLayersTransfert(model, null, seconds, style);
 		if (top != null)
-			top.transfertInto(model.topHalf_top, model.topHalf_bottom, seconds);
+			top.transfertInto(model.topHalf_top, model.topHalf_bottom, seconds, style);
 		if (bottom != null)
-			bottom.transfertInto(model.bottomHalf_top, model.bottomHalf_bottom, seconds);
+			bottom.transfertInto(model.bottomHalf_top, model.bottomHalf_bottom, seconds, style);
 		if (!reader.isInTransfer())
 			transferFinished();
 	}

@@ -21,7 +21,8 @@ import jks.tools2d.parallax.pages.Enum_ShaderEffect;
  * The SHADER layers' effects in jME: a ParallaxEffect material per layer (its numbers change every frame), which
  * {@link JmeBatch} draws the layer's run with. The numbers are {@link GdxLayerEffects#uniforms}, the shader
  * ParallaxEffect.frag: libGDX's, line for line. An IMAGE or SEQUENCE layer the page's depth fog reaches gets one too,
- * with no effect (Plain), and so does any layer a transfert's dissolve masks ({@link #setDissolve}). {@link PlaxBackground}
+ * with no effect (Plain), and so does any layer a transfert's dissolve masks ({@link #setDissolve}) or one through a
+ * colour grades ({@link #setGrade}). {@link PlaxBackground}
  * sets it on its reader.
  */
 public class JmeLayerEffects implements LayerEffects
@@ -40,6 +41,7 @@ public class JmeLayerEffects implements LayerEffects
 		final Vector3f fog = new Vector3f();
 		final Vector4f dissolve = new Vector4f();
 		final Vector2f cells = new Vector2f();
+		final Vector4f grade = new Vector4f();
 
 		Shaded(Material material, Enum_ShaderEffect kind)
 		{
@@ -54,6 +56,8 @@ public class JmeLayerEffects implements LayerEffects
 	private final float[] numbers = new float[9];
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}). */
 	private float side, ramp, softness, drift, cellsX, cellsY;
+	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
+	private float gradeR, gradeG, gradeB, gradeAmount;
 
 	public JmeLayerEffects(AssetManager assets)
 	{this.assets = assets;}
@@ -99,6 +103,8 @@ public class JmeLayerEffects implements LayerEffects
 		s.cells.set(cellsX, cellsY);
 		s.material.setVector4("Dissolve", s.dissolve);
 		s.material.setVector2("Cells", s.cells);
+		s.grade.set(gradeR, gradeG, gradeB, Math.max(0, Math.min(1, gradeAmount)));
+		s.material.setVector4("Grade", s.grade);
 		((JmeBatch) batch).setEffect(s.material);
 		return true;
 	}
@@ -112,6 +118,16 @@ public class JmeLayerEffects implements LayerEffects
 		this.drift = drift;
 		this.cellsX = cellsX;
 		this.cellsY = cellsY;
+		return true;
+	}
+
+	@Override
+	public boolean setGrade(float r, float g, float b, float amount)
+	{
+		gradeR = r;
+		gradeG = g;
+		gradeB = b;
+		gradeAmount = amount;
 		return true;
 	}
 

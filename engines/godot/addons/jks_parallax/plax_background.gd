@@ -97,6 +97,8 @@ var _gradient_to: Array[Color] = []
 var _gradient_duration := 0.0
 var _gradient_elapsed := 0.0
 var _gradient_fading := false
+# How the gradients fade (TransfertStyle.gradient): null straight, as a plain fade.
+var _gradient_style: PlaxTransfertStyle = null
 var _top_half_size := 0.5
 var _bottom_half_size := 0.5
 
@@ -175,7 +177,8 @@ func set_page(new_page: PlaxPage, new_atlas: PlaxAtlas) -> void:
 ## started during another drops the page that was fading in. `style` (null: every layer slot at once) is how the layers
 ## fade, as Parallax_Heart.transfertIntoPage(page, seconds, style): PlaxTransfertStyle.depth_stagger(s) fades each slot
 ## in its own window, the back ones first; PlaxTransfertStyle.dissolve(patches, softness, s) has each slot's incoming
-## layer eat the outgoing one in patches.
+## layer eat the outgoing one in patches; PlaxTransfertStyle.through_color(color, s) goes through a colour, white
+## possible, the gradients too.
 func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float, style: PlaxTransfertStyle = null) -> void:
 	if page == null:
 		set_page(new_page, new_atlas)
@@ -198,7 +201,7 @@ func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float, st
 			_style = style
 	_fade_gradients(
 		[new_page.top_half_top, new_page.top_half_bottom, new_page.bottom_half_top, new_page.bottom_half_bottom],
-		seconds)
+		seconds, style)
 	_update_filter()
 	_order_canvases()
 	_redraw()
@@ -457,8 +460,10 @@ func _reset_transfert() -> void:
 	_old_alpha = 1
 
 
-## SquareBackground.transfertInto: both colors of both gradients, alpha included, toward the incoming page's.
-func _fade_gradients(target: Array[Color], seconds: float) -> void:
+## SquareBackground.transfertInto: both colors of both gradients, alpha included, toward the incoming page's, as
+## `style` goes (null: straight).
+func _fade_gradients(target: Array[Color], seconds: float, style: PlaxTransfertStyle = null) -> void:
+	_gradient_style = style
 	_gradient_from = _gradient.duplicate()
 	_gradient_to = target
 	_gradient_elapsed = 0
@@ -474,7 +479,8 @@ func _act_gradients(delta: float) -> void:
 	_gradient_elapsed += delta
 	var progress := minf(1, _gradient_elapsed / _gradient_duration) if _gradient_duration > 0 else 1.0
 	for i in 4:
-		_gradient[i] = _gradient_from[i].lerp(_gradient_to[i], progress)
+		_gradient[i] = (_gradient_style.gradient(_gradient_from[i], _gradient_to[i], progress) if _gradient_style
+				else _gradient_from[i].lerp(_gradient_to[i], progress))
 	if progress >= 1:
 		_gradient_fading = false
 
@@ -612,12 +618,19 @@ func _update_scale() -> void:
 ## The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's; with a
 ## depth stagger, its slot's, each slot at its own point of the fade (ParallaxPageReader.draw). In a dissolve a layer
 ## the mask draws (_masked) is at full opacity while its share of the slot is above 0; an EMPTY or PARTICLES one fades
-## to its share (ParallaxPageReader.drawDissolved).
+## to its share (ParallaxPageReader.drawDissolved). Through a colour only one side of a slot shows, the outgoing layer
+## until halfway through its window, the incoming one after: at full opacity when graded (_graded), else faded out by
+## as much as the grade (ParallaxPageReader.drawGraded).
 func _alpha_of(l: Dictionary) -> float:
 	if transfer_layers.is_empty():
 		return 1.0
 	if _style == null or _style.kind == "FADE":
 		return _new_alpha if l.incoming else _old_alpha
+	if _style.kind == "THROUGH_COLOR":
+		var ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
+		if PlaxTransfertStyle.incoming_shows(ramp) != l.incoming:
+			return 0.0
+		return 1.0 if _graded(l) else 1.0 - PlaxTransfertStyle.grade_of(ramp)
 	var share := _share_of(l)
 	return (1.0 if share > 0 else 0.0) if _masked(l) else share
 
@@ -634,7 +647,14 @@ func _masked(l: Dictionary) -> bool:
 			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER"))
 
 
-## Takes the dissolve's mask off `page`'s layers: the PLAIN material it gave a layer that had none goes.
+## Whether a transfert through a colour mixes the layer toward it now: an IMAGE, SEQUENCE or SHADER one, during one.
+func _graded(l: Dictionary) -> bool:
+	return (not transfer_layers.is_empty() and _style != null and _style.kind == "THROUGH_COLOR"
+			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER"))
+
+
+## Takes the dissolve's mask and the colour's grade off `page`'s layers: the PLAIN material either gave a layer that had
+## none goes.
 func _unmask(page: Array[Dictionary]) -> void:
 	for l in page:
 		if l.get("dissolve_plain", false):
@@ -642,6 +662,7 @@ func _unmask(page: Array[Dictionary]) -> void:
 			l.dissolve_plain = false
 		elif l.has("canvas") and l.canvas.material is ShaderMaterial:
 			PlaxEffects.set_dissolve(l.canvas.material, 0, 0, 0, 0, 0, 0)
+			PlaxEffects.set_grade(l.canvas.material, Color.BLACK, 0)
 
 
 ## The tint at that opacity, and whether anything drawn with it would show (ParallaxPageReader.setBatchColor).
@@ -674,6 +695,12 @@ func _draw_layer(l: Dictionary) -> void:
 		var ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
 		PlaxEffects.set_dissolve(l.canvas.material, 2 if l.incoming else 1, ramp, _style.softness,
 				PlaxTransfertStyle.drift(_effect_time), _style.patches, _style.cells_up(view_w, view_h))
+	if _graded(l):
+		if l.canvas.material == null:
+			l.canvas.material = PlaxEffects.material("PLAIN")
+			l.dissolve_plain = true
+		var graded_ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
+		PlaxEffects.set_grade(l.canvas.material, _style.color, PlaxTransfertStyle.grade_of(graded_ramp))
 	if m.kind == "SHADER":
 		PlaxEffects.apply(l.canvas.material, l, _effect_time)
 	if l.canvas.material:

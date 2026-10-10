@@ -311,7 +311,8 @@ public class ParallaxShots extends ApplicationAdapter
 
 	/**
 	 * A transfer's {@code "style": {"kind": "DEPTH_STAGGER", "stagger": 1}} or
-	 * {@code {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}}; none, or another kind: FADE.
+	 * {@code {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}} or
+	 * {@code {"kind": "THROUGH_COLOR", "color": "ffffff", "stagger": 0}}; none, or another kind: FADE.
 	 */
 	static TransfertStyle style(JsonValue style)
 	{
@@ -320,6 +321,8 @@ public class ParallaxShots extends ApplicationAdapter
 			return TransfertStyle.depthStagger(style.getFloat("stagger", 0));
 		if ("DISSOLVE".equals(kind))
 			return TransfertStyle.dissolve(style.getFloat("patches", 5), style.getFloat("softness", 0.08f), style.getFloat("stagger", 0));
+		if ("THROUGH_COLOR".equals(kind))
+			return TransfertStyle.throughColor(Color.valueOf(style.getString("color", "ffffff")), style.getFloat("stagger", 0));
 		return TransfertStyle.FADE;
 	}
 }

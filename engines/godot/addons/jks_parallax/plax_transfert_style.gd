@@ -7,7 +7,8 @@ extends RefCounted
 ##
 ## FADE (or no style): every layer slot fades at once. DEPTH_STAGGER: each slot over its own window, the back ones first.
 ## DISSOLVE: in each slot the incoming layer eats the outgoing one in patches (PlaxEffects' dissolved()), over the same
-## windows.
+## windows. THROUGH_COLOR: in each slot the outgoing layer goes to a colour, then the incoming one comes out of it
+## (PlaxEffects' grade), the gradients too, over the same windows.
 
 ## TransfertStyle.MAX_STAGGER.
 const MAX_STAGGER := 2.0
@@ -18,13 +19,15 @@ const MIN_SOFTNESS := 0.01
 const MAX_SOFTNESS := 0.5
 const DISSOLVE_DRIFT := 0.15
 
-## "FADE", "DEPTH_STAGGER" or "DISSOLVE", as TransfertStyle.Kind.
+## "FADE", "DEPTH_STAGGER", "DISSOLVE" or "THROUGH_COLOR", as TransfertStyle.Kind.
 var kind := "FADE"
 ## How far apart the slots' windows are, 0 to MAX_STAGGER; 0 for FADE.
 var stagger := 0.0
 ## A dissolve's patches across the view, and how soft their edges are; 0 for every other style.
 var patches := 0.0
 var softness := 0.0
+## THROUGH_COLOR's colour, opaque; black for every other style.
+var color := Color.BLACK
 
 
 ## Every layer slot at once: what a cross-fade with no style does.
@@ -52,6 +55,37 @@ static func dissolve(patch_count: float, soft: float, value: float) -> PlaxTrans
 	style.patches = clampf(patch_count, MIN_PATCHES, MAX_PATCHES)
 	style.softness = clampf(soft, MIN_SOFTNESS, MAX_SOFTNESS)
 	return style
+
+
+## TransfertStyle.throughColor: each slot's outgoing layer mixed toward `through` (its alpha ignored, clamped to 0..1)
+## until it is all that colour halfway through the slot's window, then the incoming one out of it; the slots over
+## depth_stagger's windows.
+static func through_color(through: Color, value: float) -> PlaxTransfertStyle:
+	var style := PlaxTransfertStyle.new()
+	style.kind = "THROUGH_COLOR"
+	style.stagger = clampf(value, 0, MAX_STAGGER)
+	style.color = Color(clampf(through.r, 0, 1), clampf(through.g, 0, 1), clampf(through.b, 0, 1), 1)
+	return style
+
+
+## TransfertStyle.gradeOf: how much of the colour a layer of a slot at `ramp` is mixed toward, 0 to 1, peaking at 1
+## halfway.
+static func grade_of(ramp: float) -> float:
+	return 2 * ramp if ramp < 0.5 else 2 - 2 * ramp
+
+
+## TransfertStyle.incomingShows: whether a slot at `ramp` draws its incoming layer rather than its outgoing one.
+static func incoming_shows(ramp: float) -> bool:
+	return ramp >= 0.5
+
+
+## TransfertStyle.gradient: a gradient's colour `progress` into a fade from `from` to `to`; THROUGH_COLOR's goes
+## through its colour at the back slot's pace.
+func gradient(from: Color, to: Color, progress: float) -> Color:
+	if kind != "THROUGH_COLOR":
+		return from.lerp(to, progress)
+	var ramp := slot_ramp(progress, 0, 1)
+	return (to if incoming_shows(ramp) else from).lerp(color, grade_of(ramp))
 
 
 ## TransfertStyle.cellsUp: the dissolve's noise cells up a view `view_w` by `view_h`, stretched 2.5 times.

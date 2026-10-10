@@ -11,6 +11,7 @@ uniform float m_Haze;
 uniform vec3 m_FogColor;
 uniform vec4 m_Dissolve;
 uniform vec2 m_Cells;
+uniform vec4 m_Grade;
 
 varying vec2 texCoord;
 varying vec4 vertColor;
@@ -33,11 +34,11 @@ float dissolved()
     return m_Dissolve.x < 1.5 ? 1.0 - m : m;
 }
 
-// The color mixed toward the fog's colour by the depth fog, its alpha times dissolved(); at 0 and no dissolve the color
-// itself.
+// The color mixed toward the fog's colour by the depth fog, then toward m_Grade's rgb by its a (a transfert through a
+// colour, LayerEffects.setGrade), its alpha times dissolved(); at 0, no grade and no dissolve the color itself.
 vec4 hazed(vec4 color)
 {
-    return vec4(mix(color.rgb, m_FogColor, m_Haze), color.a * dissolved());
+    return vec4(mix(mix(color.rgb, m_FogColor, m_Haze), m_Grade.rgb, m_Grade.a), color.a * dissolved());
 }
 
 // Where the fragment is in the image, in world units from its bottom-left.
