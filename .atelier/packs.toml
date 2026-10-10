@@ -249,6 +249,7 @@ the build. Read what you wrote; nothing else will.
 """
 
 [tags.shader]
+visual = true          # a screen: its close needs a Chose: line (r1559, r1584)
 label = "Shader"
 description = "SHADER layers' effects and the page's depth fog, in libGDX, Godot and jME"
 color = "#c8a2f0"
