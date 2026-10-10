@@ -9,6 +9,8 @@ this is per pixel, so the alpha loops too.
 --mask (sil.py's) --grow G: the silhouette helps the key, for a layer whose colours come near the sky's (snow under
 a pale sky keys half clear): alpha is 1 inside the mask, and the colour key's only within G px of it, so what SD paints
 far from the shape (a horizon behind hills) goes too. Pines grow past their shape: give them a larger G (r246).
+--gap T: the foot of a gap SD painted deeper than the shape is sky or far haze, which the mask made opaque (r263):
+pixels less than T of the way from the sky to the mass's colour, open to the clear sky, key along that line (0: off).
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
@@ -80,6 +82,22 @@ def islands(mask):
     return (label > 0) & (label != int(np.argmax(sizes)) + 1)
 
 
+def ungap(img, sky, alpha, reach):
+    """alpha with the feet of gaps keyed: a gap between trees SD painted deeper than the silhouette ends in sky or
+    far haze, which the mask (or a key that ends at the layer's own distance) makes opaque, a pale spot in a dark
+    treeline (r263). Each pixel's place t on the line from the sky (0) to the mass's median colour (1); the pixels
+    under --gap (and not whiter than the sky, snow) that reach the clear sky through each other key t / --gap."""
+    mass = alpha > 0.95
+    if not mass.any():
+        return alpha
+    axis = np.median(img[mass], axis=0) - sky
+    t = (img - sky) @ axis / max(float(axis @ axis), 1.0)
+    label, _ = components((t > -0.15) & (t < reach))
+    open_ = np.unique(label[alpha < 0.05])
+    gap = np.isin(label, open_[open_ > 0])
+    return np.where(gap, np.minimum(alpha, np.clip(t / reach, 0, 1)), alpha)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
@@ -88,6 +106,7 @@ def main():
     ap.add_argument("--far", type=float, default=0, help="0: 0.85 x the layer's median distance from the sky")
     ap.add_argument("--mask", help="sil.py's _mask.png: opaque inside it, keyed only within --grow px of it")
     ap.add_argument("--grow", type=int, default=12)
+    ap.add_argument("--gap", type=float, default=0.6, help="key pale pixels open to the sky up to this far toward the mass (0: off)")
     ap.add_argument("--keep-islands", action="store_true", help="keep alpha islands apart from the main mass")
     ap.add_argument("--pixel", type=int, default=0)
     ap.add_argument("--colours", type=int, default=12)
@@ -105,6 +124,8 @@ def main():
         m = np.asarray(Image.open(a.mask).convert("L").resize(alpha.shape[::-1])) > 127
         # SD moves an outline by a few px: opaque only 8 px inside the shape, or sky comes in with it.
         alpha = np.where(spread(m, -8), 1.0, np.where(spread(m, a.grow), alpha, 0.0))
+    if a.gap:
+        alpha = ungap(img, sky, alpha, a.gap)
     if not a.keep_islands:
         cut = islands(alpha > 0.5)
         if cut.any():
