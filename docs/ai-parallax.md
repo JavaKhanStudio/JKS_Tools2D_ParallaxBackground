@@ -32,8 +32,14 @@ server, and leaves the install as it is.
   pixels, but an SVG path drawn the same way, through whole-frequency curves, would do the same job.
 - **Stable Diffusion detail.** Kept, in pass 2. Circular padding is what makes it loop, not a prompt or a mask. It costs
   nothing: the same model and the same speed.
-- **ControlNet.** Not needed for the loop. It might hold a silhouette at a higher denoise than img2img's 0.65 (more
-  detail, same shape). `control_v11p_sd15_lineart` is on disk. Untested, queued.
+- **ControlNet.** Not needed for the loop, and not kept for the shape either (r244): img2img at 0.65 stays. `gen.py
+  --control MASK --control-edge` feeds `control_v11p_sd15_lineart` the silhouette's outline (its convolutions padded
+  circularly too; seams 0.84 to 1.16, as good as img2img's). At denoise 0.8 and 0.9 it holds the outline *literally*:
+  silhouette IoU hills 0.996 against img2img's 0.984, pines 0.990 at 0.8 against 0.928. That is the trouble. The pines
+  stay `sil.py`'s sine spikes with no tree in them, where img2img's lower IoU is SD growing real pines past the crude
+  shape. And the higher denoise paints the sky: grey bands and clouds the key keeps (both strips at 0.9, pines at 0.8,
+  art up to the top row), and a light rim along the line on the hills. `tools/r239-ai-strips/r244-control.sh` paints
+  the three ways; its `compare.png` is on r244. A weaker hint (strength 0.5, first 60% of the steps) is untested: r257.
 - **Several passes.** Yes, these four. Each one can be checked on its own (`seam.py`, `layer.py`'s top-row check,
   lint), and a page is made from their output.
 - **Pixel-perfect.** Two meanings, two answers. *Loops to the pixel*: yes, see the numbers. *Pixel art*: the SD 1.5
@@ -70,7 +76,8 @@ server, and leaves the install as it is.
 
 Still wrong: a 1-cell speck can float in the sky next to the silhouette (a cell inside the mask's one-cell slack that
 keys as art): the island cut of r242 removes it. And SDXL drifts off the silhouette: it painted the low crests between
-the mountains as sky, so the far range reads as a flat band. ControlNet (r244) may hold the shape.
+the mountains as sky, so the far range reads as a flat band. SD 1.5 lineart held an outline but painted no detail in
+it (r244); an SDXL ControlNet is untried.
 
 ## Traps (each one cost a wrong result first)
 
@@ -102,7 +109,8 @@ Tasks under r239, tagged `#assets`:
 
 1. r242: `layer.py` drops the alpha islands that don't touch the layer's mass (the bird).
 2. r243 (done): pixel art through SDXL + `PixelArt_XL`, see "True pixel art".
-3. r244: ControlNet lineart over the silhouette at denoise 0.8 to 0.9, against img2img at 0.65: more detail, same shape?
+3. r244 (done): ControlNet lineart over the silhouette at 0.8 to 0.9 holds the outline and loses the trees: img2img 0.65
+   stays (see "What each idea from the card came to").
 4. r245 (`#runtime`): lint (`tools/parallax_lab.py`) skips `SEQUENCE` layers in its layout checks, so it neither
    counts them as covering (a false (b) on this page) nor checks their joins.
 5. r246, after r242 to r244: from a prompt to a page. `run.sh` as one tool (theme, layer count, size, pixel or
