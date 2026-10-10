@@ -49,7 +49,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * also scroll up, and {@code "resize": {"at": 3, "size": [720, 1280]}} resize the window mid-scroll (r95,
  * engines/godot/tests/conformance); {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY
  * layer named slot with that atlas region stretched over each tile (r177, engines/godot/tests/effects);
- * {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that game seed (r183, engines/godot/tests/sequence).
+ * {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that game seed (r183, engines/godot/tests/sequence);
+ * {@code "film": {"seconds": 8, "fps": 30}} goes on scrolling after the last still and saves every frame of those seconds,
+ * {@code <id>-f0000.png} on (r239: tools/ai-film.sh makes them a video).
  * engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots step the same way.
  */
 public class ParallaxShots extends ApplicationAdapter
@@ -75,6 +77,8 @@ public class ParallaxShots extends ApplicationAdapter
 		Color tint;
 		/** The game's seed for the SEQUENCE layers; null: the pages' own. */
 		Integer sequenceSeed;
+		/** Frames saved after the last still, {@code filmFps} a second; 0: none. */
+		int filmFrames, filmFps;
 	}
 
 	/** An EMPTY layer's hook from a round: stretches the n-th atlas region of that name over every tile (r177). */
@@ -137,6 +141,12 @@ public class ParallaxShots extends ApplicationAdapter
 			scene.speedY = s.getFloat("speedY", 0);
 			if (s.has("sequenceSeed"))
 				scene.sequenceSeed = s.getInt("sequenceSeed");
+			JsonValue film = s.get("film");
+			if (film != null)
+			{
+				scene.filmFps = film.getInt("fps", 30);
+				scene.filmFrames = Math.round(film.getFloat("seconds") * scene.filmFps);
+			}
 			JsonValue resize = s.get("resize");
 			if (resize != null)
 			{
@@ -223,8 +233,11 @@ public class ParallaxShots extends ApplicationAdapter
 			float time = 0;
 			int transferred = 0;
 			boolean tinted = false, resized = false;
-			for (float at : SHOT_TIMES)
+			for (int shot = 0; shot < SHOT_TIMES.length + scene.filmFrames; shot++)
 			{
+				// A film frame is a whole number of steps on from the last (half a step short: the float sum drifts), so
+				// the scroll does not stutter; the stills keep the sum they always had, the readers' frames step the same.
+				float at = shot < SHOT_TIMES.length ? SHOT_TIMES[shot] : time + (Math.round(60f / scene.filmFps) - 0.5f) * step;
 				for (; time < at; time += step)
 				{
 					while (transferred < scene.transfers.size() && time >= scene.transfers.get(transferred).at)
@@ -253,7 +266,8 @@ public class ParallaxShots extends ApplicationAdapter
 				ScreenUtils.clear(Color.BLACK);
 				heart.render();
 				Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
-				PixmapIO.writePNG(new FileHandle(shotsDir.resolve(scene.id + "-t" + (int) at + ".png").toFile()), pixmap, 6, true);
+				String name = shot < SHOT_TIMES.length ? scene.id + "-t" + (int) at : String.format("%s-f%04d", scene.id, shot - SHOT_TIMES.length);
+				PixmapIO.writePNG(new FileHandle(shotsDir.resolve(name + ".png").toFile()), pixmap, shot < SHOT_TIMES.length ? 6 : 1, true);
 				pixmap.dispose();
 			}
 		}

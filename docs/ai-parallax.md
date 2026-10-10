@@ -9,6 +9,11 @@ drawn by `core` (`tools/parallax-lab-shots.sh tools/r239-ai-strips/page build/la
 8f9bb8,6f88a0,1c3036 OUT` runs the four passes below for each depth, packs the atlas, writes the `.jplax` by the
 `parallax-pages` skill's rules (its "Generating a page" section), lints it and renders it. `--help` has the rest.
 
+**Examples (r239, 2026-10-10):** a forest, a beach and a post-apocalyptic city, each painted and pixel:
+`tools/r239-ai-strips/examples.sh OUT` paints the six pages and films them (`tools/ai-film.sh`). The beach and the
+city needed shapes of their own in `sil.py` (`dunes`, `sea`, `palms`, `ruins`, chosen with `--kinds`); a theme that
+names what another layer draws ("turquoise sea") gets it painted faintly into every layer's sky.
+
 ## What works
 
 | Pass | Tool | What it does |
