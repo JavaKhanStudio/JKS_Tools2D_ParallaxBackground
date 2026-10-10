@@ -151,9 +151,10 @@ What is yours to choose, from the theme:
 
 Look at every frame (`OUT/shots/a01-t*.png`) for what lint cannot see: pines that stayed smooth spikes (the tool
 repaints a painted one under an outline roughness of 3.5; a borderline one passes), a horizon or clouds painted behind a layer, a
-creature (the prompt forbids them; nothing checks), layers whose colours do not belong together, a light rim along a
-far ridge. Then the strips themselves: `OUT/strips/l<k>_ai.png` painted, `_cut.png` cut, `_cut.log` what the cut
-dropped. A strip refused 5 times (art on its top row, or no trees) stops the run: another `--seed`.
+creature (the prompt forbids them, and `creature.py` refuses one inside a layer's mass, not on its edge, r261),
+layers whose colours do not belong together, a light rim along a far ridge. Then the strips themselves:
+`OUT/strips/l<k>_ai.png` painted, `_cut.png` cut, `_cut.log` what the cut dropped. A strip refused 5 times (art on
+its top row, a creature, or no trees) stops the run: another `--seed`.
 
 ## Getting it graded
 

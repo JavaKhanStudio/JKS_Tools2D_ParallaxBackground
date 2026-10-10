@@ -12,6 +12,8 @@ far from the shape (a horizon behind hills) goes too. Pines grow past their shap
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
+A creature SD painted inside the mass (a bird, an animal: creature.py, r261) exits 4, after the PNG is written;
+--no-creatures skips the check.
 --pixel N: pixel art. Box-downscale by N, quantise to --colours colours (one palette for the
 layer, or --palette's), and cut alpha hard at 50%: every pixel is one palette colour, fully opaque or fully clear.
 The PNG is the small one; the page draws it scaled N times with the Nearest filter.
@@ -47,8 +49,9 @@ def spread(m, n):
     return m
 
 
-def islands(mask):
-    """Each 4-connected component of mask but the largest, as one mask; column 0 touches column w-1."""
+def components(mask):
+    """(label, sizes): each 4-connected component of mask numbered from 1, sizes[n - 1] its size; column 0 touches
+    column w-1."""
     h, w = mask.shape
     label = np.zeros(mask.shape, np.int32)
     sizes = [0]
@@ -66,10 +69,15 @@ def islands(mask):
                     label[ny, nx] = n
                     todo.append((ny, nx))
         sizes.append(size)
-    if len(sizes) <= 2:
+    return label, sizes[1:]
+
+
+def islands(mask):
+    """Each 4-connected component of mask but the largest, as one mask; column 0 touches column w-1."""
+    label, sizes = components(mask)
+    if len(sizes) <= 1:
         return np.zeros(mask.shape, bool)
-    main = int(np.argmax(sizes))
-    return (label > 0) & (label != main)
+    return (label > 0) & (label != int(np.argmax(sizes)) + 1)
 
 
 def main():
@@ -83,6 +91,7 @@ def main():
     ap.add_argument("--keep-islands", action="store_true", help="keep alpha islands apart from the main mass")
     ap.add_argument("--pixel", type=int, default=0)
     ap.add_argument("--colours", type=int, default=12)
+    ap.add_argument("--no-creatures", action="store_true", help="skip creature.py's check (exit 4)")
     ap.add_argument("--palette", help="--pixel: build the palette from this cut layer's opaque colours (one for all segments)")
     a = ap.parse_args()
     img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
@@ -144,6 +153,13 @@ def main():
         # Art on the top row is cut flat on screen (the parallax_lab lint's fault a).
         print(f"{a.out}: art cut flat at the top edge over {cut} columns", file=sys.stderr)
         sys.exit(3)
+    if not a.no_creatures:
+        import creature  # it imports this module
+        found = creature.find(img.astype(np.float64), alpha)
+        for x, y, size in found:
+            print(f"{a.src}: a creature? {size} px blob at x={x} y={y}", file=sys.stderr)
+        if found:
+            sys.exit(4)
 
 
 if __name__ == "__main__":

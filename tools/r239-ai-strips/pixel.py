@@ -11,7 +11,8 @@ the small one does too.
 Then the sky is keyed out hard (colour distance from the top rows' colour, cut halfway to the
 layer's own distance) and the opaque pixels are quantised to --colours colours, or to --palette's
 (the cut layers of one page share it). Opaque cells apart from the layer's main mass are cleared,
-as layer.py does (r242), and art on the top row exits 3.
+as layer.py does (r242), and art on the top row exits 3. A creature painted inside the mass (creature.py, r261), looked
+for in the painted strip, exits 4.
 """
 import argparse
 import sys
@@ -19,6 +20,7 @@ import sys
 import numpy as np
 from PIL import Image
 
+import creature
 from layer import islands
 
 
@@ -52,6 +54,7 @@ def main():
     ap.add_argument("--palette", help="quantise to this image's opaque colours (a cut layer, or a palette strip)")
     ap.add_argument("--cell", type=int, default=0, help="cell size in px; 0: found from the picture")
     ap.add_argument("--mask", help="sil.py's _mask.png: a cell is opaque only within one cell of the silhouette")
+    ap.add_argument("--no-creatures", action="store_true", help="skip creature.py's check (exit 4)")
     a = ap.parse_args()
     img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
     h, w = img.shape[:2]
@@ -106,6 +109,20 @@ def main():
     if cut:
         print(f"{a.out}: art cut flat at the top edge over {cut} columns", file=sys.stderr)
         sys.exit(3)
+    if not a.no_creatures:
+        # One art pixel per cell is too small to see a creature in: look at the painted strip, through the opaque
+        # cells laid back on it. Sizes scale with the strip's width (creature.py's are for 1024 px), and a creature is
+        # six art pixels at least: a trunk or a facet is two to four (r243's strips: 3.6 at most).
+        j = np.clip((np.arange(h) - phy - 1) // cell, 0, ny - 1)
+        i = ((np.arange(w) - phx - 1) // pitch).astype(int) % nx
+        alpha = opaque[j][:, i].astype(np.float64)
+        k = (w / 1024) ** 2
+        found = creature.find(img.astype(np.float64), alpha, max(int(50 * k), 6 * cell ** 2), int(3000 * k),
+                              r=max(int(12 * k ** 0.5), 3 * cell))
+        for x, y, size in found:
+            print(f"{a.src}: a creature? {size} px blob at x={x} y={y}", file=sys.stderr)
+        if found:
+            sys.exit(4)
 
 
 if __name__ == "__main__":

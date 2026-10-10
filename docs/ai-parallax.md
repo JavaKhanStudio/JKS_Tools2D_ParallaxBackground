@@ -125,7 +125,16 @@ it (r244); an SDXL ControlNet is untried.
 
 - r242's "bird" in the mountain strip was not painted by SD: `layer.py` drew black a pale ridge too far from any solid
   pixel to take an edge colour (0/0). Fixed. `run.sh`'s negative prompt names birds, animals and creatures: a creature
-  would stand still in a scrolling background. Nothing yet catches one SD paints *inside* a layer's mass.
+  would stand still in a scrolling background. Since r261, `layer.py` and `pixel.py` exit 4 on one SD paints *inside* a
+  layer's mass (`creature.py`), and `ai-page.sh` paints the strip again: a blob far in colour from the mass around it,
+  50 to 3000 px in a 1024 px strip (six art pixels at least in pixel art), not touching the mass's edge, and alone:
+  no other blob of its colour, shape and size, as snow on pines or trees on a slope come in crowds.
+  `tools/r261-creature/sweep.sh` passes every strip on disk (r239, r242, r243, r246: 27) and flags the 8 creatures it
+  plants (`plant.py`: birds and deer on mountains, hills, pines, snowy pines, among painted trees, in pixel art); 15
+  strips it was not tuned on (r244, r239-run) pass too. `mutate.sh` takes each rule out in turn and the sweep fails.
+  Missed by design: a creature on the silhouette's edge, and one the colour, shape and size of the layer's own flecks
+  (a white bird among snow flecks). Not the check's job, and seen while making it: a gap between trees whose foot SD
+  painted sky, which the silhouette mask makes opaque, draws a pale spot in a dark treeline (r246's snow `l3v2`, r263).
 - Each layer is painted on its own: nothing makes their colours agree but `--colours`, which the init image carries.
   `ai-page.sh` paints them at full contrast and gives the distance with the page's depth fog (`fogStrength`, r217).
 
@@ -141,3 +150,4 @@ Tasks under r239, tagged `#assets`:
 4. r245 (`#runtime`): lint (`tools/parallax_lab.py`) skips `SEQUENCE` layers in its layout checks, so it neither
    counts them as covering (a false (b) on this page) nor checks their joins.
 5. r246 (done): from a theme to a page, `tools/ai-page.sh`, and the `parallax-pages` skill's "Generating a page".
+6. r261 (done): `creature.py`, a strip with a creature in its mass is refused (see "Still wrong in the frames").
