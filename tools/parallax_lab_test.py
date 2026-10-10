@@ -276,5 +276,74 @@ class PixelArtCoverTop(unittest.TestCase):
         self.assertEqual(1, len(self.faults(1.0, 0.5)))
 
 
+class MipmappedJoins(unittest.TestCase):
+    """(f), r268: a tiled layer from a mipmapped atlas whose region edges are copied into the padding fewer texels than
+    the layer shrinks it shows a line at every join (tools/r268-mip-seams: 17-91/255 below that, none from twice it).
+    The atlas is tools/r268-mip-seams/make.py's: one art packed with 0, 1, 8 and 25 texels copied, each region drawn
+    1/4, 1/8 and 1/16 of its size."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        import tempfile
+        spec = importlib.util.spec_from_file_location('mip_make', os.path.join(lab.ROOT, 'tools/r268-mip-seams/make.py'))
+        cls.make = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.make)
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.dirs = {}
+        for filt in ('MipMapLinearLinear,Linear', 'Linear,Linear'):
+            d = os.path.join(cls.tmp.name, filt.split(',')[0])
+            cls.make.main(d, filt, [0, 1, 8, 25], 33)
+            cls.dirs[filt] = d
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def faults(self, filt, edit=None):
+        page = lab.load(os.path.join(self.dirs[filt], 'mip.jplax'))
+        if edit:
+            edit(page)
+        return [p for p in lab.layout(page, self.dirs[filt]) if p.startswith('(f)')]
+
+    def test_too_few_copied_texels_for_the_shrink_is_a_line(self):
+        # Layers 3 per region: b0 x4 x8 x16, b1 x4 x8 x16, b8 x4 x8 x16, b25 x4 x8 x16.
+        said = [int(p.split()[2]) for p in self.faults('MipMapLinearLinear,Linear')]
+        self.assertEqual([0, 1, 2, 3, 4, 5, 8], said)
+
+    def test_a_linear_atlas_has_no_mip_level(self):
+        self.assertEqual([], self.faults('Linear,Linear'))
+
+    def test_a_layer_not_tiled_shows_no_join(self):
+        def untiled(page):
+            page['repeatOnX'] = False
+        self.assertEqual([], self.faults('MipMapLinearLinear,Linear', untiled))
+
+    def test_a_sequence_from_that_atlas_is_said_too(self):
+        def sequence(page):
+            seq = lab.layer('', speed=0.05, size=lab.layers(page)[1]['sizeRatio'], dy=50.0)
+            seq.update(kind='SEQUENCE', name='seq', sequenceSeed=1, sequenceLength=4,
+                       sequenceSegments=[{'regionName': n, 'regionPosition': 0, 'weight': 1} for n in ('b0', 'b25')])
+            page['pageModel']['pageList'] = [seq]
+        said = self.faults('MipMapLinearLinear,Linear', sequence)
+        self.assertEqual(1, len(said), said)
+        self.assertIn('(b0#0)', said[0])
+
+    def test_the_colour_under_alpha_0_is_not_a_copy_that_differs(self):
+        """A region whose edge is transparent, beside padding transparent too but of another colour: copied."""
+        import tempfile
+        import parallax_regions as regions_tool
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as d:
+            sheet = Image.new('RGBA', (64, 16), (255, 0, 0, 0))
+            sheet.paste((0, 90, 40, 0), (20, 0, 40, 16))
+            sheet.paste((0, 90, 40, 255), (24, 0, 36, 16))
+            path = os.path.join(d, 's.png')
+            sheet.save(path)
+            r = {'page': path, 'xy': [20, 0], 'size': [20, 16]}
+            # Copied up to the sheet's edge, which counts as copied all the way; raw RGBA would read 0.
+            self.assertEqual(64, lab._copied(regions_tool, {}, r, 'left'))
+
+
 if __name__ == '__main__':
     unittest.main()

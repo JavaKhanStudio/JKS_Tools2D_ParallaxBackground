@@ -261,6 +261,7 @@ def _atlas_regions(page, atlas_dir):
 
 
 SCREEN_W, SCREEN_H = 40.0, 22.5  # the lab's world at 1280x720, the camera's view before any scroll
+SCREEN_PX = 1280  # that world's width in pixels
 SOLID, SEAM = 0.99, 20
 EDGE_PROBE = 1e-3  # world units inside a layer's top or bottom edge where (a) and (b) ask what covers it
 COVERED = 0.9  # a layer edge behind nearer layers this opaque at its height does not show
@@ -288,6 +289,11 @@ def layout(page, atlas_dir):
           each segment's left edge (itself included), segments weighing above 0 only. A join is a cut only when it
           also steps more than the art does between most of its own neighbour columns (3 in 4, in the same rows):
           hard alpha pixel art steps 27-75 from one column to the next everywhere, and loops as smoothly (r253).
+      (f) a layer tiled from a mipmapped atlas (its `filter:` a MipMap one) drawn 1/m of its region's size on this
+          1280 px screen, whose region edges are copied fewer than m texels into the atlas padding (duplicatePadding):
+          the mip levels it samples average in what lies past the copy, a line at every join (r268,
+          tools/r268-mip-seams: 17-91/255 below m texels, at most 8.5 at m, none from 2m). A narrower screen shrinks it
+          more. The editor copies 25 texels (padding 50).
     A layer counts as covering a band only if it spans the screen's width: tiled on X without padding, or 1 world
     wide or more. An EMPTY layer covers nothing: what its hook draws is the game's. A SEQUENCE layer is as high as its
     first segment makes it (docs/sequence-layers.md) and covers a row only as far as its least opaque segment does
@@ -330,6 +336,7 @@ def _measure_layers(page, regions, regions_tool):
         img = _image(page, i, l, r, regions_tool, sheets, stripped)
         p = _place(page, i, l, img)
         placed.append(p)
+        problems += _mip_faults(page, i, l, [r], regions_tool, sheets)
         if page.get('repeatOnX', True):
             seam = _seam_on_screen(img, p, regions_tool)
             limit = _seam_limit([img], p)
@@ -372,6 +379,8 @@ def _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, strippe
     first = regions.get((segments[0]['regionName'], segments[0].get('regionPosition', 0)))
     if first is None:
         return []
+    problems = _mip_faults(page, i, l, [regions[(s['regionName'], s.get('regionPosition', 0))] for s in weighed],
+                           regions_tool, sheets)
     each = [_place(page, i, l, img) for _, img in images]
     height = _place(page, i, l, _image(page, i, l, first, regions_tool, sheets, stripped)).height
     rows = [min(_resampled(p.rows, k, len(each[0].rows)) for p in each) for k in range(len(each[0].rows))]
@@ -379,15 +388,15 @@ def _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, strippe
     p = each[0]._replace(rows=rows, height=height, cut_top=cut)
     placed.append(p)
     if not page.get('repeatOnX', True) or l['padX'] > 0:
-        return []
+        return problems
     limits = {a: _seam_limit([img], p) for a, img in images}
     joins = [f'{a}>{b} {seam}' for a, left in images for b, right in images
              for seam in [_join_on_screen(left, right, p)] if seam > max(limits[a], limits[b])]
     if not joins:
-        return []
+        return problems
     limit = SEAM if all(v == SEAM for v in limits.values()) else f"{SEAM} and its segments' own step between columns"
-    return [f"(e) layer {i} ({label(l)}) chains segments whose edges differ (seam > {limit}), a cut at each such"
-            f" join: {', '.join(joins)} (left>right seam)"]
+    return problems + [f"(e) layer {i} ({label(l)}) chains segments whose edges differ (seam > {limit}), a cut at each"
+                       f" such join: {', '.join(joins)} (left>right seam)"]
 
 
 def _resampled(rows, k, n):
@@ -410,6 +419,72 @@ def _join_on_screen(left, right, p):
         if a[0, y][3] > 16 or b[0, y][3] > 16:
             edge.append(step(a[0, y], b[0, y]))
     return round(sum(edge) / len(edge)) if edge else 0
+
+
+def _mip_faults(page, i, l, rs, regions_tool, sheets):
+    """(f): each region of a tiled layer, from a mipmapped atlas, whose edges are copied into the padding fewer texels
+    than the layer shrinks it on screen."""
+    if not any(r['filter'].startswith('MipMap') for r in rs):
+        return []
+    sides = (['left', 'right'] if page.get('repeatOnX', True) and l.get('padX', 0) == 0 else []) + \
+            (['bottom', 'top'] if page.get('repeatOnY', False) and l.get('padY', 0) == 0 else [])
+    if not sides:
+        return []
+    out = []
+    for r in rs:
+        # A rotated or stripped region is left alone: its packed edge is not the layer's edge.
+        if r.get('rotate') == 'true' or r['size'] != r['orig']:
+            continue
+        shrink = r['size'][0] / (SCREEN_PX * l['sizeRatio'])
+        if shrink <= 1:
+            continue
+        copied = min(_copied(regions_tool, sheets, r, side) for side in sides)
+        if copied < shrink:
+            out.append(f"(f) layer {i} ({r['name']}#{r['pos']}) is tiled from a mipmapped atlas ({r['filter']}) and"
+                       f" drawn 1/{shrink:.1f} of its size, but its edges are copied only {copied} texel(s) into the"
+                       f" padding (needs {math.ceil(shrink)}): a line at every join; pack with duplicatePadding and"
+                       " a padding twice that, or a Linear filter")
+    return out
+
+
+def _copied(regions_tool, sheets, r, side, most=64):
+    """How many texels past the region's edge on that side repeat its edge column or row, up to most. A texel repeats
+    its edge texel when their premultiplied RGBA (the colour under alpha 0 is never seen) are within 32/255, or within
+    the art's own step from that edge texel to the one inside it: the editor's PixmapPacker stretches the edge with
+    Pixmap's BiLinear filter, so its copy blends in the next texels, and a few of its texels are off further (city_1.png:
+    4 of 272 along a top edge, alpha 65 for 255): a column or row is copied when 95% of its texels are. The sheet's own edge counts as copied all the way: the mip levels have nothing past it."""
+    sheet = sheets.setdefault(r['page'], regions_tool.Image.open(r['page']).convert('RGBA'))
+    (x, y), (w, h) = r['xy'], r['size']
+    if side in ('left', 'right'):
+        edge = x if side == 'left' else x + w - 1
+        step = -1 if side == 'left' else 1
+        cut = lambda c: sheet.crop((c, y, c + 1, y + h))  # noqa: E731
+        limit = sheet.width
+    else:  # libGDX's y runs down the sheet: a region's top on screen is its first row
+        edge = y + h - 1 if side == 'bottom' else y
+        step = 1 if side == 'bottom' else -1
+        cut = lambda c: sheet.crop((x, c, x + w, c + 1))  # noqa: E731
+        limit = sheet.height
+
+    def seen(c):
+        raw = cut(c).tobytes()
+        return [(raw[k] * raw[k + 3] / 255, raw[k + 1] * raw[k + 3] / 255, raw[k + 2] * raw[k + 3] / 255, raw[k + 3])
+                for k in range(0, len(raw), 4)]
+
+    def apart(p, q):
+        return max(abs(p[n] - q[n]) for n in range(4))
+
+    ref = seen(edge)
+    inner = seen(edge - step) if 0 <= edge - step < limit else ref
+    tolerance = [max(32, apart(p, q)) for p, q in zip(ref, inner)]
+    for k in range(1, most + 1):
+        c = edge + step * k
+        if not 0 <= c < limit:
+            return most
+        off = sum(1 for p, q, t in zip(seen(c), ref, tolerance) if apart(p, q) > t)
+        if off > 0.05 * len(ref):
+            return k - 1
+    return most
 
 
 def _opaque(full, img, y):

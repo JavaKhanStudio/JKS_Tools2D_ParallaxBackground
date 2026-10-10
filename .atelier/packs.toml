@@ -150,6 +150,9 @@ The atlas file's `filter:` line is what the game draws with: the editor writes
 MipMapLinearLinear,Linear on power-of-two pages (GLES2/WebGL1 draw a mipmapped NPOT page
 black, desktop shows nothing wrong), Nearest,Nearest for a pixel-art project. The Godot reader
 reads the same line (engines/godot/tests/pixelart).
+A mipmapped atlas needs each region's edges copied into its padding (the editor copies 25 of its 50 px): a tiled layer
+drawn 1/m of its size with fewer than m texels copied shows a line at every join (r268, tools/r268-mip-seams; lint
+fault (f)). The half-texel inset (r218) only saves a Linear atlas.
 useOriginalSize: an atlas packed with whitespace stripped (non-zero `offset:` lines) draws its
 regions at their original size only when the page says so.
 ETC2 (d13, r125, r173): Gvars_Parallax.setCompressedAtlases(on) makes atlasFile() load

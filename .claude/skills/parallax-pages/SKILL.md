@@ -110,7 +110,9 @@ python3 tools/parallax_lab.py lint page.jplax        # the numbers, and the rule
 Lint catches motion faults and, reading the atlas (`--atlas DIR`, else next to the page, its round.json or the sample
 folders), the layout faults a render shows: (a) art cut flat at a strip's top edge on screen, (b) a strip's bottom edge
 on screen with nothing nearer over it, (c) a band of the screen no layer and no gradient covers (white = the editor's
-unset default), (d) stripped regions stretched (useOriginalSize off), (e) a tiled layer with seam > 20 in the rows on screen (sunk below it, a mismatch cannot show). It does not
+unset default), (d) stripped regions stretched (useOriginalSize off), (e) a tiled layer with seam > 20 in the rows on screen (sunk below it, a mismatch cannot show), (f) a tiled layer
+from a mipmapped atlas drawn 1/m of its size whose region edges are copied fewer than m texels into the padding (a line
+at every join, r268). It does not
 judge composition: the editor's default layout (`calmLag.plaxpj`) passes lint and looks wrong.
 **Always render and look:**
 
