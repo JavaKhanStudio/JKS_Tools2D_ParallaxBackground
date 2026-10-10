@@ -105,7 +105,7 @@ repair.
 - A fog creep (`TransfertStyle.fogCreep`, r252, no format change) is that same grade toward a mist, with its own
   amounts: `TransfertStyle.gradeAt`/`showsIncoming` (eased, far slots first, every slot swapped at the middle), copied
   in `plax_transfert_style.gd`'s `grade_at`/`shows_incoming`. Run both frame checks on `engines/godot/tests/transfer`
-  (t13, t14); `tools/r252-fog-creep/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
+  (t13, t14, t17); `tools/r252-fog-creep/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
   `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's
