@@ -28,11 +28,12 @@
 	picks, back and forth; they only draw it differently. A is the library as it ships, in its depth stagger style (TransfertStyle.depthStagger, r249): each layer slot fades
 	in its own window, back slots first; at stagger 0 every slot fades at once, the transfert a game gets without a style. B adds a colour grade a game can
 	already do: the reader's tint (addColorTransfert) goes to the grade colour over the first half and back to white over
-	the second; a tint multiplies, so it darkens and colours but never lightens. C and D are effects this lab draws with
-	its own shader, from FOG's noise: in C the mist's white rolls in in patches, far layers first, the page is swapped
-	under the full fog, then it clears, near layers first; in D the new page's layers eat the old ones in patches, slot by
-	slot, back slots first. The stagger slider spreads A, C and D over the depth, the library's own windows in all three, the patches and softness sliders shape
-	their mask. C and D are not in the library yet.</p>
+	the second; a tint multiplies, so it darkens and colours but never lightens. C is an effect this lab draws with its
+	own shader, from FOG's noise: the mist's white rolls in in patches, far layers first, the page is swapped under the
+	full fog, then it clears, near layers first. D is the library's dissolve (TransfertStyle.dissolve, r250): the new
+	page's layers eat the old ones in patches, slot by slot, back slots first. The stagger slider spreads A, C and D over
+	the depth, the library's own windows in all three; the patches and softness sliders shape C and D's mask. C is not in
+	the library yet.</p>
 	</details>
 	<script src="lab.js"></script>
 	<script>

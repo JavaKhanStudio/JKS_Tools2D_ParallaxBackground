@@ -87,7 +87,10 @@ final class ReaderCases
 				new BrowserCase("reader: aGameSeedRedrawsTheSequencesOfBothPages", () -> new ReaderCases().aGameSeedRedrawsTheSequencesOfBothPages()),
 				new BrowserCase("reader: depthStaggerFadesEachSlotInItsOwnWindowInEveryRepeatMode", () -> new ReaderCases().depthStaggerFadesEachSlotInItsOwnWindowInEveryRepeatMode()),
 				new BrowserCase("reader: depthStaggerMatchesPagesOfUnequalLayerCountsFromTheFront", () -> new ReaderCases().depthStaggerMatchesPagesOfUnequalLayerCountsFromTheFront()),
-				new BrowserCase("reader: aTransfertWithoutAStyleFadesEverySlotAtOnce", () -> new ReaderCases().aTransfertWithoutAStyleFadesEverySlotAtOnce()));
+				new BrowserCase("reader: aTransfertWithoutAStyleFadesEverySlotAtOnce", () -> new ReaderCases().aTransfertWithoutAStyleFadesEverySlotAtOnce()),
+				new BrowserCase("reader: dissolveMasksEachSlotOnlyWhileInTransferInEveryRepeatMode", () -> new ReaderCases().dissolveMasksEachSlotOnlyWhileInTransferInEveryRepeatMode()),
+				new BrowserCase("reader: dissolveFadesWhatTheEngineCannotMask", () -> new ReaderCases().dissolveFadesWhatTheEngineCannotMask()),
+				new BrowserCase("reader: dissolveKeepsEachPagesFogAndTheTint", () -> new ReaderCases().dissolveKeepsEachPagesFogAndTheTint()));
 	}
 
 	/** A region of the given pixel size, without any texture behind it. */
@@ -1543,5 +1546,223 @@ final class ReaderCases
 				drawnAt(0.5f, slot, 0.25f, "call " + call + ", incoming slot " + slot);
 			}
 		}
+	}
+
+	/**
+	 * Stands for an engine that draws a dissolve: records each layer begun, the dissolve it was begun under (side, ramp,
+	 * softness, drift, cells across and up) and its fog; checks every begin is ended, and the mask changes between layers.
+	 */
+	private final class DissolveEffects implements LayerEffects
+	{
+		final List<ParallaxLayer> layers = new ArrayList<>();
+		final List<float[]> masks = new ArrayList<>();
+		final List<Float> fogs = new ArrayList<>();
+		final float[] mask = new float[6];
+		int setCalls, pageFogs;
+		private boolean open;
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+		{throw new AssertionError("the reader calls the begin that takes the fog");}
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fog, Color fogColor)
+		{
+			isFalse(open, "a layer begun inside another");
+			open = true;
+			layers.add(layer);
+			masks.add(Arrays.copyOf(mask, mask.length));
+			fogs.add(fog);
+			return true;
+		}
+
+		@Override
+		public void end(Batch batch, ParallaxLayer layer)
+		{
+			isTrue(open, "ended without a begin");
+			open = false;
+		}
+
+		@Override
+		public boolean beginPageFog(Batch batch, Color tint, Color fog, Color incomingFog)
+		{
+			pageFogs++;
+			return false;
+		}
+
+		@Override
+		public boolean setDissolve(int side, float ramp, float softness, float drift, float cellsX, float cellsY)
+		{
+			isFalse(open, "the dissolve changed inside a layer");
+			setCalls++;
+			mask[0] = side;
+			mask[1] = ramp;
+			mask[2] = softness;
+			mask[3] = drift;
+			mask[4] = cellsX;
+			mask[5] = cellsY;
+			return true;
+		}
+
+		/** The mask {@code layer} was last begun under; null when it was not begun. */
+		float[] maskOf(ParallaxLayer layer)
+		{
+			int i = layers.lastIndexOf(layer);
+			return i < 0 ? null : masks.get(i);
+		}
+
+		void clear()
+		{
+			layers.clear();
+			masks.clear();
+			fogs.clear();
+			setCalls = 0;
+		}
+	}
+
+	/**
+	 * r250: a dissolve begins every layer of both pages, slot by slot, under its own mask: the outgoing side then the
+	 * incoming one, at the slot's ramp in the depth stagger's windows, at full opacity, the mask set back to none after
+	 * each; a layer whose share is none is not drawn. Outside the transfert, nothing is begun and no mask set.
+	 */
+	void dissolveMasksEachSlotOnlyWhileInTransferInEveryRepeatMode()
+	{
+		float stagger = 1;
+		TransfertStyle style = TransfertStyle.dissolve(5, 0.08f, stagger);
+		same(TransfertStyle.Kind.DISSOLVE, style.getKind(), "a dissolve");
+		for (int mode = 0; mode < 4; mode++)
+		{
+			String repeat = new String[] { "X", "Y", "XY", "none" }[mode];
+			ParallaxPageReader reader = reader(mode != 1 && mode != 3, mode == 1 || mode == 2);
+			DissolveEffects effects = new DissolveEffects();
+			reader.setLayerEffects(effects);
+			List<ParallaxLayer> from = widened(0.3f, 3), into = widened(0.5f, 3);
+			reader.addLayers(from);
+			reader.draw(camera, batch);
+			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun before the transfert");
+			reader.addLayersTransfert(page(into), null, 1, style);
+			same(style, reader.getTransfertStyle(), "the style under way");
+			for (float t : new float[] { 0.25f, 0.5f, 0.75f })
+			{
+				// A quarter of the 1 s transfert a step: the fade is at t exactly.
+				reader.act(0.25f, 0, 0);
+				isTrue(reader.isInTransfer(), repeat + " at " + t + ": in transfer");
+				effects.clear();
+				draws.clear();
+				reader.draw(camera, batch);
+				int shown = 0;
+				for (int slot = 0; slot < 3; slot++)
+				{
+					float ramp = labRamp(t, stagger, slot, 3);
+					for (int side = 0; side < 2; side++)
+					{
+						ParallaxLayer layer = (side == 0 ? from : into).get(slot);
+						float share = side == 0 ? 1 - ramp : ramp;
+						String what = repeat + " at " + t + (side == 0 ? ", outgoing" : ", incoming") + " slot " + slot;
+						float[] mask = effects.maskOf(layer);
+						if (share <= 0)
+						{
+							isTrue(mask == null, what + ": a layer whose share is none is not begun");
+							drawnAt(side == 0 ? 0.3f : 0.5f, slot, 0, what);
+							continue;
+						}
+						shown++;
+						isTrue(mask != null, what + ": begun");
+						equal(side == 0 ? LayerEffects.DISSOLVE_OUTGOING : LayerEffects.DISSOLVE_INCOMING, mask[0], 0, what + ": side");
+						equal(ramp, mask[1], 1e-6f, what + ": the slot's ramp");
+						equal(0.08f, mask[2], 0, what + ": softness");
+						equal(TransfertStyle.drift(t), mask[3], 1e-6f, what + ": drift on the reader's clock");
+						equal(5, mask[4], 0, what + ": patches across");
+						equal(5 * 22.5f / 40 * 2.5f, mask[5], 1e-5f, what + ": cells up the view");
+						drawnAt(side == 0 ? 0.3f : 0.5f, slot, 1, what);
+					}
+				}
+				equal(shown, effects.layers.size(), repeat + " at " + t + ": one begin per layer shown");
+				equal(2 * shown, effects.setCalls, repeat + " at " + t + ": a mask set, and set back to none, per layer");
+				equal(0, effects.pageFogs, repeat + ": no page fog during a dissolve");
+			}
+			reader.act(0.25f, 0, 0);
+			isFalse(reader.isInTransfer(), repeat + ": the transfert is over");
+			effects.clear();
+			draws.clear();
+			reader.draw(camera, batch);
+			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun after the transfert");
+			drawnAt(0.5f, 0, 1, repeat + ": the new page, plain");
+		}
+	}
+
+	/**
+	 * An engine that draws no dissolve (setDissolve false, as a LayerEffects written before it), and an EMPTY layer in
+	 * any engine: each layer fades to its share of the slot, as the depth stagger does.
+	 */
+	void dissolveFadesWhatTheEngineCannotMask()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		RecordingEffects before = new RecordingEffects();
+		reader.setLayerEffects(before);
+		reader.addLayers(widened(0.3f, 3));
+		reader.addLayersTransfert(page(widened(0.5f, 3)), null, 1, TransfertStyle.dissolve(5, 0.1f, 2));
+		reader.act(0.5f, 0, 0);
+		draws.clear();
+		reader.draw(camera, batch);
+		for (int slot = 0; slot < 3; slot++)
+		{
+			float ramp = labRamp(0.5f, 2, slot, 3);
+			drawnAt(0.3f, slot, 1 - ramp, "no dissolve in the engine, outgoing slot " + slot);
+			drawnAt(0.5f, slot, ramp, "no dissolve in the engine, incoming slot " + slot);
+		}
+		equal(0, before.runs.size(), "nothing begun");
+
+		ParallaxPageReader hooked = reader(true, false);
+		DissolveEffects effects = new DissolveEffects();
+		hooked.setLayerEffects(effects);
+		final float[] alpha = { -1 };
+		hooked.setLayerHook("slot", new LayerHook()
+		{
+			@Override
+			public void draw(Batch batch, ParallaxLayer layer, float x, float y, float width, float height)
+			{alpha[0] = batch.getColor().a;}
+		});
+		ParallaxLayer back = layer(0);
+		hooked.addLayers(list(back));
+		hooked.addLayersTransfert(page(list(ParallaxLayer.empty("slot", 0.3f))), null, 1, TransfertStyle.dissolve(5, 0.1f, 0));
+		hooked.act(0.25f, 0, 0);
+		hooked.draw(camera, batch);
+		equal(0.25f, alpha[0], 1e-6f, "the hook fades in");
+		isTrue(effects.maskOf(back) != null, "the image layer is masked");
+		equal(1, effects.layers.size(), "the EMPTY layer is not begun");
+	}
+
+	/**
+	 * Each page's layers keep their own fog under the mask, begun one by one (no page fog's shared shader), and they
+	 * are drawn in the tint; the batch is white after the draw.
+	 */
+	void dissolveKeepsEachPagesFogAndTheTint()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		DissolveEffects effects = new DissolveEffects();
+		reader.setLayerEffects(effects);
+		reader.setFog(0.1f, Color.WHITE);
+		reader.addColorTransfert(new Color(0.5f, 1, 1, 1), 0);
+		ParallaxLayer oldBack = atSpeed(0.01f), oldFront = atSpeed(0.1f);
+		reader.addLayers(list(oldBack, oldFront));
+		ParallaxLayer newBack = atSpeed(0.01f), newFront = atSpeed(0.2f), wave = shaded(0.5f, 3, 1);
+		WholePage_Model next = page(list(newBack, wave, newFront));
+		next.setFogStrength(0.02f);
+		reader.addLayersTransfert(next, null, 2, TransfertStyle.dissolve(8, 0.05f, 0));
+		reader.act(1, 0, 0);
+		draws.clear();
+		reader.draw(camera, batch);
+		equal(fog(0.1f, 0.01f, 0.1f), effects.fogs.get(effects.layers.indexOf(oldBack)), 1e-6f, "the outgoing page: its own fog");
+		equal(fog(0.02f, 0.01f, 0.2f), effects.fogs.get(effects.layers.indexOf(newBack)), 1e-6f, "the incoming page: its own");
+		equal(0, effects.fogs.get(effects.layers.indexOf(newFront)), 0, "a front layer begun with no fog");
+		isTrue(effects.maskOf(wave) != null, "a SHADER layer through its effect and the mask");
+		equal(0, effects.pageFogs, "no page fog during a dissolve");
+		for (float[] draw : draws)
+		{
+			equal(0.5f, draw[4], 0, "drawn in the tint");
+			equal(1, draw[5], 0, "at full opacity: the mask does the rest");
+		}
+		isTrue(batch.getColor().equals(Color.WHITE), "the batch white after the draw");
 	}
 }

@@ -24,10 +24,10 @@ run() {
 	fi
 	cp "$SAVED/gd" "$GD"; cp "$SAVED/gdx" "$GDX"; cp "$SAVED/jme" "$JME"
 }
-sed -i 's/if _style == null or _style.kind != "DEPTH_STAGGER":/if true:/' "$GD"
+sed -i 's/if _style == null or _style.kind == "FADE":/if true:/' "$GD"
 grep -q '^	if true:$' "$GD" || { echo "mutation 1 did not apply"; exit 2; }
 run "Godot fading every slot at once" tools/godot-parallax-shots.sh
-sed -i 's/boolean staggered = transfertStyle.getKind() == TransfertStyle.Kind.DEPTH_STAGGER;/boolean staggered = false;/' "$GDX"
+sed -i 's/boolean staggered = transfertStyle.getKind() != TransfertStyle.Kind.FADE;/boolean staggered = false;/' "$GDX"
 grep -q 'boolean staggered = false;' "$GDX" || { echo "mutation 2 did not apply"; exit 2; }
 run "libGDX fading every slot at once" tools/godot-parallax-shots.sh
 sed -i 's/reader.addLayersTransfert(model, null, seconds, style);/reader.addLayersTransfert(model, null, seconds, TransfertStyle.FADE);/' "$JME"

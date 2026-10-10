@@ -12,12 +12,16 @@ MaterialDef ParallaxEffect {
         Vector3 Effect
         // FOG; WAVE when false.
         Boolean Fog
-        // No effect: a layer drawn through the depth fog only.
+        // No effect: a layer drawn through the depth fog, or a dissolve's mask, only.
         Boolean Plain
         // The depth fog at the layer, 0 to 1: the color mixed toward FogColor.
         Float Haze : 0.0
         // The page's fog colour.
         Vector3 FogColor : 0.93 0.95 0.97
+        // A transfert's dissolve: side (0 none, 1 outgoing, 2 incoming), ramp, softness, drift.
+        Vector4 Dissolve : 0.0 0.0 0.0 0.0
+        // The dissolve's noise cells across and up the view.
+        Vector2 Cells : 0.0 0.0
     }
 
     Technique {

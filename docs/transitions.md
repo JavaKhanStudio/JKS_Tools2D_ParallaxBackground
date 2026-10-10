@@ -28,10 +28,10 @@ two of round1's pages, drawn four ways:
 | A | the transfert as it ships | yes |
 | B | the transfert through a colour grade: the tint goes to the grade colour over the first half, back to white over the second | yes: a game can call both today. The tint multiplies, so it darkens and colours, never lightens: no fade through white |
 | C | fog creep: the mist's white rolls in in patches, far layers first, the page is swapped under the full fog, the fog clears near layers first | no: the lab's own shader |
-| D | dissolve: in each slot the new page's layer eats the old one in patches, back slots first | no: the lab's own shader |
+| D | dissolve: in each slot the new page's layer eats the old one in patches, back slots first | yes: `TransfertStyle.dissolve` (r250) |
 
-C and D are GdxLayerEffects' PLAIN shader with a mask taken from FOG's noise (r216's sum of sines, so the same on every
-GPU), in screen pixels. Sliders: the pages, the transfert's length, the hold, the scroll, B's grade colour, and for C and
+C is GdxLayerEffects' PLAIN shader with a mask taken from FOG's noise (r216's sum of sines, so the same on every GPU), in
+screen pixels; D the same mask in the library's shaders (`dissolved()`, over the camera view), in all three engines. Sliders: the pages, the transfert's length, the hold, the scroll, B's grade colour, and for C and
 D the depth stagger, the patch size and the edge softness. "Copy settings" hands them back as JSON.
 
 ## Ways to carry a transfert, and what each costs

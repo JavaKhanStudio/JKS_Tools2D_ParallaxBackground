@@ -6,14 +6,25 @@ extends RefCounted
 ##   bg.transfert_into(page, atlas, 3.0, PlaxTransfertStyle.depth_stagger(0.5))
 ##
 ## FADE (or no style): every layer slot fades at once. DEPTH_STAGGER: each slot over its own window, the back ones first.
+## DISSOLVE: in each slot the incoming layer eats the outgoing one in patches (PlaxEffects' dissolved()), over the same
+## windows.
 
 ## TransfertStyle.MAX_STAGGER.
 const MAX_STAGGER := 2.0
+## TransfertStyle.MIN_PATCHES, MAX_PATCHES, MIN_SOFTNESS, MAX_SOFTNESS, DISSOLVE_DRIFT.
+const MIN_PATCHES := 0.5
+const MAX_PATCHES := 64.0
+const MIN_SOFTNESS := 0.01
+const MAX_SOFTNESS := 0.5
+const DISSOLVE_DRIFT := 0.15
 
-## "FADE" or "DEPTH_STAGGER", as TransfertStyle.Kind.
+## "FADE", "DEPTH_STAGGER" or "DISSOLVE", as TransfertStyle.Kind.
 var kind := "FADE"
-## How far apart the slots' windows are, 0 to MAX_STAGGER; 0 but for DEPTH_STAGGER.
+## How far apart the slots' windows are, 0 to MAX_STAGGER; 0 for FADE.
 var stagger := 0.0
+## A dissolve's patches across the view, and how soft their edges are; 0 for every other style.
+var patches := 0.0
+var softness := 0.0
 
 
 ## Every layer slot at once: what a cross-fade with no style does.
@@ -30,6 +41,28 @@ static func depth_stagger(value: float) -> PlaxTransfertStyle:
 		style.kind = "DEPTH_STAGGER"
 		style.stagger = s
 	return style
+
+
+## TransfertStyle.dissolve: about `patches` patches across the view, their edges `softness` soft (0.01 hard, 0.5 a
+## blur), the slots over depth_stagger's windows. Clamped as there.
+static func dissolve(patch_count: float, soft: float, value: float) -> PlaxTransfertStyle:
+	var style := PlaxTransfertStyle.new()
+	style.kind = "DISSOLVE"
+	style.stagger = clampf(value, 0, MAX_STAGGER)
+	style.patches = clampf(patch_count, MIN_PATCHES, MAX_PATCHES)
+	style.softness = clampf(soft, MIN_SOFTNESS, MAX_SOFTNESS)
+	return style
+
+
+## TransfertStyle.cellsUp: the dissolve's noise cells up a view `view_w` by `view_h`, stretched 2.5 times.
+func cells_up(view_w: float, view_h: float) -> float:
+	return patches * view_h / view_w * 2.5 if view_w > 0 else 0.0
+
+
+## TransfertStyle.drift: how far the dissolve's noise has drifted on x at `seconds` of the clock, in cells, wrapped at 8.
+static func drift(seconds: float) -> float:
+	var d := fmod(seconds * DISSOLVE_DRIFT, 8.0)
+	return d + 8.0 if d < 0 else d
 
 
 ## TransfertStyle.slotRamp: how far along slot `slot` of `total` (0 at the back) is, 0 to 1, when the fade is at

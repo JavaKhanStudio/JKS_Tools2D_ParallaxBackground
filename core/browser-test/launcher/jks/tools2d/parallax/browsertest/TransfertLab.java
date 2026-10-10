@@ -37,10 +37,11 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * it can darken and colour, never lighten.</li>
  * <li>C: fog creep: the mist's white rolls in in patches, far layers first, the page is swapped under the full fog, and
  * the fog clears, near layers first.</li>
- * <li>D: dissolve: in every layer slot, the new page's layer eats the old one in patches, back slots first.</li>
+ * <li>D: dissolve: in every layer slot, the new page's layer eats the old one in patches, back slots first: the
+ * library's {@link TransfertStyle#dissolve} (r250) at the patch, softness and stagger sliders' values.</li>
  * </ul>
- * C and D are this lab's shaders, not the library's: GdxLayerEffects' PLAIN with a mask from FOG's noise (r216), in
- * screen pixels. The lab hands the reader one layer at a time, as {@link FogLab} does. Opened with transfert-lab.html:
+ * C is this lab's shader, not the library's: GdxLayerEffects' PLAIN with a mask from FOG's noise (r216), in screen
+ * pixels. The lab hands the reader one layer at a time, as {@link FogLab} does. Opened with transfert-lab.html:
  * tools/transfert-lab.sh.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.transfertLabAct(seconds)} steps the lab at 1/60 s.
@@ -181,7 +182,7 @@ public class TransfertLab extends ApplicationAdapter
 				duration = LabControls.read(seconds);
 				int into = PAIRS[shown][1 - side];
 				for (int i = 0; i < hearts.length; i++)
-					hearts[i].transfertIntoPage(models[i][into], duration, i == 0 ? style() : TransfertStyle.FADE);
+					hearts[i].transfertIntoPage(models[i][into], duration, i == 0 ? style() : i == 3 ? dissolve() : TransfertStyle.FADE);
 				float[] g = GRADES[LabControls.read(grade)];
 				hearts[1].parallaxReader.addColorTransfert(new Color(g[0], g[1], g[2], 1), duration / 2);
 				inTransfert = true;
@@ -244,12 +245,10 @@ public class TransfertLab extends ApplicationAdapter
 			Gdx.gl.glScissor(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
 			Gdx.gl.glViewport(x, top - PANEL_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 			// The reader may end the transfert a frame before the lab's clock does: then the new page is all there is.
-			if (i < 2 || !hearts[i].parallaxReader.isInTransfer())
+			if (i != 2 || !hearts[i].parallaxReader.isInTransfer())
 				hearts[i].render();
-			else if (i == 2)
-				renderFogCreep(hearts[i], x, top - PANEL_HEIGHT);
 			else
-				renderDissolve(hearts[i], x, top - PANEL_HEIGHT);
+				renderFogCreep(hearts[i], x, top - PANEL_HEIGHT);
 		}
 		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
 		Gdx.gl.glViewport(0, 0, width, height);
@@ -258,6 +257,10 @@ public class TransfertLab extends ApplicationAdapter
 	/** The library's depth stagger at the slider's value: A draws its transferts in it, C and D take its windows. */
 	private TransfertStyle style()
 	{return TransfertStyle.depthStagger(LabControls.read(stagger));}
+
+	/** D: the library's dissolve at the patch, softness and stagger sliders' values. */
+	private TransfertStyle dissolve()
+	{return TransfertStyle.dissolve(LabControls.read(patch), LabControls.read(soft), LabControls.read(stagger));}
 
 	/** How far along layer slot {@code slot} of {@code total} (0 at the back) is when the whole is at {@code ramp}. */
 	private float rampOf(float ramp, int slot, int total)
@@ -287,37 +290,6 @@ public class TransfertLab extends ApplicationAdapter
 		{
 			mask(HAZE, rampOf(ramp, j, n));
 			drawOne(reader, camera, drawnFrom.get(j));
-		}
-		reader.layers = layers;
-		reader.transferLayers = transfer;
-		end();
-	}
-
-	/**
-	 * D: slot by slot, back to front and matched from the front as the reader matches them, the old page's layer kept
-	 * where the noise is over the slot's ramp and the new page's where it is under it.
-	 */
-	private void renderDissolve(Parallax_Heart heart, int panelX, int panelY)
-	{
-		ParallaxPageReader reader = heart.parallaxReader;
-		float t = progress();
-		ArrayList<ParallaxLayer> layers = reader.layers, transfer = reader.transferLayers;
-		int total = Math.max(layers.size(), transfer.size());
-		int oldOffset = total - layers.size(), newOffset = total - transfer.size();
-		begin(heart, panelX, panelY);
-		for (int slot = 0; slot < total; slot++)
-		{
-			float ramp = rampOf(t, slot, total);
-			if (slot >= oldOffset)
-			{
-				mask(OUTGOING, ramp);
-				drawOne(reader, heart.worldCamera, layers.get(slot - oldOffset));
-			}
-			if (slot >= newOffset)
-			{
-				mask(INCOMING, ramp);
-				drawOne(reader, heart.worldCamera, transfer.get(slot - newOffset));
-			}
 		}
 		reader.layers = layers;
 		reader.transferLayers = transfer;

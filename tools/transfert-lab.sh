@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The transfert lab (r220): two of round1's pages, back and forth, the transfert (the cross-fade between pages) drawn
 # four times by the real reader, compiled with GWT, in WebGL: A as it ships, B through a colour grade (the reader's tint,
-# shipped API), C fog creep and D dissolve (the lab's own shaders, from FOG's noise). Sliders: the pages, the transfert's
+# shipped API), C fog creep (the lab's own shader, from FOG's noise) and D the library's dissolve (r250). Sliders: the pages, the transfert's
 # length, the hold between, the scroll, B's grade colour, C and D's depth stagger, patches and edge softness.
 #   tools/transfert-lab.sh               the lab: a Chrome window, served until it closes
 #   tools/transfert-lab.sh --sheet DIR   stills, headless: DIR/p000.png, p025, p050, p075 at those percents of the first

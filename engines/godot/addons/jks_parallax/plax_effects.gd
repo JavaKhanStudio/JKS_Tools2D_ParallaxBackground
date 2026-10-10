@@ -7,8 +7,10 @@ extends RefCounted
 ## Each effect works on the image's own coordinates, taken from UV: x and y in page units from the image's bottom-left,
 ## as it is drawn. region: the region's u, v, u2, v2 (v at the image's top); size: the drawn image's width and height in
 ## page units; effect: amplitude, wavelength, phase; haze: the depth fog at the layer, 0 to 1, which hazed() mixes the
-## color toward fog_color by, its alpha kept (fog_of). TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or
-## SEQUENCE layer the page's depth fog reaches.
+## color toward fog_color by, its alpha times dissolved() (fog_of). dissolve, cells: a transfert's dissolve (side 0 none,
+## 1 outgoing, 2 incoming; ramp, softness, drift; the noise's cells across and up the view), which dissolved() reads at
+## SCREEN_UV, y turned up as libGDX's view. TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
+## the page's depth fog reaches, or any a dissolve masks.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
 const EFFECTS := ["WAVE", "FOG"]
@@ -21,6 +23,8 @@ uniform vec2 size;
 uniform vec3 effect;
 uniform float haze;
 uniform vec3 fog_color = vec3(0.93, 0.95, 0.97);
+uniform vec4 dissolve;
+uniform vec2 cells;
 varying vec4 tint;
 void vertex() {
 	tint = COLOR;
@@ -28,8 +32,19 @@ void vertex() {
 vec2 local(vec2 uv) {
 	return vec2((uv.x - region.x) / (region.z - region.x) * size.x, (region.w - uv.y) / (region.w - region.y) * size.y);
 }
-vec4 hazed(vec4 color) {
-	return vec4(mix(color.rgb, fog_color, haze), color.a);
+float dissolved(vec2 screen_uv) {
+	if (dissolve.x < 0.5)
+		return 1.0;
+	vec2 p = vec2(screen_uv.x, 1.0 - screen_uv.y) * cells + vec2(dissolve.w, 0.0);
+	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
+		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
+		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
+	float e = dissolve.z;
+	float m = smoothstep(n - e, n + e, dissolve.y * (1.0 + 2.0 * e) - e);
+	return dissolve.x < 1.5 ? 1.0 - m : m;
+}
+vec4 hazed(vec4 color, vec2 screen_uv) {
+	return vec4(mix(color.rgb, fog_color, haze), color.a * dissolved(screen_uv));
 }
 """
 
@@ -37,7 +52,7 @@ vec4 hazed(vec4 color) {
 const _WAVE := _HEAD + """void fragment() {
 	float shift = effect.x * sin(TAU * (local(UV).y - effect.z) / effect.y);
 	float u = clamp(UV.x + shift / size.x * (region.z - region.x), min(region.x, region.z), max(region.x, region.z));
-	COLOR = hazed(tint * texture(TEXTURE, vec2(u, UV.y)));
+	COLOR = hazed(tint * texture(TEXTURE, vec2(u, UV.y)), SCREEN_UV);
 }
 """
 
@@ -50,13 +65,13 @@ const _FOG := _HEAD + """void fragment() {
 		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
 	vec4 color = tint * texture(TEXTURE, UV);
 	color.a *= 1.0 - effect.x * n;
-	COLOR = hazed(color);
+	COLOR = hazed(color, SCREEN_UV);
 }
 """
 
 ## PLAIN: no effect, the depth fog only.
 const _PLAIN := _HEAD + """void fragment() {
-	COLOR = hazed(tint * texture(TEXTURE, UV));
+	COLOR = hazed(tint * texture(TEXTURE, UV), SCREEN_UV);
 }
 """
 
@@ -108,6 +123,14 @@ static func apply(m: ShaderMaterial, l: Dictionary, seconds: float) -> void:
 		amplitude = clampf(amplitude, 0, 1)
 	m.set_shader_parameter("effect", Vector3(amplitude if on else 0.0, model.shaderWavelength if on else 1.0,
 			phase(model, seconds) if on else 0.0))
+
+
+## LayerEffects.setDissolve on a layer's material: `side` 0 (none), 1 (outgoing) or 2 (incoming), at the slot's `ramp`,
+## the noise `drift` cells along, `cells_x` by `cells_y` cells over the view.
+static func set_dissolve(m: ShaderMaterial, side: int, ramp: float, softness: float, drift: float, cells_x: float,
+		cells_y: float) -> void:
+	m.set_shader_parameter("dissolve", Vector4(side, ramp, softness, drift))
+	m.set_shader_parameter("cells", Vector2(cells_x, cells_y))
 
 
 ## ParallaxPageReader.fogOf: how much of the fog's colour layer `model` is mixed toward, 0 to 1:
