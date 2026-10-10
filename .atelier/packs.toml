@@ -4,6 +4,7 @@
 # tables belong in this file: label, description, context, color, sort.
 
 [tags.runtime]
+visual = true          # a screen: its close needs a Chose: line (r1559, r1584)
 label = "Runtime"
 description = "core: scrolling, tiling, cross-fade, the gradient squares"
 color = "#8fd0ff"
