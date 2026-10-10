@@ -98,6 +98,23 @@ def ungap(img, sky, alpha, reach):
     return np.where(gap, np.minimum(alpha, np.clip(t / reach, 0, 1)), alpha)
 
 
+def unspeck(alpha, cut):
+    """alpha with the islands of cut gone, and their faint edge: alpha within 3 px of them, outside the main mass,
+    down to the alpha around that box (outside the mass, blurred in). In clear sky that is 0; in haze SD painted half
+    clear it is the haze's own, where a 0 punched a square hole (r264)."""
+    mass = (alpha > 0.5) & ~cut
+    near = blur(blur(blur(cut.astype(np.float32)))) > 0
+    known = (~near & ~mass).astype(np.float32)
+    fill, wsum = alpha * known, known.copy()
+    for _ in range(6):
+        fill, wsum = blur(fill), blur(wsum)
+    around = np.where(wsum > 1e-6, fill / np.maximum(wsum, 1e-6), 0.0)
+    edge = near & ~mass
+    out = alpha.copy()
+    out[edge] = np.minimum(alpha[edge], around[edge])
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
@@ -129,9 +146,7 @@ def main():
     if not a.keep_islands:
         cut = islands(alpha > 0.5)
         if cut.any():
-            # The island's faint edge goes with it: alpha within 3 px of it, outside the main mass.
-            near = blur(blur(blur(cut.astype(np.float32)))) > 0
-            alpha[near & ~((alpha > 0.5) & ~cut)] = 0
+            alpha = unspeck(alpha, cut)
             print(f"{a.out}: {int(cut.sum())} px of alpha islands cut", file=sys.stderr)
     # Un-mix the sky out of the edge pixels, so a light fringe does not ring the layer.
     a3 = np.maximum(alpha, 1e-3)[..., None]
