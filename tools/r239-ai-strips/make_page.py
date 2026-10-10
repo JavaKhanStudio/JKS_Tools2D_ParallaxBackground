@@ -27,8 +27,8 @@ import parallax_lab as lab  # noqa: E402
 SKY = ("8fb4e0", "e1e8f0")
 
 
-def pack(name, files, filt):
-    """One atlas page, the strips stacked in a column, 1 px apart."""
+def pack(name, files, filt, out=OUT):
+    """One atlas page, the strips stacked in a column, 1 px apart, written to out."""
     imgs = [(region, Image.open(path).convert("RGBA")) for region, path in files]
     w = max(i.width for _, i in imgs)
     h = sum(i.height + 1 for _, i in imgs)
@@ -40,8 +40,8 @@ def pack(name, files, filt):
         lines += [region, "  rotate: false", f"  xy: 0, {y}", f"  size: {img.width}, {img.height}",
                   f"  orig: {img.width}, {img.height}", "  offset: 0, 0", "  index: -1"]
         y += img.height + 1
-    sheet.save(os.path.join(OUT, f"{name}.png"), optimize=True)
-    with open(os.path.join(OUT, f"{name}.atlas"), "w") as f:
+    sheet.save(os.path.join(out, f"{name}.png"), optimize=True)
+    with open(os.path.join(out, f"{name}.atlas"), "w") as f:
         f.write("\n".join(lines) + "\n")
 
 

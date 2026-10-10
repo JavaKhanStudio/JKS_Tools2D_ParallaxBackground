@@ -6,6 +6,9 @@ The sky colour is read from the strip's top rows; a pixel's alpha rises from 0 t
 moves away from it (between --near and --far, in 0..255 RGB distance; --far defaults to the
 layer's own contrast). The strip loops already, and
 this is per pixel, so the alpha loops too.
+--mask (sil.py's) --grow G: the silhouette helps the key, for a layer whose colours come near the sky's (snow under
+a pale sky keys half clear): alpha is 1 inside the mask, and the colour key's only within G px of it, so what SD paints
+far from the shape (a horizon behind hills) goes too. Pines grow past their shape: give them a larger G (r246).
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
@@ -27,6 +30,21 @@ def blur(a):
     p = np.concatenate([p[:, -1:], p, p[:, :1]], axis=1)
     out = sum(p[dy:dy + a.shape[0], dx:dx + a.shape[1]] for dy in range(3) for dx in range(3))
     return out / 9
+
+
+def spread(m, n):
+    """m grown by n px (n < 0: shrunk), wrapping along X."""
+    m = m.copy()
+    for _ in range(abs(n)):
+        g = m | np.roll(m, 1, 1) | np.roll(m, -1, 1) if n > 0 else m & np.roll(m, 1, 1) & np.roll(m, -1, 1)
+        if n > 0:
+            g[1:] |= m[:-1]
+            g[:-1] |= m[1:]
+        else:
+            g[1:] &= m[:-1]
+            g[:-1] &= m[1:]
+        m = g
+    return m
 
 
 def islands(mask):
@@ -60,6 +78,8 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--near", type=float, default=18)
     ap.add_argument("--far", type=float, default=0, help="0: 0.85 x the layer's median distance from the sky")
+    ap.add_argument("--mask", help="sil.py's _mask.png: opaque inside it, keyed only within --grow px of it")
+    ap.add_argument("--grow", type=int, default=12)
     ap.add_argument("--keep-islands", action="store_true", help="keep alpha islands apart from the main mass")
     ap.add_argument("--pixel", type=int, default=0)
     ap.add_argument("--colours", type=int, default=12)
@@ -72,6 +92,10 @@ def main():
     # sky, half hill as solid, a light line along the silhouette.
     far = a.far if a.far else 0.85 * float(np.median(d[d > 48])) if (d > 48).any() else 48
     alpha = np.clip((d - a.near) / (far - a.near), 0, 1)
+    if a.mask:
+        m = np.asarray(Image.open(a.mask).convert("L").resize(alpha.shape[::-1])) > 127
+        # SD moves an outline by a few px: opaque only 8 px inside the shape, or sky comes in with it.
+        alpha = np.where(spread(m, -8), 1.0, np.where(spread(m, a.grow), alpha, 0.0))
     if not a.keep_islands:
         cut = islands(alpha > 0.5)
         if cut.any():

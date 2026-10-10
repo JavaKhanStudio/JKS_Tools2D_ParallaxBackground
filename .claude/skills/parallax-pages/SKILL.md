@@ -1,6 +1,6 @@
 ---
 name: parallax-pages
-description: Design or improve a parallax background page for the JKS parallax library — write the page file (.jplax JSON) from a libGDX atlas without the editor, check its numbers, render it and look. Use when asked to "make a parallax", "build a background from these layers", "why does my parallax feel flat", or to review a .plax/.jplax/.plaxpj page.
+description: Design or improve a parallax background page for the JKS parallax library — write the page file (.jplax JSON) from a libGDX atlas without the editor, or generate the art from a theme with a local Stable Diffusion (tools/ai-page.sh), check its numbers, render it and look. Use when asked to "make a parallax", "generate a parallax background", "build a background from these layers", "why does my parallax feel flat", or to review a .plax/.jplax/.plaxpj page.
 ---
 
 # Parallax pages
@@ -122,6 +122,38 @@ tools/parallax-lab-shots.sh <round dir> build/lab/<round>   # stills at 0, 6, 12
 Look at every frame, full size, not only the contact sheet. Look for: a bottom or top edge cut flat, an empty band,
 a gradient's edge showing through a gap or a translucent layer, a bottom edge or gap showing, a seam at the tile joins, the same shape repeating in view, layers whose
 order in the picture contradicts their speed, a sky that does not belong to the art.
+
+## Generating a page (no art yet)
+
+When there is a theme and no atlas, a local Stable Diffusion paints one (r239-r246, `docs/ai-parallax.md`). It needs
+`~/ComfyUI` (`COMFYUI_DIR`) with its venv and models, and ~1.5 GB of free VRAM: run `nvidia-smi` first, and never stop
+another project's process to get it. Nothing is downloaded: a model that is not there is a question for Simon.
+
+```bash
+tools/ai-page.sh --theme "snowy pine valley at dawn" --layers 4 --colours 8f9bb8,6f88a0,1c3036 build/ai/snow
+tools/ai-page.sh --theme "red desert mesas at sunset" --layers 3 --style pixel --front hills \
+    --colours 9a6a6a,b8664a,5a2e22 --sky b5587a,f2b37a build/ai/desert
+```
+
+It paints a looping strip per depth (mountains at the back, hills between, `--front` pines or hills), cuts them,
+packs `OUT/page/<name>.atlas`, writes `<name>.jplax` by this skill's rules (front 0.08, x2.0 a layer back, the back one
+at most a tenth of the front's; each farther strip's bottom under the solid band of the one in front; one gradient
+for the whole screen; the depth fog so the back layer is `--fog` 0.6 of the way to the sky), lints it, and renders
+`OUT/shots` (0, 6, 12 s). `--style painted` is SD 1.5 at ~12 s a strip, its front a `SEQUENCE` of `--variants` 3 more
+strips; `pixel` is SDXL + PixelArt_XL at ~25 s, one PNG pixel per art pixel, drawn `Nearest`. About 2 min a page.
+
+What is yours to choose, from the theme:
+- **`--colours`**, back to front (three are spread over any count). img2img keeps the shape's colour, so this is the
+  palette. Keep every layer clearly darker or more coloured than a pale sky: a layer near it keys half clear.
+- **`--sky top,horizon`**: SD always paints a pale sky. Sunset, night, a storm: say it here. The fog takes the horizon.
+- **`--keep`** lays the page out again from the strips already painted: another `--sky`, `--fog` or `--front-speed`
+  costs seconds, not a repaint. Another look needs another `--seed`.
+
+Look at every frame (`OUT/shots/a01-t*.png`) for what lint cannot see: pines that stayed smooth spikes (the tool
+repaints a painted one under an outline roughness of 3.5; a borderline one passes), a horizon or clouds painted behind a layer, a
+creature (the prompt forbids them; nothing checks), layers whose colours do not belong together, a light rim along a
+far ridge. Then the strips themselves: `OUT/strips/l<k>_ai.png` painted, `_cut.png` cut, `_cut.log` what the cut
+dropped. A strip refused 5 times (art on its top row, or no trees) stops the run: another `--seed`.
 
 ## Getting it graded
 

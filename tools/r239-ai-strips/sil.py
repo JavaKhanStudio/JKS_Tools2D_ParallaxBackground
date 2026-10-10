@@ -1,9 +1,12 @@
 """Periodic silhouettes for a parallax layer: the shape loops by construction (r239).
 
-    python3 tools/r239-ai-strips/sil.py KIND OUT_PREFIX [--w 1024] [--h 384] [--seed 1]
+    python3 tools/r239-ai-strips/sil.py KIND OUT_PREFIX [--w 1024] [--h 384] [--seed 1] [--colour 1f3a30]
 
 KIND: mountains | hills | pines. Writes OUT_PREFIX_mask.png (white = the layer, antialiased) and
 OUT_PREFIX_init.png (the shape in flat colours over a flat sky), the start image diffusion paints over.
+img2img at 0.65 keeps much of that colour: --colour (hex) sets the layer's for a theme (r246).
+--quiet-join turns the shape so the loop's join falls where its outline is flattest (a tree's flank there
+steps past what a SEQUENCE's joins may show); a variant (--edges-of) turns by its kept seed's, so it still fits.
 Every curve is a sum of sines of whole frequencies over the width, and every tree sits at a
 position taken modulo the width, so column w-1 runs on into column 0.
 """
@@ -43,15 +46,20 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--edges-of", type=int, help="a variant: keep this seed's shape at both ends")
     ap.add_argument("--edge", type=int, default=96, help="kept px at each end, then as many to blend")
+    ap.add_argument("--quiet-join", action="store_true", help="turn the shape: the join where the outline is flattest")
+    ap.add_argument("--colour", help="the layer's colour in the init image, hex RRGGBB; default the kind's")
     a = ap.parse_args()
     spec, w, h = SPEC[a.kind], a.w, a.h
     ss = 4  # supersample for antialiased edges
     W, H = w * ss, h * ss
     top = profile(spec, np.random.default_rng(a.seed), W, H)
+    keep = profile(spec, np.random.default_rng(a.edges_of), W, H) if a.edges_of is not None else top
+    if a.quiet_join:
+        turn = quiet(keep, ss)
+        top, keep = np.roll(top, -turn), np.roll(keep, -turn)
     if a.edges_of is not None:
         # The variant's middle, the kept seed's ends, blended over `edge` px: any variant of
         # that seed then follows any other in a SEQUENCE layer, the shape running on at the join.
-        keep = profile(spec, np.random.default_rng(a.edges_of), W, H)
         x = np.arange(W)
         d = np.minimum(x, W - 1 - x) / ss
         r = np.clip((d - a.edge) / a.edge, 0, 1)
@@ -62,9 +70,18 @@ def main():
     Image.fromarray((mask * 255).astype(np.uint8)).save(f"{a.out}_mask.png")
     sky = np.array(spec["sky"], np.float32)
     shade = np.linspace(0.85, 1.1, h)[:, None, None]  # darker at the top of the layer, as haze lifts
-    col = np.array(spec["colour"], np.float32) * shade
+    rgb = tuple(int(a.colour[i:i + 2], 16) for i in (0, 2, 4)) if a.colour else spec["colour"]
+    col = np.array(rgb, np.float32) * shade
     init = sky * (1 - mask[..., None]) + col * mask[..., None]
     Image.fromarray(init.clip(0, 255).astype(np.uint8)).save(f"{a.out}_init.png")
+
+
+def quiet(top, ss):
+    """The column where the outline is flattest over 16 px around it: the shape loops, so it can start there."""
+    slope = np.abs(np.roll(top, -1) - top)
+    k = 16 * ss
+    window = sum(np.roll(slope, i) for i in range(-k // 2, k // 2))
+    return int(np.argmin(window))
 
 
 def profile(spec, rng, W, H):
