@@ -25,7 +25,8 @@ from PIL import Image, ImageDraw
 
 
 def read_atlas(path):
-    """[(page png, region dict)] of an atlas, old (xy/size/orig/offset) or new (bounds/offsets) libGDX format."""
+    """[(page png, region dict)] of an atlas, old (xy/size/orig/offset) or new (bounds/offsets) libGDX format. Each
+    region holds its page's `filter:` line too ('' when it has none)."""
     regions, page, current = [], None, None
     base = os.path.dirname(path)
     with open(path, encoding='utf-8') as f:
@@ -40,12 +41,16 @@ def read_atlas(path):
             continue
         if page is None:
             page = os.path.join(base, line.strip())
+            page_filter = ''
             while i < len(lines) and ':' in lines[i]:
+                key, value = (s.strip() for s in lines[i].split(':', 1))
+                if key == 'filter':
+                    page_filter = value
                 i += 1
             continue
         if ':' not in line:
             name = line.strip()
-            current = {'name': name, 'pos': counts.get(name, 0), 'page': page}
+            current = {'name': name, 'pos': counts.get(name, 0), 'page': page, 'filter': page_filter}
             counts[name] = current['pos'] + 1
             regions.append(current)
             continue

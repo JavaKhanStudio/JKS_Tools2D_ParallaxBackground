@@ -339,7 +339,9 @@ to get libGDX's colours.
   texture, so a page whose atlas asks mipmaps of a page of another size loads it as `Linear,Linear` there, without
   that speed-up (an atlas loaded by your own code, not through the page, would draw black). Pack it with TexturePacker's `bleed` and `duplicatePadding` on and a wide `paddingX`/`paddingY`
   (the editor uses 50 px): mipmap levels average blocks of pixels, so without them the black of transparent pixels
-  outlines every shape, and a tiled layer shows a seam at every join. Without mipmaps an atlas packed without them
+  outlines every shape, and a tiled layer shows a seam at every join. A layer drawn 1/m of its region's size needs at
+  least m texels of each edge copied into the padding (r268: fewer draw a line of 17-91/255 at every join, twice as
+  many none); `tools/parallax_lab.py lint` says which layers fall short, fault (f). Without mipmaps an atlas packed without them
   still joins cleanly: every reader draws a region half a texel inside its edges, so linear filtering never reads the
   pixel next to it. A cross-fade between pages on two different
   atlases also flushes the batch once per layer. A project with **Pixel art** ticked exports `filter: Nearest,Nearest`
