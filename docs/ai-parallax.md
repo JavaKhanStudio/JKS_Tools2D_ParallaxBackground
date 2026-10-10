@@ -70,9 +70,11 @@ server, and leaves the install as it is.
   column steps, 27 to 75) until r253 held a seam to the art's own steps.
 - **Time**, 28 steps at 1536x576 on the RTX 5060 laptop (8 GB): with ollama holding about 4.1 GB, **79 s, 77 s and
   43 s** (mountains, hills, pines; the sampling alone is 63 s at 2.3 s an iteration). r239's 363 s, under
-  the same ollama load, is not explained (not measured again). With the GPU free: not measured
-  yet. Something renewed ollama's models every few minutes through the session (`gemma3:4b`, `nomic-embed-text`),
-  and ollama is not stopped without asking Simon: r255.
+  the same ollama load, is not explained (not measured again). With the GPU free (r255, 119 MiB
+  in use before mountains and hills, 564 MiB before pines): **28.0 s, 25.1 s and 23.5 s**, the sampler at 2.07
+  iterations a second. Ollama's 4 GB costs SDXL about three times its time. The same seeds on a free GPU paint a
+  different strip: a quarter of the cut atlas's pixels (2608 of 10272) differ from the one made under ollama, so a
+  strip is reproducible only under the same GPU load.
 
 Still wrong: a 1-cell speck can float in the sky next to the silhouette (a cell inside the mask's one-cell slack that
 keys as art): the island cut of r242 removes it. And SDXL drifts off the silhouette: it painted the low crests between
