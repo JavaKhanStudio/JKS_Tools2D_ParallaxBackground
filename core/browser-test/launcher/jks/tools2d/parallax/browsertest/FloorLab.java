@@ -24,12 +24,12 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * The floor lab (r275, Simon: "gimme a lab so I can test this ... I need to feel it"): r266's floor, a ground drawn as
  * horizontal strips, each row at its own depth, tried before the reader gets it. Its page (core/test-data/floor/
  * make_lab.py) is Hiver's four regions standing on a ground, the ground an EMPTY layer named "floor" whose box (the
- * bottom 40% of the world) this lab's hook draws in. A draws it row by row: the top row scrolls at the top row's speed
+ * bottom 40% of the world) this lab's hook draws in, row by row: the top row scrolls at the top row's speed
  * (by default the mountain's, the layer behind), the bottom row at the bottom row's (nearer than the trees), the rows
- * between at a speed straight in the row's height, which is 1 / its depth in a perspective; B draws the same ground as
- * a page does today, one image at one speed, the mean of the two. Every strip is one
- * {@code batch.draw(region, x, y, width, height)}, the call JmeBatch implements, so what A shows is what the reader
- * would draw.
+ * between at a speed straight in the row's height, which is 1 / its depth in a perspective. Every strip is one
+ * {@code batch.draw(region, x, y, width, height)}, the call JmeBatch implements, so what the lab shows is what the
+ * reader would draw. Its second panel, the same ground as a page draws it today (one image at one speed), is gone:
+ * Simon, "remove option B, it's not working at all".
  * <p>
  * Its choices: the ground's art (stones seen from above, or the same painted in perspective, make_lab.py's painted.png,
  * as a fighting game's floor is drawn) and how the rows
@@ -55,21 +55,21 @@ public class FloorLab extends ApplicationAdapter
 	static final String[] SET_NAMES = { "Hiver", "PurpleFairy" };
 	static final float[] SET_TOP = { 0.016f, 0.0224f }, SET_BOTTOM = { 0.06f, 0.13f };
 	static final float WORLD_WIDTH = FogLab.WORLD_WIDTH, WORLD_HEIGHT = FogLab.WORLD_HEIGHT;
-	/** Both panels show the whole world: 760 x 428 px each, side by side. */
-	static final int FRAME_WIDTH = FogLab.FRAME_WIDTH, FRAME_HEIGHT = FogLab.FRAME_HEIGHT;
+	/** The one panel shows the whole world, 16:9, as wide as fits over the sliders at 1580 x 800. */
+	static final int FRAME_WIDTH = 960, FRAME_HEIGHT = 540;
 	static final String[] ART_NAMES = { "from above", "painted as seen" };
 	static final String[] MAPPING_NAMES = { "mode 7", "shift + stretch", "line scroll" };
 	/** What the lab opens on: the top row at the mountain's speed, the bottom row nearer than the trees (0.04). */
 	static final float TOP = 0.016f, BOTTOM = 0.06f, ROWS = 96, SCROLL = 40, STONE_WIDTH = 16, TILT = 0.6f;
 	static final int MAX_ROWS = 256;
 
-	/** Per set, per panel (A, B). */
-	private final Parallax_Heart[][] hearts = new Parallax_Heart[SET_PAGES.length][2];
-	private final Floor[][] floors = new Floor[SET_PAGES.length][2];
+	/** Per set. */
+	private final Parallax_Heart[] hearts = new Parallax_Heart[SET_PAGES.length];
+	private final Floor[] floors = new Floor[SET_PAGES.length];
 	/** Each set's ground art: the stones from above, and painted as seen. */
 	private final TextureRegion[] stones = new TextureRegion[SET_PAGES.length], painted = new TextureRegion[SET_PAGES.length];
-	/** The heart the lab draws in panel A ({@code [0]}) and B, the picked set's. */
-	private Parallax_Heart[] shown;
+	/** The heart the lab draws, the picked set's. */
+	private Parallax_Heart shown;
 	/**
 	 * {@code &unplanted=1}: the layers in front of the ground keep the page's speeds, as before Simon picked planting
 	 * (r275): tools/r275-floor/planted.py's proof that it sees a slide. Not a control: Simon kept planting only.
@@ -86,19 +86,17 @@ public class FloorLab extends ApplicationAdapter
 	/** Where the pointer was last frame, in canvas pixels. */
 	private int lastPointer;
 	private float frameSeconds, frames;
-	private final int[] panelCalls = new int[2];
+	private int drawCalls;
 	private String costLine = "";
 
-	/** The hook drawing the ground of one panel, once a frame (the reader calls it once per tile of the EMPTY layer). */
+	/** The hook drawing the ground, once a frame (the reader calls it once per tile of the EMPTY layer). */
 	final class Floor implements LayerHook
 	{
-		final boolean flat;
 		final TextureRegion[] strips = new TextureRegion[MAX_ROWS];
 		boolean drawn;
 
-		Floor(boolean flat)
+		Floor()
 		{
-			this.flat = flat;
 			for (int i = 0; i < MAX_ROWS; i++)
 				strips[i] = new TextureRegion();
 		}
@@ -121,15 +119,12 @@ public class FloorLab extends ApplicationAdapter
 		batch = new SpriteBatch();
 		for (int k = 0; k < SET_PAGES.length; k++)
 		{
-			for (int i = 0; i < 2; i++)
-			{
-				OrthographicCamera camera = new OrthographicCamera();
-				camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
-				hearts[k][i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
-				hearts[k][i].setPage(Utils_Page_Json.loadPage(SET_PAGES[k]));
-				hearts[k][i].parallaxReader.setLayerHook(FLOOR, floors[k][i] = new Floor(i == 1));
-			}
-			TextureAtlas atlas = hearts[k][0].currentPage.getLoadedAtlas();
+			OrthographicCamera camera = new OrthographicCamera();
+			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
+			hearts[k] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
+			hearts[k].setPage(Utils_Page_Json.loadPage(SET_PAGES[k]));
+			hearts[k].parallaxReader.setLayerHook(FLOOR, floors[k] = new Floor());
+			TextureAtlas atlas = hearts[k].currentPage.getLoadedAtlas();
 			stones[k] = atlas.findRegion("ground");
 			painted[k] = atlas.findRegion("painted");
 			if (stones[k] == null || painted[k] == null)
@@ -146,7 +141,10 @@ public class FloorLab extends ApplicationAdapter
 		Document document = Document.get();
 		document.setTitle("Effects lab: floor (r275)");
 		document.getElementById("effects-title").setInnerText("Effects lab: floor");
-		LabControls.panelLabels(document, "effects-labels", "A: the ground row by row, each row at its depth", "B: the ground as today, one image at one speed");
+		// One panel: the stage as wide as it is drawn, its title over the whole of it.
+		document.getElementById("effects-lab").getStyle().setProperty("maxWidth", FRAME_WIDTH + "px");
+		document.getElementById("effects-labels").getStyle().setProperty("gridTemplateColumns", "1fr");
+		LabControls.panelLabels(document, "effects-labels", "The ground row by row, each row at its depth");
 		Element controls = document.getElementById("effects-controls");
 		set = LabControls.choice(document, controls, "parallaxSet", "parallax set (Hiver on snow, or round1's PurpleFairy on a violet ground; picking one puts the row speeds back to its own)", SET_NAMES, 0);
 		top = LabControls.slider(document, controls, "topRowSpeed", "top row's speed (ratio; Hiver's mountain behind is 0.016, PurpleFairy's back trees 0.0224)", 0, 0.08f, 0.0002f, TOP);
@@ -172,8 +170,7 @@ public class FloorLab extends ApplicationAdapter
 		int n = Math.max(2, Math.min(MAX_ROWS, Math.round(LabControls.read(rows))));
 		TextureRegion image = LabControls.read(art) == 0 ? stones[shownSet] : painted[shownSet];
 		int map = LabControls.read(mapping);
-		boolean stretch = !floor.flat && map < 2, mode7 = !floor.flat && map == 0;
-		float flatSpeed = (sTop + sBottom) / 2;
+		boolean stretch = map < 2, mode7 = map == 0;
 		// A tile across: the stones 16 units, the painted ground as wide as it is painted, the box's height tall.
 		float tileWidth = image == stones[shownSet] ? STONE_WIDTH : height * image.getRegionWidth() / image.getRegionHeight();
 		float tileDepth = image == stones[shownSet] ? STONE_WIDTH : tileWidth;
@@ -184,7 +181,7 @@ public class FloorLab extends ApplicationAdapter
 		for (int i = 0; i < n; i++)
 		{
 			float t0 = (float) i / n, t1 = (float) (i + 1) / n, tc = (i + 0.5f) / n;
-			float speed = floor.flat ? flatSpeed : sBottom + (sTop - sBottom) * tc;
+			float speed = sBottom + (sTop - sBottom) * tc;
 			float k = stretch ? Math.max(0.02f, speed / sBottom) : 1;
 			// Which rows of the image: t0..t1 of it, or in mode 7 where the ground is at those depths.
 			float v0, v1;
@@ -223,14 +220,12 @@ public class FloorLab extends ApplicationAdapter
 	}
 
 	/**
-	 * The speed a layer standing on the ground at {@code footY} scrolls at in panel {@code panel}: the ground row's
-	 * there (A: straight between the bottom and top rows' speeds; B: the flat ground's), or its own when not planted.
+	 * The speed a layer standing on the ground at its foot scrolls at: the ground row's there, straight between the
+	 * bottom and top rows' speeds.
 	 */
-	private float plantedSpeed(int panel, ParallaxLayer ground, ParallaxLayer layer)
+	private float plantedSpeed(ParallaxLayer ground, ParallaxLayer layer)
 	{
 		float sTop = LabControls.read(top), sBottom = LabControls.read(bottom);
-		if (panel == 1)
-			return (sTop + sBottom) / 2;
 		float boxY = ground.getDecalPercentY() * WORLD_HEIGHT / 100;
 		float t = (footOf(layer) - boxY) / ground.getRegionHeight();
 		t = Math.max(0, Math.min(1, t));
@@ -259,48 +254,42 @@ public class FloorLab extends ApplicationAdapter
 	{
 		if (unplanted)
 			return;
-		for (int panel = 0; panel < 2; panel++)
+		java.util.ArrayList<ParallaxLayer> layers = shown.parallaxReader.layers;
+		int g = layers.size();
+		while (--g >= 0 && !FLOOR.equals(layers.get(g).getName()))
+			;
+		if (g < 0)
+			return;
+		for (int i = g + 1; i < layers.size(); i++)
 		{
-			java.util.ArrayList<ParallaxLayer> layers = shown[panel].parallaxReader.layers;
-			int g = layers.size();
-			while (--g >= 0 && !FLOOR.equals(layers.get(g).getName()))
-				;
-			if (g < 0)
-				return;
-			for (int i = g + 1; i < layers.size(); i++)
-			{
-				ParallaxLayer layer = layers.get(i);
-				float speed = plantedSpeed(panel, layers.get(g), layer);
-				layer.setParallaxSpeedRatioX(speed);
-				float width = layer.getTotalWidth(), at = layer.getDecalPercentX() * WORLD_WIDTH / 100 - speed * travel;
-				layer.setCurrentDistanceX(width > 0 ? at % width : at);
-			}
+			ParallaxLayer layer = layers.get(i);
+			float speed = plantedSpeed(layers.get(g), layer);
+			layer.setParallaxSpeedRatioX(speed);
+			float width = layer.getTotalWidth(), at = layer.getDecalPercentX() * WORLD_WIDTH / 100 - speed * travel;
+			layer.setCurrentDistanceX(width > 0 ? at % width : at);
 		}
 	}
 
-	/** Moves the view by {@code by} travel units this frame, both hearts as act() moves their layers. */
+	/** Moves the view by {@code by} travel units this frame, as act() moves the layers. */
 	private void pan(float by, float delta)
 	{
 		travel += by;
-		for (Parallax_Heart heart : shown)
-			heart.screenSpeedConsumableX += by / delta;
+		shown.screenSpeedConsumableX += by / delta;
 	}
 
 	private void applyControls()
 	{
 		pickSet();
 		float sc = LabControls.read(scroll);
-		for (Parallax_Heart heart : shown)
-			heart.screenSpeedConstantX = sc;
+		shown.screenSpeedConstantX = sc;
 		float sTop = LabControls.read(top), sBottom = LabControls.read(bottom);
-		readout.setInnerText(SET_NAMES[shownSet] + ": A's rows from " + LabControls.text(sBottom) + " (bottom) to " + LabControls.text(sTop) + " (top), depth "
-				+ LabControls.text(sTop > 0 ? sBottom / sTop : 0) + "x the bottom row's at the top; B's ground "
-				+ LabControls.text((sTop + sBottom) / 2) + "; planted in front, back to front: A " + frontSpeeds(0) + ", B "
-				+ frontSpeeds(1) + "; " + costLine);
+		readout.setInnerText(SET_NAMES[shownSet] + ": rows from " + LabControls.text(sBottom) + " (bottom) to " + LabControls.text(sTop) + " (top), depth "
+				+ LabControls.text(sTop > 0 ? sBottom / sTop : 0) + "x the bottom row's at the top; planted in front, back to front: "
+				+ frontSpeeds() + "; " + costLine);
 	}
 
 	/**
-	 * Shows the set the choice picks, once it changes: its row speeds on the sliders, its hearts moved to where the
+	 * Shows the set the choice picks, once it changes: its row speeds on the sliders, its heart's layers moved to where the
 	 * view has travelled, so the switch does not jump the camera.
 	 */
 	private void pickSet()
@@ -315,20 +304,19 @@ public class FloorLab extends ApplicationAdapter
 		}
 		shownSet = k;
 		shown = hearts[k];
-		for (Parallax_Heart heart : shown)
-			for (ParallaxLayer layer : heart.parallaxReader.layers)
-			{
-				float width = layer.getTotalWidth();
-				float at = layer.getDecalPercentX() * WORLD_WIDTH / 100 - layer.getParallaxSpeedRatioX() * travel;
-				layer.setCurrentDistanceX(width > 0 ? at % width : at);
-			}
+		for (ParallaxLayer layer : shown.parallaxReader.layers)
+		{
+			float width = layer.getTotalWidth();
+			float at = layer.getDecalPercentX() * WORLD_WIDTH / 100 - layer.getParallaxSpeedRatioX() * travel;
+			layer.setCurrentDistanceX(width > 0 ? at % width : at);
+		}
 		plant();
 	}
 
-	/** The speeds the layers in front of the ground scroll at now in panel {@code panel}, back to front. */
-	private String frontSpeeds(int panel)
+	/** The speeds the layers in front of the ground scroll at now, back to front. */
+	private String frontSpeeds()
 	{
-		java.util.ArrayList<ParallaxLayer> layers = shown[panel].parallaxReader.layers;
+		java.util.ArrayList<ParallaxLayer> layers = shown.parallaxReader.layers;
 		String out = "";
 		boolean front = false;
 		for (ParallaxLayer layer : layers)
@@ -340,7 +328,7 @@ public class FloorLab extends ApplicationAdapter
 		return out;
 	}
 
-	/** Steps both hearts by {@code seconds}, at 1/60 s: the clip's clock. */
+	/** Steps the heart by {@code seconds}, at 1/60 s: the clip's clock. */
 	void act(float seconds)
 	{
 		applyControls();
@@ -352,8 +340,7 @@ public class FloorLab extends ApplicationAdapter
 	private void step(float delta)
 	{
 		travel += LabControls.read(scroll) * delta;
-		for (Parallax_Heart heart : shown)
-			heart.act(delta);
+		shown.act(delta);
 		plant();
 	}
 
@@ -391,25 +378,14 @@ public class FloorLab extends ApplicationAdapter
 		Gdx.gl.glViewport(0, 0, width, height);
 		Gdx.gl.glClearColor(0, 0, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
-		for (int i = 0; i < 2; i++)
-		{
-			// A on the left, B on the right, a 4 px gap.
-			int x = i * (FRAME_WIDTH + 4);
-			Gdx.gl.glScissor(x, height - FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
-			Gdx.gl.glViewport(x, height - FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
-			floors[shownSet][i].drawn = false;
-			shown[i].render();
-			panelCalls[i] = batch.renderCalls;
-		}
-		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
-		Gdx.gl.glViewport(0, 0, width, height);
+		floors[shownSet].drawn = false;
+		shown.render();
+		drawCalls = batch.renderCalls;
 		frames++;
 		frameSeconds += Gdx.graphics.getDeltaTime();
 		if (frameSeconds >= 1 || clip)
 		{
-			costLine = (clip ? "" : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ") + "A " + panelCalls[0] + " draw calls, B "
-					+ panelCalls[1];
+			costLine = (clip ? "" : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ") + drawCalls + " draw calls";
 			frames = frameSeconds = 0;
 		}
 	}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """r275 (Simon: "it feel like the front element don't move with the ground correctly"): checks that the floor lab's
 trees move with the ground under their foot, headless, in each parallax set. Steps the lab (clip mode, the scroll at
-40) half a second and measures, in panel A, how far the trees moved and how far the ground row just under their foot
+40) half a second and measures how far the trees moved and how far the ground row just under their foot
 moved, by matching the rows of the two stills. Planted they must move the same within 1 px; with &unplanted=1 (the
 page's own speeds, as before) they must not, or the measure is blind. Prints the shifts and exits 1 on a failure.
 
@@ -14,11 +14,12 @@ from PIL import Image
 from playwright.sync_api import sync_playwright
 
 war, chrome = sys.argv[1:3]
-# Panel A is the canvas' first 760 x 428 px. Per set (make_lab.py): the trees' foot in frame heights up (Hiver: their
+# The canvas is the one panel, 960 x 540 px. Per set (make_lab.py): the trees' foot in frame heights up (Hiver: their
 # decal, 8%; PurpleFairy: decal 10.3% + 95 of 1080 trimmed rows of a 0.8 x 22.5 layer), and which pixels are tree
 # (Hiver's dark green; PurpleFairy's pink trunks, red well over green). Their trunks are 10 to 30 px over the foot, the
-# ground row 2 to 6 px under it.
-FRAME_W, FRAME_H = 760, 428
+# ground rows 1 and 2 px under it (lower rows are faster, 0.1 px more a row over the half second; a
+# second steps PurpleFairy's ground past its own pattern, which the match then aliases).
+FRAME_W, FRAME_H = 960, 540
 SETS = [("Hiver", 0.08, lambda band: band.sum(axis=2) < 450),
         ("PurpleFairy", (0.103 * 22.5 + 95 / 1080 * 0.8 * 22.5) / 22.5, lambda band: band[..., 0] - band[..., 1] > 60)]
 
@@ -75,7 +76,7 @@ def run(index, unplanted):
         server.kill()
     a, b = frames
     foot = round(FRAME_H * (1 - SETS[index][1]))
-    return shift(a, b, range(foot - 30, foot - 10), SETS[index][2]), shift(a, b, range(foot + 2, foot + 6), None)
+    return shift(a, b, range(foot - 30, foot - 10), SETS[index][2]), shift(a, b, range(foot + 1, foot + 3), None)
 
 
 failed = False

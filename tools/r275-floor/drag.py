@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """r275: checks the floor lab's pan by drag, headless (the lab live, not stepped): the scroll at 0, a still, then the
-mouse dragged 200 px right across panel A and held still: the ground must have moved, and two stills taken 0.5 s apart
+mouse dragged 200 px right across the panel and held still: the ground must have moved, and two stills taken 0.5 s apart
 with the button still down must be the same (a pan that keeps going under a still pointer fails). Prints the mean
 differences and exits 1 on a failure. Serve core/build/browserTest/war first.
 
