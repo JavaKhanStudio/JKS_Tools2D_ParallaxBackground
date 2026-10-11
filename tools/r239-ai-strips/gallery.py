@@ -142,89 +142,81 @@ def depth_card(r, d, pid, title, view, lint, copy):
             f'<div class="passes">{top}</div><p>{esc(joint)}</p>{"".join(rows)}</details></section>')
 
 
-def main():
-    if len(sys.argv) < 3:
-        sys.exit(__doc__)
-    out, roots = os.path.abspath(sys.argv[1]), sys.argv[2:]
-    media = os.path.join(out, "media")
-    shutil.rmtree(media, ignore_errors=True)
-    os.makedirs(media)
-    pages = find(roots)
-
+def copier(media):
+    """copy(src, name): src copied into media as name; its URL, or None when there is no such file."""
     def copy(src, name):
-        """src copied into media as name; its URL, or None when there is no such file."""
         if not os.path.exists(src):
             return None
         shutil.copyfile(src, os.path.join(media, name))
         return "media/" + name
+    return copy
 
-    cards, nav = [], []
-    for n, d in enumerate(pages):
-        r = json.loads(Path(os.path.join(d, "recipe.json")).read_text())
-        depth = r.get("tool") == "depth-page"
-        style = "from a painting" if depth else r["style"]
-        pid = f"p{n}-{r['name']}-{'depth' if depth else r['style']}"
-        pixel = style == "pixel"
-        title = f"{r['name']}, {style}"
-        nav.append(f'<a href="#{esc(pid)}">{esc(title)}</a>')
-        first_of = lambda pattern, d=d: (sorted(glob.glob(os.path.join(d, pattern))) or [""])[0]  # noqa: E731
-        poster = copy(first_of("shots/*-t12.png"), f"{pid}-t12.png")
-        film = copy(first_of("film/*.mp4"), f"{pid}.mp4")
-        if film:
-            view = (f'<video class="film" src="{film}" poster="{poster or ""}" controls loop muted playsinline '
-                    f'preload="metadata"></video><p class="muted">core\'s own frames, off screen: 8 s of scrolling at '
-                    '30 fps (tools/ai-film.sh).</p>')
-        elif poster:
-            view = (f'<img class="film" src="{poster}" alt="{esc(title)} at 12 s"><p class="muted">core\'s frame at '
-                    '12 s; no film yet (tools/ai-film.sh DIR/page DIR/film).</p>')
-        else:
-            view = '<p class="muted">No render yet: run the tool again without --no-shots.</p>'
-        if r["lint"]:
-            lint = (f'<details><summary class="lint">lint: {len(r["lint"])} fault(s)</summary><ul>'
-                    + "".join(f'<li class="lint">{esc(p)}</li>' for p in r["lint"]) + "</ul></details>")
-        else:
-            lint = '<p class="muted">lint (tools/parallax_lab.py): ok</p>'
-        if depth:
-            cards.append(depth_card(r, d, pid, title, view, lint, copy))
-            continue
-        rows = []
-        for k, layer in enumerate(r["layers"]):
-            first = layer["strips"][0]
-            figs = []
-            for key, suffix, label, _ in PASSES:
-                src = copy(os.path.join(d, "strips", f"{first['strip']}_{suffix}.png"), f"{pid}-l{k}-{suffix}.png")
-                cls = "strip" + (" checker" if key == "cut" else "") + (" pixel" if key == "cut" and pixel else "")
-                figs.append(f'<figure><img class="{cls}" src="{src}" alt="{esc(label)}" loading="lazy">'
-                            f'<figcaption>{esc(label[3:])}</figcaption></figure>')
-            cut = f"media/{pid}-l{k}-cut.png"
-            seq = ""
-            if layer["sequence"]:
-                vs = []
-                for s in layer["strips"]:
-                    vs.append(copy(os.path.join(d, "strips", f"{s['strip']}_cut.png"), f"{pid}-{s['strip']}-cut.png"))
-                imgs = "".join(f'<img class="checker" src="{v}" alt="segment {i}">' for i, v in enumerate(vs))
-                seq = (f'<p><b>A SEQUENCE of {len(vs)} strips.</b> The first one, then {len(vs) - 1} edge-locked '
-                       'variants: new trees in the middle, the first strip\'s own columns at both ends, so any of them '
-                       'can follow any other. The library picks the order from the page\'s seed: the front never '
-                       'shows the same picture twice in a row. All of them, end to end:</p>'
-                       f'<div class="twice">{imgs}</div>')
-            seeds = ", ".join(str(s.get("seed")) for s in layer["strips"])
-            rows.append(
-                f'<div class="layer"><h3>Layer {k}: {esc(layer["kind"])}'
-                f'{" (back)" if k == 0 else " (front)" if k == len(r["layers"]) - 1 else ""}</h3>'
-                f'<div class="facts"><span>speed <b>{layer["speed"]}</b></span><span>raised <b>{layer["dy"]}%</b>'
-                f'</span><span>shape colour <span class="swatch" style="background:#{esc(layer["colour"])}"></span> '
-                f'<b>#{esc(layer["colour"])}</b></span><span>seed <b>{esc(seeds)}</b></span></div>'
-                f'<div class="passes">{"".join(figs)}</div>'
-                f'<p class="muted">Drawn twice side by side, the join dashed: no step where it repeats.</p>'
-                f'<div class="pair"><img class="checker{" pixel" if pixel else ""}" src="{cut}" alt="">'
-                f'<img class="checker{" pixel" if pixel else ""}" src="{cut}" alt=""></div>{seq}'
-                f'<details><summary>prompt</summary><pre>{esc(first.get("prompt", "?"))}</pre>'
-                f'<p class="muted">negative</p><pre>{esc(first.get("negative", "?"))}</pre>'
-                f'<p class="muted">img2img denoise {first.get("denoise", "?")}: how much of the shape it may '
-                'repaint (0 none, 1 all).</p></details></div>')
-        cards.append(
-            f'<section class="card" id="{esc(pid)}"><h2>{esc(title)}</h2>'
+
+def view_of(d, pid, title, copy):
+    """The page's film, else its 12 s still, else why there is neither."""
+    first_of = lambda pattern: (sorted(glob.glob(os.path.join(d, pattern))) or [""])[0]  # noqa: E731
+    poster = copy(first_of("shots/*-t12.png"), f"{pid}-t12.png")
+    film = copy(first_of("film/*.mp4"), f"{pid}.mp4")
+    if film:
+        return (f'<video class="film" src="{film}" poster="{poster or ""}" controls loop muted playsinline '
+                f'preload="metadata"></video><p class="muted">core\'s own frames, off screen: 8 s of scrolling at '
+                '30 fps (tools/ai-film.sh).</p>')
+    if poster:
+        return (f'<img class="film" src="{poster}" alt="{esc(title)} at 12 s"><p class="muted">core\'s frame at '
+                '12 s; no film yet (tools/ai-film.sh DIR/page DIR/film).</p>')
+    return '<p class="muted">No render yet: run the tool again without --no-shots.</p>'
+
+
+def lint_of(r):
+    if r["lint"]:
+        return (f'<details><summary class="lint">lint: {len(r["lint"])} fault(s)</summary><ul>'
+                + "".join(f'<li class="lint">{esc(p)}</li>' for p in r["lint"]) + "</ul></details>")
+    return '<p class="muted">lint (tools/parallax_lab.py): ok</p>'
+
+
+def strip_layer(r, d, pid, k, layer, pixel, copy):
+    """One layer of an ai-page.sh page: its three passes, its SEQUENCE's strips, its prompt."""
+    first = layer["strips"][0]
+    figs = []
+    for key, suffix, label, _ in PASSES:
+        src = copy(os.path.join(d, "strips", f"{first['strip']}_{suffix}.png"), f"{pid}-l{k}-{suffix}.png")
+        cls = "strip" + (" checker" if key == "cut" else "") + (" pixel" if key == "cut" and pixel else "")
+        figs.append(f'<figure><img class="{cls}" src="{src}" alt="{esc(label)}" loading="lazy">'
+                    f'<figcaption>{esc(label[3:])}</figcaption></figure>')
+    cut = f"media/{pid}-l{k}-cut.png"
+    seq = ""
+    if layer["sequence"]:
+        vs = []
+        for s in layer["strips"]:
+            vs.append(copy(os.path.join(d, "strips", f"{s['strip']}_cut.png"), f"{pid}-{s['strip']}-cut.png"))
+        imgs = "".join(f'<img class="checker" src="{v}" alt="segment {i}">' for i, v in enumerate(vs))
+        seq = (f'<p><b>A SEQUENCE of {len(vs)} strips.</b> The first one, then {len(vs) - 1} edge-locked '
+               'variants: new trees in the middle, the first strip\'s own columns at both ends, so any of them '
+               'can follow any other. The library picks the order from the page\'s seed: the front never '
+               'shows the same picture twice in a row. All of them, end to end:</p>'
+               f'<div class="twice">{imgs}</div>')
+    seeds = ", ".join(str(s.get("seed")) for s in layer["strips"])
+    return (
+        f'<div class="layer"><h3>Layer {k}: {esc(layer["kind"])}'
+        f'{" (back)" if k == 0 else " (front)" if k == len(r["layers"]) - 1 else ""}</h3>'
+        f'<div class="facts"><span>speed <b>{layer["speed"]}</b></span><span>raised <b>{layer["dy"]}%</b>'
+        f'</span><span>shape colour <span class="swatch" style="background:#{esc(layer["colour"])}"></span> '
+        f'<b>#{esc(layer["colour"])}</b></span><span>seed <b>{esc(seeds)}</b></span></div>'
+        f'<div class="passes">{"".join(figs)}</div>'
+        f'<p class="muted">Drawn twice side by side, the join dashed: no step where it repeats.</p>'
+        f'<div class="pair"><img class="checker{" pixel" if pixel else ""}" src="{cut}" alt="">'
+        f'<img class="checker{" pixel" if pixel else ""}" src="{cut}" alt=""></div>{seq}'
+        f'<details><summary>prompt</summary><pre>{esc(first.get("prompt", "?"))}</pre>'
+        f'<p class="muted">negative</p><pre>{esc(first.get("negative", "?"))}</pre>'
+        f'<p class="muted">img2img denoise {first.get("denoise", "?")}: how much of the shape it may '
+        'repaint (0 none, 1 all).</p></details></div>')
+
+
+def strip_card(r, d, pid, title, view, lint, copy):
+    """A page tools/ai-page.sh painted strip by strip (r239)."""
+    pixel = r["style"] == "pixel"
+    rows = [strip_layer(r, d, pid, k, layer, pixel, copy) for k, layer in enumerate(r["layers"])]
+    return (f'<section class="card" id="{esc(pid)}"><h2>{esc(title)}</h2>'
             f'<p>“{esc(r["theme"])}”</p>{view}'
             f'<div class="facts"><span>model <b>{esc(r["model"])}</b></span><span>strip '
             f'<b>{r["size"][0]}x{r["size"][1]}</b></span><span>layers <b>{len(r["layers"])}</b></span>'
@@ -236,6 +228,24 @@ def main():
             f'<details><summary>How it was made, layer by layer (back to front)</summary>{"".join(rows)}</details>'
             '</section>')
 
+
+def cards_of(pages, copy):
+    """(cards, nav): each page's section, and its link."""
+    cards, nav = [], []
+    for n, d in enumerate(pages):
+        r = json.loads(Path(os.path.join(d, "recipe.json")).read_text())
+        depth = r.get("tool") == "depth-page"
+        style = "from a painting" if depth else r["style"]
+        pid = f"p{n}-{r['name']}-{'depth' if depth else r['style']}"
+        title = f"{r['name']}, {style}"
+        nav.append(f'<a href="#{esc(pid)}">{esc(title)}</a>')
+        card = depth_card if depth else strip_card
+        cards.append(card(r, d, pid, title, view_of(d, pid, title, copy), lint_of(r), copy))
+    return cards, nav
+
+
+def write(out, pages, cards, nav):
+    """OUT/index.html: the pages' cards, how a page is made, and the form that writes the command for another."""
     kinds = sorted(WORDS)
     opts = lambda sel: "".join(f'<option{" selected" if k == sel else ""}>{k}</option>' for k in kinds)  # noqa: E731
     start = ["mountains", "mountains", "hills", "pines"]
@@ -334,6 +344,18 @@ command();
 """
     with open(os.path.join(out, "index.html"), "w") as f:
         f.write(doc)
+
+
+def main():
+    if len(sys.argv) < 3:
+        sys.exit(__doc__)
+    out, roots = os.path.abspath(sys.argv[1]), sys.argv[2:]
+    media = os.path.join(out, "media")
+    shutil.rmtree(media, ignore_errors=True)
+    os.makedirs(media)
+    pages = find(roots)
+    cards, nav = cards_of(pages, copier(media))
+    write(out, pages, cards, nav)
     print(f"{out}/index.html: {len(pages)} page(s)")
     return 0
 
