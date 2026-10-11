@@ -13,11 +13,13 @@ docs/depth-tricks.md §5. Passes:
      relative disparity: larger is nearer;
   3. bands: --layers clusters of that disparity (k-means in one dimension), far to near, small islands merged into
      what surrounds them, then a colour pass that pulls into a nearer band the thin parts of it the model judged far
-     (a branch). A layer holds its own band, and every nearer pixel under its band's top edge (a tree's trunk in
-     front of the hills): the layer stays solid to its bottom, as a painted strip is. Over columns where a nearer
-     thing hides the band, its top edge is the lower of its two sides;
+     (a branch), and a small patch standing above its band's top edge handed to the farther band round it. A layer
+     holds its own band, and every nearer pixel under its band's top edge (a tree's trunk in front of the hills): the
+     layer stays solid to its bottom, as a painted strip is. Over columns where a nearer thing hides the band, its top
+     edge is the lower of its two sides;
   4. holes: those nearer pixels, grown by --grow px over the soft edge depth leaves, are filled with the layer's own
-     colours and repainted by dreamshaper_8's inpainting model (gen.py inpaint, tile x). The camera scrolls past every one of them.
+     colours and repainted by dreamshaper_8's inpainting model (gen.py inpaint, tile x). The camera scrolls past
+     every one of them.
   Every step that looks across the painting (depth, islands, fill) sees it as the tiled layer shows it, its two
   ends joined: else a band's edge steps at the join, lint fault (e).
   5. the page: every layer the painting's full width at sizeRatio 1, bottom on the screen's bottom, cut 2 rows
@@ -174,14 +176,21 @@ def by_colour(L, img, n, reach=16, window=41, rounds=8, margin=0.6, apart=40):
 
 
 def topline(L, k):
-    """Per column, the first row of band k. A run of columns without it (a nearer thing stands there) takes the lower
-    of the two rows either side: a line drawn between them, from tall pines on one side to low ground on the other,
-    leaves a tall thin hole that the repaint fills with a spike of the nearer thing's shape."""
+    """Per column, the first row of band k. A run of columns without it (a nearer thing stands there, or right above
+    its first row) takes the lower of the two rows either side: a line drawn between them, from tall pines on one side
+    to low ground on the other, leaves a tall thin hole that the repaint fills with a spike of the nearer thing's
+    shape, a wedge where the pines are short (r322)."""
     h, w = L.shape
     has = (L == k).any(axis=0)
-    first = np.argmax(L == k, axis=0).astype(float)
+    first = np.argmax(L == k, axis=0)
     if not has.any():
         return np.full(w, float(h))
+    # A first row with a nearer band right above it is where the nearer thing ends, not where band k begins: kept, a
+    # strip of grass under a trunk sets the run's lower side, and the layer's edge steps down beside the hill (r322).
+    hidden = (first > 0) & (L[np.maximum(first - 1, 0), np.arange(w)] > k)
+    if (has & ~hidden).any():
+        has &= ~hidden
+    first = first.astype(float)
     out = first.copy()
     x = 0
     start = int(np.argmax(has))  # walk from a column that has the band, so every run has both sides
@@ -198,6 +207,32 @@ def topline(L, k):
             out[(c + i) % w] = low
         x += run
     return out
+
+
+def strays(L, n, area):
+    """A patch of band k under area px, apart from its band's mass and standing above that band's top edge (taken
+    without it), joins the farther band round it. Between the pines and the trunk in front of them, depth's soft edge
+    leaves such a patch of the band in between: kept, it lifts that layer's top edge over the trunk's columns, and the
+    trunk under it becomes a tall hole, repainted as a flat box standing above the hill (r322). Back to front, so a
+    patch handed back can be handed back again; on the painting laid three times side by side, for the join."""
+    w = L.shape[1]
+    L = np.tile(L, 3)
+    for k in range(n - 2, 0, -1):
+        comp, count = ndimage.label(L == k)
+        if count < 2:
+            continue
+        sizes = ndimage.sum(np.ones(L.shape), comp, index=np.arange(1, count + 1))
+        small = np.isin(comp, 1 + np.nonzero(sizes < area)[0])
+        top = topline(np.where(small, -1, L), k)
+        for i in np.unique(comp[small]):
+            isl = comp == i
+            ys, xs = np.nonzero(isl)
+            if not (ys < top[xs] - 8).any():
+                continue
+            ring = ndimage.binary_dilation(isl, iterations=2) & ~isl & (L < k)
+            if ring.any():
+                L[isl] = np.bincount(L[ring], minlength=n).argmax()
+    return L[:, w:2 * w]
 
 
 def looped(fn, *arrays):
@@ -339,6 +374,7 @@ def main():
     Image.fromarray((dn * 255).astype(np.uint8)).save(os.path.join(cut, "depth.png"))
     L, centres = bands(dn, n, min_area=w * h // 150)
     L = by_colour(L, img, n)
+    L = strays(L, n, w * h // 150)
     colour_bands(L, n).save(os.path.join(cut, "bands.png"))
     log("bands, far to near: " + ", ".join(f"{k}: disparity {centres[k]:.2f}, {(L == k).mean():.0%} of the pixels"
                                           for k in range(n)))
