@@ -171,7 +171,8 @@ its top row, a creature, or no trees) stops the run: another `--seed`.
 
 When the art is one flat painting, not layers, `tools/depth-page.sh` cuts it into a page by its depth
 (`docs/depth-tricks.md` §5): Depth Anything V2 Small (Apache-2.0, in `~/.cache/huggingface`, Simon's pick) gives each
-pixel a depth, `--layers` depth bands become the layers, and dreamshaper_8 repaints what each band hid. About 2 min.
+pixel a depth, `--layers` depth bands become the layers, and dreamshaper_8's inpainting model
+(`dreamshaper_8Inpainting.safetensors` in `~/ComfyUI/models/checkpoints`, r315) repaints what each band hid. About 2 min.
 
 ```bash
 ~/ComfyUI/venv/bin/python tools/r239-ai-strips/gen.py txt2img --w 1024 --h 576 --tile x --seed 1 \

@@ -17,7 +17,7 @@ docs/depth-tricks.md §5. Passes:
      front of the hills): the layer stays solid to its bottom, as a painted strip is. Over columns where a nearer
      thing hides the band, its top edge is the lower of its two sides;
   4. holes: those nearer pixels, grown by --grow px over the soft edge depth leaves, are filled with the layer's own
-     colours and repainted by dreamshaper_8 (gen.py inpaint, tile x). The camera scrolls past every one of them.
+     colours and repainted by dreamshaper_8's inpainting model (gen.py inpaint, tile x). The camera scrolls past every one of them.
   Every step that looks across the painting (depth, islands, fill) sees it as the tiled layer shows it, its two
   ends joined: else a band's edge steps at the join, lint fault (e).
   5. the page: every layer the painting's full width at sizeRatio 1, bottom on the screen's bottom, cut 2 rows
@@ -28,7 +28,8 @@ docs/depth-tricks.md §5. Passes:
 Writes OUT/recipe.json (the command and each pass, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
 NAME.png, NAME.jplax, round.json) and, unless --no-shots, OUT/shots (tools/parallax-lab-shots.sh, cage: stills at 0,
 6 and 12 s). Exits 1 when lint finds a fault. Runs in the ComfyUI venv (COMFYUI_DIR, default ~/ComfyUI), which holds
-transformers, scipy and torch; needs dreamshaper_8 there and ~2 GB of free VRAM.
+transformers, scipy and torch; needs --ckpt in its models/checkpoints (dreamshaper_8Inpainting.safetensors, Civitai
+model version 131004, ~2 GB: a model that sees the mask and the painting round it, r315) and ~2 GB of free VRAM.
 """
 import argparse
 import json
@@ -283,6 +284,7 @@ def main():
     ap.add_argument("--grow", type=int, default=6, help="px a hole reaches past the nearer band: depth's soft edge")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--denoise", type=float, default=0.8, help="the repaint's strength over the filled hole")
+    ap.add_argument("--ckpt", default="dreamshaper_8Inpainting.safetensors", help="the repaint's checkpoint")
     ap.add_argument("--name", help="the atlas and page name; default the painting's")
     ap.add_argument("--keep", action="store_true", help="keep OUT/cut's repainted layers: only lay the page out again")
     ap.add_argument("--no-shots", action="store_true")
@@ -305,7 +307,7 @@ def main():
     recipe = {"tool": "depth-page", "command": shlex.join(["tools/depth-page.sh"] + [x for x in sys.argv[1:]
                                                                                     if x not in ("--keep", "--no-shots")]),
               "theme": a.theme, "name": name, "seed": a.seed, "size": [w, h], "denoise": a.denoise,
-              "model": "Depth Anything V2 Small + SD 1.5 dreamshaper_8 (repaints)", "page": f"page/{name}.jplax",
+              "model": f"Depth Anything V2 Small + SD 1.5 {a.ckpt} (repaints)", "page": f"page/{name}.jplax",
               "negative": NEG, "fogStrength": 0, "layers": []}
 
     # 1. The loop.
@@ -320,7 +322,7 @@ def main():
         known = mask < 0.5  # the ramp keeps the painting under it: filled, it would blend a blur into both ends
         Image.fromarray(fill(rolled, known).round().clip(0, 255).astype(np.uint8)).save(f"{cut}/loop_src.png")
         Image.fromarray((mask * 255).astype(np.uint8)).save(f"{cut}/loop_mask.png")
-        gen(["inpaint", "--src", f"{cut}/loop_src.png", "--mask", f"{cut}/loop_mask.png", "--tile", "x", "--denoise",
+        gen(["inpaint", "--ckpt", a.ckpt, "--src", f"{cut}/loop_src.png", "--mask", f"{cut}/loop_mask.png", "--tile", "x", "--denoise",
              "0.95", "--seed", str(a.seed), "--w", str(w), "--h", str(h), "--negative", NEG,
              "--prompt", f"{a.theme}, painterly, seamless", "--out", f"{cut}/loop.png"], f"{cut}/loop.log")
         img = np.roll(np.asarray(Image.open(f"{cut}/loop.png").convert("RGB")), -(w // 2), axis=1)
@@ -360,7 +362,7 @@ def main():
             soft = ndimage.gaussian_filter(grow(hole, 2).astype(np.float32), 1.5, mode=("nearest", "wrap"))
             Image.fromarray((np.maximum(soft, hole) * 255).astype(np.uint8)).save(f"{cut_k}_mask.png")
             word = WORDS[min(3, round(k * 3 / max(1, n - 1)))]
-            gen(["inpaint", "--src", f"{cut_k}_src.png", "--mask", f"{cut_k}_mask.png", "--tile", "x", "--denoise",
+            gen(["inpaint", "--ckpt", a.ckpt, "--src", f"{cut_k}_src.png", "--mask", f"{cut_k}_mask.png", "--tile", "x", "--denoise",
                  str(a.denoise), "--seed", str(a.seed * 100 + k), "--w", str(w), "--h", str(h), "--negative", NEG,
                  "--prompt", f"{a.theme}, {word} scenery, painterly, seamless", "--out", done], f"{cut_k}_gen.log")
             log(f"layer {k}: {hole.mean():.0%} of the painting repainted")

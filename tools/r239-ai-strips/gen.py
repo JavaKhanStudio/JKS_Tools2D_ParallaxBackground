@@ -13,8 +13,10 @@ model then draws on a cylinder, so the strip's right edge continues into its lef
 `variants` repaints the middle of a looping strip and keeps its edge columns: every variant
 starts and ends on the same pixels, so a SEQUENCE layer can put any of them after any other.
 `inpaint` repaints where --mask is white (grey: partly) and keeps every other pixel of --src exactly: what a
-layer cut from one painting (r279) shows where a nearer thing stood. Fill the hole with plausible colour first:
-dreamshaper is no inpainting model, and starts from the source under the mask.
+layer cut from one painting (r279) shows where a nearer thing stood. With an inpainting checkpoint (9 input
+channels: --ckpt dreamshaper_8Inpainting.safetensors, r315) the model is shown the mask and the source round it
+(InpaintModelConditioning); with any other it only starts from the source under the mask (SetLatentNoiseMask), so
+fill the hole with plausible colour first either way: below denoise 1 the start still shows.
 --control guides the sampling with a ControlNet (SD 1.5 lineart by default) fed that image; --control-edge
 turns a silhouette mask into its outline first (white lines on black, wrapping along X). With --tile x the
 ControlNet's convolutions are padded circularly too: its hint feeds every block of the UNet, and a hint
@@ -150,6 +152,8 @@ def main():
     ap.add_argument("--init", help="img2img: start image; variants: the new middle's start image")
     ap.add_argument("--src", help="variants: the looping strip whose edges are kept; inpaint: the image to repaint")
     ap.add_argument("--mask", help="inpaint: white where to repaint")
+    ap.add_argument("--noise-mask", action="store_true", help="inpaint, inpainting model: sample inside the mask only "
+                    "(r315: leaves a pale veil)")
     ap.add_argument("--n", type=int, default=3)
     ap.add_argument("--edge", type=int, default=96, help="variants: kept columns at each end, px")
     ap.add_argument("--control", help="ControlNet hint image (a silhouette mask with --control-edge)")
@@ -177,7 +181,15 @@ def main():
     elif a.mode == "inpaint":
         src = from_image(a.src)
         m = np.asarray(Image.open(a.mask).convert("L")).astype(np.float32) / 255.0
-        latent = nodes.SetLatentNoiseMask().set_mask(to_latent(vae, src), torch.from_numpy(m)[None])[0]
+        mask = torch.from_numpy(m)[None]
+        if model.model.diffusion_model.input_blocks[0][0].in_channels == 9:
+            # An inpainting model (dreamshaper_8Inpainting, r315) is fed the source with the hole greyed out beside
+            # the noise: it sees the mask and what surrounds it, and matches its light and style. No noise mask: it
+            # paints the whole image and only the mask's pixels are kept below. With one (--noise-mask), the kept latent
+            # is laid back at every step, and the repaint comes out under a pale veil with a hard edge.
+            pos, neg, latent = nodes.InpaintModelConditioning().encode(pos, neg, src, vae, mask, a.noise_mask)
+        else:
+            latent = nodes.SetLatentNoiseMask().set_mask(to_latent(vae, src), mask)[0]
         out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
         img = np.asarray(to_image(vae, out)[0]).astype(np.float32)
         # The decoder shifts every pixel by a level or two: only the mask's own pixels are taken from it.
