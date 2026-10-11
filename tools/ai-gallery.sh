@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# ai-gallery.sh [--open | --shot F.png] [ROOT...] — the AI pages gallery (r239): every page tools/ai-page.sh made under
+# ai-gallery.sh [--open | --shot F.png] [ROOT...] — the AI pages gallery (r239): every page tools/ai-page.sh or
+# tools/depth-page.sh (r316) made under
 # the ROOTs (default build/ai), its film, how each layer was painted and cut, and a form that writes the command for
 # another. Built into build/ai-gallery/index.html by tools/r239-ai-strips/gallery.py.
 #   tools/ai-gallery.sh                 build it, print its path

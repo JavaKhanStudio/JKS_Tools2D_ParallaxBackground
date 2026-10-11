@@ -9,6 +9,7 @@ Finds every ROOT/**/recipe.json (ai_page.py writes it; a page made before it exi
 so OUT can be served or zipped alone. A page shows its film (tools/ai-film.sh: OUT/film/a01.mp4, core's frames) when
 it has one, else its 12 s still. tools/ai-gallery.sh is the way in: it builds, serves and opens it.
 """
+import glob
 import html
 import json
 import os
@@ -58,7 +59,7 @@ button { font: inherit; background: #31353d; color: var(--text); border: 1px sol
   padding: 4px 10px; cursor: pointer; } button:hover { border-color: var(--accent); }
 details { margin: 8px 0; } summary { cursor: pointer; color: var(--accent); }
 .layer { border-top: 1px solid var(--line); padding: 10px 0; }
-.passes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0; }
+.passes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin: 6px 0; }
 .passes figure { margin: 0; } .passes figcaption { color: var(--muted); font-size: 13px; }
 .strip { width: 100%; display: block; border-radius: 3px; }
 .checker { background: repeating-conic-gradient(#555 0 25%, #777 0 50%) 0 0 / 16px 16px; }
@@ -95,6 +96,51 @@ def find(roots):
     return sorted(out, key=lambda d: os.path.getmtime(os.path.join(d, "recipe.json")))  # made first, shown first
 
 
+def depth_card(r, d, pid, title, view, lint, copy):
+    """A page tools/depth-page.sh cut from one painting (r279): the painting, its depth and bands, then each layer
+    as the bands cut it (what nearer things hid, see-through), repainted, and as the page draws it."""
+    cut = lambda name: copy(os.path.join(d, "cut", name), f"{pid}-{name}")  # noqa: E731
+    loop = r.get("loop") or {}
+    fixed = loop.get("after") is not None
+    figs = [(cut("source.png"), "The painting"), (cut("painting.png") if fixed else None, "Its join repainted"),
+            (cut("depth.png"), "Its depth (light: near)"), (cut("bands.png"), f"{len(r['layers'])} depth bands")]
+    top = "".join(f'<figure><img class="strip" src="{src}" alt="{esc(label)}" loading="lazy">'
+                  f'<figcaption>{esc(label)}</figcaption></figure>' for src, label in figs if src)
+    joint = (f"Its ends did not meet (seam ratio {loop['before']}): a 96 px band round the join was repainted "
+             f"(ratio {loop['after']} after).") if fixed else (
+        f"Its ends already meet (seam ratio {loop.get('before', '?')}): nothing repainted at the join.")
+    rows = []
+    for k, ly in enumerate(r["layers"]):
+        sid = ly["strip"]
+        passes = [(cut(f"{sid}_raw.png"), "The whole painting: the back layer is opaque" if k == 0 else
+                   "Cut by its band: what nearer things hid is see-through"),
+                  (cut(f"{sid}_mask.png") if ly["prompt"] else None, "What gets repainted (white)"),
+                  (cut(f"{sid}_painted.png") if ly["prompt"] else None, "The holes repainted"),
+                  (cut(f"{sid}.png"), "The layer")]
+        figs = "".join(f'<figure><img class="strip checker" src="{src}" alt="{esc(label)}" loading="lazy">'
+                       f'<figcaption>{esc(label)}</figcaption></figure>' for src, label in passes if src)
+        final = f"media/{pid}-{sid}.png"
+        prompt = (f'<details><summary>repaint prompt</summary><pre>{esc(ly["prompt"])}</pre>'
+                  f'<p class="muted">negative</p><pre>{esc(r["negative"])}</pre><p class="muted">inpaint denoise '
+                  f'{r["denoise"]}, seed {ly["seed"]}</p></details>') if ly["prompt"] else ""
+        rows.append(
+            f'<div class="layer"><h3>Layer {k}{" (back)" if k == 0 else " (front)" if k == len(r["layers"]) - 1 else ""}'
+            f'</h3><div class="facts"><span>depth <b>{ly["disparity"]}</b></span><span>speed <b>{ly["speed"]}</b>'
+            f'</span><span>repainted <b>{round(100 * ly["repainted"])}%</b></span></div>'
+            f'<div class="passes">{figs}</div>'
+            f'<p class="muted">Drawn twice side by side, the join dashed.</p>'
+            f'<div class="pair"><img class="checker" src="{final}" alt=""><img class="checker" src="{final}" alt="">'
+            f'</div>{prompt}</div>')
+    return (f'<section class="card" id="{esc(pid)}"><h2>{esc(title)}</h2>'
+            f'<p>“{esc(r["theme"])}”</p>{view}'
+            f'<div class="facts"><span>model <b>{esc(r["model"])}</b></span><span>painting '
+            f'<b>{r["size"][0]}x{r["size"][1]}</b></span><span>layers <b>{len(r["layers"])}</b></span></div>{lint}'
+            f'<div class="cmd"><pre>{esc(r["command"])}</pre><button data-copy>Copy</button></div>'
+            f'<p class="muted">Files: {esc(os.path.relpath(d))}/page (the atlas and the .jplax a game loads).</p>'
+            f'<details><summary>How it was made: the painting, then layer by layer (back to front)</summary>'
+            f'<div class="passes">{top}</div><p>{esc(joint)}</p>{"".join(rows)}</details></section>')
+
+
 def main():
     if len(sys.argv) < 3:
         sys.exit(__doc__)
@@ -114,12 +160,15 @@ def main():
     cards, nav = [], []
     for n, d in enumerate(pages):
         r = json.load(open(os.path.join(d, "recipe.json")))
-        pid = f"p{n}-{r['name']}-{r['style']}"
-        pixel = r["style"] == "pixel"
-        title = f"{r['name']}, {r['style']}"
+        depth = r.get("tool") == "depth-page"
+        style = "from a painting" if depth else r["style"]
+        pid = f"p{n}-{r['name']}-{'depth' if depth else r['style']}"
+        pixel = style == "pixel"
+        title = f"{r['name']}, {style}"
         nav.append(f'<a href="#{esc(pid)}">{esc(title)}</a>')
-        poster = copy(os.path.join(d, "shots", "a01-t12.png"), f"{pid}-t12.png")
-        film = copy(os.path.join(d, "film", "a01.mp4"), f"{pid}.mp4")
+        first_of = lambda pattern: (sorted(glob.glob(os.path.join(d, pattern))) or [""])[0]  # noqa: E731
+        poster = copy(first_of("shots/*-t12.png"), f"{pid}-t12.png")
+        film = copy(first_of("film/*.mp4"), f"{pid}.mp4")
         if film:
             view = (f'<video class="film" src="{film}" poster="{poster or ""}" controls loop muted playsinline '
                     f'preload="metadata"></video><p class="muted">core\'s own frames, off screen: 8 s of scrolling at '
@@ -128,12 +177,15 @@ def main():
             view = (f'<img class="film" src="{poster}" alt="{esc(title)} at 12 s"><p class="muted">core\'s frame at '
                     '12 s; no film yet (tools/ai-film.sh DIR/page DIR/film).</p>')
         else:
-            view = '<p class="muted">No render yet: run ai-page.sh without --no-shots.</p>'
+            view = '<p class="muted">No render yet: run the tool again without --no-shots.</p>'
         if r["lint"]:
             lint = (f'<details><summary class="lint">lint: {len(r["lint"])} fault(s)</summary><ul>'
                     + "".join(f'<li class="lint">{esc(p)}</li>' for p in r["lint"]) + "</ul></details>")
         else:
             lint = '<p class="muted">lint (tools/parallax_lab.py): ok</p>'
+        if depth:
+            cards.append(depth_card(r, d, pid, title, view, lint, copy))
+            continue
         rows = []
         for k, layer in enumerate(r["layers"]):
             first = layer["strips"][0]
@@ -212,6 +264,9 @@ fades the far ones toward the sky.</li></ol>
 <p>In <b>painted</b> style (SD 1.5, a strip of 1024x384) the front layer is a SEQUENCE: three more strips that start
 and end on the first one's columns, so the front changes as it scrolls. <b>Pixel</b> style (SDXL with the
 PixelArt_XL add-on, 1536x576 cut to one pixel per art pixel) has one strip a layer.</p>
+<p><b>From a painting</b> (tools/depth-page.sh, r279) goes the other way: one flat painting, its depth estimated
+by Depth Anything V2 Small, cut into depth bands, far to near; each layer's holes (where a nearer thing hid it) are
+repainted by SD 1.5, and each layer scrolls at a speed set by its depth.</p>
 <p class="muted">Open “How it was made” under a page to see each layer's three passes, its prompt, its seed and the
 layer drawn twice to show the join. The method and its traps: docs/ai-parallax.md.</p>
 {"".join(cards)}

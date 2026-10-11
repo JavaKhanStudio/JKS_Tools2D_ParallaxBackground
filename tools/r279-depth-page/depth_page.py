@@ -25,7 +25,7 @@ docs/depth-tricks.md §5. Passes:
      none under a twentieth of it. The back layer is opaque (the painted sky); the gradients take its top and bottom
      colours.
 
-Writes OUT/cut (depth.png, bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
+Writes OUT/recipe.json (the command and each pass, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
 NAME.png, NAME.jplax, round.json) and, unless --no-shots, OUT/shots (tools/parallax-lab-shots.sh, cage: stills at 0,
 6 and 12 s). Exits 1 when lint finds a fault. Runs in the ComfyUI venv (COMFYUI_DIR, default ~/ComfyUI), which holds
 transformers, scipy and torch; needs dreamshaper_8 there and ~2 GB of free VRAM.
@@ -34,6 +34,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -299,11 +300,18 @@ def main():
     w, h = (im.width // 8) * 8, (im.height // 8) * 8  # the VAE's cell
     im = im.crop((0, 0, w, h))
     im.save(os.path.join(cut, "painting.png"))
+    im.save(os.path.join(cut, "source.png"))  # painting.png is the one with its join repainted, when it is
     img = np.asarray(im)
+    recipe = {"tool": "depth-page", "command": shlex.join(["tools/depth-page.sh"] + [x for x in sys.argv[1:]
+                                                                                    if x not in ("--keep", "--no-shots")]),
+              "theme": a.theme, "name": name, "seed": a.seed, "size": [w, h], "denoise": a.denoise,
+              "model": "Depth Anything V2 Small + SD 1.5 dreamshaper_8 (repaints)", "page": f"page/{name}.jplax",
+              "negative": NEG, "fogStrength": 0, "layers": []}
 
     # 1. The loop.
     ratio, _ = seam.join(seam.load(os.path.join(cut, "painting.png")), seam.load(os.path.join(cut, "painting.png")))
     log(f"painting {w}x{h}: seam ratio {ratio:.2f}")
+    recipe["loop"] = {"before": round(float(ratio), 2), "after": None}
     if ratio > 2:
         rolled = np.roll(img, w // 2, axis=1)  # the join in the middle, where the repaint has both sides
         x = np.arange(w)
@@ -318,7 +326,9 @@ def main():
         img = np.roll(np.asarray(Image.open(f"{cut}/loop.png").convert("RGB")), -(w // 2), axis=1)
         Image.fromarray(img).save(os.path.join(cut, "painting.png"))
         p = os.path.join(cut, "painting.png")
-        log(f"join repainted: seam ratio {seam.join(seam.load(p), seam.load(p))[0]:.2f}")
+        recipe["loop"]["after"] = round(float(seam.join(seam.load(p), seam.load(p))[0]), 2)
+        recipe["loop"]["prompt"] = f"{a.theme}, painterly, seamless"
+        log(f"join repainted: seam ratio {recipe['loop']['after']:.2f}")
 
     # 2. Depth, 3. bands.
     d = depth_of(img)
@@ -366,6 +376,10 @@ def main():
         Image.fromarray(rgba[top:]).save(f"{cut_k}.png")
         med = float(np.median(dn[L == k])) if (L == k).any() else centres[k]
         layers.append({"path": f"{cut_k}.png", "disparity": med, "top": top, "hole": float(hole.mean())})
+        word = WORDS[min(3, round(k * 3 / max(1, n - 1)))]
+        recipe["layers"].append({"strip": f"l{k}", "disparity": round(med, 3), "top": top,
+                                 "repainted": round(float(hole.mean()), 4), "seed": a.seed * 100 + k,
+                                 "prompt": f"{a.theme}, {word} scenery, painterly, seamless" if hole.any() else None})
 
     # 5. The page.
     front = max(layers[-1]["disparity"], 1e-3)
@@ -391,6 +405,11 @@ def main():
     sheet(cut, layers, n)
 
     problems = lab.lint(lab.load(scene["page"]), rel)
+    for k, ly in enumerate(recipe["layers"]):
+        ly["speed"] = s[k]
+    recipe.update(lint=problems, sky=list(sky))
+    with open(os.path.join(out, "recipe.json"), "w") as f:
+        json.dump(recipe, f, indent=1)
     print(f"{rel}/{name}.jplax")
     for k, ly in enumerate(layers):
         print(f"  l{k}: disparity {ly['disparity']:.2f}, speed {s[k]:g}, from row {ly['top']}, "

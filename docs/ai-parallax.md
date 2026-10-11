@@ -19,7 +19,8 @@ names what another layer draws ("turquoise sea") gets it painted faintly into ev
 its prompt and seed, the layer drawn twice at its join, the SEQUENCE's strips end to end, and a form that writes the
 `ai-page.sh` command for another page. It reads `OUT/recipe.json`, which `ai-page.sh` writes beside each page; a page
 made before r239's gallery gets one from `ai-page.sh --keep --no-shots` with its first arguments (the page comes out
-byte for byte the same).
+byte for byte the same). `tools/depth-page.sh` writes one too (r316): its pages show the painting, its depth and
+bands, and each layer cut, masked, repainted and as drawn (r279's three are in `build/ai/depth`).
 
 ## What works
 
