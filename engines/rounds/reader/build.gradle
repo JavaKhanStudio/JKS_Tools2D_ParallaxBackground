@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+}
+
+// :rounds, a reader round's round.json read once (r312), for the Java frame runners: :shots (the libGDX stills) and
+// :jme's shots source set. Beside the rounds it reads (engines/rounds, a home no reader owns, parallax-readers r9).
+// gdx core and :core only: no backend, so no LWJGL beside jME's. Not published.
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ['src']
+        resources.srcDirs = []
+    }
+}
+
+dependencies {
+    api project(':core')
+}

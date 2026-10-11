@@ -39,6 +39,7 @@ dependencies {
     // POM, project(':core') is io.github.javakhanstudio:parallax-background of the same version.
     api project(':core')
     api "org.jmonkeyengine:jme3-core:$jmeVersion"
+    shotsImplementation project(':rounds')
     shotsImplementation "org.jmonkeyengine:jme3-desktop:$jmeVersion"
     shotsImplementation "org.jmonkeyengine:jme3-lwjgl3:$jmeVersion"
 }

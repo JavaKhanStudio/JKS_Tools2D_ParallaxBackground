@@ -15,6 +15,10 @@ include 'core'
 // The reference renderer (r130): the libGDX frames tools/parallax-lab-shots.sh draws for the reader rounds.
 include 'shots'
 
+// A reader round's round.json, read once for both Java frame runners (r312), beside the rounds it reads. Not published.
+include 'rounds'
+project(':rounds').projectDir = file('engines/rounds/reader')
+
 // The jMonkeyEngine reader (r112): a Java engine, so it draws pages with core itself.
 include 'jme'
 project(':jme').projectDir = file('engines/jme')

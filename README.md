@@ -78,6 +78,7 @@ To build from source instead, the repository has these Gradle modules:
 | `core`   | Runtime library for games: loads `.plax` files, scrolls, tiles and draws the layers.        |
 | `jme`    | The jMonkeyEngine reader (`engines/jme`), published as `parallax-background-jme`.            |
 | `shots`  | Not published: draws a round of pages with `core`, the frames the other engines are checked against. |
+| `rounds` | Not published (`engines/rounds/reader`): reads a reader round's `round.json` for `shots` and `jme`'s frame runner. |
 
 Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
 
@@ -466,6 +467,7 @@ engines/jme/tests/                its frame runner (tools/jme-parallax-shots.sh)
 engines/godot/addons/jks_parallax the Godot 4 reader
 engines/godot/tests/              Godot's runners for the rounds: shots.gd, particles.gd, sequence_cycle.gd
 engines/rounds/                   the reader rounds every reader is checked on: round1, conformance, transfer, pixelart, effects, particles, shaders
+engines/rounds/reader/src/.../Round  a round's round.json, read for ParallaxShots and JmeParallaxShots (:rounds)
 shots/src/.../ParallaxShots       libGDX stills of a round, what the Godot and jME frames are compared with
 core/test-data/samples/           the sample pages and atlases the tests and the rounds read (copies, never re-exported)
 core/test-data/particles/         snow .p files (MakeSnow.java), HiverSnow.atlas, and a libGDX stills round of them

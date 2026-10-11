@@ -16,19 +16,19 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.utils.JsonReader;
-import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import org.lwjgl.glfw.GLFW;
 
-import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
+import jks.tools2d.parallax.rounds.Round;
+import jks.tools2d.parallax.rounds.Round.Hook;
+import jks.tools2d.parallax.rounds.Round.Scene;
+import jks.tools2d.parallax.rounds.Round.Transfer;
 
 /**
  * The reference renderer (r130): stills of every scene of a round, drawn by the libGDX runtime, the frames the Godot and
@@ -39,22 +39,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * java -cp "shots/build/install/shots/lib/*" jks.tools2d.parallax.shots.ParallaxShots ROUND_DIR OUT_DIR
  * </pre>
  *
- * A round is a folder holding round.json: the scenes, each a page file and the folder of its atlas, both relative to
- * the working directory (the repository root). Each scene scrolls at 60 units/s stepped at 1/60 s and is saved
- * {@code <id>-t0/-t6/-t12.png}, 0, 6 and 12 s in, 1280x720. A scene may also:
- * {@code "transfer": {"at": 4, "seconds": 4, "page": ..., "atlasDir": ...}} cross-fade into that page (no page: into the
- * page on screen; a list of them: one after the other, r98; {@code "style": {"kind": "DEPTH_STAGGER", "stagger": 1}}: drawn
- * in that {@link TransfertStyle}, r249), {@code "tint": {"at": 4, "seconds": 4, "color": [r, g, b,
- * a]}} tint, both started {@code at} seconds into the scroll (r94, engines/rounds/transfer); {@code "speedY": 30}
- * also scroll up, and {@code "resize": {"at": 3, "size": [720, 1280]}} resize the window mid-scroll (r95,
- * engines/rounds/conformance); {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY
- * layer named slot with that atlas region stretched over each tile (r177, engines/rounds/effects; {@code "planet":
- * true} lowers it by {@code planetDropAt} at the tile's middle, r330);
- * {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that game seed (r183, engines/rounds/sequence);
- * {@code "film": {"seconds": 8, "fps": 30}} goes on scrolling after the last still and saves every frame of those seconds,
- * {@code <id>-f0000.png} on (r239: tools/ai-film.sh makes them a video); {@code "zoom": [1, 0.5]} zooms the camera
- * straight from the first at 0 s to the second at 12 s, set before each still, and {@code "dolly": true} dollies it
- * ({@code ParallaxPageReader.setDolly}, r278, engines/rounds/dolly).
+ * A round is a folder holding round.json, read by {@link Round} (engines/rounds/reader): what a scene holds is described
+ * there. Each scene scrolls at 60 units/s stepped at 1/60 s and is saved {@code <id>-t0/-t6/-t12.png}, 0, 6 and 12 s
+ * in, 1280x720, and its film's frames {@code <id>-f0000.png} on.
  * engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots step the same way.
  */
 public class ParallaxShots extends ApplicationAdapter
@@ -64,45 +51,11 @@ public class ParallaxShots extends ApplicationAdapter
 
 	private final Path roundDir;
 	private final Path shotsDir;
-	private final List<Scene> scenes = new ArrayList<>();
+	private List<Scene> scenes;
 
 	private Parallax_Heart heart;
 	/** The layer names the scene on screen hooked. */
 	private final List<String> hooked = new ArrayList<>();
-
-	private static final class Scene
-	{
-		String id, page, atlasDir;
-		final List<Transfer> transfers = new ArrayList<>();
-		final List<Hook> hooks = new ArrayList<>();
-		float tintAt = -1, tintSeconds, speedY, resizeAt = -1;
-		int resizeWidth, resizeHeight;
-		Color tint;
-		/** The game's seed for the SEQUENCE layers; null: the pages' own. */
-		Integer sequenceSeed;
-		/** Frames saved after the last still, {@code filmFps} a second; 0: none. */
-		int filmFrames, filmFps;
-		/** The camera's zoom at 0 s and at 12 s, and whether the reader dollies it. */
-		float zoomFrom = 1, zoomTo = 1;
-		boolean dolly;
-	}
-
-	/** An EMPTY layer's hook from a round: stretches the n-th atlas region of that name over every tile (r177). */
-	private static final class Hook
-	{
-		String layer, region;
-		int position;
-		/** Round a planet, the region lowered by its layer's drop at the tile's middle (r330). */
-		boolean planet;
-	}
-
-	/** A cross-fade {@code at} seconds into the scroll; {@code page} null: into the page on screen. */
-	private static final class Transfer
-	{
-		float at, seconds;
-		String page, atlasDir;
-		TransfertStyle style = TransfertStyle.FADE;
-	}
 
 	public ParallaxShots(Path roundDir, Path shotsDir)
 	{
@@ -139,69 +92,7 @@ public class ParallaxShots extends ApplicationAdapter
 	@Override
 	public void create()
 	{
-		JsonValue round = new JsonReader().parse(new FileHandle(roundDir.resolve("round.json").toFile()));
-		for (JsonValue s = round.get("scenes").child; s != null; s = s.next)
-		{
-			Scene scene = new Scene();
-			scene.id = s.getString("id");
-			scene.page = s.getString("page");
-			scene.atlasDir = s.getString("atlasDir");
-			scene.speedY = s.getFloat("speedY", 0);
-			if (s.has("sequenceSeed"))
-				scene.sequenceSeed = s.getInt("sequenceSeed");
-			JsonValue zoom = s.get("zoom");
-			if (zoom != null)
-			{
-				scene.zoomFrom = zoom.getFloat(0);
-				scene.zoomTo = zoom.getFloat(1);
-			}
-			scene.dolly = s.getBoolean("dolly", false);
-			JsonValue film = s.get("film");
-			if (film != null)
-			{
-				scene.filmFps = film.getInt("fps", 30);
-				scene.filmFrames = Math.round(film.getFloat("seconds") * scene.filmFps);
-			}
-			JsonValue resize = s.get("resize");
-			if (resize != null)
-			{
-				scene.resizeAt = resize.getFloat("at");
-				scene.resizeWidth = resize.get("size").getInt(0);
-				scene.resizeHeight = resize.get("size").getInt(1);
-			}
-			JsonValue transfers = s.get("transfer");
-			if (transfers != null)
-				for (JsonValue t = transfers.isArray() ? transfers.child : transfers; t != null; t = transfers.isArray() ? t.next : null)
-				{
-					Transfer transfer = new Transfer();
-					transfer.at = t.getFloat("at");
-					transfer.seconds = t.getFloat("seconds");
-					transfer.page = t.getString("page", null);
-					transfer.atlasDir = t.getString("atlasDir", scene.atlasDir);
-					transfer.style = style(t.get("style"));
-					scene.transfers.add(transfer);
-				}
-			JsonValue hooks = s.get("hooks");
-			if (hooks != null)
-				for (JsonValue h = hooks.child; h != null; h = h.next)
-				{
-					Hook hook = new Hook();
-					hook.layer = h.name;
-					hook.region = h.getString("region");
-					hook.position = h.getInt("position", 0);
-					hook.planet = h.getBoolean("planet", false);
-					scene.hooks.add(hook);
-				}
-			JsonValue tint = s.get("tint");
-			if (tint != null)
-			{
-				scene.tintAt = tint.getFloat("at");
-				scene.tintSeconds = tint.getFloat("seconds");
-				float[] c = tint.get("color").asFloatArray();
-				scene.tint = new Color(c[0], c[1], c[2], c[3]);
-			}
-			scenes.add(scene);
-		}
+		scenes = Round.read(roundDir).scenes;
 
 		heart = new Parallax_Heart();
 		takeShots();
@@ -220,7 +111,7 @@ public class ParallaxShots extends ApplicationAdapter
 		hooked.clear();
 		for (Hook hook : scene.hooks)
 		{
-			TextureRegion region = findRegion(page.getLoadedAtlas(), hook.region, hook.position);
+			TextureRegion region = Round.findRegion(page.getLoadedAtlas(), hook.region, hook.position);
 			boolean planet = hook.planet;
 			heart.parallaxReader.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x,
 					planet ? y - heart.parallaxReader.planetDropAt(layer, x + width / 2) : y, width, height));
@@ -234,10 +125,6 @@ public class ParallaxShots extends ApplicationAdapter
 		heart.parallaxReader.addColorTransfert(Color.WHITE, 0);
 		heart.parallaxReader.setDolly(scene.dolly);
 	}
-
-	/** The scene's zoom {@code at} seconds in: straight from its first at 0 s to its second at 12 s. */
-	static float zoomAt(float from, float to, float at)
-	{return from + (to - from) * (at / 12);}
 
 	/** Stills of every scene at a few moments of the same scroll. */
 	private void takeShots()
@@ -286,7 +173,7 @@ public class ParallaxShots extends ApplicationAdapter
 					}
 					heart.act(step);
 				}
-				heart.worldCamera.zoom = zoomAt(scene.zoomFrom, scene.zoomTo, at);
+				heart.worldCamera.zoom = scene.zoomAt(at);
 				ScreenUtils.clear(Color.BLACK);
 				heart.render();
 				Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
@@ -324,16 +211,6 @@ public class ParallaxShots extends ApplicationAdapter
 		resize(width, height);
 	}
 
-	/** The n-th region of that name, in atlas order, as a page names its layers' images. */
-	static TextureRegion findRegion(TextureAtlas atlas, String name, int position)
-	{
-		int seen = 0;
-		for (TextureAtlas.AtlasRegion region : atlas.getRegions())
-			if (region.name.equals(name) && seen++ == position)
-				return region;
-		throw new IllegalArgumentException("no region " + name + " #" + position + " in the atlas");
-	}
-
 	@Override
 	public void resize(int width, int height)
 	{
@@ -345,25 +222,5 @@ public class ParallaxShots extends ApplicationAdapter
 	{
 		heart.dispose();
 		Gvars_Parallax.getManager().dispose();
-	}
-
-	/**
-	 * A transfer's {@code "style": {"kind": "DEPTH_STAGGER", "stagger": 1}} or
-	 * {@code {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}} or
-	 * {@code {"kind": "THROUGH_COLOR", "color": "ffffff", "stagger": 0}} or
-	 * {@code {"kind": "FOG_CREEP", "color": "eef2f7", "stagger": 1}}; none, or another kind: FADE.
-	 */
-	static TransfertStyle style(JsonValue style)
-	{
-		String kind = style == null ? null : style.getString("kind", null);
-		if ("DEPTH_STAGGER".equals(kind))
-			return TransfertStyle.depthStagger(style.getFloat("stagger", 0));
-		if ("DISSOLVE".equals(kind))
-			return TransfertStyle.dissolve(style.getFloat("patches", 5), style.getFloat("softness", 0.08f), style.getFloat("stagger", 0));
-		if ("THROUGH_COLOR".equals(kind))
-			return TransfertStyle.throughColor(Color.valueOf(style.getString("color", "ffffff")), style.getFloat("stagger", 0));
-		if ("FOG_CREEP".equals(kind))
-			return TransfertStyle.fogCreep(Color.valueOf(style.getString("color", "ffffff")), style.getFloat("stagger", 0));
-		return TransfertStyle.FADE;
 	}
 }

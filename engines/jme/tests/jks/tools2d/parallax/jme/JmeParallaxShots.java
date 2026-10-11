@@ -12,19 +12,21 @@ import org.lwjgl.glfw.GLFW;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.utils.JsonReader;
-import com.badlogic.gdx.utils.JsonValue;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.FileLocator;
 import com.jme3.system.AppSettings;
 import com.jme3.system.lwjgl.LwjglWindow;
 
-import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.pages.WholePage_Model;
+import jks.tools2d.parallax.rounds.Round;
+import jks.tools2d.parallax.rounds.Round.Hook;
+import jks.tools2d.parallax.rounds.Round.Scene;
+import jks.tools2d.parallax.rounds.Round.Transfer;
 
 /**
- * Stills of every scene of a lab round drawn by jME, as {@code ParallaxShots} (shots/) takes them with libGDX: the same
- * page, the same 60 units/s scroll stepped at 1/60 s (in float, as the lab counts it), grabbed 0, 6 and 12 s in. A
+ * Stills of every scene of a reader round drawn by jME, as {@code ParallaxShots} (shots/) takes them with libGDX: the
+ * same page, the same 60 units/s scroll stepped at 1/60 s (in float, as the lab counts it), grabbed 0, 6 and 12 s in.
+ * Its round.json is read by {@link Round} (engines/rounds/reader), the one reader both runners share (r312). A
  * scene's "transfer" (one or a list), "tint", "speedY" and "resize" are played at the same steps, its "hooks" draw
  * its EMPTY layers the same way (r177), its "sequenceSeed" draws the SEQUENCE layers from that game seed (r183), and
  * its "zoom" and "dolly" zoom the camera before each still, dollied or not (r278).
@@ -40,39 +42,8 @@ public class JmeParallaxShots extends SimpleApplication
 	private static final float[] SHOT_TIMES = { 0, 6, 12 };
 	private static final float STEP = 1 / 60f;
 
-	private static final class Transfer
-	{
-		float at, seconds;
-		String page, atlasDir;
-		TransfertStyle style = TransfertStyle.FADE;
-	}
-
-	private static final class Scene
-	{
-		String id, page, atlasDir;
-		float speedY, tintAt = -1, tintSeconds, resizeAt = -1;
-		int resizeWidth, resizeHeight;
-		Color tint;
-		/** The game's seed for the SEQUENCE layers; null: the pages' own. */
-		Integer sequenceSeed;
-		/** The camera's zoom at 0 s and at 12 s, and whether the reader dollies it. */
-		float zoomFrom = 1, zoomTo = 1;
-		boolean dolly;
-		final List<Transfer> transfers = new ArrayList<>();
-		final List<Hook> hooks = new ArrayList<>();
-	}
-
-	/** An EMPTY layer's hook from a round: stretches the n-th atlas region of that name over every tile (r177). */
-	private static final class Hook
-	{
-		String layer, region;
-		int position;
-		/** Round a planet, the region lowered by its layer's drop at the tile's middle (r330). */
-		boolean planet;
-	}
-
 	private final Path roundDir, outDir;
-	private final List<Scene> scenes = new ArrayList<>();
+	private List<Scene> scenes;
 	private final float speedFactor = "scroll".equals(System.getProperty("parallax.jme.break")) ? 1.1f : 1;
 	private PlaxBackground bg;
 	/** The layer names the scene on screen hooked. */
@@ -123,81 +94,12 @@ public class JmeParallaxShots extends SimpleApplication
 		{Files.createDirectories(outDir);}
 		catch (IOException e)
 		{throw new RuntimeException(e);}
-		readRound();
+		scenes = Round.read(roundDir).scenes;
 
 		bg = new PlaxBackground();
 		bg.autoAct = false;
 		stateManager.attach(bg);
 		guiViewPort.addProcessor(grab);
-	}
-
-	private void readRound()
-	{
-		JsonValue round = new JsonReader().parse(readString(roundDir.resolve("round.json")));
-		for (JsonValue s = round.get("scenes").child; s != null; s = s.next)
-		{
-			Scene scene = new Scene();
-			scene.id = s.getString("id");
-			scene.page = s.getString("page");
-			scene.atlasDir = s.getString("atlasDir");
-			scene.speedY = s.getFloat("speedY", 0);
-			if (s.has("sequenceSeed"))
-				scene.sequenceSeed = s.getInt("sequenceSeed");
-			JsonValue zoom = s.get("zoom");
-			if (zoom != null)
-			{
-				scene.zoomFrom = zoom.getFloat(0);
-				scene.zoomTo = zoom.getFloat(1);
-			}
-			scene.dolly = s.getBoolean("dolly", false);
-			JsonValue resize = s.get("resize");
-			if (resize != null)
-			{
-				scene.resizeAt = resize.getFloat("at");
-				scene.resizeWidth = resize.get("size").getInt(0);
-				scene.resizeHeight = resize.get("size").getInt(1);
-			}
-			JsonValue transfer = s.get("transfer");
-			if (transfer != null)
-				for (JsonValue t : transfer.isArray() ? transfer : List.of(transfer))
-				{
-					Transfer into = new Transfer();
-					into.at = t.getFloat("at");
-					into.seconds = t.getFloat("seconds");
-					into.page = t.getString("page", null);
-					into.atlasDir = t.getString("atlasDir", scene.atlasDir);
-					into.style = style(t.get("style"));
-					scene.transfers.add(into);
-				}
-			JsonValue hooks = s.get("hooks");
-			if (hooks != null)
-				for (JsonValue h = hooks.child; h != null; h = h.next)
-				{
-					Hook hook = new Hook();
-					hook.layer = h.name;
-					hook.region = h.getString("region");
-					hook.position = h.getInt("position", 0);
-					hook.planet = h.getBoolean("planet", false);
-					scene.hooks.add(hook);
-				}
-			JsonValue tint = s.get("tint");
-			if (tint != null)
-			{
-				scene.tintAt = tint.getFloat("at");
-				scene.tintSeconds = tint.getFloat("seconds");
-				float[] c = tint.get("color").asFloatArray();
-				scene.tint = new Color(c[0], c[1], c[2], c[3]);
-			}
-			scenes.add(scene);
-		}
-	}
-
-	private static String readString(Path path)
-	{
-		try
-		{return Files.readString(path);}
-		catch (IOException e)
-		{throw new RuntimeException(e);}
 	}
 
 	/**
@@ -258,7 +160,7 @@ public class JmeParallaxShots extends SimpleApplication
 			}
 			bg.act(STEP * speedFactor);
 		}
-		bg.setZoom(scene.zoomFrom + (scene.zoomTo - scene.zoomFrom) * (at / 12));
+		bg.setZoom(scene.zoomAt(at));
 		grab.grab(outDir.resolve(scene.id + "-t" + (int) at + ".png").toFile());
 		shotIndex++;
 	}
@@ -275,7 +177,7 @@ public class JmeParallaxShots extends SimpleApplication
 		hooked.clear();
 		for (Hook hook : scene.hooks)
 		{
-			TextureRegion region = findRegion(atlas, hook.region, hook.position);
+			TextureRegion region = Round.findRegion(atlas, hook.region, hook.position);
 			boolean planet = hook.planet;
 			bg.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x,
 					planet ? y - bg.getReader().planetDropAt(layer, x + width / 2) : y, width, height));
@@ -294,16 +196,6 @@ public class JmeParallaxShots extends SimpleApplication
 		transferred = 0;
 		tinted = resized = false;
 		System.out.println("shots: " + scene.id);
-	}
-
-	/** The n-th region of that name, in atlas order, as a page names its layers' images. */
-	static TextureRegion findRegion(TextureAtlas atlas, String name, int position)
-	{
-		int seen = 0;
-		for (TextureAtlas.AtlasRegion region : atlas.getRegions())
-			if (region.name.equals(name) && seen++ == position)
-				return region;
-		throw new IllegalArgumentException("no region " + name + " #" + position + " in the atlas");
 	}
 
 	@Override
@@ -333,25 +225,5 @@ public class JmeParallaxShots extends SimpleApplication
 		if (cam.getWidth() != width || cam.getHeight() != height)
 			return false;
 		return settleFrames-- <= 0;
-	}
-
-	/**
-	 * A transfer's {@code "style": {"kind": "DEPTH_STAGGER", "stagger": 1}} or
-	 * {@code {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}} or
-	 * {@code {"kind": "THROUGH_COLOR", "color": "ffffff", "stagger": 0}} or
-	 * {@code {"kind": "FOG_CREEP", "color": "eef2f7", "stagger": 1}}; none, or another kind: FADE.
-	 */
-	static TransfertStyle style(JsonValue style)
-	{
-		String kind = style == null ? null : style.getString("kind", null);
-		if ("DEPTH_STAGGER".equals(kind))
-			return TransfertStyle.depthStagger(style.getFloat("stagger", 0));
-		if ("DISSOLVE".equals(kind))
-			return TransfertStyle.dissolve(style.getFloat("patches", 5), style.getFloat("softness", 0.08f), style.getFloat("stagger", 0));
-		if ("THROUGH_COLOR".equals(kind))
-			return TransfertStyle.throughColor(Color.valueOf(style.getString("color", "ffffff")), style.getFloat("stagger", 0));
-		if ("FOG_CREEP".equals(kind))
-			return TransfertStyle.fogCreep(Color.valueOf(style.getString("color", "ffffff")), style.getFloat("stagger", 0));
-		return TransfertStyle.FADE;
 	}
 }
