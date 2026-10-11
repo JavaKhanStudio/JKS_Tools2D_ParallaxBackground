@@ -25,6 +25,10 @@ HQ/
 hs_err_pid*.log
 core.[0-9]*
 
+# Python bytecode, written next to tools/*.py when they run
+__pycache__/
+*.pyc
+
 # Atelier board skills: absolute symlinks into the atelier checkout, broken for anyone else.
 .claude/skills/board
 .claude/skills/digest-contexts
