@@ -26,7 +26,7 @@ cut() {
 	python3 "$D"/layer.py "$src" "$out" --no-creatures "$@" 2>/dev/null
 	[ -f "$out" ] && check "$want" "$out" "$src"
 }
-# Today's layer.py on r239's strips (its own _layer.png files predate d454292's fill fix).
+# Today's layer.py on r239's strips (its own _layer.png files predate bcb8df6's fill fix).
 for k in mountains hills; do
 	[ -f "$B/r239/${k}_ai.png" ] && cut 0 "$B/r239/${k}_ai.png" "$T/r239_$k.png"
 done

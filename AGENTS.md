@@ -1,7 +1,7 @@
 # Agent guide
 
 What README.md does not say: the rules that break silently here. Concepts, settings and file shapes are in
-README.md; branches and releases in RELEASING.md. `git show 2a7e3f6:<path>` shows the code as it was before the 2026
+README.md; branches and releases in RELEASING.md. `git show b5a7441:<path>` shows the code as it was before the 2026
 repair.
 
 ## Modules

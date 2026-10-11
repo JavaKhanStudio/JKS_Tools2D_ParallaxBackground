@@ -112,7 +112,7 @@ So moving `demo/` and `editor/` out as they are leaves `core`'s tests and both f
 1. Here, before any split: gather the fixtures, point the tests and the rounds' `atlasDir` at them, split the
    reference renderer out of `ParallaxLab`. Done when a scratch clone with `editor/` and `demo/` deleted passes
    `./gradlew build`, `tools/browser-test.sh` and both frame comparisons.
-   **Done (r130, 6804c5c):** `core/test-data/samples` holds the fixtures, `shots/` (`:shots`, `ParallaxShots`) the
+   **Done (r130, 056c9aa):** `core/test-data/samples` holds the fixtures, `shots/` (`:shots`, `ParallaxShots`) the
    reference renderer, `engines/godot/tests/round1` a copy of the lab's round 1 (the lab keeps its own, and its
    grades), and `settings.gradle` includes `editor` and `demo` only when their folder exists.
    `tools/library-alone-check.sh` runs the four gates on a clone with both deleted: all pass, and the 202 lines of

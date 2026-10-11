@@ -19,7 +19,7 @@ snow[0] = '../particles/' + snow[0]
 Path(f'{HERE}/HiverHazeLab.atlas').write_text('\n'.join(fog) + '\n\n' + '\n'.join(snow) + '\n')
 
 # r217 replaced the haze round by the fog round: h01 is read from the last commit that held it.
-page = json.loads(subprocess.check_output(['git', 'show', '9db9e6b:engines/godot/tests/haze/h01.jplax']))
+page = json.loads(subprocess.check_output(['git', 'show', 'a1550fc:engines/godot/tests/haze/h01.jplax']))
 layers = page['pageModel']['pageList']
 assert layers[5]['name'] == 'mist'
 # What a game draws in an EMPTY layer: the lab's hook draws dark towers in each tile, three layers behind the mist.

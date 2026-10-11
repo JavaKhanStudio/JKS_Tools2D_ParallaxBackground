@@ -96,7 +96,7 @@ README.md's layer-settings table IS the documented meaning of these fields, and 
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.
 MEMORY_LANE.md §5 is the recorded history here — HISTORY, not a backlog. Its paths and
-line numbers are commit 2a7e3f6 (`git show 2a7e3f6:<path>` shows the original), and
+line numbers are commit b5a7441 (`git show b5a7441:<path>` shows the original), and
 anything you fix that it still lists as broken MOVES into its §10 then/now table rather
 than being deleted.
 """
@@ -119,7 +119,7 @@ Append only — the javadoc says so and it is the single most expensive rule her
 default was on; Kryo 5.0 final turned it off. With it off, every existing .plax decodes as
 garbage and throws NOTHING: the atlas name comes back "??????Hiver.atlas" and the layer list
 empty. MEMORY_LANE.md §4 is the whole story — and it is HISTORY, not a backlog: its paths and
-line numbers are commit 2a7e3f6, and anything you fix that it still lists as broken MOVES into
+line numbers are commit b5a7441, and anything you fix that it still lists as broken MOVES into
 its §10 then/now table rather than being deleted.
 New fields go behind a version bump, written AND read on the same branch, exactly like
 flipY: `if (WholePage_Model_Serializer.currentVersion(kryo) >= 2)`. Format 1 files (the
@@ -276,7 +276,7 @@ README.md IS THE PUBLISHED FRONT PAGE and it is accurate today — keep it that 
 map and the code map at the end mirror this build: move a class or a module and fix both in the
 SAME commit. Its badges point at the CI workflow FILE PATH and at the Central artifact
 coordinates, so renaming either breaks a badge silently, visible only on the GitHub page.
-NOTICE and the README's Credits section exist because "Cleaning house" (f29c6e3, 2019-04-28)
+NOTICE and the README's Credits section exist because "Cleaning house" (cd6ebc3, 2019-04-28)
 deleted the credit to Rahul Verma's ParallaxBackground-libgdx, which Apache-2.0 REQUIRES. Never
 trim them, and keep the 2014 inceptionYear in core/build.gradle's pom.
 Javadoc runs with `Xdoclint:none` (core/build.gradle), so a broken or missing tag will NOT fail
