@@ -1,0 +1,29 @@
+# Parallax readers's TAGS AND THEIR CONTEXT PACKS: split off board 'parallax' on 2026-10-11 (r334).
+# Only [tags.<slug>] tables belong in this file.
+
+[tags.readers]
+label = "Readers"
+description = "Each engine's reader (libGDX core, jME, Godot, later Unity) as its own sub project: layout, build, CI, release (r317)"
+color = "#c9a0ff"
+sort = 60
+context = """
+A READER draws a saved page in one engine. Today, in this one repository:
+  core/          libGDX, the reference: parallax-background on Maven Central. Every other reader is checked against it.
+  engines/jme/   :jme. src/ is published as parallax-background-jme, with core's version; tests/ holds the frame runner and demo.
+                 It runs core's ParallaxPageReader as is, through JmeBatch.
+  engines/godot/ a Godot 4 project. addons/jks_parallax is a GDScript port of core, line for line. release.yml attaches
+                 jks-parallax-godot-X.Y.Z.zip from 2.5.0 on; the Asset Library listing is r104 (paused).
+  Unity: r103 (paused). No Unity or dotnet is installed on this machine.
+SIMON'S LAYOUT (r317, 11 Oct): ONE repository, each reader a sub project under engines/<reader>/ with its own build,
+tests, README, CI job and release artifact. The mother board stays "parallax". He also wrote, on r312, that "JMonkey and
+libGDX should be 2 different repos". The later, explicit pick is one repository: confirm with him before creating
+any GitHub repository.
+SHARED BY EVERY READER'S CHECK: the rounds in core/test-data and engines/godot/tests, and the libGDX stills that :shots
+(shots/, ParallaxShots) draws from them. tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare each
+reader with those stills, and CI's godot-frames job runs both. The round file is read three times today:
+ParallaxShots, JmeParallaxShots and Godot's tests/shots.gd. r312 (after r317) makes the two Java copies one.
+What each port must copy line for line, and which frame round proves it, is in AGENTS.md "Runtime".
+Build rules (the #build pack): versions in gradle.properties, repositories only in settings.gradle, every JavaExec
+offscreen or headless. A new reader's CI job goes in .github/workflows/ci.yml, and its release step in release.yml
+and RELEASING.md.
+"""
