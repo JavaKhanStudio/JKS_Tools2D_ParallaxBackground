@@ -3,7 +3,7 @@
 
 [tags.readers]
 label = "Readers"
-description = "Each engine's reader (libGDX core, jME, Godot, later Unity) as its own sub project: layout, build, CI, release (r1, ex parallax:r317)"
+description = "Each engine's reader (libGDX core, jME, Godot, later Unity) as its own sub project: folder layout, build, tests, CI job, release artifact (r1, ex parallax:r317). How a page scrolls, fades or shades in a reader stays on parallax (#runtime, #shader, #format)"
 color = "#c9a0ff"
 sort = 60
 context = """
