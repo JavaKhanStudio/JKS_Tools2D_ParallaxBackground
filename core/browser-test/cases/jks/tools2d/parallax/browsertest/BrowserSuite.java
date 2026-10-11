@@ -17,7 +17,15 @@ public final class BrowserSuite
 	public static List<BrowserCase> all(Fixtures fixtures)
 	{
 		List<BrowserCase> cases = new ArrayList<>();
-		cases.addAll(ReaderCases.all());
+		cases.addAll(TilingCases.all());
+		cases.addAll(TransferCases.all());
+		cases.addAll(HookCases.all());
+		cases.addAll(ParticleCases.all());
+		cases.addAll(ShaderCases.all());
+		cases.addAll(PageFogCases.all());
+		cases.addAll(SequenceCases.all());
+		cases.addAll(TransfertStyleCases.all());
+		cases.addAll(FloorCases.all());
 		cases.addAll(JsonCases.all(fixtures));
 		return cases;
 	}

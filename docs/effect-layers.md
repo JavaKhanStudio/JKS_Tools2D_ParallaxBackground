@@ -151,7 +151,7 @@ Each is a task under r146, run in this order (`--after`). Every one that stores 
 0. `kind` and a layer `name` (the hook's key) in the format, `EMPTY` drawn as nothing and its hook, in all three
    readers. A pixel round with an empty layer and a hook drawing a region between two layers.
 1. `PARTICLES` in `core` (libGDX and the browser): the effect file paths in the format, `ParticleEffect` loaded with the
-   page and drawn in order, `ReaderCases` placing it in every repeat mode, `FrameAllocationTest`, a stress run; the jME
+   page and drawn in order, `ParticleCases` placing it in every repeat mode, `FrameAllocationTest`, a stress run; the jME
    reader skipping it; `EffectSupport`.
 2. `PARTICLES` in Godot: `plax_page.gd` reads the scene path, `plax_background.gd` instances it in draw order and moves
    it as the layer scrolls; a round that checks its place.

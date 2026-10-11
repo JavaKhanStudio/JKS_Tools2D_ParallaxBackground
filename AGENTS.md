@@ -113,7 +113,7 @@ repair.
   (t13, t14, t17); `tools/r252-fog-creep/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
-  `ReaderCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's
+  `SequenceCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's
   copy is `plax_page.gd`'s `draw_cycle` (32-bit masked) and `plax_background.gd`'s `_draw_cycle`:
   `engines/godot/tests/sequence_cycle.gd` holds them to the JVM's picks (`tests/sequence/picks.json`, written by
   `tools/r183-sequence/PickTable.java`) and to a walk over every slot; `tools/godot-parallax-shots.sh` runs it with the
@@ -124,8 +124,11 @@ repair.
   without touching its stored speed. Godot's copy is `plax_floor.gd`'s `measure` and `plax_background.gd`'s
   `_draw_floor` and `_plant`; jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/godot/tests/floor`;
   `tools/r275-floor/strength.sh` proves the round sees a floor against its flat twin, `mutate.sh` a wrong Godot copy.
-- The browser suite's `ReaderCases` checks tiling and cross-fades without a window, by recording draw calls on a
-  `RecordingBatch`; `BrowserSuiteTest` runs it in `:core:test`. Cover all four repeat modes (X, Y, XY, none).
+- The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
+  `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
+  `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,
+  `TransfertStyleCases`, `FloorCases`), their builders in `ReaderFixtures`; a new subject's class goes in
+  `BrowserSuite.all()`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)
 

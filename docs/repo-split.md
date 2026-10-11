@@ -89,7 +89,7 @@ and nothing in A stands in its way.
 **What that runs into.** The demo is not only a game: its files are how the readers are proved.
 
 - `demo/assets` (`Hiver`, `Printemps`: 1.2 MB of atlases and pages) is read by `PlaxFormatTest`, `JvmFixtures`,
-  `ParallaxPageReaderTest` and the browser suite's `ReaderCases`, and is the atlas of 14 scenes of the reader rounds.
+  `ParallaxPageReaderTest` and the browser suite's reader cases (`ReaderFixtures`), and is the atlas of 14 scenes of the reader rounds.
 - The reader rounds (`demo/lab/round1`, `engines/godot/tests/conformance` and `/transfer`) also take their atlases from
   `editor/Files/Demos` (10 scenes) and `editor/Files/transfer` (6).
 - The libGDX frames the Godot and jME frames are compared with are drawn by the demo's `ParallaxLab --shots`

@@ -30,7 +30,7 @@ Drawing must not allocate or decide anything per frame (`FrameAllocationTest`, t
   cycle (a prefix sum). Nothing is recomputed afterwards; a resize only rescales the prefix sums.
 - At draw: `tile()` already knows the first tile's x. For a sequence it finds the first visible segment by a binary
   search in the prefix sums (log N), then walks right until the view is covered. The number of draws is the number of
-  visible segments, never N: `ReaderCases` counts them in every repeat mode, as `tilesJustEnoughToCoverTheView` does.
+  visible segments, never N: `SequenceCases` counts them in every repeat mode, as `tilesJustEnoughToCoverTheView` does.
 - The cycle is long enough that its repeat is not seen: N defaults to what covers several screens (the editor shows
   "repeats every X screens"). A cycle too short shows its pattern; one too long costs only two float arrays.
 - With one weight per segment any segment may follow any other, so the seam where the cycle repeats needs no fixing.
@@ -48,7 +48,7 @@ Godot has to draw the same cycle from the same seed, so the generator is written
   JavaScript double in the browser and a 64-bit float in GDScript, and a product of one rounds differently there.
 - A game passes its own seed through the reader (a new ground each run); without one, the page's seed, which is what
   the editor previews.
-- The Godot pixel round (`engines/godot/tests/sequence`) proves the two generators agree, and a `ReaderCases` case
+- The Godot pixel round (`engines/godot/tests/sequence`) proves the two generators agree, and a `SequenceCases` case
   pins the first picks of a known seed, so the browser and the JVM are held to the same list.
 
 ## What phase 1 settled (r182)
@@ -58,7 +58,7 @@ Godot has to draw the same cycle from the same seed, so the generator is written
   picked, and when none is above 0 each weighs 1.
 - The generator, `SequenceCycle`: `state = seed` (0, where xorshift sticks, starts from `0x6D2B79F5`); per slot,
   `state ^= state << 13; state ^= state >>> 17; state ^= state << 5`, then `pick = (state >>> 1) % total` walks the
-  weights in order. `ReaderCases.sequenceCycleOfAKnownSeedIsPinned` holds its first picks, worked out a second time in
+  weights in order. `SequenceCases.sequenceCycleOfAKnownSeedIsPinned` holds its first picks, worked out a second time in
   Python.
 - The cycle's edges are kept in layer heights, without the pads: slot i starts at `height * edge[i] + i * padX`. The
   first segment is as wide as the layer (`40 x sizeRatio`), so a one-segment sequence draws as its image layer would.
@@ -92,7 +92,7 @@ Raised under r147, each `--after` the one before.
 0. r146's phase 0 (r177): the `kind` field in the format.
 1. `SEQUENCE` in `core`: the stored fields (segments, weights, seed, N; format bump, Kryo, `Utils_Page_Json`,
    `plax_page.gd`, `PlaxFormatTest`, README), the generator and the cycle builder, a game's seed, `tile()` over the
-   prefix sums, `ReaderCases` in all four repeat modes and on a known seed, `FrameAllocationTest`, a stress run.
+   prefix sums, `SequenceCases` in all four repeat modes and on a known seed, `FrameAllocationTest`, a stress run.
 2. Godot: the same generator in `plax_page.gd`, the cycle drawn in `plax_background.gd`, a pixel round
    (`engines/godot/tests/sequence`), jME through the same round.
 3. The editor: a layer's segment list, a weight per segment, the seed and cycle length, "repeats every X screens" and

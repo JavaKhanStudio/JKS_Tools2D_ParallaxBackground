@@ -127,7 +127,7 @@ class ParticlePageTest
 			assertTrue(EffectSupport.draws(Enum_LayerKind.EMPTY, engine), engine + " calls hooks");
 		}
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.LIBGDX));
-		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.BROWSER), "ReaderCases run in Chrome");
+		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.BROWSER), "ParticleCases run in Chrome");
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.GODOT), "engines/godot/tests/particles");
 		assertTrue(EffectSupport.whyNot(Enum_LayerKind.PARTICLES, EffectSupport.Engine.JME).contains("EMPTY"));
 		// engines/godot/tests/shaders, compared by pixels in Godot and jME; WebGlCases in Chrome.
@@ -137,7 +137,7 @@ class ParticlePageTest
 			for (Enum_ShaderEffect effect : Enum_ShaderEffect.values())
 				assertTrue(EffectSupport.draws(effect, engine), engine + " draws " + effect);
 		}
-		// ReaderCases, on the JVM and in Chrome; jME runs the same reader; Godot's is engines/godot/tests/sequence (r183).
+		// SequenceCases, on the JVM and in Chrome; jME runs the same reader; Godot's is engines/godot/tests/sequence (r183).
 		assertTrue(EffectSupport.draws(Enum_LayerKind.SEQUENCE, EffectSupport.Engine.LIBGDX));
 		assertTrue(EffectSupport.draws(Enum_LayerKind.SEQUENCE, EffectSupport.Engine.BROWSER));
 		assertTrue(EffectSupport.draws(Enum_LayerKind.SEQUENCE, EffectSupport.Engine.JME));

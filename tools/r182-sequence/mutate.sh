@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # headless: runs :core:test only, opens no window.
-# r182: breaks the SEQUENCE code one way at a time and checks BrowserSuiteTest (ReaderCases) fails on each.
+# r182: breaks the SEQUENCE code one way at a time and checks BrowserSuiteTest (SequenceCases) fails on each.
 # Restores every file after each run. Usage: tools/r182-sequence/mutate.sh
 set -u
 cd "$(dirname "$0")/../.." || exit 1

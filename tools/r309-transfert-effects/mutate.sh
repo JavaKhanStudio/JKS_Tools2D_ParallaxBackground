@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# r309: proves ReaderCases' shared TransfertEffects still sees the dissolve and the grade. Puts in one mutant at a time
+# r309: proves TransfertStyleCases' shared TransfertEffects still sees the dissolve and the grade. Puts in one mutant at a time
 # in ParallaxPageReader (never ask the engine for a dissolve; never for a grade), runs BrowserSuiteTest for each, and
 # fails unless every run FAILS on that style's cases. Restores the file on exit. Writes build/r309/mutant.log.
 # headless: a JUnit run, no window.

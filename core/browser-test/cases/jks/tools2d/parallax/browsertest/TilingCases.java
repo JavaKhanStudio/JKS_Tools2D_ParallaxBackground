@@ -1,0 +1,176 @@
+package jks.tools2d.parallax.browsertest;
+
+import static jks.tools2d.parallax.browsertest.Check.equal;
+import static jks.tools2d.parallax.browsertest.Check.isFalse;
+import static jks.tools2d.parallax.browsertest.Check.isTrue;
+
+import java.util.Arrays;
+import java.util.List;
+
+import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.ParallaxPageReader;
+
+/**
+ * ParallaxPageReader's cases on tiling: a layer tiled just enough to cover the camera view, its stripped regions,
+ * mirror and negative padding. Shared builders in {@link ReaderFixtures}.
+ */
+final class TilingCases extends ReaderFixtures
+{
+	static List<BrowserCase> all()
+	{
+		return Arrays.asList(
+				new BrowserCase("reader: tilesJustEnoughToCoverTheView", () -> new TilingCases().tilesJustEnoughToCoverTheView()),
+				new BrowserCase("reader: strippedRegionKeepsItsOriginalWidthAndOffset", () -> new TilingCases().strippedRegionKeepsItsOriginalWidthAndOffset()),
+				new BrowserCase("reader: strippedRegionKeepsItsOriginalHeightWhenTilingOnY", () -> new TilingCases().strippedRegionKeepsItsOriginalHeightWhenTilingOnY()),
+				new BrowserCase("reader: strippedRegionIsStretchedWhenThePageSaysSo", () -> new TilingCases().strippedRegionIsStretchedWhenThePageSaysSo()),
+				new BrowserCase("reader: mirrorStacksAFlippedStripAcrossTheTiledOne", () -> new TilingCases().mirrorStacksAFlippedStripAcrossTheTiledOne()),
+				new BrowserCase("reader: negativePaddingLargerThanTheImageDoesNotHang", () -> new TilingCases().negativePaddingLargerThanTheImageDoesNotHang()));
+	}
+
+	void tilesJustEnoughToCoverTheView()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		ParallaxLayer layer = layer(0);
+		layer.setSizeRatio(0.3f); // 12 world units wide, the view is 40
+		reader.addLayers(list(layer));
+
+		reader.act(1 / 60f, 500, 0);
+		reader.draw(camera, batch);
+
+		for (float[] draw : draws)
+			isTrue(draw[0] + draw[2] > 0 && draw[0] < 40, "off-screen draw at x=" + draw[0]);
+		isTrue(draws.size() >= 4 && draws.size() <= 5, draws.size() + " draws");
+	}
+
+	/** core/test-data/samples Hiver.atlas parallax4 #1: 3403x580 packed out of 4559x580, 913px stripped on its left. */
+	void strippedRegionKeepsItsOriginalWidthAndOffset()
+	{
+		float unit = 40f / 4559;
+		ParallaxPageReader reader = reader(false, false);
+		ParallaxLayer layer = new ParallaxLayer(strippedRegion(3403, 580, 4559, 580, 913, 0), true, 40, 0.02f, 0.02f, 1);
+		layer.setUseOriginalSize(true);
+		reader.addLayers(list(layer));
+
+		equal(580 * unit, layer.getHeight(), 1e-4f, "the layer is as high as the original image");
+		reader.draw(camera, batch);
+		equal(1, draws.size(), "draws");
+		float[] draw = draws.get(0);
+		float layerX = draw[0] - 913 * unit;
+		equal(3403 * unit, draw[2], 1e-4f, "the packed image keeps its pixel scale");
+		equal(580 * unit, draw[3], 1e-4f, "height");
+
+		// Flipped, the stripped margin moves to the right: the image ends 913px before the layer does.
+		layer.setFlipX(true);
+		draws.clear();
+		reader.draw(camera, batch);
+		draw = draws.get(0);
+		equal(-3403 * unit, draw[2], 1e-4f, "width");
+		equal(layerX + (4559 - 913) * unit, draw[0], 1e-4f, "a negative width draws leftwards from x");
+	}
+
+	/** core/test-data/samples Printemps.atlas parallax1 #4: 3645x335 packed out of 3645x580, 142px stripped below it. */
+	void strippedRegionKeepsItsOriginalHeightWhenTilingOnY()
+	{
+		float unit = 40f / 3645;
+		ParallaxPageReader reader = reader(false, true);
+		ParallaxLayer layer = new ParallaxLayer(strippedRegion(3645, 335, 3645, 580, 0, 142), true, 40, 0.02f, 0.02f, 1);
+		layer.setUseOriginalSize(true);
+		reader.addLayers(list(layer));
+
+		equal(580 * unit, layer.getTotalHeight(), 1e-4f, "the Y tiling step is the original height");
+		reader.draw(camera, batch);
+		isTrue(draws.size() >= 2, draws.size() + " draws");
+		for (float[] draw : draws)
+		{
+			equal(40, draw[2], 1e-4f, "width");
+			equal(335 * unit, draw[3], 1e-4f, "height");
+		}
+		for (int i = 1; i < draws.size(); i++)
+			equal(580 * unit, draws.get(i)[1] - draws.get(i - 1)[1], 1e-3f, "tiles are one original height apart");
+	}
+
+	/** Pages saved before .plax format 4 were designed on the packed image stretched over the whole layer. */
+	void strippedRegionIsStretchedWhenThePageSaysSo()
+	{
+		ParallaxPageReader reader = reader(false, false);
+		ParallaxLayer layer = new ParallaxLayer(strippedRegion(3403, 580, 4559, 580, 913, 0), true, 40, 0.02f, 0.02f, 1);
+		reader.addLayers(list(layer));
+
+		isFalse(layer.isUseOriginalSize(), "off by default");
+		equal(580 * 40f / 3403, layer.getHeight(), 1e-4f, "height");
+		reader.draw(camera, batch);
+		equal(40, draws.get(0)[2], 1e-4f, "width");
+		equal(580 * 40f / 3403, draws.get(0)[3], 1e-4f, "height");
+
+		// Switching back and forth resizes the layer, and a copy keeps the setting.
+		layer.setUseOriginalSize(true);
+		equal(580 * 40f / 4559, layer.clone().getHeight(), 1e-4f, "the copy's height");
+		layer.setUseOriginalSize(false);
+		equal(580 * 40f / 3403, layer.getHeight(), 1e-4f, "height");
+	}
+
+	/**
+	 * Mirror adds a second strip flipped across the first one's far edge: above it, upside down, when the page tiles on X;
+	 * to its right, reversed, when it tiles on Y; nothing when it tiles on both axes or neither (README, r127).
+	 */
+	void mirrorStacksAFlippedStripAcrossTheTiledOne()
+	{
+		for (boolean onX : new boolean[] { true, false })
+		{
+			draws.clear();
+			ParallaxPageReader reader = reader(onX, !onX);
+			ParallaxLayer layer = layer(0);
+			layer.setSizeRatio(0.3f); // 12 x 6.75 world units, the view is 40 x 22.5
+			layer.setMirror(true);
+			reader.addLayers(list(layer));
+			reader.draw(camera, batch);
+
+			float width = layer.getWidth(), height = layer.getHeight();
+			int flipped = 0;
+			for (float[] draw : draws)
+			{
+				if (onX && draw[3] < 0)
+				{
+					flipped++;
+					equal(2 * height, draw[1], 1e-4f, "upside down, its top on the strip's top edge");
+					isTrue(draw[2] > 0, "not reversed on X");
+				}
+				else if (!onX && draw[2] < 0)
+				{
+					flipped++;
+					equal(2 * width, draw[0], 1e-4f, "reversed, its right side on the column's right edge");
+					isTrue(draw[3] > 0, "not upside down on Y");
+				}
+				else
+					equal(0, onX ? draw[1] : draw[0], 1e-4f, "the tiled strip itself");
+			}
+			equal(draws.size() / 2, flipped, (onX ? "X" : "Y") + ": one mirrored copy per repeat, " + draws.size() + " draws");
+		}
+
+		for (boolean both : new boolean[] { true, false })
+		{
+			draws.clear();
+			ParallaxPageReader reader = reader(both, both);
+			ParallaxLayer layer = layer(0);
+			layer.setSizeRatio(0.3f);
+			layer.setMirror(true);
+			reader.addLayers(list(layer));
+			reader.draw(camera, batch);
+			for (float[] draw : draws)
+				isTrue(draw[2] > 0 && draw[3] > 0, "no mirrored copy when tiling on " + (both ? "both axes" : "neither"));
+		}
+	}
+
+	/** BrowserSuiteTest bounds every case with assertTimeoutPreemptively; in Chrome a hang freezes the page and the gate times out. */
+	void negativePaddingLargerThanTheImageDoesNotHang()
+	{
+		ParallaxPageReader reader = reader(true, true);
+		ParallaxLayer layer = layer(0);
+		layer.setPadX(-50);
+		layer.setPadY(-50);
+		reader.addLayers(list(layer));
+
+		reader.draw(camera, batch);
+		equal(1, draws.size(), "draws");
+	}
+}
