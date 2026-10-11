@@ -405,46 +405,59 @@ public class ParallaxPageReader implements Disposable
 		ParallaxLayer layer = page.get(index);
 		float originX = viewLeft + layer.currentDistanceX;
 		float originY = viewBottom + drawingHeight + layer.currentDistanceY;
-
 		if (layer.kind == Enum_LayerKind.EMPTY)
-		{
-			// No mirrored copy: the hook draws what it likes in each tile. Its color changes stay its own.
-			LayerHook hook = layer.name == null ? null : hooks.get(layer.name);
-			if (hook != null)
-			{
-				endPageFog(batch);
-				release(batch);
-				hookColor.set(batch.getColor());
-				tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, hook);
-				batch.setColor(hookColor);
-			}
-			return;
-		}
+			drawHookLayer(layer, batch, originX, originY);
+		else if (layer.kind == Enum_LayerKind.PARTICLES)
+			drawParticleLayer(layer, batch, originX, originY);
+		else
+			drawImageLayer(layer, batch, originX, originY, incoming);
+	}
 
-		if (layer.kind == Enum_LayerKind.PARTICLES)
+	/** An EMPTY layer: the game's hook, once per tile the view shows, its tile's corner at {@code (originX, originY)}. */
+	private void drawHookLayer(ParallaxLayer layer, Batch batch, float originX, float originY)
+	{
+		// No mirrored copy: the hook draws what it likes in each tile. Its color changes stay its own.
+		LayerHook hook = layer.name == null ? null : hooks.get(layer.name);
+		if (hook != null)
 		{
-			ParallaxParticles particles = layer.getParticles();
-			if (particles == null || particles.isEmpty())
-				return;
 			endPageFog(batch);
 			release(batch);
-			int srcColor = batch.getBlendSrcFunc(), dstColor = batch.getBlendDstFunc();
-			int srcAlpha = batch.getBlendSrcFuncAlpha(), dstAlpha = batch.getBlendDstFuncAlpha();
-			if (layer.getAnchor() == Enum_ParticleAnchor.VIEW)
-			{
-				float x = viewLeft + layer.getDecalPercentX() * (layer.getWorldWidth() / 100);
-				float y = viewBottom + drawingHeight + layer.getDecalPercentY() * (layer.getWorldHeight() / 100);
-				if (x + particles.getMaxX() > viewLeft && x + particles.getMinX() < viewLeft + viewWidth
-						&& y + particles.getMaxY() > viewBottom && y + particles.getMinY() < viewBottom + viewHeight)
-					particles.draw(batch, x, y, batch.getColor());
-			}
-			else
-				tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
-			// The emitters set the blend function their .p asks for: the next layer is drawn with the game's.
-			batch.setBlendFunctionSeparate(srcColor, dstColor, srcAlpha, dstAlpha);
-			return;
+			hookColor.set(batch.getColor());
+			tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, hook);
+			batch.setColor(hookColor);
 		}
+	}
 
+	/** A PARTICLES layer: its effect from the view's corner plus its decal (VIEW), or in each tile (LAYER). */
+	private void drawParticleLayer(ParallaxLayer layer, Batch batch, float originX, float originY)
+	{
+		ParallaxParticles particles = layer.getParticles();
+		if (particles == null || particles.isEmpty())
+			return;
+		endPageFog(batch);
+		release(batch);
+		int srcColor = batch.getBlendSrcFunc(), dstColor = batch.getBlendDstFunc();
+		int srcAlpha = batch.getBlendSrcFuncAlpha(), dstAlpha = batch.getBlendDstFuncAlpha();
+		if (layer.getAnchor() == Enum_ParticleAnchor.VIEW)
+		{
+			float x = viewLeft + layer.getDecalPercentX() * (layer.getWorldWidth() / 100);
+			float y = viewBottom + drawingHeight + layer.getDecalPercentY() * (layer.getWorldHeight() / 100);
+			if (x + particles.getMaxX() > viewLeft && x + particles.getMinX() < viewLeft + viewWidth
+					&& y + particles.getMaxY() > viewBottom && y + particles.getMinY() < viewBottom + viewHeight)
+				particles.draw(batch, x, y, batch.getColor());
+		}
+		else
+			tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
+		// The emitters set the blend function their .p asks for: the next layer is drawn with the game's.
+		batch.setBlendFunctionSeparate(srcColor, dstColor, srcAlpha, dstAlpha);
+	}
+
+	/**
+	 * An IMAGE, SHADER, SEQUENCE or FLOOR layer: through the page fog's shader or the layer's effect (or faded, when the
+	 * engine has none for a dissolve or a grade), tiled, its mirrored copy stacked beside it.
+	 */
+	private void drawImageLayer(ParallaxLayer layer, Batch batch, float originX, float originY, boolean incoming)
+	{
 		// The fog is drawn on images: an EMPTY or PARTICLES layer is drawn as is.
 		float fog = incoming ? fogOf(transferFogStrength, transferFrontSpeed, layer) : fogOf(fogStrength, frontSpeed, layer);
 		boolean shaded, packed = false;

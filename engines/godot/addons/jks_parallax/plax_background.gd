@@ -308,7 +308,7 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		_reset_position(l)
 		_add_canvas(l)
 		built.append(l)
-	# The depth fog of each layer, by its speed against the page's front: what ParallaxPageReader.drawLayer reckons.
+	# The depth fog of each layer, by its speed against the page's front: what ParallaxPageReader.drawImageLayer reckons.
 	var front := PlaxEffects.front_speed_of(built)
 	for l in built:
 		l.haze = 0.0 if l.model.kind == "EMPTY" or l.model.kind == "PARTICLES" \
