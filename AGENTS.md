@@ -38,10 +38,10 @@ repair.
   a push to develop, master or release/* when the pushed commit does (`tools/pre-push-check.sh`, r332).
   `./gradlew build` and `browser-test.sh` stay yours. After that push, `tools/ci-watch.sh` waits for CI in the
   background and puts a red run on the board as a #build task "CI red on <branch>" (r339): fix it before pushing more.
-  Its `godot-frames` job runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
-  (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), then
-  `tools/jme-parallax-shots.sh` the same way, and fails on a FAIL. A manual run's `break` input sets `BREAK` for the
-  jME step: `gh workflow run ci.yml --ref <branch> -f break=scroll` must fail it.
+  One job per reader: `godot-frames` runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
+  (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), `jme-frames` runs
+  `tools/jme-parallax-shots.sh` the same way (no Godot), and each fails on a FAIL. A manual run's `break` input sets
+  `BREAK` for `jme-frames`: `gh workflow run ci.yml --ref <branch> -f break=scroll` must fail it.
 
 ## `.plax` is a file format
 

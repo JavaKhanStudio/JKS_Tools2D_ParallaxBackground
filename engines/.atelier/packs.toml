@@ -22,7 +22,7 @@ libGDX should be 2 different repos". The later, explicit pick is one repository:
 any GitHub repository.
 SHARED BY EVERY READER'S CHECK: the rounds in core/test-data and engines/rounds (a home no reader owns, r9), and the libGDX stills that :shots
 (shots/, ParallaxShots) draws from them. tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare each
-reader with those stills, and CI's godot-frames job runs both. The round file is read three times today:
+reader with those stills; CI runs each in its own job, godot-frames and jme-frames (r10). The round file is read three times today:
 ParallaxShots, JmeParallaxShots and Godot's tests/shots.gd. parallax:r312 (waits for this board's r1) makes the two Java copies one.
 What each port must copy line for line, and which frame round proves it, is in AGENTS.md "Runtime".
 Build rules (the #build pack): versions in gradle.properties, repositories only in settings.gradle, every JavaExec
