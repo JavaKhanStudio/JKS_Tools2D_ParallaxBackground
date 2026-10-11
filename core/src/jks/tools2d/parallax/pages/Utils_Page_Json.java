@@ -64,6 +64,7 @@ public final class Utils_Page_Json
 		if (json.has("fogStrength"))
 			page.setFogStrength(readFloat(json, "fogStrength", 0));
 		page.fogColor = readColor(json.get("fogColor"), page.fogColor);
+		page.planetRadius = readFloat(json, "planetRadius", page.planetRadius);
 
 		JsonValue pageModel = json.get("pageModel");
 		if (pageModel == null || pageModel.isNull())

@@ -79,10 +79,13 @@ class FrameAllocationTest
 				// A fog on both pages: through the page fog's shader on X, through each layer's begin otherwise.
 				batch.pageFog = onX;
 				reader.setFog(0.02f, Color.SLATE);
+				// Both pages round a planet: every IMAGE, SHADER and SEQUENCE layer cut in strips through the PlanetBatch (r277).
+				reader.setPlanetRadius(600);
 				reader.setSequenceSeed(5);
 				reader.setLayerHook("hooked", (hookBatch, layer, x, y, width, height) -> hookBatch.draw(HOOKED, x, y, width, height));
 				WholePage_Model next = page(layers(2));
 				next.setFogStrength(0.03f);
+				next.planetRadius = 800;
 
 				// Warm up: the JIT, and the one-time allocations of starting a transfer, are not per frame.
 				float speedX = onX ? 300 : 0, speedY = onY ? 40 : 0;

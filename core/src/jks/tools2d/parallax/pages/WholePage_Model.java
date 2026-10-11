@@ -58,6 +58,14 @@ public class WholePage_Model
 	private float fogStrength;
 	private boolean fogStrengthSet;
 
+	/**
+	 * The radius of the planet the page's ground runs round, in percent of the world width; 0, the default: none, the
+	 * layers are flat. Each layer is bent down by {@code dx² d / 2R} at {@code dx} from the view's middle, d its depth
+	 * from its speed against the front's, so the far layers bend more and a still one (the sky) not at all
+	 * ({@link jks.tools2d.parallax.ParallaxPageReader#planetBendOf}). Stored since format 13.
+	 */
+	public float planetRadius;
+
 	public Page_Model pageModel;
 
 	public List<ParallaxLayer> preloadValue;

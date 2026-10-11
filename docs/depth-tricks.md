@@ -76,6 +76,14 @@ it does not read as depth as much as the floor does.
 
 - Built: a page setting (the planet's radius; depth from each layer's speed against the front's), vertical strips each
   lowered, a format bump, the three readers.
+- Built (r277): format 13's `planetRadius` on the page (percent of the world width, 0 flat). The bend is
+  `d / 2R` (`ParallaxPageReader.planetBendOf`), d the page's fastest speed over the layer's, so a still layer, the sky,
+  is not bent (the mock left the sky band flat by name; here it is any layer at speed 0, and a slow layer still on the
+  ground bends the most). Drawn through `PlanetBatch`, which cuts every `batch.draw` of a layer at 256 vertical strips
+  fixed in the layer's view, each lowered at its middle: the art scrolls through a still curve, and the IMAGE, SHADER
+  and SEQUENCE layers bend alike with no change in `ParallaxLayer`. FLOOR, tower, EMPTY and PARTICLES layers stay flat.
+  A bent layer uncovers what is behind it at the sides. Godot's copy is `plax_planet.gd`; round
+  `engines/godot/tests/planet`. Not built: the particles and the hooks bent, a shader version.
 
 ### 4. Dolly: a zoom that scales each layer by its depth
 

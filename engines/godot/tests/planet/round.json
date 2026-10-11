@@ -1,0 +1,72 @@
+{
+ "round": "planet",
+ "about": "A page round a planet (r277, docs/depth-tricks.md \u00a73): each IMAGE, SHADER and SEQUENCE layer cut in 256 vertical strips across its view, each lowered by d dx^2 / 2R, d its depth from its speed against the front's: the far layers bend more, a still one not at all. Godot draws its own strips (plax_planet.gd); jME runs core's PlanetBatch. Written by core/test-data/planet/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "scenes": [
+  {
+   "id": "p01",
+   "page": "engines/godot/tests/planet/p01.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "planet-hiver-still-sky",
+   "about": "the floor lab's Hiver set round a planet 800% of the world in radius (320 units): the trees bend least, the far peaks most; the sky band, still, is the sky and stays flat"
+  },
+  {
+   "id": "p02",
+   "page": "engines/godot/tests/planet/p02.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "planet-hiver-fogged-mirrored-flipped",
+   "about": "the same set round a tighter planet (500%), every layer scrolling (the band, slowest, bends most), the far peaks mirrored above themselves, the mountain flipped on X, under a page fog of 0.02"
+  },
+  {
+   "id": "p03",
+   "page": "engines/godot/tests/planet/p03.jplax",
+   "atlasDir": "core/test-data/sequence",
+   "name": "planet-sequence",
+   "about": "q01 (SEQUENCE strips between the hills) round a planet of 600%: each slot cut at the strips"
+  },
+  {
+   "id": "p04",
+   "page": "engines/godot/tests/planet/p04.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "planet-shaders",
+   "about": "s01 (a WAVE ripple, a FOG mist band, trimmed regions) round a planet of 600%: the effects drawn on the bent strips"
+  },
+  {
+   "id": "p05",
+   "page": "engines/godot/tests/planet/p05.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "planet-repeat-xy",
+   "about": "c02 (repeat X and Y, padded) round a planet of 700%, scrolling up at 30 units/s too: every row of tiles bent alike",
+   "speedY": 30
+  },
+  {
+   "id": "p06",
+   "page": "engines/godot/tests/planet/p01.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "planet-dolly-cross-fade",
+   "about": "p01 dollied in from zoom 1 to 0.7 (each layer bent in its own view), cross-fading into p02 4 s in, over 4 s: each page round its own planet",
+   "zoom": [
+    1,
+    0.7
+   ],
+   "dolly": true,
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/godot/tests/planet/p02.jplax"
+   }
+  },
+  {
+   "id": "p07",
+   "page": "engines/godot/tests/planet/p07.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "planet-from-flat",
+   "about": "c01 (Hiver, flat: planetRadius 0) cross-fading into p01 4 s in, over 4 s: the flat page fades out flat, the round one comes in bent",
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/godot/tests/planet/p01.jplax",
+    "atlasDir": "core/test-data/floor"
+   }
+  }
+ ]
+}

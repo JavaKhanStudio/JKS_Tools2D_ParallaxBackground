@@ -42,6 +42,9 @@ var use_original_size := false
 ## shaderHaze.
 var fog_strength := 0.0
 var fog_color := Color(0.93, 0.95, 0.97)
+## The planet the page's ground runs round (WholePage_Model.planetRadius, format 13): its radius in percent of the
+## world width, 0 none; PlaxPlanet bends each layer by it.
+var planet_radius := 0.0
 var atlas_name := ""
 ## Back to front. Each is a Dictionary with the keys of Parallax_Model (regionName, regionPosition, flipX, ...).
 var layers: Array[Dictionary] = []
@@ -72,6 +75,8 @@ func _read(json: Dictionary, inside) -> bool:
 	fog_color = _color(json.get("fogColor"), fog_color)
 	if json.has("fogStrength") and json.fogStrength != null:
 		fog_strength = maxf(0.0, float(json.fogStrength))
+	if json.has("planetRadius") and json.planetRadius != null:
+		planet_radius = float(json.planetRadius)
 	var page_model = json.get("pageModel")
 	if typeof(page_model) != TYPE_DICTIONARY:
 		return true

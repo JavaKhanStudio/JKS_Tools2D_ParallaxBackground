@@ -30,7 +30,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * SEQUENCE layer's cycle is the one its page stores the seed of, unless the game passes its own
  * ({@link #setSequenceSeed}). A FLOOR layer is drawn row by row, each row at its depth
  * ({@link ParallaxLayer#drawFloor}), and every layer in front of it scrolls at the speed of its row under the layer's
- * foot ({@link #plant}).
+ * foot ({@link #plant}). A page with a planet ({@link #setPlanetRadius}) bends its IMAGE, SHADER and SEQUENCE layers down
+ * toward the view's sides, the far ones more ({@link #planetBendOf}).
  */
 public class ParallaxPageReader implements Disposable
 {
@@ -106,6 +107,9 @@ public class ParallaxPageReader implements Disposable
 	/** Each layer drawn at its own zoom by its depth ({@link #setDolly}), through {@link #dollyBatch}. */
 	private boolean dolly;
 	private final DollyBatch dollyBatch = new DollyBatch();
+	/** The planet's radius of the page on screen ({@link #setPlanetRadius}), and of the page a cross-fade brings in. */
+	private float planetRadius, transferPlanetRadius;
+	private final PlanetBatch planetBatch = new PlanetBatch();
 
 	public void addLayers(List<ParallaxLayer> newLayers)
 	{
@@ -144,6 +148,7 @@ public class ParallaxPageReader implements Disposable
 			return;
 		transferFogStrength = pageModel.getFogStrength();
 		transferFogColor.set(pageModel.fogColor);
+		transferPlanetRadius = pageModel.planetRadius;
 
 		// Transferring into the page on screen: its layers must not be moved and drawn twice per frame.
 		for (ParallaxLayer layer : newLayers)
@@ -190,6 +195,34 @@ public class ParallaxPageReader implements Disposable
 	{
 		fogStrength = transferFogStrength;
 		fogColor.set(transferFogColor);
+		planetRadius = transferPlanetRadius;
+	}
+
+	/**
+	 * The planet the page on screen runs round: its radius, in percent of the world width (0 or less: none, the layers
+	 * are flat); see {@link WholePage_Model#planetRadius}. A heart sets its page's; a cross-fade brings in the incoming
+	 * page's, each page bent by its own during the fade.
+	 */
+	public void setPlanetRadius(float radius)
+	{planetRadius = radius > 0 ? radius : 0;}
+
+	public float getPlanetRadius()
+	{return planetRadius;}
+
+	/**
+	 * How much a layer is bent round its page's planet (r277, docs/depth-tricks.md §3): it is lowered by
+	 * {@code bend dx²} at {@code dx} from the view's middle, bend being {@code d / 2R}, R the planet's radius
+	 * ({@code radius} percent of {@code worldWidth}) and d the layer's depth, its page's fastest speed ratio X
+	 * ({@code front}, {@link #frontSpeedOf}) over its own, as magnitudes: 1 for the front layer, the slower the farther.
+	 * That is a point along a planet's surface dropping {@code s² / 2R} at a distance s, seen in perspective. 0 for no
+	 * planet, a page that does not scroll and a still layer: the sky, which is not on the ground.
+	 */
+	public static float planetBendOf(float radius, float worldWidth, float front, ParallaxLayer layer)
+	{
+		float r = radius * (worldWidth / 100), speed = Math.abs(layer.getParallaxSpeedRatioX());
+		if (!(r > 0) || !(front > 0) || !(speed > 0))
+			return 0;
+		return front / speed / (2 * r);
 	}
 
 	/** Tints every layer toward {@code color} over {@code inXSecondes}. */
@@ -541,6 +574,11 @@ public class ParallaxPageReader implements Disposable
 		}
 
 		boolean tower = layer.isTower();
+		// Round the page's planet: its tiles and its mirrored copy cut in strips, each lowered. Not a floor nor a tower.
+		float bend = layer.kind == Enum_LayerKind.FLOOR || tower ? 0
+				: planetBendOf(incoming ? transferPlanetRadius : planetRadius, worldWidth, incoming ? transferFrontSpeed : frontSpeed, layer);
+		if (bend > 0)
+			drawn = planetBatch.set(drawn, bend, viewLeft, viewWidth);
 		if (layer.kind == Enum_LayerKind.FLOOR)
 			// Its rows across the whole view, whatever the page repeats; no mirrored copy.
 			layer.drawFloor(drawn, originY, viewLeft, viewLeft + viewWidth, viewBottom, viewBottom + viewHeight);

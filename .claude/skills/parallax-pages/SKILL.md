@@ -39,6 +39,9 @@ whitespace stripped), `pageModel.atlasName` (file name; the atlas sits next to t
 when absent) by `1 - exp(-fogStrength * (1/speed - 1/front))`, speed its `parallaxScalingSpeedX` and front the page's
 fastest: depth for a misty page without repainting its layers. Per unit of `1/speed`, so it follows the page's speeds:
 speeds 0.1 down to 0.01, 0.03 fogs the back 93%, 0.06 near-hides it; the front layer is never fogged.
+`planetRadius` (format 13, r277): a rolling world, each image layer bent down toward the view's sides by
+`dx² × (front/speed) / 2R`, R the radius in percent of the world width (0 flat); a layer at speed 0 is the sky and stays
+flat. 800 on a 40-wide view drops a layer scrolling a quarter as fast as the front 2.5 units at the sides.
 `tools/parallax_lab.py` has `layer()`, `empty()` and `page_of()` helpers that write all of it.
 
 **An EMPTY layer** is a depth the game fills: a sprite, particles, a flock of birds that must pass in front of one

@@ -148,6 +148,7 @@ public class PlaxBackground extends BaseAppState
 		reader.setRepeatOnX(model.repeatOnX);
 		reader.setRepeatOnY(model.repeatOnY);
 		reader.setFog(model.getFogStrength(), model.fogColor);
+		reader.setPlanetRadius(model.planetRadius);
 
 		if (top != null)
 			top.geometry().removeFromParent();

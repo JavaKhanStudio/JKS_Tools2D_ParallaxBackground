@@ -45,6 +45,9 @@ extends CanvasLayer
 ## An IMAGE layer with a tower radius is wrapped round a cylinder in the view's middle, its scroll turning it
 ## (PlaxTower, r276).
 ##
+## A page with a planet (PlaxPage.planet_radius, r277) bends its IMAGE, SHADER and SEQUENCE layers down toward the
+## view's sides, the far ones more (PlaxPlanet).
+##
 ## Each layer is drawn by its own child of the gradients' canvas, in draw order, so that a particle node can sit between
 ## two of them. Not ported yet: atlas regions packed rotated.
 
@@ -121,6 +124,10 @@ var _world_height := 22.5
 var _ppu := 1.0
 var _screen_h := 0.0
 var _modulate := Color.WHITE
+# Set by _draw_layer: how much the layer drawn is bent round its page's planet (PlaxPlanet.bend_of; 0 flat), and the
+# width of its view.
+var _bend := 0.0
+var _view_w := 0.0
 # What draws each EMPTY layer, by layer name.
 var _hooks := {}
 # Seconds acted: the SHADER layers' clock, shared by both pages of a cross-fade (ParallaxPageReader.effectTime).
@@ -712,6 +719,12 @@ func _draw_layer(l: Dictionary) -> void:
 	var y: float = l.distance_y + anchor.y
 	var view_w := world_width * z
 	var view_h := _world_height * z
+	_view_w = view_w
+	_bend = 0.0
+	if m.kind == "IMAGE" or m.kind == "SHADER" or m.kind == "SEQUENCE":
+		var from_page := transfer_page if l.incoming else page
+		_bend = PlaxPlanet.bend_of(from_page.planet_radius, world_width,
+				PlaxEffects.front_speed_of(transfer_layers if l.incoming else layers), m)
 	if m.kind == "EMPTY":
 		# No mirrored copy: the hook draws what it likes in each tile.
 		var hook: Callable = _hooks.get(m.name, Callable())
@@ -741,6 +754,7 @@ func _draw_layer(l: Dictionary) -> void:
 		PlaxFloor.draw(self, l, y, view_w, view_h)
 		return
 	if PlaxTower.is_tower(l):
+		_bend = 0.0
 		# Round its tower in the view's middle, tiled up as the page says; no mirrored copy.
 		PlaxTower.draw_rows(self, l, x, y, view_w, view_h)
 		return
@@ -832,6 +846,10 @@ func _draw_region(l: Dictionary, x: float, y: float, width: float, height: float
 	var bottom: float = y + height * ((1 - l.trim_bottom - l.packed_h) if fy else l.trim_bottom)
 	var r: Dictionary = l.region
 	var src := PlaxEffects.drawn_rect(r)
+	if _bend > 0:
+		# Round the page's planet: cut in strips, each lowered (ParallaxPageReader.drawImageLayer).
+		PlaxPlanet.draw(self, r.texture, src, left, bottom, draw_w, draw_h, fx, fy, _bend, _view_w)
+		return
 	var px := Vector2(draw_w, draw_h) * _ppu
 	var origin := Vector2(left * _ppu, _screen_h - (bottom + draw_h) * _ppu)
 	if fx or fy:

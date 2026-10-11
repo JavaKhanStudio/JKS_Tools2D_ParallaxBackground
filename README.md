@@ -97,6 +97,15 @@ A **page** (`WholePage_Model`) is one complete background:
 - **Two gradient squares** (`SquareBackground`) drawn behind the layers, one covering the top of the screen and one
   the bottom, each going from a bottom color to a top color.
 - **Repeat on X / Y**: whether layers are tiled horizontally, vertically, both, or drawn once.
+- **Planet** (`planetRadius`, format 13, r277, docs/depth-tricks.md §3): the page's ground runs round a planet of that
+  radius, in percent of the world width (0, the default: flat, as every page saved before). Each `IMAGE`, `SHADER`
+  and `SEQUENCE` layer is lowered by `dx² × d / 2R` at `dx` from the view's middle, R the radius and d the layer's
+  depth, the page's fastest speed ratio X over its own (1 for the front layer, 4 for one scrolling a quarter as fast):
+  the far layers bend down toward the view's sides more, a still layer (speed 0) is the sky and stays flat, and so do
+  the gradients, `FLOOR`, tower, `EMPTY` and `PARTICLES` layers. On a 40-wide view, a layer of depth 4 drops
+  `400 × 4 / 2R` units at the sides: 800 (R = 320 units) drops it 2.5, the front 0.6. A bent layer uncovers what is
+  behind it at the sides (the gradients under the farthest). Drawn as 256 vertical strips across the view, each piece
+  one `batch.draw(region, x, y, width, height)` lowered by its strip's drop; a cross-fade bends each page by its own.
 - **Fog** (`fogStrength`, `fogColor`, format 10): a depth fog over the whole page. Each `IMAGE`, `SEQUENCE` and
   `SHADER` layer is mixed toward the fog's colour, its colour only, by `1 − exp(−strength × (1 / speed − 1 / front))`,
   speed its speed ratio X and front the page's fastest one, both as sizes: the slower a layer scrolls, the farther it
@@ -227,6 +236,10 @@ More:
   does not compile is said once in the log, and its layers are drawn without it. A game drawing through its own
   shaders or engine sets `ParallaxPageReader.setLayerEffects`; the reader disposes the shaders it made itself in
   `dispose()` (`Parallax_Heart.dispose()` calls it).
+- **A rolling world (the planet):** a page's planet (see "Planet" in "Concepts") is set by the page; a game changes it
+  with `heart.parallaxReader.setPlanetRadius(radius)` (the page on screen; a cross-fade brings in the next page's own),
+  or on the `WholePage_Model` (`planetRadius`) before showing it, as with Godot's `PlaxPage.planet_radius`. Each strip
+  is one `batch.draw(region, x, y, width, height)`: a frame allocates nothing.
 - **Depth fog:** a page's fog (see "Concepts") is set by the page itself; a game changes it with
   `heart.parallaxReader.setFog(strength, color)` (the page on screen; a cross-fade brings in the next page's own), or
   on the `WholePage_Model` (`setFogStrength`, `fogColor`) before showing it, as with Godot's `PlaxPage.fog_strength` /
@@ -406,10 +419,10 @@ layer's `shaderEffect` (by name), `shaderAmplitude`, `shaderWavelength` and `sha
 `sequenceLength`, and format 9 each layer's `shaderHaze`, and format 10 the page's `fogStrength` and `fogColor` (after
 `useOriginalSize`) and no `shaderHaze` any more, and format 11 each layer's `floorMapping` (by name), `floorTopSpeed`,
 `floorRows` and `floorHeight` (after `sequenceLength`), and format 12 each layer's `towerRadius` and `towerShade` (after
-`floorHeight`); format 1 files (written by the 2019-2023 editor) and formats 2 to 11 still load, with
+`floorHeight`), and format 13 the page's `planetRadius` (after `fogColor`); format 1 files (written by the 2019-2023 editor) and formats 2 to 12 still load, with
 `useOriginalSize` off before 4, every layer an `IMAGE` before 5, no particle effect before 6, `WAVE` with no numbers
 before 7, no segments, seed 0 and length 16 before 8, and before 10 the mist's white and, as the fog's strength, the
-largest `shaderHaze` of a `FOG` layer (0 before 9), and `MODE7`, top speed 0, 96 rows and height 0 before 11, and radius 0 (flat) and shade 0.65 before 12, as do `.jplax` and `.plaxpj` files without those fields (a
+largest `shaderHaze` of a `FOG` layer (0 before 9), and `MODE7`, top speed 0, 96 rows and height 0 before 11, and radius 0 (flat) and shade 0.65 before 12, and planet radius 0 (flat) before 13, as do `.jplax` and `.plaxpj` files without those fields (a
 segment without a weight weighs 1). A layer kind, a particle anchor, a shader effect or a floor mapping a reader does not know fails the load, naming it. `core/test/.../PlaxFormatTest` checks every sample file against the project it was
 exported from. Kryo registration order defines the class ids stored in the files, so `GVars_Serialization.prepareKryo`
 must only ever be appended to.

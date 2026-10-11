@@ -140,10 +140,17 @@ repair.
   (0 for every other layer). Godot's copy is `plax_tower.gd`; jME runs core's. Change it and run both frame checks on
   `engines/godot/tests/tower`; `tools/r276-tower/strength.sh` proves the round sees the wrap and the shade, `mutate.sh`
   a wrong Godot copy and a wrong core law.
+- A planet (r277, format 13: the page's `planetRadius`) bends a page's IMAGE, SHADER and SEQUENCE layers through
+  `PlanetBatch`, which wraps the layer's batch (the dolly's, when dollied) and cuts each `draw(region, x, y, w, h)` at
+  `PlanetBatch.STRIPS` strips fixed in the layer's view, each lowered by `planetBendOf` times dx² (dx from the view's
+  middle to the strip's); a still layer, FLOOR, tower, EMPTY and PARTICLES layers stay flat, each cross-faded page
+  bent by its own. Godot's copy is `plax_planet.gd` (called from `_draw_region`); jME runs core's. Change it and run
+  both frame checks on `engines/godot/tests/planet`; `tools/r277-planet/strength.sh` proves the round sees the bend,
+  `mutate.sh` a wrong Godot copy and a wrong core law.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,
-  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`), their builders in `ReaderFixtures`; a new subject's class goes in
+  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`), their builders in `ReaderFixtures`; a new subject's class goes in
   `BrowserSuite.all()`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)

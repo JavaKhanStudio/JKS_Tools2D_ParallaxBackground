@@ -20,6 +20,7 @@ public final class Parallax_Utils_Page
 		ref.parallaxReader.setRepeatOnX(pageModel.repeatOnX);
 		ref.parallaxReader.setRepeatOnY(pageModel.repeatOnY);
 		ref.parallaxReader.setFog(pageModel.getFogStrength(), pageModel.fogColor);
+		ref.parallaxReader.setPlanetRadius(pageModel.planetRadius);
 
 		ref.topSquare = pageModel.buildTopSquareBackground(pageModel.topHalfSize);
 		ref.bottomSquare = pageModel.buildBottomSquareBackground(pageModel.bottomHalfSize);

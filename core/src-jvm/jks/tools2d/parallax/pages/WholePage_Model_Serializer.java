@@ -35,13 +35,15 @@ import com.esotericsoftware.kryo.io.Output;
  * FLOOR layer.</li>
  * <li>version 12: the version 11 layout with each layer's towerRadius and towerShade (floats) stored after floorHeight.
  * Older files read 0 and {@link Parallax_Model#DEFAULT_TOWER_SHADE}: no layer is wrapped round a tower.</li>
+ * <li>version 13: the version 12 layout with the page's planetRadius (a float) stored after fogColor. Older files read
+ * 0: no layer is bent round a planet.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 12;
+	static final int CURRENT_VERSION = 13;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;
@@ -77,6 +79,8 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 			output.writeFloat(page.getFogStrength());
 			kryo.writeObject(output, page.fogColor);
 		}
+		if (writeVersion >= 13)
+			output.writeFloat(page.planetRadius);
 
 		kryo.writeObject(output, page.pageModel);
 	}
@@ -117,6 +121,8 @@ public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 			page.setFogStrength(input.readFloat());
 			page.fogColor = kryo.readObject(input, Color.class);
 		}
+		if (version >= 13)
+			page.planetRadius = input.readFloat();
 
 		page.pageModel = kryo.readObject(input, Page_Model.class);
 		return page;

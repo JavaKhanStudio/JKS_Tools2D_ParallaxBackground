@@ -122,6 +122,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.get(1).towerRadius = 12.5f;
 		original.pageModel.pageList.get(1).towerShade = 0.3f;
 		original.fogColor = new Color(0.2f, 0.3f, 0.5f, 1);
+		original.planetRadius = 650;
 
 		byte[] rewritten = write(original);
 		// Byte 0 is Kryo's reference marker for the page itself.
@@ -163,6 +164,23 @@ class PlaxFormatTest
 		assertEquals(40, floor.floorHeight, "the box's height");
 		assertEquals(12.5f, reread.pageModel.pageList.get(1).towerRadius, "a tower's radius is stored since format 12");
 		assertEquals(0.3f, reread.pageModel.pageList.get(1).towerShade, "and its shade");
+		assertEquals(650, reread.planetRadius, "the page's planet is stored since format 13");
+	}
+
+	/** Format 12 has no planet: written there, the page reads radius 0 (flat). */
+	@Test
+	void format12FilesStillLoadWithoutAPlanet() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.planetRadius = 650;
+
+		byte[] written = write(original, 12);
+		assertEquals(12, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		assertEquals(0, reread.planetRadius, "format 12 has no planet");
+		original.planetRadius = 0;
+		assertPageEquals(original, reread);
 	}
 
 	/** Format 11 has no tower fields: written there, a layer reads radius 0 (flat) and the default shade. */
@@ -527,11 +545,13 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(7, floorLayer());
 		original.pageModel.pageList.get(0).towerRadius = 12.5f;
 		original.pageModel.pageList.get(0).towerShade = 0.3f;
+		original.planetRadius = 650;
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
 		assertFalse(json.contains("shaderHaze"), "a FOG layer's haze is no longer written (format 10)");
 		assertTrue(json.contains("\"fogStrength\":0.25") && json.contains("\"fogColor\""), "the page's fog is: " + json);
+		assertTrue(json.contains("\"planetRadius\":650.0"), "the page's planet is: " + json);
 
 		assertPageEquals(original, JSON.readValue(json, WholePage_Model.class));
 		String legacy = json.replace("\"fogStrength\":0.25,", "").replace("\"shaderEffect\":\"FOG\",", "\"shaderEffect\":\"FOG\",\"shaderHaze\":0.4,");
@@ -567,6 +587,7 @@ class PlaxFormatTest
 		assertEquals(expected.useOriginalSize, actual.useOriginalSize);
 		assertEquals(expected.getFogStrength(), actual.getFogStrength(), "fog strength");
 		assertEquals(expected.fogColor, actual.fogColor, "fog colour");
+		assertEquals(expected.planetRadius, actual.planetRadius, "planet radius");
 		assertEquals(expected.pageModel.atlasName, actual.pageModel.atlasName);
 		assertEquals(expected.pageModel.outside, actual.pageModel.outside);
 		assertEquals(expected.pageModel.pageList.size(), actual.pageModel.pageList.size());
