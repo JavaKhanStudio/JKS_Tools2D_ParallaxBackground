@@ -4,8 +4,8 @@ extends Node
 ## checks, 0, 6 and 12 s in, that each PARTICLES layer's Godot scene is instanced, that its node sits between the
 ## canvases of the layers before and after it, at its page's opacity, and where its layer has scrolled it: the scroll
 ## is counted here, apart from PlaxBackground's. A scene's "zoom" ([at 0 s, at 12 s], set before each check) and
-## "dolly" (r278) place each layer's nodes in its own view, at its own zoom, worked out here too, and scale them by 1 over
-## it. Saves a still of each, and quits with 1 on any FAIL.
+## "dolly" (r278) place each layer's nodes in its own view, at its own zoom, worked out here too, and scale them by 1
+## over it. Saves a still of each, and quits with 1 on any FAIL.
 ##   godot --path engines/godot res://tests/particles.tscn -- <repo root> <round dir> <out dir>
 
 const SPEED := 60.0

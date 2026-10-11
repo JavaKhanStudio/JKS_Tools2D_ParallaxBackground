@@ -1,0 +1,9 @@
+# ruff for tools/*.py and the probes (r314). tools/lint.sh runs it, with shellcheck and gdlint, and CI runs that.
+# The rules are ruff 0.17.0's default set, plus E402 and E731: a '# noqa: E402' (sys.path set before an import) or
+# '# noqa: E731' (a named lambda) is then a used one, and any pycodestyle run agrees. The version is pinned: a new
+# ruff changes its defaults, and the findings would move without the code moving. Raise it here and in tools/lint.sh
+# in one commit, with what the new release flags fixed.
+required-version = "==0.17.0"
+
+[lint]
+extend-select = ["E402", "E731"]

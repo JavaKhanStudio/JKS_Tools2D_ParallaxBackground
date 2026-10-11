@@ -30,12 +30,11 @@ COMFY = os.environ.get("COMFYUI_DIR", os.path.expanduser("~/ComfyUI"))
 sys.path.insert(0, COMFY)
 sys.argv_saved, sys.argv = sys.argv, [sys.argv[0]]  # comfy parses argv on import
 
+import comfy.options  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import torch.nn.functional as F  # noqa: E402
 from PIL import Image  # noqa: E402
-
-import comfy.options  # noqa: E402
 
 comfy.options.enable_args_parsing(False)
 from comfy.cli_args import args  # noqa: E402
@@ -44,8 +43,8 @@ from comfy.cli_args import args  # noqa: E402
 # work. COMFY_CPU_VAE=1 decodes on the CPU instead (minutes a strip).
 args.bf16_vae = True
 args.cpu_vae = os.environ.get("COMFY_CPU_VAE") == "1"
-import folder_paths  # noqa: E402,F401
 import comfy.model_management  # noqa: E402
+import folder_paths  # noqa: E402,F401
 import nodes  # noqa: E402
 
 sys.argv = sys.argv_saved
@@ -237,7 +236,7 @@ def main():
     pos, neg = encode(clip, a.prompt), encode(clip, a.negative)
     if a.control:
         pos, neg = apply_control(pos, neg, a)
-    common = dict(steps=a.steps, cfg=a.cfg, sampler=a.sampler, scheduler=a.scheduler)
+    common = {"steps": a.steps, "cfg": a.cfg, "sampler": a.sampler, "scheduler": a.scheduler}
     MODES[a.mode](model, pos, neg, vae, a, common)
 
 

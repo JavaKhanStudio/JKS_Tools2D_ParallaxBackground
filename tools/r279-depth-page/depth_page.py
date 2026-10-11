@@ -69,7 +69,7 @@ def gen(args, logfile):
     """gen.py in a subprocess: it loads ComfyUI, whose models and argv parsing stay out of this process."""
     with open(logfile, "w") as f:
         code = subprocess.run([sys.executable, os.path.join(AI, "gen.py")] + args, stdout=f, stderr=subprocess.STDOUT,
-                              cwd=ROOT).returncode
+                              cwd=ROOT, check=False).returncode
     if code:
         sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {logfile}")
 
@@ -79,7 +79,7 @@ def depth_of(img):
     end: the network sees across the join, and the depth loops as the painting does."""
     import torch
     from transformers import pipeline
-    h, w, _ = img.shape
+    _, w, _ = img.shape
     pad = w // 4
     wrap = np.concatenate([img[:, -pad:], img, img[:, :pad]], axis=1)
     est = pipeline("depth-estimation", model=MODEL, device=0 if torch.cuda.is_available() else -1)

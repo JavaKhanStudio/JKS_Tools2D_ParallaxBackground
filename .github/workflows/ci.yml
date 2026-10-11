@@ -46,6 +46,13 @@ jobs:
       - name: Check no script opens a window outside cage
         run: tools/offscreen-lint.sh && tools/offscreen-lint-test.sh
 
+      # ruff, shellcheck and gdlint at pinned versions: a rule cleaned once and gated by nothing came back (r314).
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.0
+
+      - name: Lint Python, shell and GDScript
+        run: tools/lint.sh
+
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v7

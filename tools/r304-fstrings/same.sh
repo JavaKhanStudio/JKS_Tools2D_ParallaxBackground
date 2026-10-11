@@ -51,6 +51,10 @@ same planted tools/r275-floor/planted.py "$WAR" "$CHROME"
 MASK=1 same drag tools/r275-floor/drag.py "$BASE/effects-lab.html?lab=floor" "$CHROME" OUTDIR
 same film tools/r275-floor/film.py "$BASE/effects-lab.html?lab=floor&clip=1" "$CHROME" OUTDIR/floor.mp4 1
 for side in old new; do ls "$TMP/film-$side.d" > "$TMP/film-$side.ls"; done
-diff "$TMP/film-old.ls" "$TMP/film-new.ls" > /dev/null && echo "SAME film: $(cat "$TMP/film-new.ls")" || { echo "DIFFERENT film files"; fail=1; }
+if diff "$TMP/film-old.ls" "$TMP/film-new.ls" > /dev/null; then
+	echo "SAME film: $(cat "$TMP/film-new.ls")"
+else
+	echo "DIFFERENT film files"; fail=1
+fi
 python3 "$(dirname "$0")/formats.py" || fail=1
 exit $fail
