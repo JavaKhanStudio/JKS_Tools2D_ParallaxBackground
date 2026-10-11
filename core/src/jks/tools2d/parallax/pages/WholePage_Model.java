@@ -74,6 +74,8 @@ public class WholePage_Model
 	private TextureAtlas loadedAtlas;
 	/** True when {@link #loadedAtlas} was created by this page rather than handed in or owned by the AssetManager. */
 	private boolean ownsAtlas;
+	/** How many hearts show this page or cross-fade into it ({@link #holdAtlas}): its own atlas is freed when the last lets go. */
+	private int hearts;
 	/** Finds the PARTICLES layers' .p files in the atlas's folder; null when the layers were built without one. */
 	private FileHandleResolver effectFiles;
 
@@ -263,6 +265,22 @@ public class WholePage_Model
 	/** The atlas the layers were built from, or null before loading. */
 	public TextureAtlas getLoadedAtlas()
 	{return loadedAtlas;}
+
+	/** A heart starts showing this page, or cross-fading into it: the atlas it owns stays until {@link #releaseAtlas}. */
+	public void holdAtlas()
+	{hearts++;}
+
+	/**
+	 * A heart stops showing this page: once no heart does (one page in two hearts, r331), the atlas it loaded itself is
+	 * disposed ({@link #disposeOwnedAtlas}).
+	 */
+	public void releaseAtlas()
+	{
+		if (--hearts > 0)
+			return;
+		hearts = 0;
+		disposeOwnedAtlas();
+	}
 
 	/** Disposes the atlas if this page loaded it itself (external path); AssetManager and caller atlases are left alone. */
 	public void disposeOwnedAtlas()

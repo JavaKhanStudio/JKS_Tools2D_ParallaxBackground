@@ -230,9 +230,7 @@ public class Parallax_Heart implements Disposable
 		parallaxReader.resetTransfert();
 		if (ownsBatch)
 			batch.dispose();
-		if (currentPage != null)
-			currentPage.disposeOwnedAtlas();
-		if (currentTransfertPage != null && currentTransfertPage != currentPage)
-			currentTransfertPage.disposeOwnedAtlas();
+		// A page's own atlas is freed once no other heart shows it.
+		Parallax_Utils_Page.leave(this);
 	}
 }

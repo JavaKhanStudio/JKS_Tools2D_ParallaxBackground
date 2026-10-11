@@ -2,7 +2,9 @@ package jks.tools2d.parallax.heart;
 
 import static jks.tools2d.parallax.TestGdx.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.IOException;
@@ -452,5 +454,56 @@ class ParallaxHeartResizeTest
 		assertEquals("stars", ((TextureAtlas.AtlasRegion) heart.parallaxReader.transferLayers.get(0).getTexRegion().get(0)).name);
 		assertNotNull(night.getLoadedAtlas().findRegion("stars"), "the page owns the atlas it read from the folder");
 		heart.dispose();
+	}
+
+	/**
+	 * One page from a folder in two hearts (r331): the page owns the atlas it read, and the first heart to leave it, by a
+	 * new page, a cross-fade or its dispose, must not free what the other still draws. The last one to leave does.
+	 */
+	@Test
+	void aFolderPageInTwoHeartsKeepsItsAtlasUntilTheLastLeaves(@TempDir Path folder) throws IOException
+	{
+		Pixmap pixels = new Pixmap(16, 9, Pixmap.Format.RGBA8888);
+		PixmapIO.writePNG(new FileHandle(folder.resolve("night.png").toFile()), pixels);
+		pixels.dispose();
+		Files.writeString(folder.resolve("night.atlas"), "night.png\nsize:16,9\nformat:RGBA8888\nfilter:Nearest,Nearest\nrepeat:none\n"
+				+ "stars\n  bounds:0,0,16,9\n");
+		Parallax_Model stars = new Parallax_Model();
+		stars.regionName = "stars";
+		WholePage_Model night = new WholePage_Model("night.atlas");
+		night.pageModel.pageList.add(stars);
+
+		Parallax_Heart first = new Parallax_Heart(new OrthographicCamera(40, 22.5f), null, page(0.5f, 0.5f), 40, 22.5f);
+		Parallax_Heart second = new Parallax_Heart(new OrthographicCamera(20, 40), null, page(0.5f, 0.5f), 20, 40);
+		Parallax_Heart third = new Parallax_Heart(new OrthographicCamera(10, 10), null, page(0.5f, 0.5f), 10, 10);
+		first.relativePath = second.relativePath = third.relativePath = folder.toString();
+		first.setPage(night);
+		second.setPage(night);
+		third.transfertIntoPage(night, 0);
+		TextureAtlas atlas = night.getLoadedAtlas();
+		Texture texture = atlas.getTextures().first();
+		assertNotEquals(0, texture.getTextureObjectHandle());
+
+		first.setPage(page(0.5f, 0.5f));
+		assertSame(atlas, night.getLoadedAtlas(), "a heart moving to another page left the atlas to the others");
+		assertNotNull(night.preloadValue);
+		third.transfertIntoPage(page(0.5f, 0.5f), 0);
+		assertSame(atlas, night.getLoadedAtlas(), "a heart cross-fading away left it too");
+		assertNotEquals(0, texture.getTextureObjectHandle(), "the second heart still draws its texture");
+
+		second.dispose();
+		assertNull(night.getLoadedAtlas(), "the last heart to leave frees it");
+		assertEquals(0, texture.getTextureObjectHandle());
+		first.dispose();
+		third.dispose();
+
+		// Shown again, the page reads its atlas again, and frees it once more when its heart lets go.
+		Parallax_Heart again = new Parallax_Heart(new OrthographicCamera(40, 22.5f), null, page(0.5f, 0.5f), 40, 22.5f);
+		again.relativePath = folder.toString();
+		again.setPage(night);
+		again.transfertIntoPage(night, 1);
+		assertNotNull(night.getLoadedAtlas());
+		again.dispose();
+		assertNull(night.getLoadedAtlas(), "a heart cross-fading into the page it shows holds it once");
 	}
 }

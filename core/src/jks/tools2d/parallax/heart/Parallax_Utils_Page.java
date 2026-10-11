@@ -10,10 +10,10 @@ public final class Parallax_Utils_Page
 
 	public static void setPage(Parallax_Heart ref, WholePage_Model pageModel)
 	{
-		release(ref, ref.currentTransfertPage, pageModel);
-		release(ref, ref.currentPage, pageModel);
+		WholePage_Model was = ref.currentPage, wasIncoming = ref.currentTransfertPage;
 		ref.currentTransfertPage = null;
 		ref.currentPage = pageModel;
+		handOver(ref, was, wasIncoming);
 		ref.parallaxReader.clearLayers();
 		ref.parallaxReader.resetTransfert();
 		ref.parallaxReader.addLayers(ref.parallaxReader.layersOf(pageModel, ref.relativePath));
@@ -36,9 +36,9 @@ public final class Parallax_Utils_Page
 	public static void transfertIntoPage(Parallax_Heart ref, WholePage_Model pageModel, float inXSecondes, TransfertStyle style)
 	{
 		// A transfer interrupted by a new one never becomes the current page.
-		if (ref.currentTransfertPage != ref.currentPage)
-			release(ref, ref.currentTransfertPage, pageModel);
+		WholePage_Model wasIncoming = ref.currentTransfertPage;
 		ref.currentTransfertPage = pageModel;
+		handOver(ref, ref.currentPage, wasIncoming);
 
 		ref.parallaxReader.addLayersTransfert(pageModel, ref.relativePath, inXSecondes, style);
 		if (ref.topSquare != null)
@@ -52,16 +52,36 @@ public final class Parallax_Utils_Page
 	/** Called once the reader has swapped in the transferred layers: that page becomes the current one. */
 	static void transferFinished(Parallax_Heart ref)
 	{
-		WholePage_Model previous = ref.currentPage;
+		WholePage_Model was = ref.currentPage, wasIncoming = ref.currentTransfertPage;
 		ref.currentPage = ref.currentTransfertPage;
 		ref.currentTransfertPage = null;
-		release(ref, previous, ref.currentPage);
+		handOver(ref, was, wasIncoming);
 	}
 
-	/** Frees the atlas a page loaded itself, unless that page is still in use. */
-	private static void release(Parallax_Heart ref, WholePage_Model page, WholePage_Model keep)
+	/** The heart lets go of both its pages: it is disposed. */
+	static void leave(Parallax_Heart ref)
 	{
-		if (page != null && page != keep)
-			page.disposeOwnedAtlas();
+		WholePage_Model was = ref.currentPage, wasIncoming = ref.currentTransfertPage;
+		ref.currentPage = null;
+		ref.currentTransfertPage = null;
+		handOver(ref, was, wasIncoming);
+	}
+
+	/**
+	 * Holds the pages the heart shows now that it did not before ({@code was}, {@code wasIncoming}), then lets go of
+	 * the ones it no longer shows: a page's own atlas is freed only once no heart shows it (one page in two hearts, r331).
+	 * Each page counts once per heart, current and incoming alike.
+	 */
+	private static void handOver(Parallax_Heart ref, WholePage_Model was, WholePage_Model wasIncoming)
+	{
+		WholePage_Model now = ref.currentPage, incoming = ref.currentTransfertPage;
+		if (now != null && now != was && now != wasIncoming)
+			now.holdAtlas();
+		if (incoming != null && incoming != now && incoming != was && incoming != wasIncoming)
+			incoming.holdAtlas();
+		if (was != null && was != now && was != incoming)
+			was.releaseAtlas();
+		if (wasIncoming != null && wasIncoming != was && wasIncoming != now && wasIncoming != incoming)
+			wasIncoming.releaseAtlas();
 	}
 }
