@@ -121,6 +121,22 @@ def set_speeds(page, values):
 def lint(page, atlas_dir=None):
     """The rules a page breaks, as short sentences. The rules are the skill's (.claude/skills/parallax-pages). With the
     folder of the page's atlas, its layout too: see layout()."""
+    problems = speed_faults(page)
+    for i, l in enumerate(layers(page)):
+        if l['sizeRatio'] < 0.5 and page.get('repeatOnX', True) and l['padX'] == 0:
+            problems.append(f"layer {i} is {l['sizeRatio']:.2f} worlds wide and tiled: its repeat shows"
+                            f" {1 / l['sizeRatio']:.0f} times a screen")
+    problems += particle_faults(page, atlas_dir)
+    problems += shader_faults(page)
+    problems += sequence_faults(page, atlas_dir)
+    if atlas_dir is not None:
+        problems += layout(page, atlas_dir)
+    return problems
+
+
+def speed_faults(page):
+    """The speeds' faults: too few or too many layers, a front layer slower than the one behind, a span too short or
+    too deep, two layers at one speed."""
     problems = []
     s = speeds(page)
     n = len(s)
@@ -146,15 +162,6 @@ def lint(page, atlas_dir=None):
         flat = [i + 1 for i, r in enumerate(steps) if r < 1.02]
         if flat and not drops:
             problems.append(f'layers {flat} move at the speed of the one behind: they fuse into one plane')
-    for i, l in enumerate(layers(page)):
-        if l['sizeRatio'] < 0.5 and page.get('repeatOnX', True) and l['padX'] == 0:
-            problems.append(f"layer {i} is {l['sizeRatio']:.2f} worlds wide and tiled: its repeat shows"
-                            f" {1 / l['sizeRatio']:.0f} times a screen")
-    problems += particle_faults(page, atlas_dir)
-    problems += shader_faults(page)
-    problems += sequence_faults(page, atlas_dir)
-    if atlas_dir is not None:
-        problems += layout(page, atlas_dir)
     return problems
 
 
@@ -206,19 +213,20 @@ def sequence_faults(page, atlas_dir):
             problems.append(f"layer {i} ({label(l)}): its sequenceLength {length} reads as 1, one segment repeated")
         if all(s.get('weight', 1) <= 0 for s in segments):
             problems.append(f"layer {i} ({label(l)}): no segment weighs above 0, so each weighs 1")
-        if atlas_dir is None:
-            continue
-        if regions is None:
-            regions = _atlas_regions(page, atlas_dir)
-        if isinstance(regions, str):
-            problems.append(f"layer {i} ({label(l)}): segments not checked: {regions}")
-            continue
-        for k, s in enumerate(segments):
-            if (s['regionName'], s.get('regionPosition', 0)) not in regions:
-                problems.append(f"layer {i} ({label(l)}): segment {k} names no region {s['regionName']}"
-                                f"#{s.get('regionPosition', 0)} in {page['pageModel']['atlasName']}: the page fails to"
-                                f" load")
+        if atlas_dir is not None:
+            if regions is None:
+                regions = _atlas_regions(page, atlas_dir)
+            problems += _segment_faults(page, i, l, regions)
     return problems
+
+
+def _segment_faults(page, i, l, regions):
+    """Layer i's segments that name a region its atlas does not hold; regions: _atlas_regions'."""
+    if isinstance(regions, str):
+        return [f"layer {i} ({label(l)}): segments not checked: {regions}"]
+    named = [(k, s['regionName'], s.get('regionPosition', 0)) for k, s in enumerate(l['sequenceSegments'])]
+    return [f"layer {i} ({label(l)}): segment {k} names no region {name}#{pos} in {page['pageModel']['atlasName']}:"
+            f" the page fails to load" for k, name, pos in named if (name, pos) not in regions]
 
 
 def _atlas_regions(page, atlas_dir):

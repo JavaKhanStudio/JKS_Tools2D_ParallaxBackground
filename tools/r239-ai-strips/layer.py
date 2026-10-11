@@ -115,7 +115,7 @@ def unspeck(alpha, cut):
     return out
 
 
-def main():
+def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
     ap.add_argument("out")
@@ -129,9 +129,11 @@ def main():
     ap.add_argument("--colours", type=int, default=12)
     ap.add_argument("--no-creatures", action="store_true", help="skip creature.py's check (exit 4)")
     ap.add_argument("--palette", help="--pixel: build the palette from this cut layer's opaque colours (one for all segments)")
-    a = ap.parse_args()
-    img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
-    sky = np.median(img[:8].reshape(-1, 3), axis=0)
+    return ap.parse_args()
+
+
+def key(img, sky, a):
+    """The layer's alpha: the colour key, helped by --mask, its gaps keyed and its islands cut."""
     d = np.linalg.norm(img - sky, axis=2)
     # The ramp ends near the layer's own distance from the sky: a fixed one marks a pixel half
     # sky, half hill as solid, a light line along the silhouette.
@@ -148,6 +150,11 @@ def main():
         if cut.any():
             alpha = unspeck(alpha, cut)
             print(f"{a.out}: {int(cut.sum())} px of alpha islands cut", file=sys.stderr)
+    return alpha
+
+
+def unmix(img, sky, alpha):
+    """The RGBA layer."""
     # Un-mix the sky out of the edge pixels, so a light fringe does not ring the layer.
     a3 = np.maximum(alpha, 1e-3)[..., None]
     rgb = np.clip((img - sky * (1 - a3)) / a3, 0, 255)
@@ -163,27 +170,33 @@ def main():
     reached = (wsum > 1e-6)[..., None]
     rgb = np.where(solid[..., None] > 0, rgb, np.where(reached, fill / np.maximum(wsum, 1e-6)[..., None], rgb))
     rgba = np.dstack([rgb, alpha * 255]).astype(np.uint8)
-    out = Image.fromarray(rgba, "RGBA")
-    if a.pixel > 1:
-        w, h = out.size
-        small = out.resize((w // a.pixel, h // a.pixel), Image.BOX)
-        arr = np.asarray(small).copy()
-        opaque = arr[..., 3] >= 128
-        rgb = Image.fromarray(arr[..., :3])
-        if a.palette:
-            # The segments of one SEQUENCE layer share a palette, or their joins change colour.
-            ref = Image.open(a.palette).convert("RGBA")
-            ref = np.asarray(ref.resize((ref.width // a.pixel, ref.height // a.pixel), Image.BOX))
-            ref = Image.fromarray(ref[ref[..., 3] >= 128][None, :, :3])  # its opaque colours, one row
-            ref = ref.quantize(a.colours, method=Image.Quantize.MEDIANCUT)
-            pal = rgb.quantize(palette=ref, dither=Image.Dither.NONE)
-        else:
-            pal = rgb.quantize(a.colours, method=Image.Quantize.MEDIANCUT)
-        arr[..., :3] = np.asarray(pal.convert("RGB"))
-        arr[..., 3] = np.where(opaque, 255, 0)
-        arr[~opaque, :3] = 0
-        out = Image.fromarray(arr, "RGBA")
-    out.save(a.out)
+    return Image.fromarray(rgba, "RGBA")
+
+
+def pixelate(out, a):
+    """--pixel: out box-downscaled, quantised to one palette and cut hard at half alpha."""
+    w, h = out.size
+    small = out.resize((w // a.pixel, h // a.pixel), Image.BOX)
+    arr = np.asarray(small).copy()
+    opaque = arr[..., 3] >= 128
+    rgb = Image.fromarray(arr[..., :3])
+    if a.palette:
+        # The segments of one SEQUENCE layer share a palette, or their joins change colour.
+        ref = Image.open(a.palette).convert("RGBA")
+        ref = np.asarray(ref.resize((ref.width // a.pixel, ref.height // a.pixel), Image.BOX))
+        ref = Image.fromarray(ref[ref[..., 3] >= 128][None, :, :3])  # its opaque colours, one row
+        ref = ref.quantize(a.colours, method=Image.Quantize.MEDIANCUT)
+        pal = rgb.quantize(palette=ref, dither=Image.Dither.NONE)
+    else:
+        pal = rgb.quantize(a.colours, method=Image.Quantize.MEDIANCUT)
+    arr[..., :3] = np.asarray(pal.convert("RGB"))
+    arr[..., 3] = np.where(opaque, 255, 0)
+    arr[~opaque, :3] = 0
+    return Image.fromarray(arr, "RGBA")
+
+
+def check(out, img, alpha, a):
+    """Exits 3 on art at the top row, 4 on a creature in the mass (unless --no-creatures)."""
     cut = int((np.asarray(out)[0, :, 3] > 0).sum())
     if cut:
         # Art on the top row is cut flat on screen (the parallax_lab lint's fault a).
@@ -196,6 +209,18 @@ def main():
             print(f"{a.src}: a creature? {size} px blob at x={x} y={y}", file=sys.stderr)
         if found:
             sys.exit(4)
+
+
+def main():
+    a = parse_args()
+    img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
+    sky = np.median(img[:8].reshape(-1, 3), axis=0)
+    alpha = key(img, sky, a)
+    out = unmix(img, sky, alpha)
+    if a.pixel > 1:
+        out = pixelate(out, a)
+    out.save(a.out)
+    check(out, img, alpha, a)
 
 
 if __name__ == "__main__":

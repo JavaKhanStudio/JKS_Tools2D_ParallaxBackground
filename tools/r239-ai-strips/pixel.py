@@ -45,7 +45,7 @@ def grid(prof, lo=4, hi=40):
     return p, scores[p][1], scores[p][0]
 
 
-def main():
+def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
     ap.add_argument("out")
@@ -54,20 +54,17 @@ def main():
     ap.add_argument("--cell", type=int, default=0, help="cell size in px; 0: found from the picture")
     ap.add_argument("--mask", help="sil.py's _mask.png: a cell is opaque only within one cell of the silhouette")
     ap.add_argument("--no-creatures", action="store_true", help="skip creature.py's check (exit 4)")
-    a = ap.parse_args()
-    img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
+    return ap.parse_args()
+
+
+def cells(img, cell, phx, phy, mask):
+    """(small, inside): each cell's median colour, and whether it is inside mask (all True without one)."""
     h, w = img.shape[:2]
-    px, phx, sx = grid(steps(img, 1))
-    py, phy, sy = grid(steps(img, 0))
-    cell = a.cell or px
-    print(f"{a.src}: cell x {px} (phase {phx}, peak {sx:.1f}), y {py} (phase {phy}, peak {sy:.1f}); using {cell}",
-          file=sys.stderr)
     nx = max(1, round(w / cell))
     pitch = w / nx  # whole cells across the width: the small strip loops
     ny = int((h - phy - 1) // cell)
     small = np.zeros((ny, nx, 3), np.float32)
     inside = np.ones((ny, nx), bool)
-    mask = np.asarray(Image.open(a.mask).convert("L").resize((w, h))) > 127 if a.mask else None
     q = max(1, cell // 4)
     for j in range(ny):
         y0 = phy + 1 + j * cell  # a border sits after column/row `phase`
@@ -84,6 +81,11 @@ def main():
         grown[1:] |= grown[:-1].copy()
         grown[:-1] |= grown[1:].copy()
         inside = grown
+    return small, inside
+
+
+def keyed(small, inside, a):
+    """The opaque cells: away from the sky, inside the mask, its islands cleared."""
     sky = np.median(small[:2].reshape(-1, 3), axis=0)
     d = np.linalg.norm(small - sky, axis=2)
     far = float(np.median(d[d > 48])) if (d > 48).any() else 48
@@ -91,33 +93,61 @@ def main():
     speck = islands(opaque)
     if speck.any():
         print(f"{a.out}: {int(speck.sum())} cells of alpha islands cut", file=sys.stderr)
-    opaque &= ~speck
+    return opaque & ~speck
+
+
+def quantised(small, opaque, a):
+    """The RGBA strip: opaque cells in --colours colours (--palette's, or their own), the others clear."""
     rgb = Image.fromarray(small.round().clip(0, 255).astype(np.uint8))
     src = Image.fromarray(small[opaque].round().clip(0, 255).astype(np.uint8)[None])
     if a.palette:
         ref = np.asarray(Image.open(a.palette).convert("RGBA"))
         src = Image.fromarray(ref[ref[..., 3] >= 128][None, :, :3])
     pal = src.quantize(a.colours, method=Image.Quantize.MEDIANCUT)
-    out = np.zeros((ny, nx, 4), np.uint8)
+    out = np.zeros((*opaque.shape, 4), np.uint8)
     out[..., :3] = np.asarray(rgb.quantize(palette=pal, dither=Image.Dither.NONE).convert("RGB"))
     out[..., 3] = np.where(opaque, 255, 0)
     out[~opaque, :3] = 0
+    return out
+
+
+def creatures(img, opaque, cell, phx, phy):
+    """creature.py's blobs (x, y, size) in the painted strip."""
+    # One art pixel per cell is too small to see a creature in: look at the painted strip, through the opaque
+    # cells laid back on it. Sizes scale with the strip's width (creature.py's are for 1024 px), and a creature is
+    # six art pixels at least: a trunk or a facet is two to four (r243's strips: 3.6 at most).
+    h, w = img.shape[:2]
+    ny, nx = opaque.shape
+    j = np.clip((np.arange(h) - phy - 1) // cell, 0, ny - 1)
+    i = ((np.arange(w) - phx - 1) // (w / nx)).astype(int) % nx
+    alpha = opaque[j][:, i].astype(np.float64)
+    k = (w / 1024) ** 2
+    return creature.find(img.astype(np.float64), alpha, max(int(50 * k), 6 * cell ** 2), int(3000 * k),
+                         r=max(int(12 * k ** 0.5), 3 * cell))
+
+
+def main():
+    a = parse_args()
+    img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
+    h, w = img.shape[:2]
+    px, phx, sx = grid(steps(img, 1))
+    py, phy, sy = grid(steps(img, 0))
+    cell = a.cell or px
+    print(f"{a.src}: cell x {px} (phase {phx}, peak {sx:.1f}), y {py} (phase {phy}, peak {sy:.1f}); using {cell}",
+          file=sys.stderr)
+    mask = np.asarray(Image.open(a.mask).convert("L").resize((w, h))) > 127 if a.mask else None
+    small, inside = cells(img, cell, phx, phy, mask)
+    opaque = keyed(small, inside, a)
+    out = quantised(small, opaque, a)
     Image.fromarray(out, "RGBA").save(a.out)
+    ny, nx = opaque.shape
     print(f"{a.out}: {nx}x{ny}, {len(np.unique(out[opaque][:, :3], axis=0))} colours", file=sys.stderr)
     cut = int(opaque[0].sum())
     if cut:
         print(f"{a.out}: art cut flat at the top edge over {cut} columns", file=sys.stderr)
         sys.exit(3)
     if not a.no_creatures:
-        # One art pixel per cell is too small to see a creature in: look at the painted strip, through the opaque
-        # cells laid back on it. Sizes scale with the strip's width (creature.py's are for 1024 px), and a creature is
-        # six art pixels at least: a trunk or a facet is two to four (r243's strips: 3.6 at most).
-        j = np.clip((np.arange(h) - phy - 1) // cell, 0, ny - 1)
-        i = ((np.arange(w) - phx - 1) // pitch).astype(int) % nx
-        alpha = opaque[j][:, i].astype(np.float64)
-        k = (w / 1024) ** 2
-        found = creature.find(img.astype(np.float64), alpha, max(int(50 * k), 6 * cell ** 2), int(3000 * k),
-                              r=max(int(12 * k ** 0.5), 3 * cell))
+        found = creatures(img, opaque, cell, phx, phy)
         for x, y, size in found:
             print(f"{a.src}: a creature? {size} px blob at x={x} y={y}", file=sys.stderr)
         if found:

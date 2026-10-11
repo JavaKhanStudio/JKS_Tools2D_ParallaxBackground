@@ -132,9 +132,9 @@ def sample(model, pos, neg, latent, seed, steps, cfg, denoise, sampler, schedule
     return nodes.common_ksampler(model, seed, steps, cfg, sampler, scheduler, pos, neg, latent, denoise=denoise)[0]
 
 
-def main():
+def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["txt2img", "img2img", "variants", "inpaint"])
+    ap.add_argument("mode", choices=list(MODES))
     ap.add_argument("--ckpt", default="dreamshaper_8.safetensors")
     ap.add_argument("--lora")
     ap.add_argument("--lora-strength", type=float, default=0.8)
@@ -162,69 +162,83 @@ def main():
     ap.add_argument("--control-end", type=float, default=1.0, help="fraction of the steps the hint guides")
     ap.add_argument("--control-edge", action="store_true", help="feed the hint's outline, not the image")
     ap.add_argument("--out", required=True)
-    a = ap.parse_args()
+    return ap.parse_args()
 
+
+def txt2img(model, pos, neg, vae, a, common):
+    latent = nodes.EmptyLatentImage().generate(a.w, a.h, 1)[0]
+    out = sample(model, pos, neg, latent, a.seed, denoise=1.0, **common)
+    to_image(vae, out)[0].save(a.out)
+
+
+def img2img(model, pos, neg, vae, a, common):
+    latent = to_latent(vae, from_image(a.init, a.w, a.h))
+    out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
+    to_image(vae, out)[0].save(a.out)
+
+
+def inpaint(model, pos, neg, vae, a, common):
+    src = from_image(a.src)
+    m = np.asarray(Image.open(a.mask).convert("L")).astype(np.float32) / 255.0
+    mask = torch.from_numpy(m)[None]
+    if model.model.diffusion_model.input_blocks[0][0].in_channels == 9:
+        # An inpainting model (dreamshaper_8Inpainting, r315) is fed the source with the hole greyed out beside
+        # the noise: it sees the mask and what surrounds it, and matches its light and style. No noise mask: it
+        # paints the whole image and only the mask's pixels are kept below. With one (--noise-mask), the kept latent
+        # is laid back at every step, and the repaint comes out under a pale veil with a hard edge.
+        pos, neg, latent = nodes.InpaintModelConditioning().encode(pos, neg, src, vae, mask, a.noise_mask)
+    else:
+        latent = nodes.SetLatentNoiseMask().set_mask(to_latent(vae, src), mask)[0]
+    out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
+    img = np.asarray(to_image(vae, out)[0]).astype(np.float32)
+    # The decoder shifts every pixel by a level or two: only the mask's own pixels are taken from it.
+    img = src[0].cpu().numpy() * 255 * (1 - m[..., None]) + img * m[..., None]
+    Image.fromarray(img.round().clip(0, 255).astype(np.uint8)).save(a.out)
+
+
+def variants(model, pos, neg, vae, a, common):
+    src = from_image(a.src)
+    h, w = src.shape[1:3]
+    # 1 = repaint, past `edge` px from each end, with a 16 px ramp. A wider ramp leaves a band
+    # half source, half new, at every step: ghosts of trees. The sampler re-noises the kept
+    # edges at each step, so the model itself joins the new middle to them.
+    x = np.arange(w, dtype=np.float32)
+    d = np.minimum(x, w - 1 - x)
+    ramp = np.clip((d - a.edge) / 16, 0, 1)
+    start = src
+    if a.init:
+        # A new silhouette for the middle (sil.py --edges-of): painted at img2img strength
+        # it keeps the source's style, where a high denoise over the source drifts.
+        r = torch.from_numpy(ramp)[None, None, :, None]
+        start = src * (1 - r) + from_image(a.init, w, h) * r
+    latent = to_latent(vae, start)
+    mask = torch.from_numpy(np.tile(ramp, (h, 1)))[None]
+    latent = nodes.SetLatentNoiseMask().set_mask(latent, mask)[0]
+    base, ext = os.path.splitext(a.out)
+    for i in range(a.n):
+        out = sample(model, pos, neg, latent, a.seed + i, denoise=a.denoise, **common)
+        img = np.asarray(to_image(vae, out)[0]).astype(np.float32)
+        # The decoder sees the new middle beside the kept edges and shifts them by a level or
+        # two: lay the source's own outer 8 px back, blended over 16 px, so every variant
+        # starts and ends on exactly the source's columns. Only there: across the repainted
+        # ramp, a cross-fade would leave ghosts of the source's trees.
+        r = np.clip((d - 8) / 16, 0, 1)[None, :, None]
+        img = src[0].cpu().numpy() * 255 * (1 - r) + img * r
+        Image.fromarray(img.round().clip(0, 255).astype(np.uint8)).save(f"{base}_{i + 1}{ext}")
+        print(f"{base}_{i + 1}{ext}", flush=True)
+
+
+MODES = {"txt2img": txt2img, "img2img": img2img, "variants": variants, "inpaint": inpaint}
+
+
+def main():
+    a = parse_args()
     model, clip, vae = load(a.ckpt, a.lora, a.lora_strength, a.tile)
     pos, neg = encode(clip, a.prompt), encode(clip, a.negative)
     if a.control:
         pos, neg = apply_control(pos, neg, a)
     common = dict(steps=a.steps, cfg=a.cfg, sampler=a.sampler, scheduler=a.scheduler)
-
-    if a.mode == "txt2img":
-        latent = nodes.EmptyLatentImage().generate(a.w, a.h, 1)[0]
-        out = sample(model, pos, neg, latent, a.seed, denoise=1.0, **common)
-        to_image(vae, out)[0].save(a.out)
-    elif a.mode == "img2img":
-        latent = to_latent(vae, from_image(a.init, a.w, a.h))
-        out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
-        to_image(vae, out)[0].save(a.out)
-    elif a.mode == "inpaint":
-        src = from_image(a.src)
-        m = np.asarray(Image.open(a.mask).convert("L")).astype(np.float32) / 255.0
-        mask = torch.from_numpy(m)[None]
-        if model.model.diffusion_model.input_blocks[0][0].in_channels == 9:
-            # An inpainting model (dreamshaper_8Inpainting, r315) is fed the source with the hole greyed out beside
-            # the noise: it sees the mask and what surrounds it, and matches its light and style. No noise mask: it
-            # paints the whole image and only the mask's pixels are kept below. With one (--noise-mask), the kept latent
-            # is laid back at every step, and the repaint comes out under a pale veil with a hard edge.
-            pos, neg, latent = nodes.InpaintModelConditioning().encode(pos, neg, src, vae, mask, a.noise_mask)
-        else:
-            latent = nodes.SetLatentNoiseMask().set_mask(to_latent(vae, src), mask)[0]
-        out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
-        img = np.asarray(to_image(vae, out)[0]).astype(np.float32)
-        # The decoder shifts every pixel by a level or two: only the mask's own pixels are taken from it.
-        img = src[0].cpu().numpy() * 255 * (1 - m[..., None]) + img * m[..., None]
-        Image.fromarray(img.round().clip(0, 255).astype(np.uint8)).save(a.out)
-    else:
-        src = from_image(a.src)
-        h, w = src.shape[1:3]
-        # 1 = repaint, past `edge` px from each end, with a 16 px ramp. A wider ramp leaves a band
-        # half source, half new, at every step: ghosts of trees. The sampler re-noises the kept
-        # edges at each step, so the model itself joins the new middle to them.
-        x = np.arange(w, dtype=np.float32)
-        d = np.minimum(x, w - 1 - x)
-        ramp = np.clip((d - a.edge) / 16, 0, 1)
-        start = src
-        if a.init:
-            # A new silhouette for the middle (sil.py --edges-of): painted at img2img strength
-            # it keeps the source's style, where a high denoise over the source drifts.
-            r = torch.from_numpy(ramp)[None, None, :, None]
-            start = src * (1 - r) + from_image(a.init, w, h) * r
-        latent = to_latent(vae, start)
-        mask = torch.from_numpy(np.tile(ramp, (h, 1)))[None]
-        latent = nodes.SetLatentNoiseMask().set_mask(latent, mask)[0]
-        base, ext = os.path.splitext(a.out)
-        for i in range(a.n):
-            out = sample(model, pos, neg, latent, a.seed + i, denoise=a.denoise, **common)
-            img = np.asarray(to_image(vae, out)[0]).astype(np.float32)
-            # The decoder sees the new middle beside the kept edges and shifts them by a level or
-            # two: lay the source's own outer 8 px back, blended over 16 px, so every variant
-            # starts and ends on exactly the source's columns. Only there: across the repainted
-            # ramp, a cross-fade would leave ghosts of the source's trees.
-            r = np.clip((d - 8) / 16, 0, 1)[None, :, None]
-            img = src[0].cpu().numpy() * 255 * (1 - r) + img * r
-            Image.fromarray(img.round().clip(0, 255).astype(np.uint8)).save(f"{base}_{i + 1}{ext}")
-            print(f"{base}_{i + 1}{ext}", flush=True)
+    MODES[a.mode](model, pos, neg, vae, a, common)
 
 
 if __name__ == "__main__":
