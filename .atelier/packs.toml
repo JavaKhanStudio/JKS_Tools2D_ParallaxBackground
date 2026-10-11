@@ -218,6 +218,12 @@ Gates, exactly what CI runs on JDK 17, 21 AND 25 (.github/workflows/ci.yml, job 
   tools/lint.sh                                ruff (ruff.toml), shellcheck, gdlint (gdlintrc) on every tracked
                                                .py/.sh/.gd, each through uvx at the version pinned in it (r314).
                                                Run it before a push: a new probe in tools/ lands lint-clean
+PRE-PUSH GATE (r332): this clone has `git config core.hooksPath tools/githooks`, so a push to develop,
+master or release/* runs tools/pre-push-check.sh: lint.sh and offscreen-lint.sh on the exact commit sent,
+in a throwaway worktree (file modes as git holds them: ruff EXE001 reads the mode), ~3 s, and refuses
+the push on a finding. Fix the commit, never --no-verify. It does NOT run ./gradlew build or
+browser-test.sh: those stay yours before a push. tools/pre-push-check-test.sh proves it. A new clone
+needs that git config line.
 and once, on JDK 17 (job godot-frames, xvfb-run + Mesa): tools/godot-parallax-shots.sh then
 tools/jme-parallax-shots.sh, failing on a FAIL.
 NO WINDOW ON SIMON'S SCREEN (r118, r144): every JavaExec task calls rootProject.offscreen(it) (it

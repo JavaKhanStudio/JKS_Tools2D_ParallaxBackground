@@ -33,7 +33,10 @@ repair.
   there. Nothing here may point into it.
 - CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`,
   `tools/offscreen-lint.sh`, `tools/lint.sh`: ruff (`ruff.toml`), shellcheck and gdlint (`gdlintrc`) on every tracked
-  `.py`, `.sh` and `.gd`, at versions pinned in it (r314). Run it before a push: a probe lands lint-clean.
+  `.py`, `.sh` and `.gd`, at versions pinned in it (r314). Run it before a push: a probe lands lint-clean. A push to
+  develop, master or release/* runs it anyway, with `offscreen-lint.sh`, on the pushed commit, and is refused on a
+  finding (`tools/pre-push-check.sh`, r332; a clone wires it with `git config core.hooksPath tools/githooks`):
+  `./gradlew build` and `browser-test.sh` stay yours.
   Its `godot-frames` job runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
   (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), then
   `tools/jme-parallax-shots.sh` the same way, and fails on a FAIL. A manual run's `break` input sets `BREAK` for the
