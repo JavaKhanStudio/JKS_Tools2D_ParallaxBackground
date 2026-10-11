@@ -1693,17 +1693,24 @@ final class ReaderCases
 	}
 
 	/**
-	 * Stands for an engine that draws a dissolve: records each layer begun, the dissolve it was begun under (side, ramp,
-	 * softness, drift, cells across and up) and its fog; checks every begin is ended, and the mask changes between layers.
+	 * Stands for an engine that draws a dissolve, or one that grades ({@code grades}): records each layer begun, the
+	 * dissolve it was begun under (side, ramp, softness, drift, cells across and up) or the grade (r, g, b, amount), and
+	 * its fog; checks every begin is ended, and the dissolve or the grade changes between layers only. It draws the one
+	 * and not the other, as the engines written before the other did.
 	 */
-	private final class DissolveEffects implements LayerEffects
+	private final class TransfertEffects implements LayerEffects
 	{
+		final boolean grades;
 		final List<ParallaxLayer> layers = new ArrayList<>();
-		final List<float[]> masks = new ArrayList<>();
+		final List<float[]> states = new ArrayList<>();
 		final List<Float> fogs = new ArrayList<>();
-		final float[] mask = new float[6];
+		/** The dissolve or the grade set last. */
+		final float[] state = new float[6];
 		int setCalls, pageFogs;
 		private boolean open;
+
+		TransfertEffects(boolean grades)
+		{this.grades = grades;}
 
 		@Override
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
@@ -1715,7 +1722,7 @@ final class ReaderCases
 			isFalse(open, "a layer begun inside another");
 			open = true;
 			layers.add(layer);
-			masks.add(Arrays.copyOf(mask, mask.length));
+			states.add(Arrays.copyOf(state, state.length));
 			fogs.add(fog);
 			return true;
 		}
@@ -1737,31 +1744,121 @@ final class ReaderCases
 		@Override
 		public boolean setDissolve(int side, float ramp, float softness, float drift, float cellsX, float cellsY)
 		{
-			isFalse(open, "the dissolve changed inside a layer");
-			setCalls++;
-			mask[0] = side;
-			mask[1] = ramp;
-			mask[2] = softness;
-			mask[3] = drift;
-			mask[4] = cellsX;
-			mask[5] = cellsY;
+			if (grades)
+				return false;
+			set("the dissolve", side, ramp, softness, drift, cellsX, cellsY);
 			return true;
 		}
 
-		/** The mask {@code layer} was last begun under; null when it was not begun. */
-		float[] maskOf(ParallaxLayer layer)
+		@Override
+		public boolean setGrade(float r, float g, float b, float amount)
+		{
+			if (!grades)
+				return false;
+			set("the grade", r, g, b, amount);
+			return true;
+		}
+
+		private void set(String what, float... values)
+		{
+			isFalse(open, what + " changed inside a layer");
+			setCalls++;
+			System.arraycopy(values, 0, state, 0, values.length);
+		}
+
+		/** The dissolve or grade {@code layer} was last begun under; null when it was not begun. */
+		float[] stateOf(ParallaxLayer layer)
 		{
 			int i = layers.lastIndexOf(layer);
-			return i < 0 ? null : masks.get(i);
+			return i < 0 ? null : states.get(i);
 		}
 
 		void clear()
 		{
 			layers.clear();
-			masks.clear();
+			states.clear();
 			fogs.clear();
 			setCalls = 0;
 		}
+	}
+
+	private static final String[] REPEATS = { "X", "Y", "XY", "none" };
+
+	/** A reader repeating as {@code REPEATS[mode]} says. */
+	private ParallaxPageReader inRepeatMode(int mode)
+	{return reader(mode != 1 && mode != 3, mode == 1 || mode == 2);}
+
+	/** Acts {@code seconds} and draws, what {@code effects} and the batch recorded before cleared. */
+	private void stepAndDraw(ParallaxPageReader reader, TransfertEffects effects, float seconds)
+	{
+		reader.act(seconds, 0, 0);
+		effects.clear();
+		draws.clear();
+		reader.draw(camera, batch);
+	}
+
+	/** Draws {@code from} under {@code effects}, sees nothing begun, and starts the 1 s transfert into {@code into}. */
+	private void startsFromNothingBegun(ParallaxPageReader reader, TransfertEffects effects, List<ParallaxLayer> from,
+			List<ParallaxLayer> into, TransfertStyle style, String repeat)
+	{
+		reader.setLayerEffects(effects);
+		reader.addLayers(from);
+		reader.draw(camera, batch);
+		equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun before the transfert");
+		reader.addLayersTransfert(page(into), null, 1, style);
+		same(style, reader.getTransfertStyle(), "the style under way");
+	}
+
+	/** The transfert's last step of {@code seconds}: it is over, nothing is begun, the new page is drawn plain. */
+	private void endsPlain(ParallaxPageReader reader, TransfertEffects effects, float seconds, String repeat)
+	{
+		stepAndDraw(reader, effects, seconds);
+		isFalse(reader.isInTransfer(), repeat + ": the transfert is over");
+		equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun after the transfert");
+		drawnAt(0.5f, 0, 1, repeat + ": the new page, plain");
+	}
+
+	/** A hook on the EMPTY layer "slot": the batch alpha it was last called with is in the array's one cell, -1 before. */
+	private static float[] alphaHook(ParallaxPageReader reader)
+	{
+		final float[] alpha = { -1 };
+		reader.setLayerHook("slot", new LayerHook()
+		{
+			@Override
+			public void draw(Batch batch, ParallaxLayer layer, float x, float y, float width, float height)
+			{alpha[0] = batch.getColor().a;}
+		});
+		return alpha;
+	}
+
+	/**
+	 * A page of a back and a front layer, in a fog of 0.1 and the tint (0.5, 1, 1), transferring over 2 s with
+	 * {@code style} into a page of a back layer, a SHADER one and a front one in a fog of 0.02. Returns the old back and
+	 * front, the new back, the SHADER layer, the new front.
+	 */
+	private ParallaxLayer[] fogPages(ParallaxPageReader reader, TransfertEffects effects, TransfertStyle style)
+	{
+		reader.setLayerEffects(effects);
+		reader.setFog(0.1f, Color.WHITE);
+		reader.addColorTransfert(new Color(0.5f, 1, 1, 1), 0);
+		ParallaxLayer oldBack = atSpeed(0.01f), oldFront = atSpeed(0.1f);
+		reader.addLayers(list(oldBack, oldFront));
+		ParallaxLayer newBack = atSpeed(0.01f), newFront = atSpeed(0.2f), wave = shaded(0.5f, 3, 1);
+		WholePage_Model next = page(list(newBack, wave, newFront));
+		next.setFogStrength(0.02f);
+		reader.addLayersTransfert(next, null, 2, style);
+		return new ParallaxLayer[] { oldBack, oldFront, newBack, wave, newFront };
+	}
+
+	/** Every draw in the tint (0.5, 1, 1) at full opacity ({@code why}), and the batch white after the draw. */
+	private void drawnInTheTint(String why)
+	{
+		for (float[] draw : draws)
+		{
+			equal(0.5f, draw[4], 0, "drawn in the tint");
+			equal(1, draw[5], 0, "at full opacity: " + why);
+		}
+		isTrue(batch.getColor().equals(Color.WHITE), "the batch white after the draw");
 	}
 
 	/**
@@ -1776,24 +1873,16 @@ final class ReaderCases
 		same(TransfertStyle.Kind.DISSOLVE, style.getKind(), "a dissolve");
 		for (int mode = 0; mode < 4; mode++)
 		{
-			String repeat = new String[] { "X", "Y", "XY", "none" }[mode];
-			ParallaxPageReader reader = reader(mode != 1 && mode != 3, mode == 1 || mode == 2);
-			DissolveEffects effects = new DissolveEffects();
-			reader.setLayerEffects(effects);
+			String repeat = REPEATS[mode];
+			ParallaxPageReader reader = inRepeatMode(mode);
+			TransfertEffects effects = new TransfertEffects(false);
 			List<ParallaxLayer> from = widened(0.3f, 3), into = widened(0.5f, 3);
-			reader.addLayers(from);
-			reader.draw(camera, batch);
-			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun before the transfert");
-			reader.addLayersTransfert(page(into), null, 1, style);
-			same(style, reader.getTransfertStyle(), "the style under way");
+			startsFromNothingBegun(reader, effects, from, into, style, repeat);
 			for (float t : new float[] { 0.25f, 0.5f, 0.75f })
 			{
 				// A quarter of the 1 s transfert a step: the fade is at t exactly.
-				reader.act(0.25f, 0, 0);
+				stepAndDraw(reader, effects, 0.25f);
 				isTrue(reader.isInTransfer(), repeat + " at " + t + ": in transfer");
-				effects.clear();
-				draws.clear();
-				reader.draw(camera, batch);
 				int shown = 0;
 				for (int slot = 0; slot < 3; slot++)
 				{
@@ -1803,7 +1892,7 @@ final class ReaderCases
 						ParallaxLayer layer = (side == 0 ? from : into).get(slot);
 						float share = side == 0 ? 1 - ramp : ramp;
 						String what = repeat + " at " + t + (side == 0 ? ", outgoing" : ", incoming") + " slot " + slot;
-						float[] mask = effects.maskOf(layer);
+						float[] mask = effects.stateOf(layer);
 						if (share <= 0)
 						{
 							isTrue(mask == null, what + ": a layer whose share is none is not begun");
@@ -1825,13 +1914,7 @@ final class ReaderCases
 				equal(2 * shown, effects.setCalls, repeat + " at " + t + ": a mask set, and set back to none, per layer");
 				equal(0, effects.pageFogs, repeat + ": no page fog during a dissolve");
 			}
-			reader.act(0.25f, 0, 0);
-			isFalse(reader.isInTransfer(), repeat + ": the transfert is over");
-			effects.clear();
-			draws.clear();
-			reader.draw(camera, batch);
-			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun after the transfert");
-			drawnAt(0.5f, 0, 1, repeat + ": the new page, plain");
+			endsPlain(reader, effects, 0.25f, repeat);
 		}
 	}
 
@@ -1858,22 +1941,16 @@ final class ReaderCases
 		equal(0, before.runs.size(), "nothing begun");
 
 		ParallaxPageReader hooked = reader(true, false);
-		DissolveEffects effects = new DissolveEffects();
+		TransfertEffects effects = new TransfertEffects(false);
 		hooked.setLayerEffects(effects);
-		final float[] alpha = { -1 };
-		hooked.setLayerHook("slot", new LayerHook()
-		{
-			@Override
-			public void draw(Batch batch, ParallaxLayer layer, float x, float y, float width, float height)
-			{alpha[0] = batch.getColor().a;}
-		});
+		float[] alpha = alphaHook(hooked);
 		ParallaxLayer back = layer(0);
 		hooked.addLayers(list(back));
 		hooked.addLayersTransfert(page(list(ParallaxLayer.empty("slot", 0.3f))), null, 1, TransfertStyle.dissolve(5, 0.1f, 0));
 		hooked.act(0.25f, 0, 0);
 		hooked.draw(camera, batch);
 		equal(0.25f, alpha[0], 1e-6f, "the hook fades in");
-		isTrue(effects.maskOf(back) != null, "the image layer is masked");
+		isTrue(effects.stateOf(back) != null, "the image layer is masked");
 		equal(1, effects.layers.size(), "the EMPTY layer is not begun");
 	}
 
@@ -1884,100 +1961,16 @@ final class ReaderCases
 	void dissolveKeepsEachPagesFogAndTheTint()
 	{
 		ParallaxPageReader reader = reader(true, false);
-		DissolveEffects effects = new DissolveEffects();
-		reader.setLayerEffects(effects);
-		reader.setFog(0.1f, Color.WHITE);
-		reader.addColorTransfert(new Color(0.5f, 1, 1, 1), 0);
-		ParallaxLayer oldBack = atSpeed(0.01f), oldFront = atSpeed(0.1f);
-		reader.addLayers(list(oldBack, oldFront));
-		ParallaxLayer newBack = atSpeed(0.01f), newFront = atSpeed(0.2f), wave = shaded(0.5f, 3, 1);
-		WholePage_Model next = page(list(newBack, wave, newFront));
-		next.setFogStrength(0.02f);
-		reader.addLayersTransfert(next, null, 2, TransfertStyle.dissolve(8, 0.05f, 0));
-		reader.act(1, 0, 0);
-		draws.clear();
-		reader.draw(camera, batch);
+		TransfertEffects effects = new TransfertEffects(false);
+		ParallaxLayer[] l = fogPages(reader, effects, TransfertStyle.dissolve(8, 0.05f, 0));
+		ParallaxLayer oldBack = l[0], newBack = l[2], wave = l[3], newFront = l[4];
+		stepAndDraw(reader, effects, 1);
 		equal(fog(0.1f, 0.01f, 0.1f), effects.fogs.get(effects.layers.indexOf(oldBack)), 1e-6f, "the outgoing page: its own fog");
 		equal(fog(0.02f, 0.01f, 0.2f), effects.fogs.get(effects.layers.indexOf(newBack)), 1e-6f, "the incoming page: its own");
 		equal(0, effects.fogs.get(effects.layers.indexOf(newFront)), 0, "a front layer begun with no fog");
-		isTrue(effects.maskOf(wave) != null, "a SHADER layer through its effect and the mask");
+		isTrue(effects.stateOf(wave) != null, "a SHADER layer through its effect and the mask");
 		equal(0, effects.pageFogs, "no page fog during a dissolve");
-		for (float[] draw : draws)
-		{
-			equal(0.5f, draw[4], 0, "drawn in the tint");
-			equal(1, draw[5], 0, "at full opacity: the mask does the rest");
-		}
-		isTrue(batch.getColor().equals(Color.WHITE), "the batch white after the draw");
-	}
-
-	/**
-	 * Stands for an engine that grades: records each layer begun, the grade it was begun under (r, g, b, amount) and its
-	 * fog; checks every begin is ended, and the grade changes between layers only.
-	 */
-	private final class GradeEffects implements LayerEffects
-	{
-		final List<ParallaxLayer> layers = new ArrayList<>();
-		final List<float[]> grades = new ArrayList<>();
-		final List<Float> fogs = new ArrayList<>();
-		final float[] grade = new float[4];
-		int setCalls, pageFogs;
-		private boolean open;
-
-		@Override
-		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
-		{throw new AssertionError("the reader calls the begin that takes the fog");}
-
-		@Override
-		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fog, Color fogColor)
-		{
-			isFalse(open, "a layer begun inside another");
-			open = true;
-			layers.add(layer);
-			grades.add(Arrays.copyOf(grade, grade.length));
-			fogs.add(fog);
-			return true;
-		}
-
-		@Override
-		public void end(Batch batch, ParallaxLayer layer)
-		{
-			isTrue(open, "ended without a begin");
-			open = false;
-		}
-
-		@Override
-		public boolean beginPageFog(Batch batch, Color tint, Color fog, Color incomingFog)
-		{
-			pageFogs++;
-			return false;
-		}
-
-		@Override
-		public boolean setGrade(float r, float g, float b, float amount)
-		{
-			isFalse(open, "the grade changed inside a layer");
-			setCalls++;
-			grade[0] = r;
-			grade[1] = g;
-			grade[2] = b;
-			grade[3] = amount;
-			return true;
-		}
-
-		/** The grade {@code layer} was last begun under; null when it was not begun. */
-		float[] gradeOf(ParallaxLayer layer)
-		{
-			int i = layers.lastIndexOf(layer);
-			return i < 0 ? null : grades.get(i);
-		}
-
-		void clear()
-		{
-			layers.clear();
-			grades.clear();
-			fogs.clear();
-			setCalls = 0;
-		}
+		drawnInTheTint("the mask does the rest");
 	}
 
 	/** How much of the colour a slot at {@code ramp} is: up to 1 halfway through its window, back to 0 at its end. */
@@ -1997,23 +1990,15 @@ final class ReaderCases
 		equal(1, style.getColorB(), 0, "a channel clamped to 1");
 		for (int mode = 0; mode < 4; mode++)
 		{
-			String repeat = new String[] { "X", "Y", "XY", "none" }[mode];
-			ParallaxPageReader reader = reader(mode != 1 && mode != 3, mode == 1 || mode == 2);
-			GradeEffects effects = new GradeEffects();
-			reader.setLayerEffects(effects);
+			String repeat = REPEATS[mode];
+			ParallaxPageReader reader = inRepeatMode(mode);
+			TransfertEffects effects = new TransfertEffects(true);
 			List<ParallaxLayer> from = widened(0.3f, 3), into = widened(0.5f, 3);
-			reader.addLayers(from);
-			reader.draw(camera, batch);
-			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun before the transfert");
-			reader.addLayersTransfert(page(into), null, 1, style);
-			same(style, reader.getTransfertStyle(), "the style under way");
+			startsFromNothingBegun(reader, effects, from, into, style, repeat);
 			for (float t : new float[] { 0.25f, 0.5f, 0.75f })
 			{
-				reader.act(0.25f, 0, 0);
+				stepAndDraw(reader, effects, 0.25f);
 				isTrue(reader.isInTransfer(), repeat + " at " + t + ": in transfer");
-				effects.clear();
-				draws.clear();
-				reader.draw(camera, batch);
 				int shown = 0;
 				for (int slot = 0; slot < 3; slot++)
 				{
@@ -2023,7 +2008,7 @@ final class ReaderCases
 					{
 						ParallaxLayer layer = (side == 0 ? from : into).get(slot);
 						String what = repeat + " at " + t + (side == 0 ? ", outgoing" : ", incoming") + " slot " + slot;
-						float[] grade = effects.gradeOf(layer);
+						float[] grade = effects.stateOf(layer);
 						if (incoming != (side == 1))
 						{
 							isTrue(grade == null, what + ": the other side of the slot is not begun");
@@ -2042,16 +2027,10 @@ final class ReaderCases
 				equal(3, shown, repeat + " at " + t + ": one side of each slot");
 				equal(shown, effects.layers.size(), repeat + " at " + t + ": one begin per layer shown");
 				equal(2 * shown, effects.setCalls, repeat + " at " + t + ": a grade set, and set back to 0, per layer");
-				equal(0, effects.grade[3], 0, repeat + " at " + t + ": no grade left on after the draw");
+				equal(0, effects.state[3], 0, repeat + " at " + t + ": no grade left on after the draw");
 				equal(0, effects.pageFogs, repeat + ": no page fog through a colour");
 			}
-			reader.act(0.25f, 0, 0);
-			isFalse(reader.isInTransfer(), repeat + ": the transfert is over");
-			effects.clear();
-			draws.clear();
-			reader.draw(camera, batch);
-			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun after the transfert");
-			drawnAt(0.5f, 0, 1, repeat + ": the new page, plain");
+			endsPlain(reader, effects, 0.25f, repeat);
 		}
 	}
 
@@ -2079,22 +2058,16 @@ final class ReaderCases
 		equal(0, before.runs.size(), "nothing begun");
 
 		ParallaxPageReader hooked = reader(true, false);
-		GradeEffects effects = new GradeEffects();
+		TransfertEffects effects = new TransfertEffects(true);
 		hooked.setLayerEffects(effects);
-		final float[] alpha = { -1 };
-		hooked.setLayerHook("slot", new LayerHook()
-		{
-			@Override
-			public void draw(Batch batch, ParallaxLayer layer, float x, float y, float width, float height)
-			{alpha[0] = batch.getColor().a;}
-		});
+		float[] alpha = alphaHook(hooked);
 		ParallaxLayer back = layer(0);
 		hooked.addLayers(list(ParallaxLayer.empty("slot", 0.3f), back));
 		hooked.addLayersTransfert(page(list(layer(0), layer(0))), null, 1, TransfertStyle.throughColor(Color.WHITE, 0));
 		hooked.act(0.25f, 0, 0);
 		hooked.draw(camera, batch);
 		equal(0.5f, alpha[0], 1e-6f, "the hook fades out by the grade");
-		isTrue(effects.gradeOf(back) != null, "the image layer is graded");
+		isTrue(effects.stateOf(back) != null, "the image layer is graded");
 		equal(1, effects.layers.size(), "the EMPTY layer is not begun");
 	}
 
@@ -2105,38 +2078,21 @@ final class ReaderCases
 	void throughColorKeepsEachPagesFogAndTheTint()
 	{
 		ParallaxPageReader reader = reader(true, false);
-		GradeEffects effects = new GradeEffects();
-		reader.setLayerEffects(effects);
-		reader.setFog(0.1f, Color.WHITE);
-		reader.addColorTransfert(new Color(0.5f, 1, 1, 1), 0);
-		ParallaxLayer oldBack = atSpeed(0.01f), oldFront = atSpeed(0.1f);
-		reader.addLayers(list(oldBack, oldFront));
-		ParallaxLayer newBack = atSpeed(0.01f), newFront = atSpeed(0.2f), wave = shaded(0.5f, 3, 1);
-		WholePage_Model next = page(list(newBack, wave, newFront));
-		next.setFogStrength(0.02f);
-		reader.addLayersTransfert(next, null, 2, TransfertStyle.throughColor(Color.WHITE, 0));
-		reader.act(0.5f, 0, 0);
-		draws.clear();
-		reader.draw(camera, batch);
+		TransfertEffects effects = new TransfertEffects(true);
+		ParallaxLayer[] l = fogPages(reader, effects, TransfertStyle.throughColor(Color.WHITE, 0));
+		ParallaxLayer oldBack = l[0], oldFront = l[1], newBack = l[2], wave = l[3];
+		stepAndDraw(reader, effects, 0.5f);
 		equal(fog(0.1f, 0.01f, 0.1f), effects.fogs.get(effects.layers.indexOf(oldBack)), 1e-6f, "the outgoing page: its own fog");
 		equal(0, effects.fogs.get(effects.layers.indexOf(oldFront)), 0, "a front layer begun with no fog");
-		equal(0.5f, effects.gradeOf(oldBack)[3], 1e-6f, "a quarter in: half the colour");
-		isTrue(effects.gradeOf(newBack) == null, "the incoming page not drawn yet");
-		reader.act(1, 0, 0);
-		effects.clear();
-		draws.clear();
-		reader.draw(camera, batch);
+		equal(0.5f, effects.stateOf(oldBack)[3], 1e-6f, "a quarter in: half the colour");
+		isTrue(effects.stateOf(newBack) == null, "the incoming page not drawn yet");
+		stepAndDraw(reader, effects, 1);
 		equal(fog(0.02f, 0.01f, 0.2f), effects.fogs.get(effects.layers.indexOf(newBack)), 1e-6f, "the incoming page: its own");
-		equal(0.5f, effects.gradeOf(newBack)[3], 1e-6f, "three quarters in: half the colour");
-		isTrue(effects.gradeOf(wave) != null, "a SHADER layer through its effect and the grade");
-		isTrue(effects.gradeOf(oldBack) == null, "the outgoing page no longer drawn");
+		equal(0.5f, effects.stateOf(newBack)[3], 1e-6f, "three quarters in: half the colour");
+		isTrue(effects.stateOf(wave) != null, "a SHADER layer through its effect and the grade");
+		isTrue(effects.stateOf(oldBack) == null, "the outgoing page no longer drawn");
 		equal(0, effects.pageFogs, "no page fog through a colour");
-		for (float[] draw : draws)
-		{
-			equal(0.5f, draw[4], 0, "drawn in the tint");
-			equal(1, draw[5], 0, "at full opacity: the grade does the rest");
-		}
-		isTrue(batch.getColor().equals(Color.WHITE), "the batch white after the draw");
+		drawnInTheTint("the grade does the rest");
 	}
 
 	/**
@@ -2186,27 +2142,24 @@ final class ReaderCases
 		equal(1, style.getColorB(), 0, "a channel clamped to 1");
 		for (int mode = 0; mode < 4; mode++)
 		{
-			String repeat = new String[] { "X", "Y", "XY", "none" }[mode];
-			ParallaxPageReader reader = reader(mode != 1 && mode != 3, mode == 1 || mode == 2);
-			GradeEffects effects = new GradeEffects();
+			String repeat = REPEATS[mode];
+			ParallaxPageReader reader = inRepeatMode(mode);
+			TransfertEffects effects = new TransfertEffects(true);
 			reader.setLayerEffects(effects);
 			List<ParallaxLayer> from = widened(0.3f, 3), into = widened(0.5f, 3);
 			reader.addLayers(from);
 			reader.addLayersTransfert(page(into), null, 1, style);
 			for (float t : new float[] { 0.125f, 0.25f, 0.375f, 0.5f, 0.625f, 0.75f, 0.875f })
 			{
-				reader.act(0.125f, 0, 0);
-				effects.clear();
-				draws.clear();
-				reader.draw(camera, batch);
+				stepAndDraw(reader, effects, 0.125f);
 				boolean incoming = t >= 0.5f;
 				float deeper = 2;
 				for (int slot = 0; slot < 3; slot++)
 				{
 					String what = repeat + " at " + t + " slot " + slot;
-					isTrue(effects.gradeOf((incoming ? from : into).get(slot)) == null, what + ": the other page not begun");
+					isTrue(effects.stateOf((incoming ? from : into).get(slot)) == null, what + ": the other page not begun");
 					drawnAt(incoming ? 0.3f : 0.5f, slot, 0, what);
-					float[] grade = effects.gradeOf((incoming ? into : from).get(slot));
+					float[] grade = effects.stateOf((incoming ? into : from).get(slot));
 					isTrue(grade != null, what + ": begun");
 					equal(0.9f, grade[0], 0, what + ": red");
 					equal(0.95f, grade[1], 0, what + ": green");
@@ -2219,16 +2172,10 @@ final class ReaderCases
 					drawnAt(incoming ? 0.5f : 0.3f, slot, 1, what);
 				}
 				equal(3, effects.layers.size(), repeat + " at " + t + ": one begin per slot");
-				equal(0, effects.grade[3], 0, repeat + " at " + t + ": no grade left on after the draw");
+				equal(0, effects.state[3], 0, repeat + " at " + t + ": no grade left on after the draw");
 				equal(0, effects.pageFogs, repeat + ": no page fog in a fog creep");
 			}
-			reader.act(0.125f, 0, 0);
-			isFalse(reader.isInTransfer(), repeat + ": the transfert is over");
-			effects.clear();
-			draws.clear();
-			reader.draw(camera, batch);
-			equal(0, effects.layers.size() + effects.setCalls, repeat + ": nothing begun after the transfert");
-			drawnAt(0.5f, 0, 1, repeat + ": the new page, plain");
+			endsPlain(reader, effects, 0.125f, repeat);
 		}
 		// The far slot is under some mist before the near one is, and still is after the near one has cleared.
 		isTrue(labCreep(0.125f, stagger, 0, 3) > 0 && labCreep(0.125f, stagger, 2, 3) == 0, "the far layers first");
