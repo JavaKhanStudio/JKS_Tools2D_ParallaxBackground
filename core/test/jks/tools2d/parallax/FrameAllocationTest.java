@@ -46,16 +46,7 @@ class FrameAllocationTest
 	static void natives()
 	{
 		GdxNativesLoader.load();
-		Texture page = new Texture()
-		{
-			@Override
-			public int getWidth()
-			{return 64;}
-
-			@Override
-			public int getHeight()
-			{return 64;}
-		};
+		Texture page = TestGdx.unbackedTexture(64, 64);
 		TextureAtlas atlas = new TextureAtlas();
 		atlas.addRegion("snowflake", page, 0, 0, 8, 8);
 		snow = new ParallaxParticles();

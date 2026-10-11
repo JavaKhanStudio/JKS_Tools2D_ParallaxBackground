@@ -1,9 +1,9 @@
 package jks.tools2d.parallax.pages;
 
+import static jks.tools2d.parallax.TestGdx.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
-import java.lang.reflect.Proxy;
 import java.nio.IntBuffer;
 import java.nio.file.Path;
 
@@ -27,6 +27,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
+import jks.tools2d.parallax.TestGdx;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 
 /**
@@ -54,12 +55,12 @@ class Etc2AtlasMipmapTest
 	@BeforeEach
 	void countingGl()
 	{
-		Gdx.app = (Application) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { Application.class }, (proxy, method, args) -> defaultValue(method.getReturnType()));
-		Gdx.graphics = (Graphics) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { Graphics.class }, (proxy, method, args) -> defaultValue(method.getReturnType()));
+		Gdx.app = TestGdx.stub(Application.class);
+		Gdx.graphics = TestGdx.stub(Graphics.class);
 		// Every path the test hands over is absolute.
-		Gdx.files = (Files) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { Files.class }, (proxy, method, args) ->
+		Gdx.files = TestGdx.stub(Files.class, (proxy, method, args) ->
 				method.getReturnType() == FileHandle.class ? new FileHandle((String) args[0]) : defaultValue(method.getReturnType()));
-		Gdx.gl = Gdx.gl20 = (GL20) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { GL20.class }, (proxy, method, args) ->
+		Gdx.gl = Gdx.gl20 = TestGdx.stub(GL20.class, (proxy, method, args) ->
 		{
 			if (method.getName().equals("glGenerateMipmap"))
 				generateMipmap++;
@@ -80,23 +81,9 @@ class Etc2AtlasMipmapTest
 	@AfterEach
 	void restore()
 	{
-		Gdx.app = null;
-		Gdx.graphics = null;
-		Gdx.files = null;
-		Gdx.gl = Gdx.gl20 = null;
+		TestGdx.restore();
 		Gvars_Parallax.setCompressedAtlases(false);
 		Gvars_Parallax.setManager(null);
-	}
-
-	private static Object defaultValue(Class<?> type)
-	{
-		if (type == boolean.class)
-			return false;
-		if (type == float.class)
-			return 0f;
-		if (type.isPrimitive() && type != void.class)
-			return 0;
-		return null;
 	}
 
 	/** The call this test is about, without the fix: libGDX's own loading asks for the mipmaps. */

@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.GdxNativesLoader;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
+import jks.tools2d.parallax.TestGdx;
 
 /**
  * The editor saves a page from its loaded layers through {@link Utils_Page#buildFromPage}: a layer that comes back
@@ -37,16 +38,7 @@ class BuildFromPageTest
 	/** An atlas of the page's image and the snow effect's flake, on a page with no GL texture behind it. */
 	private static TextureAtlas atlas()
 	{
-		Texture page = new Texture()
-		{
-			@Override
-			public int getWidth()
-			{return 256;}
-
-			@Override
-			public int getHeight()
-			{return 256;}
-		};
+		Texture page = TestGdx.unbackedTexture(256, 256);
 		TextureAtlas atlas = new TextureAtlas();
 		atlas.addRegion("sky", page, 0, 0, 192, 108);
 		atlas.addRegion("snowflake", page, 200, 0, 8, 8);

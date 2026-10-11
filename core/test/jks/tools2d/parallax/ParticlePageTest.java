@@ -49,16 +49,7 @@ class ParticlePageTest
 	/** An atlas of two regions on a page with no GL texture behind it. */
 	private static TextureAtlas atlas()
 	{
-		Texture page = new Texture()
-		{
-			@Override
-			public int getWidth()
-			{return 256;}
-
-			@Override
-			public int getHeight()
-			{return 256;}
-		};
+		Texture page = TestGdx.unbackedTexture(256, 256);
 		TextureAtlas atlas = new TextureAtlas();
 		atlas.addRegion("sky", page, 0, 0, 192, 108);
 		atlas.addRegion("snowflake", page, 200, 0, 8, 8);

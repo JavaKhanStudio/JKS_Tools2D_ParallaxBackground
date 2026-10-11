@@ -1,9 +1,9 @@
 package jks.tools2d.parallax.heart;
 
+import static jks.tools2d.parallax.TestGdx.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.lang.reflect.Proxy;
 import java.io.IOException;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
@@ -35,6 +35,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
 import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.TestGdx;
 import jks.tools2d.parallax.pages.Parallax_Model;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.side.SquareBackground;
@@ -66,7 +67,7 @@ class ParallaxHeartResizeTest
 		savedWorldHeight = Gvars_Parallax.getWorldHeight();
 		window(1600, 900);
 
-		Gdx.graphics = (Graphics) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { Graphics.class }, (proxy, method, args) ->
+		Gdx.graphics = TestGdx.stub(Graphics.class, (proxy, method, args) ->
 		{
 			switch (method.getName())
 			{
@@ -80,8 +81,8 @@ class ParallaxHeartResizeTest
 					return defaultValue(method.getReturnType());
 			}
 		});
-		Gdx.app = (Application) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { Application.class }, (proxy, method, args) -> defaultValue(method.getReturnType()));
-		Gdx.gl = Gdx.gl20 = (GL20) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { GL20.class }, (proxy, method, args) ->
+		Gdx.app = TestGdx.stub(Application.class);
+		Gdx.gl = Gdx.gl20 = TestGdx.stub(GL20.class, (proxy, method, args) ->
 		{
 			boolean status = (method.getName().equals("glGetShaderiv") || method.getName().equals("glGetProgramiv"))
 					&& ((int) args[1] == GL20.GL_COMPILE_STATUS || (int) args[1] == GL20.GL_LINK_STATUS);
@@ -98,27 +99,10 @@ class ParallaxHeartResizeTest
 	@AfterEach
 	void restore()
 	{
-		Gdx.graphics = null;
-		Gdx.app = null;
-		Gdx.gl = Gdx.gl20 = null;
+		TestGdx.restore();
 		Gvars_Parallax.setWorldWidth(savedWorldWidth);
 		Gvars_Parallax.setWorldHeight(savedWorldHeight);
 		Gvars_Parallax.setManager(null);
-	}
-
-	private static Object defaultValue(Class<?> type)
-	{
-		if (type == boolean.class)
-			return false;
-		if (type == float.class)
-			return 0f;
-		if (type == long.class)
-			return 0L;
-		if (type == double.class)
-			return 0d;
-		if (type.isPrimitive() && type != void.class)
-			return 0;
-		return null;
 	}
 
 	/** What the backend does before calling resize: the window reports its new size. */
