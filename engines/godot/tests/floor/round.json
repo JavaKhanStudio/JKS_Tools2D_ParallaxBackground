@@ -1,0 +1,39 @@
+{
+ "round": "floor",
+ "about": "FLOOR layers (r275, docs/depth-tricks.md \u00a71): the floor lab's grounds drawn row by row, each row at its depth, in MODE7 and LINE_SCROLL, the layers in front planted on them. Godot draws its own rows (plax_background.gd's _measure_floor/_draw_floor) and plants its own (_plant): a row at another speed, stretch or strip, or a tree at its page speed, shows. Written by core/test-data/floor/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "scenes": [
+  {
+   "id": "g01",
+   "page": "engines/godot/tests/floor/g01.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "floor-mode7",
+   "about": "Hiver's lab set on a MODE7 floor (stones from above, 16-unit tiles, a box 40% of the world high, 96 rows from 0.06 at the bottom to 0.016 at the top); the trees in front planted on it"
+  },
+  {
+   "id": "g02",
+   "page": "engines/godot/tests/floor/g02.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "floor-line-scroll",
+   "about": "the same set on a LINE_SCROLL floor: the stones painted in perspective, each row shifted at its speed"
+  },
+  {
+   "id": "g03",
+   "page": "engines/godot/tests/floor/g03.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "floor-purple-fogged",
+   "about": "PurpleFairy's lab set on a MODE7 violet floor (0.13 to 0.0224), its pink trees and flowers planted, under a page fog of 0.02: the floor is fogged at its bottom row's speed"
+  },
+  {
+   "id": "g04",
+   "page": "engines/godot/tests/floor/g04.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "floor-no-repeat-cross-fade",
+   "about": "g01 in 24 rows on a page repeating on neither axis (the floor still tiles across, the other layers are drawn once), cross-fading into g02 4 s in, over 4 s: both pages' layers planted on their own floor",
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/godot/tests/floor/g02.jplax"
+   }
+  }
+ ]
+}

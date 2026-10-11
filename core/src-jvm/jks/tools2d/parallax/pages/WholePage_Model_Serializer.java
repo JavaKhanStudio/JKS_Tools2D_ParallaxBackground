@@ -30,13 +30,16 @@ import com.esotericsoftware.kryo.io.Output;
  * <li>version 10: the version 9 layout without the layers' shaderHaze, and with the page's fogStrength (a float) and
  * fogColor (a color) stored after useOriginalSize. Older files read the white mist and, as the strength, their largest
  * FOG layer's shaderHaze (0 before 9).</li>
+ * <li>version 11: the version 10 layout with each layer's floorMapping (its name), floorTopSpeed (a float), floorRows
+ * (an int) and floorHeight (a float) stored after sequenceLength. Older files read MODE7, 0, 96 and 0, and have no
+ * FLOOR layer.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 10;
+	static final int CURRENT_VERSION = 11;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

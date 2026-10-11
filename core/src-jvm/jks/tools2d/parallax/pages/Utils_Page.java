@@ -35,7 +35,7 @@ public final class Utils_Page
 
 	/**
 	 * The stored form of a loaded layer, for a page saved from its layers (the editor's): everything the layer was set
-	 * up from, its kind, name, particle files, shader effect and sequence (its stored seed, not a game's) included. An IMAGE layer's region is not on it, the caller names it.
+	 * up from, its kind, name, particle files, shader effect, sequence (its stored seed, not a game's) and floor included. An IMAGE layer's region is not on it, the caller names it.
 	 */
 	public static Parallax_Model buildFromPage(ParallaxLayer page, String regionName, int region_Position)
 	{
@@ -72,6 +72,10 @@ public final class Utils_Page
 			model.sequenceSeed = page.getSequenceSeed();
 			model.sequenceLength = page.getSequenceLength();
 		}
+		model.floorMapping = page.getFloorMapping();
+		model.floorTopSpeed = page.getFloorTopSpeed();
+		model.floorRows = page.getFloorRows();
+		model.floorHeight = page.getFloorHeight();
 		return model;
 	}
 }

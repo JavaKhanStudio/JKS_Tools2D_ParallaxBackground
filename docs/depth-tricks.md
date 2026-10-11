@@ -38,6 +38,13 @@ five: the ground's stones run apart under the camera while the billboards stand 
 - The art: any layer can be a ground, but an image drawn as seen from above (a floor texture) reads best. Hiver's
   sky band would be a lake.
 - Limit: row strips are an affine approximation of perspective; at one strip per screen row it is exact enough.
+- Built (r275), after Simon felt it in the floor lab (`tools/effects-lab.sh --lab floor`, `FloorLab`): the layer kind
+  `FLOOR` (format 11: `floorMapping` `MODE7` or `LINE_SCROLL`, `floorTopSpeed`, `floorRows`, `floorHeight`: the box,
+  so the lab's 40%-high ground over a square tile of stones is a page setting), its rows straight in
+  speed from the layer's own at the bottom to the top speed (the lab's sliders, not the layer behind's). The lab showed
+  the layers in front sliding on the ground at their own speeds; the reader plants them, each at the speed of the row
+  under its foot (`ParallaxPageReader.plant`). Drawn by `ParallaxLayer.drawFloor`, `plax_background.gd`'s
+  `_draw_floor`; round `engines/godot/tests/floor`.
 
 ### 2. Tower: a layer wrapped round a cylinder
 

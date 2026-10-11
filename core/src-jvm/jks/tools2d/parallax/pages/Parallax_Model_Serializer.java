@@ -73,6 +73,14 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 		// Format 9 only: from 10 the fog is the page's (WholePage_Model.getFogStrength reads this one from older files).
 		if (WholePage_Model_Serializer.currentVersion(kryo) == 9)
 			output.writeFloat(model.shaderHaze);
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 11)
+		{
+			output.writeString(model.floorMapping.name());
+			output.writeFloat(model.floorTopSpeed);
+			output.writeInt(model.floorRows);
+			output.writeFloat(model.floorHeight);
+		}
 	}
 
 	@Override
@@ -146,6 +154,18 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		if (WholePage_Model_Serializer.currentVersion(kryo) == 9)
 			model.shaderHaze = input.readFloat();
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 11)
+		{
+			String mapping = input.readString();
+			try
+			{model.floorMapping = Enum_FloorMapping.valueOf(mapping);}
+			catch (IllegalArgumentException e)
+			{throw new KryoException("Floor mapping " + mapping + " is not known here: the .plax was written by a newer version");}
+			model.floorTopSpeed = input.readFloat();
+			model.floorRows = input.readInt();
+			model.floorHeight = input.readFloat();
+		}
 
 		return model;
 	}

@@ -12,11 +12,14 @@ const LAYER_DEFAULTS := {
 	"particlesLibgdx": "", "particlesGodot": "", "particlesAnchor": "LAYER",
 	"shaderEffect": "WAVE", "shaderAmplitude": 0.0, "shaderWavelength": 0.0, "shaderSpeed": 0.0, "shaderHaze": 0.0,
 	"sequenceSegments": [], "sequenceSeed": 0, "sequenceLength": 16,
+	"floorMapping": "MODE7", "floorTopSpeed": 0.0, "floorRows": 96, "floorHeight": 0.0,
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
 ## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects, a SEQUENCE
-## layer's cycle drawn by draw_cycle.
-const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER", "SEQUENCE"]
+## layer's cycle drawn by draw_cycle, a FLOOR layer's rows by PlaxBackground._draw_floor.
+const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER", "SEQUENCE", "FLOOR"]
+## How a FLOOR layer's rows map its image (Enum_FloorMapping).
+const FLOOR_MAPPINGS := ["MODE7", "LINE_SCROLL"]
 ## What a seed of 0 starts from (SequenceCycle.ZERO_SEED): xorshift never leaves 0.
 const ZERO_SEED := 0x6D2B79F5
 const _U32 := 0xFFFFFFFF
@@ -87,6 +90,7 @@ func _read(json: Dictionary, inside) -> bool:
 		# JSON numbers are floats here: a seed is read back to the int Java stored.
 		layer.sequenceSeed = int(layer.sequenceSeed)
 		layer.sequenceLength = int(layer.sequenceLength)
+		layer.floorRows = int(layer.floorRows)
 		for segment in layer.sequenceSegments:
 			segment.regionPosition = int(segment.get("regionPosition", 0))
 			segment.weight = int(segment.get("weight", 1)) if segment.get("weight") != null else 1
@@ -95,6 +99,9 @@ func _read(json: Dictionary, inside) -> bool:
 			return false
 		if not layer.particlesAnchor in ANCHORS:
 			push_error("PlaxPage: particle anchor %s is not known here: the page was written by a newer version" % layer.particlesAnchor)
+			return false
+		if not layer.floorMapping in FLOOR_MAPPINGS:
+			push_error("PlaxPage: floor mapping %s is not known here: the page was written by a newer version" % layer.floorMapping)
 			return false
 		if not layer.shaderEffect in PlaxEffects.EFFECTS:
 			push_error("PlaxPage: shader effect %s is not known here: the page was written by a newer version" % layer.shaderEffect)

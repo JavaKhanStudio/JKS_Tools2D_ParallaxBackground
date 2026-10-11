@@ -28,7 +28,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * depth fog ({@link #setFog}) mixes each IMAGE, SEQUENCE and SHADER layer toward the fog's colour, more the slower the
  * layer scrolls ({@link #fogOf}), through the same effects. A
  * SEQUENCE layer's cycle is the one its page stores the seed of, unless the game passes its own
- * ({@link #setSequenceSeed}).
+ * ({@link #setSequenceSeed}). A FLOOR layer is drawn row by row, each row at its depth
+ * ({@link ParallaxLayer#drawFloor}), and every layer in front of it scrolls at the speed of its row under the layer's
+ * foot ({@link #plant}).
  */
 public class ParallaxPageReader implements Disposable
 {
@@ -474,9 +476,13 @@ public class ParallaxPageReader implements Disposable
 			}
 		}
 
-		tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
+		if (layer.kind == Enum_LayerKind.FLOOR)
+			// Its rows across the whole view, whatever the page repeats; no mirrored copy.
+			layer.drawFloor(batch, originY, viewLeft, viewLeft + viewWidth, viewBottom, viewBottom + viewHeight);
+		else
+			tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
 
-		if (layer.isMirror && repeatOnX != repeatOnY)
+		if (layer.isMirror && repeatOnX != repeatOnY && layer.kind != Enum_LayerKind.FLOOR)
 		{
 			// A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
 			if (repeatOnX)
@@ -564,6 +570,8 @@ public class ParallaxPageReader implements Disposable
 	public void act(float delta, float speedX, float speedY)
 	{
 		effectTime += delta;
+		plant(layers);
+		plant(transferLayers);
 		for (int i = 0, n = layers.size(); i < n; i++)
 			layers.get(i).act(delta, speedX, speedY, repeatOnX, repeatOnY);
 
@@ -588,6 +596,35 @@ public class ParallaxPageReader implements Disposable
 			tintElapsed = Math.min(tintDuration, tintElapsed + delta);
 			tint.set(tintFrom).lerp(tintTo, tintElapsed / tintDuration);
 		}
+	}
+
+	/**
+	 * Plants every layer of {@code page} in front of its last FLOOR layer on it (r275, Simon: the trees slid on the
+	 * ground until they moved with it): such a layer scrolls at the speed of the floor's row under its foot
+	 * ({@link ParallaxLayer#getFootY}), as a thing standing on the ground does, the floor's box taken at both decals. A
+	 * foot below the box stands on its bottom row; a foot above its top row stands on no floor, and keeps its own speed (a
+	 * foreground hanging from the top of the view). Every other layer keeps its own. Run by act(), every frame, so a
+	 * speed the editor changes plants at once; allocates nothing.
+	 */
+	public static void plant(List<ParallaxLayer> page)
+	{
+		int floor = -1;
+		for (int i = 0, n = page.size(); i < n; i++)
+			if (page.get(i).kind == Enum_LayerKind.FLOOR)
+				floor = i;
+		for (int i = 0, n = page.size(); i < n; i++)
+			page.get(i).setPlantedSpeedX(i > floor && floor >= 0 ? plantedSpeedOn(page.get(floor), page.get(i)) : Float.NaN);
+	}
+
+	/** The speed of {@code floor}'s row under {@code layer}'s foot, NaN when its foot is above the floor's top row. */
+	public static float plantedSpeedOn(ParallaxLayer floor, ParallaxLayer layer)
+	{
+		float bottom = floor.getDecalPercentY() * (floor.getWorldHeight() / 100), height = floor.getHeight();
+		float t = height > 0 ? (layer.getFootY() - bottom) / height : 0;
+		if (t > 1)
+			return Float.NaN;
+		t = Math.max(0, t);
+		return floor.getParallaxSpeedRatioX() + (floor.getFloorTopSpeed() - floor.getParallaxSpeedRatioX()) * t;
 	}
 
 	/**

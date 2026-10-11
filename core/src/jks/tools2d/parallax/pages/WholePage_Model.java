@@ -305,7 +305,7 @@ public class WholePage_Model
 		List<TextureRegion> regions = new ArrayList<>(1);
 		regions.add(findLayer(parallax, atlas));
 		ParallaxLayer layer = new ParallaxLayer(
-				parallax.kind == Enum_LayerKind.SHADER ? Enum_LayerKind.SHADER : Enum_LayerKind.IMAGE,
+				parallax.kind == Enum_LayerKind.SHADER || parallax.kind == Enum_LayerKind.FLOOR ? parallax.kind : Enum_LayerKind.IMAGE,
 				regions,
 				true,
 				worldWidth,

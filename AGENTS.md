@@ -116,6 +116,12 @@ repair.
   `engines/godot/tests/sequence_cycle.gd` holds them to the JVM's picks (`tests/sequence/picks.json`, written by
   `tools/r183-sequence/PickTable.java`) and to a walk over every slot; `tools/godot-parallax-shots.sh` runs it with the
   `sequence` round.
+- A `FLOOR` layer (r275, format 11) is drawn row by row, each row at its own speed and distance
+  (`ParallaxLayer.measureFloor`/`drawFloor`, its strips cut when a setting changes, never in a frame), and
+  `ParallaxPageReader.plant` moves every layer in front of it at the speed of the row under its foot, every `act()`,
+  without touching its stored speed. Godot's copy is `plax_background.gd`'s `_measure_floor`, `_draw_floor` and `_plant`;
+  jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/godot/tests/floor`;
+  `tools/r275-floor/strength.sh` proves the round sees a floor against its flat twin, `mutate.sh` a wrong Godot copy.
 - The browser suite's `ReaderCases` checks tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs it in `:core:test`. Cover all four repeat modes (X, Y, XY, none).
 

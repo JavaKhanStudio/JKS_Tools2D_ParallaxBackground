@@ -133,6 +133,12 @@ public final class Utils_Page_Json
 						segment.getInt("regionPosition", 0), segment.getInt("weight", 1)));
 		layer.sequenceSeed = json.getInt("sequenceSeed", layer.sequenceSeed);
 		layer.sequenceLength = json.getInt("sequenceLength", layer.sequenceLength);
+		String mapping = readString(json, "floorMapping");
+		if (mapping != null)
+			layer.floorMapping = readMapping(mapping);
+		layer.floorTopSpeed = readFloat(json, "floorTopSpeed", layer.floorTopSpeed);
+		layer.floorRows = json.getInt("floorRows", layer.floorRows);
+		layer.floorHeight = readFloat(json, "floorHeight", layer.floorHeight);
 		return layer;
 	}
 
@@ -169,6 +175,14 @@ public final class Utils_Page_Json
 			if (value.name().equals(effect))
 				return value;
 		throw new GdxRuntimeException("Shader effect " + effect + " is not known here: the page was written by a newer version");
+	}
+
+	private static Enum_FloorMapping readMapping(String mapping)
+	{
+		for (Enum_FloorMapping value : Enum_FloorMapping.values())
+			if (value.name().equals(mapping))
+				return value;
+		throw new GdxRuntimeException("Floor mapping " + mapping + " is not known here: the page was written by a newer version");
 	}
 
 	private static Color readColor(JsonValue json, Color fallback)

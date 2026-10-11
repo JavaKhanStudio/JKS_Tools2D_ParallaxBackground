@@ -25,6 +25,7 @@ import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
+import jks.tools2d.parallax.pages.Enum_FloorMapping;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -137,6 +138,9 @@ class FrameAllocationTest
 					: i % 10 == 3 ? ParallaxLayer.shader(region(), 40, 0.05f + random.nextFloat(), i % 20 == 3 ? Enum_ShaderEffect.WAVE : Enum_ShaderEffect.FOG, 0.5f, 2, 1)
 					: i % 10 == 1 ? ParallaxLayer.sequence(new ArrayList<>(List.of(region(), narrowRegion(), region())), new int[] { 3, 5, 2 },
 							(int) seed * 31 + i, 64, 40, 0.05f + random.nextFloat())
+					// One in twenty a FLOOR, of both mappings: the layers after it are planted on it every frame.
+					: i % 20 == 9 ? ParallaxLayer.floor(region(), 40, 0.05f + random.nextFloat(), i % 40 == 9 ? Enum_FloorMapping.MODE7 : Enum_FloorMapping.LINE_SCROLL,
+							0.06f, 0.01f, 64)
 					: i % 10 == 7 ? ParallaxLayer.particles(new ParallaxParticles(snow), i % 20 == 7 ? Enum_ParticleAnchor.VIEW : Enum_ParticleAnchor.LAYER, 0.05f + random.nextFloat())
 					: new ParallaxLayer(region(), true, 40, 0.01f + random.nextFloat() * 0.05f, 0.01f + random.nextFloat() * 0.05f, 0.05f + random.nextFloat());
 			layer.setParallaxSpeedRatioX(0.01f + random.nextFloat() * 0.05f);

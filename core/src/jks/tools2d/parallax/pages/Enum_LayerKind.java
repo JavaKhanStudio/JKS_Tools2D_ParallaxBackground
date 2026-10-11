@@ -29,4 +29,12 @@ public enum Enum_LayerKind
 	 * layer's one image is. See {@link Sequence_Segment}.
 	 */
 	SEQUENCE,
+	/**
+	 * A ground (format 11): an atlas region in an IMAGE layer's box, drawn as {@link Parallax_Model#floorRows} rows, each
+	 * row at its own depth: the bottom row scrolls at the layer's speed, the top row at
+	 * {@link Parallax_Model#floorTopSpeed}, the rows between at a speed straight in their height (1 / their depth), mapped
+	 * as {@link Parallax_Model#floorMapping} says. The layers in front of it scroll at the speed of the row under their
+	 * foot. See {@link Enum_FloorMapping}, docs/depth-tricks.md §1.
+	 */
+	FLOOR,
 }

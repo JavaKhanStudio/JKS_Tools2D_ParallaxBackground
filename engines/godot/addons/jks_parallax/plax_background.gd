@@ -52,6 +52,10 @@ extends CanvasLayer
 ## two of them. Not ported yet: atlas regions packed rotated.
 
 @export_file("*.jplax", "*.plaxpj") var page_path := ""
+## The most rows a FLOOR layer is cut in (ParallaxLayer.MAX_FLOOR_ROWS), and mode 7's tilt (ParallaxLayer.FLOOR_TILT).
+const MAX_FLOOR_ROWS := 512
+const FLOOR_TILT := 0.6
+
 ## Folder the page's atlas is in; empty: the page's own folder.
 @export_dir var atlas_dir := ""
 @export var world_width := 40.0
@@ -287,7 +291,7 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 			_add_canvas(sequence)
 			built.append(sequence)
 			continue
-		if model.kind != "IMAGE" and model.kind != "SHADER":
+		if model.kind != "IMAGE" and model.kind != "SHADER" and model.kind != "FLOOR":
 			var e := {"model": model, "region": {}, "distance_x": 0.0, "distance_y": 0.0}
 			if model.kind == "PARTICLES":
 				e.scene = _particle_scene(model, from_page, from_atlas, i)
@@ -307,6 +311,8 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		if region.rotate:
 			push_warning("PlaxBackground: region '%s' is packed rotated, which is not supported: drawn as is" % model.regionName)
 		var l := _build_layer(model, region, from_page.use_original_size)
+		if model.kind == "FLOOR":
+			_measure_floor(l)
 		_reset_position(l)
 		_add_canvas(l)
 		built.append(l)
@@ -315,7 +321,7 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 	for l in built:
 		l.haze = 0.0 if l.model.kind == "EMPTY" or l.model.kind == "PARTICLES" else PlaxEffects.fog_of(from_page.fog_strength, front, l.model)
 		l.fog_color = Vector3(from_page.fog_color.r, from_page.fog_color.g, from_page.fog_color.b)
-		if l.haze > 0 and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE"):
+		if l.haze > 0 and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "FLOOR"):
 			l.canvas.material = PlaxEffects.material("PLAIN")
 	return built
 
@@ -514,6 +520,8 @@ func _reset_position(l: Dictionary) -> void:
 	l.travel_y = l.distance_y
 	l.wrapped_x = 0.0
 	l.wrapped_y = 0.0
+	if l.has("row_distance"):
+		l.row_distance.fill(l.distance_x)
 
 
 func _process(delta: float) -> void:
@@ -531,6 +539,8 @@ func act(delta: float) -> void:
 		return
 	_effect_time += delta
 	_act_gradients(delta)
+	_plant(layers)
+	_plant(transfer_layers)
 	for l in layers:
 		_act_layer(l, delta, speed_x, speed_y)
 	if not transfer_layers.is_empty():
@@ -551,7 +561,8 @@ func act(delta: float) -> void:
 func _act_layer(l: Dictionary, delta: float, speed_x: float, speed_y: float) -> void:
 	var m: Dictionary = l.model
 	var move_y: float = -delta * speed_y * m.parallaxScalingSpeedY
-	var move_x: float = -delta * (m.speedXAtRest + speed_x) * m.parallaxScalingSpeedX
+	var planted: float = l.get("planted", NAN)
+	var move_x: float = -delta * (m.speedXAtRest + speed_x) * (m.parallaxScalingSpeedX if is_nan(planted) else planted)
 	l.distance_y += move_y
 	l.distance_x += move_x
 	l.travel_y += move_y
@@ -571,6 +582,120 @@ func _act_layer(l: Dictionary, delta: float, speed_x: float, speed_y: float) -> 
 		# The same on Y, within its period up (ParallaxLayer.wrappedY, r262).
 		var period_y := PlaxEffects.period_y(m)
 		l.wrapped_y = fmod(l.wrapped_y + below - l.distance_y, period_y) if period_y > 0 else 0.0
+	if l.has("row_distance"):
+		# Each row at its own speed, kept within one of its tiles: a floor is tiled across whatever the page repeats.
+		for i in l.row_distance.size():
+			var step: float = l.width * l.row_stretch[i]
+			var distance: float = l.row_distance[i] - delta * (m.speedXAtRest + speed_x) * l.row_speed[i]
+			l.row_distance[i] = fmod(distance, step) if step > 0 else distance
+
+
+## ParallaxPageReader.plant: every layer in front of the page's last FLOOR layer scrolls at the speed of the floor's row
+## under its foot (_foot_y); one whose foot is above the floor's top row, and every other layer, at its own.
+func _plant(page_layers: Array[Dictionary]) -> void:
+	var floor := -1
+	for i in page_layers.size():
+		if page_layers[i].model.kind == "FLOOR":
+			floor = i
+	for i in page_layers.size():
+		page_layers[i].planted = _planted_speed_on(page_layers[floor], page_layers[i]) if floor >= 0 and i > floor else NAN
+
+
+## ParallaxPageReader.plantedSpeedOn: the speed of `floor`'s row under `l`'s foot, NAN above the floor's top row.
+func _planted_speed_on(floor: Dictionary, l: Dictionary) -> float:
+	var bottom: float = floor.model.decal_Y_Ratio * (_world_height / 100.0)
+	var height: float = floor.floor_h
+	var t: float = (_foot_y(l) - bottom) / height if height > 0 else 0.0
+	if t > 1:
+		return NAN
+	t = maxf(0.0, t)
+	return floor.model.parallaxScalingSpeedX + (floor.model.floorTopSpeed - floor.model.parallaxScalingSpeedX) * t
+
+
+## ParallaxLayer.getFootY: where a layer stands, its decal, and over it the rows an atlas trimmed off an IMAGE or SHADER
+## layer's image's bottom.
+func _foot_y(l: Dictionary) -> float:
+	var foot: float = l.model.decal_Y_Ratio * (_world_height / 100.0)
+	if l.model.kind == "IMAGE" or l.model.kind == "SHADER":
+		foot += l.height * ((1 - l.trim_bottom - l.packed_h) if l.model.flipY else l.trim_bottom)
+	return foot
+
+
+## ParallaxLayer.measureFloor: a FLOOR layer's rows, bottom to top, from its settings and its image: each row's speed
+## (the bottom row's to the top row's, straight, at the row's middle), its stretch across (MODE7: its speed over the
+## bottom row's; LINE_SCROLL: 1) and the strip of the image it draws, in the atlas' pixels (MODE7: where the ground is
+## at the row's depth, the image's height one tile of depth; LINE_SCROLL: the image's rows i/n to (i+1)/n).
+func _measure_floor(l: Dictionary) -> void:
+	var m: Dictionary = l.model
+	var n := clampi(int(m.floorRows), 2, MAX_FLOOR_ROWS)
+	var bottom: float = _f32(m.parallaxScalingSpeedX)
+	var top: float = _f32(m.floorTopSpeed)
+	var mode7: bool = m.floorMapping == "MODE7"
+	var recedes: bool = mode7 and absf(bottom) > absf(top) and bottom * top >= 0 and l.height > 0
+	var near_in_heights: float = l.floor_h / l.height * bottom / (FLOOR_TILT * (bottom - top)) if recedes else 0.0
+	var drawn := PlaxEffects.drawn_rect(l.region)
+	l.row_speed = PackedFloat64Array()
+	l.row_stretch = PackedFloat64Array()
+	l.row_strips = []
+	l.row_speed.resize(n)
+	l.row_stretch.resize(n)
+	for i in n:
+		var t0 := float(i) / n
+		var t1 := float(i + 1) / n
+		var tc := (i + 0.5) / n
+		var speed := bottom + (top - bottom) * tc
+		l.row_speed[i] = speed
+		l.row_stretch[i] = maxf(0.02, speed / bottom) if mode7 and bottom != 0 else 1.0
+		var from := t0
+		var to := t1
+		if recedes:
+			from = _along(bottom, top, t0, near_in_heights)
+			to = _along(bottom, top, t1, near_in_heights)
+			var start := from - floorf(from)
+			to = minf(1.0, start + (to - from))
+			from = start
+		# The image's rows count down from its top, t up from its bottom.
+		l.row_strips.append(Rect2(drawn.position.x, drawn.position.y + drawn.size.y * (1 - to), drawn.size.x, drawn.size.y * (to - from)))
+	# Allocated once: a resize measures the rows again and keeps where they have scrolled to.
+	if not l.has("row_distance") or l.row_distance.size() != n:
+		l.row_distance = PackedFloat64Array()
+		l.row_distance.resize(n)
+		l.row_distance.fill(l.distance_x)
+
+
+## ParallaxLayer.along: how far along the ground the row at `t` is from the bottom row, in image heights.
+static func _along(bottom: float, top: float, t: float, near_in_heights: float) -> float:
+	var speed := bottom + (top - bottom) * t
+	return (bottom / speed - 1) * near_in_heights
+
+
+static func _f32(value: float) -> float:
+	return PackedFloat32Array([value])[0]
+
+
+## ParallaxLayer.drawFloor: a FLOOR layer's rows in its box, its bottom at `y`, each tiled across the view (x 0 to
+## `view_w`) from where it has scrolled, its tiles `width * stretch` wide, stretched about the view's middle.
+func _draw_floor(l: Dictionary, y: float, view_w: float, view_h: float) -> void:
+	var n: int = l.row_strips.size()
+	var width: float = l.width
+	var row_h: float = l.floor_h / n
+	var middle := view_w / 2
+	var texture: Texture2D = l.region.texture
+	for i in n:
+		var row_y := y + i * row_h
+		if row_y + row_h <= 0 or row_y >= view_h:
+			continue
+		var stretch: float = l.row_stretch[i]
+		var across := width * stretch
+		if not across > 0:
+			continue
+		var origin: float = middle + (0 - middle) * stretch + l.row_distance[i]
+		var first := origin + across * floorf((0 - origin) / across)
+		var count := int(ceilf((view_w - first) / across))
+		for k in count:
+			var x := first + k * across
+			_target.draw_texture_rect_region(texture,
+					Rect2(x * _ppu, _screen_h - (row_y + row_h) * _ppu, across * _ppu, row_h * _ppu), l.row_strips[i], _modulate)
 
 
 func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool) -> Dictionary:
@@ -593,6 +718,11 @@ func _size_layer(l: Dictionary) -> void:
 		l.height = _world_height * l.model.sizeRatio
 		return
 	l.height = l.image_h * (world_width / l.image_w) * l.model.sizeRatio
+	if l.model.kind == "FLOOR":
+		# Its box (ParallaxLayer.getHeight): its own height, or the tile's; mode 7's depths follow it.
+		l.floor_h = l.model.floorHeight * (_world_height / 100.0) if l.model.floorHeight > 0 else l.height
+		if l.has("row_strips"):
+			_measure_floor(l)
 	if l.model.kind == "SEQUENCE" and l.has("edges"):
 		l.width = l.height * l.edges[l.cycle.size()] + (l.cycle.size() - 1) * l.model.padX
 
@@ -657,17 +787,17 @@ func _share_of(l: Dictionary) -> float:
 	return ramp if l.incoming else 1.0 - ramp
 
 
-## Whether a dissolve draws the layer through its mask now: an IMAGE, SEQUENCE or SHADER one, during a dissolve.
+## Whether a dissolve draws the layer through its mask now: an IMAGE, SEQUENCE, SHADER or FLOOR one, during a dissolve.
 func _masked(l: Dictionary) -> bool:
 	return (not transfer_layers.is_empty() and _style != null and _style.kind == "DISSOLVE"
-			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER"))
+			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER" or l.model.kind == "FLOOR"))
 
 
-## Whether a transfert through a colour or a fog creep mixes the layer toward it now: an IMAGE, SEQUENCE or SHADER one,
-## during one.
+## Whether a transfert through a colour or a fog creep mixes the layer toward it now: an IMAGE, SEQUENCE, SHADER or
+## FLOOR one, during one.
 func _graded(l: Dictionary) -> bool:
 	return (not transfer_layers.is_empty() and _style != null and _style.grades()
-			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER"))
+			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER" or l.model.kind == "FLOOR"))
 
 
 ## Takes the dissolve's mask and the colour's grade off `page`'s layers: the PLAIN material either gave a layer that had
@@ -723,6 +853,10 @@ func _draw_layer(l: Dictionary) -> void:
 	if l.canvas.material:
 		l.canvas.material.set_shader_parameter("haze", l.haze)
 		l.canvas.material.set_shader_parameter("fog_color", l.fog_color)
+	if m.kind == "FLOOR":
+		# Its rows across the whole view, whatever the page repeats; no mirrored copy.
+		_draw_floor(l, y, view_w, view_h)
+		return
 	_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h)
 	if m.mirror and _repeat_x != _repeat_y:
 		# A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.

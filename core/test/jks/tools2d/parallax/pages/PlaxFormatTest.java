@@ -118,6 +118,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(particleLayer());
 		original.pageModel.pageList.add(shaderLayer());
 		original.pageModel.pageList.add(sequenceLayer());
+		original.pageModel.pageList.add(floorLayer());
 		original.fogColor = new Color(0.2f, 0.3f, 0.5f, 1);
 
 		byte[] rewritten = write(original);
@@ -129,14 +130,14 @@ class PlaxFormatTest
 		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
 		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
 		assertTrue(reread.useOriginalSize, "useOriginalSize is stored since format 4");
-		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 4);
+		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 5);
 		assertEquals(Enum_LayerKind.EMPTY, slot.kind, "kind is stored since format 5");
 		assertEquals("birds", slot.name, "name is stored since format 5");
-		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
+		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 4);
 		assertEquals("effects/snow.p", snow.particlesLibgdx, "the libGDX effect is stored since format 6");
 		assertEquals("effects/snow.tscn", snow.particlesGodot, "the Godot scene is stored since format 6");
 		assertEquals(Enum_ParticleAnchor.VIEW, snow.particlesAnchor, "the anchor is stored since format 6");
-		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
+		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
 		assertEquals(Enum_LayerKind.SHADER, fog.kind, "SHADER is a kind since format 7");
 		assertEquals(Enum_ShaderEffect.FOG, fog.shaderEffect, "the effect is stored since format 7");
 		assertEquals(0.6f, fog.shaderAmplitude, "its amplitude");
@@ -145,13 +146,64 @@ class PlaxFormatTest
 		assertEquals(0, fog.shaderHaze, "its depth haze is no longer stored since format 10");
 		assertEquals(0.25f, reread.getFogStrength(), "it is the page's fog's strength, stored since format 10");
 		assertEquals(new Color(0.2f, 0.3f, 0.5f, 1), reread.fogColor, "and the fog's colour");
-		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
 		assertEquals(Enum_LayerKind.SEQUENCE, ground.kind, "SEQUENCE is a kind since format 8");
 		assertEquals(3, ground.sequenceSegments.size(), "the segments are stored since format 8");
 		assertEquals("parallax3", ground.sequenceSegments.get(1).regionName, "a segment's region");
 		assertEquals(50, ground.sequenceSegments.get(1).weight, "and its weight");
 		assertEquals(-1640531527, ground.sequenceSeed, "the seed, negative ones too");
 		assertEquals(24, ground.sequenceLength, "the cycle's length");
+		Parallax_Model floor = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals(Enum_LayerKind.FLOOR, floor.kind, "FLOOR is a kind since format 11");
+		assertEquals(Enum_FloorMapping.LINE_SCROLL, floor.floorMapping, "the mapping is stored since format 11");
+		assertEquals(0.016f, floor.floorTopSpeed, "the top row's speed");
+		assertEquals(48, floor.floorRows, "the rows");
+		assertEquals(40, floor.floorHeight, "the box's height");
+	}
+
+	/**
+	 * A FLOOR layer drawing Hiver.atlas's parallax1 as 48 rows of line scroll in a box 40% of the world high, from 0.06
+	 * at the bottom to 0.016 at the top.
+	 */
+	static Parallax_Model floorLayer()
+	{
+		Parallax_Model floor = new Parallax_Model();
+		floor.kind = Enum_LayerKind.FLOOR;
+		floor.regionName = "parallax1";
+		floor.floorMapping = Enum_FloorMapping.LINE_SCROLL;
+		floor.floorTopSpeed = 0.016f;
+		floor.floorRows = 48;
+		floor.floorHeight = 40;
+		floor.sizeRatio = 0.4f;
+		floor.parallaxScalingSpeedX = 0.06f;
+		return floor;
+	}
+
+	/** Format 10 has no floor fields: written there, a layer reads MODE7, 0, 96 rows and height 0. */
+	@Test
+	void format10FilesStillLoadWithoutFloors() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		Parallax_Model layer = original.pageModel.pageList.get(0);
+		layer.floorMapping = Enum_FloorMapping.LINE_SCROLL;
+		layer.floorTopSpeed = 0.5f;
+		layer.floorRows = 7;
+		layer.floorHeight = 30;
+
+		byte[] written = write(original, 10);
+		assertEquals(10, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		Parallax_Model rereadLayer = reread.pageModel.pageList.get(0);
+		assertEquals(Enum_FloorMapping.MODE7, rereadLayer.floorMapping, "format 10 has no mapping");
+		assertEquals(0, rereadLayer.floorTopSpeed);
+		assertEquals(96, rereadLayer.floorRows);
+		assertEquals(0, rereadLayer.floorHeight);
+		layer.floorMapping = Enum_FloorMapping.MODE7;
+		layer.floorTopSpeed = 0;
+		layer.floorRows = 96;
+		layer.floorHeight = 0;
+		assertPageEquals(original, reread);
 	}
 
 	/** A SEQUENCE layer chaining three of Hiver.atlas's regions, the middle one twice as often. */
@@ -447,6 +499,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(4, particleLayer());
 		original.pageModel.pageList.add(5, shaderLayer());
 		original.pageModel.pageList.add(6, sequenceLayer());
+		original.pageModel.pageList.add(7, floorLayer());
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
@@ -523,6 +576,10 @@ class PlaxFormatTest
 			}
 			assertEquals(expected.sequenceSeed, actual.sequenceSeed, name);
 			assertEquals(expected.sequenceLength, actual.sequenceLength, name);
+			assertEquals(expected.floorMapping, actual.floorMapping, name);
+			assertEquals(expected.floorTopSpeed, actual.floorTopSpeed, name);
+			assertEquals(expected.floorRows, actual.floorRows, name);
+			assertEquals(expected.floorHeight, actual.floorHeight, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

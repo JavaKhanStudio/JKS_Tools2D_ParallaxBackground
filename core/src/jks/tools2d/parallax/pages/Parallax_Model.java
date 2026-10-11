@@ -65,6 +65,21 @@ public class Parallax_Model
 	/** How many segments a SEQUENCE layer's cycle holds before it repeats (1 at least). Stored since format 8, 16 before. */
 	public int sequenceLength = 16;
 
+	/** How a FLOOR layer's rows map its image; stored since format 11, MODE7 before. */
+	public Enum_FloorMapping floorMapping = Enum_FloorMapping.MODE7;
+	/**
+	 * A FLOOR layer's top row's speed ratio X, its bottom row's being the layer's own ({@link #parallaxScalingSpeedX}).
+	 * Stored since format 11.
+	 */
+	public float floorTopSpeed;
+	/** How many rows a FLOOR layer is cut in, 2 at least. Stored since format 11, 96 before. */
+	public int floorRows = 96;
+	/**
+	 * How high a FLOOR layer's box is, in percent of the world height; 0: as high as its image makes it, as an IMAGE
+	 * layer is. Stored since format 11.
+	 */
+	public float floorHeight;
+
 	public boolean isFlipX()
 	{return flipX;}
 
@@ -197,6 +212,30 @@ public class Parallax_Model
 
 	public void setSequenceLength(int sequenceLength)
 	{this.sequenceLength = sequenceLength;}
+
+	public Enum_FloorMapping getFloorMapping()
+	{return floorMapping;}
+
+	public void setFloorMapping(Enum_FloorMapping floorMapping)
+	{this.floorMapping = floorMapping;}
+
+	public float getFloorTopSpeed()
+	{return floorTopSpeed;}
+
+	public void setFloorTopSpeed(float floorTopSpeed)
+	{this.floorTopSpeed = floorTopSpeed;}
+
+	public int getFloorRows()
+	{return floorRows;}
+
+	public void setFloorRows(int floorRows)
+	{this.floorRows = floorRows;}
+
+	public float getFloorHeight()
+	{return floorHeight;}
+
+	public void setFloorHeight(float floorHeight)
+	{this.floorHeight = floorHeight;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

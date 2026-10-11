@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
+import jks.tools2d.parallax.pages.Enum_FloorMapping;
 import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
@@ -24,6 +25,9 @@ import jks.tools2d.parallax.pages.Sequence_Segment;
  * {@link Enum_LayerKind#SHADER} layer is an image layer the reader draws through its {@link Enum_ShaderEffect}. A
  * {@link Enum_LayerKind#SEQUENCE} layer chains its regions (its segments) in a cycle drawn once from a seed: the cycle is
  * its tile, as wide as its segments and their padX, each segment as wide as the layer's height and its own image make it.
+ * A {@link Enum_LayerKind#FLOOR} layer is an image layer's box drawn as rows, each at its own depth and its own distance
+ * ({@link #drawFloor}); the reader moves the layers in front of it at the speed of the row under their foot
+ * ({@link #setPlantedSpeedX}).
  */
 public class ParallaxLayer
 {
@@ -61,6 +65,28 @@ public class ParallaxLayer
 	private float[] segmentAspect, segmentTrimLeft, segmentTrimBottom, segmentPackedWidth, segmentPackedHeight;
 	/** The narrowest segment, in layer heights: with padX, whether the slots' edges grow from left to right. */
 	private float narrowestSegment;
+
+	/**
+	 * How a FLOOR layer's rows map its image, its top row's speed ratio X (the bottom row's is the layer's own), how
+	 * many rows it is cut in and how high its box is (percent of the world height, 0: the image's height): see
+	 * {@link Enum_LayerKind#FLOOR}.
+	 */
+	private Enum_FloorMapping floorMapping = Enum_FloorMapping.MODE7;
+	private float floorTopSpeed, floorHeight;
+	private int floorRows = 96;
+	/**
+	 * A FLOOR layer's rows, bottom to top, measured by {@link #measureFloor} when a setting changes, never in a frame:
+	 * each row's speed ratio X, how much it is stretched across (its tiles {@code width * rowStretch} wide, about the
+	 * view's middle), the strip of the image it draws, and how far it has scrolled (as currentDistanceX, within one of
+	 * its tiles).
+	 */
+	private float[] rowSpeed, rowStretch, rowDistance;
+	private TextureRegion[] rowStrips;
+	/**
+	 * The speed ratio X the reader gives a layer standing on a FLOOR in front of it: the speed of the floor's row under
+	 * its foot. NaN when it stands on none: the layer's own. Never stored.
+	 */
+	private float plantedSpeedX = Float.NaN;
 
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
@@ -202,12 +228,23 @@ public class ParallaxLayer
 		return layer;
 	}
 
-	/** True for the kinds that draw a region: IMAGE, SHADER and SEQUENCE. */
+	/** True for the kinds that draw a region: IMAGE, SHADER, SEQUENCE and FLOOR. */
 	public boolean drawsImage()
 	{return drawsImage(kind);}
 
 	private static boolean drawsImage(Enum_LayerKind kind)
-	{return kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER || kind == Enum_LayerKind.SEQUENCE;}
+	{return kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER || kind == Enum_LayerKind.SEQUENCE || kind == Enum_LayerKind.FLOOR;}
+
+	/**
+	 * A FLOOR layer: {@code region} in an image layer's box, {@code worldDimension} wide, drawn as {@code rows} rows from
+	 * the bottom one at {@code bottomSpeed} to the top one at {@code topSpeed}, mapped as {@code mapping} says.
+	 */
+	public static ParallaxLayer floor(TextureRegion region, float worldDimension, float sizeRatio, Enum_FloorMapping mapping, float bottomSpeed, float topSpeed, int rows)
+	{
+		ParallaxLayer layer = new ParallaxLayer(Enum_LayerKind.FLOOR, singletonList(region), true, worldDimension, bottomSpeed, 0, sizeRatio);
+		layer.setFloor(mapping, topSpeed, rows, 0);
+		return layer;
+	}
 
 	private static List<TextureRegion> singletonList(TextureRegion region)
 	{
@@ -248,6 +285,7 @@ public class ParallaxLayer
 				named.add(segment.copy());
 			setSequence(named, model.sequenceSeed, model.sequenceLength);
 		}
+		setFloor(model.floorMapping, model.floorTopSpeed, model.floorRows, model.floorHeight);
 	}
 
 	public void resetPosition()
@@ -256,6 +294,8 @@ public class ParallaxLayer
 		currentDistanceY = decalPercentY * (worldHeight / 100);
 		wrappedX = 0;
 		wrappedY = 0;
+		if (rowDistance != null)
+			Arrays.fill(rowDistance, currentDistanceX);
 	}
 
 	/**
@@ -379,6 +419,11 @@ public class ParallaxLayer
 		copy.segmentPackedWidth = segmentPackedWidth == null ? null : Arrays.copyOf(segmentPackedWidth, segmentPackedWidth.length);
 		copy.segmentPackedHeight = segmentPackedHeight == null ? null : Arrays.copyOf(segmentPackedHeight, segmentPackedHeight.length);
 		copy.narrowestSegment = narrowestSegment;
+		copy.floorMapping = floorMapping;
+		copy.floorTopSpeed = floorTopSpeed;
+		copy.floorRows = floorRows;
+		copy.floorHeight = floorHeight;
+		copy.plantedSpeedX = plantedSpeedX;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
 		copy.parallaxSpeedRatioY = parallaxSpeedRatioY;
 		copy.worldWidth = worldWidth;
@@ -404,12 +449,16 @@ public class ParallaxLayer
 		copy.flipX = flipX;
 		copy.flipY = flipY;
 		copy.isMirror = isMirror;
+		// Its own rows: measured again from the settings just copied, then placed where this layer's are.
+		copy.measureFloor();
+		if (rowDistance != null && copy.rowDistance != null)
+			System.arraycopy(rowDistance, 0, copy.rowDistance, 0, rowDistance.length);
 		return copy;
 	}
 
 	public void act(float delta, float speedX, float speedY, boolean onX, boolean onY)
 	{
-		float moveX = -delta * (speedXAtRest + speedX) * parallaxSpeedRatioX;
+		float moveX = -delta * (speedXAtRest + speedX) * getActingSpeedX();
 		float moveY = -delta * speedY * parallaxSpeedRatioY;
 		currentDistanceY += moveY;
 		currentDistanceX += moveX;
@@ -439,6 +488,18 @@ public class ParallaxLayer
 			currentDistanceY %= totalHeight;
 			float period = getShaderPeriodY();
 			wrappedY = period > 0 ? (wrappedY + before - currentDistanceY) % period : 0;
+		}
+
+		if (rowDistance != null)
+		{
+			// Each row at its own speed, kept within one of its tiles: a floor is tiled across whatever the page repeats.
+			float width = getRegionWidth();
+			for (int i = 0; i < rowDistance.length; i++)
+			{
+				float step = width * rowStretch[i];
+				float distance = rowDistance[i] - delta * (speedXAtRest + speedX) * rowSpeed[i];
+				rowDistance[i] = step > 0 ? distance % step : distance;
+			}
 		}
 	}
 
@@ -483,8 +544,9 @@ public class ParallaxLayer
 	private boolean isCycleOrdered()
 	{return getRegionHeight() * narrowestSegment + padX > 0;}
 
+	/** The layer's box's height: its image's, or a FLOOR layer's own when it sets one ({@link #getFloorHeight}). */
 	public float getHeight()
-	{return getRegionHeight();}
+	{return kind == Enum_LayerKind.FLOOR && floorHeight > 0 ? floorHeight * (worldHeight / 100) : getRegionHeight();}
 
 	/** The step between two tiles: a SEQUENCE layer's cycle, each slot followed by padX. */
 	public float getTotalWidth()
@@ -511,6 +573,8 @@ public class ParallaxLayer
 	{
 		this.worldWidth = worldWidth;
 		this.worldHeight = worldHeight;
+		// A floor's box against its image: mode 7's depths follow.
+		measureFloor();
 	}
 
 	public float getDecalPercentX()
@@ -518,7 +582,11 @@ public class ParallaxLayer
 
 	public void setDecalPercentX(float decalPercentX)
 	{
-		currentDistanceX += (decalPercentX - this.decalPercentX) * (worldWidth / 100);
+		float by = (decalPercentX - this.decalPercentX) * (worldWidth / 100);
+		currentDistanceX += by;
+		if (rowDistance != null)
+			for (int i = 0; i < rowDistance.length; i++)
+				rowDistance[i] += by;
 		this.decalPercentX = decalPercentX;
 	}
 
@@ -573,7 +641,10 @@ public class ParallaxLayer
 	{return sizeRatio;}
 
 	public void setSizeRatio(float sizeRatio)
-	{this.sizeRatio = sizeRatio;}
+	{
+		this.sizeRatio = sizeRatio;
+		measureFloor();
+	}
 
 	public boolean isFlipX()
 	{return flipX;}
@@ -615,7 +686,31 @@ public class ParallaxLayer
 	{return parallaxSpeedRatioX;}
 
 	public void setParallaxSpeedRatioX(float parallaxSpeedRatioX)
-	{this.parallaxSpeedRatioX = parallaxSpeedRatioX;}
+	{
+		this.parallaxSpeedRatioX = parallaxSpeedRatioX;
+		// A floor's bottom row: its rows' speeds follow.
+		if (kind == Enum_LayerKind.FLOOR)
+			measureFloor();
+	}
+
+	/**
+	 * The speed ratio X act() moves the layer at: the one the reader planted it at on a floor ({@link #setPlantedSpeedX}),
+	 * or its own.
+	 */
+	public float getActingSpeedX()
+	{return plantedSpeedX == plantedSpeedX ? plantedSpeedX : parallaxSpeedRatioX;}
+
+	/** The speed of the floor's row under the layer's foot, NaN when it stands on no floor; see {@link #setPlantedSpeedX}. */
+	public float getPlantedSpeedX()
+	{return plantedSpeedX;}
+
+	/**
+	 * Makes act() move the layer at {@code speed} instead of its own speed ratio X, which stays what the page stores; NaN
+	 * gives it its own back. The reader sets it on every layer in front of a FLOOR, each frame
+	 * ({@link ParallaxPageReader#plant}).
+	 */
+	public void setPlantedSpeedX(float speed)
+	{this.plantedSpeedX = speed;}
 
 	public float getParallaxSpeedRatioY()
 	{return parallaxSpeedRatioY;}
@@ -846,6 +941,170 @@ public class ParallaxLayer
 		cycleEdges[cycle.length] = edge;
 	}
 
+	public Enum_FloorMapping getFloorMapping()
+	{return floorMapping;}
+
+	/** A FLOOR layer's top row's speed ratio X; its bottom row's is {@link #getParallaxSpeedRatioX()}. */
+	public float getFloorTopSpeed()
+	{return floorTopSpeed;}
+
+	public int getFloorRows()
+	{return floorRows;}
+
+	/** A FLOOR layer's box's height in percent of the world height; 0: as high as its image makes it. */
+	public float getFloorHeight()
+	{return floorHeight;}
+
+	/**
+	 * Sets how a FLOOR layer's rows map its image, its top row's speed, how many rows it is cut in (2 to
+	 * {@link #MAX_FLOOR_ROWS}) and its box's height (percent of the world height, 0: its image's), and measures its rows
+	 * again. Kept on other kinds, which draw no rows, so a page saved from its layers stores them back.
+	 */
+	public void setFloor(Enum_FloorMapping mapping, float topSpeed, int rows, float height)
+	{
+		floorMapping = mapping == null ? Enum_FloorMapping.MODE7 : mapping;
+		floorTopSpeed = topSpeed;
+		floorRows = rows;
+		floorHeight = height;
+		measureFloor();
+	}
+
+	/** The most rows a FLOOR layer is cut in; and the fewest, 2. */
+	public static final int MAX_FLOOR_ROWS = 512;
+	/**
+	 * Mode 7's tilt: a step up the bottom rows crosses the ground this many times as fast as a step across. The floor
+	 * lab's (r275), what Simon tried.
+	 */
+	public static final float FLOOR_TILT = 0.6f;
+
+	/** How many rows a FLOOR layer draws: its setting within 2 and {@link #MAX_FLOOR_ROWS}; 0 for other kinds. */
+	public int getFloorRowCount()
+	{return rowSpeed == null ? 0 : rowSpeed.length;}
+
+	/**
+	 * A FLOOR layer's rows, from its settings and its image (FloorLab.drawFloor's math, r275). Row i of n covers the box's
+	 * heights i/n to (i+1)/n; its speed is the bottom row's (the layer's own) at 0, the top row's at 1, straight between,
+	 * taken at the row's middle: in a perspective a row's height over the horizon goes as 1 / its depth, and so does its
+	 * speed. MODE7 stretches a row's tiles by its speed over the bottom row's, and draws the image's rows where the ground
+	 * is at that depth: depth goes as 1 / speed, the ground runs {@code (depth - 1) * near} along from the bottom row,
+	 * {@code near} set so a step up the bottom rows of the box crosses the ground {@link #FLOOR_TILT} times as fast as a
+	 * step across, the image's own height (its pixels square on the ground) one tile of depth; a row whose ground crosses
+	 * the image's top edge draws up to it. LINE_SCROLL only shifts each row: row i draws the image's rows i/n to (i+1)/n,
+	 * stretched to the box. Allocates only when the row count changes.
+	 */
+	private void measureFloor()
+	{
+		if (kind != Enum_LayerKind.FLOOR || drawnRegions == null)
+			return;
+		int n = Math.max(2, Math.min(MAX_FLOOR_ROWS, floorRows));
+		if (rowSpeed == null || rowSpeed.length != n)
+		{
+			float start = rowDistance == null ? currentDistanceX : rowDistance[0];
+			rowSpeed = new float[n];
+			rowStretch = new float[n];
+			rowDistance = new float[n];
+			rowStrips = new TextureRegion[n];
+			for (int i = 0; i < n; i++)
+				rowStrips[i] = new TextureRegion();
+			Arrays.fill(rowDistance, start);
+		}
+		float bottom = parallaxSpeedRatioX, top = floorTopSpeed;
+		boolean mode7 = floorMapping == Enum_FloorMapping.MODE7;
+		// In image heights: how far along the ground the row at t is from the bottom row is (depth - 1) * nearInHeights.
+		float imageHeight = getRegionHeight();
+		boolean recedes = mode7 && Math.abs(bottom) > Math.abs(top) && bottom * top >= 0 && imageHeight > 0;
+		float nearInHeights = recedes ? getHeight() / imageHeight * bottom / (FLOOR_TILT * (bottom - top)) : 0;
+		TextureRegion image = drawnRegions.get(0);
+		float u = image.getU(), u2 = image.getU2(), v = image.getV(), v2 = image.getV2();
+		for (int i = 0; i < n; i++)
+		{
+			float t0 = (float) i / n, t1 = (float) (i + 1) / n, tc = (i + 0.5f) / n;
+			float speed = bottom + (top - bottom) * tc;
+			rowSpeed[i] = speed;
+			rowStretch[i] = mode7 && bottom != 0 ? Math.max(0.02f, speed / bottom) : 1;
+			// Which rows of the image, up from its bottom: t0..t1 of it, or in mode 7 where the ground is at those depths.
+			float from = t0, to = t1;
+			if (recedes)
+			{
+				from = along(bottom, top, t0, nearInHeights);
+				to = along(bottom, top, t1, nearInHeights);
+				float start = from - (float) Math.floor(from);
+				to = Math.min(1, start + (to - from));
+				from = start;
+			}
+			// The image's rows count down from its top (v), t up from its bottom. A region with no texture (a test's) has no
+			// texture coordinates to cut: its strips stay empty, placed all the same.
+			if (image.getTexture() == null)
+				continue;
+			rowStrips[i].setTexture(image.getTexture());
+			rowStrips[i].setRegion(u, v + (v2 - v) * (1 - to), u2, v + (v2 - v) * (1 - from));
+		}
+	}
+
+	/** How far along the ground the row at {@code t} is from the bottom row, in image heights: (depth - 1) * near. */
+	private static float along(float bottom, float top, float t, float nearInHeights)
+	{
+		float speed = bottom + (top - bottom) * t;
+		return (bottom / speed - 1) * nearInHeights;
+	}
+
+	/**
+	 * Draws a FLOOR layer's rows in its box, whose bottom left corner is at {@code y} and whose rows tile across the view
+	 * from {@code viewLeft} to {@code viewRight}: row i's tiles are {@code width * stretch} wide, stretched about the
+	 * view's middle, and start where the row has scrolled to. One {@code batch.draw(region, x, y, width, height)} a tile
+	 * of a row, the call every engine's batch draws; nothing allocated.
+	 */
+	public void drawFloor(Batch batch, float y, float viewLeft, float viewRight, float viewBottom, float viewTop)
+	{
+		if (rowStrips == null)
+			return;
+		int n = rowStrips.length;
+		float width = getRegionWidth(), rowHeight = getHeight() / n, middle = (viewLeft + viewRight) / 2;
+		for (int i = 0; i < n; i++)
+		{
+			float rowY = y + i * rowHeight;
+			if (rowY + rowHeight <= viewBottom || rowY >= viewTop)
+				continue;
+			float across = width * rowStretch[i];
+			if (!(across > 0))
+				continue;
+			float origin = middle + (viewLeft - middle) * rowStretch[i] + rowDistance[i];
+			float first = origin + across * (float) Math.floor((viewLeft - origin) / across);
+			int count = (int) Math.ceil((viewRight - first) / across);
+			for (int k = 0; k < count; k++)
+				batch.draw(rowStrips[i], first + k * across, rowY, across, rowHeight);
+		}
+	}
+
+	/** Where a FLOOR layer's row {@code i} (from the bottom) has scrolled to, within one of its tiles. */
+	public float getRowDistance(int i)
+	{return rowDistance[i];}
+
+	/** A FLOOR layer's row {@code i}'s speed ratio X. */
+	public float getRowSpeed(int i)
+	{return rowSpeed[i];}
+
+	/** How much a FLOOR layer's row {@code i}'s tiles are stretched across: 1 in LINE_SCROLL. */
+	public float getRowStretch(int i)
+	{return rowStretch[i];}
+
+	/** The strip of the image a FLOOR layer's row {@code i} draws. */
+	public TextureRegion getRowStrip(int i)
+	{return rowStrips[i];}
+
+	/**
+	 * Where the layer stands, in world units above the layers' y 0 at its decal: the bottom of what it draws, its decal
+	 * and, for an image whose atlas trimmed transparent rows off its bottom, those rows (PurpleFairy's pink trees: 95 of
+	 * 1080). What {@link ParallaxPageReader#plant} reads.
+	 */
+	public float getFootY()
+	{
+		float foot = decalPercentY * (worldHeight / 100);
+		if (kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER)
+			foot += getRegionHeight() * (flipY ? 1 - trimBottom - packedHeightRatio : trimBottom);
+		return foot;
+	}
+
 	/** The packed image's share of the layer's width: the part of the box the region is drawn over. */
 	public float getPackedWidthRatio()
 	{return packedWidthRatio;}
@@ -922,6 +1181,7 @@ public class ParallaxLayer
 
 		if (kind == Enum_LayerKind.SEQUENCE)
 			measureSegments();
+		measureFloor();
 	}
 
 	/** Each segment's width in layer heights and where its packed image sits, as {@link #setTexRegion} does for one. */

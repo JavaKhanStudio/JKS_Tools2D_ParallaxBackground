@@ -91,6 +91,10 @@ class BuildFromPageTest
 		ground.sizeRatio = 0.25f;
 		ground.padX = 1;
 		page.pageModel.pageList.add(ground);
+
+		Parallax_Model floor = PlaxFormatTest.floorLayer();
+		floor.regionName = "sky";
+		page.pageModel.pageList.add(floor);
 		return page;
 	}
 
@@ -141,6 +145,28 @@ class BuildFromPageTest
 		assertEquals(Enum_ShaderEffect.FOG, saved.pageModel.pageList.get(3).shaderEffect);
 		assertEquals(Enum_LayerKind.SEQUENCE, saved.pageModel.pageList.get(4).kind);
 		assertEquals("snowflake", saved.pageModel.pageList.get(4).sequenceSegments.get(1).regionName);
+		assertEquals(Enum_LayerKind.FLOOR, saved.pageModel.pageList.get(5).kind);
+		assertEquals(Enum_FloorMapping.LINE_SCROLL, saved.pageModel.pageList.get(5).floorMapping);
+		assertEquals(48, saved.pageModel.pageList.get(5).floorRows);
+	}
+
+	/** A layer in front of a floor moves at the speed the reader plants it at, and saves the speed it was given. */
+	@Test
+	void aPlantedLayerSavesItsOwnSpeed()
+	{
+		WholePage_Model page = page();
+		Parallax_Model tree = new Parallax_Model();
+		tree.regionName = "sky";
+		tree.parallaxScalingSpeedX = 0.04f;
+		page.pageModel.pageList.add(tree);
+		page.forceLoad(atlas());
+		ParallaxPageReader reader = new ParallaxPageReader();
+		reader.addLayers(page.preloadValue);
+		reader.act(1 / 60f, 10, 0);
+		assertEquals(0.06f, page.preloadValue.get(6).getActingSpeedX(), 1e-6f, "standing at the floor's foot: its bottom row's speed");
+
+		assertSameLayers(page, saved(page));
+		assertEquals(0.04f, saved(page).pageModel.pageList.get(6).parallaxScalingSpeedX);
 	}
 
 	/** A game's seed redraws the cycle on screen, never the seed the editor saves. */
