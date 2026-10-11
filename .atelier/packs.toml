@@ -218,14 +218,22 @@ Gates, exactly what CI runs on JDK 17, 21 AND 25 (.github/workflows/ci.yml, job 
   tools/lint.sh                                ruff (ruff.toml), shellcheck, gdlint (gdlintrc) on every tracked
                                                .py/.sh/.gd, each through uvx at the version pinned in it (r314).
                                                Run it before a push: a new probe in tools/ lands lint-clean
-PRE-PUSH GATE (r332): this clone has `git config core.hooksPath tools/githooks`, so a push to develop,
-master or release/* runs tools/pre-push-check.sh: lint.sh and offscreen-lint.sh on the exact commit sent,
-in a throwaway worktree (file modes as git holds them: ruff EXE001 reads the mode), ~3 s, and refuses
-the push on a finding. Fix the commit, never --no-verify. It does NOT run ./gradlew build or
-browser-test.sh: those stay yours before a push. tools/pre-push-check-test.sh proves it. A new clone
-needs that git config line.
 and once, on JDK 17 (job godot-frames, xvfb-run + Mesa): tools/godot-parallax-shots.sh then
 tools/jme-parallax-shots.sh, failing on a FAIL.
+GIT HOOKS (r332, r339): this clone has `git config core.hooksPath tools/githooks` (a new clone needs
+that line; a session's hooks reach them through atelier's proxy). Three rails, cheapest first:
+  pre-commit  tools/pre-commit-check.sh: lint.sh on the .py/.sh/.gd the commit STAGES (as staged, mode
+              included: ruff EXE001 reads it), offscreen-lint on a staged tools/*.sh. Refused: fix, git
+              add, commit again. Nothing to amend, nothing to re-push: lint as you write, not after.
+  pre-push    tools/pre-push-check.sh: the same on the exact commit sent to develop, master or
+              release/*, in a throwaway worktree, ~3 s. Fix the commit, never --no-verify.
+  after push  tools/ci-watch.sh, started in the background by pre-push: waits for CI on the pushed
+              commit and, when it is red, adds ONE #build task "CI red on <branch>" with the failed jobs
+              and the log's end (a later red run notes it). Log: .git/ci-watch/<sha>.log. CI_WATCH=0
+              starts none. Seeing that task open: do not push on top of red without fixing it.
+None of them runs ./gradlew build or browser-test.sh: those stay yours before a push (CI does, and a
+red one comes back as that task). Proofs: tools/pre-commit-check-test.sh, tools/pre-push-check-test.sh,
+tools/ci-watch-test.sh.
 NO WINDOW ON SIMON'S SCREEN (r118, r144): every JavaExec task calls rootProject.offscreen(it) (it
 opens a window: an agent's, ATELIER_AGENT or CLAUDECODE=1, goes to a headless cage, and fails
 without cage) or rootProject.headless(it) (it opens none); gradle/offscreen.gradle stops the build

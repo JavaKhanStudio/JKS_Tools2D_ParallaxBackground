@@ -1,3 +1,16 @@
 #!/bin/sh
 # The pre-push gate (r332): tools/pre-push-check.sh. Wired by: git config core.hooksPath tools/githooks
-exec "$(dirname "$0")/../pre-push-check.sh" "$@"
+# A push it lets through to develop, master or release/* is then watched in the background by tools/ci-watch.sh
+# (r339), which puts a red CI run on the board. CI_WATCH=0 starts no watch.
+here=$(dirname "$0")
+txn=$(cat)
+printf '%s\n' "$txn" | "$here/../pre-push-check.sh" "$@" || exit 1
+[ "${CI_WATCH:-1}" = 0 ] && exit 0
+logs="$(git rev-parse --git-common-dir)/ci-watch"
+mkdir -p "$logs"
+printf '%s\n' "$txn" | while read -r _lref lsha rref _rsha; do
+	case "$lsha" in *[!0]*) ;; *) continue ;; esac
+	case "$rref" in refs/heads/develop | refs/heads/master | refs/heads/release/*) ;; *) continue ;; esac
+	setsid nohup "$here/../ci-watch.sh" "$lsha" "${rref#refs/heads/}" </dev/null >>"$logs/$lsha.log" 2>&1 &
+done
+exit 0

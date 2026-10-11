@@ -1,0 +1,3 @@
+#!/bin/sh
+# The pre-commit gate (r339): tools/pre-commit-check.sh. Wired by: git config core.hooksPath tools/githooks
+exec "$(dirname "$0")/../pre-commit-check.sh" "$@"
