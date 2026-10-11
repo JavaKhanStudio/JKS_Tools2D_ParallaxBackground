@@ -18,7 +18,8 @@ os.makedirs(out, exist_ok=True)
 
 def grab(page, name):
     png = page.query_selector("canvas").screenshot()
-    open(os.path.join(out, name), "wb").write(png)
+    with open(os.path.join(out, name), "wb") as f:
+        f.write(png)
     return Image.open(io.BytesIO(png)).convert("L")
 
 

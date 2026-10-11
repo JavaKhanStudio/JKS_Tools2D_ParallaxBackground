@@ -6,6 +6,7 @@ planted on it by the reader, whatever its page speed. Read by shots/.../Parallax
 engines/jme's JmeParallaxShots; tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare them.
 Run from the repository root: python3 core/test-data/floor/make_round.py"""
 import json
+from pathlib import Path
 
 HERE = 'core/test-data/floor'
 OUT = 'engines/godot/tests/floor'
@@ -13,7 +14,7 @@ OUT = 'engines/godot/tests/floor'
 
 def page(lab, region, mapping, size, bottom, top, **more):
     """The lab's page with its floor a FLOOR layer drawing `region` `size` worlds wide."""
-    p = json.load(open(f'{HERE}/{lab}'))
+    p = json.loads(Path(f'{HERE}/{lab}').read_text())
     p.update({k: v for k, v in more.items() if k in ('repeatOnX', 'repeatOnY', 'fogStrength', 'fogColor')})
     for layer in p['pageModel']['pageList']:
         if layer.get('kind') == 'EMPTY' and layer.get('name') == 'floor':
@@ -25,7 +26,8 @@ def page(lab, region, mapping, size, bottom, top, **more):
 
 
 def write(name, p):
-    json.dump(p, open(f'{OUT}/{name}.jplax', 'w'), indent=1)
+    with open(f'{OUT}/{name}.jplax', 'w') as f:
+        json.dump(p, f, indent=1)
     return f'{OUT}/{name}.jplax'
 
 
@@ -51,13 +53,14 @@ scenes = [
               "drawn once), cross-fading into g02 4 s in, over 4 s: both pages' layers planted on their own floor",
      'transfer': {'at': 4, 'seconds': 4, 'page': g02}},
 ]
-json.dump({'round': 'floor',
-           'about': "FLOOR layers (r275, docs/depth-tricks.md §1): the floor lab's grounds drawn row by row, each row at "
-                    "its depth, in MODE7 and LINE_SCROLL, the layers in front planted on them. Godot draws its own rows "
-                    "(plax_floor.gd's measure, plax_background.gd's _draw_floor) and plants its own (_plant): a row at "
-                    "another "
-                    "speed, stretch or strip, or a tree at its page speed, shows. Written by "
-                    "core/test-data/floor/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd "
-                    "and engines/jme's JmeParallaxShots.",
-           'scenes': scenes}, open(f'{OUT}/round.json', 'w'), indent=1)
+with open(f'{OUT}/round.json', 'w') as f:
+    json.dump({'round': 'floor',
+               'about': "FLOOR layers (r275, docs/depth-tricks.md §1): the floor lab's grounds drawn row by row, each row at "
+                        "its depth, in MODE7 and LINE_SCROLL, the layers in front planted on them. Godot draws its own rows "
+                        "(plax_floor.gd's measure, plax_background.gd's _draw_floor) and plants its own (_plant): a row at "
+                        "another "
+                        "speed, stretch or strip, or a tree at its page speed, shows. Written by "
+                        "core/test-data/floor/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd "
+                        "and engines/jme's JmeParallaxShots.",
+               'scenes': scenes}, f, indent=1)
 print('wrote', OUT)

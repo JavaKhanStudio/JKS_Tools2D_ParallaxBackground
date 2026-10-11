@@ -31,7 +31,8 @@ def bands(img):
 
 def rows_of(out):
     """The rows' names, top to bottom, from the atlas make.py wrote: bN x4, x8, x16 for each region."""
-    names = [line.strip() for line in open(os.path.join(out, "mip.atlas")) if line.strip().startswith("b")]
+    with open(os.path.join(out, "mip.atlas")) as f:
+        names = [line.strip() for line in f if line.strip().startswith("b")]
     return [f"{n} x{s}" for n in names for s in (4, 8, 16)]
 
 

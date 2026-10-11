@@ -15,6 +15,7 @@ import json
 import os
 import shutil
 import sys
+from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -159,7 +160,7 @@ def main():
 
     cards, nav = [], []
     for n, d in enumerate(pages):
-        r = json.load(open(os.path.join(d, "recipe.json")))
+        r = json.loads(Path(os.path.join(d, "recipe.json")).read_text())
         depth = r.get("tool") == "depth-page"
         style = "from a painting" if depth else r["style"]
         pid = f"p{n}-{r['name']}-{'depth' if depth else r['style']}"

@@ -4,7 +4,9 @@ make_round.py: an even slab through FOG, 20 of 40 units wide and 5 tall, tiling 
 repeats up every 5 units, the image's height: no cut either way.
 Run from the repository root, after make_round.py: python3 tools/r262-fog-seam-y/make.py"""
 import json
+from pathlib import Path
 
-page = json.load(open('engines/godot/tests/shaders/s07.jplax'))
+page = json.loads(Path('engines/godot/tests/shaders/s07.jplax').read_text())
 page['pageModel']['pageList'][0]['shaderWavelength'] = 0.5
-json.dump(page, open('tools/r262-fog-seam-y/y05.jplax', 'w'), indent=1)
+with open('tools/r262-fog-seam-y/y05.jplax', 'w') as f:
+    json.dump(page, f, indent=1)

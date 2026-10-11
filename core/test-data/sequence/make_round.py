@@ -6,6 +6,7 @@ colour and width, with marks that are not symmetric, so a wrong pick, a slot out
 big difference, not a 1/255 one. Run from the repository root: python3 core/test-data/sequence/make_round.py (needs
 Pillow)."""
 import json
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 
@@ -48,9 +49,9 @@ for i, (name, (w, colour, stripped)) in enumerate(SEGMENTS.items()):
               f'  offset: {offset}, 0', '  index: -1']
     x += w + 2
 sheet.save(f'{HERE}/segments.png')
-hiver = open('core/test-data/samples/Hiver.atlas').read().strip().split('\n')
+hiver = Path('core/test-data/samples/Hiver.atlas').read_text().strip().split('\n')
 hiver[0] = '../samples/Hiver.png'
-open(f'{HERE}/HiverSeq.atlas', 'w').write('\n'.join(hiver) + '\n' + '\n'.join(atlas) + '\n')
+Path(f'{HERE}/HiverSeq.atlas').write_text('\n'.join(hiver) + '\n' + '\n'.join(atlas) + '\n')
 
 
 def sequence(name, segments, seed, length, size, decal_x, decal_y, ratio, **more):
@@ -65,10 +66,11 @@ def sequence(name, segments, seed, length, size, decal_x, decal_y, ratio, **more
 
 
 def page(source, out, change):
-    p = json.load(open(f'engines/godot/tests/conformance/{source}.jplax'))
+    p = json.loads(Path(f'engines/godot/tests/conformance/{source}.jplax').read_text())
     p['pageModel']['atlasName'] = 'HiverSeq.atlas'
     change(p['pageModel']['pageList'])
-    json.dump(p, open(f'{ROUND}/{out}.jplax', 'w'), indent=1)
+    with open(f'{ROUND}/{out}.jplax', 'w') as f:
+        json.dump(p, f, indent=1)
 
 
 def q01(layers):

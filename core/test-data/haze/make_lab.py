@@ -8,14 +8,15 @@ Run from the repository root: python3 core/test-data/haze/make_lab.py"""
 import copy
 import json
 import subprocess
+from pathlib import Path
 
 HERE = 'core/test-data/haze'
 
-fog = open('core/test-data/shaders/HiverFog.atlas').read().strip().split('\n')
+fog = Path('core/test-data/shaders/HiverFog.atlas').read_text().strip().split('\n')
 fog = ['../shaders/' + line if line.endswith('.png') and not line.startswith('..') else line for line in fog]
-snow = open('core/test-data/particles/HiverSnow.atlas').read().strip().split('\n\n')[-1].split('\n')
+snow = Path('core/test-data/particles/HiverSnow.atlas').read_text().strip().split('\n\n')[-1].split('\n')
 snow[0] = '../particles/' + snow[0]
-open(f'{HERE}/HiverHazeLab.atlas', 'w').write('\n'.join(fog) + '\n\n' + '\n'.join(snow) + '\n')
+Path(f'{HERE}/HiverHazeLab.atlas').write_text('\n'.join(fog) + '\n\n' + '\n'.join(snow) + '\n')
 
 # r217 replaced the haze round by the fog round: h01 is read from the last commit that held it.
 page = json.loads(subprocess.check_output(['git', 'show', '9db9e6b:engines/godot/tests/haze/h01.jplax']))
@@ -26,9 +27,10 @@ hook = {'regionName': None, 'regionPosition': 0, 'flipX': False, 'flipY': False,
         'parallaxScalingSpeedX': 0.017, 'parallaxScalingSpeedY': 0.017, 'speedXAtRest': 0.0,
         'sizeRatio': 0.3, 'decal_X_Ratio': 5.0, 'decal_Y_Ratio': 62.0,
         'padX': 3.0, 'padXFactor': 0.0, 'padY': 0.0, 'padYFactor': 0.0, 'kind': 'EMPTY', 'name': 'towers', 'mirror': False}
-particles = copy.deepcopy(json.load(open('core/test-data/particles/p01.jplax'))['pageModel']['pageList'][5])
+particles = copy.deepcopy(json.loads(Path('core/test-data/particles/p01.jplax').read_text())['pageModel']['pageList'][5])
 assert particles['kind'] == 'PARTICLES'
 layers.insert(5, particles)
 layers.insert(3, hook)
 page['pageModel']['atlasName'] = 'HiverHazeLab.atlas'
-json.dump(page, open(f'{HERE}/lab.jplax', 'w'), indent=1)
+with open(f'{HERE}/lab.jplax', 'w') as f:
+    json.dump(page, f, indent=1)

@@ -36,6 +36,7 @@ import re
 import shlex
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -222,7 +223,7 @@ def main():
                      " trees); another --seed, or more --tries")
         layers.append([got])
         seed_file = os.path.join(strips, f"l{k}_seed.txt")
-        seeds.append(int(open(seed_file).read()) if os.path.exists(seed_file) else seed)
+        seeds.append(int(Path(seed_file).read_text()) if os.path.exists(seed_file) else seed)
         log(f"layer {k}: {kind}, seed {seed}, colour {cols[k]}")
     if not pixel and a.variants:
         # The front's variants: sil.py's shape for the middle, the front strip's ends (run.sh's pines).
@@ -310,7 +311,7 @@ def main():
             sid = strip_of(path)
             seed_file = os.path.join(strips, f"{sid}_seed.txt")
             info = dict(made.get(sid, {}), strip=sid)
-            info.setdefault("seed", int(open(seed_file).read()) if os.path.exists(seed_file) else None)
+            info.setdefault("seed", int(Path(seed_file).read_text()) if os.path.exists(seed_file) else None)
             strips_k.append(info)
         recipe["layers"].append({"kind": ks[k], "colour": cols[k], "speed": round(s[k], 5),
                                  "dy": page_layers[k]["decal_Y_Ratio"],

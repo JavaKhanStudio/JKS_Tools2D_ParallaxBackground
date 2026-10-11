@@ -4,13 +4,14 @@ far the left edge is from the right (mean |RGBA| difference, the r139 'seam').
 python3 tools/r218-seams/atlas_edges.py ATLAS..."""
 import os
 import sys
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
 
 
 def regions(path):
-    lines = open(path).read().splitlines()
+    lines = Path(path).read_text().splitlines()
     page, out, name = None, [], None
     for i, line in enumerate(lines):
         if not line.strip():

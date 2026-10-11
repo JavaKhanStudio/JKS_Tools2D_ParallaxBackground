@@ -9,25 +9,27 @@ another fog while tinting. tools/r217-fog/strength.sh checks that leaving the fo
 import copy
 import json
 import os
+from pathlib import Path
 
 HERE = 'core/test-data/haze'
 ROUND = 'engines/godot/tests/fog'
 
-sequence = open('core/test-data/sequence/HiverSeq.atlas').read().strip().split('\n')
+sequence = Path('core/test-data/sequence/HiverSeq.atlas').read_text().strip().split('\n')
 sequence = ['../sequence/' + line if line.endswith('.png') and not line.startswith('..') else line for line in sequence]
-mist = open('core/test-data/shaders/HiverFog.atlas').read().strip().split('\n\n')[-1].split('\n')
+mist = Path('core/test-data/shaders/HiverFog.atlas').read_text().strip().split('\n\n')[-1].split('\n')
 mist[0] = '../shaders/' + mist[0]
-open(f'{HERE}/HiverHaze.atlas', 'w').write('\n'.join(sequence) + '\n\n' + '\n'.join(mist) + '\n')
+Path(f'{HERE}/HiverHaze.atlas').write_text('\n'.join(sequence) + '\n\n' + '\n'.join(mist) + '\n')
 os.makedirs(ROUND, exist_ok=True)
 
 
 def load(path):
-    return json.load(open(path))
+    return json.loads(Path(path).read_text())
 
 
 def save(page, out):
     page['pageModel']['atlasName'] = 'HiverHaze.atlas'
-    json.dump(page, open(f'{ROUND}/{out}.jplax', 'w'), indent=1)
+    with open(f'{ROUND}/{out}.jplax', 'w') as f:
+        json.dump(page, f, indent=1)
 
 
 def fog(page, strength, color=None):
@@ -83,6 +85,7 @@ for name, (title, about) in ABOUT.items():
 scenes.append({'id': 'f05', 'page': f'{ROUND}/f01.jplax', 'atlasDir': HERE, 'name': 'fog-cross-fade-tinted',
                'about': 'f01 cross-fading into f02 (another fog, another colour) while tinting orange: each page fogs its own layers by its own fog, faded and tinted, the fog\'s colours untinted',
                'transfer': {'at': 4, 'seconds': 4, 'page': f'{ROUND}/f02.jplax'}, 'tint': {'at': 4, 'seconds': 4, 'color': [1.0, 0.55, 0.3, 1.0]}})
-json.dump({'round': 'fog',
-           'about': 'Page fog (r217, format 10): each IMAGE, SHADER and SEQUENCE layer mixed toward the page\'s fog colour by 1 - exp(-strength (1 / speed - 1 / front)), front the page\'s fastest speed ratio X, in every repeat mode, in colours, from a format 9 FOG layer\'s haze, and through a cross-fade between two fogs while tinting. Written by core/test-data/haze/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme\'s JmeParallaxShots.',
-           'scenes': scenes}, open(f'{ROUND}/round.json', 'w'), indent=1)
+with open(f'{ROUND}/round.json', 'w') as f:
+    json.dump({'round': 'fog',
+               'about': 'Page fog (r217, format 10): each IMAGE, SHADER and SEQUENCE layer mixed toward the page\'s fog colour by 1 - exp(-strength (1 / speed - 1 / front)), front the page\'s fastest speed ratio X, in every repeat mode, in colours, from a format 9 FOG layer\'s haze, and through a cross-fade between two fogs while tinting. Written by core/test-data/haze/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme\'s JmeParallaxShots.',
+               'scenes': scenes}, f, indent=1)

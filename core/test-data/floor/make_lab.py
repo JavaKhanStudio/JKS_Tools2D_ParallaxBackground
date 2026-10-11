@@ -11,6 +11,7 @@ in front.
 Run from the repository root: python3 core/test-data/floor/make_lab.py (needs numpy and Pillow)."""
 import json
 import math
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -92,9 +93,9 @@ painted
 ground((0.86, 0.88, 0.92), (0.5, 0.56, 0.64), f'{HERE}/ground.png')
 painted(f'{HERE}/ground.png', 0.06, 0.016, f'{HERE}/painted.png')
 
-hiver = open('core/test-data/shaders/HiverFog.atlas').read().strip().split('\n\n')[0].split('\n')
+hiver = Path('core/test-data/shaders/HiverFog.atlas').read_text().strip().split('\n\n')[0].split('\n')
 assert hiver[0] == '../samples/Hiver.png'
-open(f'{HERE}/HiverFloor.atlas', 'w').write('\n'.join(hiver) + grounds_atlas('ground.png', 'painted.png'))
+Path(f'{HERE}/HiverFloor.atlas').write_text('\n'.join(hiver) + grounds_atlas('ground.png', 'painted.png'))
 
 
 def layer(position, size, decal_x, decal_y, speed, **more):
@@ -120,11 +121,12 @@ layers = [layer(3, 1.4, 0, 52, 0.006),
           layer(0, 1.3, -10, 8, 0.04)]
 sky_top = {'r': 0.55, 'g': 0.64, 'b': 0.78, 'a': 1.0}
 sky_low = {'r': 0.88, 'g': 0.9, 'b': 0.93, 'a': 1.0}
-json.dump({'topHalf_top': sky_top, 'topHalf_bottom': sky_low, 'topHalfSize': 0.6,
-           'bottomHalf_top': sky_low, 'bottomHalf_bottom': sky_low, 'bottomHalfSize': 0.4,
-           'repeatOnX': True, 'repeatOnY': False,
-           'pageModel': {'atlasName': 'HiverFloor.atlas', 'outside': False, 'pageList': layers},
-           'useOriginalSize': True}, open(f'{HERE}/lab.jplax', 'w'), indent=1)
+with open(f'{HERE}/lab.jplax', 'w') as f:
+    json.dump({'topHalf_top': sky_top, 'topHalf_bottom': sky_low, 'topHalfSize': 0.6,
+               'bottomHalf_top': sky_low, 'bottomHalf_bottom': sky_low, 'bottomHalfSize': 0.4,
+               'repeatOnX': True, 'repeatOnY': False,
+               'pageModel': {'atlasName': 'HiverFloor.atlas', 'outside': False, 'pageList': layers},
+               'useOriginalSize': True}, f, indent=1)
 
 # The second set (r275, Simon: "let's try it again with another parallax"): round1's PurpleFairy (s05) standing on a
 # violet ground. Its back trees (region 4) meet their grass 39% up the world, which is the ground's box; their speed is
@@ -133,10 +135,10 @@ json.dump({'topHalf_top': sky_top, 'topHalf_bottom': sky_low, 'topHalfSize': 0.6
 # (5) and the stone strip (2), grounds of their own, are left out.
 ground((0.4, 0.28, 0.46), (0.66, 0.54, 0.72), f'{HERE}/ground-purple.png')
 painted(f'{HERE}/ground-purple.png', 0.13, 0.0224, f'{HERE}/painted-purple.png')
-fairy = open('core/test-data/samples/Demos/PurpleFairy.atlas').read().strip().split('\n')
+fairy = Path('core/test-data/samples/Demos/PurpleFairy.atlas').read_text().strip().split('\n')
 assert fairy[0] == 'PurpleFairy.png'
 fairy = ['../samples/Demos/PurpleFairy.png'] + ['filter: Linear,Linear' if l.startswith('filter: ') else l for l in fairy[1:]]
-open(f'{HERE}/PurpleFloor.atlas', 'w').write('\n'.join(fairy) + grounds_atlas('ground-purple.png', 'painted-purple.png'))
+Path(f'{HERE}/PurpleFloor.atlas').write_text('\n'.join(fairy) + grounds_atlas('ground-purple.png', 'painted-purple.png'))
 
 
 def fairy_layer(name, size, decal_x, decal_y, speed):
@@ -159,8 +161,9 @@ purple = [fairy_layer('7', 1.0, 60, 21, 0.0063),
           fairy_layer('1', 0.8, 10, 0, 0.1496)]
 dusk = {'r': 0.42, 'g': 0.3, 'b': 0.52, 'a': 1.0}
 dusk_low = {'r': 0.62, 'g': 0.45, 'b': 0.66, 'a': 1.0}
-json.dump({'topHalf_top': dusk, 'topHalf_bottom': dusk_low, 'topHalfSize': 0.6,
-           'bottomHalf_top': dusk_low, 'bottomHalf_bottom': dusk_low, 'bottomHalfSize': 0.4,
-           'repeatOnX': True, 'repeatOnY': False,
-           'pageModel': {'atlasName': 'PurpleFloor.atlas', 'outside': False, 'pageList': purple},
-           'useOriginalSize': True}, open(f'{HERE}/lab-purple.jplax', 'w'), indent=1)
+with open(f'{HERE}/lab-purple.jplax', 'w') as f:
+    json.dump({'topHalf_top': dusk, 'topHalf_bottom': dusk_low, 'topHalfSize': 0.6,
+               'bottomHalf_top': dusk_low, 'bottomHalf_bottom': dusk_low, 'bottomHalfSize': 0.4,
+               'repeatOnX': True, 'repeatOnY': False,
+               'pageModel': {'atlasName': 'PurpleFloor.atlas', 'outside': False, 'pageList': purple},
+               'useOriginalSize': True}, f, indent=1)

@@ -7,6 +7,7 @@ s08.jplax, vertical stripes (stripes.png, stripes.atlas) through WAVE tiling on 
 Run from the repository root: python3 core/test-data/shaders/make_round.py (needs Pillow)."""
 import json
 import math
+from pathlib import Path
 
 from PIL import Image
 
@@ -19,9 +20,9 @@ mist = Image.new('RGBA', (W, H))
 mist.putdata([(255, 255, 255, round(230 * math.sin(math.pi * (y + 0.5) / H) ** 2)) for y in range(H) for x in range(W)])
 mist.save(f'{HERE}/mist.png')
 
-hiver = open('core/test-data/samples/Hiver.atlas').read().strip().split('\n')
+hiver = Path('core/test-data/samples/Hiver.atlas').read_text().strip().split('\n')
 hiver[0] = '../samples/Hiver.png'
-open(f'{HERE}/HiverFog.atlas', 'w').write('\n'.join(hiver) + f'''
+Path(f'{HERE}/HiverFog.atlas').write_text('\n'.join(hiver) + f'''
 
 mist.png
 size: {W}, {H}
@@ -54,10 +55,11 @@ def mist_layer(size, decal_x, decal_y, ratio, amplitude, wavelength, speed, **mo
 
 
 def page(source, out, change):
-    p = json.load(open(f'engines/godot/tests/conformance/{source}.jplax'))
+    p = json.loads(Path(f'engines/godot/tests/conformance/{source}.jplax').read_text())
     p['pageModel']['atlasName'] = 'HiverFog.atlas'
     change(p['pageModel']['pageList'])
-    json.dump(p, open(f'{ROUND}/{out}.jplax', 'w'), indent=1)
+    with open(f'{ROUND}/{out}.jplax', 'w') as f:
+        json.dump(p, f, indent=1)
 
 
 def s01(layers):
@@ -97,19 +99,20 @@ for source, out, change in [('c01', 's01', s01), ('c02', 's02', s02), ('c03', 's
 # s06 (r229): the mist alone, half the world wide, its noise period (8 wavelengths of 5) twice the image, over near-black
 # gradients: before r229 it cut at every tile edge; now it runs on across them. tools/r229-fog-seam's w5.
 dark = {'r': 0.05, 'g': 0.07, 'b': 0.12, 'a': 1.0}
-json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
-           'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
-           'repeatOnX': True, 'repeatOnY': False,
-           'pageModel': {'atlasName': 'HiverFog.atlas', 'outside': False,
-                         'pageList': [mist_layer(0.5, 0, 20, 0.03, 1.0, 5, 1.5)]},
-           'useOriginalSize': True}, open(f'{ROUND}/s06.jplax', 'w'), indent=1)
+with open(f'{ROUND}/s06.jplax', 'w') as f:
+    json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
+               'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
+               'repeatOnX': True, 'repeatOnY': False,
+               'pageModel': {'atlasName': 'HiverFog.atlas', 'outside': False,
+                             'pageList': [mist_layer(0.5, 0, 20, 0.03, 1.0, 5, 1.5)]},
+               'useOriginalSize': True}, f, indent=1)
 
 # s07 (r262): an even white slab (alpha 230 on every row: the mist fades to 0 at its top and bottom, which hides a cut on
 # Y) through FOG, half the world wide and 5 tall, tiling on Y only, over near-black gradients; the round scrolls it up
 # (speedY) so it wraps on Y. Its noise period up (10 wavelengths of 5) is ten times the image: before r262 it cut at
 # every tile edge on Y. tools/r262-fog-seam-y's y5.
 Image.new('RGBA', (W, H), (255, 255, 255, 230)).save(f'{HERE}/slab.png')
-open(f'{HERE}/slab.atlas', 'w').write(f'''
+Path(f'{HERE}/slab.atlas').write_text(f'''
 slab.png
 size: {W}, {H}
 format: RGBA8888
@@ -124,11 +127,12 @@ slab
   index: -1
 ''')
 slab = mist_layer(0.5, 25, 0, 0.03, 1.0, 5, 1.5, regionName='slab', name='slab')
-json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
-           'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
-           'repeatOnX': False, 'repeatOnY': True,
-           'pageModel': {'atlasName': 'slab.atlas', 'outside': False, 'pageList': [slab]},
-           'useOriginalSize': True}, open(f'{ROUND}/s07.jplax', 'w'), indent=1)
+with open(f'{ROUND}/s07.jplax', 'w') as f:
+    json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
+               'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
+               'repeatOnX': False, 'repeatOnY': True,
+               'pageModel': {'atlasName': 'slab.atlas', 'outside': False, 'pageList': [slab]},
+               'useOriginalSize': True}, f, indent=1)
 
 # s08 (r273): black and white vertical stripes 32 px apart (every row the same: seamless on Y) through WAVE, amplitude
 # 0.3, half the world wide and 5 tall, tiling on Y only; the round scrolls it up (speedY) so it wraps on Y. Its
@@ -138,7 +142,7 @@ SW, SH = 512, 128
 stripes = Image.new('RGBA', (SW, SH))
 stripes.putdata([(255, 255, 255, 255) if (x // 32) % 2 == 0 else (0, 0, 0, 255) for y in range(SH) for x in range(SW)])
 stripes.save(f'{HERE}/stripes.png')
-open(f'{HERE}/stripes.atlas', 'w').write(f'''
+Path(f'{HERE}/stripes.atlas').write_text(f'''
 stripes.png
 size: {SW}, {SH}
 format: RGBA8888
@@ -154,8 +158,9 @@ stripes
 ''')
 wave = mist_layer(0.5, 25, 0, 0.03, 0.3, 1.5, 0.0, regionName='stripes', name='stripes')
 wave['shaderEffect'] = 'WAVE'
-json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
-           'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
-           'repeatOnX': False, 'repeatOnY': True,
-           'pageModel': {'atlasName': 'stripes.atlas', 'outside': False, 'pageList': [wave]},
-           'useOriginalSize': True}, open(f'{ROUND}/s08.jplax', 'w'), indent=1)
+with open(f'{ROUND}/s08.jplax', 'w') as f:
+    json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
+               'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
+               'repeatOnX': False, 'repeatOnY': True,
+               'pageModel': {'atlasName': 'stripes.atlas', 'outside': False, 'pageList': [wave]},
+               'useOriginalSize': True}, f, indent=1)

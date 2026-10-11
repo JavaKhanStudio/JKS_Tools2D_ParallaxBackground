@@ -6,6 +6,7 @@ does not divide the image's 5 units: a ripple taken inside one tile jumps at eve
 five to the image: no cut either way (the control).
 Run from the repository root: python3 tools/r273-wave-seam-y/make.py (needs Pillow)."""
 import json
+from pathlib import Path
 
 from PIL import Image
 
@@ -14,7 +15,7 @@ W, H = 512, 128
 img = Image.new('RGBA', (W, H))
 img.putdata([(255, 255, 255, 255) if (x // 32) % 2 == 0 else (0, 0, 0, 255) for y in range(H) for x in range(W)])
 img.save(f'{HERE}/stripes.png')
-open(f'{HERE}/stripes.atlas', 'w').write(f'''
+Path(f'{HERE}/stripes.atlas').write_text(f'''
 stripes.png
 size: {W}, {H}
 format: RGBA8888
@@ -36,8 +37,9 @@ for name, wavelength in [('w15', 1.5), ('w10', 1.0)]:
              'padX': 0.0, 'padXFactor': 0.0, 'padY': 0.0, 'padYFactor': 0.0, 'mirror': False, 'name': 'stripes',
              'kind': 'SHADER', 'shaderEffect': 'WAVE', 'shaderAmplitude': 0.3, 'shaderWavelength': wavelength,
              'shaderSpeed': 0.0}
-    json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
-               'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
-               'repeatOnX': False, 'repeatOnY': True,
-               'pageModel': {'atlasName': 'stripes.atlas', 'outside': False, 'pageList': [layer]},
-               'useOriginalSize': True}, open(f'{HERE}/{name}.jplax', 'w'), indent=1)
+    with open(f'{HERE}/{name}.jplax', 'w') as f:
+        json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
+                   'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
+                   'repeatOnX': False, 'repeatOnY': True,
+                   'pageModel': {'atlasName': 'stripes.atlas', 'outside': False, 'pageList': [layer]},
+                   'useOriginalSize': True}, f, indent=1)
