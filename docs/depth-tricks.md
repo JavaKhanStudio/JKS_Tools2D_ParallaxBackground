@@ -81,9 +81,14 @@ it does not read as depth as much as the floor does.
   is not bent (the mock left the sky band flat by name; here it is any layer at speed 0, and a slow layer still on the
   ground bends the most). Drawn through `PlanetBatch`, which cuts every `batch.draw` of a layer at 256 vertical strips
   fixed in the layer's view, each lowered at its middle: the art scrolls through a still curve, and the IMAGE, SHADER
-  and SEQUENCE layers bend alike with no change in `ParallaxLayer`. FLOOR, tower, EMPTY and PARTICLES layers stay flat.
+  and SEQUENCE layers bend alike with no change in `ParallaxLayer`. FLOOR and tower layers stay flat.
   A bent layer uncovers what is behind it at the sides. Godot's copy is `plax_planet.gd`; round
-  `engines/godot/tests/planet`. Not built: the particles and the hooks bent, a shader version.
+  `engines/godot/tests/planet`. Not built: a shader version.
+- Built (r330, Simon: "1: A · 2: A", and a lab): a PARTICLES layer's effect is lowered as one block by the drop at the
+  middle of its layer's box, per tile when anchored to the LAYER (the box's middle, not the live particles', which
+  Godot does not know); a still one stays flat. A hook is not bent: `ParallaxPageReader.planetDropAt(layer, x)` (Godot
+  `planet_drop_at`) gives the drop at x, and the hook lowers what it draws by it, each thing at its own x or its tile as
+  a block. Lab: `tools/effects-lab.sh --lab planet` (PlanetLab). Rounds: planet's p08 (a hook), particles' q09, q10.
 
 ### 4. Dolly: a zoom that scales each layer by its depth
 

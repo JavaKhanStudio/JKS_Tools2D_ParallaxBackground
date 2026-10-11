@@ -9,7 +9,8 @@ extends RefCounted
 ## tile (local_coords on); each is its own simulation. Anchored to the VIEW, one instance emits from the view's
 ## bottom-left moved by the layer's decal, and the particles already out drift by the layer's scroll: the node moves
 ## with the layer and its process material's emission_shape_offset moves back by as much (a CPUParticles2D is converted
-## to a GPUParticles2D for that). A layer with no scene draws nothing, and the reader warns once.
+## to a GPUParticles2D for that). A layer with no scene draws nothing, and the reader warns once. Round a planet
+## (r330), each instance is lowered as one block by the drop at the middle of its layer's box (planet_drop_at).
 
 var _bg: PlaxBackground
 # PARTICLES layers already warned about ("<page id>:<layer index>"): a page that draws no particles says so once.
@@ -65,6 +66,7 @@ func place() -> void:
 		if l.scene == null:
 			continue
 		_bg._update_scale(_bg._zoom_of(l))
+		_bg._view_w = _bg.world_width * _bg._zoom_of(l)
 		if l.model.particlesAnchor == "VIEW":
 			_place_view_particles(l)
 		else:
@@ -82,7 +84,9 @@ func _place_view_particles(l: Dictionary) -> void:
 	node.scale = node.get_meta("plax_scale") / z
 	var decal_x: float = l.model.decal_X_Ratio * (_bg.world_width / 100.0)
 	var decal_y: float = l.model.decal_Y_Ratio * (_bg._world_height / 100.0)
-	node.position = Vector2((anchor.x + l.travel_x) * ppu, screen_h - (anchor.y + l.travel_y) * ppu)
+	# Round a planet, lowered by the drop at the middle of the layer's box from the emitter's place.
+	var drop := _bg.planet_drop_at(l, (anchor.x + decal_x + l.width / 2) * ppu)
+	node.position = Vector2((anchor.x + l.travel_x) * ppu, screen_h - (anchor.y + l.travel_y) * ppu + drop)
 	if node.has_meta("plax_offset"):
 		# In the node's own pixels, which its scale makes ppu on screen: those of zoom 1.
 		var authored: Vector3 = node.get_meta("plax_offset")
@@ -90,13 +94,14 @@ func _place_view_particles(l: Dictionary) -> void:
 				-(l.travel_x - decal_x) * ppu * z, (l.travel_y - decal_y) * ppu * z, 0)
 	else:
 		# A custom process material cannot be moved back: the emitter stays at the decal, and nothing drifts.
-		node.position = Vector2((anchor.x + decal_x) * ppu, screen_h - (anchor.y + decal_y) * ppu)
+		node.position = Vector2((anchor.x + decal_x) * ppu, screen_h - (anchor.y + decal_y) * ppu + drop)
 
 
 ## LAYER: an instance at the bottom-left corner of each tile the view shows, as PlaxBackground._tile places them. On a
 ## repeated axis a tile counts as shown while its box and a GPUParticles2D's visibility_rect reach into the view; a
 ## CPUParticles2D has none, so its box grown by its own size each way. On an axis not repeated there is one tile,
-## always kept.
+## always kept. Round a planet each is lowered by the drop at its box's middle, and a tile counts as shown down to the
+## most a tile reaching into the view can be lowered.
 func _place_tile_particles(l: Dictionary) -> void:
 	var z := _bg._zoom_of(l)
 	var ppu := _bg._ppu
@@ -113,6 +118,8 @@ func _place_tile_particles(l: Dictionary) -> void:
 		reach = reach.merge(Rect2(r.position.x / unit, -r.end.y / unit, r.size.x / unit, r.size.y / unit))
 	var view_w := _bg.world_width * z
 	var view_h := _bg._world_height * z
+	var lowest := _bg.planet_drop_at(l, -maxf(reach.end.x - width / 2, width / 2 - reach.position.x) * ppu) / ppu
+	reach = reach.grow_individual(0, lowest, 0, 0)
 	var repeat_x := _bg._repeat_x
 	var repeat_y := _bg._repeat_y
 	var step_x: float = width + l.model.padX
@@ -127,7 +134,7 @@ func _place_tile_particles(l: Dictionary) -> void:
 			var node: Node2D = _instance(l, key)
 			var x: float = anchor.x + l.travel_x + (kx * step_x if repeat_x and step_x > 0 else 0.0)
 			var y: float = anchor.y + l.travel_y + (ky * step_y if repeat_y and step_y > 0 else 0.0)
-			node.position = Vector2(x * ppu, _bg._screen_h - y * ppu)
+			node.position = Vector2(x * ppu, _bg._screen_h - y * ppu + _bg.planet_drop_at(l, (x + width / 2) * ppu))
 			node.scale = node.get_meta("plax_scale") / z
 	for key in l.instances.keys():
 		if not shown.has(key):

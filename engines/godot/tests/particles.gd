@@ -5,7 +5,8 @@ extends Node
 ## canvases of the layers before and after it, at its page's opacity, and where its layer has scrolled it: the scroll
 ## is counted here, apart from PlaxBackground's. A scene's "zoom" ([at 0 s, at 12 s], set before each check) and
 ## "dolly" (r278) place each layer's nodes in its own view, at its own zoom, worked out here too, and scale them by 1
-## over it. Saves a still of each, and quits with 1 on any FAIL.
+## over it. Round a planet (r330) each node is lowered by the drop at the middle of its layer's box, worked out here as
+## ParallaxPageReader.planetBendOf. Saves a still of each, and quits with 1 on any FAIL.
 ##   godot --path engines/godot res://tests/particles.tscn -- <repo root> <round dir> <out dir>
 
 const SPEED := 60.0
@@ -124,6 +125,12 @@ func _check_layer(bg: PlaxBackground, l: Dictionary, travel: Vector2, shot: Stri
 	var anchor := Vector2(bg.world_width * (z - 1), bg._world_height * (z - 1)) / 2 if bg.dolly else Vector2.ZERO
 	var ppu := bg._screen_size().x / (bg.world_width * z)
 	var screen_h := bg._screen_h
+	# Round its page's planet, the drop in pixels at x page units across its view: front / speed / 2R times dx².
+	var from_page: PlaxPage = bg.transfer_page if l.incoming else bg.page
+	var r: float = from_page.planet_radius * bg.world_width / 100.0
+	var speed := absf(float(l.model.parallaxScalingSpeedX))
+	var bend := front / speed / (2 * r) if r > 0 and front > 0 and speed > 0 else 0.0
+	var drop := func(x: float) -> float: return bend * pow(x - bg.world_width * z / 2, 2) * ppu
 	_check(shot, what + " scroll", Vector2(l.travel_x, l.travel_y), travel)
 	travel += anchor
 	for node in nodes:
@@ -136,7 +143,9 @@ func _check_layer(bg: PlaxBackground, l: Dictionary, travel: Vector2, shot: Stri
 		_check(shot, what + " is a GPUParticles2D", node != null, true)
 		if node == null:
 			return
-		_check(shot, what + " node, carried by the scroll", node.position, Vector2(travel.x * ppu, screen_h - travel.y * ppu))
+		var lowered: float = drop.call(anchor.x + l.model.decal_X_Ratio * bg.world_width / 100.0 + l.width / 2)
+		_check(shot, what + " node, carried by the scroll", node.position,
+				Vector2(travel.x * ppu, screen_h - travel.y * ppu + lowered))
 		# The emitter stays: the node's position plus its offset, in its scale, is the authored offset from the decal's
 		# place.
 		var decal := anchor + Vector2(l.model.decal_X_Ratio * bg.world_width / 100.0,
@@ -144,14 +153,14 @@ func _check_layer(bg: PlaxBackground, l: Dictionary, travel: Vector2, shot: Stri
 		var authored: Vector3 = node.get_meta("plax_offset")
 		var offset: Vector3 = node.process_material.emission_shape_offset
 		_check(shot, what + " emitter, kept in the view", node.position + Vector2(offset.x, offset.y) / z,
-				Vector2(decal.x * ppu + authored.x / z, screen_h - decal.y * ppu + authored.y / z))
+				Vector2(decal.x * ppu + authored.x / z, screen_h - decal.y * ppu + authored.y / z + lowered))
 		return
 	# LAYER: a node at the bottom-left corner of every tile whose box, grown by its size each way (a CPUParticles2D),
 	# meets the view: tiles at travel + k * step on a repeated axis, the one at travel on the other.
 	var corners := []
 	for y in _tiles(travel.y, l.height, l.height + l.model.padY, bg._repeat_y, bg._world_height * z):
 		for x in _tiles(travel.x, l.width, l.width + l.model.padX, bg._repeat_x, bg.world_width * z):
-			corners.append(Vector2(x * ppu, screen_h - y * ppu))
+			corners.append(Vector2(x * ppu, screen_h - y * ppu + drop.call(x + l.width / 2)))
 	var positions := nodes.map(func(n): return n.position)
 	_check(shot, what + " one node per tile", positions.size(), corners.size())
 	for corner in corners:

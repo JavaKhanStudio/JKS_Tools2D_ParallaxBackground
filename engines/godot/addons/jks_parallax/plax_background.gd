@@ -26,7 +26,8 @@ extends CanvasLayer
 ##       canvas.draw_texture_rect(bird, rect, false, modulate))
 ##
 ## called in the layer's place in the draw order, once per tile of it the view shows, `rect` in screen pixels and
-## `modulate` the page's tint at the layer's opacity. A layer with no hook draws nothing.
+## `modulate` the page's tint at the layer's opacity. A layer with no hook draws nothing. Round a planet the hook is
+## not bent: it lowers what it draws by planet_drop_at(l, x) (r330).
 ##
 ## A PARTICLES layer instances the Godot scene its page names, between the layers before and after it: PlaxParticles.
 ##
@@ -245,6 +246,18 @@ func set_layer_hook(layer_name: String, hook: Callable) -> void:
 	else:
 		_hooks.erase(layer_name)
 	_redraw()
+
+
+## ParallaxPageReader.planetDropAt (r330): how far layer `l` is lowered round its page's planet at `x`, both in the
+## screen pixels a hook draws in: bend dx², bend PlaxPlanet.bend_of and dx from the middle of the view the layer is
+## drawn in, the curve its page's IMAGE layers follow. For a hook to lower what it draws; 0 for no planet and a still
+## layer. Called from a hook, the view is the layer's own (dolly).
+func planet_drop_at(l: Dictionary, x: float) -> float:
+	var from_page := transfer_page if l.incoming else page
+	var bend := PlaxPlanet.bend_of(from_page.planet_radius, world_width,
+			PlaxEffects.front_speed_of(transfer_layers if l.incoming else layers), l.model)
+	var dx := x / _ppu - _view_w / 2
+	return bend * dx * dx * _ppu
 
 
 ## Draws every SEQUENCE layer's cycle, on screen and fading in, from `seed` XOR the seed its page stores rather than

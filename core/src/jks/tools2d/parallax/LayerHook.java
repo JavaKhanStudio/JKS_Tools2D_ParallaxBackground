@@ -6,7 +6,8 @@ import com.badlogic.gdx.graphics.g2d.Batch;
  * What a game draws in an EMPTY layer ({@link jks.tools2d.parallax.pages.Enum_LayerKind#EMPTY}), registered under the
  * layer's name with {@link ParallaxPageReader#setLayerHook}. Called every frame, in the layer's place in the draw
  * order, once for each tile of the layer the view shows: on the axes the page repeats on, a box the layer's size,
- * scrolled and placed as an image layer would be. Runs every frame: allocate nothing.
+ * scrolled and placed as an image layer would be. Runs every frame: allocate nothing. Round a planet the hook is not
+ * bent: it lowers what it draws at x by {@link ParallaxPageReader#planetDropAt} (r330).
  */
 public interface LayerHook
 {

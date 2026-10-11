@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Writes the planet round (r277, docs/depth-tricks.md §3): engines/godot/tests/planet/round.json and its pages, other
 rounds' pages with a planet radius (WholePage_Model.planetRadius, format 13) so each layer is bent down toward the view's
-sides by its depth, the far ones more, a still one not at all. No art of its own: the atlases are the floor lab's,
-the samples', the sequence round's and the shaders round's.
+sides by its depth, the far ones more, a still one not at all; p08 an EMPTY layer whose hook lowers its tiles by
+planetDropAt (r330). No art of its own: the atlases are the floor lab's, the samples', the sequence round's and the
+shaders round's. Also writes p09 and p10, the particles round's pages (core/test-data/particles) round a planet, which
+engines/godot/tests/particles/round.json lists (q09, q10): particles are not compared in pixels.
 Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots;
 tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare them. `make_round.py --flat OUT` (strength.sh)
 writes the same pages with the planets dropped.
@@ -14,6 +16,7 @@ from pathlib import Path
 OUT = 'engines/godot/tests/planet'
 FLOOR, SAMPLES, SEQUENCE, SHADERS = 'core/test-data/floor', 'core/test-data/samples', 'core/test-data/sequence', \
     'core/test-data/shaders'
+PARTICLES = 'core/test-data/particles'
 
 
 def load(path):
@@ -49,6 +52,9 @@ def main(out, flat):
     p04 = write('p04', load('engines/godot/tests/shaders/s01.jplax'), 600)
     p05 = write('p05', load('engines/godot/tests/conformance/c02.jplax'), 700)
     p07 = write('p07', load('engines/godot/tests/conformance/c01.jplax'), 0)
+    p08 = write('p08', load('engines/godot/tests/effects/e01.jplax'), 400)
+    write('p09', load(f'{PARTICLES}/p02.jplax'), 400)
+    write('p10', load(f'{PARTICLES}/p01.jplax'), 400)
     scenes = [
         {'id': 'p01', 'page': p01, 'atlasDir': FLOOR, 'name': 'planet-hiver-still-sky',
          'about': "the floor lab's Hiver set round a planet 800% of the world in radius (320 units): the trees bend "
@@ -71,6 +77,10 @@ def main(out, flat):
         {'id': 'p07', 'page': p07, 'atlasDir': SAMPLES, 'name': 'planet-from-flat',
          'about': "c01 (Hiver, flat: planetRadius 0) cross-fading into p01 4 s in, over 4 s: the flat page fades out "
                   "flat, the round one comes in bent", 'transfer': {'at': 4, 'seconds': 4, 'page': p01, 'atlasDir': FLOOR}},
+        {'id': 'p08', 'page': p08, 'atlasDir': SAMPLES, 'name': 'planet-hook',
+         'about': "e01 (Hiver with an EMPTY slot, 24 wide, drawn by a hook) round a planet of 400% (r330): the hook "
+                  "lowers each tile as one block by planetDropAt at its middle, the images around it bent in strips",
+         'hooks': {'slot': {'region': 'parallax4', 'position': 1, 'planet': True}}},
     ]
     with open(f'{out}/round.json', 'w') as f:
         json.dump({'round': 'planet',

@@ -48,7 +48,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * a]}} tint, both started {@code at} seconds into the scroll (r94, engines/godot/tests/transfer); {@code "speedY": 30}
  * also scroll up, and {@code "resize": {"at": 3, "size": [720, 1280]}} resize the window mid-scroll (r95,
  * engines/godot/tests/conformance); {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY
- * layer named slot with that atlas region stretched over each tile (r177, engines/godot/tests/effects);
+ * layer named slot with that atlas region stretched over each tile (r177, engines/godot/tests/effects; {@code "planet":
+ * true} lowers it by {@code planetDropAt} at the tile's middle, r330);
  * {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that game seed (r183, engines/godot/tests/sequence);
  * {@code "film": {"seconds": 8, "fps": 30}} goes on scrolling after the last still and saves every frame of those seconds,
  * {@code <id>-f0000.png} on (r239: tools/ai-film.sh makes them a video); {@code "zoom": [1, 0.5]} zooms the camera
@@ -91,6 +92,8 @@ public class ParallaxShots extends ApplicationAdapter
 	{
 		String layer, region;
 		int position;
+		/** Round a planet, the region lowered by its layer's drop at the tile's middle (r330). */
+		boolean planet;
 	}
 
 	/** A cross-fade {@code at} seconds into the scroll; {@code page} null: into the page on screen. */
@@ -186,6 +189,7 @@ public class ParallaxShots extends ApplicationAdapter
 					hook.layer = h.name;
 					hook.region = h.getString("region");
 					hook.position = h.getInt("position", 0);
+					hook.planet = h.getBoolean("planet", false);
 					scene.hooks.add(hook);
 				}
 			JsonValue tint = s.get("tint");
@@ -217,7 +221,9 @@ public class ParallaxShots extends ApplicationAdapter
 		for (Hook hook : scene.hooks)
 		{
 			TextureRegion region = findRegion(page.getLoadedAtlas(), hook.region, hook.position);
-			heart.parallaxReader.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x, y, width, height));
+			boolean planet = hook.planet;
+			heart.parallaxReader.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x,
+					planet ? y - heart.parallaxReader.planetDropAt(layer, x + width / 2) : y, width, height));
 			hooked.add(hook.layer);
 		}
 		if (scene.sequenceSeed != null)

@@ -41,7 +41,7 @@ final class ParticleCases extends ReaderFixtures
 	 * One emitter holding one still particle, 1 world unit square, centered {@code offsetX} right of the effect's origin,
 	 * alive 100 s: drawn, it shows where the reader put the origin.
 	 */
-	private static ParallaxParticles dot(float offsetX)
+	static ParallaxParticles dot(float offsetX)
 	{
 		ParticleEmitter emitter = new ParticleEmitter();
 		emitter.setMaxParticleCount(1);

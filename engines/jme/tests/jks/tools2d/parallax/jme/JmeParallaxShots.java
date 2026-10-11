@@ -67,6 +67,8 @@ public class JmeParallaxShots extends SimpleApplication
 	{
 		String layer, region;
 		int position;
+		/** Round a planet, the region lowered by its layer's drop at the tile's middle (r330). */
+		boolean planet;
 	}
 
 	private final Path roundDir, outDir;
@@ -175,6 +177,7 @@ public class JmeParallaxShots extends SimpleApplication
 					hook.layer = h.name;
 					hook.region = h.getString("region");
 					hook.position = h.getInt("position", 0);
+					hook.planet = h.getBoolean("planet", false);
 					scene.hooks.add(hook);
 				}
 			JsonValue tint = s.get("tint");
@@ -273,7 +276,9 @@ public class JmeParallaxShots extends SimpleApplication
 		for (Hook hook : scene.hooks)
 		{
 			TextureRegion region = findRegion(atlas, hook.region, hook.position);
-			bg.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x, y, width, height));
+			boolean planet = hook.planet;
+			bg.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x,
+					planet ? y - bg.getReader().planetDropAt(layer, x + width / 2) : y, width, height));
 			hooked.add(hook.layer);
 		}
 		if (scene.sequenceSeed != null)

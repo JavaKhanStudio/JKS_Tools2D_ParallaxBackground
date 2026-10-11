@@ -147,10 +147,12 @@ repair.
 - A planet (r277, format 13: the page's `planetRadius`) bends a page's IMAGE, SHADER and SEQUENCE layers through
   `PlanetBatch`, which wraps the layer's batch (the dolly's, when dollied) and cuts each `draw(region, x, y, w, h)` at
   `PlanetBatch.STRIPS` strips fixed in the layer's view, each lowered by `planetBendOf` times dx² (dx from the view's
-  middle to the strip's); a still layer, FLOOR, tower, EMPTY and PARTICLES layers stay flat, each cross-faded page
-  bent by its own. Godot's copy is `plax_planet.gd` (called from `_draw_region`); jME runs core's. Change it and run
-  both frame checks on `engines/godot/tests/planet`; `tools/r277-planet/strength.sh` proves the round sees the bend,
-  `mutate.sh` a wrong Godot copy and a wrong core law.
+  middle to the strip's); a still layer, FLOOR and tower layers stay flat, each cross-faded page bent by its own. A
+  PARTICLES effect is lowered as one block by the drop at its layer box's middle, and a hook asks
+  `ParallaxPageReader.planetDropAt` (r330). Godot's copy is `plax_planet.gd` (called from `_draw_region`),
+  `planet_drop_at` and `plax_particles.gd`'s placing; jME runs core's. Change it and run both frame checks on
+  `engines/godot/tests/planet` (p08: a hook) and `engines/godot/tests/particles` (q09, q10);
+  `tools/r277-planet/strength.sh` proves the round sees the bend, `mutate.sh` a wrong Godot copy and a wrong core law.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,

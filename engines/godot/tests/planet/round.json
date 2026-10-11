@@ -67,6 +67,20 @@
     "page": "engines/godot/tests/planet/p01.jplax",
     "atlasDir": "core/test-data/floor"
    }
+  },
+  {
+   "id": "p08",
+   "page": "engines/godot/tests/planet/p08.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "planet-hook",
+   "about": "e01 (Hiver with an EMPTY slot, 24 wide, drawn by a hook) round a planet of 400% (r330): the hook lowers each tile as one block by planetDropAt at its middle, the images around it bent in strips",
+   "hooks": {
+    "slot": {
+     "region": "parallax4",
+     "position": 1,
+     "planet": true
+    }
+   }
   }
  ]
 }

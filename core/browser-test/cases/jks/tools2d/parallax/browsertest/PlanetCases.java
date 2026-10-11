@@ -7,16 +7,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
+import jks.tools2d.parallax.LayerHook;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
+import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
  * ParallaxPageReader's cases on a page bent round its planet (r277): each IMAGE, SHADER and SEQUENCE layer cut in the
- * view's vertical strips, each strip lowered by {@code d dx² / 2R}, the far layers more, a still one not at all. Shared
- * builders in {@link ReaderFixtures}.
+ * view's vertical strips, each strip lowered by {@code d dx² / 2R}, the far layers more, a still one not at all; a
+ * PARTICLES layer's effects each lowered as one block, an EMPTY layer's hook handed the drop (r330). Shared builders in
+ * {@link ReaderFixtures}.
  */
 final class PlanetCases extends ReaderFixtures
 {
@@ -30,7 +34,11 @@ final class PlanetCases extends ReaderFixtures
 				new BrowserCase("reader: planetCutsAFlippedLayerRightToLeft", () -> new PlanetCases().planetCutsAFlippedLayerRightToLeft()),
 				new BrowserCase("reader: planetBendsTheMirroredCopy", () -> new PlanetCases().planetBendsTheMirroredCopy()),
 				new BrowserCase("reader: planetLeavesATowerAsItIs", () -> new PlanetCases().planetLeavesATowerAsItIs()),
-				new BrowserCase("reader: planetOfEachPageBendsItsOwnLayersInACrossFade", () -> new PlanetCases().planetOfEachPageBendsItsOwnLayersInACrossFade()));
+				new BrowserCase("reader: planetOfEachPageBendsItsOwnLayersInACrossFade", () -> new PlanetCases().planetOfEachPageBendsItsOwnLayersInACrossFade()),
+				new BrowserCase("reader: planetLowersEachParticleTileAsOneBlockInEveryRepeatMode", () -> new PlanetCases().planetLowersEachParticleTileAsOneBlockInEveryRepeatMode()),
+				new BrowserCase("reader: planetBringsAParticleTileFromAboveTheViewDown", () -> new PlanetCases().planetBringsAParticleTileFromAboveTheViewDown()),
+				new BrowserCase("reader: planetLowersAViewAnchoredEffectByTheDropAtItsBoxsMiddle", () -> new PlanetCases().planetLowersAViewAnchoredEffectByTheDropAtItsBoxsMiddle()),
+				new BrowserCase("reader: planetHandsAHookTheDropOfItsLayer", () -> new PlanetCases().planetHandsAHookTheDropOfItsLayer()));
 	}
 
 	/** The planet's radius: 250% of the 40-wide world, 100 units; the front layer's bend 1 / 200. */
@@ -225,5 +233,157 @@ final class PlanetCases extends ReaderFixtures
 		equal(2, whole, "the outgoing page's tiles whole");
 		reader.act(1.5f, 0, 0);
 		equal(RADIUS, reader.getPlanetRadius(), 0, "the page in, its planet is the reader's");
+	}
+
+	/** The particles' draws, recognized by their 1-unit width ({@link ParticleCases#dot}). */
+	private List<float[]> dots()
+	{
+		List<float[]> dots = new ArrayList<>();
+		for (float[] draw : draws)
+			if (Math.abs(draw[2] - 1) < 1e-3f && Math.abs(draw[3] - 1) < 1e-3f)
+				dots.add(draw);
+		return dots;
+	}
+
+	/**
+	 * Every repeat mode: a PARTICLES layer pinned to its layer, at half the front's speed, has each tile's effect lowered
+	 * as one block by twice the front's bend times dx², dx from the view's middle to its tile's box's (12 wide) (r330):
+	 * its dot sits that far under its tile's corner.
+	 */
+	void planetLowersEachParticleTileAsOneBlockInEveryRepeatMode()
+	{
+		for (boolean[] mode : new boolean[][] { { true, false }, { false, true }, { true, true }, { false, false } })
+		{
+			String repeat = "repeat X " + mode[0] + ", Y " + mode[1];
+			ParallaxLayer snow = ParallaxLayer.particles(ParticleCases.dot(0), Enum_ParticleAnchor.LAYER, 0.3f); // a step of 13 x 7.75
+			snow.setPadX(1);
+			snow.setPadY(1);
+			snow.setParallaxSpeedRatioX(0.01f);
+			snow.setParallaxSpeedRatioY(0.01f);
+			snow.setDecalPercentX(25);
+			snow.setDecalPercentY(25);
+			ParallaxPageReader reader = drawn(mode[0], mode[1], RADIUS, ground(0.02f), snow);
+			reader.act(1 / 60f, 0, 0);
+			draws.clear();
+			reader.draw(camera, batch);
+			List<float[]> dots = dots();
+			isTrue(dots.size() > 0, repeat + ": the particles are drawn");
+			float lowest = 0;
+			for (float[] dot : dots)
+			{
+				float x = dot[0] + 0.5f, dx = x + 6 - 20, drop = 2 * BEND * dx * dx;
+				float stepsY = (dot[1] + 0.5f + drop - snow.getCurrentDistanceY() - 0) / 7.75f;
+				equal(Math.round(stepsY), stepsY, 1e-3f, repeat + ": the dot at " + x + " lowered by " + drop + ", at " + dot[1]);
+				lowest = Math.max(lowest, drop);
+			}
+			if (mode[0])
+				isTrue(lowest > 1, repeat + ": the side tiles lowered by more than a unit: " + lowest);
+		}
+	}
+
+	/**
+	 * A tile whose effect is just over the view's top, flat, but lowered into it near the view's side, is drawn: the
+	 * reader culls the tiles where their effect lands, not where it would be flat. Its dot at 0.5 across, 23.5 up, its
+	 * box's middle 6 right of it, is lowered by 2 / 200 times 13.5², 1.82, into the view.
+	 */
+	void planetBringsAParticleTileFromAboveTheViewDown()
+	{
+		ParallaxLayer snow = ParallaxLayer.particles(ParticleCases.dot(0), Enum_ParticleAnchor.LAYER, 0.3f);
+		snow.setParallaxSpeedRatioX(0.01f);
+		snow.setParallaxSpeedRatioY(0.01f);
+		snow.setDecalPercentX(1.25f);
+		snow.setDecalPercentY(23.5f / 22.5f * 100);
+		ParallaxPageReader reader = drawn(false, false, 0, ground(0.02f), snow);
+		reader.act(1 / 60f, 0, 0);
+		draws.clear();
+		reader.draw(camera, batch);
+		equal(0, dots().size(), "flat, the dot is over the view");
+		reader.setPlanetRadius(RADIUS);
+		draws.clear();
+		reader.draw(camera, batch);
+		equal(1, dots().size(), "bent, it is lowered into it");
+		equal(23.5f - 2 * BEND * 13.5f * 13.5f, dots().get(0)[1] + 0.5f, 1e-3f, "by the drop at its box's middle");
+	}
+
+	/**
+	 * Anchored to the view, the effect is lowered by the drop at its box's middle, 12 wide from 4 across, 10 left of the
+	 * view's: 2 / 200 times 100, 1 under where the flat page draws it. A still one (the sky's snow) is not lowered.
+	 */
+	void planetLowersAViewAnchoredEffectByTheDropAtItsBoxsMiddle()
+	{
+		for (float speed : new float[] { 0.01f, 0 })
+		{
+			float[] flat = null;
+			for (float radius : new float[] { 0, RADIUS })
+			{
+				ParallaxLayer rain = ParallaxLayer.particles(ParticleCases.dot(0), Enum_ParticleAnchor.VIEW, 0.3f);
+				rain.setParallaxSpeedRatioX(speed);
+				rain.setParallaxSpeedRatioY(speed);
+				rain.setDecalPercentX(10);
+				rain.setDecalPercentY(50);
+				ParallaxPageReader reader = drawn(true, false, radius, ground(0.02f), rain);
+				reader.act(1 / 60f, 0, 0);
+				draws.clear();
+				reader.draw(camera, batch);
+				equal(1, dots().size(), "speed " + speed + ", radius " + radius + ": drawn once");
+				if (flat == null)
+					flat = dots().get(0);
+				else
+				{
+					equal(flat[0], dots().get(0)[0], 1e-4f, "speed " + speed + ": not moved across");
+					equal(flat[1] - (speed > 0 ? 1 : 0), dots().get(0)[1], 1e-3f, "speed " + speed + ": lowered");
+				}
+			}
+		}
+	}
+
+	/**
+	 * An EMPTY layer is not bent: its hook asks {@link ParallaxPageReader#planetDropAt} and lowers what it draws by it.
+	 * At half the front's speed, twice the front's bend times dx²; 0 for a still layer and a flat page; during a
+	 * cross-fade into a planet, the incoming page's.
+	 */
+	void planetHandsAHookTheDropOfItsLayer()
+	{
+		final ParallaxPageReader[] at = new ParallaxPageReader[1];
+		final float[] asked = new float[1];
+		LayerHook lowered = new LayerHook()
+		{
+			@Override
+			public void draw(Batch batch, ParallaxLayer layer, float x, float y, float width, float height)
+			{
+				asked[0] = at[0].planetDropAt(layer, x + width / 2);
+				batch.draw((TextureRegion) null, x, y - asked[0], width, height);
+			}
+		};
+		ParallaxLayer flock = ParallaxLayer.empty("flock", 0.3f); // 12 wide, from 0 to 12 at decal 0
+		flock.setParallaxSpeedRatioX(0.01f);
+		at[0] = reader(false, false);
+		at[0].setLayerHook("flock", lowered);
+		at[0].setWorldSize(40, 22.5f);
+		at[0].setPlanetRadius(RADIUS);
+		at[0].addLayers(list(ground(0.02f), flock));
+		at[0].resetPositions();
+		draws.clear();
+		at[0].draw(camera, batch);
+		equal(2 * BEND * 14 * 14, asked[0], 1e-4f, "its tile's middle at 6, 14 left of the view's");
+		float[] box = draws.get(draws.size() - 1);
+		equal(-asked[0], box[1], 1e-4f, "the hook drew its box that much lower");
+		equal(2 * BEND * 20 * 20, at[0].planetDropAt(flock, 0), 1e-4f, "at the view's left edge");
+		equal(0, at[0].planetDropAt(flock, 20), 1e-6f, "none in its middle");
+		ParallaxLayer still = ParallaxLayer.empty("flock", 0.3f);
+		equal(0, at[0].planetDropAt(still, 0), 0, "a still layer: none");
+
+		at[0].setPlanetRadius(0);
+		equal(0, at[0].planetDropAt(flock, 0), 0, "a flat page: none");
+		ParallaxLayer incoming = ParallaxLayer.empty("flock", 0.3f);
+		incoming.setParallaxSpeedRatioX(0.01f);
+		WholePage_Model round = page(list(ground(0.02f), incoming));
+		round.planetRadius = RADIUS;
+		at[0].addLayersTransfert(round, 2);
+		at[0].act(1, 0, 0);
+		draws.clear();
+		at[0].draw(camera, batch);
+		equal(0, at[0].planetDropAt(flock, 0), 0, "the outgoing page's layer: still flat");
+		equal(2 * BEND * 20 * 20, at[0].planetDropAt(at[0].transferLayers.get(1), 0), 1e-4f, "the incoming page's: its planet");
 	}
 }

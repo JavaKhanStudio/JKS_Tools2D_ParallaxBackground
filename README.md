@@ -105,7 +105,10 @@ A **page** (`WholePage_Model`) is one complete background:
   and `SEQUENCE` layer is lowered by `dx² × d / 2R` at `dx` from the view's middle, R the radius and d the layer's
   depth, the page's fastest speed ratio X over its own (1 for the front layer, 4 for one scrolling a quarter as fast):
   the far layers bend down toward the view's sides more, a still layer (speed 0) is the sky and stays flat, and so do
-  the gradients, `FLOOR`, tower, `EMPTY` and `PARTICLES` layers. On a 40-wide view, a layer of depth 4 drops
+  the gradients, `FLOOR` and tower layers. A `PARTICLES` layer's effect is lowered as one block by the drop at the
+  middle of its layer's box (each tile's, anchored to the `LAYER`), and an `EMPTY` layer's hook is not bent: it asks
+  the drop at an x, `reader.planetDropAt(layer, x)` (Godot's `planet_drop_at(l, x)`, in its rect's pixels), and lowers
+  what it draws by it (r330). On a 40-wide view, a layer of depth 4 drops
   `400 × 4 / 2R` units at the sides: 800 (R = 320 units) drops it 2.5, the front 0.6. A bent layer uncovers what is
   behind it at the sides (the gradients under the farthest). Drawn as 256 vertical strips across the view, each piece
   one `batch.draw(region, x, y, width, height)` lowered by its strip's drop; a cross-fade bends each page by its own.
@@ -242,7 +245,10 @@ More:
 - **A rolling world (the planet):** a page's planet (see "Planet" in "Concepts") is set by the page; a game changes it
   with `heart.parallaxReader.setPlanetRadius(radius)` (the page on screen; a cross-fade brings in the next page's own),
   or on the `WholePage_Model` (`planetRadius`) before showing it, as with Godot's `PlaxPage.planet_radius`. Each strip
-  is one `batch.draw(region, x, y, width, height)`: a frame allocates nothing.
+  is one `batch.draw(region, x, y, width, height)`: a frame allocates nothing. A hook drawing in an `EMPTY` layer
+  lowers what it draws at x by `heart.parallaxReader.planetDropAt(layer, x)` (0 on a flat page): each thing at its own
+  x follows the curve, the whole tile at the tile's middle drops as a block. `tools/effects-lab.sh --lab planet` shows
+  both, and the snow, moving.
 - **Depth fog:** a page's fog (see "Concepts") is set by the page itself; a game changes it with
   `heart.parallaxReader.setFog(strength, color)` (the page on screen; a cross-fade brings in the next page's own), or
   on the `WholePage_Model` (`setFogStrength`, `fogColor`) before showing it, as with Godot's `PlaxPage.fog_strength` /
