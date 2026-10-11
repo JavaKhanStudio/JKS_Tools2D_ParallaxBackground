@@ -80,6 +80,11 @@ inpainted, makes an ordinary page. The pipeline is assets work beside r239's str
 displacement shader on one image and its depth map is the other way, and the costliest: a second texture per layer
 (a format bump), a shader three times, and holes wherever the camera looks behind a near thing.
 
+- Built (r279): `tools/depth-page.sh PAINTING OUT` (`tools/r279-depth-page/depth_page.py`), Depth Anything V2 Small
+  in the ComfyUI venv, the holes repainted by `gen.py inpaint` with `--tile x` so every layer loops. Each step that
+  looks across the painting (the depth, the islands, the fill) runs on it laid three times side by side, or a band's
+  edge steps at the join. How to use it and what to look for: the parallax-pages skill, "From one painting".
+
 ### Not here
 
 - Shantae's planes (jumping into the background, Risky's Revenge): the game's own levels, drawn as layers; the page

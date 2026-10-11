@@ -6,11 +6,15 @@ Runs ComfyUI's nodes in-process, without its server, and leaves the install unto
     ~/ComfyUI/venv/bin/python tools/r239-ai-strips/gen.py img2img --init sil.png --denoise 0.75 --tile x ...
     ~/ComfyUI/venv/bin/python tools/r239-ai-strips/gen.py variants --src a.png --n 3 --edge 96 --tile x ...
     ... img2img ... --control mask.png --control-edge --control-strength 1.0   (r244)
+    ~/ComfyUI/venv/bin/python tools/r239-ai-strips/gen.py inpaint --src a.png --mask hole.png --tile x ...   (r279)
 
 --tile x pads every convolution of the UNet and the VAE circularly along X (zeros along Y): the
 model then draws on a cylinder, so the strip's right edge continues into its left one.
 `variants` repaints the middle of a looping strip and keeps its edge columns: every variant
 starts and ends on the same pixels, so a SEQUENCE layer can put any of them after any other.
+`inpaint` repaints where --mask is white (grey: partly) and keeps every other pixel of --src exactly: what a
+layer cut from one painting (r279) shows where a nearer thing stood. Fill the hole with plausible colour first:
+dreamshaper is no inpainting model, and starts from the source under the mask.
 --control guides the sampling with a ControlNet (SD 1.5 lineart by default) fed that image; --control-edge
 turns a silhouette mask into its outline first (white lines on black, wrapping along X). With --tile x the
 ControlNet's convolutions are padded circularly too: its hint feeds every block of the UNet, and a hint
@@ -128,7 +132,7 @@ def sample(model, pos, neg, latent, seed, steps, cfg, denoise, sampler, schedule
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["txt2img", "img2img", "variants"])
+    ap.add_argument("mode", choices=["txt2img", "img2img", "variants", "inpaint"])
     ap.add_argument("--ckpt", default="dreamshaper_8.safetensors")
     ap.add_argument("--lora")
     ap.add_argument("--lora-strength", type=float, default=0.8)
@@ -144,7 +148,8 @@ def main():
     ap.add_argument("--denoise", type=float, default=1.0)
     ap.add_argument("--tile", choices=["x", "none"], default="none")
     ap.add_argument("--init", help="img2img: start image; variants: the new middle's start image")
-    ap.add_argument("--src", help="variants: the looping strip whose edges are kept")
+    ap.add_argument("--src", help="variants: the looping strip whose edges are kept; inpaint: the image to repaint")
+    ap.add_argument("--mask", help="inpaint: white where to repaint")
     ap.add_argument("--n", type=int, default=3)
     ap.add_argument("--edge", type=int, default=96, help="variants: kept columns at each end, px")
     ap.add_argument("--control", help="ControlNet hint image (a silhouette mask with --control-edge)")
@@ -169,6 +174,15 @@ def main():
         latent = to_latent(vae, from_image(a.init, a.w, a.h))
         out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
         to_image(vae, out)[0].save(a.out)
+    elif a.mode == "inpaint":
+        src = from_image(a.src)
+        m = np.asarray(Image.open(a.mask).convert("L")).astype(np.float32) / 255.0
+        latent = nodes.SetLatentNoiseMask().set_mask(to_latent(vae, src), torch.from_numpy(m)[None])[0]
+        out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
+        img = np.asarray(to_image(vae, out)[0]).astype(np.float32)
+        # The decoder shifts every pixel by a level or two: only the mask's own pixels are taken from it.
+        img = src[0].cpu().numpy() * 255 * (1 - m[..., None]) + img * m[..., None]
+        Image.fromarray(img.round().clip(0, 255).astype(np.uint8)).save(a.out)
     else:
         src = from_image(a.src)
         h, w = src.shape[1:3]

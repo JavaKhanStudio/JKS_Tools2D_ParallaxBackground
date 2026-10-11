@@ -1,6 +1,6 @@
 ---
 name: parallax-pages
-description: Design or improve a parallax background page for the JKS parallax library — write the page file (.jplax JSON) from a libGDX atlas without the editor, or generate the art from a theme with a local Stable Diffusion (tools/ai-page.sh), check its numbers, render it and look. Use when asked to "make a parallax", "generate a parallax background", "build a background from these layers", "why does my parallax feel flat", or to review a .plax/.jplax/.plaxpj page.
+description: Design or improve a parallax background page for the JKS parallax library — write the page file (.jplax JSON) from a libGDX atlas without the editor, or generate the art from a theme with a local Stable Diffusion (tools/ai-page.sh), or cut one flat painting into layers by its depth (tools/depth-page.sh), check its numbers, render it and look. Use when asked to "make a parallax", "generate a parallax background", "build a background from these layers", "why does my parallax feel flat", or to review a .plax/.jplax/.plaxpj page.
 ---
 
 # Parallax pages
@@ -164,6 +164,33 @@ creature (the prompt forbids them, and `creature.py` refuses one inside a layer'
 layers whose colours do not belong together, a light rim along a far ridge. Then the strips themselves:
 `OUT/strips/l<k>_ai.png` painted, `_cut.png` cut, `_cut.log` what the cut dropped. A strip refused 5 times (art on
 its top row, a creature, or no trees) stops the run: another `--seed`.
+
+### From one painting (r279)
+
+When the art is one flat painting, not layers, `tools/depth-page.sh` cuts it into a page by its depth
+(`docs/depth-tricks.md` §5): Depth Anything V2 Small (Apache-2.0, in `~/.cache/huggingface`, Simon's pick) gives each
+pixel a depth, `--layers` depth bands become the layers, and dreamshaper_8 repaints what each band hid. About 2 min.
+
+```bash
+~/ComfyUI/venv/bin/python tools/r239-ai-strips/gen.py txt2img --w 1024 --h 576 --tile x --seed 1 \
+    --prompt "wide painterly 2d game background, a green valley ..., tall pine trees in the foreground" --out paint.png
+tools/depth-page.sh paint.png build/depth/valley --theme "green valley with a river, pine forest, blue mountains"
+```
+
+The painting should loop (`--tile x`, as above); one whose join shows has a band round it repainted. Paint it 16:9:
+every layer is the painting's full width at sizeRatio 1, so its height is the screen's. Speeds follow each band's
+median depth (front `--front-speed` 0.08, none under a twentieth of it); the back layer is opaque, the painted sky.
+`--theme` is the repaint's prompt: say what the painting shows.
+
+Look at `OUT/cut/sheet.png` (the painting, its depth, its bands, each layer before and after the repaint) and at the
+frames at 6 and 12 s, where the layers have slid apart: a repaint is seen everywhere a nearer thing stood once the
+camera moves. What it gets wrong: a repainted patch darker or brighter than the painting round it (`--denoise`, 0.8
+by default; 0.9 invents more, a rock spire in a trunk's place); a nearer band's edge cut
+straight down where its neighbour was taller (the tool takes the lower side over a gap rather than paint a spike);
+a thin part of a near thing the small model judged far, left behind in the back layer (the colour pass catches what
+hangs from a crown; another painting may need it tuned, `by_colour` in `tools/r279-depth-page/depth_page.py`);
+a small bird in a repainted sky, whatever the negative prompt says; and, on a painting that did not loop, its
+repaired join, which reads as a soft vertical band once the layers slide: paint one that loops instead.
 
 ## Getting it graded
 
