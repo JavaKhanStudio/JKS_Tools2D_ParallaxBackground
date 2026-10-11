@@ -43,7 +43,7 @@ for a in core/test-data/shaders/HiverFog.atlas core/test-data/samples/Hiver.atla
 done
 same overlap tools/r183-sequence/overlap.py
 same shots tools/r232-lab-kit/shots.py "$BASE" "$CHROME" OUTDIR
-# probe.py fails on every lab since r248 put choices in them, at line 13, after the line r304 changed: same failure.
+# probe.py lists a choice's select too since r323 (it failed on every lab from r248 to r323).
 # headless: Playwright launches the system Chrome headless (the probes' own launch), no window.
 same probe tools/r232-lab-kit/probe.py "$BASE" "$CHROME" "fog-lab.html?clip=1" fogLabReady 1580 710
 same pick tools/r248-lab-choices/pick.py "$BASE" "$CHROME"
