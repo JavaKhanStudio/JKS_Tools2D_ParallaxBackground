@@ -27,12 +27,12 @@ func _ready() -> void:
 	for scene in round.scenes:
 		var page := PlaxPage.load_page(root.path_join(scene.page))
 		page.repeat_on_y = scene.get("repeatY", page.repeat_on_y)
-		var warned: int = bg._warned.size()
+		var warned: int = bg._particles._warned.size()
 		bg.set_page(page, PlaxAtlas.load_atlas(root.path_join(scene.atlasDir).path_join(page.atlas_name)))
 		bg.tint_to(Color.WHITE, 0)
 		bg.speed_constant_x = SPEED
 		bg.speed_constant_y = scene.get("speedY", 0.0)
-		_check(scene.id, "warnings", bg._warned.size() - warned,
+		_check(scene.id, "warnings", bg._particles._warned.size() - warned,
 				0 if _particle_layers(bg.layers).all(func(l): return not l.model.particlesGodot.is_empty()) else 1)
 		var transfer: Dictionary = scene.get("transfer", {})
 		var tint: Dictionary = scene.get("tint", {})

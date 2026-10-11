@@ -63,6 +63,12 @@ A reader is three pieces, and the third is where the work is:
 - `plax_background.gd` (`PlaxBackground`): a `CanvasLayer` (layer −100) that scrolls and draws the page. It mirrors
   `Parallax_Heart`: `speed_constant_x/y`, `speed_consumable_x/y`, `act(delta)`, `reset_positions()`,
   `transfert_into(page, atlas, seconds)` (`transfertIntoPage`) and `tint_to(color, seconds)` (`addColorTransfert`).
+- `plax_particles.gd` (`PlaxParticles`): the background's `PARTICLES` layers, ParallaxPageReader's particle branch:
+  their Godot scene, instanced and placed between the layers' canvases.
+- `plax_floor.gd` (`PlaxFloor`): a `FLOOR` layer's rows (`ParallaxLayer.measureFloor`), measured when it is built or
+  resized; the background draws them.
+- `plax_effects.gd` (`PlaxEffects`) and `plax_transfert_style.gd` (`PlaxTransfertStyle`): the `SHADER` layers' effects
+  and the page fog, and how a cross-fade is drawn.
 
 Usage is in the README (*In Godot 4*). `godot --path engines/godot` is the libGDX demo game (the editor repository's `demo/`) in Godot: Hiver and Printemps, SPACE cross-fades, T picks its
 style (the depth stagger, the plain fade, the dissolve, through white, the fog creep, named on the screen), N tints, LEFT/RIGHT scroll, R resets

@@ -5,10 +5,10 @@ extends RefCounted
 ##
 ##   bg.transfert_into(page, atlas, 3.0, PlaxTransfertStyle.depth_stagger(0.5))
 ##
-## FADE (or no style): every layer slot fades at once. DEPTH_STAGGER: each slot over its own window, the back ones first.
-## DISSOLVE: in each slot the incoming layer eats the outgoing one in patches (PlaxEffects' dissolved()), over the same
-## windows. THROUGH_COLOR: in each slot the outgoing layer goes to a colour, then the incoming one comes out of it
-## (PlaxEffects' grade), the gradients too, over the same windows. FOG_CREEP: the whole page sinks into a mist, far
+## FADE (or no style): every layer slot fades at once. DEPTH_STAGGER: each slot over its own window, the back ones
+## first. DISSOLVE: in each slot the incoming layer eats the outgoing one in patches (PlaxEffects' dissolved()), over
+## the same windows. THROUGH_COLOR: in each slot the outgoing layer goes to a colour, then the incoming one comes out of
+## it (PlaxEffects' grade), the gradients too, over the same windows. FOG_CREEP: the whole page sinks into a mist, far
 ## layers first, the incoming page swapped in at the middle and coming out of it, near layers first (the same grade).
 
 ## TransfertStyle.MAX_STAGGER.
@@ -124,7 +124,8 @@ func cells_up(view_w: float, view_h: float) -> float:
 	return patches * view_h / view_w * 2.5 if view_w > 0 else 0.0
 
 
-## TransfertStyle.drift: how far the dissolve's noise has drifted on x at `seconds` of the clock, in cells, wrapped at 8.
+## TransfertStyle.drift: how far the dissolve's noise has drifted on x at `seconds` of the clock, in cells, wrapped at
+## 8.
 static func drift(seconds: float) -> float:
 	var d := fmod(seconds * DISSOLVE_DRIFT, 8.0)
 	return d + 8.0 if d < 0 else d

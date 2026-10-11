@@ -1,9 +1,10 @@
 extends SceneTree
-## PlaxPage.draw_cycle against core's SequenceCycle (r183): the first picks ReaderCases.sequenceCycleOfAKnownSeedIsPinned
-## pins, then every cycle of tests/sequence/picks.json (written by tools/r183-sequence/PickTable.java from the JVM's
-## SequenceCycle: edge and random seeds, weights of every shape). Then PlaxBackground._draw_cycle, as ReaderCases holds
-## ParallaxLayer.drawCycle: at many positions and pads, positive and going back, the slots it draws are the ones a walk
-## over every slot finds in view, in order. Prints "sequence_cycle: PASS" or FAIL lines.
+## PlaxPage.draw_cycle against core's SequenceCycle (r183): the first picks
+## ReaderCases.sequenceCycleOfAKnownSeedIsPinned pins, then every cycle of tests/sequence/picks.json (written by
+## tools/r183-sequence/PickTable.java from the JVM's SequenceCycle: edge and random seeds, weights of every shape). Then
+## PlaxBackground._draw_cycle, as ReaderCases holds ParallaxLayer.drawCycle: at many positions and pads, positive and
+## going back, the slots it draws are the ones a walk over every slot finds in view, in order. Prints "sequence_cycle:
+## PASS" or FAIL lines.
 ##   godot --headless --path engines/godot --script res://tests/sequence_cycle.gd
 
 const PlaxPageScript := preload("res://addons/jks_parallax/plax_page.gd")
@@ -15,7 +16,8 @@ func _initialize() -> void:
 	# Java's int of a state, as ReaderCases prints it.
 	_equal(_signed(PlaxPageScript.sequence_next(1)), 270369, "xorshift32 (13, 17, 5) of 1")
 	_equal(_cycle(42, [1, 2, 3], 12), [0, 1, 1, 2, 0, 2, 0, 2, 2, 2, 2, 2], "seed 42, weights 1 2 3")
-	_equal(_cycle(-1640531527, [25, 50, 25], 12), [1, 1, 2, 0, 2, 0, 1, 0, 1, 2, 0, 0], "a negative seed, weights 25 50 25")
+	_equal(_cycle(-1640531527, [25, 50, 25], 12), [1, 1, 2, 0, 2, 0, 1, 0, 1, 2, 0, 0],
+			"a negative seed, weights 25 50 25")
 	_equal(_cycle(0, [1, 1], 8), [1, 0, 0, 0, 0, 1, 0, 1], "seed 0 starts from ZERO_SEED")
 	_equal(_cycle(7, [0, 5, -3], 12), [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], "only the weighted segment")
 	_equal(PlaxPageScript.draw_cycle(5, PackedInt32Array([1]), 0).size(), 1, "a cycle holds one slot at least")

@@ -54,7 +54,8 @@ scenes = [
 json.dump({'round': 'floor',
            'about': "FLOOR layers (r275, docs/depth-tricks.md §1): the floor lab's grounds drawn row by row, each row at "
                     "its depth, in MODE7 and LINE_SCROLL, the layers in front planted on them. Godot draws its own rows "
-                    "(plax_background.gd's _measure_floor/_draw_floor) and plants its own (_plant): a row at another "
+                    "(plax_floor.gd's measure, plax_background.gd's _draw_floor) and plants its own (_plant): a row at "
+                    "another "
                     "speed, stretch or strip, or a tree at its page speed, shows. Written by "
                     "core/test-data/floor/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd "
                     "and engines/jme's JmeParallaxShots.",

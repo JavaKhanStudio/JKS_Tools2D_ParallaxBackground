@@ -28,23 +28,17 @@ extends CanvasLayer
 ## called in the layer's place in the draw order, once per tile of it the view shows, `rect` in screen pixels and
 ## `modulate` the page's tint at the layer's opacity. A layer with no hook draws nothing.
 ##
-## A PARTICLES layer instances the Godot scene its page names (particlesGodot, relative to the page's atlas folder, or
-## res:// or absolute): a GPUParticles2D or a CPUParticles2D, in screen pixels, y down, unscaled. It sits between the
-## layers before and after it, tinted and faded with its page, and runs on Godot's clock, not act()'s. Anchored to the
-## LAYER, one instance per tile the view shows sits at the tile's bottom-left corner, its particles carried by the
-## tile (local_coords on); each is its own simulation. Anchored to the VIEW, one instance emits from the view's
-## bottom-left moved by the layer's decal, and the particles already out drift by the layer's scroll: the node moves
-## with the layer and its process material's emission_shape_offset moves back by as much (a CPUParticles2D is converted
-## to a GPUParticles2D for that). A layer with no scene draws nothing, and the reader warns once.
+## A PARTICLES layer instances the Godot scene its page names, between the layers before and after it: PlaxParticles.
 ##
 ## A SHADER layer is drawn as an image layer, through its effect (PlaxEffects, the shaders of core's GdxLayerEffects),
 ## which moves on act()'s clock. The page's depth fog (PlaxPage.fog_strength, fog_color) mixes each IMAGE, SEQUENCE and
 ## SHADER layer toward the fog's colour, more the slower it scrolls (PlaxEffects.fog_of), through the same shaders, each
 ## page of a cross-fade by its own fog; an EMPTY or PARTICLES layer is drawn as is.
 ##
-## A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set, by PlaxPage.draw_cycle
-## from the page's seed: the same picks as core's SequenceCycle. The cycle is the layer's tile. A game draws a new ground
-## each run with its own seed, XORed with each layer's stored one, as ParallaxPageReader.setSequenceSeed:
+## A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set, by
+## PlaxPage.draw_cycle from the page's seed: the same picks as core's SequenceCycle. The cycle is the layer's tile. A
+## game draws a new ground each run with its own seed, XORed with each layer's stored one, as
+## ParallaxPageReader.setSequenceSeed:
 ##
 ##   bg.set_sequence_seed(randi())
 ##
@@ -52,9 +46,6 @@ extends CanvasLayer
 ## two of them. Not ported yet: atlas regions packed rotated.
 
 @export_file("*.jplax", "*.plaxpj") var page_path := ""
-## The most rows a FLOOR layer is cut in (ParallaxLayer.MAX_FLOOR_ROWS), and mode 7's tilt (ParallaxLayer.FLOOR_TILT).
-const MAX_FLOOR_ROWS := 512
-const FLOOR_TILT := 0.6
 
 ## Folder the page's atlas is in; empty: the page's own folder.
 @export_dir var atlas_dir := ""
@@ -122,12 +113,13 @@ var _effect_time := 0.0
 # The game's seed for the SEQUENCE layers, when _has_sequence_seed (set_sequence_seed).
 var _sequence_seed := 0
 var _has_sequence_seed := false
-# PARTICLES layers already warned about ("<page id>:<layer index>"): a page that draws no particles says so once.
-var _warned := {}
+# Places the PARTICLES layers' nodes.
+var _particles: PlaxParticles
 
 
 func _init() -> void:
 	layer = -100
+	_particles = PlaxParticles.new(self)
 	_canvas.draw.connect(_draw_page)
 	add_child(_canvas)
 
@@ -220,7 +212,7 @@ func tint_to(color: Color, seconds: float) -> void:
 	_tint_duration = seconds
 	if seconds <= 0:
 		tint = color
-	_place_particles()
+	_particles.place()
 	_redraw()
 
 
@@ -233,8 +225,8 @@ func set_layer_hook(layer_name: String, hook: Callable) -> void:
 	_redraw()
 
 
-## Draws every SEQUENCE layer's cycle, on screen and fading in, from `seed` XOR the seed its page stores rather than from
-## the stored one alone: a new ground each run (ParallaxPageReader.setSequenceSeed). `seed` is Java's int: 32 bits.
+## Draws every SEQUENCE layer's cycle, on screen and fading in, from `seed` XOR the seed its page stores rather than
+## from the stored one alone: a new ground each run (ParallaxPageReader.setSequenceSeed). `seed` is Java's int: 32 bits.
 func set_sequence_seed(seed: int) -> void:
 	_sequence_seed = seed
 	_has_sequence_seed = true
@@ -294,10 +286,10 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		if model.kind != "IMAGE" and model.kind != "SHADER" and model.kind != "FLOOR":
 			var e := {"model": model, "region": {}, "distance_x": 0.0, "distance_y": 0.0}
 			if model.kind == "PARTICLES":
-				e.scene = _particle_scene(model, from_page, from_atlas, i)
+				e.scene = _particles.scene_of(model, from_page, from_atlas, i)
 				e.instances = {}
 				# One made now: what the scene is (its visibility_rect) is known before the first tile is placed.
-				e.pool = [_prepare(e.scene.instantiate(), model)] if e.scene else []
+				e.pool = [PlaxParticles.prepare(e.scene.instantiate(), model)] if e.scene else []
 			_size_layer(e)
 			_reset_position(e)
 			_add_canvas(e)
@@ -312,14 +304,15 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 			push_warning("PlaxBackground: region '%s' is packed rotated, which is not supported: drawn as is" % model.regionName)
 		var l := _build_layer(model, region, from_page.use_original_size)
 		if model.kind == "FLOOR":
-			_measure_floor(l)
+			PlaxFloor.measure(l)
 		_reset_position(l)
 		_add_canvas(l)
 		built.append(l)
 	# The depth fog of each layer, by its speed against the page's front: what ParallaxPageReader.drawLayer reckons.
 	var front := PlaxEffects.front_speed_of(built)
 	for l in built:
-		l.haze = 0.0 if l.model.kind == "EMPTY" or l.model.kind == "PARTICLES" else PlaxEffects.fog_of(from_page.fog_strength, front, l.model)
+		l.haze = 0.0 if l.model.kind == "EMPTY" or l.model.kind == "PARTICLES" \
+				else PlaxEffects.fog_of(from_page.fog_strength, front, l.model)
 		l.fog_color = Vector3(from_page.fog_color.r, from_page.fog_color.g, from_page.fog_color.b)
 		if l.haze > 0 and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "FLOOR"):
 			l.canvas.material = PlaxEffects.material("PLAIN")
@@ -357,8 +350,8 @@ func _build_sequence(model: Dictionary, from_page: PlaxPage, from_atlas: PlaxAtl
 
 
 ## A region's box: where its packed image sits in it, the image's size, and its width in heights. useOriginalSize: a
-## region packed with its whitespace stripped keeps its original size, and its packed image is drawn at its offset inside
-## it. Off: the packed image is stretched over the whole box.
+## region packed with its whitespace stripped keeps its original size, and its packed image is drawn at its offset
+## inside it. Off: the packed image is stretched over the whole box.
 static func _measure_region(region: Dictionary, use_original_size: bool) -> Dictionary:
 	var m := {"region": region, "trim_left": 0.0, "trim_bottom": 0.0, "packed_w": 1.0, "packed_h": 1.0}
 	var image_w: float = region.width
@@ -407,7 +400,7 @@ func _order_canvases() -> void:
 		if canvas.get_parent() == null:
 			_canvas.add_child(canvas)
 		_canvas.move_child(canvas, i)
-	_place_particles()
+	_particles.place()
 
 
 ## Frees the layers' canvases, and their pooled particle nodes, which are out of the tree.
@@ -553,7 +546,7 @@ func act(delta: float) -> void:
 	if _tint_elapsed < _tint_duration:
 		_tint_elapsed = minf(_tint_duration, _tint_elapsed + delta)
 		tint = _tint_from.lerp(_tint_to, _tint_elapsed / _tint_duration)
-	_place_particles()
+	_particles.place()
 	_redraw()
 
 
@@ -621,58 +614,6 @@ func _foot_y(l: Dictionary) -> float:
 	return foot
 
 
-## ParallaxLayer.measureFloor: a FLOOR layer's rows, bottom to top, from its settings and its image: each row's speed
-## (the bottom row's to the top row's, straight, at the row's middle), its stretch across (MODE7: its speed over the
-## bottom row's; LINE_SCROLL: 1) and the strip of the image it draws, in the atlas' pixels (MODE7: where the ground is
-## at the row's depth, the image's height one tile of depth; LINE_SCROLL: the image's rows i/n to (i+1)/n).
-func _measure_floor(l: Dictionary) -> void:
-	var m: Dictionary = l.model
-	var n := clampi(int(m.floorRows), 2, MAX_FLOOR_ROWS)
-	var bottom: float = _f32(m.parallaxScalingSpeedX)
-	var top: float = _f32(m.floorTopSpeed)
-	var mode7: bool = m.floorMapping == "MODE7"
-	var recedes: bool = mode7 and absf(bottom) > absf(top) and bottom * top >= 0 and l.height > 0
-	var near_in_heights: float = l.floor_h / l.height * bottom / (FLOOR_TILT * (bottom - top)) if recedes else 0.0
-	var drawn := PlaxEffects.drawn_rect(l.region)
-	l.row_speed = PackedFloat64Array()
-	l.row_stretch = PackedFloat64Array()
-	l.row_strips = []
-	l.row_speed.resize(n)
-	l.row_stretch.resize(n)
-	for i in n:
-		var t0 := float(i) / n
-		var t1 := float(i + 1) / n
-		var tc := (i + 0.5) / n
-		var speed := bottom + (top - bottom) * tc
-		l.row_speed[i] = speed
-		l.row_stretch[i] = maxf(0.02, speed / bottom) if mode7 and bottom != 0 else 1.0
-		var from := t0
-		var to := t1
-		if recedes:
-			from = _along(bottom, top, t0, near_in_heights)
-			to = _along(bottom, top, t1, near_in_heights)
-			var start := from - floorf(from)
-			to = minf(1.0, start + (to - from))
-			from = start
-		# The image's rows count down from its top, t up from its bottom.
-		l.row_strips.append(Rect2(drawn.position.x, drawn.position.y + drawn.size.y * (1 - to), drawn.size.x, drawn.size.y * (to - from)))
-	# Allocated once: a resize measures the rows again and keeps where they have scrolled to.
-	if not l.has("row_distance") or l.row_distance.size() != n:
-		l.row_distance = PackedFloat64Array()
-		l.row_distance.resize(n)
-		l.row_distance.fill(l.distance_x)
-
-
-## ParallaxLayer.along: how far along the ground the row at `t` is from the bottom row, in image heights.
-static func _along(bottom: float, top: float, t: float, near_in_heights: float) -> float:
-	var speed := bottom + (top - bottom) * t
-	return (bottom / speed - 1) * near_in_heights
-
-
-static func _f32(value: float) -> float:
-	return PackedFloat32Array([value])[0]
-
-
 ## ParallaxLayer.drawFloor: a FLOOR layer's rows in its box, its bottom at `y`, each tiled across the view (x 0 to
 ## `view_w`) from where it has scrolled, its tiles `width * stretch` wide, stretched about the view's middle.
 func _draw_floor(l: Dictionary, y: float, view_w: float, view_h: float) -> void:
@@ -722,7 +663,7 @@ func _size_layer(l: Dictionary) -> void:
 		# Its box (ParallaxLayer.getHeight): its own height, or the tile's; mode 7's depths follow it.
 		l.floor_h = l.model.floorHeight * (_world_height / 100.0) if l.model.floorHeight > 0 else l.height
 		if l.has("row_strips"):
-			_measure_floor(l)
+			PlaxFloor.measure(l)
 	if l.model.kind == "SEQUENCE" and l.has("edges"):
 		l.width = l.height * l.edges[l.cycle.size()] + (l.cycle.size() - 1) * l.model.padX
 
@@ -737,7 +678,7 @@ func _on_resize() -> void:
 	_update_world()
 	for l in layers + transfer_layers:
 		_size_layer(l)
-	_place_particles()
+	_particles.place()
 	_redraw()
 
 
@@ -765,8 +706,8 @@ func _update_scale() -> void:
 ## depth stagger, its slot's, each slot at its own point of the fade (ParallaxPageReader.draw). In a dissolve a layer
 ## the mask draws (_masked) is at full opacity while its share of the slot is above 0; an EMPTY or PARTICLES one fades
 ## to its share (ParallaxPageReader.drawDissolved). Through a colour or in a fog creep only one side of a slot shows,
-## the outgoing layer until the slot is all colour, the incoming one after (PlaxTransfertStyle.shows_incoming): at full opacity when graded (_graded), else faded out by
-## as much as the grade (ParallaxPageReader.drawGraded).
+## the outgoing layer until the slot is all colour, the incoming one after (PlaxTransfertStyle.shows_incoming): at full
+## opacity when graded (_graded), else faded out by as much as the grade (ParallaxPageReader.drawGraded).
 func _alpha_of(l: Dictionary) -> float:
 	if transfer_layers.is_empty():
 		return 1.0
@@ -936,8 +877,8 @@ func _tile(
 				_draw_region(l, draw_x, draw_y, l.width, l.height, fx, fy)
 
 
-## ParallaxLayer.getCycleLeft: where a SEQUENCE layer's leftmost slot starts, from the tile's corner; below 0 only when a
-## negative padX wider than a segment takes slots back past it.
+## ParallaxLayer.getCycleLeft: where a SEQUENCE layer's leftmost slot starts, from the tile's corner; below 0 only when
+## a negative padX wider than a segment takes slots back past it.
 func _cycle_left(l: Dictionary) -> float:
 	if _cycle_ordered(l):
 		return 0.0
@@ -995,8 +936,8 @@ func _draw_cycle(l: Dictionary, x: float, y: float, from_x: float, to_x: float, 
 		_draw_region(segment, left, y, width, height, fx, fy)
 
 
-## The packed image of `l` (a layer, or a sequence's segment) in a box at (x, y); a flip mirrors where it sits in the box
-## too.
+## The packed image of `l` (a layer, or a sequence's segment) in a box at (x, y); a flip mirrors where it sits in the
+## box too.
 func _draw_region(l: Dictionary, x: float, y: float, width: float, height: float, fx: bool, fy: bool) -> void:
 	var draw_w: float = width * l.packed_w
 	var draw_h: float = height * l.packed_h
@@ -1013,147 +954,3 @@ func _draw_region(l: Dictionary, x: float, y: float, width: float, height: float
 		_target.draw_set_transform(Vector2.ZERO)
 	else:
 		_target.draw_texture_rect_region(r.texture, Rect2(origin, px), src, _modulate)
-
-
-# --- PARTICLES layers: the page's Godot scene, instanced between the layers' canvases -------------------------------
-
-## The layer's particlesGodot scene, or null after one warning: no file named, none there, or not a particle node.
-func _particle_scene(model: Dictionary, from_page: PlaxPage, from_atlas: PlaxAtlas, index: int) -> PackedScene:
-	var file: String = model.particlesGodot
-	var why := ""
-	var scene: PackedScene = null
-	if file.is_empty():
-		why = "names no Godot scene"
-	else:
-		var path := file
-		if not file.begins_with("res://") and not file.begins_with("user://") and not file.is_absolute_path():
-			path = (from_atlas.get_dir() if from_atlas else "res://").path_join(file)
-		if not ResourceLoader.exists(path) and not FileAccess.file_exists(path):
-			why = "names %s, which is not there" % path
-		else:
-			scene = load(path) as PackedScene
-			var root := scene.instantiate() if scene else null
-			if not (root is GPUParticles2D or root is CPUParticles2D):
-				why = "names %s, whose root is not a GPUParticles2D or a CPUParticles2D" % path
-				scene = null
-			if root:
-				root.free()
-	if scene == null:
-		var key := "%d:%d" % [from_page.get_instance_id(), index]
-		if not _warned.has(key):
-			_warned[key] = true
-			push_warning("PlaxBackground: PARTICLES layer '%s' %s: it draws nothing" % [model.name, why])
-	return scene
-
-
-## Moves every PARTICLES layer's instances where its layer is now, makes the ones a tile needs, and tints them.
-func _place_particles() -> void:
-	if page == null:
-		return
-	_update_scale()
-	for l in layers + transfer_layers:
-		if l.model.kind != "PARTICLES":
-			continue
-		var holder: Node2D = l.canvas
-		var alpha := _alpha_of(l)
-		holder.modulate = Color(tint.r, tint.g, tint.b, tint.a * alpha)
-		holder.visible = holder.modulate.a > 0
-		if l.scene == null:
-			continue
-		if l.model.particlesAnchor == "VIEW":
-			_place_view_particles(l)
-		else:
-			_place_tile_particles(l)
-
-
-## VIEW: one instance, carried by the layer's scroll since its decal, its emitter moved back to the view's bottom-left
-## plus the decal, as ParallaxPageReader places it.
-func _place_view_particles(l: Dictionary) -> void:
-	var node: Node2D = _instance(l, Vector2i.ZERO)
-	var decal_x: float = l.model.decal_X_Ratio * (world_width / 100.0)
-	var decal_y: float = l.model.decal_Y_Ratio * (_world_height / 100.0)
-	node.position = Vector2(l.travel_x * _ppu, _screen_h - l.travel_y * _ppu)
-	if node.has_meta("plax_offset"):
-		var authored: Vector3 = node.get_meta("plax_offset")
-		node.process_material.emission_shape_offset = authored + Vector3(
-				-(l.travel_x - decal_x) * _ppu, (l.travel_y - decal_y) * _ppu, 0)
-	else:
-		# A custom process material cannot be moved back: the emitter stays at the decal, and nothing drifts.
-		node.position = Vector2(decal_x * _ppu, _screen_h - decal_y * _ppu)
-
-
-## LAYER: an instance at the bottom-left corner of each tile the view shows, as _tile places them. On a repeated axis a
-## tile counts as shown while its box and a GPUParticles2D's visibility_rect reach into the view; a CPUParticles2D has
-## none, so its box grown by its own size each way. On an axis not repeated there is one tile, always kept.
-func _place_tile_particles(l: Dictionary) -> void:
-	var width: float = l.width
-	var height: float = l.height
-	var reach := Rect2(-width, -height, 3 * width, 3 * height)
-	var sample: Node = l.pool[0] if not l.pool.is_empty() else l.instances.values()[0]
-	if sample is GPUParticles2D:
-		reach = Rect2(0, 0, width, height)
-		var r: Rect2 = sample.visibility_rect
-		# Pixels, y down from the corner, into page units, y up.
-		reach = reach.merge(Rect2(r.position.x / _ppu, -r.end.y / _ppu, r.size.x / _ppu, r.size.y / _ppu))
-	var view_w := world_width
-	var view_h := _world_height
-	var step_x: float = width + l.model.padX
-	var step_y: float = height + l.model.padY
-	var range_x := _tile_range(l.travel_x, reach.position.x, reach.end.x, step_x, _repeat_x, view_w)
-	var range_y := _tile_range(l.travel_y, reach.position.y, reach.end.y, step_y, _repeat_y, view_h)
-	var shown := {}
-	for ky in range(range_y.x, range_y.y + 1):
-		for kx in range(range_x.x, range_x.y + 1):
-			var key := Vector2i(kx, ky)
-			shown[key] = true
-			var node: Node2D = _instance(l, key)
-			var x: float = l.travel_x + (kx * step_x if _repeat_x and step_x > 0 else 0.0)
-			var y: float = l.travel_y + (ky * step_y if _repeat_y and step_y > 0 else 0.0)
-			node.position = Vector2(x * _ppu, _screen_h - y * _ppu)
-	for key in l.instances.keys():
-		if not shown.has(key):
-			var node: Node = l.instances[key]
-			l.instances.erase(key)
-			l.canvas.remove_child(node)
-			l.pool.append(node)
-
-
-## The first and last tile index whose reach (from..to, from its corner) meets 0..view, tiles at origin + k * step;
-## (0, 0) when the axis does not repeat.
-static func _tile_range(origin: float, from: float, to: float, step: float, repeat: bool, view: float) -> Vector2i:
-	if not repeat or step <= 0:
-		return Vector2i(0, 0)
-	return Vector2i(floori((-to - origin) / step) + 1, ceili((view - from - origin) / step) - 1)
-
-
-## The layer's instance for `key`, from its pool or the scene, in the layer's place.
-func _instance(l: Dictionary, key: Vector2i) -> Node2D:
-	if l.instances.has(key):
-		return l.instances[key]
-	var node: Node2D
-	if not l.pool.is_empty():
-		node = l.pool.pop_back()
-		node.restart()
-	else:
-		node = _prepare(l.scene.instantiate(), l.model)
-	l.instances[key] = node
-	l.canvas.add_child(node)
-	return node
-
-
-## A new instance of the layer's scene, made to be carried by its node; for the VIEW, made so its emitter can move back.
-static func _prepare(node: Node2D, model: Dictionary) -> Node2D:
-	if model.particlesAnchor == "VIEW":
-		if node is CPUParticles2D:
-			# Only a process material's emission moves back as the node drifts.
-			var gpu := GPUParticles2D.new()
-			gpu.convert_from_particles(node)
-			gpu.name = node.name
-			node.free()
-			node = gpu
-		if node is GPUParticles2D and node.process_material is ParticleProcessMaterial:
-			# Its own, its authored offset kept: the drift is added to it.
-			node.process_material = node.process_material.duplicate()
-			node.set_meta("plax_offset", node.process_material.emission_shape_offset)
-	node.local_coords = true
-	return node

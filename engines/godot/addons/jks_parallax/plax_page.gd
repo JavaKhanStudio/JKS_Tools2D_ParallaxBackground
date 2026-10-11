@@ -94,17 +94,9 @@ func _read(json: Dictionary, inside) -> bool:
 		for segment in layer.sequenceSegments:
 			segment.regionPosition = int(segment.get("regionPosition", 0))
 			segment.weight = int(segment.get("weight", 1)) if segment.get("weight") != null else 1
-		if not layer.kind in KINDS:
-			push_error("PlaxPage: layer kind %s is not known here: the page was written by a newer version" % layer.kind)
-			return false
-		if not layer.particlesAnchor in ANCHORS:
-			push_error("PlaxPage: particle anchor %s is not known here: the page was written by a newer version" % layer.particlesAnchor)
-			return false
-		if not layer.floorMapping in FLOOR_MAPPINGS:
-			push_error("PlaxPage: floor mapping %s is not known here: the page was written by a newer version" % layer.floorMapping)
-			return false
-		if not layer.shaderEffect in PlaxEffects.EFFECTS:
-			push_error("PlaxPage: shader effect %s is not known here: the page was written by a newer version" % layer.shaderEffect)
+		var unknown := _unknown(layer)
+		if not unknown.is_empty():
+			push_error("PlaxPage: %s is not known here: the page was written by a newer version" % unknown)
 			return false
 		layers.append(layer)
 	if not json.has("fogStrength"):
@@ -149,6 +141,19 @@ static func draw_cycle(seed: int, weights: PackedInt32Array, length: int) -> Pac
 			segment += 1
 		cycle[slot] = segment
 	return cycle
+
+
+## What of the layer's this reader does not know ("layer kind X"), or "".
+static func _unknown(layer: Dictionary) -> String:
+	if not layer.kind in KINDS:
+		return "layer kind %s" % layer.kind
+	if not layer.particlesAnchor in ANCHORS:
+		return "particle anchor %s" % layer.particlesAnchor
+	if not layer.floorMapping in FLOOR_MAPPINGS:
+		return "floor mapping %s" % layer.floorMapping
+	if not layer.shaderEffect in PlaxEffects.EFFECTS:
+		return "shader effect %s" % layer.shaderEffect
+	return ""
 
 
 static func _color(json, fallback: Color) -> Color:

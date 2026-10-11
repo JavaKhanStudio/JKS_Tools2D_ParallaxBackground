@@ -1,6 +1,6 @@
 extends Node
-## Presses SPACE and N in the demo (demo.gd) and saves a frame once both fades are over: Printemps, tinted night.
-## With "mid" after the file, presses SPACE alone and saves the frame halfway through the transfert, in the demo's style.
+## Presses SPACE and N in the demo (demo.gd) and saves a frame once both fades are over: Printemps, tinted night. With
+## "mid" after the file, presses SPACE alone and saves the frame halfway through the transfert, in the demo's style.
 ##   godot --path engines/godot res://tests/demo_keys.tscn -- /abs/out.png [mid]   (tools/start-demo-check.sh)
 
 func _ready() -> void:

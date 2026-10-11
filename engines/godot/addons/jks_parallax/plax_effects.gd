@@ -8,13 +8,14 @@ extends RefCounted
 ## as it is drawn. region: the region's u, v, u2, v2 (v at the image's top); size: the drawn image's width and height in
 ## page units; effect: amplitude, wavelength, phase; haze: the depth fog at the layer, 0 to 1, which hazed() mixes the
 ## color toward fog_color by, then toward grade's rgb by its a (a transfert through a colour, set_grade), its alpha
-## times dissolved() (fog_of). dissolve, cells: a transfert's dissolve (side 0 none,
-## 1 outgoing, 2 incoming; ramp, softness, drift; the noise's cells across and up the view), which dissolved() reads at
-## SCREEN_UV, y turned up as libGDX's view. across: the view's width in page units, where the layer's noise starts from
-## its left (effect_start_x), 1 or -1 (flipped on X); along() reads it at SCREEN_UV: where the fragment is along the
-## layer, local() carried on across its tiles, so FOG has no seam at a tile edge (r229); up: the same up the view, from
-## its bottom (effect_start_y), -1 flipped on Y (r262), which WAVE's ripple reads too (r273). TAU is Godot's own (2 pi). "PLAIN" is no effect: an IMAGE or SEQUENCE layer
-## the page's depth fog reaches, or any a dissolve masks or a transfert through a colour grades.
+## times dissolved() (fog_of). dissolve, cells: a transfert's dissolve (side 0 none, 1 outgoing, 2 incoming; ramp,
+## softness, drift; the noise's cells across and up the view), which dissolved() reads at SCREEN_UV, y turned up as
+## libGDX's view. across: the view's width in page units, where the layer's noise starts from its left (effect_start_x),
+## 1 or -1 (flipped on X); along() reads it at SCREEN_UV: where the fragment is along the layer, local() carried on
+## across its tiles, so FOG has no seam at a tile edge (r229); up: the same up the view, from its bottom
+## (effect_start_y), -1 flipped on Y (r262), which WAVE's ripple reads too (r273). TAU is Godot's own (2 pi). "PLAIN" is
+## no effect: an IMAGE or SEQUENCE layer the page's depth fog reaches, or any a dissolve masks or a transfert through a
+## colour grades.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
 const EFFECTS := ["WAVE", "FOG"]
