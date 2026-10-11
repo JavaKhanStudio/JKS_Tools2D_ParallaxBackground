@@ -9,7 +9,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
     pg = b.new_page(viewport={"width": int(w), "height": int(h)})
     pg.goto(base + "/" + path)
-    pg.wait_for_function("window.%s === true" % ready, timeout=90000)
+    pg.wait_for_function(f"window.{ready} === true", timeout=90000)
     print(pg.evaluate("""() => [...document.querySelectorAll('.ctl')].map(c => c.querySelector('input').dataset.key + ' ' +
         Math.round(c.getBoundingClientRect().right) + ': ' + [...c.children].map(k => k.tagName + '=' + Math.round(k.getBoundingClientRect().left) + '..' + Math.round(k.getBoundingClientRect().right) + ' ' + k.textContent).join(' | ')).join('\\n')"""))
     b.close()

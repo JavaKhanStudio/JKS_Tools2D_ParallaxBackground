@@ -45,4 +45,4 @@ for segs,ws in [(['bridge','tower','stone'],[1,4,1]),(['stone','tower','bridge']
       H=40*0.35/A[segs[0]]; c=draw(seed,ws,10)
       width=H*sum(A[segs[k]] for k in c)+9*pad
       # A cycle no wider than 0 can't tile and is drawn once (r202): only a positive one shows the search when tiled.
-      if width>0 and sum(1 for v in d if v)>=2: print(segs,ws,pad,seed,d,'cycle %.1f wide'%width)
+      if width>0 and sum(1 for v in d if v)>=2: print(segs,ws,pad,seed,d,f'cycle {width:.1f} wide')

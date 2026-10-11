@@ -55,30 +55,30 @@ with sync_playwright() as p:
             page = browser.new_page(viewport={"width": w, "height": h})
             errors = []
             page.on("pageerror", lambda e, errors=errors: errors.append(str(e)))
-            page.goto("%s/%s%s" % (base, path, "&clip=1" if "?" in path else "?clip=1") if ready else "%s/%s" % (base, path))
+            page.goto(f"{base}/{path}{'&clip=1' if '?' in path else '?clip=1'}" if ready else f"{base}/{path}")
             if ready:
-                page.wait_for_function("window.%s === true" % ready, timeout=90000)
-                page.evaluate("window.%sAct && window.%sAct(6)" % (ready[:-5], ready[:-5]))
+                page.wait_for_function(f"window.{ready} === true", timeout=90000)
+                page.evaluate(f"window.{ready[:-5]}Act && window.{ready[:-5]}Act(6)")
             else:
                 page.wait_for_selector("#summary", timeout=90000)
             page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
             m = page.evaluate(MEASURE)
-            report["%s-%s" % (name, size)] = m
-            page.screenshot(path="%s/%s-%s.png" % (out, name, size), full_page=(size == "phone"))
+            report[f"{name}-{size}"] = m
+            page.screenshot(path=f"{out}/{name}-{size}.png", full_page=(size == "phone"))
             if errors:
-                failures.append("%s %s: page errors %s" % (name, size, errors))
+                failures.append(f"{name} {size}: page errors {errors}")
             if size == "desktop" and m["sliders"] and m["lastSliderBottom"] > m["innerHeight"]:
-                failures.append("%s: the last slider ends at %dpx, below the %dpx window" % (name, m["lastSliderBottom"], m["innerHeight"]))
+                failures.append(f"{name}: the last slider ends at {int(m['lastSliderBottom'])}px, below the {int(m['innerHeight'])}px window")
             if m["smallestControlText"] is not None and m["smallestControlText"] < 14:
-                failures.append("%s %s: control text at %spx" % (name, size, m["smallestControlText"]))
+                failures.append(f"{name} {size}: control text at {m['smallestControlText']}px")
             if m["overrun"]:
-                failures.append("%s %s: a value runs out of its slider's box: %s" % (name, size, m["overrun"]))
+                failures.append(f"{name} {size}: a value runs out of its slider's box: {m['overrun']}")
             if m["namedSliders"]:
-                failures.append("%s %s: sliders over names, not choices: %s" % (name, size, m["namedSliders"]))
+                failures.append(f"{name} {size}: sliders over names, not choices: {m['namedSliders']}")
             if m["brokenCells"]:
-                failures.append("%s %s: %d PASS/FAIL cells broken over lines" % (name, size, m["brokenCells"]))
+                failures.append(f"{name} {size}: {int(m['brokenCells'])} PASS/FAIL cells broken over lines")
             if size == "phone" and m["scrollWidth"] > m["innerWidth"]:
-                failures.append("%s: %dpx wide on a %dpx phone" % (name, m["scrollWidth"], m["innerWidth"]))
+                failures.append(f"{name}: {int(m['scrollWidth'])}px wide on a {int(m['innerWidth'])}px phone")
             page.close()
     browser.close()
 print(json.dumps(report, indent=1))

@@ -42,7 +42,7 @@ for atlas in sys.argv[1:]:
         def out(o, mask):
             if o is None or not mask.any():
                 return None
-            return 'a%.0f rgb%.0f' % (o[mask, 3].mean(), o[mask, :3].mean())
+            return f'a{o[mask, 3].mean():.0f} rgb{o[mask, :3].mean():.0f}'
         seam = float(np.abs(r[:, 0] - r[:, -1]).mean())
-        print('  %-14s %5dx%-5d L edge a=%s in1=%s out:%s | R edge a=%s out:%s | seam %.0f' % (
-            name, w, h, a(0, rows), a(1, rows), out(outL, rows), a(-1, rowsR), out(outR, rowsR), seam))
+        print(f'  {name:<14} {w:5d}x{h:<5d} L edge a={a(0, rows)} in1={a(1, rows)} out:{out(outL, rows)}'
+              f' | R edge a={a(-1, rowsR)} out:{out(outR, rowsR)} | seam {seam:.0f}')

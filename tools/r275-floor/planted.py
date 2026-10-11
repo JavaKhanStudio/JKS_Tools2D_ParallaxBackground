@@ -64,7 +64,7 @@ def run(index, unplanted):
             page = browser.new_page(viewport={"width": 1540, "height": 900})
             for attempt in range(50):
                 try:
-                    page.goto("http://127.0.0.1:%d/effects-lab.html?lab=floor&clip=1%s" % (number, "&unplanted=1" if unplanted else ""))
+                    page.goto(f"http://127.0.0.1:{number}/effects-lab.html?lab=floor&clip=1{'&unplanted=1' if unplanted else ''}")
                     break
                 except PlaywrightError:  # the server is not up yet
                     page.wait_for_timeout(200)
@@ -88,7 +88,7 @@ for index, (set_name, _, _) in enumerate(SETS):
     for unplanted in (False, True):
         trees, ground = run(index, unplanted)
         name = "unplanted" if unplanted else "planted"
-        print("%-11s %-9s  trees moved %d px, the ground under them %d px" % (set_name, name, trees, ground))
+        print(f"{set_name:<11} {name:<9}  trees moved {int(trees)} px, the ground under them {int(ground)} px")
         if not unplanted and abs(trees - ground) > 1:
             print("FAIL: planted trees slide on the ground")
             failed = True

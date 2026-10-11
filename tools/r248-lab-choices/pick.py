@@ -21,21 +21,21 @@ with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
     for path, ready, key, label, expect in CASES:
         page = browser.new_page(viewport={"width": 1580, "height": 710})
-        page.goto("%s/%s%s" % (base, path, "&clip=1" if "?" in path else "?clip=1"))
-        page.wait_for_function("window.%s === true" % ready, timeout=90000)
-        page.select_option("select[data-key=%s]" % key, label=label)
-        page.evaluate("window.%sAct(1)" % ready[:-5])
+        page.goto(f"{base}/{path}{'&clip=1' if '?' in path else '?clip=1'}")
+        page.wait_for_function(f"window.{ready} === true", timeout=90000)
+        page.select_option(f"select[data-key={key}]", label=label)
+        page.evaluate(f"window.{ready[:-5]}Act(1)")
         if expect[0].startswith("#"):
             got = page.text_content(expect[0])
             ok = expect[1] in got
         else:
             page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-            page.click("#%s-copy" % expect[0])
-            page.wait_for_function("document.getElementById('%s-copy-state').textContent !== ''" % expect[0])
-            copied = json.loads(page.input_value("#%s-copy-json" % expect[0]))
+            page.click(f"#{expect[0]}-copy")
+            page.wait_for_function(f"document.getElementById('{expect[0]}-copy-state').textContent !== ''")
+            copied = json.loads(page.input_value(f"#{expect[0]}-copy-json"))
             got = copied.get(expect[1], copied["settings"].get(expect[1]))
             ok = got == expect[2]
-        print("%s %s %s = %r: %r" % ("ok  " if ok else "FAIL", path, key, label, got))
+        print(f"{'ok  ' if ok else 'FAIL'} {path} {key} = {label!r}: {got!r}")
         if not ok:
             failures.append(key)
         page.close()

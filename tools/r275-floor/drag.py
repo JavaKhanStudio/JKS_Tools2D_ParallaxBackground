@@ -49,5 +49,5 @@ with sync_playwright() as p:
     page.mouse.up()
     browser.close()
 moved, drift = diff(before, held1), diff(held1, held2)
-print("drag moved the picture by a mean %.2f/255; while held still it moved %.2f/255" % (moved, drift))
+print(f"drag moved the picture by a mean {moved:.2f}/255; while held still it moved {drift:.2f}/255")
 sys.exit(0 if moved > 2 and drift < 0.5 else 1)
