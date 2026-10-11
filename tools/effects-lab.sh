@@ -32,7 +32,6 @@ while [ $# -gt 0 ]; do
 	shift
 done
 case "$LAB" in fog|snow|all|floor|tower|planet) ;; *) echo "--lab is fog, snow, all, floor, tower or planet, not: $LAB" >&2; exit 2 ;; esac
-# shellcheck disable=SC1091  # the guard is linted on its own; a per-file lint (pre-commit, r339) cannot follow it
 if [ $MODE = open ]; then . tools/agent-window-guard.sh; refuse_agent_window tools/effects-lab.sh; fi
 
 CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || command -v chromium-browser)}"

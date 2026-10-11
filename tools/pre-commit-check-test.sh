@@ -2,7 +2,8 @@
 # pre-commit-check-test.sh — proves tools/pre-commit-check.sh (r339) on a scratch clone of HEAD: a staged .py with a
 # shebang and no executable bit (ruff EXE001, r276's fault) is refused, even when the working tree's copy is fixed
 # (it lints what the commit holds); it passes once staged executable; a staged tools/*.sh that runs java outside cage
-# is refused (offscreen-lint); a commit staging no .py/.sh/.gd passes. Exit 0 when all hold.
+# is refused (offscreen-lint); a commit staging no .py/.sh/.gd passes; a staged lab launcher that sources
+# tools/agent-window-guard.sh passes alone (shellcheck follows the source, r340). Exit 0 when all hold.
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd) || exit 1
 CHECK="$HERE/pre-commit-check.sh"
@@ -18,6 +19,9 @@ expect() { # WANT NAME
 }
 echo 'x' >> README.md && git add README.md
 expect 0 "a commit staging no .py/.sh/.gd passes"
+echo '# r340' >> tools/browser-test.sh && git add tools/browser-test.sh
+expect 0 "a staged tools/browser-test.sh, which sources agent-window-guard.sh, passes alone"
+git reset -q
 printf '#!/usr/bin/env python3\nprint(1)\n' > tools/r339_probe.py
 chmod 644 tools/r339_probe.py && git add tools/r339_probe.py
 chmod +x tools/r339_probe.py

@@ -25,8 +25,10 @@ else
 		case "$f" in *.py) py+=("$f") ;; *.sh) sh+=("$f") ;; *.gd) gd+=("$f") ;; esac
 	done
 fi
+# With -x, shellcheck follows a `. tools/x.sh` (from this directory, the checkout's top): a staged lab launcher linted alone
+# would otherwise fail SC1091 on the guard it sources (r340).
 # An empty list would lint the whole directory (ruff) or fail on no input.
 [ ${#py[@]} -eq 0 ] || lint ruff uvx "ruff@$RUFF" check --quiet "${py[@]}"
-[ ${#sh[@]} -eq 0 ] || lint shellcheck uvx --from "shellcheck-py==$SHELLCHECK" shellcheck "${sh[@]}"
+[ ${#sh[@]} -eq 0 ] || lint shellcheck uvx --from "shellcheck-py==$SHELLCHECK" shellcheck -x "${sh[@]}"
 [ ${#gd[@]} -eq 0 ] || lint gdlint uvx --from "gdtoolkit==$GDTOOLKIT" gdlint "${gd[@]}"
 exit $fail
