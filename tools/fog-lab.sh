@@ -73,8 +73,11 @@ with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
     page = browser.new_page(viewport={"width": 1540, "height": 700})
     errors = []
-    page.on("console", lambda m: m.type == "error" and errors.append(m.text))
+    # A failed load is reported below with its URL: the console's line names none (r320: it was the favicon).
+    page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and errors.append(m.text))
     page.on("pageerror", lambda e: errors.append(str(e)))
+    # Chrome asks every page for a favicon: the lab has none.
+    page.on("response", lambda r: r.status >= 400 and not r.url.endswith("/favicon.ico") and errors.append("%d %s" % (r.status, r.url)))
     page.goto(url)
     try:
         page.wait_for_function("window.fogLabReady === true", timeout=60000)
