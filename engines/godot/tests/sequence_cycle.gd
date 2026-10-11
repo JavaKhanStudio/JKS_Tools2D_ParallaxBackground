@@ -2,7 +2,7 @@ extends SceneTree
 ## PlaxPage.draw_cycle against core's SequenceCycle (r183): the first picks
 ## SequenceCases.sequenceCycleOfAKnownSeedIsPinned pins, then every cycle of tests/sequence/picks.json (written by
 ## tools/r183-sequence/PickTable.java from the JVM's SequenceCycle: edge and random seeds, weights of every shape). Then
-## PlaxBackground._draw_cycle, as SequenceCases holds ParallaxLayer.drawCycle: at many positions and pads, positive and
+## PlaxSequence.draw, as SequenceCases holds ParallaxLayer.drawCycle: at many positions and pads, positive and
 ## going back, the slots it draws are the ones a walk over every slot finds in view, in order. Prints "sequence_cycle:
 ## PASS" or FAIL lines.
 ##   godot --headless --path engines/godot --script res://tests/sequence_cycle.gd
@@ -37,7 +37,7 @@ func _initialize() -> void:
 	quit(1 if _failures else 0)
 
 
-## Records what _draw_cycle draws instead of drawing it.
+## Records what PlaxSequence.draw draws instead of drawing it.
 class Recorder extends PlaxBackground:
 	var drawn: Array = []
 
@@ -63,7 +63,7 @@ func _check_slots_in_view() -> int:
 		for step in 161:
 			var x := -120.0 + step
 			bg.drawn = []
-			bg._draw_cycle(l, x, 0, 0, 40, false, false)
+			PlaxSequence.draw(bg, l, x, 0, 0, 40, false, false)
 			var expected := []
 			for slot in l.cycle.size():
 				var left: float = x + height * l.edges[slot] + slot * pad

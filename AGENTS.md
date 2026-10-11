@@ -71,7 +71,8 @@ repair.
   the cross-fade, the tint and the gradients line for line: change how a page scrolls, fades or draws, change it there,
   and run `tools/godot-parallax-shots.sh` (`engines/godot/tests/transfer` is its cross-fade round). Its PARTICLES
   layers are placed by `plax_particles.gd` (ParallaxPageReader's particle branch; round `engines/godot/tests/particles`),
-  a FLOOR's rows measured by `plax_floor.gd` (r307: `gdlint` caps a script at 1000 lines).
+  a FLOOR's rows measured, scrolled and drawn by `plax_floor.gd`, a SEQUENCE's cycle laid out and drawn by
+  `plax_sequence.gd` (r307, r324: `gdlint` caps a script at 1000 lines).
 - `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
   `draw(region, x, y, width, height)`, and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
   method, change the gradients, or make `ParallaxPageReader` or `ParallaxLayer` reach a libGDX native (`OrthographicCamera.update` does), and
@@ -114,15 +115,15 @@ repair.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
   `SequenceCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's
-  copy is `plax_page.gd`'s `draw_cycle` (32-bit masked) and `plax_background.gd`'s `_draw_cycle`:
+  copy is `plax_page.gd`'s `draw_cycle` (32-bit masked) and `plax_sequence.gd`'s `draw`:
   `engines/godot/tests/sequence_cycle.gd` holds them to the JVM's picks (`tests/sequence/picks.json`, written by
   `tools/r183-sequence/PickTable.java`) and to a walk over every slot; `tools/godot-parallax-shots.sh` runs it with the
   `sequence` round.
 - A `FLOOR` layer (r275, format 11) is drawn row by row, each row at its own speed and distance
   (`ParallaxLayer.measureFloor`/`drawFloor`, its strips cut when a setting changes, never in a frame), and
   `ParallaxPageReader.plant` moves every layer in front of it at the speed of the row under its foot, every `act()`,
-  without touching its stored speed. Godot's copy is `plax_floor.gd`'s `measure` and `plax_background.gd`'s
-  `_draw_floor` and `_plant`; jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/godot/tests/floor`;
+  without touching its stored speed. Godot's copy is `plax_floor.gd`'s `measure`, `scroll`, `draw` and
+  `plant`; jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/godot/tests/floor`;
   `tools/r275-floor/strength.sh` proves the round sees a floor against its flat twin, `mutate.sh` a wrong Godot copy.
 - The dolly (r278, `ParallaxPageReader.setDolly`, no format change) draws each layer at its own zoom
   (`dollyZoom`: `1 - k (1 - zoom)`, k its speed over its page's front), tiled across its own view and placed from the

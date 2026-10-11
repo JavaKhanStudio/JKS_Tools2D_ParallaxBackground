@@ -36,12 +36,12 @@ PY
 	fi
 	restore
 }
-mutant "$BG" "every row at the bottom row's speed" \
-	'var distance: float = l.row_distance[i] - delta * (m.speedXAtRest + speed_x) * l.row_speed[i]' \
-	'var distance: float = l.row_distance[i] - delta * (m.speedXAtRest + speed_x) * m.parallaxScalingSpeedX'
-mutant "$BG" "no layer planted" \
-	'page_layers[i].planted = _planted_speed_on(page_layers[floor], page_layers[i]) if floor >= 0 and i > floor else NAN' \
-	'page_layers[i].planted = NAN'
+mutant "$FLOOR" "every row at the bottom row's speed" \
+	'var distance: float = l.row_distance[i] - travel * l.row_speed[i]' \
+	'var distance: float = l.row_distance[i] - travel * l.model.parallaxScalingSpeedX'
+mutant "$FLOOR" "no layer planted" \
+	'if floor >= 0 and i > floor else NAN)' \
+	'if false else NAN)'
 mutant "$FLOOR" "no row stretched" \
 	'l.row_stretch[i] = maxf(0.02, speed / bottom) if mode7 and bottom != 0 else 1.0' \
 	'l.row_stretch[i] = 1.0'

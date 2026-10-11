@@ -1,7 +1,7 @@
 class_name PlaxFloor
 extends RefCounted
-## A FLOOR layer's rows, measured when the layer is built or resized, never in a frame: PlaxBackground draws them
-## (_draw_floor) and plants the layers in front on them (_plant).
+## A FLOOR layer's rows, measured when the layer is built or resized, never in a frame, scrolled, drawn, and the layers
+## in front planted on them, for a PlaxBackground (r324: out of plax_background.gd).
 
 ## The most rows a FLOOR layer is cut in (ParallaxLayer.MAX_FLOOR_ROWS), and mode 7's tilt (ParallaxLayer.FLOOR_TILT).
 const MAX_FLOOR_ROWS := 512
@@ -50,6 +50,75 @@ static func measure(l: Dictionary) -> void:
 		l.row_distance.resize(n)
 		l.row_distance.fill(l.distance_x)
 
+
+
+## Each row of a FLOOR layer scrolled by `travel` (the page's speed times the step) times its own speed, kept within one
+## of its tiles: a floor is tiled across whatever the page repeats (ParallaxLayer.act).
+static func scroll(l: Dictionary, travel: float) -> void:
+	for i in l.row_distance.size():
+		var step: float = l.width * l.row_stretch[i]
+		var distance: float = l.row_distance[i] - travel * l.row_speed[i]
+		l.row_distance[i] = fmod(distance, step) if step > 0 else distance
+
+
+## ParallaxPageReader.plant: every layer in front of the page's last FLOOR layer scrolls at the speed of the floor's row
+## under its foot (foot_y); one whose foot is above the floor's top row, and every other layer, at its own.
+static func plant(page_layers: Array[Dictionary], world_height: float) -> void:
+	var floor := -1
+	for i in page_layers.size():
+		if page_layers[i].model.kind == "FLOOR":
+			floor = i
+	for i in page_layers.size():
+		page_layers[i].planted = (planted_speed_on(page_layers[floor], page_layers[i], world_height)
+				if floor >= 0 and i > floor else NAN)
+
+
+## ParallaxPageReader.plantedSpeedOn: the speed of `floor`'s row under `l`'s foot, NAN above the floor's top row.
+static func planted_speed_on(floor: Dictionary, l: Dictionary, world_height: float) -> float:
+	var bottom: float = floor.model.decal_Y_Ratio * (world_height / 100.0)
+	var height: float = floor.floor_h
+	var t: float = (foot_y(l, world_height) - bottom) / height if height > 0 else 0.0
+	if t > 1:
+		return NAN
+	t = maxf(0.0, t)
+	return floor.model.parallaxScalingSpeedX + (floor.model.floorTopSpeed - floor.model.parallaxScalingSpeedX) * t
+
+
+## ParallaxLayer.getFootY: where a layer stands, its decal, and over it the rows an atlas trimmed off an IMAGE or SHADER
+## layer's image's bottom.
+static func foot_y(l: Dictionary, world_height: float) -> float:
+	var foot: float = l.model.decal_Y_Ratio * (world_height / 100.0)
+	if l.model.kind == "IMAGE" or l.model.kind == "SHADER":
+		foot += l.height * ((1 - l.trim_bottom - l.packed_h) if l.model.flipY else l.trim_bottom)
+	return foot
+
+
+## ParallaxLayer.drawFloor: a FLOOR layer's rows in its box, its bottom at `y`, each tiled across the view (x 0 to
+## `view_w`) from where it has scrolled, its tiles `width * stretch` wide, stretched about the view's middle; drawn on
+## `bg`'s target at its scale and tint.
+static func draw(bg: PlaxBackground, l: Dictionary, y: float, view_w: float, view_h: float) -> void:
+	var n: int = l.row_strips.size()
+	var width: float = l.width
+	var row_h: float = l.floor_h / n
+	var middle := view_w / 2
+	var texture: Texture2D = l.region.texture
+	var ppu := bg._ppu
+	var screen_h := bg._screen_h
+	for i in n:
+		var row_y := y + i * row_h
+		if row_y + row_h <= 0 or row_y >= view_h:
+			continue
+		var stretch: float = l.row_stretch[i]
+		var across := width * stretch
+		if not across > 0:
+			continue
+		var origin: float = middle + (0 - middle) * stretch + l.row_distance[i]
+		var first := origin + across * floorf((0 - origin) / across)
+		var count := int(ceilf((view_w - first) / across))
+		for k in count:
+			var x := first + k * across
+			bg._target.draw_texture_rect_region(texture,
+					Rect2(x * ppu, screen_h - (row_y + row_h) * ppu, across * ppu, row_h * ppu), l.row_strips[i], bg._modulate)
 
 ## ParallaxLayer.along: how far along the ground the row at `t` is from the bottom row, in image heights.
 static func _along(bottom: float, top: float, t: float, near_in_heights: float) -> float:

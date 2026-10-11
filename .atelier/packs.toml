@@ -64,13 +64,13 @@ in texRegion (the first sets the height), a cycle int[N] picked by SequenceCycle
 starts at height * cycleEdges[i] + i * padX), so act() and draw() recompute nothing; getTotalWidth() is the cycle.
 drawCycle binary-searches the first slot in view. The generator is INTEGERS ONLY (xorshift32 13/17/5, (state >>> 1) %
 total): a float rounds differently in GWT and GDScript. SequenceCases.sequenceCycleOfAKnownSeedIsPinned pins its picks;
-Godot's port (r183: plax_page.gd draw_cycle, plax_background.gd _draw_cycle, GDScript ints 64-bit so every << masked
+Godot's port (r183: plax_page.gd draw_cycle, plax_sequence.gd draw, GDScript ints 64-bit so every << masked
 to 32 bits) matches them: engines/godot/tests/sequence_cycle.gd (the JVM's picks in tests/sequence/picks.json, and the
 slots drawn against a walk over every slot) and the pixel round engines/godot/tests/sequence, which jME runs too. Change
 the generator or drawCycle and change both, regenerate picks.json, run tools/r183-sequence/mutate.sh. A game's seed
 (reader.setSequenceSeed, Godot set_sequence_seed) is XORed with each layer's stored one. A cycle no wider than 0 (pads
 outweighing segments) can't tile and is drawn once, culled by its slots' real extent (getCycleLeft/Right, Godot
-_cycle_left/_right), in both (r202; SequenceCases.sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce, q04 'backward').
+PlaxSequence.cycle_left/_right), in both (r202; SequenceCases.sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce, q04 'backward').
 THE DOLLY (r278, setDolly, a game's switch, nothing stored) DRAWS EACH LAYER AT ITS OWN ZOOM, 1 - k(1 - zoom), k its
 speed over its page's front: tiled across its own view, placed from the view at zoom 1 (so it scales about the middle;
 without the dolly a zoom scales the page about the view's corner), drawn through DollyBatch into the camera's view.

@@ -35,7 +35,7 @@ extends CanvasLayer
 ## SHADER layer toward the fog's colour, more the slower it scrolls (PlaxEffects.fog_of), through the same shaders, each
 ## page of a cross-fade by its own fog; an EMPTY or PARTICLES layer is drawn as is.
 ##
-## A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set, by
+## A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set (PlaxSequence), by
 ## PlaxPage.draw_cycle from the page's seed: the same picks as core's SequenceCycle. The cycle is the layer's tile. A
 ## game draws a new ground each run with its own seed, XORed with each layer's stored one, as
 ## ParallaxPageReader.setSequenceSeed:
@@ -265,17 +265,7 @@ func _draw_cycle_of(l: Dictionary) -> void:
 	if l.has("drawn_seed") and l.drawn_seed == seed:
 		return
 	l.drawn_seed = seed
-	l.cycle = PlaxPage.draw_cycle(seed, l.weights, l.model.sequenceLength)
-	# Where each slot starts, without the pads, in layer heights: slot i at height * edges[i] + i * padX. One more than
-	# the slots.
-	var edges := PackedFloat64Array()
-	edges.resize(l.cycle.size() + 1)
-	var edge := 0.0
-	for slot in l.cycle.size():
-		edges[slot] = edge
-		edge += l.segments[l.cycle[slot]].aspect
-	edges[l.cycle.size()] = edge
-	l.edges = edges
+	PlaxSequence.lay_out(l, seed)
 	_size_layer(l)
 
 
@@ -288,9 +278,10 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 	for i in from_page.layers.size():
 		var model: Dictionary = from_page.layers[i]
 		if model.kind == "SEQUENCE":
-			var sequence := _build_sequence(model, from_page, from_atlas)
+			var sequence := PlaxSequence.build(self, model, from_page, from_atlas)
 			if sequence.is_empty():
 				continue
+			_draw_cycle_of(sequence)
 			_reset_position(sequence)
 			_add_canvas(sequence)
 			built.append(sequence)
@@ -329,36 +320,6 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		if l.haze > 0 and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "FLOOR"):
 			l.canvas.material = PlaxEffects.material("PLAIN")
 	return built
-
-
-## A SEQUENCE layer (WholePage_Model.buildLayer, ParallaxLayer.measureSegments): its first segment sizes it as an image
-## layer's region does, every segment is as wide as the layer's height and its own image make it, the first as wide as
-## the layer. Empty when a segment's region is missing.
-func _build_sequence(model: Dictionary, from_page: PlaxPage, from_atlas: PlaxAtlas) -> Dictionary:
-	if model.sequenceSegments.is_empty():
-		push_error("PlaxBackground: the sequence layer '%s' has no segments" % model.name)
-		return {}
-	var segments: Array[Dictionary] = []
-	var weights := PackedInt32Array()
-	for named in model.sequenceSegments:
-		var region := from_atlas.find_region(named.regionName, named.regionPosition) if from_atlas else {}
-		if region.is_empty():
-			push_error("PlaxBackground: region '%s' #%d of the sequence layer '%s' not found in %s"
-					% [named.regionName, named.regionPosition, model.name, from_page.atlas_name])
-			return {}
-		if region.rotate:
-			push_warning("PlaxBackground: region '%s' is packed rotated, which is not supported: drawn as is" % named.regionName)
-		segments.append(_measure_region(region, from_page.use_original_size))
-		weights.append(named.weight)
-	# The first segment sizes the layer, as an image layer's region does.
-	var l := _build_layer(model, segments[0].region, from_page.use_original_size)
-	l.segments = segments
-	l.weights = weights
-	l.narrowest = INF
-	for segment in segments:
-		l.narrowest = minf(l.narrowest, segment.aspect)
-	_draw_cycle_of(l)
-	return l
 
 
 ## A region's box: where its packed image sits in it, the image's size, and its width in heights. useOriginalSize: a
@@ -551,8 +512,8 @@ func act(delta: float) -> void:
 		return
 	_effect_time += delta
 	_act_gradients(delta)
-	_plant(layers)
-	_plant(transfer_layers)
+	PlaxFloor.plant(layers, _world_height)
+	PlaxFloor.plant(transfer_layers, _world_height)
 	for l in layers:
 		_act_layer(l, delta, speed_x, speed_y)
 	if not transfer_layers.is_empty():
@@ -595,67 +556,7 @@ func _act_layer(l: Dictionary, delta: float, speed_x: float, speed_y: float) -> 
 		var period_y := PlaxEffects.period_y(m)
 		l.wrapped_y = fmod(l.wrapped_y + below - l.distance_y, period_y) if period_y > 0 else 0.0
 	if l.has("row_distance"):
-		# Each row at its own speed, kept within one of its tiles: a floor is tiled across whatever the page repeats.
-		for i in l.row_distance.size():
-			var step: float = l.width * l.row_stretch[i]
-			var distance: float = l.row_distance[i] - delta * (m.speedXAtRest + speed_x) * l.row_speed[i]
-			l.row_distance[i] = fmod(distance, step) if step > 0 else distance
-
-
-## ParallaxPageReader.plant: every layer in front of the page's last FLOOR layer scrolls at the speed of the floor's row
-## under its foot (_foot_y); one whose foot is above the floor's top row, and every other layer, at its own.
-func _plant(page_layers: Array[Dictionary]) -> void:
-	var floor := -1
-	for i in page_layers.size():
-		if page_layers[i].model.kind == "FLOOR":
-			floor = i
-	for i in page_layers.size():
-		page_layers[i].planted = _planted_speed_on(page_layers[floor], page_layers[i]) if floor >= 0 and i > floor else NAN
-
-
-## ParallaxPageReader.plantedSpeedOn: the speed of `floor`'s row under `l`'s foot, NAN above the floor's top row.
-func _planted_speed_on(floor: Dictionary, l: Dictionary) -> float:
-	var bottom: float = floor.model.decal_Y_Ratio * (_world_height / 100.0)
-	var height: float = floor.floor_h
-	var t: float = (_foot_y(l) - bottom) / height if height > 0 else 0.0
-	if t > 1:
-		return NAN
-	t = maxf(0.0, t)
-	return floor.model.parallaxScalingSpeedX + (floor.model.floorTopSpeed - floor.model.parallaxScalingSpeedX) * t
-
-
-## ParallaxLayer.getFootY: where a layer stands, its decal, and over it the rows an atlas trimmed off an IMAGE or SHADER
-## layer's image's bottom.
-func _foot_y(l: Dictionary) -> float:
-	var foot: float = l.model.decal_Y_Ratio * (_world_height / 100.0)
-	if l.model.kind == "IMAGE" or l.model.kind == "SHADER":
-		foot += l.height * ((1 - l.trim_bottom - l.packed_h) if l.model.flipY else l.trim_bottom)
-	return foot
-
-
-## ParallaxLayer.drawFloor: a FLOOR layer's rows in its box, its bottom at `y`, each tiled across the view (x 0 to
-## `view_w`) from where it has scrolled, its tiles `width * stretch` wide, stretched about the view's middle.
-func _draw_floor(l: Dictionary, y: float, view_w: float, view_h: float) -> void:
-	var n: int = l.row_strips.size()
-	var width: float = l.width
-	var row_h: float = l.floor_h / n
-	var middle := view_w / 2
-	var texture: Texture2D = l.region.texture
-	for i in n:
-		var row_y := y + i * row_h
-		if row_y + row_h <= 0 or row_y >= view_h:
-			continue
-		var stretch: float = l.row_stretch[i]
-		var across := width * stretch
-		if not across > 0:
-			continue
-		var origin: float = middle + (0 - middle) * stretch + l.row_distance[i]
-		var first := origin + across * floorf((0 - origin) / across)
-		var count := int(ceilf((view_w - first) / across))
-		for k in count:
-			var x := first + k * across
-			_target.draw_texture_rect_region(texture,
-					Rect2(x * _ppu, _screen_h - (row_y + row_h) * _ppu, across * _ppu, row_h * _ppu), l.row_strips[i], _modulate)
+		PlaxFloor.scroll(l, delta * (m.speedXAtRest + speed_x))
 
 
 func _build_layer(model: Dictionary, region: Dictionary, use_original_size: bool) -> Dictionary:
@@ -834,7 +735,7 @@ func _draw_layer(l: Dictionary) -> void:
 		l.canvas.material.set_shader_parameter("fog_color", l.fog_color)
 	if m.kind == "FLOOR":
 		# Its rows across the whole view, whatever the page repeats; no mirrored copy.
-		_draw_floor(l, y, view_w, view_h)
+		PlaxFloor.draw(self, l, y, view_w, view_h)
 		return
 	_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h)
 	if m.mirror and _repeat_x != _repeat_y:
@@ -877,8 +778,8 @@ func _tile(
 	if (width <= 0 and not sequence) or height <= 0:
 		return
 	# What is drawn of a tile, from its corner: the box, or a SEQUENCE layer's slots (ParallaxLayer.getCycleLeft/Right).
-	var left := _cycle_left(l) if sequence else 0.0
-	var right := _cycle_right(l) if sequence else width
+	var left := PlaxSequence.cycle_left(l) if sequence else 0.0
+	var right := PlaxSequence.cycle_right(l) if sequence else width
 	# A step <= 0 (a negative padding larger than the image) can't tile: the layer is drawn once.
 	var step_x: float = width + l.model.padX
 	var step_y: float = height + l.model.padY
@@ -910,68 +811,9 @@ func _tile(
 				else:
 					fx = not fx
 			if l.model.kind == "SEQUENCE":
-				_draw_cycle(l, draw_x, draw_y, 0, view_w, fx, fy)
+				PlaxSequence.draw(self, l, draw_x, draw_y, 0, view_w, fx, fy)
 			else:
 				_draw_region(l, draw_x, draw_y, l.width, l.height, fx, fy)
-
-
-## ParallaxLayer.getCycleLeft: where a SEQUENCE layer's leftmost slot starts, from the tile's corner; below 0 only when
-## a negative padX wider than a segment takes slots back past it.
-func _cycle_left(l: Dictionary) -> float:
-	if _cycle_ordered(l):
-		return 0.0
-	var left := 0.0
-	for slot in l.cycle.size():
-		left = minf(left, l.height * l.edges[slot] + slot * l.model.padX)
-	return left
-
-
-## ParallaxLayer.getCycleRight: where its rightmost slot ends; the layer's width unless slots go back.
-func _cycle_right(l: Dictionary) -> float:
-	if _cycle_ordered(l):
-		return l.width
-	var right := -INF
-	for slot in l.cycle.size():
-		right = maxf(right, l.height * (l.edges[slot] + l.segments[l.cycle[slot]].aspect) + slot * l.model.padX)
-	return right
-
-
-## Every slot starts right of the one before: no negative padX outweighs the narrowest segment.
-static func _cycle_ordered(l: Dictionary) -> bool:
-	return l.height * l.narrowest + l.model.padX > 0
-
-
-## ParallaxLayer.drawCycle: the slots of a SEQUENCE layer's cycle, starting at (x, y), that reach between `from_x` and
-## `to_x`. A binary search finds the first, then the walk stops past `to_x`, so a long cycle costs only what shows. A
-## flip mirrors each segment in its own slot; the slots keep their order.
-func _draw_cycle(l: Dictionary, x: float, y: float, from_x: float, to_x: float, fx: bool, fy: bool) -> void:
-	var height: float = l.height
-	var pad: float = l.model.padX
-	var edges: PackedFloat64Array = l.edges
-	var cycle: PackedInt32Array = l.cycle
-	var slots := cycle.size()
-	# A negative padX wider than a segment makes the edges go back: then every slot is looked at.
-	var ordered := _cycle_ordered(l)
-	var first := 0
-	if ordered:
-		var last := slots
-		while first < last:
-			var middle := (first + last) >> 1
-			if x + height * edges[middle + 1] + middle * pad > from_x:
-				last = middle
-			else:
-				first = middle + 1
-	for slot in range(first, slots):
-		var left: float = x + height * edges[slot] + slot * pad
-		if left >= to_x:
-			if ordered:
-				break
-			continue
-		var segment: Dictionary = l.segments[cycle[slot]]
-		var width: float = height * segment.aspect
-		if left + width <= from_x:
-			continue
-		_draw_region(segment, left, y, width, height, fx, fy)
 
 
 ## The packed image of `l` (a layer, or a sequence's segment) in a box at (x, y); a flip mirrors where it sits in the

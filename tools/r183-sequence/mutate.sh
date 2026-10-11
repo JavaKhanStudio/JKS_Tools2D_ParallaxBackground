@@ -5,11 +5,12 @@
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 BG=engines/godot/addons/jks_parallax/plax_background.gd
+SEQ=engines/godot/addons/jks_parallax/plax_sequence.gd
 PAGE=engines/godot/addons/jks_parallax/plax_page.gd
 SAVE=$(mktemp -d)
-cp "$BG" "$PAGE" "$SAVE/"
+cp "$BG" "$SEQ" "$PAGE" "$SAVE/"
 # shellcheck disable=SC2329 # called by the trap below
-restore() { cp "$SAVE/plax_background.gd" "$BG"; cp "$SAVE/plax_page.gd" "$PAGE"; rm -rf "$SAVE"; }
+restore() { cp "$SAVE/plax_background.gd" "$BG"; cp "$SAVE/plax_sequence.gd" "$SEQ"; cp "$SAVE/plax_page.gd" "$PAGE"; rm -rf "$SAVE"; }
 trap restore EXIT INT TERM PIPE
 # "ok" or "broken", then the frames' verdict and sequence_cycle.gd's: either failing fails the script.
 run() {
@@ -42,14 +43,14 @@ done <<'MUTANTS'
 engines/godot/addons/jks_parallax/plax_page.gd|seed off by one|var state := seed & _U32|var state := (seed + 1) & _U32
 engines/godot/addons/jks_parallax/plax_page.gd|pick from the state, not its top 31 bits|var pick := (state >> 1) %|var pick := state %
 engines/godot/addons/jks_parallax/plax_background.gd|game seed not XORed with the layer's|(_sequence_seed ^ l.model.sequenceSeed if|(_sequence_seed if
-engines/godot/addons/jks_parallax/plax_background.gd|slots without their pads|var left: float = x + height * edges[slot] + slot * pad|var left: float = x + height * edges[slot]
-engines/godot/addons/jks_parallax/plax_background.gd|segments not flipped|_draw_region(segment, left, y, width, height, fx, fy)|_draw_region(segment, left, y, width, height, false, false)
-engines/godot/addons/jks_parallax/plax_background.gd|first slot in view skipped|for slot in range(first, slots):|for slot in range(first + 1, slots):
+engines/godot/addons/jks_parallax/plax_sequence.gd|slots without their pads|var left: float = x + height * edges[slot] + slot * pad|var left: float = x + height * edges[slot]
+engines/godot/addons/jks_parallax/plax_sequence.gd|segments not flipped|bg._draw_region(segment, left, y, width, height, fx, fy)|bg._draw_region(segment, left, y, width, height, false, false)
+engines/godot/addons/jks_parallax/plax_sequence.gd|first slot in view skipped|for slot in range(first, slots):|for slot in range(first + 1, slots):
 engines/godot/addons/jks_parallax/plax_background.gd|cycle width without its pads|l.width = l.height * l.edges[l.cycle.size()] + (l.cycle.size() - 1) * l.model.padX|l.width = l.height * l.edges[l.cycle.size()]
-engines/godot/addons/jks_parallax/plax_background.gd|segments ignore useOriginalSize|segments.append(_measure_region(region, from_page.use_original_size))|segments.append(_measure_region(region, false))
-engines/godot/addons/jks_parallax/plax_background.gd|overlapping slots searched as if ordered|var ordered: bool = height * l.narrowest + pad > 0|var ordered: bool = true
-engines/godot/addons/jks_parallax/plax_background.gd|search on a slot's left edge, not its right|if x + height * edges[middle + 1] + middle * pad > from_x:|if x + height * edges[middle] + middle * pad > from_x:
-engines/godot/addons/jks_parallax/plax_background.gd|walk stops a slot late|		if left >= to_x:|		if left > to_x + 1:
+engines/godot/addons/jks_parallax/plax_sequence.gd|segments ignore useOriginalSize|segments.append(PlaxBackground._measure_region(region, from_page.use_original_size))|segments.append(PlaxBackground._measure_region(region, false))
+engines/godot/addons/jks_parallax/plax_sequence.gd|overlapping slots searched as if ordered|	var in_order := ordered(l)|	var in_order := true
+engines/godot/addons/jks_parallax/plax_sequence.gd|search on a slot's left edge, not its right|if x + height * edges[middle + 1] + middle * pad > from_x:|if x + height * edges[middle] + middle * pad > from_x:
+engines/godot/addons/jks_parallax/plax_sequence.gd|walk stops a slot late|		if left >= to_x:|		if left > to_x + 1:
 engines/godot/addons/jks_parallax/plax_page.gd|negative weights not floored|var weight := maxi(weights[segment], 0) if total > 0 else 1|var weight := weights[segment] if total > 0 else 1
 MUTANTS
 exit $status
