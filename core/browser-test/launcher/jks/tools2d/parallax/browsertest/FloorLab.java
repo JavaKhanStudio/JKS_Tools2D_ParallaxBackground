@@ -47,16 +47,19 @@ public class FloorLab extends ApplicationAdapter
 	static final int FRAME_WIDTH = FogLab.FRAME_WIDTH, FRAME_HEIGHT = FogLab.FRAME_HEIGHT;
 	static final String[] ART_NAMES = { "from above", "painted as seen" };
 	static final String[] MAPPING_NAMES = { "mode 7", "shift + stretch", "line scroll" };
+	static final String[] FRONT_NAMES = { "planted on the ground", "own speed (0.04)" };
 	/** What the lab opens on: the top row at the mountain's speed, the bottom row nearer than the trees (0.04). */
 	static final float TOP = 0.016f, BOTTOM = 0.06f, ROWS = 96, SCROLL = 40, STONE_WIDTH = 16, TILT = 0.6f;
 	static final int MAX_ROWS = 256;
 
 	private final Parallax_Heart[] hearts = new Parallax_Heart[2];
 	private final Floor[] floors = new Floor[2];
+	/** Each panel's layers' speeds as the page holds them: plant() overwrites the reader's. */
+	private final float[][] ownSpeeds = new float[2][];
 	private SpriteBatch batch;
 	private TextureRegion stones, painted;
 	private InputElement top, bottom, rows, scroll;
-	private SelectElement art, mapping;
+	private SelectElement art, mapping, front;
 	private Element readout;
 	private boolean clip;
 	/** How far the view has travelled: a layer of speed ratio s has moved by -s * travel, as act() moves it. */
@@ -103,6 +106,10 @@ public class FloorLab extends ApplicationAdapter
 			hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i].setPage(Utils_Page_Json.loadPage(PAGE));
 			hearts[i].parallaxReader.setLayerHook(FLOOR, floors[i] = new Floor(i == 1));
+			java.util.ArrayList<ParallaxLayer> layers = hearts[i].parallaxReader.layers;
+			ownSpeeds[i] = new float[layers.size()];
+			for (int l = 0; l < layers.size(); l++)
+				ownSpeeds[i][l] = layers.get(l).getParallaxSpeedRatioX();
 		}
 		TextureAtlas atlas = hearts[0].currentPage.getLoadedAtlas();
 		stones = atlas.findRegion("ground");
@@ -126,6 +133,7 @@ public class FloorLab extends ApplicationAdapter
 		rows = LabControls.slider(document, controls, "strips", "strips (the rows the ground is cut in)", 2, MAX_ROWS, 1, ROWS);
 		art = LabControls.choice(document, controls, "groundArt", "ground's art (the stones drawn from above, or the same stones painted in perspective, as a fighting game's floor is)", ART_NAMES, 0);
 		mapping = LabControls.choice(document, controls, "rowMapping", "mapping (mode 7: stretched by depth, the image's rows spaced by depth; shift + stretch: each row stretched, the image as painted; line scroll: each row only shifted)", MAPPING_NAMES, 0);
+		front = LabControls.choice(document, controls, "frontLayers", "trees (planted: they scroll at the speed of the ground row under their foot, as a thing standing on it does; their own speed: the page's 0.04, the ground sliding under them)", FRONT_NAMES, 0);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (drag the picture, or the arrow keys, to pan)", -160, 160, 5, SCROLL);
 		readout = LabControls.readout(document, controls, "effects-readout");
 	}
@@ -194,6 +202,49 @@ public class FloorLab extends ApplicationAdapter
 		return (sBottom / Math.max(1e-4f, speed) - 1) * near;
 	}
 
+	/**
+	 * The speed a layer standing on the ground at {@code footY} scrolls at in panel {@code panel}: the ground row's
+	 * there (A: straight between the bottom and top rows' speeds; B: the flat ground's), or its own when not planted.
+	 */
+	private float plantedSpeed(int panel, ParallaxLayer ground, int index, ParallaxLayer layer)
+	{
+		float sTop = LabControls.read(top), sBottom = LabControls.read(bottom);
+		if (LabControls.read(front) != 0)
+			return ownSpeeds[panel][index];
+		if (panel == 1)
+			return (sTop + sBottom) / 2;
+		float boxY = ground.getDecalPercentY() * WORLD_HEIGHT / 100;
+		float t = (layer.getDecalPercentY() * WORLD_HEIGHT / 100 - boxY) / ground.getRegionHeight();
+		t = Math.max(0, Math.min(1, t));
+		return sBottom + (sTop - sBottom) * t;
+	}
+
+	/**
+	 * Every layer in front of the ground moves at {@link #plantedSpeed}, placed where that speed has taken it since the
+	 * lab opened ({@code -speed * travel} from its decal, as the ground's rows are), so a slider moved mid-scroll
+	 * re-plants it instead of leaving it where its old speed had carried it.
+	 */
+	private void plant()
+	{
+		for (int panel = 0; panel < hearts.length; panel++)
+		{
+			java.util.ArrayList<ParallaxLayer> layers = hearts[panel].parallaxReader.layers;
+			int g = layers.size();
+			while (--g >= 0 && !FLOOR.equals(layers.get(g).getName()))
+				;
+			if (g < 0)
+				return;
+			for (int i = g + 1; i < layers.size(); i++)
+			{
+				ParallaxLayer layer = layers.get(i);
+				float speed = plantedSpeed(panel, layers.get(g), i, layer);
+				layer.setParallaxSpeedRatioX(speed);
+				float width = layer.getTotalWidth(), at = layer.getDecalPercentX() * WORLD_WIDTH / 100 - speed * travel;
+				layer.setCurrentDistanceX(width > 0 ? at % width : at);
+			}
+		}
+	}
+
 	/** Moves the view by {@code by} travel units this frame, both hearts as act() moves their layers. */
 	private void pan(float by, float delta)
 	{
@@ -210,7 +261,15 @@ public class FloorLab extends ApplicationAdapter
 		float sTop = LabControls.read(top), sBottom = LabControls.read(bottom);
 		readout.setInnerText("A's rows from " + LabControls.text(sBottom) + " (bottom) to " + LabControls.text(sTop) + " (top), depth "
 				+ LabControls.text(sTop > 0 ? sBottom / sTop : 0) + "x the bottom row's at the top; B's ground "
-				+ LabControls.text((sTop + sBottom) / 2) + "; " + costLine);
+				+ LabControls.text((sTop + sBottom) / 2) + "; trees in A " + LabControls.text(frontSpeed(0)) + ", in B "
+				+ LabControls.text(frontSpeed(1)) + "; " + costLine);
+	}
+
+	/** The speed the front layer of panel {@code panel} scrolls at now. */
+	private float frontSpeed(int panel)
+	{
+		java.util.ArrayList<ParallaxLayer> layers = hearts[panel].parallaxReader.layers;
+		return layers.get(layers.size() - 1).getParallaxSpeedRatioX();
 	}
 
 	/** Steps both hearts by {@code seconds}, at 1/60 s: the clip's clock. */
@@ -227,6 +286,7 @@ public class FloorLab extends ApplicationAdapter
 		travel += LabControls.read(scroll) * delta;
 		for (Parallax_Heart heart : hearts)
 			heart.act(delta);
+		plant();
 	}
 
 	private static native void exportAct(FloorLab lab) /*-{
