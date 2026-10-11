@@ -390,7 +390,9 @@ art shifts its colours slightly. The Godot and jME readers load the PNG atlas; G
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
-pages built without a heart.
+pages built without a heart. Two hearts can show the same `WholePage_Model`: the first shows the page's own layers
+(`page.preloadValue`), each other one layers the page builds for its world (`ParallaxPageReader.layersOf`), so each
+places and scrolls its own.
 
 ## File formats
 

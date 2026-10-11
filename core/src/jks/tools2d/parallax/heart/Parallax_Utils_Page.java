@@ -14,9 +14,9 @@ public final class Parallax_Utils_Page
 		release(ref, ref.currentPage, pageModel);
 		ref.currentTransfertPage = null;
 		ref.currentPage = pageModel;
-		ref.parallaxReader.layers.clear();
+		ref.parallaxReader.clearLayers();
 		ref.parallaxReader.resetTransfert();
-		ref.parallaxReader.addLayers(pageModel.getDrawing(ref.relativePath, ref.getWorldWidth(), ref.getWorldHeight()));
+		ref.parallaxReader.addLayers(ref.parallaxReader.layersOf(pageModel, ref.relativePath));
 		ref.parallaxReader.setRepeatOnX(pageModel.repeatOnX);
 		ref.parallaxReader.setRepeatOnY(pageModel.repeatOnY);
 		ref.parallaxReader.setFog(pageModel.getFogStrength(), pageModel.fogColor);

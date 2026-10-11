@@ -216,12 +216,18 @@ public class Parallax_Heart implements Disposable
 	public String getAtlasName()
 	{return currentPage == null ? null : currentPage.pageModel.getAtlasName();}
 
-	/** Releases the renderers and the SHADER layers' shaders, and the batch and atlases if this heart created them. */
+	/**
+	 * Releases the renderers and the SHADER layers' shaders, and the batch and atlases if this heart created them; drops
+	 * its layers.
+	 */
 	@Override
 	public void dispose()
 	{
 		shapeRender.dispose();
 		parallaxReader.dispose();
+		// Its pages' layers are free for another heart to take as they are.
+		parallaxReader.clearLayers();
+		parallaxReader.resetTransfert();
 		if (ownsBatch)
 			batch.dispose();
 		if (currentPage != null)

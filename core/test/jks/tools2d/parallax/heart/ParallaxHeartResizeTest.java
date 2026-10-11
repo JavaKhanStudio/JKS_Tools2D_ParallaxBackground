@@ -3,6 +3,7 @@ package jks.tools2d.parallax.heart;
 import static jks.tools2d.parallax.TestGdx.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.IOException;
 import java.nio.IntBuffer;
@@ -379,6 +380,47 @@ class ParallaxHeartResizeTest
 		ParallaxLayer incoming = wide.parallaxReader.transferLayers.get(0);
 		assertEquals(40, incoming.getWidth(), 1e-4f);
 		assertEquals(11.25f, incoming.getCurrentDistanceY(), 1e-4f, "50% of 22.5");
+	}
+
+	/**
+	 * One page shown by two hearts: the page builds its layers once, and each heart must still place and scroll them in
+	 * its own world (r298).
+	 */
+	@Test
+	void twoHeartsShowingOnePageKeepTheirOwnLayers()
+	{
+		WholePage_Model shared = atlasPage(10, 20);
+		Parallax_Heart wide = new Parallax_Heart(new OrthographicCamera(40, 22.5f), null, shared, 40, 22.5f);
+		Parallax_Heart tall = new Parallax_Heart(new OrthographicCamera(20, 40), null, shared, 20, 40);
+		ParallaxLayer wideLayer = wide.parallaxReader.layers.get(0);
+		ParallaxLayer tallLayer = tall.parallaxReader.layers.get(0);
+
+		assertEquals(40, wideLayer.getWidth(), 1e-4f, "the first heart's layer is as wide as its world");
+		assertEquals(20, tallLayer.getWidth(), 1e-4f, "the second heart's layer as wide as its own");
+		assertEquals(4.5f, wideLayer.getCurrentDistanceY(), 1e-4f, "20% of 22.5");
+		assertEquals(8, tallLayer.getCurrentDistanceY(), 1e-4f, "20% of 40");
+
+		// One frame of each heart: each layer scrolls once, not once per heart.
+		float before = wideLayer.getCurrentDistanceX();
+		wide.parallaxReader.act(1, 1, 0);
+		float moved = wideLayer.getCurrentDistanceX() - before;
+		tall.parallaxReader.act(1, 1, 0);
+		assertEquals(before + moved, wideLayer.getCurrentDistanceX(), 1e-4f, "the other heart's frame left it alone");
+
+		// A cross-fade into the page the other heart shows takes layers of its own too.
+		Parallax_Heart third = new Parallax_Heart(new OrthographicCamera(10, 10), null, atlasPage(0, 0), 10, 10);
+		third.transfertIntoPage(shared, 1);
+		ParallaxLayer incoming = third.parallaxReader.transferLayers.get(0);
+		assertEquals(10, incoming.getWidth(), 1e-4f);
+		assertEquals(40, wideLayer.getWidth(), 1e-4f, "the first heart's layer kept its world");
+
+		// The page's own layers stay with the first heart: the editor edits them through preloadValue.
+		assertSame(shared.preloadValue.get(0), wideLayer);
+
+		// Once that heart moves on, the next heart to show the page takes them back.
+		wide.setPage(atlasPage(0, 0));
+		Parallax_Heart next = new Parallax_Heart(new OrthographicCamera(40, 22.5f), null, shared, 40, 22.5f);
+		assertSame(wideLayer, next.parallaxReader.layers.get(0), "a page another heart let go of is shown as it is");
 	}
 
 	/** A game loading its atlases from a folder: the page it cross-fades into is built from that folder too. */

@@ -111,14 +111,59 @@ public class ParallaxPageReader implements Disposable
 	private float planetRadius, transferPlanetRadius;
 	private final PlanetBatch planetBatch = new PlanetBatch();
 
+	/**
+	 * Shows {@code newLayers} after the current ones. A layer another reader already shows is cloned, so each reader
+	 * scrolls its own; a page's layers come from {@link #layersOf}, built for this reader's world.
+	 */
 	public void addLayers(List<ParallaxLayer> newLayers)
 	{
 		for (ParallaxLayer layer : newLayers)
 		{
-			layer.setWorldSize(worldWidth, worldHeight);
-			drawCycle(layer);
+			ParallaxLayer taken = take(layer);
+			taken.setWorldSize(worldWidth, worldHeight);
+			drawCycle(taken);
+			layers.add(taken);
 		}
-		layers.addAll(newLayers);
+	}
+
+	/** Drops every layer, letting another reader take the page's own layers. */
+	public void clearLayers()
+	{
+		release(layers);
+		layers.clear();
+	}
+
+	/** Lets another reader take these layers as they are: this one drops them. */
+	private void release(List<ParallaxLayer> dropped)
+	{
+		for (int i = 0, n = dropped.size(); i < n; i++)
+			if (dropped.get(i).reader == this)
+				dropped.get(i).reader = null;
+	}
+
+	/**
+	 * The layers of {@code pageModel} for this reader's world: the page's own, built once ({@link
+	 * WholePage_Model#getDrawing(String, float, float)}), unless another reader shows them (one page in two hearts), then
+	 * layers the page builds for this world.
+	 */
+	public List<ParallaxLayer> layersOf(WholePage_Model pageModel, String relativePath)
+	{
+		List<ParallaxLayer> drawing = pageModel.getDrawing(relativePath, worldWidth, worldHeight);
+		for (int i = 0, n = drawing == null ? 0 : drawing.size(); i < n; i++)
+			if (drawing.get(i).reader != null && drawing.get(i).reader != this)
+				return pageModel.buildDrawing(worldWidth, worldHeight);
+		return drawing;
+	}
+
+	/**
+	 * The layer itself if no other reader shows it, else a clone of it, this reader's own from then on. A clone keeps
+	 * the width it was built for: {@link #layersOf} builds a page's for this world.
+	 */
+	private ParallaxLayer take(ParallaxLayer layer)
+	{
+		ParallaxLayer taken = layer.reader == null || layer.reader == this ? layer : layer.clone();
+		taken.reader = this;
+		return taken;
 	}
 
 	/**
@@ -143,7 +188,7 @@ public class ParallaxPageReader implements Disposable
 	{
 		resetTransfert();
 
-		List<ParallaxLayer> newLayers = pageModel.getDrawing(relativePath, worldWidth, worldHeight);
+		List<ParallaxLayer> newLayers = layersOf(pageModel, relativePath);
 		if (newLayers == null || newLayers.isEmpty())
 			return;
 		transferFogStrength = pageModel.getFogStrength();
@@ -153,7 +198,7 @@ public class ParallaxPageReader implements Disposable
 		// Transferring into the page on screen: its layers must not be moved and drawn twice per frame.
 		for (ParallaxLayer layer : newLayers)
 		{
-			ParallaxLayer incoming = layers.contains(layer) ? layer.clone() : layer;
+			ParallaxLayer incoming = layers.contains(layer) ? layer.clone() : take(layer);
 			incoming.setWorldSize(worldWidth, worldHeight);
 			drawCycle(incoming);
 			transferLayers.add(incoming);
@@ -162,6 +207,7 @@ public class ParallaxPageReader implements Disposable
 
 		if (inXSecondes <= 0)
 		{
+			release(layers);
 			layers = transferLayers;
 			takeTransferFog();
 			resetTransfert();
@@ -682,6 +728,9 @@ public class ParallaxPageReader implements Disposable
 
 	public void resetTransfert()
 	{
+		// An interrupted cross-fade's layers are dropped; a finished one's are the layers on screen.
+		if (transferLayers != layers)
+			release(transferLayers);
 		transferLayers = new ArrayList<>();
 		transfertType = Enum_TransfertType.NONE;
 		transfertStyle = TransfertStyle.FADE;
@@ -713,6 +762,7 @@ public class ParallaxPageReader implements Disposable
 
 			if (newLayerAlpha >= 1)
 			{
+				release(layers);
 				layers = transferLayers;
 				takeTransferFog();
 				resetTransfert();

@@ -142,9 +142,9 @@ public class PlaxBackground extends BaseAppState
 		build(model, atlas);
 		page = model;
 		transfertPage = null;
-		reader.layers.clear();
+		reader.clearLayers();
 		reader.resetTransfert();
-		reader.addLayers(model.preloadValue);
+		reader.addLayers(reader.layersOf(model, null));
 		reader.setRepeatOnX(model.repeatOnX);
 		reader.setRepeatOnY(model.repeatOnY);
 		reader.setFog(model.getFogStrength(), model.fogColor);

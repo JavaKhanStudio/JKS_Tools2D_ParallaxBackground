@@ -245,6 +245,21 @@ public class WholePage_Model
 		}
 	}
 
+	/**
+	 * Layers of their own for a second reader of this page, built for its world from the atlas {@link #getDrawing} loaded
+	 * (call that first): the cached ones keep the first reader's world size and scroll.
+	 */
+	public List<ParallaxLayer> buildDrawing(float worldWidth, float worldHeight)
+	{
+		List<ParallaxLayer> layers = load(worldWidth, worldHeight, loadedAtlas);
+		for (ParallaxLayer layer : layers)
+		{
+			layer.setWorldSize(worldWidth, worldHeight);
+			layer.resetPosition();
+		}
+		return layers;
+	}
+
 	/** The atlas the layers were built from, or null before loading. */
 	public TextureAtlas getLoadedAtlas()
 	{return loadedAtlas;}

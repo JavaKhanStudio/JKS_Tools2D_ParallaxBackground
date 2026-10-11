@@ -112,6 +112,11 @@ public class ParallaxLayer
 	private final boolean isWidth;
 	private final float worldDimension;
 
+	/**
+	 * The reader that took this layer first ({@link ParallaxPageReader#addLayers}): another reader takes a clone, so two
+	 * hearts showing one page keep their own world size and scroll. A clone starts with none.
+	 */
+	ParallaxPageReader reader;
 	/** The world the decal percentages are taken of: the heart's, see {@link #setWorldSize}. */
 	private float worldWidth, worldHeight;
 	private float decalPercentX, decalPercentY;

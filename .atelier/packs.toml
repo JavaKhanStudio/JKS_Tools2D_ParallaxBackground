@@ -17,7 +17,12 @@ World size is PER HEART: each Parallax_Heart's ParallaxPageReader holds it and p
 every layer it takes (setWorldSize). heart/Gvars_Parallax only holds the last heart's size, the
 default (40 wide) for pages built without a heart: nothing a heart runs may read it.
 ParallaxHeartResizeTest.twoHeartsKeepTheirOwnWorldSize holds that. A layer is worldWidth *
-sizeRatio wide. Hearts call only getDrawing(relativePath, w, h): a stub overriding getDrawing() is ignored.
+sizeRatio wide, fixed when it is built (setWorldSize moves decals, not width). Hearts call only
+getDrawing(relativePath, w, h): a stub overriding getDrawing() is ignored. ONE PAGE, TWO HEARTS (r298):
+getDrawing caches one list of layers, so a reader takes a page through ParallaxPageReader.layersOf,
+which hands back page.buildDrawing(w, h) when ParallaxLayer.reader says another reader shows them;
+a reader drops its own through clearLayers()/release, never layers.clear(), or the next heart gets
+copies the editor's preloadValue edits never reach. twoHeartsShowingOnePageKeepTheirOwnLayers.
 Gate: `./gradlew :core:test`. The reader's tests are core/browser-test/cases/.../*Cases, one class per
 subject (TilingCases, TransferCases, ShaderCases, SequenceCases...) over ReaderFixtures' builders (GWT-safe: no JUnit, no reflection), run on the JVM by core/test BrowserSuiteTest and in Chrome by
 tools/browser-test.sh. They need NO window: RecordingBatch records the draw calls, with
