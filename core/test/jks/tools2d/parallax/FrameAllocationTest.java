@@ -145,6 +145,9 @@ class FrameAllocationTest
 			layer.setPadY(random.nextFloat() * 5);
 			layer.setFlipX(random.nextBoolean());
 			layer.setMirror(random.nextBoolean());
+			// One in ten wrapped round a tower (drawn so on an IMAGE layer only), its strips cut every frame.
+			if (i % 10 == 0)
+				layer.setTower(5 + random.nextFloat() * 40, 0.65f);
 			layers.add(layer);
 		}
 		return layers;

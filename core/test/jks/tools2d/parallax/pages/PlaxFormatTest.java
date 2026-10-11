@@ -119,6 +119,8 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(shaderLayer());
 		original.pageModel.pageList.add(sequenceLayer());
 		original.pageModel.pageList.add(floorLayer());
+		original.pageModel.pageList.get(1).towerRadius = 12.5f;
+		original.pageModel.pageList.get(1).towerShade = 0.3f;
 		original.fogColor = new Color(0.2f, 0.3f, 0.5f, 1);
 
 		byte[] rewritten = write(original);
@@ -159,6 +161,29 @@ class PlaxFormatTest
 		assertEquals(0.016f, floor.floorTopSpeed, "the top row's speed");
 		assertEquals(48, floor.floorRows, "the rows");
 		assertEquals(40, floor.floorHeight, "the box's height");
+		assertEquals(12.5f, reread.pageModel.pageList.get(1).towerRadius, "a tower's radius is stored since format 12");
+		assertEquals(0.3f, reread.pageModel.pageList.get(1).towerShade, "and its shade");
+	}
+
+	/** Format 11 has no tower fields: written there, a layer reads radius 0 (flat) and the default shade. */
+	@Test
+	void format11FilesStillLoadWithoutTowers() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		Parallax_Model layer = original.pageModel.pageList.get(0);
+		layer.towerRadius = 9;
+		layer.towerShade = 0.1f;
+
+		byte[] written = write(original, 11);
+		assertEquals(11, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		Parallax_Model rereadLayer = reread.pageModel.pageList.get(0);
+		assertEquals(0, rereadLayer.towerRadius, "format 11 has no tower");
+		assertEquals(Parallax_Model.DEFAULT_TOWER_SHADE, rereadLayer.towerShade);
+		layer.towerRadius = 0;
+		layer.towerShade = Parallax_Model.DEFAULT_TOWER_SHADE;
+		assertPageEquals(original, reread);
 	}
 
 	/**
@@ -500,6 +525,8 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(5, shaderLayer());
 		original.pageModel.pageList.add(6, sequenceLayer());
 		original.pageModel.pageList.add(7, floorLayer());
+		original.pageModel.pageList.get(0).towerRadius = 12.5f;
+		original.pageModel.pageList.get(0).towerShade = 0.3f;
 
 		String json = JSON.writeValueAsString(original);
 		assertFalse(json.contains("preloadValue") || json.contains("completeRegionName") || json.contains("\"speed\""), json);
@@ -580,6 +607,8 @@ class PlaxFormatTest
 			assertEquals(expected.floorTopSpeed, actual.floorTopSpeed, name);
 			assertEquals(expected.floorRows, actual.floorRows, name);
 			assertEquals(expected.floorHeight, actual.floorHeight, name);
+			assertEquals(expected.towerRadius, actual.towerRadius, name);
+			assertEquals(expected.towerShade, actual.towerShade, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

@@ -73,7 +73,7 @@ repair.
   and run `tools/godot-parallax-shots.sh` (`engines/godot/tests/transfer` is its cross-fade round). Its PARTICLES
   layers are placed by `plax_particles.gd` (ParallaxPageReader's particle branch; round `engines/godot/tests/particles`),
   a FLOOR's rows measured, scrolled and drawn by `plax_floor.gd`, a SEQUENCE's cycle laid out and drawn by
-  `plax_sequence.gd` (r307, r324: `gdlint` caps a script at 1000 lines).
+  `plax_sequence.gd`, a tower's strips by `plax_tower.gd` (r307, r324: `gdlint` caps a script at 1000 lines).
 - `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
   `draw(region, x, y, width, height)`, and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
   method, change the gradients, or make `ParallaxPageReader` or `ParallaxLayer` reach a libGDX native (`OrthographicCamera.update` does), and
@@ -133,10 +133,17 @@ repair.
   is `plax_background.gd`'s `_zoom_of`/`_anchor_of` (each layer in its own view at its own `_ppu`) and
   `plax_particles.gd`'s `place`. Change it and run both frame checks on `engines/godot/tests/dolly`;
   `tools/r278-dolly/mutate.sh` proves the round sees a wrong Godot copy.
+- A tower (r276, format 12: `towerRadius`, `towerShade` on an IMAGE layer) is drawn by `ParallaxLayer.drawTower`
+  (`ParallaxPageReader.towerRows` tiles it up): the front half of a cylinder in the view's middle, in
+  `TOWER_STRIPS` strips of equal angle, each one `batch.draw`, its shade in the batch colour. Under libGDX's page fog
+  the batch colour's red, green and alpha are the fog's: the shade rides in its blue, which `PAGE_FOG` reads as darkness
+  (0 for every other layer). Godot's copy is `plax_tower.gd`; jME runs core's. Change it and run both frame checks on
+  `engines/godot/tests/tower`; `tools/r276-tower/strength.sh` proves the round sees the wrap and the shade, `mutate.sh`
+  a wrong Godot copy and a wrong core law.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,
-  `TransfertStyleCases`, `FloorCases`, `DollyCases`), their builders in `ReaderFixtures`; a new subject's class goes in
+  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`), their builders in `ReaderFixtures`; a new subject's class goes in
   `BrowserSuite.all()`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)

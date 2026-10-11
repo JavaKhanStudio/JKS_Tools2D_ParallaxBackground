@@ -13,7 +13,8 @@ import com.badlogic.gdx.math.Matrix4;
 
 /**
  * A {@link Batch} that draws nothing and records the x, y, width and height of every 5-argument draw, the ones the
- * reader makes, then the batch color's red and alpha; and of every particle, its own color's. The reader cases
+ * reader makes, then the batch color's red and alpha (and of a region's draw, its green and blue, then the region's u
+ * and u2); and of every particle, its own color's. The reader cases
  * ({@link ReaderFixtures}) record the reader on it: a java.lang.reflect.Proxy would too, but GWT does not have one.
  */
 public class RecordingBatch implements Batch
@@ -24,7 +25,8 @@ public class RecordingBatch implements Batch
 
 	@Override
 	public void draw(TextureRegion region, float x, float y, float width, float height)
-	{draws.add(new float[] { x, y, width, height, color.r, color.a });}
+	{draws.add(new float[] { x, y, width, height, color.r, color.a, color.g, color.b,
+			region == null ? 0 : region.getU(), region == null ? 0 : region.getU2() });}
 
 	@Override
 	public void draw(Texture texture, float x, float y, float width, float height)

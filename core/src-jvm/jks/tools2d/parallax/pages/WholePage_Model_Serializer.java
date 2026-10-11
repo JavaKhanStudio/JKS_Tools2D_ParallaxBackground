@@ -33,13 +33,15 @@ import com.esotericsoftware.kryo.io.Output;
  * <li>version 11: the version 10 layout with each layer's floorMapping (its name), floorTopSpeed (a float), floorRows
  * (an int) and floorHeight (a float) stored after sequenceLength. Older files read MODE7, 0, 96 and 0, and have no
  * FLOOR layer.</li>
+ * <li>version 12: the version 11 layout with each layer's towerRadius and towerShade (floats) stored after floorHeight.
+ * Older files read 0 and {@link Parallax_Model#DEFAULT_TOWER_SHADE}: no layer is wrapped round a tower.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 11;
+	static final int CURRENT_VERSION = 12;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

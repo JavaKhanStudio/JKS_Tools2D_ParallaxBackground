@@ -42,6 +42,9 @@ extends CanvasLayer
 ##
 ##   bg.set_sequence_seed(randi())
 ##
+## An IMAGE layer with a tower radius is wrapped round a cylinder in the view's middle, its scroll turning it
+## (PlaxTower, r276).
+##
 ## Each layer is drawn by its own child of the gradients' canvas, in draw order, so that a particle node can sit between
 ## two of them. Not ported yet: atlas regions packed rotated.
 
@@ -736,6 +739,10 @@ func _draw_layer(l: Dictionary) -> void:
 	if m.kind == "FLOOR":
 		# Its rows across the whole view, whatever the page repeats; no mirrored copy.
 		PlaxFloor.draw(self, l, y, view_w, view_h)
+		return
+	if PlaxTower.is_tower(l):
+		# Round its tower in the view's middle, tiled up as the page says; no mirrored copy.
+		PlaxTower.draw_rows(self, l, x, y, view_w, view_h)
 		return
 	_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h)
 	if m.mirror and _repeat_x != _repeat_y:

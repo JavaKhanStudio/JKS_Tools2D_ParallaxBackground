@@ -27,6 +27,7 @@ public final class BrowserSuite
 		cases.addAll(TransfertStyleCases.all());
 		cases.addAll(FloorCases.all());
 		cases.addAll(DollyCases.all());
+		cases.addAll(TowerCases.all());
 		cases.addAll(JsonCases.all(fixtures));
 		return cases;
 	}

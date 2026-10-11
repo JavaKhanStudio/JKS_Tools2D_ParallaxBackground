@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
@@ -27,7 +28,8 @@ import jks.tools2d.parallax.pages.Sequence_Segment;
  * its tile, as wide as its segments and their padX, each segment as wide as the layer's height and its own image make it.
  * A {@link Enum_LayerKind#FLOOR} layer is an image layer's box drawn as rows, each at its own depth and its own distance
  * ({@link #drawFloor}); the reader moves the layers in front of it at the speed of the row under their foot
- * ({@link #setPlantedSpeedX}).
+ * ({@link #setPlantedSpeedX}). An IMAGE layer with a tower radius ({@link #isTower}) is wrapped round a cylinder standing
+ * in the view's middle: its scroll turns it ({@link #drawTower}).
  */
 public class ParallaxLayer
 {
@@ -87,6 +89,14 @@ public class ParallaxLayer
 	 * its foot. NaN when it stands on none: the layer's own. Never stored.
 	 */
 	private float plantedSpeedX = Float.NaN;
+
+	/**
+	 * The radius of the tower an IMAGE layer is wrapped round, in percent of the world width (0: flat), and how much its
+	 * wall darkens as it turns away: see {@link Parallax_Model#towerRadius}.
+	 */
+	private float towerRadius, towerShade = Parallax_Model.DEFAULT_TOWER_SHADE;
+	/** The strip of the image a tower's piece draws, set before each piece's draw; made once, with the regions. */
+	private TextureRegion towerStrip;
 
 	private List<TextureRegion> texRegion;
 	/** Cached first region, the one actually drawn. */
@@ -286,6 +296,7 @@ public class ParallaxLayer
 			setSequence(named, model.sequenceSeed, model.sequenceLength);
 		}
 		setFloor(model.floorMapping, model.floorTopSpeed, model.floorRows, model.floorHeight);
+		setTower(model.towerRadius, model.towerShade);
 	}
 
 	public void resetPosition()
@@ -424,6 +435,10 @@ public class ParallaxLayer
 		copy.floorRows = floorRows;
 		copy.floorHeight = floorHeight;
 		copy.plantedSpeedX = plantedSpeedX;
+		copy.towerRadius = towerRadius;
+		copy.towerShade = towerShade;
+		// Set before each piece is drawn, and read by the batch at once: shared.
+		copy.towerStrip = towerStrip;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
 		copy.parallaxSpeedRatioY = parallaxSpeedRatioY;
 		copy.worldWidth = worldWidth;
@@ -1076,6 +1091,109 @@ public class ParallaxLayer
 		}
 	}
 
+	/** A tower's radius in percent of the world width; 0: the layer is flat. Kept on every kind, drawn on IMAGE only. */
+	public float getTowerRadius()
+	{return towerRadius;}
+
+	/** How much a tower's wall darkens toward its sides, 0 to 1. */
+	public float getTowerShade()
+	{return towerShade;}
+
+	/**
+	 * Sets the radius of the tower the layer is wrapped round (percent of the world width, 0: flat) and how much its wall
+	 * darkens as it turns away (0 to 1). Kept on kinds other than IMAGE, which are drawn flat, so a page saved from its
+	 * layers stores them back.
+	 */
+	public void setTower(float radius, float shade)
+	{
+		towerRadius = radius;
+		towerShade = shade;
+	}
+
+	/** True when the reader wraps this layer round a tower ({@link #drawTower}): an IMAGE layer with a radius. */
+	public boolean isTower()
+	{return kind == Enum_LayerKind.IMAGE && towerRadius > 0;}
+
+	/** How many strips a tower's front half is cut in, by angle: {@code PI / TOWER_STRIPS} each. */
+	public static final int TOWER_STRIPS = 128;
+	private static final float HALF_PI = (float) (Math.PI / 2), STRIP_ANGLE = (float) (Math.PI / TOWER_STRIPS);
+
+	/**
+	 * Draws the layer wrapped round a tower (docs/depth-tricks.md §2, r276): a cylinder of {@link #getTowerRadius} whose
+	 * axis is at {@code axisX}, so {@code 2 radius} wide, of the layer's height, its box's bottom at {@code y}. The image
+	 * runs round it at its own scale: the point an arc {@code s} round the wall from its front (the angle
+	 * {@code a = s / radius}) shows what the flat layer, its tile at {@code x}, shows at {@code axisX + s}, and is drawn at
+	 * {@code axisX + radius sin(a)}, so the image narrows toward the sides and the layer's scroll turns the tower. Its
+	 * tiles follow each other round it, padX apart, whatever the page repeats; flips mirror each image in its own place.
+	 * The front half, cut in {@link #TOWER_STRIPS} strips of equal angle and at each image's edges, one
+	 * {@code batch.draw(region, x, y, width, height)} a piece, the ones outside {@code viewLeft} to {@code viewRight}
+	 * skipped; each piece at {@code 1 - towerShade (1 - cos a)} of its brightness, at its middle. {@code packed}: the batch
+	 * colour holds the page fog's numbers ({@link LayerEffects#beginPageFog}), the darkness goes in its blue; otherwise
+	 * its red, green and blue are multiplied. The batch colour is put back after. Nothing allocated.
+	 */
+	public void drawTower(Batch batch, float axisX, float x, float y, float viewLeft, float viewRight, boolean packed)
+	{
+		float radius = towerRadius * (worldWidth / 100), width = getRegionWidth(), height = getRegionHeight();
+		if (!(radius > 0) || !(width > 0) || !(height > 0))
+			return;
+		// What shows of the front half: its arc from the view's left edge to its right one.
+		float from = radius * (float) Math.asin(Math.max(-1, Math.min(1, (viewLeft - axisX) / radius)));
+		float to = radius * (float) Math.asin(Math.max(-1, Math.min(1, (viewRight - axisX) / radius)));
+		if (!(to > from))
+			return;
+		// The image in its tile, along the arc, and up the box, as drawRegion places it.
+		float imageLeft = width * (flipX ? 1 - trimLeft - packedWidthRatio : trimLeft), imageWidth = width * packedWidthRatio;
+		float drawHeight = height * packedHeightRatio;
+		float bottom = y + height * (flipY ? 1 - trimBottom - packedHeightRatio : trimBottom);
+		float drawY = flipY ? bottom + drawHeight : bottom, drawH = flipY ? -drawHeight : drawHeight;
+		// Tile k's image starts at an arc of corner + k * step; a step <= 0 can't tile: the image goes round once.
+		float corner = x - axisX + imageLeft, step = getTotalWidth();
+		int first = 0, last = 0;
+		if (step > 0)
+		{
+			first = (int) Math.floor((from - corner - imageWidth) / step);
+			last = (int) Math.ceil((to - corner) / step);
+		}
+		TextureRegion image = drawnRegions.get(0);
+		float u = image.getU(), u2 = image.getU2(), v = image.getV(), v2 = image.getV2();
+		Color color = batch.getColor();
+		float r = color.r, g = color.g, b = color.b, a = color.a;
+		for (int k = first; k <= last; k++)
+		{
+			float left = corner + k * step;
+			float lo = Math.max(from, left), hi = Math.min(to, left + imageWidth);
+			if (!(hi > lo))
+				continue;
+			int strip = Math.max(0, (int) Math.floor((lo / radius + HALF_PI) / STRIP_ANGLE));
+			int lastStrip = Math.min(TOWER_STRIPS - 1, (int) Math.floor((hi / radius + HALF_PI) / STRIP_ANGLE));
+			for (; strip <= lastStrip; strip++)
+			{
+				float p0 = Math.max(lo, radius * (strip * STRIP_ANGLE - HALF_PI));
+				float p1 = Math.min(hi, radius * ((strip + 1) * STRIP_ANGLE - HALF_PI));
+				if (!(p1 > p0))
+					continue;
+				float x0 = axisX + radius * (float) Math.sin(p0 / radius), x1 = axisX + radius * (float) Math.sin(p1 / radius);
+				float bright = 1 - towerShade * (1 - (float) Math.cos((p0 + p1) / (2 * radius)));
+				// The piece's share of its image, left to right; flipped on X the image runs right to left.
+				float f0 = (p0 - left) / imageWidth, f1 = (p1 - left) / imageWidth;
+				if (image.getTexture() != null)
+				{
+					towerStrip.setTexture(image.getTexture());
+					towerStrip.setRegion(u + (u2 - u) * (flipX ? 1 - f1 : f0), v, u + (u2 - u) * (flipX ? 1 - f0 : f1), v2);
+				}
+				if (packed)
+					batch.setColor(r, g, 1 - bright, a);
+				else
+					batch.setColor(r * bright, g * bright, b * bright, a);
+				if (flipX)
+					batch.draw(towerStrip, x1, drawY, x0 - x1, drawH);
+				else
+					batch.draw(towerStrip, x0, drawY, x1 - x0, drawH);
+			}
+		}
+		batch.setColor(r, g, b, a);
+	}
+
 	/** Where a FLOOR layer's row {@code i} (from the bottom) has scrolled to, within one of its tiles. */
 	public float getRowDistance(int i)
 	{return rowDistance[i];}
@@ -1149,6 +1267,7 @@ public class ParallaxLayer
 		for (int i = 0, n = texRegion.size(); i < n; i++)
 			drawn.add(insetByHalfATexel(texRegion.get(i)));
 		this.drawnRegions = drawn;
+		towerStrip = new TextureRegion();
 
 		float imageWidth = region.getRegionWidth();
 		float imageHeight = region.getRegionHeight();

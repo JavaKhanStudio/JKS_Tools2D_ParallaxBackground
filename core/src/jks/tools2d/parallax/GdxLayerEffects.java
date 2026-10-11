@@ -140,14 +140,15 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 
 	/**
 	 * The page fog ({@link LayerEffects#beginPageFog}): the tint a uniform, the batch color's red the layer's fog, its
-	 * green which page's fog colour, its alpha the layer's. Mixed as hazed() does.
+	 * green which page's fog colour, its blue how much darker a tower's strip is drawn (0 for every other layer:
+	 * {@link ParallaxLayer#drawTower}), its alpha the layer's. Mixed as hazed() does, after the darkening.
 	 */
 	static final String PAGE_FOG = FRAGMENT_HEAD
 			+ "uniform vec3 u_tint;\n"
 			+ "uniform vec3 u_fogIncoming;\n"
 			+ "void main()\n"
 			+ "{\n"
-			+ "	vec4 color = vec4(u_tint, v_color.a) * texture2D(u_texture, v_texCoords);\n"
+			+ "	vec4 color = vec4(u_tint * (1.0 - v_color.b), v_color.a) * texture2D(u_texture, v_texCoords);\n"
 			+ "	vec3 fog = v_color.g > 0.5 ? u_fogIncoming : u_fog;\n"
 			+ "	gl_FragColor = vec4(mix(color.rgb, fog, v_color.r), color.a);\n"
 			+ "}\n";

@@ -81,6 +81,12 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			output.writeInt(model.floorRows);
 			output.writeFloat(model.floorHeight);
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 12)
+		{
+			output.writeFloat(model.towerRadius);
+			output.writeFloat(model.towerShade);
+		}
 	}
 
 	@Override
@@ -165,6 +171,12 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			model.floorTopSpeed = input.readFloat();
 			model.floorRows = input.readInt();
 			model.floorHeight = input.readFloat();
+		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 12)
+		{
+			model.towerRadius = input.readFloat();
+			model.towerShade = input.readFloat();
 		}
 
 		return model;

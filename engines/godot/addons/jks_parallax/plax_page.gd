@@ -13,6 +13,7 @@ const LAYER_DEFAULTS := {
 	"shaderEffect": "WAVE", "shaderAmplitude": 0.0, "shaderWavelength": 0.0, "shaderSpeed": 0.0, "shaderHaze": 0.0,
 	"sequenceSegments": [], "sequenceSeed": 0, "sequenceLength": 16,
 	"floorMapping": "MODE7", "floorTopSpeed": 0.0, "floorRows": 96, "floorHeight": 0.0,
+	"towerRadius": 0.0, "towerShade": 0.65,
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
 ## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects, a SEQUENCE

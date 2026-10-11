@@ -54,7 +54,9 @@ public interface LayerEffects
 	 * Draws what follows, the IMAGE and SEQUENCE layers of a page with a fog, through one shader, so that no flush
 	 * separates them: each layer's color is {@code tint} times its texture, mixed toward {@code fog} (its page drawn
 	 * with batch color green 0) or {@code incomingFog} (green 1, the page a cross-fade brings in) by the batch color's
-	 * red, its alpha the batch color's alpha. The reader then sets the batch color (fog, page, 0, alpha) per layer. It
+	 * red, its alpha the batch color's alpha, its red, green and blue first darkened by the batch color's blue (a tower's
+	 * strips, {@link ParallaxLayer#drawTower}: {@code tint * (1 - blue)}). The reader then sets the batch color (fog, page,
+	 * 0, alpha) per layer, a tower's blue per strip. It
 	 * still begins each SHADER layer, which {@link #release} comes back from to this shader. False when this engine
 	 * draws no page fog: the reader begins each fogged layer instead ({@link #begin(Batch, ParallaxLayer, float, float, Color)}).
 	 */

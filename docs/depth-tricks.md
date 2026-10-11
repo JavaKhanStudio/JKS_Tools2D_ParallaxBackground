@@ -60,6 +60,13 @@ little at their edges.
 - Conflict to settle: a strip's shade is the obvious batch colour, but the page fog packs each layer's fog in the batch
   colour's red channel (`LayerEffects.beginPageFog`). The shade must ride elsewhere (a darker slice drawn over, or
   the shade baked into the fog's packed value).
+- Built (r276): format 12's `towerRadius` (percent of the world width, 0 flat) and `towerShade` (0.65, the mock's,
+  when unset) on an `IMAGE` layer. The tower stands in the view's middle; the image runs round it at its own scale, its
+  front showing what the flat layer would there, so the layer's scroll turns it. 128 strips of equal angle, one
+  `batch.draw` each. The conflict settled in the packed value: the page fog's shader reads the batch colour's free
+  blue as darkness (`rgb * (1 - b)` before the fog's mix), 0 for every other layer; elsewhere the strip's rgb is
+  multiplied. Drawn by `ParallaxLayer.drawTower`, `plax_tower.gd`'s `draw`; round `engines/godot/tests/tower`. Not
+  built: the panoramas behind curving at their edges (a flat parallax behind reads well enough), a shader version.
 
 ### 3. Planet: layers bent by their distance
 

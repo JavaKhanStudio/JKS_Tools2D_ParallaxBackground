@@ -77,6 +77,11 @@ without the dolly a zoom scales the page about the view's corner), drawn through
 Effects get the GAME's batch (JmeLayerEffects casts it to JmeBatch) and setView(w, h, left, floor) with the layers'
 corner, or FOG's noise slides off its image. Godot: _zoom_of/_anchor_of, each layer at its own _ppu; round
 engines/godot/tests/dolly, tools/r278-dolly/mutate.sh.
+A TOWER (r276, format 12 towerRadius/towerShade on an IMAGE layer) IS DRAWN AS STRIPS, NOT TILES: ParallaxLayer.drawTower,
+the front half of a cylinder in the view's middle, TOWER_STRIPS strips of equal angle, each strip's shade in the batch
+colour. UNDER libGDX's PAGE FOG THE BATCH COLOUR IS NOT A COLOUR (red fog, green page, alpha): the shade rides in its
+blue, which PAGE_FOG reads as darkness, and every other layer must keep blue 0 there. Godot: plax_tower.gd; round
+engines/godot/tests/tower, tools/r276-tower/strength.sh and mutate.sh.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.

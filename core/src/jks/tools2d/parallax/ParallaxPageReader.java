@@ -540,13 +540,17 @@ public class ParallaxPageReader implements Disposable
 			}
 		}
 
+		boolean tower = layer.isTower();
 		if (layer.kind == Enum_LayerKind.FLOOR)
 			// Its rows across the whole view, whatever the page repeats; no mirrored copy.
 			layer.drawFloor(drawn, originY, viewLeft, viewLeft + viewWidth, viewBottom, viewBottom + viewHeight);
+		else if (tower)
+			// Round its tower in the view's middle, tiled up as the page says; no mirrored copy.
+			towerRows(layer, drawn, originX, originY, packed);
 		else
 			tile(layer, drawn, originX, originY, repeatOnX, repeatOnY, false, null);
 
-		if (layer.isMirror && repeatOnX != repeatOnY && layer.kind != Enum_LayerKind.FLOOR)
+		if (layer.isMirror && repeatOnX != repeatOnY && layer.kind != Enum_LayerKind.FLOOR && !tower)
 		{
 			// A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
 			if (repeatOnX)
@@ -560,6 +564,28 @@ public class ParallaxPageReader implements Disposable
 		else if (packed)
 			// The next layer is drawn with the tint at this alpha, which draw() sets only once outside a cross-fade.
 			batch.setColor(tint.r, tint.g, tint.b, packedAlpha);
+	}
+
+	/**
+	 * A tower layer ({@link ParallaxLayer#drawTower}) round its axis in the view's middle, its tile at {@code (x, y)}: once,
+	 * or on a page repeating on Y every repetition up that intersects the view; round the tower it repeats whatever the
+	 * page does.
+	 */
+	private void towerRows(ParallaxLayer layer, Batch batch, float x, float y, boolean packed)
+	{
+		float height = layer.getHeight(), stepY = layer.getTotalHeight();
+		if (!(height > 0))
+			return;
+		boolean tileY = repeatOnY && stepY > 0;
+		float startY = tileY ? y - (float) Math.ceil((y + height - viewBottom) / stepY) * stepY : y;
+		int countY = tileY ? (int) Math.ceil((viewBottom + viewHeight - startY) / stepY) + 1 : 1;
+		for (int row = 0; row < countY; row++)
+		{
+			float drawY = startY + row * stepY;
+			if (drawY + height <= viewBottom || drawY >= viewBottom + viewHeight)
+				continue;
+			layer.drawTower(batch, viewLeft + viewWidth / 2, x, drawY, viewLeft, viewLeft + viewWidth, packed);
+		}
 	}
 
 	/**

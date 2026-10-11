@@ -139,6 +139,8 @@ public final class Utils_Page_Json
 		layer.floorTopSpeed = readFloat(json, "floorTopSpeed", layer.floorTopSpeed);
 		layer.floorRows = json.getInt("floorRows", layer.floorRows);
 		layer.floorHeight = readFloat(json, "floorHeight", layer.floorHeight);
+		layer.towerRadius = readFloat(json, "towerRadius", layer.towerRadius);
+		layer.towerShade = readFloat(json, "towerShade", layer.towerShade);
 		return layer;
 	}
 

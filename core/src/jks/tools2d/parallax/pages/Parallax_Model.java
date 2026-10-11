@@ -80,6 +80,19 @@ public class Parallax_Model
 	 */
 	public float floorHeight;
 
+	/** What a layer saved before format 12, or without one, darkens toward its tower's sides: the r266 mock's. */
+	public static final float DEFAULT_TOWER_SHADE = 0.65f;
+	/**
+	 * The radius of the tower an IMAGE layer is wrapped round, in percent of the world width; 0, the default: none, the
+	 * layer is flat. Stored since format 12.
+	 */
+	public float towerRadius;
+	/**
+	 * How much a tower's wall darkens as it turns away, 0 to 1: a strip facing the view at angle a is drawn at
+	 * {@code 1 - towerShade (1 - cos a)} of its brightness. Stored since format 12, {@link #DEFAULT_TOWER_SHADE} before.
+	 */
+	public float towerShade = DEFAULT_TOWER_SHADE;
+
 	public boolean isFlipX()
 	{return flipX;}
 
@@ -236,6 +249,18 @@ public class Parallax_Model
 
 	public void setFloorHeight(float floorHeight)
 	{this.floorHeight = floorHeight;}
+
+	public float getTowerRadius()
+	{return towerRadius;}
+
+	public void setTowerRadius(float towerRadius)
+	{this.towerRadius = towerRadius;}
+
+	public float getTowerShade()
+	{return towerShade;}
+
+	public void setTowerShade(float towerShade)
+	{this.towerShade = towerShade;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}
