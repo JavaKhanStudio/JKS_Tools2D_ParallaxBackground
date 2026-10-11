@@ -3,7 +3,6 @@ package jks.tools2d.parallax.browsertest;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -41,7 +40,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.effectsLabAct(seconds)} steps both hearts at 1/60 s.
  */
-public class EffectsLab extends ApplicationAdapter
+public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 {
 	static final float WORLD_WIDTH = FogLab.WORLD_WIDTH, WORLD_HEIGHT = FogLab.WORLD_HEIGHT;
 	static final int FRAME_WIDTH = FogLab.FRAME_WIDTH, FRAME_HEIGHT = FogLab.FRAME_HEIGHT, PANEL_HEIGHT = FogLab.PANEL_HEIGHT;
@@ -186,7 +185,7 @@ public class EffectsLab extends ApplicationAdapter
 		snowBase = snowBase();
 		buildControls();
 		if (clip)
-			exportAct(this);
+			LabKit.exportClip("effectsLab", this);
 	}
 
 	/** The first snow emitter's numbers as loaded, or null when the lab has no snow. */
@@ -344,21 +343,14 @@ public class EffectsLab extends ApplicationAdapter
 	}
 
 	/** Steps both hearts by {@code seconds}, at 1/60 s: the clip's clock. */
-	void act(float seconds)
+	@Override
+	public void act(float seconds)
 	{
 		applyControls();
-		for (float t = 0; t < seconds - 1e-4f; t += 1 / 60f)
-			for (Parallax_Heart heart : set.hearts)
-				heart.act(1 / 60f);
+		LabKit.clip(seconds, set.hearts);
 		applyControls();
 	}
 
-	private static native void exportAct(EffectsLab lab) /*-{
-		$wnd.effectsLabAct = $entry(function(seconds) {
-			lab.@jks.tools2d.parallax.browsertest.EffectsLab::act(F)(seconds);
-		});
-		$wnd.effectsLabReady = true;
-	}-*/;
 
 	@Override
 	public void render()
@@ -366,28 +358,20 @@ public class EffectsLab extends ApplicationAdapter
 		if (!clip)
 		{
 			applyControls();
-			float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 15f);
-			for (Parallax_Heart heart : set.hearts)
-				heart.act(delta);
+			LabKit.act(LabKit.liveDelta(), set.hearts);
 		}
-		int width = Gdx.graphics.getBackBufferWidth(), height = Gdx.graphics.getBackBufferHeight();
-		Gdx.gl.glViewport(0, 0, width, height);
-		Gdx.gl.glClearColor(0, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
+		int height = Gdx.graphics.getBackBufferHeight();
+		LabKit.beginPanels();
 		for (int i = 0; i < 2; i++)
 		{
 			// A on the left, B on the right, a 4 px gap.
-			int x = i * (FRAME_WIDTH + 4);
-			Gdx.gl.glScissor(x, height - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
-			Gdx.gl.glViewport(x, height - PANEL_HEIGHT - set.frameDrop, FRAME_WIDTH, FRAME_HEIGHT);
+			LabKit.panel(i * (FRAME_WIDTH + 4), height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, set.frameDrop);
 			double start = now();
 			set.hearts[i].render();
 			panelMillis[i] += (float) (now() - start);
 			panelCalls[i] = batch.renderCalls;
 		}
-		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
-		Gdx.gl.glViewport(0, 0, width, height);
+		LabKit.endPanels();
 		measure();
 	}
 

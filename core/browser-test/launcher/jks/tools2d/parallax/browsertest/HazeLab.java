@@ -3,7 +3,6 @@ package jks.tools2d.parallax.browsertest;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -19,7 +18,6 @@ import com.google.gwt.dom.client.SelectElement;
 import java.util.ArrayList;
 
 import jks.tools2d.parallax.GdxLayerEffects;
-import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.LayerHook;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
@@ -42,7 +40,7 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * {@code &same=1}: B to D draw as A does (no hook haze, untinted white) and the snow is left out (random in each panel),
  * so tools/haze-lab.sh --same can prove the lab's one-layer-at-a-time drawing is the reader's own.
  */
-public class HazeLab extends ApplicationAdapter
+public class HazeLab extends ApplicationAdapter implements LabKit.Clip
 {
 	static final String PAGE = "haze-lab/lab.jplax";
 	static final String TOWERS = "towers";
@@ -129,7 +127,7 @@ public class HazeLab extends ApplicationAdapter
 		}
 		buildControls();
 		if (clip)
-			exportAct(this);
+			LabKit.exportClip("hazeLab", this);
 	}
 
 	private void buildControls()
@@ -190,20 +188,13 @@ public class HazeLab extends ApplicationAdapter
 	{return layer.getKind() == Enum_LayerKind.EMPTY || layer.getKind() == Enum_LayerKind.PARTICLES;}
 
 	/** Steps every heart by {@code seconds}, at 1/60 s: the clip's clock. */
-	void act(float seconds)
+	@Override
+	public void act(float seconds)
 	{
 		applyControls();
-		for (float t = 0; t < seconds - 1e-4f; t += 1 / 60f)
-			for (Parallax_Heart heart : hearts)
-				heart.act(1 / 60f);
+		LabKit.clip(seconds, hearts);
 	}
 
-	private static native void exportAct(HazeLab lab) /*-{
-		$wnd.hazeLabAct = $entry(function(seconds) {
-			lab.@jks.tools2d.parallax.browsertest.HazeLab::act(F)(seconds);
-		});
-		$wnd.hazeLabReady = true;
-	}-*/;
 
 	@Override
 	public void render()
@@ -211,25 +202,17 @@ public class HazeLab extends ApplicationAdapter
 		if (!clip)
 		{
 			applyControls();
-			float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 15f);
-			for (Parallax_Heart heart : hearts)
-				heart.act(delta);
+			LabKit.act(LabKit.liveDelta(), hearts);
 		}
-		int width = Gdx.graphics.getBackBufferWidth(), height = Gdx.graphics.getBackBufferHeight();
-		Gdx.gl.glViewport(0, 0, width, height);
-		Gdx.gl.glClearColor(0, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
+		int height = Gdx.graphics.getBackBufferHeight();
+		LabKit.beginPanels();
 		for (int i = 0; i < hearts.length; i++)
 		{
-			// A, B on top; C, D below; a 4 px gap. GL's y goes up: a panel's top is its frame's top.
-			int x = (i % 2) * (FRAME_WIDTH + 4), top = i < 2 ? height : height - PANEL_HEIGHT - 4;
-			Gdx.gl.glScissor(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
-			Gdx.gl.glViewport(x, top - PANEL_HEIGHT - FRAME_DROP, FRAME_WIDTH, FRAME_HEIGHT);
+			// A, B on top; C, D below; a 4 px gap.
+			LabKit.quarter(i, height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, FRAME_DROP);
 			renderLab(hearts[i], effects[i], !same && HAZE_HOOKS[i], !same && TINT_WHITE[i]);
 		}
-		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
-		Gdx.gl.glViewport(0, 0, width, height);
+		LabKit.endPanels();
 	}
 
 	/**
@@ -264,8 +247,7 @@ public class HazeLab extends ApplicationAdapter
 			effects.haze = hooked(layer) && !hazeHooks ? 0 : ParallaxPageReader.hazeOf(drawn, j);
 			batch.setShader(program);
 			batch.flush();
-			program.setUniformf(program.fetchUniformLocation("u_haze", false), effects.haze);
-			program.setUniformf(program.fetchUniformLocation("u_fog", false), white[0], white[1], white[2]);
+			LabKit.setHaze(program, effects.haze, white[0], white[1], white[2]);
 			layers.clear();
 			layers.add(layer);
 			heart.parallaxReader.draw(heart.worldCamera, batch);
@@ -287,22 +269,12 @@ public class HazeLab extends ApplicationAdapter
 	 * The reader's effects, compiled from GdxLayerEffects' own sources, the mist's white set as their u_fog, and the
 	 * haze the lab's, not the reader's (it is handed one layer, so it reckons none).
 	 */
-	static final class LabEffects implements LayerEffects
+	static final class LabEffects extends LabKit.Effects
 	{
 
 		float haze;
 		float[] white;
 		private final ShaderProgram[] programs = new ShaderProgram[Enum_ShaderEffect.values().length];
-		private final float[] numbers = new float[15];
-		private float viewWidth, viewHeight, viewFloor;
-
-		@Override
-		public void setView(float width, float height, float floor)
-		{
-			viewWidth = width;
-			viewHeight = height;
-			viewFloor = floor;
-		}
 
 		private ShaderProgram previous;
 
@@ -323,15 +295,7 @@ public class HazeLab extends ApplicationAdapter
 			batch.setShader(program);
 			if (!batch.isDrawing())
 				program.bind();
-			GdxLayerEffects.uniforms(layer, phase, viewWidth, viewHeight, viewFloor, numbers);
-			program.setUniformf(program.fetchUniformLocation("u_region", false), numbers[0], numbers[1], numbers[2], numbers[3]);
-			program.setUniformf(program.fetchUniformLocation("u_size", false), numbers[4], numbers[5]);
-			program.setUniformf(program.fetchUniformLocation("u_effect", false), numbers[6], numbers[7], numbers[8]);
-			// Only FOG reads it: a WAVE program has none, and a by-name set would throw.
-			program.setUniformf(program.fetchUniformLocation("u_across", false), numbers[9], numbers[10], numbers[11]);
-			program.setUniformf(program.fetchUniformLocation("u_up", false), numbers[12], numbers[13], numbers[14]);
-			program.setUniformf(program.fetchUniformLocation("u_haze", false), haze);
-			program.setUniformf(program.fetchUniformLocation("u_fog", false), white[0], white[1], white[2]);
+			LabKit.setEffect(program, numbers(layer, phase), haze, white[0], white[1], white[2]);
 			return true;
 		}
 

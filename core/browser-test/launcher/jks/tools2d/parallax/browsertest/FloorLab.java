@@ -3,7 +3,6 @@ package jks.tools2d.parallax.browsertest;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -43,7 +42,7 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.effectsLabAct(seconds)} steps both hearts at 1/60 s.
  */
-public class FloorLab extends ApplicationAdapter
+public class FloorLab extends ApplicationAdapter implements LabKit.Clip
 {
 	static final String FLOOR = "floor";
 	/**
@@ -133,7 +132,7 @@ public class FloorLab extends ApplicationAdapter
 		buildControls();
 		pickSet();
 		if (clip)
-			exportAct(this);
+			LabKit.exportClip("effectsLab", this);
 	}
 
 	private void buildControls()
@@ -329,10 +328,11 @@ public class FloorLab extends ApplicationAdapter
 	}
 
 	/** Steps the heart by {@code seconds}, at 1/60 s: the clip's clock. */
-	void act(float seconds)
+	@Override
+	public void act(float seconds)
 	{
 		applyControls();
-		for (float t = 0; t < seconds - 1e-4f; t += 1 / 60f)
+		for (int n = LabKit.clipSteps(seconds); n > 0; n--)
 			step(1 / 60f);
 		applyControls();
 	}
@@ -344,12 +344,6 @@ public class FloorLab extends ApplicationAdapter
 		plant();
 	}
 
-	private static native void exportAct(FloorLab lab) /*-{
-		$wnd.effectsLabAct = $entry(function(seconds) {
-			lab.@jks.tools2d.parallax.browsertest.FloorLab::act(F)(seconds);
-		});
-		$wnd.effectsLabReady = true;
-	}-*/;
 
 	@Override
 	public void render()
@@ -357,7 +351,7 @@ public class FloorLab extends ApplicationAdapter
 		if (!clip)
 		{
 			applyControls();
-			float delta = Math.max(1e-3f, Math.min(Gdx.graphics.getDeltaTime(), 1 / 15f));
+			float delta = Math.max(1e-3f, LabKit.liveDelta());
 			// A drag moves the ground's bottom row with the pointer; the arrow keys pan at 120 a second.
 			float perPixel = WORLD_WIDTH / FRAME_WIDTH, sBottom = Math.max(1e-3f, LabControls.read(bottom));
 			// The pointer's own position: GWT's getDeltaX() is not reset between frames, a still finger would keep panning.
@@ -374,10 +368,7 @@ public class FloorLab extends ApplicationAdapter
 				pan(120 * delta, delta);
 			step(delta);
 		}
-		int width = Gdx.graphics.getBackBufferWidth(), height = Gdx.graphics.getBackBufferHeight();
-		Gdx.gl.glViewport(0, 0, width, height);
-		Gdx.gl.glClearColor(0, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		LabKit.clear();
 		floors[shownSet].drawn = false;
 		shown.render();
 		drawCalls = batch.renderCalls;

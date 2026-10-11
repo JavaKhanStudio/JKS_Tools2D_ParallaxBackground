@@ -3,7 +3,6 @@ package jks.tools2d.parallax.browsertest;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -16,7 +15,6 @@ import com.google.gwt.dom.client.SelectElement;
 import java.util.ArrayList;
 
 import jks.tools2d.parallax.GdxLayerEffects;
-import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.heart.Parallax_Heart;
@@ -43,7 +41,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * {@code &clip=1}: nothing moves by itself, {@code window.fogLabAct(seconds)} steps every heart at 1/60 s, so that
  * tools/fog-lab.sh --clip records it at game speed however slow the browser draws.
  */
-public class FogLab extends ApplicationAdapter
+public class FogLab extends ApplicationAdapter implements LabKit.Clip
 {
 	static final String PAGE = "fog-lab/s01.jplax";
 	/**
@@ -107,7 +105,10 @@ public class FogLab extends ApplicationAdapter
 		heights[2] = SIMON[2];
 		buildControls(SIMON[0], SIMON[1], sets[0].mists[0].getShaderSpeed());
 		if (clip)
-			exportAct(this);
+		{
+			exportPick(this);
+			LabKit.exportClip("fogLab", this);
+		}
 	}
 
 	/** One set: its page in four hearts, the panels' readers handed the panels' effects, each with a mist. */
@@ -257,12 +258,11 @@ public class FogLab extends ApplicationAdapter
 	}
 
 	/** Steps every heart by {@code seconds}, at 1/60 s: the clip's clock. */
-	void act(float seconds)
+	@Override
+	public void act(float seconds)
 	{
 		applyControls();
-		for (float t = 0; t < seconds - 1e-4f; t += 1 / 60f)
-			for (Parallax_Heart heart : hearts)
-				heart.act(1 / 60f);
+		LabKit.clip(seconds, hearts);
 	}
 
 	/** Shows set {@code index}, as its slider does: tools/fog-lab.sh --sets. */
@@ -272,14 +272,10 @@ public class FogLab extends ApplicationAdapter
 		applyControls();
 	}
 
-	private static native void exportAct(FogLab lab) /*-{
-		$wnd.fogLabAct = $entry(function(seconds) {
-			lab.@jks.tools2d.parallax.browsertest.FogLab::act(F)(seconds);
-		});
+	private static native void exportPick(FogLab lab) /*-{
 		$wnd.fogLabPick = $entry(function(index) {
 			lab.@jks.tools2d.parallax.browsertest.FogLab::pick(I)(index);
 		});
-		$wnd.fogLabReady = true;
 	}-*/;
 
 	@Override
@@ -288,25 +284,17 @@ public class FogLab extends ApplicationAdapter
 		if (!clip)
 		{
 			applyControls();
-			float delta = Math.min(Gdx.graphics.getDeltaTime(), 1 / 15f);
-			for (Parallax_Heart heart : hearts)
-				heart.act(delta);
+			LabKit.act(LabKit.liveDelta(), hearts);
 		}
-		int width = Gdx.graphics.getBackBufferWidth(), height = Gdx.graphics.getBackBufferHeight();
-		Gdx.gl.glViewport(0, 0, width, height);
-		Gdx.gl.glClearColor(0, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
+		int height = Gdx.graphics.getBackBufferHeight();
+		LabKit.beginPanels();
 		for (int i = 0; i < hearts.length; i++)
 		{
-			// A, B on top; C, no FOG below; a 4 px gap. GL's y goes up: a panel's top is its frame's top.
-			int x = (i % 2) * (FRAME_WIDTH + 4), top = i < 2 ? height : height - PANEL_HEIGHT - 4;
-			Gdx.gl.glScissor(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
-			Gdx.gl.glViewport(x, top - PANEL_HEIGHT - set.frameDrop(), FRAME_WIDTH, FRAME_HEIGHT);
+			// A, B on top; C, no FOG below; a 4 px gap.
+			LabKit.quarter(i, height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, set.frameDrop());
 			hearts[i].render();
 		}
-		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
-		Gdx.gl.glViewport(0, 0, width, height);
+		LabKit.endPanels();
 	}
 
 	/**
@@ -314,7 +302,7 @@ public class FogLab extends ApplicationAdapter
 	 * {@code heights[panel]} wavelengths instead of one. WAVE stays GdxLayerEffects'. The last panel draws FOG plain. An
 	 * IMAGE or SEQUENCE layer the fog reaches is drawn through GdxLayerEffects' own.
 	 */
-	static final class PatchHeightEffects implements LayerEffects
+	static final class PatchHeightEffects extends LabKit.Effects
 	{
 		static final String SHIPPED = "vec2 p = (along() + vec2(u_effect.z, 0.0)) / u_effect.y;";
 		static final String SCALED = "vec2 p = (along() + vec2(u_effect.z, 0.0)) / (u_effect.y * vec2(1.0, u_height));";
@@ -325,16 +313,6 @@ public class FogLab extends ApplicationAdapter
 		/** The layer begun is drawn by {@link #shipped}. */
 		private boolean byShipped;
 		private final GdxLayerEffects shipped = new GdxLayerEffects();
-		private final float[] numbers = new float[15];
-		private float viewWidth, viewHeight, viewFloor;
-
-		@Override
-		public void setView(float width, float height, float floor)
-		{
-			viewWidth = width;
-			viewHeight = height;
-			viewFloor = floor;
-		}
 
 		private ShaderProgram fog, previous;
 
@@ -360,17 +338,9 @@ public class FogLab extends ApplicationAdapter
 			batch.setShader(program);
 			if (!batch.isDrawing())
 				program.bind();
-			GdxLayerEffects.uniforms(layer, phase, viewWidth, viewHeight, viewFloor, numbers);
-			program.setUniformf(program.fetchUniformLocation("u_region", false), numbers[0], numbers[1], numbers[2], numbers[3]);
-			program.setUniformf(program.fetchUniformLocation("u_size", false), numbers[4], numbers[5]);
-			program.setUniformf(program.fetchUniformLocation("u_effect", false), numbers[6], numbers[7], numbers[8]);
-			// Only FOG reads it: a WAVE program has none, and a by-name set would throw.
-			program.setUniformf(program.fetchUniformLocation("u_across", false), numbers[9], numbers[10], numbers[11]);
-			program.setUniformf(program.fetchUniformLocation("u_up", false), numbers[12], numbers[13], numbers[14]);
+			LabKit.setEffect(program, numbers(layer, phase), fogAmount, fogColor.r, fogColor.g, fogColor.b);
 			if (layer.getShaderEffect() == Enum_ShaderEffect.FOG)
 				program.setUniformf(program.fetchUniformLocation("u_height", false), heights[panel]);
-			program.setUniformf(program.fetchUniformLocation("u_haze", false), fogAmount);
-			program.setUniformf(program.fetchUniformLocation("u_fog", false), fogColor.r, fogColor.g, fogColor.b);
 			return true;
 		}
 
