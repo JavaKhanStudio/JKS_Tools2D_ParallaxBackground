@@ -113,7 +113,7 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     // the other sets it puts the mist into (r208) are round1's s02, s05 and s06, with their atlases.
     def fogSets = ['s02', 's05', 's06'].collect { file("../engines/godot/tests/round1/${it}.jplax") }
     def fogAtlases = ['samples/transfer/calm', 'samples/Demos/PurpleFairy', 'samples/Demos/OneNight']
-    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'particles/**'; fogAtlases.each { include "${it}.*" } },
+    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'particles/**', 'floor/**'; fogAtlases.each { include "${it}.*" } },
             file('../engines/godot/tests/shaders/s01.jplax'), fogSets)
     doLast {
         def assets = browserTestAssets.get().asFile
@@ -143,6 +143,14 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
             filter { it.startsWith('../') && it.endsWith('.png') ? it.substring(it.lastIndexOf('/') + 1) : it }
         }
         project.copy { from 'test-data/haze/lab.jplax'; into new File(assets, 'haze-lab') }
+        // The floor lab's (r275, FloorLab): core/test-data/floor/make_lab.py's page, its atlas (Hiver, then the ground).
+        project.copy { from 'test-data/floor/ground.png', 'test-data/floor/painted.png'; into assets }
+        project.copy {
+            from 'test-data/floor/HiverFloor.atlas'
+            into assets
+            filter { it == '../samples/Hiver.png' ? 'Hiver.png' : it }
+        }
+        project.copy { from 'test-data/floor/lab.jplax'; into new File(assets, 'floor-lab') }
     }
 }
 tasks.register('browserTestWar', JavaExec) {

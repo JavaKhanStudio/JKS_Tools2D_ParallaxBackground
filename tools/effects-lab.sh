@@ -4,6 +4,8 @@
 #   --lab fog    the page fog (r217) alone, on four parallax sets: strength, colour, scroll
 #   --lab snow   a PARTICLES layer's snow alone: density, flake size, wind, its layer, its drift, its anchor
 #   --lab all    every effect that ships, together on s01: page fog, FOG mist, WAVE trees, a game's towers, snow
+#   --lab floor  r275's floor (FloorLab): a ground drawn row by row, each row at its depth, beside today's flat one;
+#                drag the picture or hold the arrow keys to pan
 # The readout gives the frame time, and each panel's draw calls and CPU time.
 #   tools/effects-lab.sh --lab L                 the lab: a Chrome window, served until it closes
 #   tools/effects-lab.sh --lab L --shot F.png    one still, headless (6 s into the scroll)
@@ -27,7 +29,7 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-case "$LAB" in fog|snow|all) ;; *) echo "--lab is fog, snow or all, not: $LAB" >&2; exit 2 ;; esac
+case "$LAB" in fog|snow|all|floor) ;; *) echo "--lab is fog, snow, all or floor, not: $LAB" >&2; exit 2 ;; esac
 if [ $MODE = open ]; then . tools/agent-window-guard.sh; refuse_agent_window tools/effects-lab.sh; fi
 
 CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || command -v chromium-browser)}"
