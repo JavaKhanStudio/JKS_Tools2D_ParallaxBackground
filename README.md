@@ -60,6 +60,9 @@ to add those dependencies yourself.
 Then see [Using the library in a game](#using-the-library-in-a-game). A jMonkeyEngine game depends on
 `parallax-background-jme` instead, see [In jMonkeyEngine 3](#in-jmonkeyengine-3).
 
+A game that still uses the jar copied in from the 2019-2023 code moves to Maven Central with
+[docs/MIGRATING.md](docs/MIGRATING.md): what to change in the build, what no longer compiles, what behaves differently.
+
 ### The editor, to design a parallax
 
 The editor is a separate commercial product, not part of this repository or its releases. You do not need it: a page
