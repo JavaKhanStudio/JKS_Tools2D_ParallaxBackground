@@ -1,0 +1,141 @@
+{
+ "topHalf_top": {
+  "r": 0.42,
+  "g": 0.3,
+  "b": 0.52,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 0.62,
+  "g": 0.45,
+  "b": 0.66,
+  "a": 1.0
+ },
+ "topHalfSize": 0.6,
+ "bottomHalf_top": {
+  "r": 0.62,
+  "g": 0.45,
+  "b": 0.66,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 0.62,
+  "g": 0.45,
+  "b": 0.66,
+  "a": 1.0
+ },
+ "bottomHalfSize": 0.4,
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "pageModel": {
+  "atlasName": "PurpleFloor.atlas",
+  "outside": false,
+  "pageList": [
+   {
+    "regionName": "7",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.0063,
+    "parallaxScalingSpeedY": 0.0063,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 60,
+    "decal_Y_Ratio": 21,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "6",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.0119,
+    "parallaxScalingSpeedY": 0.0119,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 50,
+    "decal_Y_Ratio": 4.5,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "4",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.0224,
+    "parallaxScalingSpeedY": 0.0224,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.11,
+    "decal_X_Ratio": 26.5,
+    "decal_Y_Ratio": 2.5,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": null,
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.076,
+    "parallaxScalingSpeedY": 0.076,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.39,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 0.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "kind": "EMPTY",
+    "name": "floor",
+    "mirror": false
+   },
+   {
+    "regionName": "3",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.0794,
+    "parallaxScalingSpeedY": 0.0794,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.8,
+    "decal_X_Ratio": 20,
+    "decal_Y_Ratio": 10.3,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "1",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.1496,
+    "parallaxScalingSpeedY": 0.1496,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 0.8,
+    "decal_X_Ratio": 10,
+    "decal_Y_Ratio": 0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   }
+  ]
+ },
+ "useOriginalSize": true
+}
