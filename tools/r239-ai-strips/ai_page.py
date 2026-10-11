@@ -106,7 +106,13 @@ def roughness(path):
 TREES = 3.5  # roughness under which a pine strip has no trees in it
 
 
+DRY_RUN = False  # --dry-run: print each command instead of running it
+
+
 def run(cmd, log):
+    if DRY_RUN:
+        print(shlex.join(cmd), ">", log)
+        return 0
     with open(log, "w") as f:
         return subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT, check=False).returncode
 
@@ -128,7 +134,16 @@ def hexc(rgb):
     return "".join(f"{int(round(min(255, max(0, v)))):02x}" for v in rgb)  # noqa: RUF046 (v may be a numpy float)
 
 
-def main():
+def log(s):
+    print(s, file=sys.stderr, flush=True)
+
+
+def strip_of(path):
+    """A cut layer's strip: OUT/strips/l3v1_cut.png is l3v1."""
+    return os.path.basename(path)[:-len("_cut.png")]
+
+
+def parse_args():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("out")
     ap.add_argument("--theme", required=True, help="what the page shows, in a few words: it goes in every prompt")
@@ -148,6 +163,8 @@ def main():
     ap.add_argument("--keep", action="store_true", help="keep the strips OUT/strips holds: only cut and lay out again"
                     " (another --sky, --fog or --front-speed, with the same --seed)")
     ap.add_argument("--no-shots", action="store_true")
+    ap.add_argument("--dry-run", action="store_true", help="print every command, back to front, as if each strip took"
+                    " on its first seed, and write nothing (r305: the proof that a change runs the same commands)")
     a = ap.parse_args()
     if a.kinds:
         given = a.kinds.split(",")
@@ -156,174 +173,237 @@ def main():
         a.layers, a.front = len(given), given[-1]
     if not 2 <= a.layers <= 6:
         ap.error("--layers: 2 to 6")
-    out = os.path.abspath(a.out)
-    strips, page_dir = os.path.join(out, "strips"), os.path.join(out, "page")
-    os.makedirs(strips, exist_ok=True)
-    os.makedirs(page_dir, exist_ok=True)
-    name = a.name or re.sub(r"[^a-z0-9]+", "-", a.theme.lower()).strip("-")[:40]
-    pixel = a.style == "pixel"
-    ks = a.kinds.split(",") if a.kinds else kinds(a.layers, a.front)
-    cols = colours(a.colours.split(",") if a.colours else None, a.layers)
-    w, h = (1536, 576) if pixel else (1024, 384)
-    d = HERE
-    log = lambda s: print(s, file=sys.stderr, flush=True)  # noqa: E731
-    made = {}  # strip prefix -> how it was painted, for recipe.json
+    return a
 
-    def paint(k, kind, seed, prefix):
+
+class Pipeline:
+    """One run, step by step: what every step reads (the arguments, the strip size, each depth's shape and colour) and
+    what the strips were painted with, for recipe.json."""
+
+    def __init__(self, a):
+        self.a = a
+        self.out = os.path.abspath(a.out)
+        self.strips, self.page_dir = os.path.join(self.out, "strips"), os.path.join(self.out, "page")
+        if not a.dry_run:
+            os.makedirs(self.strips, exist_ok=True)
+            os.makedirs(self.page_dir, exist_ok=True)
+        self.name = a.name or re.sub(r"[^a-z0-9]+", "-", a.theme.lower()).strip("-")[:40]
+        self.pixel = a.style == "pixel"
+        self.ks = a.kinds.split(",") if a.kinds else kinds(a.layers, a.front)
+        self.cols = colours(a.colours.split(",") if a.colours else None, a.layers)
+        self.w, self.h = (1536, 576) if self.pixel else (1024, 384)
+        self.made = {}  # strip prefix -> how it was painted, for recipe.json
+
+    def gen_command(self, k, kind):
+        """gen.py's img2img for depth k, its init, seed and out left to add."""
+        a, d = self.a, HERE
+        depth = "distant" if k == 0 else "foreground" if k == a.layers - 1 else "middle distance"
+        if self.pixel:
+            return [PY, f"{d}/gen.py", "img2img", "--ckpt", "sdXL_v10VAEFix.safetensors", "--lora",
+                    "PixelArt_XL.safetensors", "--lora-strength", "1.0", "--w", str(self.w), "--h", str(self.h),
+                    "--denoise", "0.7", "--negative", negative(NEG_XL, kind), "--prompt",
+                    (f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
+                     f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
+        return [PY, f"{d}/gen.py", "img2img", "--denoise", "0.65", "--negative", negative(NEG, kind), "--prompt",
+                f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
+
+    def paint(self, k, kind, seed, prefix):
         """sil.py, gen.py, then the cut: the cut layer's path, or None when it reaches its top row or holds a
         creature."""
-        depth = "distant" if k == 0 else "foreground" if k == a.layers - 1 else "middle distance"
-        if pixel:
-            gen = [PY, f"{d}/gen.py", "img2img", "--ckpt", "sdXL_v10VAEFix.safetensors", "--lora",
-                   "PixelArt_XL.safetensors", "--lora-strength", "1.0", "--w", str(w), "--h", str(h), "--denoise", "0.7",
-                   "--negative", negative(NEG_XL, kind), "--prompt", (f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
-                   f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
-        else:
-            gen = [PY, f"{d}/gen.py", "img2img", "--denoise", "0.65", "--negative", negative(NEG, kind), "--prompt",
-                   f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
-        made[os.path.basename(prefix)] = {"prompt": gen[gen.index("--prompt") + 1],
-                                          "negative": gen[gen.index("--negative") + 1],
-                                          "denoise": float(gen[gen.index("--denoise") + 1])}
+        a, d = self.a, HERE
+        gen = self.gen_command(k, kind)
+        self.made[os.path.basename(prefix)] = {"prompt": gen[gen.index("--prompt") + 1],
+                                               "negative": gen[gen.index("--negative") + 1],
+                                               "denoise": float(gen[gen.index("--denoise") + 1])}
         if a.keep and os.path.exists(f"{prefix}_ai.png"):
-            return cut(prefix, kind)
-        with open(prefix + "_seed.txt", "w") as f:  # what a kept strip was painted with: its variants' ends
-            f.write(str(seed))
-        if run(["python3", f"{d}/sil.py", kind, prefix, "--w", str(w), "--h", str(h), "--seed", str(seed), "--colour",
-                cols[k], "--quiet-join"], prefix + "_sil.log"):
+            return self.cut(prefix, kind)
+        if not a.dry_run:
+            with open(prefix + "_seed.txt", "w") as f:  # what a kept strip was painted with: its variants' ends
+                f.write(str(seed))
+        if run(["python3", f"{d}/sil.py", kind, prefix, "--w", str(self.w), "--h", str(self.h), "--seed", str(seed),
+                "--colour", self.cols[k], "--quiet-join"], prefix + "_sil.log"):
             sys.exit(f"sil.py failed: {prefix}_sil.log")
         if run(gen + ["--init", f"{prefix}_init.png", "--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
                prefix + "_gen.log"):
             sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {prefix}_gen.log")
-        return cut(prefix, kind)
+        return self.cut(prefix, kind)
 
-    def cut(prefix, kind):
+    def cut(self, prefix, kind):
+        d = HERE
         tool = ["python3", f"{d}/pixel.py", f"{prefix}_ai.png", f"{prefix}_cut.png", "--mask", f"{prefix}_mask.png",
-                "--colours", "12"] if pixel else ["python3", f"{d}/layer.py", f"{prefix}_ai.png", f"{prefix}_cut.png", "--mask",
-                                f"{prefix}_mask.png", "--grow", str(GROW[kind])]
+                "--colours", "12"] if self.pixel else ["python3", f"{d}/layer.py", f"{prefix}_ai.png",
+                                                       f"{prefix}_cut.png", "--mask", f"{prefix}_mask.png", "--grow",
+                                                       str(GROW[kind])]
         code = run(tool, prefix + "_cut.log")
+        if self.a.dry_run:
+            return f"{prefix}_cut.png"
         with open(prefix + "_cut.log") as f:
             log(f.read().rstrip())
         if code:
             return None
-        if kind == "pines" and not pixel and roughness(f"{prefix}_cut.png") < TREES:
+        if kind == "pines" and not self.pixel and roughness(f"{prefix}_cut.png") < TREES:
             log(f"{prefix}: outline roughness {roughness(prefix + '_cut.png'):.1f} < {TREES}: no trees grew")
             return None
         return f"{prefix}_cut.png"
 
-    layers, seeds = [], []  # per depth: [cut paths], the first the layer's own; the seed that painted it
-    for k, kind in enumerate(ks):
-        for t in range(a.tries):
-            seed = a.seed * 1000 + k * 10 + t
-            got = paint(k, kind, seed, os.path.join(strips, f"l{k}"))
-            if got:
-                break
-            log(f"layer {k} ({kind}) seed {seed}: refused, painting again")
-        else:
-            sys.exit(f"layer {k} ({kind}): {a.tries} strips refused (art on the top row, a creature, or pines without"
-                     " trees); another --seed, or more --tries")
-        layers.append([got])
-        seed_file = os.path.join(strips, f"l{k}_seed.txt")
-        seeds.append(int(Path(seed_file).read_text()) if os.path.exists(seed_file) else seed)
-        log(f"layer {k}: {kind}, seed {seed}, colour {cols[k]}")
-    if not pixel and a.variants:
-        # The front's variants: sil.py's shape for the middle, the front strip's ends (run.sh's pines).
-        front, src = len(ks) - 1, os.path.join(strips, f"l{len(ks) - 1}")
-        for v in range(1, a.variants + 1):
+    def paint_depths(self):
+        """Every depth back to front, each on the next seed until one is not refused: per depth [its cut path], and
+        the seed that painted it."""
+        a = self.a
+        layers, seeds = [], []
+        for k, kind in enumerate(self.ks):
             for t in range(a.tries):
-                p = os.path.join(strips, f"l{front}v{v}")
-                vs = a.seed * 1000 + 500 + v * 10 + t
-                vprompt = (f"2d game parallax background layer, {a.theme}, foreground {WORDS[ks[front]]}, "
-                           "painterly, plain pale sky")
-                made[os.path.basename(p)] = {"prompt": vprompt, "negative": negative(NEG, ks[front]), "denoise": 0.65,
-                                             "seed": vs, "edgesOf": seeds[front]}
-                if a.keep and os.path.exists(f"{p}_ai.png"):
-                    got = cut(p, ks[front])
-                    if got:
-                        layers[front].append(got)
-                    break
-                run(["python3", f"{d}/sil.py", ks[front], p, "--seed", str(vs), "--edges-of", str(seeds[front]),
-                     "--colour", cols[front], "--quiet-join"], p + "_sil.log")
-                code = run([PY, f"{d}/gen.py", "variants", "--src", f"{src}_ai.png", "--init", f"{p}_init.png", "--tile",
-                            "x", "--n", "1", "--edge", "96", "--denoise", "0.65", "--seed", str(vs), "--negative", negative(NEG, ks[front]),
-                            "--prompt", vprompt, "--out", f"{p}_ai.png"], p + "_gen.log")
-                if code:
-                    sys.exit(f"gen.py variants failed: {p}_gen.log")
-                os.replace(f"{p}_ai_1.png", f"{p}_ai.png")
-                got = cut(p, ks[front])
+                seed = a.seed * 1000 + k * 10 + t
+                got = self.paint(k, kind, seed, os.path.join(self.strips, f"l{k}"))
                 if got:
-                    layers[front].append(got)
+                    break
+                log(f"layer {k} ({kind}) seed {seed}: refused, painting again")
+            else:
+                sys.exit(f"layer {k} ({kind}): {a.tries} strips refused (art on the top row, a creature, or pines"
+                         " without trees); another --seed, or more --tries")
+            layers.append([got])
+            seed_file = os.path.join(self.strips, f"l{k}_seed.txt")
+            seeds.append(int(Path(seed_file).read_text()) if os.path.exists(seed_file) else seed)
+            log(f"layer {k}: {kind}, seed {seed}, colour {self.cols[k]}")
+        return layers, seeds
+
+    def paint_variants(self, layers, seeds):
+        """The front's variants: sil.py's shape for the middle, the front strip's ends (run.sh's pines), each added
+        to the front's cut paths."""
+        for v in range(1, self.a.variants + 1):
+            for t in range(self.a.tries):
+                if self.paint_variant(layers, seeds, v, t):
                     break
             else:
-                log(f"front variant {v}: {a.tries} strips refused, left out of the SEQUENCE")
+                log(f"front variant {v}: {self.a.tries} strips refused, left out of the SEQUENCE")
 
-    # The page.
-    s = speeds(len(ks), a.front_speed)
-    files = [(f"l{k}" if len(paths) == 1 else f"l{k}_{i}", p) for k, paths in enumerate(layers)
-             for i, p in enumerate(paths)]
-    make_page.pack(name, files, "Nearest,Nearest" if pixel else "Linear,Linear", out=page_dir)
-    bottoms, hs = [0.0] * len(ks), []
-    for k, paths in enumerate(layers):
-        img = Image.open(paths[0])
-        hs.append(lab.SCREEN_W * img.height / img.width)  # sizeRatio 1
-    for k in range(len(ks) - 2, -1, -1):
-        # Under the nearer layer's solid band, a fifth of it deep: its bottom edge never shows (skill step 3).
-        band = min(solid(p) for p in layers[k + 1]) * hs[k + 1]
-        bottoms[k] = bottoms[k + 1] + 0.8 * band
-    page_layers = []
-    for k, paths in enumerate(layers):
-        dy = round(100 * bottoms[k] / lab.SCREEN_H, 2)
-        if len(paths) == 1:
-            page_layers.append(lab.layer(f"l{k}", speed=round(s[k], 5), dy=dy))
-        else:
-            l = lab.layer("", speed=round(s[k], 5), dy=dy)
-            l.update(kind="SEQUENCE", name=f"l{k}", sequenceSeed=a.seed, sequenceLength=2 * len(paths),
-                     sequenceSegments=[{"regionName": f"l{k}_{i}", "regionPosition": 0, "weight": 1}
-                                       for i in range(len(paths))])
-            page_layers.append(l)
-    horizon = sky_of(os.path.join(strips, "l0_ai.png"))
-    sky = a.sky.split(",") if a.sky else (hexc(horizon * 0.72 + np.array([20, 40, 90]) * 0.28), hexc(horizon))
-    page = lab.page_of(f"{name}.atlas", page_layers, sky=sky, ground=(sky[1], sky[1]), top_size=0.0,
-                       bottom_size=1.0)
-    if len(s) > 1 and a.fog > 0:
-        # fog of a layer = 1 - exp(-strength (1/speed - 1/front)): the back one at a.fog.
-        page["fogStrength"] = round(-math.log(1 - min(a.fog, 0.99)) / (1 / s[0] - 1 / s[-1]), 5)
-        page["fogColor"] = lab.color(sky[1])
-    with open(os.path.join(page_dir, f"{name}.jplax"), "w") as f:
-        json.dump(page, f, indent=1)
-    rel = os.path.relpath(page_dir, ROOT)
-    scene = {"id": "a01", "page": f"{rel}/{name}.jplax", "atlasDir": rel, "name": name,
-             "about": f"r246 ai-page: '{a.theme}', {a.style}, {len(ks)} layers ({', '.join(ks)}), seed {a.seed}"}
-    with open(os.path.join(page_dir, "round.json"), "w") as f:
-        json.dump({"round": name, "about": scene["about"], "scenes": [scene]}, f, indent=1)
+    def paint_variant(self, layers, seeds, v, t):
+        """Variant v on try t: True when it is done with (painted, or kept from an earlier run)."""
+        a, d, ks, strips = self.a, HERE, self.ks, self.strips
+        front, src = len(ks) - 1, os.path.join(strips, f"l{len(ks) - 1}")
+        p = os.path.join(strips, f"l{front}v{v}")
+        vs = a.seed * 1000 + 500 + v * 10 + t
+        vprompt = (f"2d game parallax background layer, {a.theme}, foreground {WORDS[ks[front]]}, "
+                   "painterly, plain pale sky")
+        self.made[os.path.basename(p)] = {"prompt": vprompt, "negative": negative(NEG, ks[front]), "denoise": 0.65,
+                                          "seed": vs, "edgesOf": seeds[front]}
+        if a.keep and os.path.exists(f"{p}_ai.png"):
+            got = self.cut(p, ks[front])
+            if got:
+                layers[front].append(got)
+            return True
+        run(["python3", f"{d}/sil.py", ks[front], p, "--seed", str(vs), "--edges-of", str(seeds[front]),
+             "--colour", self.cols[front], "--quiet-join"], p + "_sil.log")
+        code = run([PY, f"{d}/gen.py", "variants", "--src", f"{src}_ai.png", "--init", f"{p}_init.png", "--tile",
+                    "x", "--n", "1", "--edge", "96", "--denoise", "0.65", "--seed", str(vs), "--negative",
+                    negative(NEG, ks[front]), "--prompt", vprompt, "--out", f"{p}_ai.png"], p + "_gen.log")
+        if code:
+            sys.exit(f"gen.py variants failed: {p}_gen.log")
+        if not a.dry_run:
+            os.replace(f"{p}_ai_1.png", f"{p}_ai.png")
+        got = self.cut(p, ks[front])
+        if got:
+            layers[front].append(got)
+            return True
+        return False
 
+    def bottoms(self, layers):
+        """Each layer's bottom edge, world units up: the front at 0, each farther one under the solid band of the one
+        in front of it, a fifth of it deep, so its bottom edge never shows (skill step 3)."""
+        bottoms, hs = [0.0] * len(self.ks), []
+        for paths in layers:
+            img = Image.open(paths[0])
+            hs.append(lab.SCREEN_W * img.height / img.width)  # sizeRatio 1
+        for k in range(len(self.ks) - 2, -1, -1):
+            band = min(solid(p) for p in layers[k + 1]) * hs[k + 1]
+            bottoms[k] = bottoms[k + 1] + 0.8 * band
+        return bottoms
+
+    def write_page(self, layers):
+        """Packs the atlas and writes NAME.jplax and round.json: the page, its layers' speeds, and its scene."""
+        a, ks, name, page_dir = self.a, self.ks, self.name, self.page_dir
+        s = speeds(len(ks), a.front_speed)
+        files = [(f"l{k}" if len(paths) == 1 else f"l{k}_{i}", p) for k, paths in enumerate(layers)
+                 for i, p in enumerate(paths)]
+        make_page.pack(name, files, "Nearest,Nearest" if self.pixel else "Linear,Linear", out=page_dir)
+        bottoms = self.bottoms(layers)
+        page_layers = []
+        for k, paths in enumerate(layers):
+            dy = round(100 * bottoms[k] / lab.SCREEN_H, 2)
+            if len(paths) == 1:
+                page_layers.append(lab.layer(f"l{k}", speed=round(s[k], 5), dy=dy))
+            else:
+                seq = lab.layer("", speed=round(s[k], 5), dy=dy)
+                seq.update(kind="SEQUENCE", name=f"l{k}", sequenceSeed=a.seed, sequenceLength=2 * len(paths),
+                           sequenceSegments=[{"regionName": f"l{k}_{i}", "regionPosition": 0, "weight": 1}
+                                             for i in range(len(paths))])
+                page_layers.append(seq)
+        horizon = sky_of(os.path.join(self.strips, "l0_ai.png"))
+        sky = a.sky.split(",") if a.sky else (hexc(horizon * 0.72 + np.array([20, 40, 90]) * 0.28), hexc(horizon))
+        page = lab.page_of(f"{name}.atlas", page_layers, sky=sky, ground=(sky[1], sky[1]), top_size=0.0,
+                           bottom_size=1.0)
+        if len(s) > 1 and a.fog > 0:
+            # fog of a layer = 1 - exp(-strength (1/speed - 1/front)): the back one at a.fog.
+            page["fogStrength"] = round(-math.log(1 - min(a.fog, 0.99)) / (1 / s[0] - 1 / s[-1]), 5)
+            page["fogColor"] = lab.color(sky[1])
+        with open(os.path.join(page_dir, f"{name}.jplax"), "w") as f:
+            json.dump(page, f, indent=1)
+        rel = os.path.relpath(page_dir, ROOT)
+        scene = {"id": "a01", "page": f"{rel}/{name}.jplax", "atlasDir": rel, "name": name,
+                 "about": f"r246 ai-page: '{a.theme}', {a.style}, {len(ks)} layers ({', '.join(ks)}), seed {a.seed}"}
+        with open(os.path.join(page_dir, "round.json"), "w") as f:
+            json.dump({"round": name, "about": scene["about"], "scenes": [scene]}, f, indent=1)
+        return page, page_layers, s, sky, scene
+
+    def write_recipe(self, layers, page, page_layers, s, sky, problems):
+        """OUT/recipe.json: what made the page, strip by strip: the ones the page draws, each with the prompt and seed
+        that painted it."""
+        a, pixel, name = self.a, self.pixel, self.name
+        keep_out = ("--keep", "--no-shots")  # how this run went, not what paints the page
+        recipe = {"command": shlex.join(["tools/ai-page.sh"] + [x for x in sys.argv[1:] if x not in keep_out]),
+                  "theme": a.theme, "style": a.style, "name": name, "seed": a.seed, "size": [self.w, self.h],
+                  "model": "SDXL 1.0 + PixelArt_XL" if pixel else "SD 1.5 dreamshaper_8",
+                  "page": f"page/{name}.jplax", "fogStrength": page.get("fogStrength", 0), "sky": list(sky),
+                  "lint": problems, "layers": []}
+        for k, paths in enumerate(layers):
+            strips_k = []
+            for path in paths:
+                sid = strip_of(path)
+                seed_file = os.path.join(self.strips, f"{sid}_seed.txt")
+                info = dict(self.made.get(sid, {}), strip=sid)
+                info.setdefault("seed", int(Path(seed_file).read_text()) if os.path.exists(seed_file) else None)
+                strips_k.append(info)
+            recipe["layers"].append({"kind": self.ks[k], "colour": self.cols[k], "speed": round(s[k], 5),
+                                     "dy": page_layers[k]["decal_Y_Ratio"],
+                                     "sequence": len(paths) > 1, "strips": strips_k})
+        with open(os.path.join(self.out, "recipe.json"), "w") as f:
+            json.dump(recipe, f, indent=1)
+
+    def shots_command(self):
+        return [os.path.join(ROOT, "tools", "parallax-lab-shots.sh"), self.page_dir, os.path.join(self.out, "shots")]
+
+
+def main():
+    global DRY_RUN
+    a = parse_args()
+    DRY_RUN = a.dry_run
+    p = Pipeline(a)
+    layers, seeds = p.paint_depths()
+    if not p.pixel and a.variants:
+        p.paint_variants(layers, seeds)
+    if a.dry_run:
+        print(f"make_page.pack {p.name}", *(path for paths in layers for path in paths))
+        print("(no shots)" if a.no_shots else shlex.join(p.shots_command()))
+        return 0
+    page, page_layers, s, sky, scene = p.write_page(layers)
+    rel = os.path.relpath(p.page_dir, ROOT)
     problems = lab.lint(lab.load(scene["page"]), rel)
-    # What made the page, strip by strip: the ones the page draws, each with the prompt and seed that painted it.
-    strip_of = lambda path: os.path.basename(path)[:-len("_cut.png")]  # noqa: E731
-    keep_out = ("--keep", "--no-shots")  # how this run went, not what paints the page
-    recipe = {"command": shlex.join(["tools/ai-page.sh"] + [x for x in sys.argv[1:] if x not in keep_out]), "theme": a.theme, "style": a.style,
-              "name": name, "seed": a.seed, "size": [w, h],
-              "model": "SDXL 1.0 + PixelArt_XL" if pixel else "SD 1.5 dreamshaper_8",
-              "page": f"page/{name}.jplax", "fogStrength": page.get("fogStrength", 0), "sky": list(sky),
-              "lint": problems, "layers": []}
-    for k, paths in enumerate(layers):
-        strips_k = []
-        for path in paths:
-            sid = strip_of(path)
-            seed_file = os.path.join(strips, f"{sid}_seed.txt")
-            info = dict(made.get(sid, {}), strip=sid)
-            info.setdefault("seed", int(Path(seed_file).read_text()) if os.path.exists(seed_file) else None)
-            strips_k.append(info)
-        recipe["layers"].append({"kind": ks[k], "colour": cols[k], "speed": round(s[k], 5),
-                                 "dy": page_layers[k]["decal_Y_Ratio"],
-                                 "sequence": len(paths) > 1, "strips": strips_k})
-    with open(os.path.join(out, "recipe.json"), "w") as f:
-        json.dump(recipe, f, indent=1)
-    print(f"{rel}/{name}.jplax")
+    p.write_recipe(layers, page, page_layers, s, sky, problems)
+    print(f"{rel}/{p.name}.jplax")
     print(lab.describe(page))
-    print("\n".join("  ! " + p for p in problems) or "  lint ok")
+    print("\n".join("  ! " + problem for problem in problems) or "  lint ok")
     if not a.no_shots:
-        subprocess.run([os.path.join(ROOT, "tools", "parallax-lab-shots.sh"), page_dir, os.path.join(out, "shots")],
-                       cwd=ROOT, check=False)
+        subprocess.run(p.shots_command(), cwd=ROOT, check=False)
     return 1 if problems else 0
 
 
