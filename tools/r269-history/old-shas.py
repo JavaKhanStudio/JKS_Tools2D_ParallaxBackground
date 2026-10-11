@@ -5,7 +5,7 @@ commit-map.txt beside this script is the map of the history Simon force-pushed (
 0000... for a commit dropped (it touched only editor/ or demo/). A 7-40 hex token that starts an old SHA, and no new
 one, is an old quote. --fix replaces it by the new SHA cut to the same length; a dropped one is only reported.
 Kept old on purpose (KEEP): rewrite.sh, which reads the old mirror, and .atelier/routing-eval.json, which copies board
-cards' text, and the cards keep their old SHAs: look one up in commit-map.txt.
+cards' text as it was. The cards themselves no longer quote old SHAs: purge-board-shas.py blanked them (r334).
 
   tools/r269-history/old-shas.py [--fix] [--skip PATH ...]
 """
