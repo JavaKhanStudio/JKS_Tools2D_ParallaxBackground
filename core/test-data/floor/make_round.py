@@ -3,7 +3,7 @@
 (lab.jplax, lab-purple.jplax, written by make_lab.py) with the lab's EMPTY "floor" layer turned into a FLOOR layer of
 the same box (its sizeRatio of the world height: floorHeight), its rows from the lab's speeds. Every layer in front is
 planted on it by the reader, whatever its page speed. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and
-engines/jme's JmeParallaxShots; tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare them.
+engines/jme's JmeParallaxShots; engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh compare them.
 Run from the repository root: python3 core/test-data/floor/make_round.py"""
 import json
 from pathlib import Path

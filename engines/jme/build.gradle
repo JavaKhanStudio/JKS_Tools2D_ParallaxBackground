@@ -19,7 +19,7 @@ sourceSets {
         java.srcDirs = ['src']
         resources.srcDirs = ['resources']
     }
-    // The frame runner of tools/jme-parallax-shots.sh, and a demo: not part of what a game copies.
+    // The frame runner of engines/jme/tools/frame-check.sh, and a demo: not part of what a game copies.
     shots {
         java.srcDirs = ['tests']
         resources.srcDirs = []
@@ -54,7 +54,7 @@ tasks.register('run', JavaExec) {
     rootProject.offscreen(it)
 }
 
-// The runner's classpath, for tools/jme-parallax-shots.sh to start it without Gradle inside cage.
+// The runner's classpath, for engines/jme/tools/frame-check.sh to start it without Gradle inside cage.
 tasks.register('shotsClasspath') {
     def out = layout.buildDirectory.file('shots.classpath')
     def files = sourceSets.shots.runtimeClasspath
@@ -75,7 +75,7 @@ tasks.withType(Javadoc).configureEach {
 
 /*
  * Publishing, with core (RELEASING.md):
- *   ./gradlew :jme:publishToMavenLocal          local testing, see tools/jme-probe
+ *   ./gradlew :jme:publishToMavenLocal          local testing, see engines/jme/tools/probe
  *   ./gradlew :jme:publishToMavenCentral        CI does this, beside :core's
  * The shots source set (runner, demo) is not published.
  */

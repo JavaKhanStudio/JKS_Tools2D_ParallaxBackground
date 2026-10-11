@@ -4,7 +4,7 @@ seamless both ways (r266's mock tower, made taller); HiverTower.atlas, Hiver's r
 their own; and engines/rounds/tower/round.json and its pages: the floor lab's Hiver set (its EMPTY floor dropped)
 with a tower in front, its wall six bricks images round, turning a full turn in the 12 s the shots scroll.
 Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots;
-tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare them.
+engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh compare them.
 Run from the repository root: python3 core/test-data/tower/make_round.py (needs numpy and Pillow)."""
 import json
 import math

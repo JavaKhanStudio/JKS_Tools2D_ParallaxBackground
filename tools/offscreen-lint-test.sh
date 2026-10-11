@@ -65,5 +65,17 @@ expect pass "a window handed to parallax-lab-shots.sh" "$WORK/through-probe.sh"
 printf '#!/usr/bin/env bash\ntools/offscreen.sh shots/build/install/shots/bin/shots\n' >"$WORK/through-offscreen.sh"
 expect pass "a window through tools/offscreen.sh" "$WORK/through-offscreen.sh"
 
+# A reader's own scripts live in engines/<reader>/tools/ (parallax-readers:r11): the lint reads them, and a window
+# handed to one of them that runs cage passes, while a call to a reader script that does not exist does not.
+if "$LINT" | grep -q "$(git ls-files 'tools/*.sh' 'engines/*/tools/*.sh' | wc -l) script(s)"; then
+	echo "ok    engines/*/tools/*.sh are read"
+else
+	echo "WRONG engines/*/tools/*.sh not read"; status=1
+fi
+printf '#!/usr/bin/env bash\njava -cp "$CP" Probe\nengines/jme/tools/frame-check.sh r\n' >"$WORK/through-reader.sh"
+expect pass "a window handed to engines/jme/tools/frame-check.sh" "$WORK/through-reader.sh"
+printf '#!/usr/bin/env bash\njava -cp "$CP" Probe\nengines/jme/tools/no-such.sh r\n' >"$WORK/through-nothing.sh"
+expect fail "a window handed to a reader script that is not there" "$WORK/through-nothing.sh" "runs java"
+
 [ $status = 0 ] && echo PASS || echo FAIL
 exit $status

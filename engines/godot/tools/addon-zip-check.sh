@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# godot-addon-zip-check.sh — installs the release zip (tools/godot-addon-zip.sh) into a blank Godot 4 project, the way a
+# addon-zip-check.sh — installs the release zip (engines/godot/tools/addon-zip.sh) into a blank Godot 4 project, the way a
 # game would, loads Hiver from res:// with the README's snippet, and saves one frame: build/godot-addon/check.png.
 # Fails when the page does not load or the frame is blank. Needs godot 4.x, cage, Xwayland, python3 with Pillow
 # (ATELIER_NO_OFFSCREEN=1 draws on $DISPLAY instead of cage).
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 ROOT=$(pwd)
 GODOT="${GODOT:-godot}"
-ZIP=$(tools/godot-addon-zip.sh)
+ZIP=$(engines/godot/tools/addon-zip.sh)
 P=$(mktemp -d)
 trap 'rm -rf "$P"' EXIT
 

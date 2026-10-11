@@ -20,8 +20,8 @@ import jks.tools2d.parallax.pages.Enum_ShaderEffect;
  * <p>
  * Each effect works on the image's own coordinates, taken from the texture coordinates: x and y in world units from the
  * image's bottom-left, as it is drawn. engines/godot/addons/jks_parallax/plax_effects.gd and engines/jme's
- * ParallaxEffect.frag are the same lines: change one, change them, and run tools/godot-parallax-shots.sh and
- * tools/jme-parallax-shots.sh (engines/rounds/shaders).
+ * ParallaxEffect.frag are the same lines: change one, change them, and run engines/godot/tools/frame-check.sh and
+ * engines/jme/tools/frame-check.sh (engines/rounds/shaders).
  */
 public class GdxLayerEffects implements LayerEffects, Disposable
 {

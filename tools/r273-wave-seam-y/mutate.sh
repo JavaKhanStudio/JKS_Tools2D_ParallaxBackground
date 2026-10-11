@@ -3,7 +3,7 @@
 # one engine at a time, the ripple inside one tile on Y (local().y) in Godot's plax_effects.gd, then in jME's
 # ParallaxEffect.frag; runs that engine's frame check on engines/rounds/shaders for each, and fails unless every
 # run FAILS (its scene s08, stripes through WAVE wrapping on Y). Restores the files on exit.
-# headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
+# headless: engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh render in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 FX=engines/godot/addons/jks_parallax/plax_effects.gd
@@ -25,8 +25,8 @@ run() {
 }
 sed -i 's/sin(TAU \* (along(SCREEN_UV).y - effect.z)/sin(TAU * (local(UV).y - effect.z)/' "$FX"
 grep -q "sin(TAU \* (local(UV).y - effect.z)" "$FX" || { echo "mutation 1 did not apply"; exit 2; }
-run "the ripple inside one tile on Y in Godot" tools/godot-parallax-shots.sh
+run "the ripple inside one tile on Y in Godot" engines/godot/tools/frame-check.sh
 sed -i 's/sin(TAU \* (along().y - m_Effect.z)/sin(TAU * (local().y - m_Effect.z)/' "$FRAG"
 grep -q "sin(TAU \* (local().y - m_Effect.z)" "$FRAG" || { echo "mutation 2 did not apply"; exit 2; }
-run "the ripple inside one tile on Y in jME" tools/jme-parallax-shots.sh
+run "the ripple inside one tile on Y in jME" engines/jme/tools/frame-check.sh
 exit $status

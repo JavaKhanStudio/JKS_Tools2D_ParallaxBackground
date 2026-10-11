@@ -9,10 +9,10 @@ repair.
 | Module    | What it is | Java | Run / check |
 |-----------|------------|------|-------------|
 | `core/`   | The runtime games depend on (`parallax-background` on Maven Central). Sources `src/` (GWT) and `src-jvm/`, tests `test/`. | `options.release = 11` for main, 17 for tests | `./gradlew :core:test`, `./gradlew :core:gwtCheck` |
-| `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `tools/godot-parallax-shots.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
+| `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `engines/godot/tools/frame-check.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. Split out of the grading lab's `--shots` mode, which the lab no longer has (r157). | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/rounds/reader/` | `:rounds` (r312): `Round`, a reader round's `round.json` read once for `:shots` and `:jme`'s frame runner (Godot's `tests/shots.gd` reads it a third time). A new round field goes there. Gdx core only. Not published. | 17 | `./gradlew :rounds:build`, then the frame checks |
-| `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `tools/jme-parallax-shots.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
+| `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `engines/jme/tools/frame-check.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:jme:run` and `:shots:run`
   render in a headless cage (`gradle/offscreen.gradle`, off with
@@ -39,9 +39,9 @@ repair.
   a push to develop, master or release/* when the pushed commit does (`tools/pre-push-check.sh`, r332).
   `./gradlew build` and `browser-test.sh` stay yours. After that push, `tools/ci-watch.sh` waits for CI in the
   background and puts a red run on the board as a #build task "CI red on <branch>" (r339): fix it before pushing more.
-  One job per reader: `godot-frames` runs `tools/godot-parallax-shots.sh` under `xvfb-run` on Mesa llvmpipe
+  One job per reader: `godot-frames` runs `engines/godot/tools/frame-check.sh` under `xvfb-run` on Mesa llvmpipe
   (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), `jme-frames` runs
-  `tools/jme-parallax-shots.sh` the same way (no Godot), and each fails on a FAIL. A manual run's `break` input sets
+  `engines/jme/tools/frame-check.sh` the same way (no Godot), and each fails on a FAIL. A manual run's `break` input sets
   `BREAK` for `jme-frames`: `gh workflow run ci.yml --ref <branch> -f break=scroll` must fail it.
 
 ## `.plax` is a file format
@@ -75,14 +75,14 @@ repair.
 - Tiling reads the camera view, position and zoom: `tilesJustEnoughToCoverTheView` holds it.
 - `engines/godot/addons/jks_parallax/plax_background.gd` ports `ParallaxLayer.act`, `ParallaxPageReader.tile`/`drawRegion`,
   the cross-fade, the tint and the gradients line for line: change how a page scrolls, fades or draws, change it there,
-  and run `tools/godot-parallax-shots.sh` (`engines/rounds/transfer` is its cross-fade round). Its PARTICLES
+  and run `engines/godot/tools/frame-check.sh` (`engines/rounds/transfer` is its cross-fade round). Its PARTICLES
   layers are placed by `plax_particles.gd` (ParallaxPageReader's particle branch; round `engines/rounds/particles`),
   a FLOOR's rows measured, scrolled and drawn by `plax_floor.gd`, a SEQUENCE's cycle laid out and drawn by
   `plax_sequence.gd`, a tower's strips by `plax_tower.gd` (r307, r324: `gdlint` caps a script at 1000 lines).
 - `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
   `draw(region, x, y, width, height)`, and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
   method, change the gradients, or make `ParallaxPageReader` or `ParallaxLayer` reach a libGDX native (`OrthographicCamera.update` does), and
-  run `tools/jme-parallax-shots.sh`.
+  run `engines/jme/tools/frame-check.sh`.
 - An `EMPTY` layer (`Enum_LayerKind`, format 5) has no image: the reader calls the game's `LayerHook` per tile in its
   place, and so do `plax_background.gd` (`set_layer_hook`) and jME. A new layer kind goes in `Enum_LayerKind` (append
   only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/rounds` (`effects` is EMPTY's).
@@ -123,7 +123,7 @@ repair.
   `SequenceCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's
   copy is `plax_page.gd`'s `draw_cycle` (32-bit masked) and `plax_sequence.gd`'s `draw`:
   `engines/godot/tests/sequence_cycle.gd` holds them to the JVM's picks (`engines/rounds/sequence/picks.json`, written by
-  `tools/r183-sequence/PickTable.java`) and to a walk over every slot; `tools/godot-parallax-shots.sh` runs it with the
+  `tools/r183-sequence/PickTable.java`) and to a walk over every slot; `engines/godot/tools/frame-check.sh` runs it with the
   `sequence` round.
 - A `FLOOR` layer (r275, format 11) is drawn row by row, each row at its own speed and distance
   (`ParallaxLayer.measureFloor`/`drawFloor`, its strips cut when a setting changes, never in a frame), and

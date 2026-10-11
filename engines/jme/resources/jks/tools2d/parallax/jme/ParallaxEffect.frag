@@ -1,7 +1,7 @@
 #import "Common/ShaderLib/GLSLCompat.glsllib"
 
 // core/src/.../GdxLayerEffects.java and engines/godot/addons/jks_parallax/plax_effects.gd are the same lines: change one,
-// change them, and run tools/jme-parallax-shots.sh engines/rounds/shaders.
+// change them, and run engines/jme/tools/frame-check.sh engines/rounds/shaders.
 
 uniform sampler2D m_ColorMap;
 uniform vec4 m_Region;

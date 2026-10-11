@@ -4,7 +4,7 @@
 # (smoothstep left out); libGDX's gradients fading straight instead of through the mist; jME's gradients fading
 # straight. Runs that engine's frame check on engines/rounds/transfer for each, and fails unless every run FAILs.
 # Restores the files on exit.
-# headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
+# headless: engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh render in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 FILES=(engines/godot/addons/jks_parallax/plax_transfert_style.gd engines/godot/addons/jks_parallax/plax_transfert_style.gd
@@ -31,11 +31,11 @@ mutate() {
 	run "$4" "$5"
 }
 mutate 0 's/return progress >= 0.5 if kind == "FOG_CREEP" else/return progress >= 0.5 if false else/' '0.5 if false else' \
-	"Godot swapping each slot in its own window" tools/godot-parallax-shots.sh
+	"Godot swapping each slot in its own window" engines/godot/tools/frame-check.sh
 mutate 1 's/	return r \* r \* (3 - 2 \* r)$/	return r/' '	return r' \
-	"Godot's mist not eased" tools/godot-parallax-shots.sh
+	"Godot's mist not eased" engines/godot/tools/frame-check.sh
 mutate 2 's/		if (!grades())$/		if (kind != Kind.THROUGH_COLOR)/' 'if (kind != Kind.THROUGH_COLOR)' \
-	"libGDX's gradients straight in a fog creep" tools/godot-parallax-shots.sh
+	"libGDX's gradients straight in a fog creep" engines/godot/tools/frame-check.sh
 mutate 3 's/		style.gradient(/		TransfertStyle.FADE.gradient(/' 'TransfertStyle.FADE.gradient(' \
-	"jME's gradients straight" tools/jme-parallax-shots.sh
+	"jME's gradients straight" engines/jme/tools/frame-check.sh
 exit $status

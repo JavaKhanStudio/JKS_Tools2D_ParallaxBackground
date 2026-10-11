@@ -47,7 +47,7 @@ $failed
 End of the failed log:
 $logtail
 
-Wanted: $BRANCH green again. Reproduce the failed step locally (./gradlew build, tools/browser-test.sh, tools/godot-parallax-shots.sh, tools/jme-parallax-shots.sh: whichever failed), fix it in a new commit, push.
+Wanted: $BRANCH green again. Reproduce the failed step locally (./gradlew build, tools/browser-test.sh, engines/godot/tools/frame-check.sh, engines/jme/tools/frame-check.sh: whichever failed), fix it in a new commit, push.
 Done when: a CI run on $BRANCH at or after the fix is green (gh run list --workflow ci.yml --branch $BRANCH).
 OUT of scope: anything the log does not point at.
 Discovered while: tools/ci-watch.sh watching the push of ${SHA:0:7} (r339)."

@@ -62,9 +62,9 @@ sentinel() {
 		echo "ok: $name stays in cage"
 	fi
 }
-sentinel jme-shots tools/jme-parallax-shots.sh engines/rounds/transfer
+sentinel jme-shots engines/jme/tools/frame-check.sh engines/rounds/transfer
 sentinel jme-demo tools/start-demo-check.sh jme
-if command -v "${GODOT:-godot}" >/dev/null; then sentinel godot-shots tools/godot-parallax-shots.sh engines/rounds/transfer; fi
+if command -v "${GODOT:-godot}" >/dev/null; then sentinel godot-shots engines/godot/tools/frame-check.sh engines/rounds/transfer; fi
 # The labs' open mode, with DISPLAY and WAYLAND_DISPLAY both empty: the branch that points Chrome at wayland-0 (r237).
 # An agent's must refuse before Chrome; the board's Open button (neither ATELIER_AGENT nor CLAUDECODE) must reach it.
 labs=("tools/fog-lab.sh" "tools/haze-lab.sh" "tools/transfert-lab.sh" "tools/effects-lab.sh --lab fog" "tools/browser-test.sh --open")

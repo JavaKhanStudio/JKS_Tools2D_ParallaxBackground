@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # library-alone-check.sh [REF] — proves the library checks itself without editor/ and demo/ (r130, docs/repo-split.md
 # phase 1): clones REF (default HEAD) of this checkout into build/library-alone/<REF>, deletes editor/ and demo/, and
-# runs the gates there: ./gradlew build, tools/browser-test.sh, tools/godot-parallax-shots.sh, tools/jme-parallax-shots.sh.
+# runs the gates there: ./gradlew build, tools/browser-test.sh, engines/godot/tools/frame-check.sh, engines/jme/tools/frame-check.sh.
 #
 #   tools/library-alone-check.sh                 HEAD, editor/ and demo/ deleted
 #   KEEP_APPS=1 tools/library-alone-check.sh X   X as it is: the baseline to compare the scores with
@@ -34,8 +34,8 @@ gate() {
 }
 gate ./gradlew build
 gate tools/browser-test.sh
-gate tools/godot-parallax-shots.sh
-gate tools/jme-parallax-shots.sh
+gate engines/godot/tools/frame-check.sh
+gate engines/jme/tools/frame-check.sh
 for r in {demo/,}build/{godot,jme}/*/report.txt; do
 	[ -f "$r" ] && sed "s|^|$(dirname "$r" | sed 's|.*build/||') |" "$r"
 done | sort >"$DIR/scores.txt"

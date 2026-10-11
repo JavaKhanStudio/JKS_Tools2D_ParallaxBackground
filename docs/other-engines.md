@@ -75,7 +75,7 @@ style (the depth stagger, the plain fade, the dissolve, through white, the fog c
 (`tools/start-demo-check.sh` presses SPACE and N off screen; `tools/start-demo-check.sh godot mid` saves a frame
 halfway through the transfert). `./gradlew :jme:run` has the same keys.
 
-**How it is checked.** `tools/godot-parallax-shots.sh` renders the same pages in libGDX (`shots/`'s `ParallaxShots`, the grading lab's `--shots` split out in r130)
+**How it is checked.** `engines/godot/tools/frame-check.sh` renders the same pages in libGDX (`shots/`'s `ParallaxShots`, the grading lab's `--shots` split out in r130)
 and in Godot (`engines/godot/tests/shots.gd`), with the same 60 units/s scroll stepped at 1/60 s, 0, 6 and 12 s in,
 off screen, and compares them pixel by pixel. It runs four rounds: `engines/rounds/round1`, a copy of the grading lab's round 1 (`demo/lab/round1`, in the editor repository; 18 pages from four
 atlases), `engines/rounds/conformance` (7 pages for what round 1 lacks: trimmed regions with `useOriginalSize`,
@@ -136,7 +136,7 @@ ports its 60 lines (opaque, colours packed as ShapeRenderer packs them). `JmeBat
 calls, `draw(region, x, y, width, height)`, and throws on every other: a reader that starts calling another fails
 there, loudly.
 
-**How it is checked.** `tools/jme-parallax-shots.sh` renders three of the Godot check's rounds (`engines/rounds/round1`,
+**How it is checked.** `engines/jme/tools/frame-check.sh` renders three of the Godot check's rounds (`engines/rounds/round1`,
 `engines/rounds/conformance` and `engines/rounds/transfer`, with their Y scroll, resizes,
 cross-fades and tints) with libGDX and with `JmeParallaxShots`, off screen in cage, and compares them with the same
 `tools/compare-parallax-frames.py`. On 2026-09-30 (jME 3.9.0, LWJGL 3.3.6, NVIDIA): worst mean difference **0.25 /
@@ -147,7 +147,7 @@ scores 6.4 to 160, so the 2 / 255 threshold catches both. `tools/start-demo-chec
 
 **Not there yet:** atlas regions packed rotated (as in Godot), and assets in an Android jME game (tried on the desktop
 only). **In CI** (r115): the `jme-frames` job of `.github/workflows/ci.yml` (its own job since parallax-readers:r10; before,
-it ran after the Godot rounds in `godot-frames`) runs `tools/jme-parallax-shots.sh` on Xvfb and Mesa llvmpipe, and fails on a FAIL. There, on 2026-09-30 (llvmpipe, LLVM 20.1.2),
+it ran after the Godot rounds in `godot-frames`) runs `engines/jme/tools/frame-check.sh` on Xvfb and Mesa llvmpipe, and fails on a FAIL. There, on 2026-09-30 (llvmpipe, LLVM 20.1.2),
 round 1, the conformance round and the transfer round scored 0.40, 0.21 and 0.33; a run with `BREAK=scroll` (the
 workflow's `break` input) failed all three, at 39.1, 32.8 and 22.1.
 

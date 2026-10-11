@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# jme-parallax-shots.sh [ROUND_DIR...] — the jMonkeyEngine reader (engines/jme) against the libGDX runtime, frame by frame (r112).
+# frame-check.sh [ROUND_DIR...] — the jMonkeyEngine reader (engines/jme) against the libGDX runtime, frame by frame (r112).
 #
-#   tools/jme-parallax-shots.sh                          engines/rounds/round1, /conformance, /transfer, /effects, /shaders, /sequence, /fog, /floor, /dolly, /tower and /planet
-#   tools/jme-parallax-shots.sh engines/rounds/round1
+#   engines/jme/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /effects, /shaders, /sequence, /fog, /floor, /dolly, /tower and /planet
+#   engines/jme/tools/frame-check.sh engines/rounds/round1
 #
-# The same rounds and stills as tools/godot-parallax-shots.sh: libGDX's (tools/parallax-lab-shots.sh, 0, 6 and 12 s into
+# The same rounds and stills as engines/godot/tools/frame-check.sh: libGDX's (tools/parallax-lab-shots.sh, 0, 6 and 12 s into
 # the lab's scroll) and jME's (engines/jme/tests/.../JmeParallaxShots, the same scroll), off screen in cage's headless
 # display on a nested Xwayland, compared by tools/compare-parallax-frames.py. Writes build/jme/<round>/ (a link to this run's own folder: tools/shots-out.sh): gdx/,
 # jme/, compare.png and report.txt. Fails when a still differs by more than THRESHOLD (mean absolute difference per
 # channel, 0-255; default 2). Needs cage, Xwayland, python3 with Pillow. ATELIER_NO_OFFSCREEN=1 draws both on
 # $DISPLAY instead. BREAK=scroll draws jME with a scroll 10 % too fast: it must FAIL (the threshold's negative control).
 set -u
-cd "$(dirname "$0")/.." || exit 1
+cd "$(dirname "$0")/../../.." || exit 1
 ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"

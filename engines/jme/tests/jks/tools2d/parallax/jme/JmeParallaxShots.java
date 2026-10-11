@@ -30,7 +30,7 @@ import jks.tools2d.parallax.rounds.Round.Transfer;
  * scene's "transfer" (one or a list), "tint", "speedY" and "resize" are played at the same steps, its "hooks" draw
  * its EMPTY layers the same way (r177), its "sequenceSeed" draws the SEQUENCE layers from that game seed (r183), and
  * its "zoom" and "dolly" zoom the camera before each still, dollied or not (r278).
- * tools/jme-parallax-shots.sh runs it and compares the two sets.
+ * engines/jme/tools/frame-check.sh runs it and compares the two sets.
  * <pre>
  *   java -cp ... jks.tools2d.parallax.jme.JmeParallaxShots &lt;round dir&gt; &lt;out dir&gt;   (from the repository root)
  * </pre>

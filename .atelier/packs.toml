@@ -47,7 +47,7 @@ when this checkout sits beside it.
 THE GODOT PORT DRAWS THE SAME PAGE: engines/godot/addons/jks_parallax/plax_background.gd
 copies act(), tile(), drawRegion() and the gradients line for line (r87), and the cross-fade,
 syncTransferPositions and the tint (r94). Change how a page scrolls, tiles, fades or draws here and
-change it there, or a Godot game shows a different picture: `tools/godot-parallax-shots.sh`
+change it there, or a Godot game shows a different picture: `engines/godot/tools/frame-check.sh`
 renders both off screen (libGDX's frames through shots/ ParallaxShots) and fails past a mean 2/255 apart; engines/rounds/transfer is its
 cross-fade round. CI runs it too (ci.yml job godot-frames, Xvfb + llvmpipe): a push that
 desynchronises the port fails the build, so run it before pushing, not after.
@@ -55,7 +55,7 @@ THE jME READER (engines/jme, r112) RUNS THIS CODE AS IS: PlaxBackground drives P
 and draws through JmeBatch, a libGDX Batch in jME meshes that implements ONLY
 draw(region, x, y, width, height) and throws on every other draw. Make the reader call another
 Batch method, or change SquareBackground (ported in JmeGradient: it reads Gdx.graphics), and run
-`tools/jme-parallax-shots.sh` (CI runs it in its own job, jme-frames). No libGDX backend there: a core call that reaches a gdx
+`engines/jme/tools/frame-check.sh` (CI runs it in its own job, jme-frames). No libGDX backend there: a core call that reaches a gdx
 native from ParallaxPageReader or ParallaxLayer (OrthographicCamera.update -> Matrix4.prj does) throws
 UnsatisfiedLinkError in a jME game.
 SHADER LAYERS (r180, format 7) ARE AN IMAGE LAYER THROUGH AN EFFECT, WRITTEN THREE TIMES: core's
@@ -136,7 +136,7 @@ so add the field there too.
 A THIRD reader has the same blind spot: engines/godot/addons/jks_parallax/plax_page.gd (the
 Godot port, r87) lists the layer fields in LAYER_DEFAULTS and reads the page's by hand. A
 field missing there loads as its default in a Godot game. Add it, and a scene using it to
-engines/rounds/conformance; `tools/godot-parallax-shots.sh` is the gate.
+engines/rounds/conformance; `engines/godot/tools/frame-check.sh` is the gate.
 A layer field also lives on ParallaxLayer: setUpEverything copies it in, clone() copies it
 (ParallaxLayerTest), and pages/Utils_Page.buildFromPage writes it back. That is the editor's
 save path: a field it misses is dropped when the editor saves the page. BuildFromPageTest
@@ -222,7 +222,7 @@ Gates, exactly what CI runs on JDK 17, 21 AND 25 (.github/workflows/ci.yml, job 
                                                .py/.sh/.gd, each through uvx at the version pinned in it (r314).
                                                Run it before a push: a new probe in tools/ lands lint-clean.
 And once each, on JDK 17 with xvfb-run + Mesa, one job per reader: godot-frames runs
-tools/godot-parallax-shots.sh, jme-frames tools/jme-parallax-shots.sh; each fails on a FAIL.
+engines/godot/tools/frame-check.sh, jme-frames engines/jme/tools/frame-check.sh; each fails on a FAIL.
 GIT HOOKS (r332, r339): this clone has `git config core.hooksPath tools/githooks` (a new clone needs
 that line; a session's hooks reach them through atelier's proxy). Three rails, cheapest first:
   pre-commit  tools/pre-commit-check.sh: lint.sh on the .py/.sh/.gd the commit STAGES (as staged, mode
@@ -270,7 +270,7 @@ workflow REFUSES to run when the tag and gradle.properties disagree.
 Two artifacts share that version (r116): :core is parallax-background, :jme (engines/jme/src)
 is parallax-background-jme, each with its own mavenPublishing block; the release and snapshot
 workflows publish both. Its classes are public API. `./gradlew :core:publishToMavenLocal
-:jme:publishToMavenLocal && ./gradlew -p tools/jme-probe run` proves a fresh jME game uses it.
+:jme:publishToMavenLocal && ./gradlew -p engines/jme/tools/probe run` proves a fresh jME game uses it.
 A fix reaches a game as a snapshot, not a release (Simon, r57): push develop, and the game pins
 the timestamped build (X.Y.Z-yyyyMMdd.HHmmss-N, RELEASING.md "Test versions"). Do not raise a
 release to ship one fix. `./gradlew -p tools/snapshot-probe resolve` proves a snapshot resolves.
@@ -318,7 +318,7 @@ fetchUniformLocation(name, false): a by-name setUniformf throws when a GPU drops
 frontSpeedOf are copied in plax_effects.gd fog_of / front_speed_of. Change one, change the other.
 A Godot shader error is only a log line and the layer draws plain: read godot.log after a run (TAU is a Godot
 built-in; that name collision once moved the stills 2-11/255 with nothing failing).
-Gates: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh, given engines/rounds/shaders
+Gates: engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh, given engines/rounds/shaders
 engines/rounds/fog as arguments (no argument runs every round; both fail past a mean 2/255; CI's godot-frames job runs them). A round only proves an
 effect that moves its stills by more than that: tools/r180-shader-round/strength.sh (effects) and
 tools/r217-fog/strength.sh (fog) fail under 2.5/255, and tools/r217-fog/mutate.sh puts a wrong fog in one engine at a

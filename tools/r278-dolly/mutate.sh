@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # r278: proves the dolly round (engines/rounds/dolly) sees a wrong copy of the dolly in Godot's plax_background.gd
 # and plax_effects.gd, the one engine that ports it (jME runs core's DollyBatch as is). Puts in one mutant at a time,
-# runs tools/godot-parallax-shots.sh engines/rounds/dolly for each, and fails unless every run FAILS: every layer
+# runs engines/godot/tools/frame-check.sh engines/rounds/dolly for each, and fails unless every run FAILS: every layer
 # at the camera's zoom (no depth); layers placed from the zoomed view's corner (scaled about it, not the middle); an
 # incoming page's layers by the outgoing page's front; k squared in dolly_zoom; FOG's and WAVE's noise laid from the
 # view's corner. Restores the files on exit. Writes build/r278/mutant.log.
-# headless: tools/godot-parallax-shots.sh renders in cage.
+# headless: engines/godot/tools/frame-check.sh renders in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 ADDON=engines/godot/addons/jks_parallax
@@ -29,7 +29,7 @@ if text.count(os.environ['FROM']) != 1:
     sys.exit(1)
 open(path, 'w').write(text.replace(os.environ['FROM'], os.environ['TO']))
 PY
-	if tools/godot-parallax-shots.sh engines/rounds/dolly >"$LOG" 2>&1; then
+	if engines/godot/tools/frame-check.sh engines/rounds/dolly >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the dolly round ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"; status=1
 	else
 		echo "caught: $1 ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1); over 2: $(grep -E 'mean diff ([2-9]|[1-9][0-9])' "$LOG" | grep -oE '^[a-z][0-9]+-t[0-9]+' | tr '\n' ' '))"

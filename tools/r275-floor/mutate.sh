@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # r275: proves the floor round sees a wrong copy of the floor in Godot's plax_background.gd and plax_floor.gd (its rows,
 # measured: r307), the one engine that ports it (jME runs core's ParallaxLayer.drawFloor as is, through JmeBatch's draw(region, x, y, width, height)). Puts in one
-# mutant at a time, runs tools/godot-parallax-shots.sh engines/rounds/floor for each, and fails unless every run
+# mutant at a time, runs engines/godot/tools/frame-check.sh engines/rounds/floor for each, and fails unless every run
 # FAILS: every row at the bottom row's speed; no layer planted (each at its page speed); no row stretched (mode 7 as
 # line scroll's widths); mode 7's strips as line scroll's (the image's rows not spaced by depth). Restores the files on
 # exit. Writes build/r275/mutant.log.
-# headless: tools/godot-parallax-shots.sh renders in cage.
+# headless: engines/godot/tools/frame-check.sh renders in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 ADDON=engines/godot/addons/jks_parallax
@@ -29,7 +29,7 @@ if text.count(os.environ['FROM']) != 1:
     sys.exit(1)
 open(path, 'w').write(text.replace(os.environ['FROM'], os.environ['TO']))
 PY
-	if tools/godot-parallax-shots.sh engines/rounds/floor >"$LOG" 2>&1; then
+	if engines/godot/tools/frame-check.sh engines/rounds/floor >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the floor round ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"; status=1
 	else
 		echo "caught: $1 ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"

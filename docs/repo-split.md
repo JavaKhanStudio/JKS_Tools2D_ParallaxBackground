@@ -27,7 +27,7 @@ versioning mess, and it is real.
   editor only, 8 `core` only, 5 `core` and editor together, 3 the demo and Godot. The five crossing ones are the
   format changes: a stored field added in `core`, and the editor control that sets it.
 - **The Godot reader is tied to `core`, not to the editor.** `plax_background.gd` ports `ParallaxLayer.act` and
-  `ParallaxPageReader` line for line, and `tools/godot-parallax-shots.sh` compares its frames with frames the libGDX
+  `ParallaxPageReader` line for line, and `engines/godot/tools/frame-check.sh` compares its frames with frames the libGDX
   runtime draws of the demo's pages (`demo/lab`). A Godot change is proved against `core` and `demo` in the same
   checkout.
 - **`core`'s format tests read the editor's files.** `PlaxFormatTest` and `JvmFixtures` load every `.plax` under

@@ -2,7 +2,7 @@ class_name PlaxBackground
 extends CanvasLayer
 ## A parallax page from the JKS editor, drawn behind the game: the Godot port of the libGDX runtime's
 ## Parallax_Heart + ParallaxPageReader + ParallaxLayer (core/src/jks/tools2d/parallax). Same numbers, same picture:
-## tools/godot-parallax-shots.sh compares its frames with the libGDX ones.
+## engines/godot/tools/frame-check.sh compares its frames with the libGDX ones.
 ##
 ##   var bg := PlaxBackground.new()
 ##   bg.load_page("res://backgrounds/calm.jplax")   # its .atlas and .png next to it

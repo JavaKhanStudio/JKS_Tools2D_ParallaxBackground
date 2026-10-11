@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# godot-addon-zip.sh [OUT_DIR] — packs the Godot reader for a release (d11): jks-parallax-godot-X.Y.Z.zip, with
+# addon-zip.sh [OUT_DIR] — packs the Godot reader for a release (d11): jks-parallax-godot-X.Y.Z.zip, with
 # addons/jks_parallax/ at its root (where the Godot Asset Library installer and a game both expect it), LICENSE and
 # NOTICE inside the addon. X.Y.Z is gradle.properties' version. The Release workflow attaches the zip to the GitHub
 # release, and the Asset Library listing downloads it from there (RELEASING.md, "Godot Asset Library").
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 OUT="${1:-build/godot-addon}"
 VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
 STAGE=$(mktemp -d)

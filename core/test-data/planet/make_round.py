@@ -6,7 +6,7 @@ planetDropAt (r330). No art of its own: the atlases are the floor lab's, the sam
 shaders round's. Also writes p09 and p10, the particles round's pages (core/test-data/particles) round a planet, which
 engines/rounds/particles/round.json lists (q09, q10): particles are not compared in pixels.
 Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots;
-tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare them. `make_round.py --flat OUT` (strength.sh)
+engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh compare them. `make_round.py --flat OUT` (strength.sh)
 writes the same pages with the planets dropped.
 Run from the repository root: python3 core/test-data/planet/make_round.py [--flat OUT]"""
 import json

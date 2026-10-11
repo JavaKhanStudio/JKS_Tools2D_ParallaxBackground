@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# godot-parallax-shots.sh [ROUND_DIR] — the Godot reader (engines/godot) against the libGDX runtime, frame by frame (r87).
+# frame-check.sh [ROUND_DIR] — the Godot reader (engines/godot) against the libGDX runtime, frame by frame (r87).
 #
-#   tools/godot-parallax-shots.sh                          engines/rounds/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet
-#   tools/godot-parallax-shots.sh engines/rounds/round1
+#   engines/godot/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet
+#   engines/godot/tools/frame-check.sh engines/rounds/round1
 #
 # For each round: renders its scenes with libGDX (tools/parallax-lab-shots.sh, 0, 6 and 12 s into the lab's scroll)
 # and with Godot (engines/godot/tests/shots.gd, the same scroll), off screen in cage's headless display on a nested
@@ -18,7 +18,7 @@
 # a FAIL in godot.log. The sequence round (r183) first runs engines/godot/tests/sequence_cycle.gd: Godot's cycle
 # generator against the JVM's picks.
 set -u
-cd "$(dirname "$0")/.." || exit 1
+cd "$(dirname "$0")/../../.." || exit 1
 ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"

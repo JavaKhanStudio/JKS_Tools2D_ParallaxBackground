@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# offscreen-lint.sh [SCRIPT...] — fails on a tools/*.sh that opens a window outside cage (r171).
+# offscreen-lint.sh [SCRIPT...] — fails on a tools/*.sh or engines/*/tools/*.sh that opens a window outside cage (r171).
 #
-#   tools/offscreen-lint.sh                  every tracked tools/*.sh (CI, job build)
+#   tools/offscreen-lint.sh                  every tracked tools/*.sh and engines/*/tools/*.sh (CI, job build)
 #   tools/offscreen-lint.sh path/to/new.sh   one script
 #
 # gradle/offscreen.gradle refuses a JavaExec that is neither offscreen nor headless (r144); this is the same rail for
@@ -20,16 +20,16 @@ set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd) || exit 2
 cd "$ROOT" || exit 2
 if [ $# -eq 0 ]; then
-	mapfile -t scripts < <(git ls-files 'tools/*.sh')
+	mapfile -t scripts < <(git ls-files 'tools/*.sh' 'engines/*/tools/*.sh')
 else
 	scripts=("$@")
 fi
-exec python3 - "$ROOT/tools" "${scripts[@]}" <<'PY'
+exec python3 - "$ROOT" "${scripts[@]}" <<'PY'
 import os
 import re
 import sys
 
-tools_dir, scripts = sys.argv[1], sys.argv[2:]
+root, scripts = sys.argv[1], sys.argv[2:]
 
 HEADLESS = re.compile(r'--headless')
 OPENERS = [
@@ -40,7 +40,7 @@ OPENERS = [
 ]
 FIXED_X = re.compile(r'\b(Xwayland|Xvfb|Xephyr)\s+:\d')
 WRAPS = re.compile(r'\bcage\s+--|(^|[\s"\'/])offscreen\.sh\b')
-CALLS = re.compile(r'(?:^|[\s"\'(;&|])(?:\$\{?\w+\}?/|\./)?tools/([\w.-]+\.sh)\b')
+CALLS = re.compile(r'(?:^|[\s"\'(;&|])(?:\$\{?\w+\}?/|\./)?((?:engines/[\w.-]+/)?tools/[\w.-]+\.sh)\b')
 MARKER = re.compile(r'^\s*#\s*on-screen:\s*\S')
 NO_WINDOW = re.compile(r'^\s*#\s*headless:\s*\S')
 HEREDOC = re.compile(r'<<-?\s*([\'"]?)(\w+)\1')
@@ -90,7 +90,7 @@ wrapped_memo = {}
 
 
 def wrapped(path, seen=()):
-    """Runs cage or offscreen.sh itself, or calls a tools/*.sh that does."""
+    """Runs cage or offscreen.sh itself, or calls a tools/*.sh or engines/*/tools/*.sh that does."""
     key = os.path.realpath(path)
     if key in wrapped_memo:
         return wrapped_memo[key]
@@ -104,7 +104,7 @@ def wrapped(path, seen=()):
         if in_heredoc:
             continue
         for callee in CALLS.findall(text):
-            target = os.path.join(tools_dir, callee)
+            target = os.path.join(root, callee)
             if os.path.realpath(target) != key and wrapped(target, seen + (key,)):
                 result = True
                 break

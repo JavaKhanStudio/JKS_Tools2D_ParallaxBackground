@@ -106,7 +106,7 @@ jobs:
           # 1b. The jMonkeyEngine reader (also on Maven Central).
           cp engines/jme/build/libs/parallax-background-jme-*.jar release/
           # 2. The Godot reader, addons/jks_parallax at the zip's root.
-          tools/godot-addon-zip.sh release
+          engines/godot/tools/addon-zip.sh release
           ls -la release
 
           # The release notes only point at Maven Central when the library was published there.

@@ -3,8 +3,8 @@
 
 Reads OUT_DIR/gdx/<scene>-t0/6/12.png (tools/parallax-lab-shots.sh) and OUT_DIR/<engine>/ the same names, writes
 OUT_DIR/compare.png (libGDX | engine | difference x4, per still) and OUT_DIR/report.txt, and exits 1 when a still's
-mean absolute difference per channel (0-255) is over THRESHOLD. tools/godot-parallax-shots.sh (ENGINE godot) and
-tools/jme-parallax-shots.sh (ENGINE jme) run it. Needs Pillow.
+mean absolute difference per channel (0-255) is over THRESHOLD. engines/godot/tools/frame-check.sh (ENGINE godot) and
+engines/jme/tools/frame-check.sh (ENGINE jme) run it. Needs Pillow.
 """
 import json
 import os

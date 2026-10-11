@@ -4,7 +4,7 @@
 # Godot's stagger against a libGDX without one); jME's PlaxBackground dropping the style it is handed. Runs that
 # engine's frame check on engines/rounds/transfer for each, and fails unless every run FAILs. Restores the files
 # on exit.
-# headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
+# headless: engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh render in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 GD=engines/godot/addons/jks_parallax/plax_background.gd
@@ -26,11 +26,11 @@ run() {
 }
 sed -i 's/if _style == null or _style.kind == "FADE":/if true:/' "$GD"
 grep -q '^	if true:$' "$GD" || { echo "mutation 1 did not apply"; exit 2; }
-run "Godot fading every slot at once" tools/godot-parallax-shots.sh
+run "Godot fading every slot at once" engines/godot/tools/frame-check.sh
 sed -i 's/boolean staggered = transfertStyle.getKind() != TransfertStyle.Kind.FADE;/boolean staggered = false;/' "$GDX"
 grep -q 'boolean staggered = false;' "$GDX" || { echo "mutation 2 did not apply"; exit 2; }
-run "libGDX fading every slot at once" tools/godot-parallax-shots.sh
+run "libGDX fading every slot at once" engines/godot/tools/frame-check.sh
 sed -i 's/reader.addLayersTransfert(model, null, seconds, style);/reader.addLayersTransfert(model, null, seconds, TransfertStyle.FADE);/' "$JME"
 grep -q 'seconds, TransfertStyle.FADE);$' "$JME" || { echo "mutation 3 did not apply"; exit 2; }
-run "jME dropping the style" tools/jme-parallax-shots.sh
+run "jME dropping the style" engines/jme/tools/frame-check.sh
 exit $status

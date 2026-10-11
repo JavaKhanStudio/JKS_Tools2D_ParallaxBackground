@@ -5,7 +5,7 @@
 # the other should be; and, on t15's fogged page (r256), Godot's WAVE shader and jME's FOG shader each dropping the mask
 # while PLAIN keeps it. Runs that engine's frame check on engines/rounds/transfer for each, and fails unless every
 # run FAILs. Restores the files on exit.
-# headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
+# headless: engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh render in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 FILES=(engines/godot/addons/jks_parallax/plax_background.gd engines/godot/addons/jks_parallax/plax_effects.gd
@@ -32,15 +32,15 @@ mutate() {
 	run "$4" "$5"
 }
 mutate 0 's/and _style.kind == "DISSOLVE"$/and _style.kind == "NONE"/' '_style.kind == "NONE"' \
-	"Godot fading instead of masking" tools/godot-parallax-shots.sh
+	"Godot fading instead of masking" engines/godot/tools/frame-check.sh
 mutate 1 's/vec2(screen_uv.x, 1.0 - screen_uv.y)/screen_uv/' 'vec2 p = screen_uv * cells' \
-	"Godot's noise upside down" tools/godot-parallax-shots.sh
+	"Godot's noise upside down" engines/godot/tools/frame-check.sh
 mutate 2 's/TransfertStyle.drift(effectTime)/0/' 'transfertStyle.getSoftness(), 0,' \
-	"libGDX's patches not drifting" tools/godot-parallax-shots.sh
+	"libGDX's patches not drifting" engines/godot/tools/frame-check.sh
 mutate 3 's/return m_Dissolve.x < 1.5 ? 1.0 - m : m;/return m_Dissolve.x < 1.5 ? m : 1.0 - m;/' 'm_Dissolve.x < 1.5 ? m : 1.0 - m' \
-	"jME's sides swapped" tools/jme-parallax-shots.sh
+	"jME's sides swapped" engines/jme/tools/frame-check.sh
 mutate 1 's/COLOR = hazed(tint \* texture(TEXTURE, vec2(u, UV.y)), SCREEN_UV);/COLOR = vec4(hazed(tint * texture(TEXTURE, vec2(u, UV.y)), SCREEN_UV).rgb, (tint * texture(TEXTURE, vec2(u, UV.y))).a);/' \
-	'SCREEN_UV).rgb, (tint' "Godot's WAVE without the mask" tools/godot-parallax-shots.sh
+	'SCREEN_UV).rgb, (tint' "Godot's WAVE without the mask" engines/godot/tools/frame-check.sh
 mutate 3 's/^    gl_FragColor = hazed(color);$/    gl_FragColor = vec4(hazed(color).rgb, color.a);/' 'vec4(hazed(color).rgb, color.a)' \
-	"jME's FOG without the mask" tools/jme-parallax-shots.sh
+	"jME's FOG without the mask" engines/jme/tools/frame-check.sh
 exit $status

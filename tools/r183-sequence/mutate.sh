@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # mutate.sh — breaks Godot's SEQUENCE port (r183) one way at a time and runs the sequence round
-# (tools/godot-parallax-shots.sh engines/rounds/sequence) on each: every mutation must FAIL, the unmutated port first
+# (engines/godot/tools/frame-check.sh engines/rounds/sequence) on each: every mutation must FAIL, the unmutated port first
 # must PASS. The files are restored on exit, whatever happens.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
@@ -15,7 +15,7 @@ trap restore EXIT INT TERM PIPE
 # "ok" or "broken", then the frames' verdict and sequence_cycle.gd's: either failing fails the script.
 run() {
 	local out code
-	out=$(tools/godot-parallax-shots.sh engines/rounds/sequence 2>&1); code=$?
+	out=$(engines/godot/tools/frame-check.sh engines/rounds/sequence 2>&1); code=$?
 	echo "$([ $code = 0 ] && echo ok || echo broken) | $(echo "$out" | grep -E "^(PASS|FAIL): worst" | tail -1) | $(echo "$out" | grep -c "^FAIL") FAIL lines"
 }
 

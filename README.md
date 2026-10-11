@@ -292,6 +292,8 @@ More:
 
 ### In Godot 4
 
+The reader's own folder, its checks and demo: [engines/godot/README.md](engines/godot/README.md).
+
 Export the page as JSON (**Export** with `.jplax` ticked), and add the reader to your project: install *JKS Parallax*
 from the Godot Asset Library (once listed, see RELEASING.md), unzip a release's `jks-parallax-godot-X.Y.Z.zip` at
 your project's root (from 2.5.0 on), or copy `engines/godot/addons/jks_parallax` into your
@@ -330,13 +332,15 @@ A `SEQUENCE` layer draws the same cycle as libGDX from the same seed (`PlaxPage.
 `engines/rounds/sequence`); `bg.set_sequence_seed(randi())` draws a new ground each run, XORed with each layer's
 own seed as in libGDX, and `clear_sequence_seed()` goes back to the page's.
 
-It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
+It draws what the libGDX library draws (`engines/godot/tools/frame-check.sh` compares the two frame by frame), in a world
 `world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the
 export preset lists them under *Filters to export non-resource files* (`*.jplax, *.atlas`); for an atlas written with
 `filter: MipMap`, tick *Mipmaps > Generate* on its `.png` in the Import dock. Not there yet: atlas regions packed
 rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md).
 
 ### In jMonkeyEngine 3
+
+The reader's own folder, its checks and demo: [engines/jme/README.md](engines/jme/README.md).
 
 jME is a Java engine, so it reads pages with this library itself, `.plax` included. The jME reader is on Maven Central
 as `io.github.javakhanstudio:parallax-background-jme`, released with the library under the same version from 2.5.0 on
@@ -367,7 +371,7 @@ bg.setZoom(0.8f);                           // as a libGDX camera's zoom: below 
 ```
 
 The scrolling, tiling, cross-fade and tint are this library's own `ParallaxPageReader`; jME only draws the quads, and
-`tools/jme-parallax-shots.sh` compares its frames with libGDX's. An `EMPTY` layer's hook draws through the same
+`engines/jme/tools/frame-check.sh` compares its frames with libGDX's. An `EMPTY` layer's hook draws through the same
 `JmeBatch`, whose only draw is `draw(region, x, y, width, height)` with a region of a `JmeAtlas`. A `SHADER` layer's
 tiles are a run of their own drawn with a `ParallaxEffect` material (`JmeLayerEffects`), the same frames as libGDX's.
 The background
@@ -463,9 +467,11 @@ core/browser-test/                the core tests that translate, run in Chrome b
 engines/jme/src/.../jme/          the jMonkeyEngine reader, published as parallax-background-jme: PlaxBackground (an
                                   AppState), JmeAtlas, JmeBatch (libGDX's Batch in jME meshes), JmeGradient,
                                   JmeLayerEffects (the SHADER effects, resources/.../ParallaxEffect.j3md)
-engines/jme/tests/                its frame runner (tools/jme-parallax-shots.sh) and demo (:jme:run)
+engines/jme/tests/                its frame runner and demo (:jme:run)
+engines/jme/tools/                its checks: frame-check.sh, probe/ (a fresh game on the published jars)
 engines/godot/addons/jks_parallax the Godot 4 reader
 engines/godot/tests/              Godot's runners for the rounds: shots.gd, particles.gd, sequence_cycle.gd
+engines/godot/tools/              its checks: frame-check.sh, addon-zip.sh (the release zip), addon-zip-check.sh
 engines/rounds/                   the reader rounds every reader is checked on: round1, conformance, transfer, pixelart, effects, particles, shaders
 engines/rounds/reader/src/.../Round  a round's round.json, read for ParallaxShots and JmeParallaxShots (:rounds)
 shots/src/.../ParallaxShots       libGDX stills of a round, what the Godot and jME frames are compared with

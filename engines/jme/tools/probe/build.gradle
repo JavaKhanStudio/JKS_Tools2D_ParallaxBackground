@@ -1,6 +1,6 @@
 plugins { id 'application' }
 
-def props = file('../../gradle.properties').readLines()
+def props = file('../../../../gradle.properties').readLines()
 def parallax = findProperty('parallax') ?: props.find { it.startsWith('version=') }.substring('version='.length())
 def jme = props.find { it.startsWith('jmeVersion=') }.substring('jmeVersion='.length())
 
@@ -18,7 +18,7 @@ application {
 
 tasks.named('run') {
     // core/test-data/samples holds the Hiver page and its atlas.
-    workingDir = file('../../core/test-data/samples')
+    workingDir = file('../../../../core/test-data/samples')
     doFirst {
         def jar = sourceSets.main.runtimeClasspath.find { it.name.startsWith('parallax-background-jme-') }
         println "parallax-background-jme -> ${jar?.name}"

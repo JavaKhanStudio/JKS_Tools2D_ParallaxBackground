@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # r277: proves the planet round (engines/rounds/planet) sees a wrong bend, in Godot's copy (plax_planet.gd,
 # plax_background.gd) and in core's law (ParallaxPageReader.planetBendOf, PlanetBatch), which libGDX draws and jME runs
-# as is. Puts in one mutant at a time, runs tools/godot-parallax-shots.sh engines/rounds/planet for each, and fails
+# as is. Puts in one mutant at a time, runs engines/godot/tools/frame-check.sh engines/rounds/planet for each, and fails
 # unless every run FAILS. Godot: no bend; every layer bent as the front (no depth); dx from the view's left, not its
 # middle; the incoming page bent by the outgoing page's planet. Core: dx from the view's left; every layer bent as the
 # front. r330's: a hook handed no drop (Godot's planet_drop_at, core's planetDropAt: the planet round's p08), and
 # Godot's particle nodes left flat, per LAYER tile and for a VIEW effect (engines/rounds/particles, q09 and q10,
 # whose particles.gd works the drop out apart: libGDX's particle drop is held by core's PlanetCases instead).
 # Restores the files on exit. Writes build/r277/mutant.log, and each mutant's report in build/r277/mutants/.
-# headless: tools/godot-parallax-shots.sh renders in cage.
+# headless: engines/godot/tools/frame-check.sh renders in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 PLANET=engines/godot/addons/jks_parallax/plax_planet.gd
@@ -41,7 +41,7 @@ if text.count(os.environ['FROM']) != 1:
     sys.exit(1)
 open(path, 'w').write(text.replace(os.environ['FROM'], os.environ['TO']))
 PY
-	if tools/godot-parallax-shots.sh "$round" >"$LOG" 2>&1; then
+	if engines/godot/tools/frame-check.sh "$round" >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the $(basename "$round") round ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"; status=1
 	elif [ "$(basename "$round")" = particles ]; then
 		# Not pixels: particles.gd's FAIL lines, by scene.

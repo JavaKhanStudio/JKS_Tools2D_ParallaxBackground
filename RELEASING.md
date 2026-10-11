@@ -45,7 +45,7 @@ snapshot builds after 90 days: a game still on one then needs a newer snapshot o
 (`-Pparallax=<version>` for one pinned build).
 
 To try a change without publishing anything, `./gradlew :core:publishToMavenLocal` (and `:jme:publishToMavenLocal`
-for the jME reader) and add `mavenLocal()` to the game's repositories. `./gradlew -p tools/jme-probe run` is such a
+for the jME reader) and add `mavenLocal()` to the game's repositories. `./gradlew -p engines/jme/tools/probe run` is such a
 game: a headless jME app that takes `parallax-background-jme` from `mavenLocal()` (or Central) and loads and
 scrolls a demo page with it (no pixels: jME's null renderer), then prints OK.
 
@@ -95,7 +95,7 @@ Each release publishes:
   `io.github.javakhanstudio:parallax-background-jme`. Its classes are public API: keep them compatible;
 - a GitHub release with the downloads: the library jars (+ sources, + javadoc), the jME reader's jars and
   `jks-parallax-godot-X.Y.Z.zip` (the Godot reader, `addons/jks_parallax/` at its root, made by
-  `tools/godot-addon-zip.sh`). The editor is a separate commercial product, released on its own (r133, r269):
+  `engines/godot/tools/addon-zip.sh`). The editor is a separate commercial product, released on its own (r133, r269):
   nothing here links to it or attaches it.
 
 ## Godot Asset Library
@@ -131,7 +131,7 @@ releases.
   listing made with that URL needs it changed once that release is out);
 - the description: the README's *In Godot 4* section, and screenshots of a page in Godot.
 
-`tools/godot-addon-zip-check.sh` installs the zip into a blank Godot project, loads a page from `res://` and saves a
+`engines/godot/tools/addon-zip-check.sh` installs the zip into a blank Godot project, loads a page from `res://` and saves a
 frame (`build/godot-addon/check.png`): run it before a first submission, or after the addon's files change.
 
 ## One-time setup: Maven Central credentials

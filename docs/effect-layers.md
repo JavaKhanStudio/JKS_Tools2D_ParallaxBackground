@@ -12,7 +12,7 @@ options as they were weighed; the phases at the end are the plan as decided.
 ## What has to hold
 
 - **One page, three engines.** A page draws the same in libGDX (and the browser), Godot and jME: that is what
-  `tools/godot-parallax-shots.sh` and `tools/jme-parallax-shots.sh` prove, frame by frame, at 2/255. An effect either
+  `engines/godot/tools/frame-check.sh` and `engines/jme/tools/frame-check.sh` prove, frame by frame, at 2/255. An effect either
   draws the same there too, or the editor says, on the effect's own controls, which engine will not draw it.
 - **No allocation per frame** (`FrameAllocationTest`): particles live in a pool sized when the page is built.
 - **Fill rate is the cost** (`:demo:stress`, in the editor repository): a particle is a quad, and hundreds of overlapping ones cost more than

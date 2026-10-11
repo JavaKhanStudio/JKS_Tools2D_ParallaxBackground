@@ -1,8 +1,8 @@
 extends Node
 ## Stills of every scene of a lab round, as shots/.../ParallaxShots takes them with libGDX: the same page, the same 60
-## units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. tools/godot-parallax-shots.sh runs it and compares the
-## two sets. A scene's "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same step as the lab
-## (a transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1}, r249; "DISSOLVE", r250; "THROUGH_COLOR", r251;
+## units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in. engines/godot/tools/frame-check.sh runs it and compares
+## the two sets. A scene's "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same step as the
+## lab (a transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1}, r249; "DISSOLVE", r250; "THROUGH_COLOR", r251;
 ## "FOG_CREEP", r252), its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
 ## the page's EMPTY layers: each stretches the atlas region it names over every tile it is handed (r177). Its
 ## "sequenceSeed" draws the SEQUENCE layers from that game seed (r183). Its "zoom": [1, 0.5] zooms the camera straight
