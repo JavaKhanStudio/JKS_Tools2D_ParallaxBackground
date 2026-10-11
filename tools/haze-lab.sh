@@ -66,7 +66,8 @@ from playwright.sync_api import sync_playwright
 url, chrome, out, mode = sys.argv[1:]
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
-    page = browser.new_page(viewport={"width": 1540, "height": 760})
+    # --same compares panels pixel for pixel: wide enough that lab.css draws the canvas 1:1, no resampling between rows.
+    page = browser.new_page(viewport={"width": 1600 if mode == "same" else 1540, "height": 760})
     errors = []
     page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and errors.append(m.text))
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -98,27 +99,39 @@ with sync_playwright() as p:
         page.evaluate("window.hazeLabAct(6)")
     print(page.text_content("#haze-readout"))
     shot(out)
+    if mode == "same":
+        # Where the canvas is in the still, and its size in GL pixels: lab.css may scale it (r232), the panels with it.
+        canvas = page.evaluate("""() => { const c = document.querySelector('canvas'), r = c.getBoundingClientRect();
+            return [r.left + scrollX, r.top + scrollY, r.width / c.width, r.height / c.height]; }""")
+        with open(out + ".canvas", "w") as f:
+            json.dump(canvas, f)
     if errors:
         sys.exit("page errors: %s" % errors)
     browser.close()
 PY
 echo "still: $OUT"
 [ $MODE = same ] || exit 0
-# The panels sit at x 0 and 764, y 0 and 254, 760 x 250 each (haze-lab.html), their titles in the top 30 px: below them,
-# no pixel may differ by more than 2/255, or the lab's drawing is not the reader's.
+# The panels are 760 x 250 GL pixels, 4 apart (HazeLab, FogLab's sizes), their titles over the top 30; where the canvas sits
+# and its scale come from the page (STILL.canvas), not from the layout of the day (r319: r232's kit moved them, and a
+# fixed crop failed a lab that drew right). Inside each, 3 px in from its edges (the scaling blends the gap in), no
+# pixel may differ from A's by more than 2/255, or the lab's drawing is not the reader's.
 python3 - "$OUT" <<'PY'
-import sys
+import json, sys
 from PIL import Image, ImageChops
 im = Image.open(sys.argv[1]).convert("RGB")
-box = lambda x, y: im.crop((8 + x, 8 + y + 30, 8 + x + 760, 8 + y + 250))
+left, top, sx, sy = json.load(open(sys.argv[1] + ".canvas"))
+W, H, GAP, TITLE, IN = 760, 250, 4, 30, 3
+def box(col, row):
+    x0, y0 = left + col * (W + GAP) * sx, top + row * (H + GAP) * sy
+    return im.crop((round(x0 + IN), round(y0 + TITLE * sy), round(x0 + W * sx - IN), round(y0 + H * sy - IN)))
 a = box(0, 0)
 worst = 0
-for name, (x, y) in {"B": (764, 0), "C": (0, 254), "D": (764, 254)}.items():
-    diff = ImageChops.difference(a, box(x, y)).convert("L")
+for name, (col, row) in {"B": (1, 0), "C": (0, 1), "D": (1, 1)}.items():
+    diff = ImageChops.difference(a, box(col, row)).convert("L")
     hist = diff.histogram()
     off = sum(hist[3:])
-    mean = sum(i * n for i, n in enumerate(hist)) / (760 * 220)
-    print("%s vs A: %d px differ by more than 2/255, mean %.3f/255" % (name, off, mean))
+    mean = sum(i * n for i, n in enumerate(hist)) / (a.width * a.height)
+    print("%s vs A: %d px differ by more than 2/255, mean %.3f/255 (%d x %d compared)" % (name, off, mean, a.width, a.height))
     worst = max(worst, off)
 sys.exit("the lab's one-layer-at-a-time drawing is not the reader's" if worst > 0 else 0)
 PY
