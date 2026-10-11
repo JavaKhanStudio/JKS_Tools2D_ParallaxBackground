@@ -97,8 +97,15 @@ public class ParallaxPageReader implements Disposable
 	private int sequenceSeed;
 	private boolean hasSequenceSeed;
 
-	// Visible area of the camera, refreshed each draw.
+	// Visible area of the camera, refreshed each draw; during a dollied layer, that layer's own (setDolly).
 	private float viewLeft, viewBottom, viewWidth, viewHeight;
+	/** The camera's viewport, zoom and middle, refreshed each draw. */
+	private float viewportWidth, viewportHeight, cameraZoom, cameraX, cameraY;
+	/** Where the layer being drawn is placed from: the view's corner; dollied, the corner of the view at zoom 1. */
+	private float anchorLeft, anchorBottom;
+	/** Each layer drawn at its own zoom by its depth ({@link #setDolly}), through {@link #dollyBatch}. */
+	private boolean dolly;
+	private final DollyBatch dollyBatch = new DollyBatch();
 
 	public void addLayers(List<ParallaxLayer> newLayers)
 	{
@@ -224,12 +231,12 @@ public class ParallaxPageReader implements Disposable
 
 	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
-		viewWidth = worldCamera.viewportWidth * worldCamera.zoom;
-		viewHeight = worldCamera.viewportHeight * worldCamera.zoom;
-		viewLeft = worldCamera.position.x - viewWidth / 2;
-		viewBottom = worldCamera.position.y - viewHeight / 2;
-
-		getLayerEffects().setView(viewWidth, viewHeight, drawingHeight);
+		viewportWidth = worldCamera.viewportWidth;
+		viewportHeight = worldCamera.viewportHeight;
+		cameraZoom = worldCamera.zoom;
+		cameraX = worldCamera.position.x;
+		cameraY = worldCamera.position.y;
+		view(cameraZoom);
 		frontSpeed = frontSpeedOf(layers);
 		transferFrontSpeed = frontSpeedOf(transferLayers);
 		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();
@@ -400,21 +407,65 @@ public class ParallaxPageReader implements Disposable
 		return 1 - keep;
 	}
 
+	/**
+	 * The view at {@code zoom} about the camera's middle: what the layers are tiled across, and the effects laid on;
+	 * where the layers are placed from in it: its corner, or dollied, the corner of the view at zoom 1.
+	 */
+	private void view(float zoom)
+	{
+		viewWidth = viewportWidth * zoom;
+		viewHeight = viewportHeight * zoom;
+		viewLeft = cameraX - viewWidth / 2;
+		viewBottom = cameraY - viewHeight / 2;
+		anchorLeft = dolly ? cameraX - viewportWidth / 2 : viewLeft;
+		anchorBottom = dolly ? cameraY - viewportHeight / 2 : viewBottom;
+		getLayerEffects().setView(viewWidth, viewHeight, anchorLeft - viewLeft, drawingHeight + anchorBottom - viewBottom);
+	}
+
+	/**
+	 * Draws a layer. Dollied ({@link #setDolly}), it is placed from the corner of the view at zoom 1, so that a zoom
+	 * scales it about the view's middle, and at a zoom other than the camera's it is tiled across its own view and drawn
+	 * through {@link #dollyBatch} into the camera's: the effects keep the game's batch.
+	 */
 	private void drawLayer(ArrayList<ParallaxLayer> page, int index, Batch batch, boolean incoming)
 	{
 		ParallaxLayer layer = page.get(index);
-		float originX = viewLeft + layer.currentDistanceX;
-		float originY = viewBottom + drawingHeight + layer.currentDistanceY;
+		float zoom = dolly ? dollyZoom(cameraZoom, incoming ? transferFrontSpeed : frontSpeed, layer) : cameraZoom;
+		Batch drawn = batch;
+		if (zoom != cameraZoom)
+		{
+			view(zoom);
+			drawn = dollyBatch.set(batch, cameraZoom / zoom, cameraX, cameraY);
+		}
+		float originX = anchorLeft + layer.currentDistanceX;
+		float originY = anchorBottom + drawingHeight + layer.currentDistanceY;
 		if (layer.kind == Enum_LayerKind.EMPTY)
-			drawHookLayer(layer, batch, originX, originY);
+			drawHookLayer(layer, batch, drawn, originX, originY);
 		else if (layer.kind == Enum_LayerKind.PARTICLES)
-			drawParticleLayer(layer, batch, originX, originY);
+			drawParticleLayer(layer, batch, drawn, originX, originY);
 		else
-			drawImageLayer(layer, batch, originX, originY, incoming);
+			drawImageLayer(layer, batch, drawn, originX, originY, incoming);
+		if (drawn != batch)
+			view(cameraZoom);
+	}
+
+	/**
+	 * The zoom a dollied layer is drawn at, the camera's being {@code zoom} and its page's fastest speed ratio X
+	 * {@code front}: {@code 1 - k (1 - zoom)}, k the layer's speed ratio X over the front's, as magnitudes. That is a
+	 * camera moving in or out, each layer as far as its speed says (a parallax speed is 1 / distance): the front layer
+	 * at the camera's zoom, as without the dolly, a still one at 1, whatever the zoom; the layers between grow less the
+	 * farther they are. The camera's zoom for every layer of a page that does not scroll.
+	 */
+	public static float dollyZoom(float zoom, float front, ParallaxLayer layer)
+	{
+		if (!(front > 0))
+			return zoom;
+		float k = Math.min(1, Math.abs(layer.getParallaxSpeedRatioX()) / front);
+		return 1 - k * (1 - zoom);
 	}
 
 	/** An EMPTY layer: the game's hook, once per tile the view shows, its tile's corner at {@code (originX, originY)}. */
-	private void drawHookLayer(ParallaxLayer layer, Batch batch, float originX, float originY)
+	private void drawHookLayer(ParallaxLayer layer, Batch batch, Batch drawn, float originX, float originY)
 	{
 		// No mirrored copy: the hook draws what it likes in each tile. Its color changes stay its own.
 		LayerHook hook = layer.name == null ? null : hooks.get(layer.name);
@@ -423,13 +474,13 @@ public class ParallaxPageReader implements Disposable
 			endPageFog(batch);
 			release(batch);
 			hookColor.set(batch.getColor());
-			tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, hook);
+			tile(layer, drawn, originX, originY, repeatOnX, repeatOnY, false, hook);
 			batch.setColor(hookColor);
 		}
 	}
 
 	/** A PARTICLES layer: its effect from the view's corner plus its decal (VIEW), or in each tile (LAYER). */
-	private void drawParticleLayer(ParallaxLayer layer, Batch batch, float originX, float originY)
+	private void drawParticleLayer(ParallaxLayer layer, Batch batch, Batch drawn, float originX, float originY)
 	{
 		ParallaxParticles particles = layer.getParticles();
 		if (particles == null || particles.isEmpty())
@@ -440,14 +491,14 @@ public class ParallaxPageReader implements Disposable
 		int srcAlpha = batch.getBlendSrcFuncAlpha(), dstAlpha = batch.getBlendDstFuncAlpha();
 		if (layer.getAnchor() == Enum_ParticleAnchor.VIEW)
 		{
-			float x = viewLeft + layer.getDecalPercentX() * (layer.getWorldWidth() / 100);
-			float y = viewBottom + drawingHeight + layer.getDecalPercentY() * (layer.getWorldHeight() / 100);
+			float x = anchorLeft + layer.getDecalPercentX() * (layer.getWorldWidth() / 100);
+			float y = anchorBottom + drawingHeight + layer.getDecalPercentY() * (layer.getWorldHeight() / 100);
 			if (x + particles.getMaxX() > viewLeft && x + particles.getMinX() < viewLeft + viewWidth
 					&& y + particles.getMaxY() > viewBottom && y + particles.getMinY() < viewBottom + viewHeight)
-				particles.draw(batch, x, y, batch.getColor());
+				particles.draw(drawn, x, y, batch.getColor());
 		}
 		else
-			tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
+			tile(layer, drawn, originX, originY, repeatOnX, repeatOnY, false, null);
 		// The emitters set the blend function their .p asks for: the next layer is drawn with the game's.
 		batch.setBlendFunctionSeparate(srcColor, dstColor, srcAlpha, dstAlpha);
 	}
@@ -456,7 +507,7 @@ public class ParallaxPageReader implements Disposable
 	 * An IMAGE, SHADER, SEQUENCE or FLOOR layer: through the page fog's shader or the layer's effect (or faded, when the
 	 * engine has none for a dissolve or a grade), tiled, its mirrored copy stacked beside it.
 	 */
-	private void drawImageLayer(ParallaxLayer layer, Batch batch, float originX, float originY, boolean incoming)
+	private void drawImageLayer(ParallaxLayer layer, Batch batch, Batch drawn, float originX, float originY, boolean incoming)
 	{
 		// The fog is drawn on images: an EMPTY or PARTICLES layer is drawn as is.
 		float fog = incoming ? fogOf(transferFogStrength, transferFrontSpeed, layer) : fogOf(fogStrength, frontSpeed, layer);
@@ -491,17 +542,17 @@ public class ParallaxPageReader implements Disposable
 
 		if (layer.kind == Enum_LayerKind.FLOOR)
 			// Its rows across the whole view, whatever the page repeats; no mirrored copy.
-			layer.drawFloor(batch, originY, viewLeft, viewLeft + viewWidth, viewBottom, viewBottom + viewHeight);
+			layer.drawFloor(drawn, originY, viewLeft, viewLeft + viewWidth, viewBottom, viewBottom + viewHeight);
 		else
-			tile(layer, batch, originX, originY, repeatOnX, repeatOnY, false, null);
+			tile(layer, drawn, originX, originY, repeatOnX, repeatOnY, false, null);
 
 		if (layer.isMirror && repeatOnX != repeatOnY && layer.kind != Enum_LayerKind.FLOOR)
 		{
 			// A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
 			if (repeatOnX)
-				tile(layer, batch, originX, originY + layer.padY + layer.getHeight(), true, false, true, null);
+				tile(layer, drawn, originX, originY + layer.padY + layer.getHeight(), true, false, true, null);
 			else
-				tile(layer, batch, originX + layer.padX + layer.getWidth(), originY, false, true, true, null);
+				tile(layer, drawn, originX + layer.padX + layer.getWidth(), originY, false, true, true, null);
 		}
 
 		if (shaded)
@@ -782,4 +833,16 @@ public class ParallaxPageReader implements Disposable
 
 	public void setRepeatOnY(boolean repeatOnY)
 	{this.repeatOnY = repeatOnY;}
+
+	/**
+	 * The dolly (r278, docs/depth-tricks.md): with it, the camera's zoom scales each layer by its depth, the near ones
+	 * more, the sky not at all ({@link #dollyZoom}), all about the view's middle; without it (the default) the page
+	 * zooms as one picture, about the view's bottom left corner, where its layers are placed from. Nothing stored: a
+	 * game's switch, for a camera that zooms.
+	 */
+	public void setDolly(boolean dolly)
+	{this.dolly = dolly;}
+
+	public boolean isDolly()
+	{return dolly;}
 }

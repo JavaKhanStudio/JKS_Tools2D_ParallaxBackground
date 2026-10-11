@@ -74,6 +74,14 @@ public interface LayerEffects
 	default void setView(float width, float height, float floor)
 	{}
 
+	/**
+	 * {@link #setView(float, float, float)}, and how far right of the view's left edge the layers' x 0 is: 0 but for a
+	 * dollied page ({@link ParallaxPageReader#setDolly}), whose layers are placed from the view at zoom 1 (r278). The
+	 * reader calls this one; an engine's effects that do not take {@code left} lay FOG's noise as if it were 0.
+	 */
+	default void setView(float width, float height, float left, float floor)
+	{setView(width, height, floor);}
+
 	/** {@link #setDissolve} sides: no mask; the outgoing layer, kept where the mask is not; the incoming, where it is. */
 	int DISSOLVE_NONE = 0, DISSOLVE_OUTGOING = 1, DISSOLVE_INCOMING = 2;
 

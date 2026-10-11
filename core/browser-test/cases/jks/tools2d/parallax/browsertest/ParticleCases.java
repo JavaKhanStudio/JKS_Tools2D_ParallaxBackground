@@ -21,7 +21,7 @@ import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 
 /**
  * ParallaxPageReader's cases on PARTICLES layers: pinned to their layer or to the view, faded and tinted with their
- * page, warmed on their first frame. Shared builders in {@link ReaderFixtures}.
+ * page, warmed on their first frame, dollied. Shared builders in {@link ReaderFixtures}.
  */
 final class ParticleCases extends ReaderFixtures
 {
@@ -33,7 +33,8 @@ final class ParticleCases extends ReaderFixtures
 				new BrowserCase("reader: particlesPastTheirBoxAreDrawnWhenTheBoxIsNot", () -> new ParticleCases().particlesPastTheirBoxAreDrawnWhenTheBoxIsNot()),
 				new BrowserCase("reader: particlesFadeAndTintWithTheirPage", () -> new ParticleCases().particlesFadeAndTintWithTheirPage()),
 				new BrowserCase("reader: aParticleLayerWithoutAnEffectDrawsNothing", () -> new ParticleCases().aParticleLayerWithoutAnEffectDrawsNothing()),
-				new BrowserCase("reader: aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame", () -> new ParticleCases().aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame()));
+				new BrowserCase("reader: aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame", () -> new ParticleCases().aFreshParticleLayerIsAlreadyFallingOnItsFirstFrame()),
+				new BrowserCase("reader: dollyScalesTheParticlesAboutTheViewsMiddle", () -> new ParticleCases().dollyScalesTheParticlesAboutTheViewsMiddle()));
 	}
 
 	/**
@@ -154,6 +155,42 @@ final class ParticleCases extends ReaderFixtures
 			equal(8.25f, dots().get(0)[1] + 0.5f, 1e-3f, name + ": both ways");
 			equal(0, effect.getEmitters().get(0).getX(), 0, name + ": the emitter stayed in the view");
 		}
+	}
+
+	/**
+	 * Dollied (r278) at zoom 0.5, a VIEW layer at half the front's speed is drawn at zoom 0.75: its particle, emitted at
+	 * the view's middle, stays there, 2/3 of a unit wide; drifted 6 left and 3 down with the layer, it is 4 and 2 from
+	 * the middle in the camera's world units, two thirds of the way.
+	 */
+	void dollyScalesTheParticlesAboutTheViewsMiddle()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		reader.setWorldSize(40, 22.5f);
+		camera.zoom = 0.5f;
+		reader.setDolly(true);
+		ParallaxLayer rain = ParallaxLayer.particles(dot(0), Enum_ParticleAnchor.VIEW, 0.3f);
+		rain.setParallaxSpeedRatioX(0.1f);
+		rain.setParallaxSpeedRatioY(0.1f);
+		rain.setDecalPercentX(50);
+		rain.setDecalPercentY(50);
+		ParallaxLayer front = layer(0);
+		front.setParallaxSpeedRatioX(0.2f);
+		reader.addLayers(list(rain, front));
+
+		reader.act(1 / 60f, 0, 0);
+		draws.clear();
+		reader.draw(camera, batch);
+		float[] dot = draws.get(0);
+		equal(2 / 3f, dot[2], 1e-4f, "two thirds of a unit wide");
+		equal(20, dot[0] + dot[2] / 2, 1e-4f, "at the view's middle across");
+		equal(11.25f, dot[1] + dot[3] / 2, 1e-4f, "and up");
+
+		reader.act(1, 60, 30);
+		draws.clear();
+		reader.draw(camera, batch);
+		dot = draws.get(0);
+		equal(16, dot[0] + dot[2] / 2, 1e-3f, "drifted 6 left in its view, 4 in the camera's");
+		equal(9.25f, dot[1] + dot[3] / 2, 1e-3f, "3 down, 2");
 	}
 
 	/** Particles reach past their box: a box out of the view still draws the particles that are in it. */

@@ -78,6 +78,16 @@ barely moves. Only games whose camera zooms gain anything.
 
 - Built: in the reader only, a game's switch (no stored field, no format bump, nothing in Godot's or jME's file
   readers, but their draw code copies it). Tiling must read the scaled view (`tilesJustEnoughToCoverTheView`).
+- Built (r278): `ParallaxPageReader.setDolly`. A camera moving in by `dz` grows a layer at distance `d` by
+  `d / (d - dz)`; a parallax speed is `1 / d`, so with `k` a layer's speed over the front's, the front layer at the
+  camera's zoom `z` puts every layer at zoom `1 - k (1 - z)` (`dollyZoom`): the front as the camera, a still layer at 1.
+  Each layer is tiled across its own view, at its zoom about the camera's middle, placed from the corner of the view
+  at zoom 1 (so the zoom scales it about the middle, where without the dolly the page zooms about the view's corner),
+  and drawn through `DollyBatch`, which scales its quads (and its particles' vertices) into the camera's view; the
+  effects keep the game's batch and are laid on the layer's view, FOG's noise from where its layers' corner is
+  (`LayerEffects.setView(width, height, left, floor)`). Godot draws each layer in its own view at as many pixels a
+  unit (`PlaxBackground._zoom_of`, `_anchor_of`); jME runs core's. Round `engines/godot/tests/dolly`,
+  `tools/r278-dolly/mutate.sh`. A FLOOR's rows are not dollied one by one: the floor takes its layer's zoom.
 
 ### 5. From one painting: depth estimated, split into layers
 

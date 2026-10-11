@@ -67,6 +67,8 @@ public class PlaxBackground extends BaseAppState
 	private WholePage_Model pendingPage;
 	private TextureAtlas pendingAtlas;
 	private int screenWidth, screenHeight;
+	/** The camera's zoom, as libGDX's OrthographicCamera.zoom ({@link #setZoom}). */
+	private float zoom = 1;
 
 	public PlaxBackground()
 	{this(DEFAULT_WORLD_WIDTH);}
@@ -280,9 +282,22 @@ public class PlaxBackground extends BaseAppState
 		// only the view (ParallaxPageReader.draw).
 		worldCamera.viewportWidth = worldWidth;
 		worldCamera.viewportHeight = worldHeight;
-		worldCamera.zoom = 1;
+		worldCamera.zoom = zoom;
 		worldCamera.position.set(worldWidth / 2, worldHeight / 2, 0);
 	}
+
+	/**
+	 * Zooms the view, as a libGDX game's camera does: below 1 in, above 1 out. The page zooms as one picture, or with
+	 * {@code getReader().setDolly(true)} each layer by its depth (r278).
+	 */
+	public void setZoom(float zoom)
+	{
+		this.zoom = zoom;
+		worldCamera.zoom = zoom;
+	}
+
+	public float getZoom()
+	{return zoom;}
 
 	public WholePage_Model getPage()
 	{return page;}

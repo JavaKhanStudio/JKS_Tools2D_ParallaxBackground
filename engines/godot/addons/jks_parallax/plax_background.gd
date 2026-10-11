@@ -55,6 +55,18 @@ extends CanvasLayer
 @export var speed_constant_y := 0.0
 ## False: nothing moves unless act() is called (to step it yourself, at a fixed rate).
 @export var auto_act := true
+## The camera's zoom, as libGDX's OrthographicCamera.zoom: below 1 zooms in, above 1 out. Without the dolly the page
+## zooms as one picture, about the view's bottom left corner, where its layers are placed from (ParallaxPageReader).
+@export var zoom := 1.0:
+	set(value):
+		zoom = value
+		_rescale()
+## ParallaxPageReader.setDolly (r278): the zoom scales each layer by its depth (PlaxEffects.dolly_zoom), the near ones
+## more, a still one not at all, about the view's middle.
+@export var dolly := false:
+	set(value):
+		dolly = value
+		_rescale()
 ## Scroll speed for the next frame only, then reset (e.g. from the player's movement).
 var speed_consumable_x := 0.0
 var speed_consumable_y := 0.0
@@ -421,6 +433,13 @@ func _redraw() -> void:
 		l.canvas.queue_redraw()
 
 
+## A new zoom or dolly: the particles placed again, the layers drawn again.
+func _rescale() -> void:
+	if _particles != null and page != null:
+		_particles.place()
+	_redraw()
+
+
 ## ParallaxPageReader.syncTransferPositions: matched from the front, the incoming layer keeps its own decal and takes
 ## the distance its counterpart has scrolled from its decal.
 func _sync_transfer_positions() -> void:
@@ -695,11 +714,27 @@ func _draw_page() -> void:
 	_draw_gradients(_screen_size())
 
 
-## Pixels per page unit and the screen height, as the screen is now.
-func _update_scale() -> void:
+## Pixels per page unit and the screen height, as the screen is now, for a layer drawn at `z` (_zoom_of).
+func _update_scale(z := 1.0) -> void:
 	var screen := _screen_size()
-	_ppu = screen.x / world_width
+	_ppu = screen.x / (world_width * z)
 	_screen_h = screen.y
+
+
+## The zoom `l` is drawn at: the camera's (zoom), or dollied, by its depth against its page's front
+## (ParallaxPageReader.drawLayer).
+func _zoom_of(l: Dictionary) -> float:
+	if not dolly:
+		return zoom
+	return PlaxEffects.dolly_zoom(zoom, PlaxEffects.front_speed_of(transfer_layers if l.incoming else layers), l.model)
+
+
+## Where the layers are placed from in the view at zoom `z`, from its bottom left corner: the corner itself, or dollied,
+## the corner of the view at zoom 1, so that a zoom scales them about the middle (ParallaxPageReader.view).
+func _anchor_of(z: float) -> Vector2:
+	if not dolly:
+		return Vector2.ZERO
+	return Vector2(world_width * (z - 1), _world_height * (z - 1)) / 2
 
 
 ## The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's; with a
@@ -763,13 +798,16 @@ func _set_modulate(alpha: float) -> bool:
 func _draw_layer(l: Dictionary) -> void:
 	if page == null or not _set_modulate(_alpha_of(l)):
 		return
-	_update_scale()
+	# Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
+	var z := _zoom_of(l)
+	_update_scale(z)
 	_target = l.canvas
 	var m: Dictionary = l.model
-	var x: float = l.distance_x
-	var y: float = l.distance_y
-	var view_w := world_width
-	var view_h := _world_height
+	var anchor := _anchor_of(z)
+	var x: float = l.distance_x + anchor.x
+	var y: float = l.distance_y + anchor.y
+	var view_w := world_width * z
+	var view_h := _world_height * z
 	if m.kind == "EMPTY":
 		# No mirrored copy: the hook draws what it likes in each tile.
 		var hook: Callable = _hooks.get(m.name, Callable())
@@ -790,7 +828,7 @@ func _draw_layer(l: Dictionary) -> void:
 		PlaxEffects.set_grade(l.canvas.material, _style.color,
 				_style.grade_at(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size())))
 	if m.kind == "SHADER":
-		PlaxEffects.apply(l.canvas.material, l, _effect_time, view_w, view_h)
+		PlaxEffects.apply(l.canvas.material, l, _effect_time, view_w, view_h, anchor.x, anchor.y)
 	if l.canvas.material:
 		l.canvas.material.set_shader_parameter("haze", l.haze)
 		l.canvas.material.set_shader_parameter("fog_color", l.fog_color)

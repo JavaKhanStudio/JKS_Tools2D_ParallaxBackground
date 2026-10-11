@@ -168,8 +168,8 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	private final int[] region = new int[EFFECTS.length + 1], size = new int[EFFECTS.length + 1], effect = new int[EFFECTS.length + 1],
 			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1], dissolve = new int[EFFECTS.length + 1],
 			cells = new int[EFFECTS.length + 1], grade = new int[EFFECTS.length + 1], across = new int[EFFECTS.length + 1], up = new int[EFFECTS.length + 1];
-	/** The view's size in world units, which FOG's noise is laid across, and where the layers' y 0 is ({@link #setView}). */
-	private float viewWidth, viewHeight, viewFloor;
+	/** The view's size in world units, which FOG's noise is laid across, and where the layers' x and y 0 are ({@link #setView}). */
+	private float viewWidth, viewHeight, viewLeft, viewFloor;
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}): side, ramp, softness, drift; cells. */
 	private float dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift, cellsX, cellsY;
 	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
@@ -236,7 +236,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		// Bound by setShader while the batch draws; bound here when it does not, for the uniforms.
 		if (!batch.isDrawing())
 			program.bind();
-		uniforms(layer, phase, viewWidth, viewHeight, viewFloor, numbers);
+		uniforms(layer, phase, viewWidth, viewHeight, viewLeft, viewFloor, numbers);
 		program.setUniformf(region[index], numbers[0], numbers[1], numbers[2], numbers[3]);
 		program.setUniformf(size[index], numbers[4], numbers[5]);
 		program.setUniformf(effect[index], numbers[6], numbers[7], numbers[8]);
@@ -252,9 +252,14 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 
 	@Override
 	public void setView(float width, float height, float floor)
+	{setView(width, height, 0, floor);}
+
+	@Override
+	public void setView(float width, float height, float left, float floor)
 	{
 		viewWidth = width;
 		viewHeight = height;
+		viewLeft = left;
 		viewFloor = floor;
 	}
 
@@ -377,10 +382,17 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	 * {@link ParallaxLayer#getEffectStartY}), and 1, or -1 for a layer flipped on Y (r262).
 	 */
 	public static float[] uniforms(ParallaxLayer layer, float phase, float viewWidth, float viewHeight, float floor, float[] out)
+	{return uniforms(layer, phase, viewWidth, viewHeight, 0, floor, out);}
+
+	/**
+	 * The same, the layers' x 0 {@code left} right of the view's left edge, as their y 0 is {@code floor} above its
+	 * bottom: a dollied page's (r278, {@link LayerEffects#setView(float, float, float, float)}).
+	 */
+	public static float[] uniforms(ParallaxLayer layer, float phase, float viewWidth, float viewHeight, float left, float floor, float[] out)
 	{
 		uniforms(layer, phase, out);
 		out[9] = viewWidth;
-		out[10] = layer.getEffectStartX();
+		out[10] = left + layer.getEffectStartX();
 		out[11] = layer.isFlipX() ? -1 : 1;
 		out[12] = viewHeight;
 		out[13] = floor + layer.getEffectStartY();

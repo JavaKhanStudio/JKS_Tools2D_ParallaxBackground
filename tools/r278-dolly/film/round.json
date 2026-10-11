@@ -1,0 +1,29 @@
+{
+ "round": "r278-dolly-film",
+ "about": "Not a frame check: tools/r278-dolly/film.sh films it with libGDX (shots/ParallaxShots, through tools/ai-film.sh) and stacks the two films side by side.",
+ "scenes": [
+  {
+   "id": "dolly",
+   "page": "engines/godot/tests/round1/s10.jplax",
+   "atlasDir": "core/test-data/samples/transfer",
+   "name": "calm-dolly",
+   "about": "the film attached to r278: Calm (round1 s10, nine layers) dollied: the near forest grows, the far peaks barely, the sky not at all, filmed after the 12 s still for 8 s at 30 fps while the zoom goes on in from 1 to 0.7 (straight from 1.45 at 0 s to 1 at 12 s: 0.0375 a second)",
+   "zoom": [
+    1.45,
+    1.0
+   ],
+   "dolly": true
+  },
+  {
+   "id": "plain",
+   "page": "engines/godot/tests/round1/s10.jplax",
+   "atlasDir": "core/test-data/samples/transfer",
+   "name": "calm-plain-zoom",
+   "about": "the film attached to r278: the same without the dolly: the page zooms as one picture, about the view's bottom left corner, filmed after the 12 s still for 8 s at 30 fps while the zoom goes on in from 1 to 0.7 (straight from 1.45 at 0 s to 1 at 12 s: 0.0375 a second)",
+   "zoom": [
+    1.45,
+    1.0
+   ]
+  }
+ ]
+}

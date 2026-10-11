@@ -1,0 +1,163 @@
+{
+ "round": "dolly",
+ "about": "The dolly (r278, docs/depth-tricks.md \u00a74): a camera zoom that scales each layer by its depth, the near ones more, about the view's middle (ParallaxPageReader.setDolly, PlaxBackground.dolly). Each scene's \"zoom\" moves straight from its first value at 0 s to its second at 12 s, set before each still. The pages are other rounds' (written by hand, nothing generated). Godot draws each layer in its own view (PlaxBackground._zoom_of, _anchor_of); jME runs core's DollyBatch. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "scenes": [
+  {
+   "id": "d01",
+   "page": "engines/godot/tests/conformance/c01.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "dolly-in",
+   "about": "c01 (Hiver, repeat X, trimmed regions) dollied in from zoom 1 to 0.5: the trees grow to twice their size, the far peaks barely, the sky band not at all; all about the view's middle",
+   "zoom": [
+    1,
+    0.5
+   ],
+   "dolly": true
+  },
+  {
+   "id": "d02",
+   "page": "engines/godot/tests/conformance/c01.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "dolly-out",
+   "about": "c01 dollied out from zoom 1 to 1.6: the near layers shrink most and tile wider, more tiles in the view",
+   "zoom": [
+    1,
+    1.6
+   ],
+   "dolly": true
+  },
+  {
+   "id": "d03",
+   "page": "engines/godot/tests/conformance/c01.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "zoom-plain",
+   "about": "c01 zoomed from 1 to 0.5 without the dolly: the page as one picture, about the view's bottom left corner, as before r278 (Godot's new zoom against core's)",
+   "zoom": [
+    1,
+    0.5
+   ]
+  },
+  {
+   "id": "d04",
+   "page": "engines/godot/tests/conformance/c02.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "dolly-xy",
+   "about": "c02 (repeat X and Y, padded), scrolling up at 30 units/s too, dollied from 0.8 to 0.6: every layer tiles both ways in its own view",
+   "zoom": [
+    0.8,
+    0.6
+   ],
+   "dolly": true,
+   "speedY": 30
+  },
+  {
+   "id": "d05",
+   "page": "engines/godot/tests/conformance/c03.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "dolly-y-mirrored",
+   "about": "c03 (repeat Y, mirrored copies to the right), scrolling up at 30 units/s, dollied out from 0.7 to 1.3",
+   "zoom": [
+    0.7,
+    1.3
+   ],
+   "dolly": true,
+   "speedY": 30
+  },
+  {
+   "id": "d06",
+   "page": "engines/godot/tests/conformance/c05.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "dolly-no-repeat",
+   "about": "c05 (no repeat, flipX on odd layers): each layer drawn once, scaled about the middle as it scrolls off, from 1 to 0.6",
+   "zoom": [
+    1,
+    0.6
+   ],
+   "dolly": true
+  },
+  {
+   "id": "d07",
+   "page": "engines/godot/tests/shaders/s01.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "dolly-shaders",
+   "about": "s01 (a WAVE ripple and a FOG mist band) dollied from 0.9 to 0.6: the ripple and the noise scale with their layer, the noise laid from where the view at zoom 1 puts the layers",
+   "zoom": [
+    0.9,
+    0.6
+   ],
+   "dolly": true
+  },
+  {
+   "id": "d08",
+   "page": "engines/godot/tests/fog/f01.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "dolly-fog",
+   "about": "f01 (a page fog of 0.03, a WAVE and a FOG layer) dollied out from 1 to 1.4: each layer keeps its fog, by its speed, at its own zoom",
+   "zoom": [
+    1,
+    1.4
+   ],
+   "dolly": true
+  },
+  {
+   "id": "d09",
+   "page": "engines/godot/tests/effects/e01.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "dolly-hook",
+   "about": "e01 (Hiver with an EMPTY slot drawn by a hook) dollied from 1 to 0.6: the hook is handed its layer's tiles, and what it draws is scaled with them",
+   "zoom": [
+    1,
+    0.6
+   ],
+   "dolly": true,
+   "hooks": {
+    "slot": {
+     "region": "parallax4",
+     "position": 1
+    }
+   }
+  },
+  {
+   "id": "d10",
+   "page": "engines/godot/tests/conformance/c04.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "dolly-cross-fade",
+   "about": "t01 (Hiver, mirrored, into Calm 4 s in over 4 s) dollied from 0.9 to 0.6: each page's layers by their own page's front",
+   "zoom": [
+    0.9,
+    0.6
+   ],
+   "dolly": true,
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/godot/tests/round1/s10.jplax",
+    "atlasDir": "core/test-data/samples/transfer"
+   }
+  },
+  {
+   "id": "d11",
+   "page": "engines/godot/tests/sequence/q01.jplax",
+   "atlasDir": "core/test-data/sequence",
+   "name": "dolly-sequence",
+   "about": "q01 (SEQUENCE strips between the hills) dollied from 1 to 0.6: each cycle's slots searched in its own view",
+   "zoom": [
+    1,
+    0.6
+   ],
+   "dolly": true
+  },
+  {
+   "id": "d12",
+   "page": "engines/godot/tests/floor/g01.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "dolly-floor",
+   "about": "g01 (a MODE7 floor, the trees planted on it) dollied from 1 to 0.7: the floor's rows across its own view, the trees at their stored speed's depth (the floor itself is not dollied row by row: out of r278)",
+   "zoom": [
+    1,
+    0.7
+   ],
+   "dolly": true
+  }
+ ]
+}

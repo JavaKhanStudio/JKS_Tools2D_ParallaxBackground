@@ -71,6 +71,12 @@ the generator or drawCycle and change both, regenerate picks.json, run tools/r18
 (reader.setSequenceSeed, Godot set_sequence_seed) is XORed with each layer's stored one. A cycle no wider than 0 (pads
 outweighing segments) can't tile and is drawn once, culled by its slots' real extent (getCycleLeft/Right, Godot
 _cycle_left/_right), in both (r202; SequenceCases.sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce, q04 'backward').
+THE DOLLY (r278, setDolly, a game's switch, nothing stored) DRAWS EACH LAYER AT ITS OWN ZOOM, 1 - k(1 - zoom), k its
+speed over its page's front: tiled across its own view, placed from the view at zoom 1 (so it scales about the middle;
+without the dolly a zoom scales the page about the view's corner), drawn through DollyBatch into the camera's view.
+Effects get the GAME's batch (JmeLayerEffects casts it to JmeBatch) and setView(w, h, left, floor) with the layers'
+corner, or FOG's noise slides off its image. Godot: _zoom_of/_anchor_of, each layer at its own _ppu; round
+engines/godot/tests/dolly, tools/r278-dolly/mutate.sh.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.

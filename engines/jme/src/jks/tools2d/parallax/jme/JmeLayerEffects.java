@@ -57,7 +57,7 @@ public class JmeLayerEffects implements LayerEffects
 	private final Map<ParallaxLayer, Shaded> shaded = new WeakHashMap<>();
 	private final float[] numbers = new float[15];
 	/** The view's size in world units, which FOG's noise is laid across, and where the layers' y 0 is ({@link #setView}). */
-	private float viewWidth, viewHeight, viewFloor;
+	private float viewWidth, viewHeight, viewLeft, viewFloor;
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}). */
 	private float side, ramp, softness, drift, cellsX, cellsY;
 	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
@@ -93,7 +93,7 @@ public class JmeLayerEffects implements LayerEffects
 			s = new Shaded(material, kind);
 			shaded.put(layer, s);
 		}
-		GdxLayerEffects.uniforms(layer, phase, viewWidth, viewHeight, viewFloor, numbers);
+		GdxLayerEffects.uniforms(layer, phase, viewWidth, viewHeight, viewLeft, viewFloor, numbers);
 		s.region.set(numbers[0], numbers[1], numbers[2], numbers[3]);
 		s.size.set(numbers[4], numbers[5]);
 		s.effect.set(numbers[6], numbers[7], numbers[8]);
@@ -131,9 +131,14 @@ public class JmeLayerEffects implements LayerEffects
 
 	@Override
 	public void setView(float width, float height, float floor)
+	{setView(width, height, 0, floor);}
+
+	@Override
+	public void setView(float width, float height, float left, float floor)
 	{
 		viewWidth = width;
 		viewHeight = height;
+		viewLeft = left;
 		viewFloor = floor;
 	}
 

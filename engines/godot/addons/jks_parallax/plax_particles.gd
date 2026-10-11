@@ -49,11 +49,11 @@ func scene_of(model: Dictionary, from_page: PlaxPage, from_atlas: PlaxAtlas, ind
 	return scene
 
 
-## Moves every PARTICLES layer's instances where its layer is now, makes the ones a tile needs, and tints them.
+## Moves every PARTICLES layer's instances where its layer is now, makes the ones a tile needs, and tints them. At a
+## zoom, each layer's are placed in its own view (PlaxBackground._draw_layer) and scaled by 1 over its zoom.
 func place() -> void:
 	if _bg.page == null:
 		return
-	_bg._update_scale()
 	for l in _bg.layers + _bg.transfer_layers:
 		if l.model.kind != "PARTICLES":
 			continue
@@ -64,6 +64,7 @@ func place() -> void:
 		holder.visible = holder.modulate.a > 0
 		if l.scene == null:
 			continue
+		_bg._update_scale(_bg._zoom_of(l))
 		if l.model.particlesAnchor == "VIEW":
 			_place_view_particles(l)
 		else:
@@ -74,18 +75,22 @@ func place() -> void:
 ## plus the decal, as ParallaxPageReader places it.
 func _place_view_particles(l: Dictionary) -> void:
 	var node: Node2D = _instance(l, Vector2i.ZERO)
+	var z := _bg._zoom_of(l)
 	var ppu := _bg._ppu
 	var screen_h := _bg._screen_h
+	var anchor := _bg._anchor_of(z)
+	node.scale = node.get_meta("plax_scale") / z
 	var decal_x: float = l.model.decal_X_Ratio * (_bg.world_width / 100.0)
 	var decal_y: float = l.model.decal_Y_Ratio * (_bg._world_height / 100.0)
-	node.position = Vector2(l.travel_x * ppu, screen_h - l.travel_y * ppu)
+	node.position = Vector2((anchor.x + l.travel_x) * ppu, screen_h - (anchor.y + l.travel_y) * ppu)
 	if node.has_meta("plax_offset"):
+		# In the node's own pixels, which its scale makes ppu on screen: those of zoom 1.
 		var authored: Vector3 = node.get_meta("plax_offset")
 		node.process_material.emission_shape_offset = authored + Vector3(
-				-(l.travel_x - decal_x) * ppu, (l.travel_y - decal_y) * ppu, 0)
+				-(l.travel_x - decal_x) * ppu * z, (l.travel_y - decal_y) * ppu * z, 0)
 	else:
 		# A custom process material cannot be moved back: the emitter stays at the decal, and nothing drifts.
-		node.position = Vector2(decal_x * ppu, screen_h - decal_y * ppu)
+		node.position = Vector2((anchor.x + decal_x) * ppu, screen_h - (anchor.y + decal_y) * ppu)
 
 
 ## LAYER: an instance at the bottom-left corner of each tile the view shows, as PlaxBackground._tile places them. On a
@@ -93,7 +98,9 @@ func _place_view_particles(l: Dictionary) -> void:
 ## CPUParticles2D has none, so its box grown by its own size each way. On an axis not repeated there is one tile,
 ## always kept.
 func _place_tile_particles(l: Dictionary) -> void:
+	var z := _bg._zoom_of(l)
 	var ppu := _bg._ppu
+	var anchor := _bg._anchor_of(z)
 	var width: float = l.width
 	var height: float = l.height
 	var reach := Rect2(-width, -height, 3 * width, 3 * height)
@@ -101,25 +108,27 @@ func _place_tile_particles(l: Dictionary) -> void:
 	if sample is GPUParticles2D:
 		reach = Rect2(0, 0, width, height)
 		var r: Rect2 = sample.visibility_rect
-		# Pixels, y down from the corner, into page units, y up.
-		reach = reach.merge(Rect2(r.position.x / ppu, -r.end.y / ppu, r.size.x / ppu, r.size.y / ppu))
-	var view_w := _bg.world_width
-	var view_h := _bg._world_height
+		# The node's pixels, y down from the corner, into page units, y up: zoom 1's, the node scaled by 1 / z.
+		var unit := ppu * z
+		reach = reach.merge(Rect2(r.position.x / unit, -r.end.y / unit, r.size.x / unit, r.size.y / unit))
+	var view_w := _bg.world_width * z
+	var view_h := _bg._world_height * z
 	var repeat_x := _bg._repeat_x
 	var repeat_y := _bg._repeat_y
 	var step_x: float = width + l.model.padX
 	var step_y: float = height + l.model.padY
-	var range_x := _tile_range(l.travel_x, reach.position.x, reach.end.x, step_x, repeat_x, view_w)
-	var range_y := _tile_range(l.travel_y, reach.position.y, reach.end.y, step_y, repeat_y, view_h)
+	var range_x := _tile_range(anchor.x + l.travel_x, reach.position.x, reach.end.x, step_x, repeat_x, view_w)
+	var range_y := _tile_range(anchor.y + l.travel_y, reach.position.y, reach.end.y, step_y, repeat_y, view_h)
 	var shown := {}
 	for ky in range(range_y.x, range_y.y + 1):
 		for kx in range(range_x.x, range_x.y + 1):
 			var key := Vector2i(kx, ky)
 			shown[key] = true
 			var node: Node2D = _instance(l, key)
-			var x: float = l.travel_x + (kx * step_x if repeat_x and step_x > 0 else 0.0)
-			var y: float = l.travel_y + (ky * step_y if repeat_y and step_y > 0 else 0.0)
+			var x: float = anchor.x + l.travel_x + (kx * step_x if repeat_x and step_x > 0 else 0.0)
+			var y: float = anchor.y + l.travel_y + (ky * step_y if repeat_y and step_y > 0 else 0.0)
 			node.position = Vector2(x * ppu, _bg._screen_h - y * ppu)
+			node.scale = node.get_meta("plax_scale") / z
 	for key in l.instances.keys():
 		if not shown.has(key):
 			var node: Node = l.instances[key]
@@ -166,4 +175,6 @@ static func prepare(node: Node2D, model: Dictionary) -> Node2D:
 			node.process_material = node.process_material.duplicate()
 			node.set_meta("plax_offset", node.process_material.emission_shape_offset)
 	node.local_coords = true
+	# Its authored scale, which a zoom divides (place).
+	node.set_meta("plax_scale", node.scale)
 	return node

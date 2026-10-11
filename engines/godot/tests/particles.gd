@@ -3,7 +3,9 @@ extends Node
 ## of a round as shots.gd does (60 units/s, stepped at 1/60 s, a "transfer", "tint", "speedY" and "repeatY" too) and
 ## checks, 0, 6 and 12 s in, that each PARTICLES layer's Godot scene is instanced, that its node sits between the
 ## canvases of the layers before and after it, at its page's opacity, and where its layer has scrolled it: the scroll
-## is counted here, apart from PlaxBackground's. Saves a still of each, and quits with 1 on any FAIL.
+## is counted here, apart from PlaxBackground's. A scene's "zoom" ([at 0 s, at 12 s], set before each check) and
+## "dolly" (r278) place each layer's nodes in its own view, at its own zoom, worked out here too, and scale them by 1 over
+## it. Saves a still of each, and quits with 1 on any FAIL.
 ##   godot --path engines/godot res://tests/particles.tscn -- <repo root> <round dir> <out dir>
 
 const SPEED := 60.0
@@ -30,6 +32,8 @@ func _ready() -> void:
 		var warned: int = bg._particles._warned.size()
 		bg.set_page(page, PlaxAtlas.load_atlas(root.path_join(scene.atlasDir).path_join(page.atlas_name)))
 		bg.tint_to(Color.WHITE, 0)
+		bg.dolly = scene.get("dolly", false)
+		var zoom: Array = scene.get("zoom", [1.0, 1.0])
 		bg.speed_constant_x = SPEED
 		bg.speed_constant_y = scene.get("speedY", 0.0)
 		_check(scene.id, "warnings", bg._particles._warned.size() - warned,
@@ -62,6 +66,7 @@ func _ready() -> void:
 					var m: Dictionary = tracked[i].model
 					expected_x[i] += -step * (m.speedXAtRest + SPEED) * m.parallaxScalingSpeedX
 					expected_y[i] += -step * bg.speed_constant_y * m.parallaxScalingSpeedY
+			bg.zoom = zoom[0] + (zoom[1] - zoom[0]) * (at / 12.0)
 			var shot := "%s t%d" % [scene.id, at]
 			_check_order(bg, shot)
 			for l in _particle_layers(bg.layers + bg.transfer_layers):
@@ -108,9 +113,21 @@ func _check_layer(bg: PlaxBackground, l: Dictionary, travel: Vector2, shot: Stri
 	if l.model.particlesGodot.is_empty():
 		_check(shot, what + " instances", nodes.size(), 0)
 		return
-	var ppu := bg._ppu
+	# The layer's zoom, worked out here: ParallaxPageReader.dollyZoom, by its speed against its page's fastest.
+	var z := bg.zoom
+	var front := 0.0
+	for other in (bg.transfer_layers if l.incoming else bg.layers):
+		front = maxf(front, absf(float(other.model.parallaxScalingSpeedX)))
+	if bg.dolly and front > 0:
+		z = 1.0 - minf(1.0, absf(float(l.model.parallaxScalingSpeedX)) / front) * (1.0 - bg.zoom)
+	# Placed in its own view, world_width * z wide: from its corner, or dollied from the view at zoom 1's.
+	var anchor := Vector2(bg.world_width * (z - 1), bg._world_height * (z - 1)) / 2 if bg.dolly else Vector2.ZERO
+	var ppu := bg._screen_size().x / (bg.world_width * z)
 	var screen_h := bg._screen_h
 	_check(shot, what + " scroll", Vector2(l.travel_x, l.travel_y), travel)
+	travel += anchor
+	for node in nodes:
+		_check(shot, what + " scaled by 1 over its zoom", (node as Node2D).scale, node.get_meta("plax_scale") / z)
 	if l.model.particlesAnchor == "VIEW":
 		_check(shot, what + " instances", nodes.size(), 1)
 		if nodes.size() != 1:
@@ -120,18 +137,20 @@ func _check_layer(bg: PlaxBackground, l: Dictionary, travel: Vector2, shot: Stri
 		if node == null:
 			return
 		_check(shot, what + " node, carried by the scroll", node.position, Vector2(travel.x * ppu, screen_h - travel.y * ppu))
-		# The emitter stays: the node's position plus its offset is the authored offset from the decal's place.
-		var decal := Vector2(l.model.decal_X_Ratio * bg.world_width / 100.0, l.model.decal_Y_Ratio * bg._world_height / 100.0)
+		# The emitter stays: the node's position plus its offset, in its scale, is the authored offset from the decal's
+		# place.
+		var decal := anchor + Vector2(l.model.decal_X_Ratio * bg.world_width / 100.0,
+				l.model.decal_Y_Ratio * bg._world_height / 100.0)
 		var authored: Vector3 = node.get_meta("plax_offset")
 		var offset: Vector3 = node.process_material.emission_shape_offset
-		_check(shot, what + " emitter, kept in the view", node.position + Vector2(offset.x, offset.y),
-				Vector2(decal.x * ppu + authored.x, screen_h - decal.y * ppu + authored.y))
+		_check(shot, what + " emitter, kept in the view", node.position + Vector2(offset.x, offset.y) / z,
+				Vector2(decal.x * ppu + authored.x / z, screen_h - decal.y * ppu + authored.y / z))
 		return
 	# LAYER: a node at the bottom-left corner of every tile whose box, grown by its size each way (a CPUParticles2D),
 	# meets the view: tiles at travel + k * step on a repeated axis, the one at travel on the other.
 	var corners := []
-	for y in _tiles(travel.y, l.height, l.height + l.model.padY, bg._repeat_y, bg._world_height):
-		for x in _tiles(travel.x, l.width, l.width + l.model.padX, bg._repeat_x, bg.world_width):
+	for y in _tiles(travel.y, l.height, l.height + l.model.padY, bg._repeat_y, bg._world_height * z):
+		for x in _tiles(travel.x, l.width, l.width + l.model.padX, bg._repeat_x, bg.world_width * z):
 			corners.append(Vector2(x * ppu, screen_h - y * ppu))
 	var positions := nodes.map(func(n): return n.position)
 	_check(shot, what + " one node per tile", positions.size(), corners.size())

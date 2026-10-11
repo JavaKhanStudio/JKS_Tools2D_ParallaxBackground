@@ -51,7 +51,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * layer named slot with that atlas region stretched over each tile (r177, engines/godot/tests/effects);
  * {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that game seed (r183, engines/godot/tests/sequence);
  * {@code "film": {"seconds": 8, "fps": 30}} goes on scrolling after the last still and saves every frame of those seconds,
- * {@code <id>-f0000.png} on (r239: tools/ai-film.sh makes them a video).
+ * {@code <id>-f0000.png} on (r239: tools/ai-film.sh makes them a video); {@code "zoom": [1, 0.5]} zooms the camera
+ * straight from the first at 0 s to the second at 12 s, set before each still, and {@code "dolly": true} dollies it
+ * ({@code ParallaxPageReader.setDolly}, r278, engines/godot/tests/dolly).
  * engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots step the same way.
  */
 public class ParallaxShots extends ApplicationAdapter
@@ -79,6 +81,9 @@ public class ParallaxShots extends ApplicationAdapter
 		Integer sequenceSeed;
 		/** Frames saved after the last still, {@code filmFps} a second; 0: none. */
 		int filmFrames, filmFps;
+		/** The camera's zoom at 0 s and at 12 s, and whether the reader dollies it. */
+		float zoomFrom = 1, zoomTo = 1;
+		boolean dolly;
 	}
 
 	/** An EMPTY layer's hook from a round: stretches the n-th atlas region of that name over every tile (r177). */
@@ -141,6 +146,13 @@ public class ParallaxShots extends ApplicationAdapter
 			scene.speedY = s.getFloat("speedY", 0);
 			if (s.has("sequenceSeed"))
 				scene.sequenceSeed = s.getInt("sequenceSeed");
+			JsonValue zoom = s.get("zoom");
+			if (zoom != null)
+			{
+				scene.zoomFrom = zoom.getFloat(0);
+				scene.zoomTo = zoom.getFloat(1);
+			}
+			scene.dolly = s.getBoolean("dolly", false);
 			JsonValue film = s.get("film");
 			if (film != null)
 			{
@@ -214,7 +226,12 @@ public class ParallaxShots extends ApplicationAdapter
 			heart.parallaxReader.clearSequenceSeed();
 		// A tint outlives setPage: the scene before may have left one.
 		heart.parallaxReader.addColorTransfert(Color.WHITE, 0);
+		heart.parallaxReader.setDolly(scene.dolly);
 	}
+
+	/** The scene's zoom {@code at} seconds in: straight from its first at 0 s to its second at 12 s. */
+	static float zoomAt(float from, float to, float at)
+	{return from + (to - from) * (at / 12);}
 
 	/** Stills of every scene at a few moments of the same scroll. */
 	private void takeShots()
@@ -263,6 +280,7 @@ public class ParallaxShots extends ApplicationAdapter
 					}
 					heart.act(step);
 				}
+				heart.worldCamera.zoom = zoomAt(scene.zoomFrom, scene.zoomTo, at);
 				ScreenUtils.clear(Color.BLACK);
 				heart.render();
 				Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());

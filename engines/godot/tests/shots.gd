@@ -5,7 +5,8 @@ extends Node
 ## (a transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1}, r249; "DISSOLVE", r250; "THROUGH_COLOR", r251;
 ## "FOG_CREEP", r252), its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
 ## the page's EMPTY layers: each stretches the atlas region it names over every tile it is handed (r177). Its
-## "sequenceSeed" draws the SEQUENCE layers from that game seed (r183).
+## "sequenceSeed" draws the SEQUENCE layers from that game seed (r183). Its "zoom": [1, 0.5] zooms the camera straight
+## from the first at 0 s to the second at 12 s, set before each still, and its "dolly": true dollies it (r278).
 ##   godot --path engines/godot res://tests/shots.tscn -- <repo root> <round dir> <out dir>
 
 const SPEED := 60.0
@@ -32,6 +33,8 @@ func _ready() -> void:
 		else:
 			bg.clear_sequence_seed()
 		bg.tint_to(Color.WHITE, 0)
+		bg.dolly = scene.get("dolly", false)
+		var zoom: Array = scene.get("zoom", [1.0, 1.0])
 		bg.speed_constant_x = SPEED
 		bg.speed_constant_y = scene.get("speedY", 0.0)
 		var resize: Dictionary = scene.get("resize", {})
@@ -54,6 +57,8 @@ func _ready() -> void:
 					tint = {}
 				bg.act(step)
 				time[0] = time[0] + step
+			# As ParallaxShots.zoomAt, in float32.
+			bg.zoom = _f32(zoom[0] + (zoom[1] - zoom[0]) * (at / 12.0))
 			await RenderingServer.frame_post_draw
 			await RenderingServer.frame_post_draw
 			var image := get_viewport().get_texture().get_image()

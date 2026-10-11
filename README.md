@@ -245,6 +245,13 @@ More:
   depth, Mode 7 or line scroll, and plants the layers in front of it on it. Each row is one
   `batch.draw(region, x, y, width, height)` per tile, its strips cut from the image when the page is built: a frame
   allocates nothing. The floor lab (`tools/effects-lab.sh --lab floor`) is where it was tried.
+- **A zoom with depth (the dolly):** the camera's `zoom` zooms the page as one picture, about the view's bottom left
+  corner. `heart.parallaxReader.setDolly(true)` scales each layer by its depth instead, about the view's middle: a
+  layer is drawn as at zoom `1 - k (1 - zoom)`, k its speed ratio X over the page's fastest, so the front layer follows
+  the camera's zoom, a still sky does not move, and the layers between grow less the farther they are, as a camera
+  moving in would see them (docs/depth-tricks.md). Nothing is stored in the page; Godot's `bg.zoom` and `bg.dolly`, and
+  jME's `bg.setZoom(z)` with `bg.getReader().setDolly(true)`, draw the same (`engines/godot/tests/dolly`). A dollied
+  layer is drawn through a batch that scales its quads into the camera's view: no flush, nothing allocated.
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
   background away.
@@ -271,14 +278,16 @@ add_child(bg)
 bg.transfert_into(PlaxPage.load_page(path), PlaxAtlas.load_atlas(atlas_path), 3.0)   # cross-fade into another page
 bg.tint_to(Color(0.5, 0.55, 0.8), 3.0)                                                 # tint every layer
 bg.set_layer_hook("birds", func(canvas, rect, modulate, layer): canvas.draw_texture_rect(bird, rect, false, modulate))
+bg.dolly = true                            # optional: a zoom scales each layer by its depth
+bg.zoom = 0.8                              # as a libGDX camera's zoom: below 1 zooms in
 ```
 
 An `EMPTY` layer's hook gets the canvas it draws on, the tile's box in screen pixels and the page's tint at the
 layer's opacity.
 
 A `PARTICLES` layer plays the scene its `particlesGodot` names, beside the atlas: a `GPUParticles2D` or a
-`CPUParticles2D` at its root, in screen pixels, y down, between the layers before and after it, tinted and faded with
-its page. Pinned to its `LAYER`, one instance sits at the bottom-left corner of every tile the view shows, its
+`CPUParticles2D` at its root, in screen pixels, y down (scaled by 1 over the zoom), between the layers before and
+after it, tinted and faded with its page. Pinned to its `LAYER`, one instance sits at the bottom-left corner of every tile the view shows, its
 particles carried by the tile, each instance its own simulation (give it a `preprocess`, or a tile scrolling in starts
 empty). From the `VIEW`, one instance emits from the view's bottom-left plus the layer's decal, and its particles drift
 by the layer's scroll; the reader moves its `ParticleProcessMaterial`'s `emission_shape_offset` for that, adding to
@@ -325,6 +334,8 @@ bg.speedConstantX = 60;                     // optional: always scroll; each fra
 bg.transfertIntoPage(other, otherAtlas, 3); // cross-fade into another page
 bg.tintTo(new Color(0.5f, 0.55f, 0.8f, 1), 3);
 bg.setLayerHook("birds", (batch, layer, x, y, w, h) -> batch.draw(birdRegion, x, y, w, h));  // an EMPTY layer
+bg.getReader().setDolly(true);              // optional: a zoom scales each layer by its depth
+bg.setZoom(0.8f);                           // as a libGDX camera's zoom: below 1 zooms in
 ```
 
 The scrolling, tiling, cross-fade and tint are this library's own `ParallaxPageReader`; jME only draws the quads, and

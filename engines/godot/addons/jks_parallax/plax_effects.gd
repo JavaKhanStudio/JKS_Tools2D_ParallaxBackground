@@ -160,7 +160,9 @@ static func drawn_rect(r: Dictionary) -> Rect2:
 
 ## GdxLayerEffects.uniforms: the numbers of a SHADER layer `l` of PlaxBackground, set on its material; `view_w` and
 ## `view_h` the view's size in page units.
-static func apply(m: ShaderMaterial, l: Dictionary, seconds: float, view_w: float, view_h: float) -> void:
+static func apply(
+		m: ShaderMaterial, l: Dictionary, seconds: float, view_w: float, view_h: float, left := 0.0, floor_y := 0.0
+) -> void:
 	var r: Dictionary = l.region
 	var texture_size: Vector2 = r.texture.get_size()
 	var model: Dictionary = l.model
@@ -174,8 +176,8 @@ static func apply(m: ShaderMaterial, l: Dictionary, seconds: float, view_w: floa
 		amplitude = clampf(amplitude, 0, 1)
 	m.set_shader_parameter("effect", Vector3(amplitude if on else 0.0, model.shaderWavelength if on else 1.0,
 			phase(model, seconds) if on else 0.0))
-	m.set_shader_parameter("across", Vector3(view_w, effect_start_x(l), -1.0 if model.flipX else 1.0))
-	m.set_shader_parameter("up", Vector3(view_h, effect_start_y(l), -1.0 if model.flipY else 1.0))
+	m.set_shader_parameter("across", Vector3(view_w, left + effect_start_x(l), -1.0 if model.flipX else 1.0))
+	m.set_shader_parameter("up", Vector3(view_h, floor_y + effect_start_y(l), -1.0 if model.flipY else 1.0))
 
 
 ## LayerEffects.setDissolve on a layer's material: `side` 0 (none), 1 (outgoing) or 2 (incoming), at the slot's `ramp`,
@@ -202,6 +204,15 @@ static func fog_of(strength: float, front: float, model: Dictionary) -> float:
 		return 1.0
 	var depth := 1.0 / speed - 1.0 / front
 	return 1.0 - exp(-strength * depth) if depth > 0 else 0.0
+
+
+## ParallaxPageReader.dollyZoom: the zoom a dollied layer is drawn at, the camera's being `zoom` and its page's front
+## `front`: 1 - k (1 - zoom), k its speed ratio X over the front's, as magnitudes; the camera's for a still page.
+static func dolly_zoom(zoom: float, front: float, model: Dictionary) -> float:
+	if not front > 0:
+		return zoom
+	var k := minf(1.0, absf(float(model.parallaxScalingSpeedX)) / front)
+	return 1.0 - k * (1.0 - zoom)
 
 
 ## ParallaxPageReader.frontSpeedOf: the fastest speed ratio X of `page` (PlaxBackground's layers), as a magnitude.

@@ -71,6 +71,9 @@ class FrameAllocationTest
 				ParallaxPageReader reader = new ParallaxPageReader();
 				reader.setRepeatOnX(onX);
 				reader.setRepeatOnY(onY);
+				// Tiling on Y, zoomed in and dollied: each layer through the DollyBatch at its own zoom (r278).
+				reader.setDolly(onY);
+				camera.zoom = onY ? 0.8f : 1;
 				reader.addLayers(layers(1));
 				reader.setLayerEffects(batch);
 				// A fog on both pages: through the page fog's shader on X, through each layer's begin otherwise.

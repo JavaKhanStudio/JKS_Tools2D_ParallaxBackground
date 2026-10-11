@@ -26,7 +26,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * Stills of every scene of a lab round drawn by jME, as {@code ParallaxShots} (shots/) takes them with libGDX: the same
  * page, the same 60 units/s scroll stepped at 1/60 s (in float, as the lab counts it), grabbed 0, 6 and 12 s in. A
  * scene's "transfer" (one or a list), "tint", "speedY" and "resize" are played at the same steps, its "hooks" draw
- * its EMPTY layers the same way (r177), and its "sequenceSeed" draws the SEQUENCE layers from that game seed (r183).
+ * its EMPTY layers the same way (r177), its "sequenceSeed" draws the SEQUENCE layers from that game seed (r183), and
+ * its "zoom" and "dolly" zoom the camera before each still, dollied or not (r278).
  * tools/jme-parallax-shots.sh runs it and compares the two sets.
  * <pre>
  *   java -cp ... jks.tools2d.parallax.jme.JmeParallaxShots &lt;round dir&gt; &lt;out dir&gt;   (from the repository root)
@@ -54,6 +55,9 @@ public class JmeParallaxShots extends SimpleApplication
 		Color tint;
 		/** The game's seed for the SEQUENCE layers; null: the pages' own. */
 		Integer sequenceSeed;
+		/** The camera's zoom at 0 s and at 12 s, and whether the reader dollies it. */
+		float zoomFrom = 1, zoomTo = 1;
+		boolean dolly;
 		final List<Transfer> transfers = new ArrayList<>();
 		final List<Hook> hooks = new ArrayList<>();
 	}
@@ -137,6 +141,13 @@ public class JmeParallaxShots extends SimpleApplication
 			scene.speedY = s.getFloat("speedY", 0);
 			if (s.has("sequenceSeed"))
 				scene.sequenceSeed = s.getInt("sequenceSeed");
+			JsonValue zoom = s.get("zoom");
+			if (zoom != null)
+			{
+				scene.zoomFrom = zoom.getFloat(0);
+				scene.zoomTo = zoom.getFloat(1);
+			}
+			scene.dolly = s.getBoolean("dolly", false);
 			JsonValue resize = s.get("resize");
 			if (resize != null)
 			{
@@ -244,6 +255,7 @@ public class JmeParallaxShots extends SimpleApplication
 			}
 			bg.act(STEP * speedFactor);
 		}
+		bg.setZoom(scene.zoomFrom + (scene.zoomTo - scene.zoomFrom) * (at / 12));
 		grab.grab(outDir.resolve(scene.id + "-t" + (int) at + ".png").toFile());
 		shotIndex++;
 	}
@@ -271,6 +283,7 @@ public class JmeParallaxShots extends SimpleApplication
 		bg.tintTo(Color.WHITE, 0);
 		bg.speedConstantX = SPEED;
 		bg.speedConstantY = scene.speedY;
+		bg.getReader().setDolly(scene.dolly);
 		shotIndex = 0;
 		time = 0;
 		transferred = 0;

@@ -124,10 +124,17 @@ repair.
   without touching its stored speed. Godot's copy is `plax_floor.gd`'s `measure` and `plax_background.gd`'s
   `_draw_floor` and `_plant`; jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/godot/tests/floor`;
   `tools/r275-floor/strength.sh` proves the round sees a floor against its flat twin, `mutate.sh` a wrong Godot copy.
+- The dolly (r278, `ParallaxPageReader.setDolly`, no format change) draws each layer at its own zoom
+  (`dollyZoom`: `1 - k (1 - zoom)`, k its speed over its page's front), tiled across its own view and placed from the
+  view at zoom 1, through `DollyBatch` (its quads and particle vertices scaled into the camera's view); the effects keep
+  the game's batch (jME's casts it) and take the layers' corner in `setView(width, height, left, floor)`. Godot's copy
+  is `plax_background.gd`'s `_zoom_of`/`_anchor_of` (each layer in its own view at its own `_ppu`) and
+  `plax_particles.gd`'s `place`. Change it and run both frame checks on `engines/godot/tests/dolly`;
+  `tools/r278-dolly/mutate.sh` proves the round sees a wrong Godot copy.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,
-  `TransfertStyleCases`, `FloorCases`), their builders in `ReaderFixtures`; a new subject's class goes in
+  `TransfertStyleCases`, `FloorCases`, `DollyCases`), their builders in `ReaderFixtures`; a new subject's class goes in
   `BrowserSuite.all()`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)
