@@ -70,11 +70,12 @@ if command -v "${GODOT:-godot}" >/dev/null; then sentinel godot-shots tools/godo
 labs=("tools/fog-lab.sh" "tools/haze-lab.sh" "tools/transfert-lab.sh" "tools/effects-lab.sh --lab fog" "tools/browser-test.sh --open")
 if ! ./gradlew -q :core:browserTestWar >"$OUT/war.log" 2>&1; then echo "FAIL: :core:browserTestWar, see $OUT/war.log"; status=1; trap - EXIT; fi
 for lab in "${labs[@]}"; do
-	name=$(basename "${lab%% *}" .sh)
+	read -ra cmd <<< "$lab"
+	name=$(basename "${cmd[0]}" .sh)
 	for who in "ATELIER_AGENT=screen-check" "CLAUDECODE=1"; do
 		rm -f "$OUT/sentinel.log"
 		env -u ATELIER_AGENT -u CLAUDECODE -u ATELIER_NO_OFFSCREEN DISPLAY= WAYLAND_DISPLAY= XDG_RUNTIME_DIR="$RT" "$who" \
-			timeout 60 $lab --no-build >"$OUT/$name-agent.log" 2>&1
+			timeout 60 "${cmd[@]}" --no-build >"$OUT/$name-agent.log" 2>&1
 		code=$?
 		if [ -s "$OUT/sentinel.log" ]; then
 			echo "FAIL: $name's open mode under ${who%%=*} connected to wayland-0, Simon's screen"; status=1
@@ -86,7 +87,7 @@ for lab in "${labs[@]}"; do
 	done
 	rm -f "$OUT/sentinel.log"
 	env -u ATELIER_AGENT -u CLAUDECODE -u ATELIER_NO_OFFSCREEN DISPLAY= WAYLAND_DISPLAY= XDG_RUNTIME_DIR="$RT" \
-		timeout 60 $lab --no-build >"$OUT/$name-board.log" 2>&1
+		timeout 60 "${cmd[@]}" --no-build >"$OUT/$name-board.log" 2>&1
 	if [ -s "$OUT/sentinel.log" ]; then
 		echo "ok: $name's open mode from the board still opens (reached wayland-0)"
 	else

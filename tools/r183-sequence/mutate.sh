@@ -8,6 +8,7 @@ BG=engines/godot/addons/jks_parallax/plax_background.gd
 PAGE=engines/godot/addons/jks_parallax/plax_page.gd
 SAVE=$(mktemp -d)
 cp "$BG" "$PAGE" "$SAVE/"
+# shellcheck disable=SC2329 # called by the trap below
 restore() { cp "$SAVE/plax_background.gd" "$BG"; cp "$SAVE/plax_page.gd" "$PAGE"; rm -rf "$SAVE"; }
 trap restore EXIT INT TERM PIPE
 # "ok" or "broken", then the frames' verdict and sequence_cycle.gd's: either failing fails the script.

@@ -3,7 +3,7 @@
 # r182: breaks the SEQUENCE code one way at a time and checks BrowserSuiteTest (ReaderCases) fails on each.
 # Restores every file after each run. Usage: tools/r182-sequence/mutate.sh
 set -u
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../.." || exit 1
 LAYER=core/src/jks/tools2d/parallax/ParallaxLayer.java
 READER=core/src/jks/tools2d/parallax/ParallaxPageReader.java
 CYCLE=core/src/jks/tools2d/parallax/SequenceCycle.java
@@ -21,7 +21,7 @@ mutate() # name file python-old python-new
 {
 	local name=$1 file=$2 old=$3 new=$4
 	cp "$file" "$file.r182"
-	python3 - "$file" "$old" "$new" <<'PY'
+	if ! python3 - "$file" "$old" "$new" <<'PY'; then
 import sys
 path, old, new = sys.argv[1:]
 s = open(path).read()
@@ -29,7 +29,8 @@ if s.count(old) != 1:
     sys.exit("not found once: " + old)
 open(path, 'w').write(s.replace(old, new))
 PY
-	[ $? -eq 0 ] || { echo "NOT APPLIED: $name"; mv "$file.r182" "$file"; return; }
+		echo "NOT APPLIED: $name"; mv "$file.r182" "$file"; return
+	fi
 	if ./gradlew :core:test --tests '*BrowserSuiteTest' -q > /dev/null 2>&1; then
 		echo "PASSED (bad): $name"
 	else

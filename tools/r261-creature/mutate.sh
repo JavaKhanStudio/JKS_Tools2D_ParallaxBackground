@@ -4,7 +4,7 @@
 # tools/r239-ai-strips at a time and runs sweep.sh on it, which must then give a wrong answer (a strip flagged, or a
 # planted creature missed). A mutation the sweep still passes is a rule nothing proves: exits 1.
 set -u
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../.." || exit 1
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
 bad=0

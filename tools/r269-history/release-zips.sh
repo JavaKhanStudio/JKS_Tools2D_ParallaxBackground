@@ -6,6 +6,7 @@
 set -euo pipefail
 REPO=repos/JavaKhanStudio/JKS_Tools2D_ParallaxBackground
 # The notes' "Design a parallax" paragraph, as .github/workflows/release.yml writes it since r284.
+# shellcheck disable=SC2016 # the backticks are Markdown, meant literal
 NEW='**Design a parallax** — a page is a `.jplax` JSON file you can write by hand: see the README\x27s\n[File formats](https:\/\/github.com\/JavaKhanStudio\/JKS_Tools2D_ParallaxBackground#file-formats).\n'
 SUB="s/\\*\\*Design a parallax\\*\\* — \`ParallaxEditor-[^\`]*\\.zip\`:.*?Java 17 or newer\\.\\n/$NEW/s"
 

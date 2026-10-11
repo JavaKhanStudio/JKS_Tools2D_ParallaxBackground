@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # shots-out.sh — sourced by the frame checks (godot-/jme-parallax-shots.sh): a run's own output folder (r172).
 #
 #   . tools/shots-out.sh; OUT=$(shots_out "$ROOT/build/godot" "$ROUND")

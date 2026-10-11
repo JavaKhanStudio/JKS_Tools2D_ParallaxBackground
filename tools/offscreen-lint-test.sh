@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # offscreen-lint-test.sh — proves tools/offscreen-lint.sh (r171) on today's scripts and on broken copies of them.
+# shellcheck disable=SC2016 # every single-quoted $ below is a fixture script's own text, meant literal
 # Exit 0 when every case gives the expected verdict.
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd) || exit 2
@@ -18,7 +19,7 @@ expect() {
 	if [ "$want" = fail ] && [ $code = 1 ] && grep -qF "$script:" <<<"$out" && grep -qF -- "$text" <<<"$out"; then
 		echo "ok    $name"; return
 	fi
-	echo "WRONG $name (wanted $want, exit $code)"; echo "$out" | sed 's/^/      /'; status=1
+	echo "WRONG $name (wanted $want, exit $code)"; printf '      %s\n' "${out//$'\n'/$'\n      '}"; status=1
 }
 
 out=$("$LINT"); code=$?

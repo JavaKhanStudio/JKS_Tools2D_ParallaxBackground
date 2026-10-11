@@ -4,7 +4,7 @@
 # must be). The strips are scratch from r239/r242/r243/r246 runs (run.sh, run-xl.sh, ai-page.sh); a missing one is
 # skipped. Prints FLAG/PASS per strip and exits 1 on a wrong answer. SHOW=DIR: creature.py --show's picture of each.
 set -u
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../.." || exit 1
 [ -n "${SHOW:-}" ] && mkdir -p "$SHOW"
 B="${1:-build}"
 D="${R239_DIR:-tools/r239-ai-strips}" # mutate.sh points it at a mutated copy
@@ -14,7 +14,7 @@ bad=0
 check() { # WANT(0|4) CUT [SRC]
 	want=$1 cut=$2
 	shift 2
-	out=$(python3 $D/creature.py "$cut" ${1:+--src "$1"} ${SHOW:+--show "$SHOW/$(basename "$cut")"} 2>&1)
+	out=$(python3 "$D"/creature.py "$cut" ${1:+--src "$1"} ${SHOW:+--show "$SHOW/$(basename "$cut")"} 2>&1)
 	rc=$?
 	echo "$([ $rc = 4 ] && echo FLAG || echo PASS) $cut ${out:+($(echo "$out" | sed 's/.*: //' | paste -sd';'))}"
 	[ $rc = "$want" ] || { echo "  WRONG: wanted $([ "$want" = 4 ] && echo a flag || echo none)"; bad=1; }
@@ -23,7 +23,7 @@ check() { # WANT(0|4) CUT [SRC]
 cut() {
 	want=$1 src=$2 out=$3
 	shift 3
-	python3 $D/layer.py "$src" "$out" --no-creatures "$@" 2>/dev/null
+	python3 "$D"/layer.py "$src" "$out" --no-creatures "$@" 2>/dev/null
 	[ -f "$out" ] && check "$want" "$out" "$src"
 }
 # Today's layer.py on r239's strips (its own _layer.png files predate d454292's fill fix).
@@ -67,7 +67,7 @@ plant snow3_bird "$S/l3_ai.png" 500,330 bird - --mask "$S/l3_mask.png" --grow 40
 # (120 x 48 px, ~9 cells: under 6 is texture).
 if [ -f "$B/r243/hills_xl.png" ]; then
 	python3 tools/r261-creature/plant.py "$B/r243/hills_xl.png" "$T/p_xl_hills_bird.png" --at 700,470 --size 4
-	python3 $D/pixel.py "$T/p_xl_hills_bird.png" "$T/p_xl_hills_bird_cut.png" --mask "$B/r243/hills_mask.png" 2>"$T/log"
+	python3 "$D"/pixel.py "$T/p_xl_hills_bird.png" "$T/p_xl_hills_bird_cut.png" --mask "$B/r243/hills_mask.png" 2>"$T/log"
 	rc=$?
 	echo "$([ $rc = 4 ] && echo FLAG || echo PASS) p_xl_hills_bird (pixel.py) $(grep creature "$T/log" | sed 's/.*: //')"
 	[ $rc = 4 ] || { echo "  WRONG: wanted a flag (pixel.py exit $rc)"; bad=1; }

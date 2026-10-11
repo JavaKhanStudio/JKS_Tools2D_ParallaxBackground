@@ -50,17 +50,20 @@ RE=$(sed -e 's/[.]/\\./g' -e 's|/$|/.*|' "$OUT/drop.txt" | paste -sd'|')
 
 # 1. nothing under a dropped path, in any object reachable from any ref
 N=$(git -C "$OUT/new.git" rev-list --objects --all | awk 'NF>1{print $2}' | grep -cE "^($RE)$" || true)
-[ "$N" = 0 ] && pass "no object under a dropped path in new.git" || fail "$N objects under dropped paths in new.git"
+if [ "$N" = 0 ]; then pass "no object under a dropped path in new.git"; else fail "$N objects under dropped paths in new.git"; fi
 mapfile -t PATHS < "$OUT/drop.txt"
 N=$(git -C "$OUT/new.git" log --all --format=%H -- "${PATHS[@]}" | wc -l)
-[ "$N" = 0 ] && pass "git log --all -- <dropped paths> is empty" || fail "$N commits still touch dropped paths"
+if [ "$N" = 0 ]; then pass "git log --all -- <dropped paths> is empty"; else fail "$N commits still touch dropped paths"; fi
 N=$(git -C "$OUT/old.git" log --all --format=%H -- "${PATHS[@]}" | wc -l)
 echo "     (old.git: $N commits touched them)"
 
 # 2. the same refs
 REFS=$(git -C "$OUT/old.git" for-each-ref --format='%(refname)' refs/heads refs/tags)
-[ "$REFS" = "$(git -C "$OUT/new.git" for-each-ref --format='%(refname)' refs/heads refs/tags)" ] \
-  && pass "same $(echo "$REFS" | wc -l) branches and tags" || fail "the branches or tags differ"
+if [ "$REFS" = "$(git -C "$OUT/new.git" for-each-ref --format='%(refname)' refs/heads refs/tags)" ]; then
+  pass "same $(echo "$REFS" | wc -l) branches and tags"
+else
+  fail "the branches or tags differ"
+fi
 if git ls-remote --exit-code --tags "$URL" v2.5.0 v2.5 > /dev/null 2>&1; then
   git -C "$OUT/new.git" rev-parse -q --verify refs/tags/v2.5.0 > /dev/null || fail "origin has a v2.5 tag new.git lacks"
 fi
@@ -77,8 +80,11 @@ for REF in $REFS; do
 done
 
 # 4. develop as today
-[ "$(git -C "$OUT/old.git" rev-parse develop^{tree})" = "$(git -C "$OUT/new.git" rev-parse develop^{tree})" ] \
-  && pass "develop's tree hash unchanged" || fail "develop's tree changed"
+if [ "$(git -C "$OUT/old.git" rev-parse 'develop^{tree}')" = "$(git -C "$OUT/new.git" rev-parse 'develop^{tree}')" ]; then
+  pass "develop's tree hash unchanged"
+else
+  fail "develop's tree changed"
+fi
 
 # The old -> new commit map, for every SHA quoted in docs and on the board.
 cp "$OUT/new.git/filter-repo/commit-map" "$OUT/commit-map.txt"
@@ -90,4 +96,4 @@ Not run by any script. Simon, from $OUT/new.git, once GitHub allows a force-push
 Not --mirror: GitHub refuses writes to refs/pull/*, and --mirror would also delete refs it does not know.
 Then every checkout of this repository on the machine is re-cloned (a pull would merge the old history back in).
 EOF
-[ "$FAIL" = 0 ] && echo "PROVEN: $OUT/new.git (push: $OUT/PUSH.txt)" || { echo "NOT PROVEN" >&2; exit 1; }
+if [ "$FAIL" = 0 ]; then echo "PROVEN: $OUT/new.git (push: $OUT/PUSH.txt)"; else echo "NOT PROVEN" >&2; exit 1; fi

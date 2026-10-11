@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # agent-window-guard.sh — sourced, never run: `. tools/agent-window-guard.sh; refuse_agent_window <what>` (r237).
 #
 # The labs' open mode (tools/fog-lab.sh, haze-lab.sh, transfert-lab.sh with no argument, tools/browser-test.sh --open)
