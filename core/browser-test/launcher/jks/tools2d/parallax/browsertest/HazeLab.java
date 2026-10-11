@@ -264,8 +264,8 @@ public class HazeLab extends ApplicationAdapter
 			effects.haze = hooked(layer) && !hazeHooks ? 0 : ParallaxPageReader.hazeOf(drawn, j);
 			batch.setShader(program);
 			batch.flush();
-			program.setUniformf("u_haze", effects.haze);
-			program.setUniformf("u_fog", white[0], white[1], white[2]);
+			program.setUniformf(program.fetchUniformLocation("u_haze", false), effects.haze);
+			program.setUniformf(program.fetchUniformLocation("u_fog", false), white[0], white[1], white[2]);
 			layers.clear();
 			layers.add(layer);
 			heart.parallaxReader.draw(heart.worldCamera, batch);
@@ -324,14 +324,14 @@ public class HazeLab extends ApplicationAdapter
 			if (!batch.isDrawing())
 				program.bind();
 			GdxLayerEffects.uniforms(layer, phase, viewWidth, viewHeight, viewFloor, numbers);
-			program.setUniformf("u_region", numbers[0], numbers[1], numbers[2], numbers[3]);
-			program.setUniformf("u_size", numbers[4], numbers[5]);
-			program.setUniformf("u_effect", numbers[6], numbers[7], numbers[8]);
+			program.setUniformf(program.fetchUniformLocation("u_region", false), numbers[0], numbers[1], numbers[2], numbers[3]);
+			program.setUniformf(program.fetchUniformLocation("u_size", false), numbers[4], numbers[5]);
+			program.setUniformf(program.fetchUniformLocation("u_effect", false), numbers[6], numbers[7], numbers[8]);
 			// Only FOG reads it: a WAVE program has none, and a by-name set would throw.
 			program.setUniformf(program.fetchUniformLocation("u_across", false), numbers[9], numbers[10], numbers[11]);
 			program.setUniformf(program.fetchUniformLocation("u_up", false), numbers[12], numbers[13], numbers[14]);
-			program.setUniformf("u_haze", haze);
-			program.setUniformf("u_fog", white[0], white[1], white[2]);
+			program.setUniformf(program.fetchUniformLocation("u_haze", false), haze);
+			program.setUniformf(program.fetchUniformLocation("u_fog", false), white[0], white[1], white[2]);
 			return true;
 		}
 

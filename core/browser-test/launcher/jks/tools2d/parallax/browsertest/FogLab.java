@@ -361,16 +361,16 @@ public class FogLab extends ApplicationAdapter
 			if (!batch.isDrawing())
 				program.bind();
 			GdxLayerEffects.uniforms(layer, phase, viewWidth, viewHeight, viewFloor, numbers);
-			program.setUniformf("u_region", numbers[0], numbers[1], numbers[2], numbers[3]);
-			program.setUniformf("u_size", numbers[4], numbers[5]);
-			program.setUniformf("u_effect", numbers[6], numbers[7], numbers[8]);
+			program.setUniformf(program.fetchUniformLocation("u_region", false), numbers[0], numbers[1], numbers[2], numbers[3]);
+			program.setUniformf(program.fetchUniformLocation("u_size", false), numbers[4], numbers[5]);
+			program.setUniformf(program.fetchUniformLocation("u_effect", false), numbers[6], numbers[7], numbers[8]);
 			// Only FOG reads it: a WAVE program has none, and a by-name set would throw.
 			program.setUniformf(program.fetchUniformLocation("u_across", false), numbers[9], numbers[10], numbers[11]);
 			program.setUniformf(program.fetchUniformLocation("u_up", false), numbers[12], numbers[13], numbers[14]);
 			if (layer.getShaderEffect() == Enum_ShaderEffect.FOG)
-				program.setUniformf("u_height", heights[panel]);
-			program.setUniformf("u_haze", fogAmount);
-			program.setUniformf("u_fog", fogColor.r, fogColor.g, fogColor.b);
+				program.setUniformf(program.fetchUniformLocation("u_height", false), heights[panel]);
+			program.setUniformf(program.fetchUniformLocation("u_haze", false), fogAmount);
+			program.setUniformf(program.fetchUniformLocation("u_fog", false), fogColor.r, fogColor.g, fogColor.b);
 			return true;
 		}
 
