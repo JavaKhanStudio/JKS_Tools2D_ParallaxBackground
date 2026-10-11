@@ -22,7 +22,8 @@ The page, from the skill (.claude/skills/parallax-pages, steps 2, 3, 5, 6) and r
 img2img at 0.65 keeps much of the shape's colour: --colours sets it per depth (far, ..., front; three are spread
 over any count), and is the theme's say in the palette. Choose them for the theme.
 
-Writes OUT/strips (every strip, scratch), OUT/page (NAME.atlas, NAME.png, NAME.jplax, round.json) and, unless
+Writes OUT/recipe.json (the command, and every strip's shape, seed, colour and prompt: tools/ai-gallery.sh shows it),
+OUT/strips (every strip, scratch), OUT/page (NAME.atlas, NAME.png, NAME.jplax, round.json) and, unless
 --no-shots, OUT/shots (tools/parallax-lab-shots.sh: stills at 0, 6 and 12 s, contact.png). Exits 1 when lint
 finds a fault, 2 when a strip cannot be cut. Needs ComfyUI with its venv (COMFYUI_DIR, default ~/ComfyUI) holding
 dreamshaper_8 (painted) or sdXL_v10VAEFix + PixelArt_XL (pixel), and ~1.5 GB of free VRAM.
@@ -32,6 +33,7 @@ import json
 import math
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -164,6 +166,7 @@ def main():
     w, h = (1536, 576) if pixel else (1024, 384)
     d = HERE
     log = lambda s: print(s, file=sys.stderr, flush=True)  # noqa: E731
+    made = {}  # strip prefix -> how it was painted, for recipe.json
 
     def paint(k, kind, seed, prefix):
         """sil.py, gen.py, then the cut: the cut layer's path, or None when it reaches its top row or holds a
@@ -177,6 +180,9 @@ def main():
         else:
             gen = [PY, f"{d}/gen.py", "img2img", "--denoise", "0.65", "--negative", negative(NEG, kind), "--prompt",
                    f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
+        made[os.path.basename(prefix)] = {"prompt": gen[gen.index("--prompt") + 1],
+                                          "negative": gen[gen.index("--negative") + 1],
+                                          "denoise": float(gen[gen.index("--denoise") + 1])}
         if a.keep and os.path.exists(f"{prefix}_ai.png"):
             return cut(prefix, kind)
         with open(prefix + "_seed.txt", "w") as f:  # what a kept strip was painted with: its variants' ends
@@ -225,6 +231,10 @@ def main():
             for t in range(a.tries):
                 p = os.path.join(strips, f"l{front}v{v}")
                 vs = a.seed * 1000 + 500 + v * 10 + t
+                vprompt = (f"2d game parallax background layer, {a.theme}, foreground {WORDS[ks[front]]}, "
+                           "painterly, plain pale sky")
+                made[os.path.basename(p)] = {"prompt": vprompt, "negative": negative(NEG, ks[front]), "denoise": 0.65,
+                                             "seed": vs, "edgesOf": seeds[front]}
                 if a.keep and os.path.exists(f"{p}_ai.png"):
                     got = cut(p, ks[front])
                     if got:
@@ -234,8 +244,7 @@ def main():
                      "--colour", cols[front], "--quiet-join"], p + "_sil.log")
                 code = run([PY, f"{d}/gen.py", "variants", "--src", f"{src}_ai.png", "--init", f"{p}_init.png", "--tile",
                             "x", "--n", "1", "--edge", "96", "--denoise", "0.65", "--seed", str(vs), "--negative", negative(NEG, ks[front]),
-                            "--prompt", f"2d game parallax background layer, {a.theme}, foreground {WORDS[ks[front]]}, "
-                            "painterly, plain pale sky", "--out", f"{p}_ai.png"], p + "_gen.log")
+                            "--prompt", vprompt, "--out", f"{p}_ai.png"], p + "_gen.log")
                 if code:
                     sys.exit(f"gen.py variants failed: {p}_gen.log")
                 os.replace(f"{p}_ai_1.png", f"{p}_ai.png")
@@ -287,6 +296,27 @@ def main():
         json.dump({"round": name, "about": scene["about"], "scenes": [scene]}, f, indent=1)
 
     problems = lab.lint(lab.load(scene["page"]), rel)
+    # What made the page, strip by strip: the ones the page draws, each with the prompt and seed that painted it.
+    strip_of = lambda path: os.path.basename(path)[:-len("_cut.png")]  # noqa: E731
+    keep_out = ("--keep", "--no-shots")  # how this run went, not what paints the page
+    recipe = {"command": shlex.join(["tools/ai-page.sh"] + [x for x in sys.argv[1:] if x not in keep_out]), "theme": a.theme, "style": a.style,
+              "name": name, "seed": a.seed, "size": [w, h],
+              "model": "SDXL 1.0 + PixelArt_XL" if pixel else "SD 1.5 dreamshaper_8",
+              "page": f"page/{name}.jplax", "fogStrength": page.get("fogStrength", 0), "sky": list(sky),
+              "lint": problems, "layers": []}
+    for k, paths in enumerate(layers):
+        strips_k = []
+        for path in paths:
+            sid = strip_of(path)
+            seed_file = os.path.join(strips, f"{sid}_seed.txt")
+            info = dict(made.get(sid, {}), strip=sid)
+            info.setdefault("seed", int(open(seed_file).read()) if os.path.exists(seed_file) else None)
+            strips_k.append(info)
+        recipe["layers"].append({"kind": ks[k], "colour": cols[k], "speed": round(s[k], 5),
+                                 "dy": page_layers[k]["decal_Y_Ratio"],
+                                 "sequence": len(paths) > 1, "strips": strips_k})
+    with open(os.path.join(out, "recipe.json"), "w") as f:
+        json.dump(recipe, f, indent=1)
     print(f"{rel}/{name}.jplax")
     print(lab.describe(page))
     print("\n".join("  ! " + p for p in problems) or "  lint ok")

@@ -3,6 +3,7 @@
 # and pixel (SDXL + PixelArt_XL), painted by tools/ai-page.sh into OUT/<theme>-<style> and filmed by tools/ai-film.sh
 # into OUT/<theme>-<style>/film (8 s, 30 fps). About 20 min on the RTX 5060 with nothing else on it. Exits 1 when a
 # page fails lint: three do, each looked at on its render (r280, r281: lint faults they showed). Its pages are r239's attachments, bit for bit.
+# Under build/ai (build/ai/examples), tools/ai-gallery.sh shows them; it builds that gallery from OUT at the end.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 OUT="${1:?OUT}"
@@ -21,4 +22,5 @@ done
 for d in "$OUT"/*-painted "$OUT"/*-pixel; do
 	tools/ai-film.sh "$d/page" "$d/film" 8 30 || rc=1
 done
+tools/ai-gallery.sh "$OUT" || rc=1
 exit $rc

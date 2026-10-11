@@ -157,6 +157,8 @@ What is yours to choose, from the theme:
   SEQUENCE join.
 
 `tools/ai-film.sh OUT/page FILM 8 30` films the page: core's frames off screen, `FILM/a01.mp4` and a 640px `.gif`.
+Give it `OUT/film` and put OUT under `build/ai`: `tools/ai-gallery.sh` then shows the page, its film and how each
+layer was painted (from `OUT/recipe.json`) beside the others, for Simon to explore (the `ai-gallery` lab).
 
 Look at every frame (`OUT/shots/a01-t*.png`) for what lint cannot see: pines that stayed smooth spikes (the tool
 repaints a painted one under an outline roughness of 3.5; a borderline one passes), a horizon or clouds painted behind a layer, a

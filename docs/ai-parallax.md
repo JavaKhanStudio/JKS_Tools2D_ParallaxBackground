@@ -14,6 +14,13 @@ drawn by `core` (`tools/parallax-lab-shots.sh tools/r239-ai-strips/page build/la
 city needed shapes of their own in `sil.py` (`dunes`, `sea`, `palms`, `ruins`, chosen with `--kinds`); a theme that
 names what another layer draws ("turquoise sea") gets it painted faintly into every layer's sky.
 
+**The gallery (r239, 2026-10-11):** `tools/ai-gallery.sh` (the board's `ai-gallery` lab: `--open`) builds
+`build/ai-gallery/index.html` from every page under `build/ai`: its film, each layer's shape, painting and cut with
+its prompt and seed, the layer drawn twice at its join, the SEQUENCE's strips end to end, and a form that writes the
+`ai-page.sh` command for another page. It reads `OUT/recipe.json`, which `ai-page.sh` writes beside each page; a page
+made before r239's gallery gets one from `ai-page.sh --keep --no-shots` with its first arguments (the page comes out
+byte for byte the same).
+
 ## What works
 
 | Pass | Tool | What it does |
