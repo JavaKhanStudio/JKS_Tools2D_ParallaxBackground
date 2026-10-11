@@ -1,28 +1,15 @@
 #!/usr/bin/env python3
-"""The parallax lab's scene maker and page linter (r73). Plain Python 3, no dependency.
+"""The parallax page linter (r73), and the page writers the parallax-pages skill names. Plain Python 3.
 
   tools/parallax_lab.py lint [--atlas DIR] PAGE...  the numbers of a page (.jplax/.plaxpj) and the rules it breaks,
                                                 its layout too when its atlas is found (next to it, in its round.json
-                                                or the sample folders) or given; the layout needs Pillow
-  tools/parallax_lab.py survey OUT_DIR          every sample page as it is, as a round (to render or grade)
-  tools/parallax_lab.py round2 [OUT_DIR]        round 2: those pages next to Simon's, and brackets of speed ratio,
-                                                span and width, shuffled blind (default demo/lab/round2)
-  tools/parallax_lab.py round3 [OUT_DIR]        round 3: pages from the skill (version 2) on Printemps, boss and pure,
-                                                and the top of the speed span bracketed (default demo/lab/round3)
-  tools/parallax_lab.py round4 [OUT_DIR]        round 4: the speed span past 100x, 100x against 250x on calm and pure,
-                                                round 3's best as anchors (default demo/lab/round4)
-  tools/parallax_lab.py study [OUT_DIR]         the pages written from the art (r92), in order, to render and look
-                                                at (default demo/lab/study)
-  tools/parallax_lab.py round1 [OUT_DIR]        round 1: Simon's pages, each rule broken once, and pages written from
-                                                the rules alone, shuffled blind (default demo/lab/round1)
+                                                or in core/test-data/samples) or given; the layout needs Pillow
 
-A round is a folder of .jplax pages and a round.json listing them in the order shown, with the folder of each page's
-atlas and what the scene tests; ParallaxLab (./gradlew :demo:lab) shows it and saves the grades next to it.
-Paths are relative to the repository root, the lab's working directory.
+layer(), empty() and page_of() write a page by hand; flat(), rescale_span() and the other variants break one rule of a
+page; the *_from_art() pages are the skill's worked examples. Paths are relative to the repository root.
 
-Since r133 the lab, its rounds and the sample projects they read (editor/Files, demo/assets) are in the editor
-repository, JKS_Tools2D_ParallaxEditor, which has this file too: run survey, study and the rounds there. Here, lint
-finds a page's atlas next to it, in its round.json, or in core/test-data/samples.
+The grading lab, its rounds (survey, study, round1 to round4) and the sample projects they read are in the editor
+repository, JKS_Tools2D_ParallaxEditor, since r133: its copy of this file writes them (r321 took them out of this one).
 """
 import collections
 import copy
@@ -42,20 +29,6 @@ LAYER_FIELDS = ['regionName', 'regionPosition', 'flipX', 'flipY', 'parallaxScali
                 'sequenceSegments', 'sequenceSeed', 'sequenceLength']
 PAGE_FIELDS = ['topHalf_top', 'topHalf_bottom', 'topHalfSize', 'bottomHalf_top', 'bottomHalf_bottom',
                'bottomHalfSize', 'repeatOnX', 'repeatOnY', 'useOriginalSize', 'fogStrength', 'fogColor']
-
-SAMPLES = {
-    'Hiver': ('demo/assets/hiver/Hiver.plaxpj', 'demo/assets'),
-    'Printemps': ('demo/assets/printemps/Printemps.plaxpj', 'demo/assets'),
-    'Calm': ('editor/Files/transfer/calm.plaxpj', 'editor/Files/transfer'),
-    'CalmLag': ('editor/Files/transfer/calmLag.plaxpj', 'editor/Files/transfer'),
-    'OneNight': ('editor/Files/Demos/OneNight.plaxpj', 'editor/Files/Demos'),
-    'PurpleFairy': ('editor/Files/Demos/PurpleFairy.plaxpj', 'editor/Files/Demos'),
-    'CalmTree': ('editor/Files/Aa new/calmTree.plaxpj', 'editor/Files/Aa new'),
-    'CalmTree3': ('editor/Files/Aa new/calmTree3.plaxpj', 'editor/Files/Aa new'),
-    'CalmTree4': ('editor/Files/Aa new/calmTree4.plaxpj', 'editor/Files/Aa new'),
-    'CalmTree5': ('editor/Files/Aa new/calmTree5.plaxpj', 'editor/Files/Aa new'),
-}
-
 
 # ---------------------------------------------------------------- pages
 
@@ -732,41 +705,6 @@ def aligned(page):
     return p
 
 
-# ---------------------------------------------------------------- pages written from the rules alone
-
-def calm_from_rules():
-    """The calm atlas (6 strips 5000 px wide), laid out from the rules without looking at Simon's calm page: sky
-    gradient behind, clouds drifting, mountains, then the three tree strips ordered by their haze (the palest is the
-    farthest: Trees_close, whose name says the opposite), speeds x1.4 per layer, each strip covering the one behind's
-    bottom edge."""
-    r = 1.4
-    base = 0.012
-    L = [
-        layer('Clouds', speed=base, size=1.1, dx=15, dy=68, rest=40),
-        layer('Mountains_big', speed=base * r, size=1.3, dx=0, dy=36),
-        layer('Mountains_small', speed=base * r ** 2, size=1.1, dx=35, dy=28),
-        layer('Trees_close', speed=base * r ** 3, size=1.0, dx=10, dy=20),
-        layer('Trees_far', speed=base * r ** 4, size=1.0, dx=55, dy=9),
-        layer('Trees_fartest', speed=base * r ** 5, size=1.2, dx=25, dy=0),
-    ]
-    return page_of('calm.atlas', L, sky=('3a8fd9', 'dff1ff'), ground=('0b5a48', '07402f'))
-
-
-def night_from_rules():
-    """The OneNight atlas laid out from the rules: clouds drifting slowly, rocks, three grounds, water in front."""
-    r = 1.35
-    base = 0.018
-    L = [
-        layer('clouds', 0, speed=base, size=1.0, dx=20, dy=40, rest=25),
-        layer('rocks', speed=base * r, size=1.0, dx=0, dy=24),
-        layer('ground', 0, speed=base * r ** 2, size=1.0, dx=40, dy=16),
-        layer('ground', 1, speed=base * r ** 3, size=1.0, dx=10, dy=8, flip_x=True),
-        layer('ground', 2, speed=base * r ** 4, size=1.1, dx=65, dy=0),
-        layer('waterDark', speed=base * r ** 5, size=1.0, dx=0, dy=-2, rest=-15),
-    ]
-    return page_of('OneNight.atlas', L, sky=('0b1d3a', '5a6fa8'), ground=('1a1420', '0a0810'), original_size=True)
-
-
 # ---------------------------------------------------------------- pages written from the art (r92)
 #
 # Round 1's pages read as random values (Simon, r92): they were placed from rules, not from what each region shows.
@@ -927,158 +865,9 @@ def pure_from_art(ratio=1.6, front=0.1):
     return page_of('pure.atlas', L, sky=('0165bb', '38d6ff'), ground=('032200', '032200'), original_size=True)
 
 
-def study(out_dir):
-    """The pages written from the art, not shuffled: to render and look at before a round is built from them."""
-    scenes = [
-        ('PurpleFairy-art', fairy_from_art(), 'editor/Files/Demos', 'full-frame layers at size 1, decal Y 0'),
-        ('Hiver-art', hiver_from_art(), 'demo/assets', 'strips stacked, snow ground, trees at two depths'),
-        ('CalmTree3-art', calm_tree_from_art(), 'editor/Files/Aa new', '1080-tall layers at their natural size'),
-        ('OneNight-art', night_from_art(), 'editor/Files/Demos', 'full-frame grounds at size 1'),
-        ('Calm-art', calm_from_art(), 'editor/Files/transfer', 'strips stacked by haze'),
-    ]
-    write_round(out_dir, scenes, None, 'Pages written from the art (r92), in order, to look at.')
-
-
-# ---------------------------------------------------------------- rounds
-
-def write_round(out_dir, scenes, seed, note):
-    """scenes: (name, page, atlasDir, about). Shuffled with the seed and renamed s01.. so the order and the names
-    say nothing; the name stays in round.json for the reveal."""
-    out = os.path.join(ROOT, out_dir)
-    os.makedirs(out, exist_ok=True)
-    order = list(scenes)
-    if seed is not None:
-        random.Random(seed).shuffle(order)
-    listed = []
-    for i, (name, page, atlas_dir, about) in enumerate(order, 1):
-        sid = f's{i:02d}'
-        path = os.path.join(out_dir, sid + '.jplax')
-        with open(os.path.join(ROOT, path), 'w', encoding='utf-8') as f:
-            json.dump(page, f, indent=1)
-            f.write('\n')
-        listed.append({'id': sid, 'page': path, 'atlasDir': atlas_dir, 'name': name, 'about': name + ': ' + about,
-                       'lint': lint(page, atlas_dir)})
-    with open(os.path.join(out, 'round.json'), 'w', encoding='utf-8') as f:
-        json.dump({'note': note, 'seed': seed, 'scenes': listed}, f, indent=1)
-        f.write('\n')
-    print(f'{len(listed)} scenes in {out_dir}')
-
-
-def survey(out_dir):
-    scenes = [(name, load(path), atlas_dir, 'as saved, ' + path) for name, (path, atlas_dir) in SAMPLES.items()]
-    write_round(out_dir, scenes, 0, 'Every sample page as saved.')
-
-
-def round1(out_dir):
-    s = {name: load(path) for name, (path, _) in SAMPLES.items()}
-    d = {name: atlas_dir for name, (_, atlas_dir) in SAMPLES.items()}
-    scenes = [
-        ('Hiver', s['Hiver'], d['Hiver'], 'original (control)'),
-        ('Calm', s['Calm'], d['Calm'], 'original (control)'),
-        ('OneNight', s['OneNight'], d['OneNight'], 'original (control)'),
-        ('PurpleFairy', s['PurpleFairy'], d['PurpleFairy'], 'original (control)'),
-        ('CalmLag', s['CalmLag'], d['CalmLag'], 'original: the editor\'s default layout, no art direction'),
-        ('Hiver-flat', flat(s['Hiver']), d['Hiver'], 'every layer at the same speed: no depth from motion'),
-        ('Calm-flat', flat(s['Calm']), d['Calm'], 'every layer at the same speed: no depth from motion'),
-        ('PurpleFairy-inverted', inverted(s['PurpleFairy']), d['PurpleFairy'],
-         'speeds reversed: the back moves fastest'),
-        ('OneNight-shuffled', shuffled(s['OneNight'], 7), d['OneNight'], 'speeds shuffled: depth order broken'),
-        ('Calm-compressed', rescale_span(s['Calm'], 0.35), d['Calm'],
-         'speed span cut to a third (5.6x -> 1.8x): shallow'),
-        ('PurpleFairy-exaggerated', rescale_span(s['PurpleFairy'], 2.2), d['PurpleFairy'],
-         'speed span x2.2 in log (5.6x -> 45x): back frozen, front whips'),
-        ('Hiver-linear', linear(s['Hiver']), d['Hiver'],
-         'same back/front speeds, evenly spaced instead of a constant ratio'),
-        ('OneNight-small', shrunk(s['OneNight'], 0.5), d['OneNight'], 'every layer half as wide: repeats show'),
-        ('Calm-whitesky', white_sky(s['Calm']), d['Calm'], 'sky gradient removed (white)'),
-        ('OneNight-wrongsky', recolored(s['OneNight'], ('ffb347', 'ffe7c2'), ('b0d88f', '6fae4a')), d['OneNight'],
-         'gradients of a sunny day behind a night scene'),
-        ('PurpleFairy-aligned', aligned(s['PurpleFairy']), d['PurpleFairy'],
-         'every layer starts at decal X 0: joins line up at the start'),
-        ('Calm-agent', calm_from_rules(), d['Calm'], 'written from the rules alone (not from Simon\'s page)'),
-        ('OneNight-agent', night_from_rules(), d['OneNight'], 'written from the rules alone (not from Simon\'s page)'),
-    ]
-    write_round(out_dir, scenes, 73, 'Round 1 (r73): Simon\'s pages, one rule broken each, and two pages written '
-                                     'from the rules. Grade 1-5 on how good the scene feels as a game background.')
-
-
-def round2(out_dir):
-    """Round 2 (r92): the pages written from the art next to Simon's, and brackets of what round 1 left open."""
-    s = {name: load(path) for name, (path, _) in SAMPLES.items()}
-    d = {name: atlas_dir for name, (_, atlas_dir) in SAMPLES.items()}
-    fairy_dir, calm_dir = 'editor/Files/Demos', 'editor/Files/transfer'
-    scenes = [
-        ('PurpleFairy', s['PurpleFairy'], d['PurpleFairy'], 'Simon\'s page (control)'),
-        ('Hiver', s['Hiver'], d['Hiver'], 'Simon\'s page (control)'),
-        ('CalmTree3', s['CalmTree3'], d['CalmTree3'], 'Simon\'s page (control)'),
-        ('Calm', s['Calm'], d['Calm'], 'Simon\'s page (control, graded 3 in round 1)'),
-        ('OneNight', s['OneNight'], d['OneNight'], 'Simon\'s page (control, graded 3 in round 1)'),
-        ('PurpleFairy-art', fairy_from_art(), fairy_dir, 'from the art: full-frame layers at size 1, x1.33 a layer'),
-        ('Hiver-art', hiver_from_art(), 'demo/assets', 'from the art: strips stacked, snow ground, big trees'),
-        ('CalmTree3-art', calm_tree_from_art(), d['CalmTree3'], 'from the art: 1080-tall layers at natural size'),
-        ('Calm-art', calm_from_art(), calm_dir, 'from the art: strips stacked by haze'),
-        ('OneNight-art', night_from_art(), fairy_dir, 'from the art: grounds stacked, one sky gradient'),
-        ('PurpleFairy-art-x1.15', fairy_from_art(ratio=1.15), fairy_dir, 'speed ratio x1.15 a layer (span 2.3x)'),
-        ('PurpleFairy-art-x1.6', fairy_from_art(ratio=1.6), fairy_dir, 'speed ratio x1.6 a layer (span 17x)'),
-        ('Calm-art-shallow', rescale_span(calm_from_art(), 0.6), calm_dir, 'speed span 12x -> 4.5x'),
-        ('Calm-art-deep', rescale_span(calm_from_art(), 1.5), calm_dir, 'speed span 12x -> 41x'),
-        ('Calm-art-narrow', shrunk(calm_from_art(), 0.7), calm_dir, 'every layer 0.7 as wide: repeats closer'),
-        ('CalmTree3-art-narrow', shrunk(calm_tree_from_art(), 0.75), d['CalmTree3'],
-         'every layer 0.75 as wide: the forest shrinks, its bottom shows'),
-    ]
-    write_round(out_dir, scenes, 92, 'Round 2 (r92): pages written from the art next to Simon\'s, and brackets of '
-                                     'speed ratio, span and width. Grade 1-5 on how good the scene feels as a game '
-                                     'background.')
-
-
-def round3(out_dir):
-    """Round 3 (r128): pages written from the skill (version 2) on three atlases no page has been written for, and the
-    top of the speed span bracketed, next to round 2's best two as anchors."""
-    s = {name: load(path) for name, (path, _) in SAMPLES.items()}
-    d = {name: atlas_dir for name, (_, atlas_dir) in SAMPLES.items()}
-    fairy_dir, calm_dir, pure_dir = 'editor/Files/Demos', 'editor/Files/transfer', 'editor/Files/Demos/Day/pureTest'
-    scenes = [
-        ('Printemps', s['Printemps'], d['Printemps'], 'Simon\'s page (control, never graded)'),
-        ('Printemps-art', printemps_from_art(), d['Printemps'], 'from the skill: strips stacked, poles big, 25x; the field\'s seam (the art\'s) passes once a tile'),
-        ('Boss-art', boss_from_art(), calm_dir, 'from the skill: silhouettes on a fire sky, 25x'),
-        ('Boss-art-shallow', rescale_span(boss_from_art(), 0.6), calm_dir, 'speed span 25x -> 7x'),
-        ('Pure-art', pure_from_art(), pure_dir, 'from the skill: nine strips, x1.6 a layer (43x)'),
-        ('Pure-art-x1.33', pure_from_art(ratio=4 / 3), pure_dir, 'x1.33 a layer, the samples\' ratio (10x)'),
-        ('PurpleFairy-art-x1.6', fairy_from_art(ratio=1.6), fairy_dir, 'anchor: graded 4 in round 2 (span 17x)'),
-        ('PurpleFairy-art-x2.0', fairy_from_art(ratio=2.0), fairy_dir, 'x2.0 a layer (span 64x)'),
-        ('Calm-art-deep', rescale_span(calm_from_art(), 1.5), calm_dir, 'anchor: graded 5 in round 2 (span 41x)'),
-        ('Calm-art-100x', rescale_span(calm_from_art(), math.log(100) / math.log(12)), calm_dir, 'speed span 12x -> 100x'),
-        ('OneNight-art-deep', rescale_span(night_from_art(), 1.6), fairy_dir, 'OneNight-art (4 in round 2), span 10x -> 40x'),
-        ('CalmTree3-art-deep', rescale_span(calm_tree_from_art(), 1.4), d['CalmTree3'], 'CalmTree3-art (4 in round 2), span 20x -> 66x'),
-    ]
-    write_round(out_dir, scenes, 128, 'Round 3 (r128): pages written from the skill on atlases never paged, and how '
-                                      'deep the speeds can go. Grade 1-5 on how good the scene feels as a game '
-                                      'background.')
-
-
-def round4(out_dir):
-    """Round 4 (parallax:r227): is there a top to the speed span past 100x? Round 3's deeper span won or tied every
-    bracket up to 100x. Calm and pure at 100x and 250x, next to round 3's anchors: Pure-art (43x, graded 5),
-    Printemps-art (25x, 4) and Calm-art-100x (4) again, to watch the grading scale."""
-    d = {name: atlas_dir for name, (_, atlas_dir) in SAMPLES.items()}
-    calm_dir, pure_dir = 'editor/Files/transfer', 'editor/Files/Demos/Day/pureTest'
-    calm = math.log(12)  # calm_from_art's span
-    scenes = [
-        ('Calm-art-100x', rescale_span(calm_from_art(), math.log(100) / calm), calm_dir, 'anchor: graded 4 in round 3 (span 100x)'),
-        ('Calm-art-250x', deepen_back(rescale_span(calm_from_art(), math.log(100) / calm), math.log(250) / math.log(100)),
-         calm_dir, 'Calm-art-100x with its front kept and the rest pushed back: span 100x -> 250x'),
-        ('Pure-art', pure_from_art(), pure_dir, 'anchor: graded 5 in round 3 (x1.6 a layer, 43x)'),
-        ('Pure-art-100x', pure_from_art(ratio=100 ** (1 / 8)), pure_dir, 'x1.78 a layer (span 100x)'),
-        ('Pure-art-250x', pure_from_art(ratio=250 ** (1 / 8)), pure_dir, 'x1.99 a layer (span 250x)'),
-        ('Printemps-art', printemps_from_art(), d['Printemps'], 'anchor: graded 4 in round 3 (25x)'),
-    ]
-    write_round(out_dir, scenes, 227, 'Round 4 (parallax:r227): is there a top to the speed span past 100x? Grade 1-5 '
-                                      'on how good the scene feels as a game background.')
-
-
 def find_atlas_dir(path, page):
-    """The folder of a page's atlas: next to the page, else the one a round.json beside it names, else the one sample
-    folder that holds an atlas of that name. None when it is not found once."""
+    """The folder of a page's atlas: next to the page, else the one a round.json beside it names, else the one folder of
+    core/test-data/samples that holds an atlas of that name. None when it is not found once."""
     name = page['pageModel']['atlasName']
     here = os.path.dirname(path)
     if os.path.exists(os.path.join(ROOT, here, name)):
@@ -1090,7 +879,7 @@ def find_atlas_dir(path, page):
                 if os.path.normpath(scene['page']) == os.path.normpath(os.path.relpath(os.path.join(ROOT, path), ROOT)):
                     return scene['atlasDir']
     found = {os.path.relpath(os.path.dirname(a), ROOT)
-             for d in ('editor/Files', 'demo/assets', 'core/test-data/samples') for a in glob.glob(os.path.join(ROOT, d, '**', name), recursive=True)}
+             for a in glob.glob(os.path.join(ROOT, 'core/test-data/samples', '**', name), recursive=True)}
     return found.pop() if len(found) == 1 else None
 
 
@@ -1113,22 +902,6 @@ def main(argv):
             bad += bool(problems)
             print('\n'.join('  ! ' + p for p in problems) or '  ok')
         return 1 if bad else 0
-    if cmd == 'survey':
-        survey(argv[2])
-        return 0
-    if cmd == 'study':
-        study(argv[2] if len(argv) > 2 else 'demo/lab/study')
-        return 0
-    if cmd == 'round4':
-        return round4(argv[2] if len(argv) > 2 else 'demo/lab/round4')
-    if cmd == 'round3':
-        return round3(argv[2] if len(argv) > 2 else 'demo/lab/round3')
-    if cmd == 'round2':
-        round2(argv[2] if len(argv) > 2 else 'demo/lab/round2')
-        return 0
-    if cmd == 'round1':
-        round1(argv[2] if len(argv) > 2 else 'demo/lab/round1')
-        return 0
     print('unknown command ' + cmd, file=sys.stderr)
     return 2
 

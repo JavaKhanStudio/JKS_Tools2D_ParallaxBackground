@@ -75,6 +75,9 @@ What the lab cannot show: vertical scroll, cross-fades between pages (the demo d
 
 ## 4. The lab
 
+The lab and its rounds are in the editor repository since r133 (r321 took the rounds out of this repository's
+`tools/parallax_lab.py`, which keeps `lint` and the page writers); the commands below run there.
+
 - `python3 tools/parallax_lab.py round1` (`round2`, `round3`) writes `demo/lab/round1`: 18 scenes, shuffled, named `s01`… so neither the
   order nor the name says which is the control.
 - `./gradlew :demo:lab` shows the latest round, scrolling. **1-5** grades and moves on, **ENTER / BACKSPACE** next /
@@ -154,8 +157,8 @@ their seam across it.
 
 **Seams**: Printemps p2 (60), p3 (100) and PurpleFairy 3 (117) do not tile: their right edge does not meet their left.
 
-The pages written this way are `tools/parallax_lab.py` `*_from_art()`; `tools/parallax_lab.py study` writes them in
-order to `demo/lab/study`, and round 2 grades them next to Simon's.
+The pages written this way are `tools/parallax_lab.py` `*_from_art()`; the editor repository's `tools/parallax_lab.py
+study` writes them in order to `demo/lab/study`, and round 2 grades them next to Simon's.
 
 ## 7. Round 2 results (r128)
 
@@ -214,7 +217,7 @@ its 6 s stills, unblinded and sorted by grade, are on r213):
 ## 9. Round 4 results (r231)
 
 Graded by Simon on 2026-10-10, 1-5, `demo/lab/round4/grades.json` joined with `round.json` (in the editor repository,
-built by r227: `tools/parallax_lab.py round4`). One question: is there a top to the speed span past 100x?
+built by r227 with its `tools/parallax_lab.py round4`). One question: is there a top to the speed span past 100x?
 
 | Atlas | Anchor (its round 3 grade) | 43x | 100x | 250x |
 |-------|----------------------------|-----|------|------|
