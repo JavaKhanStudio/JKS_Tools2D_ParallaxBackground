@@ -31,7 +31,8 @@ reader with those stills; CI runs each in its own job, godot-frames and jme-fram
 Round (:rounds, engines/rounds/reader, parallax:r312) for ParallaxShots and JmeParallaxShots, and by Godot's tests/shots.gd. A new round
 field goes in both, and in each runner that plays it.
 What each port must copy line for line, and which frame round proves it, is in AGENTS.md "Runtime".
-Build rules (the #build pack): versions in gradle.properties, repositories only in settings.gradle, every JavaExec
-offscreen or headless. A new reader's CI job goes in .github/workflows/ci.yml, and its release step in release.yml
-and RELEASING.md.
+WHAT A NEW READER MUST HAVE (folder, README, frame check, CI job, release artifact, AGENTS.md duties) is
+engines/README.md, "What a new reader must have" (r12): follow it, and change it when a reader changes the shape.
+Build rules are the #build pack's: versions in gradle.properties, repositories only in settings.gradle, every JavaExec
+offscreen or headless.
 """

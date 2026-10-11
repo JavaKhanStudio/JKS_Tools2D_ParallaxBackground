@@ -166,6 +166,9 @@ The same three pieces. What changes is how each engine draws a 2D screen-space b
 | Draw | A dedicated background camera, or a mesh of quads rebuilt each frame; a `SpriteRenderer` per tile works but costs GameObjects. | A `UCanvas` draw in a HUD, or a Slate/UMG widget: screen space, no world actors. |
 | Watch | **Colour space**: a Linear-space project blends and interpolates gradients differently from libGDX. Mark the textures sRGB and expect small differences, or compare in Gamma space. | **Tone mapping and post-process** alter every colour of the scene: draw after them (UI), or the page will not match. |
 
+What a reader sub project must have in this repository (its folder, README, frame check, CI job and release
+artifact) is in [engines/README.md](../engines/README.md#what-a-new-reader-must-have).
+
 For each, the Godot check carries over: a runner that renders the lab rounds' pages at 0, 6 and 12 s and compares with
 the libGDX stills. That comparison is what makes a port trustworthy, much more than the reader code.
 

@@ -336,7 +336,7 @@ It draws what the libGDX library draws (`engines/godot/tools/frame-check.sh` com
 `world_width` units wide (40, as `Parallax_Heart`'s). An exported game only ships the `.jplax` and `.atlas` if the
 export preset lists them under *Filters to export non-resource files* (`*.jplax, *.atlas`); for an atlas written with
 `filter: MipMap`, tick *Mipmaps > Generate* on its `.png` in the Import dock. Not there yet: atlas regions packed
-rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md).
+rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md); every reader, and what a new one must have: [engines/README.md](engines/README.md).
 
 ### In jMonkeyEngine 3
 
