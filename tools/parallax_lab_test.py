@@ -44,10 +44,10 @@ class ImagelessLayers(unittest.TestCase):
 
 
 class ShaderLayers(unittest.TestCase):
-    """engines/godot/tests/shaders/s04.jplax holds a WAVE with no wavelength (layer 5) and a FOG at 1.7 (layer 6)."""
+    """engines/rounds/shaders/s04.jplax holds a WAVE with no wavelength (layer 5) and a FOG at 1.7 (layer 6)."""
 
     def setUp(self):
-        self.page = lab.load('engines/godot/tests/shaders/s04.jplax')
+        self.page = lab.load('engines/rounds/shaders/s04.jplax')
 
     def test_load_keeps_the_shader_fields(self):
         fog = lab.layers(self.page)[6]
@@ -63,13 +63,13 @@ class ShaderLayers(unittest.TestCase):
         self.assertIn("layer 6 (mist#0): FOG thins by 0 to 1, its shaderAmplitude 1.7 reads as 1", problems)
 
     def test_a_good_shader_layer_says_nothing(self):
-        problems = lab.lint(lab.load('engines/godot/tests/shaders/s01.jplax'))
+        problems = lab.lint(lab.load('engines/rounds/shaders/s01.jplax'))
         self.assertFalse([p for p in problems if 'shader' in p or 'FOG' in p], problems)
 
 
 class SequenceLayers(unittest.TestCase):
-    """engines/godot/tests/sequence/q01.jplax: layer 4 chains tower, river and stone from HiverSeq.atlas."""
-    PATH = 'engines/godot/tests/sequence/q01.jplax'
+    """engines/rounds/sequence/q01.jplax: layer 4 chains tower, river and stone from HiverSeq.atlas."""
+    PATH = 'engines/rounds/sequence/q01.jplax'
 
     def setUp(self):
         self.page = lab.load(self.PATH)
@@ -126,7 +126,7 @@ class SequenceLayout(unittest.TestCase):
     """layout() measures a SEQUENCE layer from its segments (r245): it covers what every segment covers, and each join
     its cycle can make is checked for a seam."""
     PAINTED = 'tools/r239-ai-strips/page/painted.jplax'
-    Q01 = 'engines/godot/tests/sequence/q01.jplax'
+    Q01 = 'engines/rounds/sequence/q01.jplax'
 
     def layout(self, path, change=None):
         page = lab.load(path)

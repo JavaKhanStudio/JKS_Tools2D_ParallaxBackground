@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # r216: proves the shaders round sees FOG's 8-wavelength period. Puts back, in Godot's copy only, first the old
 # frequencies (1, 2, 3 per wavelength), then the old phase wrap (one wavelength), runs tools/godot-parallax-shots.sh
-# on engines/godot/tests/shaders for each, and fails unless both runs FAIL. Restores plax_effects.gd on exit.
+# on engines/rounds/shaders for each, and fails unless both runs FAIL. Restores plax_effects.gd on exit.
 # headless: tools/godot-parallax-shots.sh renders in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
@@ -11,7 +11,7 @@ cp "$GD" "$SAVED"
 trap 'cp "$SAVED" "$GD"; rm -f "$SAVED"' EXIT
 status=0
 run() {
-	if tools/godot-parallax-shots.sh engines/godot/tests/shaders >/tmp/r216-mutant.log 2>&1; then
+	if tools/godot-parallax-shots.sh engines/rounds/shaders >/tmp/r216-mutant.log 2>&1; then
 		echo "NOT CAUGHT: $1 passes the shaders round"; status=1
 	else
 		echo "caught: $1 ($(grep -o 'worst mean diff [0-9.]*' /tmp/r216-mutant.log | head -1))"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Writes the tower round (r276, docs/depth-tricks.md §2): core/test-data/tower/bricks.png, a brick wall with windows,
 seamless both ways (r266's mock tower, made taller); HiverTower.atlas, Hiver's regions then the bricks on a page of
-their own; and engines/godot/tests/tower/round.json and its pages: the floor lab's Hiver set (its EMPTY floor dropped)
+their own; and engines/rounds/tower/round.json and its pages: the floor lab's Hiver set (its EMPTY floor dropped)
 with a tower in front, its wall six bricks images round, turning a full turn in the 12 s the shots scroll.
 Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots;
 tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare them.
@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 HERE = 'core/test-data/tower'
-OUT = 'engines/godot/tests/tower'
+OUT = 'engines/rounds/tower'
 W, H = 256, 1024
 # The shots scroll 60 units of view a second for 12 s (shots.gd): a speed ratio of 2 pi R / 720 turns R a full turn.
 SECONDS, SPEED = 12, 60

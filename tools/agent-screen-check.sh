@@ -28,12 +28,12 @@ for k in ("DISPLAY", "WAYLAND_DISPLAY"):
 OUT=$(mktemp -d); trap 'rm -rf "$OUT"' EXIT
 status=0
 if [ "${1:-}" != --only-sentinel ]; then
-if tools/parallax-lab-shots.sh engines/godot/tests/transfer "$OUT/cage" >/dev/null 2>&1; then
+if tools/parallax-lab-shots.sh engines/rounds/transfer "$OUT/cage" >/dev/null 2>&1; then
 	echo "ok: cage renders without the screen"
 else
 	echo "FAIL: cage could not render with the screen stripped, see a rerun of tools/parallax-lab-shots.sh"; status=1
 fi
-if ATELIER_NO_OFFSCREEN=1 timeout 60 tools/parallax-lab-shots.sh engines/godot/tests/transfer "$OUT/screen" >/dev/null 2>&1; then
+if ATELIER_NO_OFFSCREEN=1 timeout 60 tools/parallax-lab-shots.sh engines/rounds/transfer "$OUT/screen" >/dev/null 2>&1; then
 	echo "FAIL: a window opened outside cage"; status=1
 elif grep -q "Failed to open display" "$OUT/screen/lab.log" 2>/dev/null; then
 	echo "ok: a launch outside cage fails (GLFW: no display)"
@@ -62,9 +62,9 @@ sentinel() {
 		echo "ok: $name stays in cage"
 	fi
 }
-sentinel jme-shots tools/jme-parallax-shots.sh engines/godot/tests/transfer
+sentinel jme-shots tools/jme-parallax-shots.sh engines/rounds/transfer
 sentinel jme-demo tools/start-demo-check.sh jme
-if command -v "${GODOT:-godot}" >/dev/null; then sentinel godot-shots tools/godot-parallax-shots.sh engines/godot/tests/transfer; fi
+if command -v "${GODOT:-godot}" >/dev/null; then sentinel godot-shots tools/godot-parallax-shots.sh engines/rounds/transfer; fi
 # The labs' open mode, with DISPLAY and WAYLAND_DISPLAY both empty: the branch that points Chrome at wayland-0 (r237).
 # An agent's must refuse before Chrome; the board's Open button (neither ATELIER_AGENT nor CLAUDECODE) must reach it.
 labs=("tools/fog-lab.sh" "tools/haze-lab.sh" "tools/transfert-lab.sh" "tools/effects-lab.sh --lab fog" "tools/browser-test.sh --open")

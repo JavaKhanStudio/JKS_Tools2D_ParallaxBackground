@@ -32,7 +32,7 @@ depth, and the trees are drawn over it.
 - **`EMPTY`** draws nothing. It holds a slot a game can fill: `ParallaxPageReader` calls a `LayerHook` the game
   registered under the layer's `name` (`setLayerHook`), in draw order, once per tile of the layer the view shows: a box
   the world's size times `sizeRatio`, scrolled and tiled as an image would be, the batch at the page's tint and fade.
-  Shipped in r177 (format 5); `engines/godot/tests/effects` is its round. That is the
+  Shipped in r177 (format 5); `engines/rounds/effects` is its round. That is the
   escape hatch for anything the page cannot describe (a libGDX `ParticleEffect`, a Godot `GPUParticles2D`, a game
   sprite that should sit between two layers), and it is portable by construction: each engine calls its own hook.
 - **`PARTICLES`** is an engine's own particle effect, named by file in the page, one file per engine (below).
@@ -79,7 +79,7 @@ two. Godot cannot draw one particle node at several places, so a `LAYER` effect 
 shows, each its own simulation, made as a tile scrolls in and pooled as it leaves; a `VIEW` effect is one instance
 moved with the layer, its `ParticleProcessMaterial.emission_shape_offset` moved back by as much, which keeps the
 emitter in the view and lets the particles drift (a `CPUParticles2D` has no such offset: it is converted to a
-`GPUParticles2D`). The scene is in screen pixels, unscaled. `engines/godot/tests/particles` checks it.
+`GPUParticles2D`). The scene is in screen pixels, unscaled. `engines/rounds/particles` checks it.
 
 ## Shaders: options
 
@@ -107,7 +107,7 @@ moves on the reader's clock (`act`), its phase wrapped to one wavelength on the 
 numbers; `FOG` is a sum of three sines, not a hash, so every GPU computes the same. `core` draws through a
 `LayerEffects` the engine sets: `GdxLayerEffects` (GLSL ES 1.0) by default, jME's `JmeLayerEffects` (a
 `ParallaxEffect` material per layer, `JmeBatch.setEffect` starting a run of its own); Godot's `plax_effects.gd` is a
-`ShaderMaterial` on the layer's canvas. `engines/godot/tests/shaders` compares Godot and jME with libGDX at 2/255
+`ShaderMaterial` on the layer's canvas. `engines/rounds/shaders` compares Godot and jME with libGDX at 2/255
 (0.30 and 0.07), and fails with an effect left out, its phase frozen or a ripple reversed; the browser suite compiles
 both effects in WebGL and checks `FOG`'s pixels against its formula. On a still page two `WAVE` and one `FOG` layer
 took a frame from 0.70 to 0.90 ms, a flush each (`tools/r180-shader-round/stress.sh`).
@@ -128,7 +128,7 @@ the shader switches, which keeping the shader bound did not change. So libGDX dr
 through one `PAGE_FOG` shader (`LayerEffects.beginPageFog`): the batch colour carries the layer's fog in its red and
 its page in its green, the tint and both pages' fog colours are uniforms; a `SHADER` layer, a hook or particles
 switch away from it and back. Fogged, 0.67 ms at 10 layers and 1.25 at 40, as unfogged. jME and Godot draw a
-material per layer anyway. `engines/godot/tests/fog` (written by `core/test-data/haze/make_round.py`) compares Godot
+material per layer anyway. `engines/rounds/fog` (written by `core/test-data/haze/make_round.py`) compares Godot
 and jME with libGDX in every repeat mode, in three colours, through a `SEQUENCE` layer, from a format 9 page and
 through a cross-fade between two fogs while tinting (0.35 and 0.13 / 255); leaving the fog out moves its stills by
 6.9 to 46 / 255 (`tools/r217-fog/strength.sh`), and `tools/r217-fog/mutate.sh` fails a wrong colour or depth in

@@ -14,7 +14,7 @@ is what exists, what the lab shows, and what each way would cost.
   screen clones its layers; one interrupted by another releases the page it was going to.
 - **The tint transfer** (`ParallaxPageReader.addColorTransfert(color, seconds)`): every layer's colour multiplied by a
   tint that moves toward `color`.
-- Both are ported line for line to Godot (`plax_background.gd`, r94) and run as is in jME. `engines/godot/tests/transfer`
+- Both are ported line for line to Godot (`plax_background.gd`, r94) and run as is in jME. `engines/rounds/transfer`
   is their frame round: on 2026-10-09 it passes in Godot (worst 0.69/255) and jME (0.23/255), with `:core:test`
   (`TransferCases`, all four repeat modes).
 

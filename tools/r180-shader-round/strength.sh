@@ -7,7 +7,7 @@
 # fails when one is under MIN (default 2.5, past the rounds' 2). Writes build/r180/strength/.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
-ROUND="${1:-engines/godot/tests/shaders}" MIN="${MIN:-2.5}" OUT=build/r180/strength
+ROUND="${1:-engines/rounds/shaders}" MIN="${MIN:-2.5}" OUT=build/r180/strength
 rm -rf "$OUT"; mkdir -p "$OUT/plain-round"
 python3 - "$ROUND" "$OUT/plain-round" <<'PY'
 import json, os, sys

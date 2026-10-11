@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Writes the planet round (r277, docs/depth-tricks.md §3): engines/godot/tests/planet/round.json and its pages, other
+"""Writes the planet round (r277, docs/depth-tricks.md §3): engines/rounds/planet/round.json and its pages, other
 rounds' pages with a planet radius (WholePage_Model.planetRadius, format 13) so each layer is bent down toward the view's
 sides by its depth, the far ones more, a still one not at all; p08 an EMPTY layer whose hook lowers its tiles by
 planetDropAt (r330). No art of its own: the atlases are the floor lab's, the samples', the sequence round's and the
 shaders round's. Also writes p09 and p10, the particles round's pages (core/test-data/particles) round a planet, which
-engines/godot/tests/particles/round.json lists (q09, q10): particles are not compared in pixels.
+engines/rounds/particles/round.json lists (q09, q10): particles are not compared in pixels.
 Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots;
 tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare them. `make_round.py --flat OUT` (strength.sh)
 writes the same pages with the planets dropped.
@@ -13,7 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-OUT = 'engines/godot/tests/planet'
+OUT = 'engines/rounds/planet'
 FLOOR, SAMPLES, SEQUENCE, SHADERS = 'core/test-data/floor', 'core/test-data/samples', 'core/test-data/sequence', \
     'core/test-data/shaders'
 PARTICLES = 'core/test-data/particles'
@@ -48,11 +48,11 @@ def main(out, flat):
     layers[2]['flipX'] = True
     p02.update(fogStrength=0.02, fogColor={'r': 0.88, 'g': 0.9, 'b': 0.93, 'a': 1})
     p02 = write('p02', p02, 500)
-    p03 = write('p03', load('engines/godot/tests/sequence/q01.jplax'), 600)
-    p04 = write('p04', load('engines/godot/tests/shaders/s01.jplax'), 600)
-    p05 = write('p05', load('engines/godot/tests/conformance/c02.jplax'), 700)
-    p07 = write('p07', load('engines/godot/tests/conformance/c01.jplax'), 0)
-    p08 = write('p08', load('engines/godot/tests/effects/e01.jplax'), 400)
+    p03 = write('p03', load('engines/rounds/sequence/q01.jplax'), 600)
+    p04 = write('p04', load('engines/rounds/shaders/s01.jplax'), 600)
+    p05 = write('p05', load('engines/rounds/conformance/c02.jplax'), 700)
+    p07 = write('p07', load('engines/rounds/conformance/c01.jplax'), 0)
+    p08 = write('p08', load('engines/rounds/effects/e01.jplax'), 400)
     write('p09', load(f'{PARTICLES}/p02.jplax'), 400)
     write('p10', load(f'{PARTICLES}/p01.jplax'), 400)
     scenes = [

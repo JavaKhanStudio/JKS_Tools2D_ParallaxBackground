@@ -50,7 +50,7 @@ public final class EffectSupport
 
 	/**
 	 * True when {@code engine} draws a SHADER layer's image through {@code effect}. Every effect is drawn by all four:
-	 * engines/godot/tests/shaders compares Godot's and jME's frames with libGDX's (tools/godot-parallax-shots.sh,
+	 * engines/rounds/shaders compares Godot's and jME's frames with libGDX's (tools/godot-parallax-shots.sh,
 	 * tools/jme-parallax-shots.sh), and the browser compiles the libGDX shaders, GLSL ES 1.0, as WebGL.
 	 */
 	public static boolean draws(Enum_ShaderEffect effect, Engine engine)

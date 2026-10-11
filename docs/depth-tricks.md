@@ -44,7 +44,7 @@ five: the ground's stones run apart under the camera while the billboards stand 
   speed from the layer's own at the bottom to the top speed (the lab's sliders, not the layer behind's). The lab showed
   the layers in front sliding on the ground at their own speeds; the reader plants them, each at the speed of the row
   under its foot (`ParallaxPageReader.plant`). Drawn by `ParallaxLayer.drawFloor`, `plax_floor.gd`'s
-  `draw`; round `engines/godot/tests/floor`.
+  `draw`; round `engines/rounds/floor`.
 
 ### 2. Tower: a layer wrapped round a cylinder
 
@@ -65,7 +65,7 @@ little at their edges.
   front showing what the flat layer would there, so the layer's scroll turns it. 128 strips of equal angle, one
   `batch.draw` each. The conflict settled in the packed value: the page fog's shader reads the batch colour's free
   blue as darkness (`rgb * (1 - b)` before the fog's mix), 0 for every other layer; elsewhere the strip's rgb is
-  multiplied. Drawn by `ParallaxLayer.drawTower`, `plax_tower.gd`'s `draw`; round `engines/godot/tests/tower`. Not
+  multiplied. Drawn by `ParallaxLayer.drawTower`, `plax_tower.gd`'s `draw`; round `engines/rounds/tower`. Not
   built: the panoramas behind curving at their edges (a flat parallax behind reads well enough), a shader version.
 
 ### 3. Planet: layers bent by their distance
@@ -83,7 +83,7 @@ it does not read as depth as much as the floor does.
   fixed in the layer's view, each lowered at its middle: the art scrolls through a still curve, and the IMAGE, SHADER
   and SEQUENCE layers bend alike with no change in `ParallaxLayer`. FLOOR and tower layers stay flat.
   A bent layer uncovers what is behind it at the sides. Godot's copy is `plax_planet.gd`; round
-  `engines/godot/tests/planet`. Not built: a shader version.
+  `engines/rounds/planet`. Not built: a shader version.
 - Built (r330, Simon: "1: A · 2: A", and a lab): a PARTICLES layer's effect is lowered as one block by the drop at the
   middle of its layer's box, per tile when anchored to the LAYER (the box's middle, not the live particles', which
   Godot does not know); a still one stays flat. A hook is not bent: `ParallaxPageReader.planetDropAt(layer, x)` (Godot
@@ -106,7 +106,7 @@ barely moves. Only games whose camera zooms gain anything.
   and drawn through `DollyBatch`, which scales its quads (and its particles' vertices) into the camera's view; the
   effects keep the game's batch and are laid on the layer's view, FOG's noise from where its layers' corner is
   (`LayerEffects.setView(width, height, left, floor)`). Godot draws each layer in its own view at as many pixels a
-  unit (`PlaxBackground._zoom_of`, `_anchor_of`); jME runs core's. Round `engines/godot/tests/dolly`,
+  unit (`PlaxBackground._zoom_of`, `_anchor_of`); jME runs core's. Round `engines/rounds/dolly`,
   `tools/r278-dolly/mutate.sh`. A FLOOR's rows are not dollied one by one: the floor takes its layer's zoom.
 
 ### 5. From one painting: depth estimated, split into layers

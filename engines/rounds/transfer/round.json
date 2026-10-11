@@ -4,23 +4,23 @@
  "scenes": [
   {
    "id": "t01",
-   "page": "engines/godot/tests/conformance/c04.jplax",
+   "page": "engines/rounds/conformance/c04.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "into-more-layers",
    "about": "Hiver (7 layers, repeat X, mirrored) into Calm (9 layers, another atlas): the 2 back layers of Calm have no counterpart",
-   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer"}
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer"}
   },
   {
    "id": "t02",
-   "page": "engines/godot/tests/round1/s10.jplax",
+   "page": "engines/rounds/round1/s10.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "into-fewer-layers",
    "about": "Calm (9 layers) into OneNight (6 layers, useOriginalSize, dark gradients): the 3 back layers of Calm fade out alone",
-   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s06.jplax", "atlasDir": "core/test-data/samples/Demos"}
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/rounds/round1/s06.jplax", "atlasDir": "core/test-data/samples/Demos"}
   },
   {
    "id": "t03",
-   "page": "engines/godot/tests/conformance/c02.jplax",
+   "page": "engines/rounds/conformance/c02.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "into-itself-tinted",
    "about": "repeat XY: a cross-fade into the page on screen (its layers cloned), while tinting orange",
@@ -29,15 +29,15 @@
   },
   {
    "id": "t04",
-   "page": "engines/godot/tests/conformance/c05.jplax",
+   "page": "engines/rounds/conformance/c05.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "no-repeat-into-gradients",
    "about": "no repeat, white gradients into c06's coloured ones: the colours fade, the sizes stay c05's",
-   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/conformance/c06.jplax"}
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/rounds/conformance/c06.jplax"}
   },
   {
    "id": "t05",
-   "page": "engines/godot/tests/conformance/c03.jplax",
+   "page": "engines/rounds/conformance/c03.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "tint-translucent",
    "about": "repeat Y, mirrored: a tint only, to a half-transparent night blue",
@@ -45,102 +45,102 @@
   },
   {
    "id": "t06",
-   "page": "engines/godot/tests/round1/s03.jplax",
+   "page": "engines/rounds/round1/s03.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "interrupted",
    "about": "Hiver (7 layers) starts fading into Calm (9) at 4 s, then into OneNight (6) at 5 s: Calm is dropped, Hiver pops back to full opacity and fades again; the gradients restart from where they were",
    "transfer": [
-    {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer"},
-    {"at": 5, "seconds": 4, "page": "engines/godot/tests/round1/s06.jplax", "atlasDir": "core/test-data/samples/Demos"}
+    {"at": 4, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer"},
+    {"at": 5, "seconds": 4, "page": "engines/rounds/round1/s06.jplax", "atlasDir": "core/test-data/samples/Demos"}
    ]
   },
   {
    "id": "t07",
-   "page": "engines/godot/tests/conformance/c04.jplax",
+   "page": "engines/rounds/conformance/c04.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "depth-stagger-into-more-layers",
    "about": "t01 with a depth stagger of 1: at t6, half way, Calm's back slot is all in and Hiver's front one not yet started; Calm's 2 extra back slots lead",
-   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "DEPTH_STAGGER", "stagger": 1}}
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "DEPTH_STAGGER", "stagger": 1}}
   },
   {
    "id": "t08",
-   "page": "engines/godot/tests/round1/s10.jplax",
+   "page": "engines/rounds/round1/s10.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "depth-stagger-into-fewer-layers",
    "about": "t02 with the largest stagger, 2: at t6 the back slots are all OneNight (Calm's 3 extra ones gone), the front ones still Calm",
-   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s06.jplax", "atlasDir": "core/test-data/samples/Demos", "style": {"kind": "DEPTH_STAGGER", "stagger": 2}}
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/rounds/round1/s06.jplax", "atlasDir": "core/test-data/samples/Demos", "style": {"kind": "DEPTH_STAGGER", "stagger": 2}}
   },
   {
    "id": "t09",
-   "page": "engines/godot/tests/conformance/c04.jplax",
+   "page": "engines/rounds/conformance/c04.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "dissolve-into-more-layers",
    "about": "t01 as a dissolve (r250), the transfert lab's D: 5 patches across, edges 0.08 soft, stagger 0.5; at t6 each slot's Calm layer has eaten part of Hiver's, the back slots further",
-   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}}
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}}
   },
   {
    "id": "t10",
-   "page": "engines/godot/tests/round1/s10.jplax",
+   "page": "engines/rounds/round1/s10.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "dissolve-hard-into-fewer-layers",
    "about": "t02 as a dissolve with hard edges (0.01), 3 patches, every slot at once: at t6 half of each slot is OneNight, the other half Calm, cut sharp",
-   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s06.jplax", "atlasDir": "core/test-data/samples/Demos", "style": {"kind": "DISSOLVE", "patches": 3, "softness": 0.01, "stagger": 0}}
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/rounds/round1/s06.jplax", "atlasDir": "core/test-data/samples/Demos", "style": {"kind": "DISSOLVE", "patches": 3, "softness": 0.01, "stagger": 0}}
   },
   {
    "id": "t11",
-   "page": "engines/godot/tests/conformance/c04.jplax",
+   "page": "engines/rounds/conformance/c04.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "through-white-into-more-layers",
    "about": "t01 through white (r251), every slot at once, started at 3.5 s: the whole screen white at 5.5 s, and at t6 Calm and its gradients coming out of the white, 75% of the way still white",
-   "transfer": {"at": 3.5, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "THROUGH_COLOR", "color": "ffffff", "stagger": 0}}
+   "transfer": {"at": 3.5, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "THROUGH_COLOR", "color": "ffffff", "stagger": 0}}
   },
   {
    "id": "t12",
-   "page": "engines/godot/tests/fog/f01.jplax",
+   "page": "engines/rounds/fog/f01.jplax",
    "atlasDir": "core/test-data/haze",
    "name": "through-orange-from-a-fogged-page-staggered",
    "about": "f01 (a page fog, a WAVE and a FOG layer) through a warm orange into Calm, stagger 1 (r251): at t6 the back slots are Calm coming out of the orange, the front ones f01 going into it, mixed toward the orange after their fog",
-   "transfer": {"at": 4, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "THROUGH_COLOR", "color": "ff9a40", "stagger": 1}}
+   "transfer": {"at": 4, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "THROUGH_COLOR", "color": "ff9a40", "stagger": 1}}
   },
   {
    "id": "t13",
-   "page": "engines/godot/tests/conformance/c04.jplax",
+   "page": "engines/rounds/conformance/c04.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "fog-creep-in-far-first",
    "about": "t01 as a fog creep into the page fog's white mist (r252), stagger 1, started at 4.6 s: at t6, 35% in, Hiver's far slots all mist, its near ones going into it, the gradients white; Calm not drawn yet",
-   "transfer": {"at": 4.6, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "FOG_CREEP", "color": "eef2f7", "stagger": 1}}
+   "transfer": {"at": 4.6, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "FOG_CREEP", "color": "eef2f7", "stagger": 1}}
   },
   {
    "id": "t14",
-   "page": "engines/godot/tests/fog/f01.jplax",
+   "page": "engines/rounds/fog/f01.jplax",
    "atlasDir": "core/test-data/haze",
    "name": "fog-creep-out-near-first-from-a-fogged-page",
    "about": "f01 (a page fog, a WAVE and a FOG layer) as a fog creep into a grey-blue mist, into Calm, stagger 1 (r252), started at 3.4 s: at t6, 65% in, Calm coming out of the mist, its near slots clear first, its far ones still under it",
-   "transfer": {"at": 3.4, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "FOG_CREEP", "color": "b8c4d4", "stagger": 1}}
+   "transfer": {"at": 3.4, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "FOG_CREEP", "color": "b8c4d4", "stagger": 1}}
   },
   {
    "id": "t15",
-   "page": "engines/godot/tests/fog/f01.jplax",
+   "page": "engines/rounds/fog/f01.jplax",
    "atlasDir": "core/test-data/haze",
    "name": "dissolve-from-a-fogged-page",
    "about": "f01 (a page fog, two WAVE layers and a FOG one) dissolving into Calm at t09's values, started at 3 s (r256): at t6, 75% in, the WAVE and FOG layers mostly eaten through their own shaders (a shader without the mask moves t6 by 4.6 to 7.8 / 255), the fogged IMAGE ones through PLAIN with their fog, Calm's unfogged ones through PLAIN too",
-   "transfer": {"at": 3, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}}
+   "transfer": {"at": 3, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "DISSOLVE", "patches": 5, "softness": 0.08, "stagger": 0.5}}
   },
   {
    "id": "t16",
-   "page": "engines/godot/tests/fog/f02.jplax",
+   "page": "engines/rounds/fog/f02.jplax",
    "atlasDir": "core/test-data/haze",
    "name": "through-gold-from-a-night-fog",
    "about": "f02 (a night-blue fog of 0.06, the back layers near hidden, a SEQUENCE layer) through a pale gold into Calm, every slot at once, started at 4.5 s (r258): at t6 every layer of f02 well into the gold over its fog, so the fog mixed in after the grade instead of before shows as blue left over the gold",
-   "transfer": {"at": 4.5, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "THROUGH_COLOR", "color": "ffe0a0", "stagger": 0}}
+   "transfer": {"at": 4.5, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "THROUGH_COLOR", "color": "ffe0a0", "stagger": 0}}
   },
   {
    "id": "t17",
-   "page": "engines/godot/tests/round1/s06.jplax",
+   "page": "engines/rounds/round1/s06.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "fog-creep-early-over-a-dark-page",
    "about": "OneNight (dark layers, dark gradients) as a fog creep into the white mist, into Calm, every slot at once, started at 5.6 s (r259): at t6, 10% in, every slot and both gradients at ramp 0.2, where the smoothstepped mist (0.10) is furthest from a straight one (0.20)",
-   "transfer": {"at": 5.6, "seconds": 4, "page": "engines/godot/tests/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "FOG_CREEP", "color": "eef2f7", "stagger": 0}}
+   "transfer": {"at": 5.6, "seconds": 4, "page": "engines/rounds/round1/s10.jplax", "atlasDir": "core/test-data/samples/transfer", "style": {"kind": "FOG_CREEP", "color": "eef2f7", "stagger": 0}}
   }
  ]
 }

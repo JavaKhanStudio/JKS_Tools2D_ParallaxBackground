@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # r180-shader-round/stress.sh [SECONDS] — what SHADER layers cost on the GPU (docs/effect-layers.md phase 3).
-# Writes engines/godot/tests/shaders/s01.jplax (Hiver: two WAVE layers, one FOG mist) as a .plax, and the same page
+# Writes engines/rounds/shaders/s01.jplax (Hiver: two WAVE layers, one FOG mist) as a .plax, and the same page
 # with those layers drawn as plain images, into build/r180-stress/ with HiverFog.atlas and its two pages, then runs the
 # editor repository's ./gradlew :demo:stress --plax on each (it builds this core when checked out beside it) and prints
 # both summaries. Off screen: :demo:stress renders in cage when ATELIER_AGENT or CLAUDECODE is set.
@@ -16,9 +16,9 @@ CP=$(./gradlew -q -I tools/r178-particle-stress/classpath.gradle :core:printRunt
 # Assets-relative: the stress run's working directory is the editor's demo/assets.
 REL=$(realpath --relative-to="$EDITOR/demo/assets" "$OUT")
 # headless: ToPlax converts a .jplax to a .plax with core's Kryo, it opens no window
-java -cp "$CP" tools/r180-shader-round/ToPlax.java engines/godot/tests/shaders/s01.jplax "$OUT/shaded.plax" "$REL/HiverFog.atlas"
+java -cp "$CP" tools/r180-shader-round/ToPlax.java engines/rounds/shaders/s01.jplax "$OUT/shaded.plax" "$REL/HiverFog.atlas"
 # headless: the same conversion, the control page
-java -cp "$CP" tools/r180-shader-round/ToPlax.java engines/godot/tests/shaders/s01.jplax "$OUT/plain.plax" "$REL/HiverFog.atlas" --plain
+java -cp "$CP" tools/r180-shader-round/ToPlax.java engines/rounds/shaders/s01.jplax "$OUT/plain.plax" "$REL/HiverFog.atlas" --plain
 for page in plain shaded; do
 	echo "== $page"
 	(cd "$EDITOR" && ./gradlew -q :demo:stress --args="--plax $REL/$page.plax --seconds $SECONDS_RUN --shot $OUT/$page.png" 2>&1) \

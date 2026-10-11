@@ -13,13 +13,13 @@ MIN="${MIN:-2.5}" OUT=build/r251/strength
 rm -rf "$OUT"; mkdir -p "$OUT/round" "$OUT/plain" "$OUT/color"
 python3 - "$OUT/round" <<'PY' || exit 1
 import json, sys
-r = json.load(open('engines/godot/tests/transfer/round.json'))
+r = json.load(open('engines/rounds/transfer/round.json'))
 r['scenes'] = [s for s in r['scenes'] if s['id'] in ('t11', 't12', 't16')]
 for s in r['scenes']:
     del s['transfer']['style']
 json.dump(r, open(sys.argv[1] + '/round.json', 'w'), indent=1)
 PY
-tools/parallax-lab-shots.sh engines/godot/tests/transfer "$OUT/color" >/dev/null || exit 1
+tools/parallax-lab-shots.sh engines/rounds/transfer "$OUT/color" >/dev/null || exit 1
 tools/parallax-lab-shots.sh "$OUT/round" "$OUT/plain" >/dev/null || exit 1
 python3 - "$OUT" "$MIN" <<'PY'
 import os, sys

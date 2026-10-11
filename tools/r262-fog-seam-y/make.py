@@ -6,7 +6,7 @@ Run from the repository root, after make_round.py: python3 tools/r262-fog-seam-y
 import json
 from pathlib import Path
 
-page = json.loads(Path('engines/godot/tests/shaders/s07.jplax').read_text())
+page = json.loads(Path('engines/rounds/shaders/s07.jplax').read_text())
 page['pageModel']['pageList'][0]['shaderWavelength'] = 0.5
 with open('tools/r262-fog-seam-y/y05.jplax', 'w') as f:
     json.dump(page, f, indent=1)

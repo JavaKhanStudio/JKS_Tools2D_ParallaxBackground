@@ -45,16 +45,16 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * {@code "transfer": {"at": 4, "seconds": 4, "page": ..., "atlasDir": ...}} cross-fade into that page (no page: into the
  * page on screen; a list of them: one after the other, r98; {@code "style": {"kind": "DEPTH_STAGGER", "stagger": 1}}: drawn
  * in that {@link TransfertStyle}, r249), {@code "tint": {"at": 4, "seconds": 4, "color": [r, g, b,
- * a]}} tint, both started {@code at} seconds into the scroll (r94, engines/godot/tests/transfer); {@code "speedY": 30}
+ * a]}} tint, both started {@code at} seconds into the scroll (r94, engines/rounds/transfer); {@code "speedY": 30}
  * also scroll up, and {@code "resize": {"at": 3, "size": [720, 1280]}} resize the window mid-scroll (r95,
- * engines/godot/tests/conformance); {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY
- * layer named slot with that atlas region stretched over each tile (r177, engines/godot/tests/effects; {@code "planet":
+ * engines/rounds/conformance); {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY
+ * layer named slot with that atlas region stretched over each tile (r177, engines/rounds/effects; {@code "planet":
  * true} lowers it by {@code planetDropAt} at the tile's middle, r330);
- * {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that game seed (r183, engines/godot/tests/sequence);
+ * {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that game seed (r183, engines/rounds/sequence);
  * {@code "film": {"seconds": 8, "fps": 30}} goes on scrolling after the last still and saves every frame of those seconds,
  * {@code <id>-f0000.png} on (r239: tools/ai-film.sh makes them a video); {@code "zoom": [1, 0.5]} zooms the camera
  * straight from the first at 0 s to the second at 12 s, set before each still, and {@code "dolly": true} dollies it
- * ({@code ParallaxPageReader.setDolly}, r278, engines/godot/tests/dolly).
+ * ({@code ParallaxPageReader.setDolly}, r278, engines/rounds/dolly).
  * engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots step the same way.
  */
 public class ParallaxShots extends ApplicationAdapter

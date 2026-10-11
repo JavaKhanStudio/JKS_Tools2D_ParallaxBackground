@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # jme-parallax-shots.sh [ROUND_DIR...] — the jMonkeyEngine reader (engines/jme) against the libGDX runtime, frame by frame (r112).
 #
-#   tools/jme-parallax-shots.sh                          engines/godot/tests/round1, /conformance, /transfer, /effects, /shaders, /sequence, /fog, /floor, /dolly, /tower and /planet
-#   tools/jme-parallax-shots.sh engines/godot/tests/round1
+#   tools/jme-parallax-shots.sh                          engines/rounds/round1, /conformance, /transfer, /effects, /shaders, /sequence, /fog, /floor, /dolly, /tower and /planet
+#   tools/jme-parallax-shots.sh engines/rounds/round1
 #
 # The same rounds and stills as tools/godot-parallax-shots.sh: libGDX's (tools/parallax-lab-shots.sh, 0, 6 and 12 s into
 # the lab's scroll) and jME's (engines/jme/tests/.../JmeParallaxShots, the same scroll), off screen in cage's headless
@@ -16,7 +16,7 @@ ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/godot/tests/round1 engines/godot/tests/conformance engines/godot/tests/transfer engines/godot/tests/effects engines/godot/tests/shaders engines/godot/tests/sequence engines/godot/tests/fog engines/godot/tests/floor engines/godot/tests/dolly engines/godot/tests/tower engines/godot/tests/planet)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/effects engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet)
 ./gradlew -q :jme:shotsClasspath || exit 1
 CP="$(cat engines/jme/build/shots.classpath)"
 status=0

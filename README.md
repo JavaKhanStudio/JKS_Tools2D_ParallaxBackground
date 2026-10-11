@@ -85,7 +85,7 @@ Requirements: JDK 17 or newer. The Gradle wrapper downloads Gradle itself.
 godot --path engines/godot      # Hiver and Printemps through the Godot reader (Godot 4)
 ./gradlew :jme:run              # Hiver and Printemps through the jMonkeyEngine reader, behind a jME cube
 ./gradlew test                  # file format, tiling, cross-fade and no-allocation-per-frame tests
-tools/parallax-lab-shots.sh engines/godot/tests/round1 build/lab/round1   # libGDX stills of a round of pages (off screen)
+tools/parallax-lab-shots.sh engines/rounds/round1 build/lab/round1   # libGDX stills of a round of pages (off screen)
 ```
 
 Versions (libGDX, LWJGL, Kryo, Jackson, GWT, jME) are set in `gradle.properties`.
@@ -235,7 +235,7 @@ More:
   horizontal ripple (water, heat), and `FOG`, drifting patches that thin the image's opacity (a plain white band is a
   fog over the layers behind it; on a layer repeating on X or Y its patches run on across the tiles, with no cut at a tile
   edge). Each is written for libGDX (GLSL ES 1.0, so WebGL too: `GdxLayerEffects`), Godot
-  and jME, and the three draw the same frames (`engines/godot/tests/shaders`). The effect works on the layer's own
+  and jME, and the three draw the same frames (`engines/rounds/shaders`). The effect works on the layer's own
   image, not on what is behind it, and moves on the reader's clock: both pages of a cross-fade show it at the same
   place. Each `SHADER` layer flushes the batch before and after its tiles: on a still page, two `WAVE` and one `FOG`
   layer took a frame from 0.70 to 0.90 ms, 4 draw calls to 7 (`tools/r180-shader-round/stress.sh`). A shader that
@@ -277,7 +277,7 @@ More:
   layer is drawn as at zoom `1 - k (1 - zoom)`, k its speed ratio X over the page's fastest, so the front layer follows
   the camera's zoom, a still sky does not move, and the layers between grow less the farther they are, as a camera
   moving in would see them (docs/depth-tricks.md). Nothing is stored in the page; Godot's `bg.zoom` and `bg.dolly`, and
-  jME's `bg.setZoom(z)` with `bg.getReader().setDolly(true)`, draw the same (`engines/godot/tests/dolly`). A dollied
+  jME's `bg.setZoom(z)` with `bg.getReader().setDolly(true)`, draw the same (`engines/rounds/dolly`). A dollied
   layer is drawn through a batch that scales its quads into the camera's view: no flush, nothing allocated.
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
@@ -323,10 +323,10 @@ the one the scene sets, and converts a `CPUParticles2D` to a `GPUParticles2D`. P
 two files agree: each engine draws its own.
 
 A `SHADER` layer is drawn through the same `WAVE` or `FOG` as in libGDX (`plax_effects.gd`, a `ShaderMaterial` on the
-layer's canvas), on `act()`'s clock: the same frames (`engines/godot/tests/shaders`).
+layer's canvas), on `act()`'s clock: the same frames (`engines/rounds/shaders`).
 
 A `SEQUENCE` layer draws the same cycle as libGDX from the same seed (`PlaxPage.draw_cycle`, bit for bit:
-`engines/godot/tests/sequence`); `bg.set_sequence_seed(randi())` draws a new ground each run, XORed with each layer's
+`engines/rounds/sequence`); `bg.set_sequence_seed(randi())` draws a new ground each run, XORed with each layer's
 own seed as in libGDX, and `clear_sequence_seed()` goes back to the page's.
 
 It draws what the libGDX library draws (`tools/godot-parallax-shots.sh` compares the two frame by frame), in a world
@@ -464,7 +464,8 @@ engines/jme/src/.../jme/          the jMonkeyEngine reader, published as paralla
                                   JmeLayerEffects (the SHADER effects, resources/.../ParallaxEffect.j3md)
 engines/jme/tests/                its frame runner (tools/jme-parallax-shots.sh) and demo (:jme:run)
 engines/godot/addons/jks_parallax the Godot 4 reader
-engines/godot/tests/              the reader rounds: round1, conformance, transfer, pixelart, effects, particles, shaders
+engines/godot/tests/              Godot's runners for the rounds: shots.gd, particles.gd, sequence_cycle.gd
+engines/rounds/                   the reader rounds every reader is checked on: round1, conformance, transfer, pixelart, effects, particles, shaders
 shots/src/.../ParallaxShots       libGDX stills of a round, what the Godot and jME frames are compared with
 core/test-data/samples/           the sample pages and atlases the tests and the rounds read (copies, never re-exported)
 core/test-data/particles/         snow .p files (MakeSnow.java), HiverSnow.atlas, and a libGDX stills round of them

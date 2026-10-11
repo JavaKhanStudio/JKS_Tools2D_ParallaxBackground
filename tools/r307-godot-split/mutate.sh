@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # r307: proves the particles round still sees Godot's particle placement after it moved out of plax_background.gd into
 # plax_particles.gd. Puts in one mutant (a VIEW layer's emitter offset moved the wrong way), runs
-# tools/godot-parallax-shots.sh engines/godot/tests/particles, and fails unless that run FAILS. Restores the file on
+# tools/godot-parallax-shots.sh engines/rounds/particles, and fails unless that run FAILS. Restores the file on
 # exit. Writes build/r307/mutant.log. The floor's half (plax_floor.gd) is tools/r275-floor/mutate.sh's.
 # headless: tools/godot-parallax-shots.sh renders in cage.
 set -u
@@ -21,7 +21,7 @@ if text.count(os.environ['FROM']) != 1:
     sys.exit(1)
 open(path, 'w').write(text.replace(os.environ['FROM'], os.environ['TO']))
 PY
-if tools/godot-parallax-shots.sh engines/godot/tests/particles >"$LOG" 2>&1; then
+if tools/godot-parallax-shots.sh engines/rounds/particles >"$LOG" 2>&1; then
 	echo "NOT CAUGHT: the VIEW emitter moved the wrong way passes the particles round"; exit 1
 fi
 echo "caught: the VIEW emitter moved the wrong way ($(grep -c '^FAIL q' "$LOG") checks failed)"

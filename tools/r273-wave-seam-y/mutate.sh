@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # r273: proves the shaders round sees WAVE's ripple run on up across the tiles (along().y, not local().y). Puts back,
 # one engine at a time, the ripple inside one tile on Y (local().y) in Godot's plax_effects.gd, then in jME's
-# ParallaxEffect.frag; runs that engine's frame check on engines/godot/tests/shaders for each, and fails unless every
+# ParallaxEffect.frag; runs that engine's frame check on engines/rounds/shaders for each, and fails unless every
 # run FAILS (its scene s08, stripes through WAVE wrapping on Y). Restores the files on exit.
 # headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
 set -u
@@ -16,7 +16,7 @@ LOG=build/r273/mutant.log
 mkdir -p build/r273
 status=0
 run() {
-	if "$2" engines/godot/tests/shaders >"$LOG" 2>&1; then
+	if "$2" engines/rounds/shaders >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the shaders round ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"; status=1
 	else
 		echo "caught: $1 ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1); s08: $(grep '^s08' "$LOG" | grep -o 'mean diff [0-9.]*' | tr '\n' ' '))"

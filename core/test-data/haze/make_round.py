@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes the fog round (r217, was r211's haze round): core/test-data/haze/HiverHaze.atlas (HiverSeq.atlas's Hiver
-regions and sequence segments, then the shaders round's mist on a page of its own) and engines/godot/tests/fog/
+regions and sequence segments, then the shaders round's mist on a page of its own) and engines/rounds/fog/
 f01-f05.jplax and round.json: the shaders and sequence rounds' pages with a page fog (format 10), so every IMAGE, SHADER
 and SEQUENCE layer is mixed toward the fog's colour by 1 - exp(-strength (1 / speed - 1 / front)), in every repeat mode,
 in colours, through a format 9 page whose FOG layer's haze becomes its fog, and through a cross-fade into a page of
@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 
 HERE = 'core/test-data/haze'
-ROUND = 'engines/godot/tests/fog'
+ROUND = 'engines/rounds/fog'
 
 sequence = Path('core/test-data/sequence/HiverSeq.atlas').read_text().strip().split('\n')
 sequence = ['../sequence/' + line if line.endswith('.png') and not line.startswith('..') else line for line in sequence]
@@ -43,25 +43,25 @@ def fog(page, strength, color=None):
 
 def f01():
     # Repeat X, the mist's white: 0.03, the back layer 1 - exp(-0.03 x 75.6) = 0.90, the layer at 0.024 0.40.
-    return fog(load('engines/godot/tests/shaders/s01.jplax'), 0.03)
+    return fog(load('engines/rounds/shaders/s01.jplax'), 0.03)
 
 
 def f02():
     # Repeat X and Y, padded, scrolling up, near-hidden in a night blue: q02 with s02's padded mist in front of its
     # SEQUENCE layer; 0.06, the back layer 0.99.
-    p = load('engines/godot/tests/sequence/q02.jplax')
-    p['pageModel']['pageList'].insert(6, copy.deepcopy(load('engines/godot/tests/shaders/s02.jplax')['pageModel']['pageList'][4]))
+    p = load('engines/rounds/sequence/q02.jplax')
+    p['pageModel']['pageList'].insert(6, copy.deepcopy(load('engines/rounds/shaders/s02.jplax')['pageModel']['pageList'][4]))
     return fog(p, 0.06, (0.25, 0.3, 0.45))
 
 
 def f03():
     # Repeat Y, mirrored copies, a thin warm grey: 0.015.
-    return fog(load('engines/godot/tests/shaders/s03.jplax'), 0.015, (0.75, 0.7, 0.65))
+    return fog(load('engines/rounds/shaders/s03.jplax'), 0.015, (0.75, 0.7, 0.65))
 
 
 def f04():
     # No repeat, written as format 9 did: no page fog, the mist's shaderHaze 0.3, which becomes the page's fog.
-    p = load('engines/godot/tests/shaders/s04.jplax')
+    p = load('engines/rounds/shaders/s04.jplax')
     p['pageModel']['pageList'][6]['shaderHaze'] = 0.3
     return p
 

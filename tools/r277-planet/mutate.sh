@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# r277: proves the planet round (engines/godot/tests/planet) sees a wrong bend, in Godot's copy (plax_planet.gd,
+# r277: proves the planet round (engines/rounds/planet) sees a wrong bend, in Godot's copy (plax_planet.gd,
 # plax_background.gd) and in core's law (ParallaxPageReader.planetBendOf, PlanetBatch), which libGDX draws and jME runs
-# as is. Puts in one mutant at a time, runs tools/godot-parallax-shots.sh engines/godot/tests/planet for each, and fails
+# as is. Puts in one mutant at a time, runs tools/godot-parallax-shots.sh engines/rounds/planet for each, and fails
 # unless every run FAILS. Godot: no bend; every layer bent as the front (no depth); dx from the view's left, not its
 # middle; the incoming page bent by the outgoing page's planet. Core: dx from the view's left; every layer bent as the
 # front. r330's: a hook handed no drop (Godot's planet_drop_at, core's planetDropAt: the planet round's p08), and
-# Godot's particle nodes left flat, per LAYER tile and for a VIEW effect (engines/godot/tests/particles, q09 and q10,
+# Godot's particle nodes left flat, per LAYER tile and for a VIEW effect (engines/rounds/particles, q09 and q10,
 # whose particles.gd works the drop out apart: libGDX's particle drop is held by core's PlanetCases instead).
 # Restores the files on exit. Writes build/r277/mutant.log, and each mutant's report in build/r277/mutants/.
 # headless: tools/godot-parallax-shots.sh renders in cage.
@@ -31,7 +31,7 @@ n=0
 mutant() {
 	# $1 the file, $2 what it is, $3 the text as it is, $4 the text mutated; ROUND the round it runs (planet)
 	local file=$1; shift
-	local round=engines/godot/tests/${ROUND:-planet}
+	local round=engines/rounds/${ROUND:-planet}
 	n=$((n + 1))
 	FROM="$2" TO="$3" python3 - "$file" <<'PY' || { echo "mutation did not apply: $1"; exit 2; }
 import os, sys

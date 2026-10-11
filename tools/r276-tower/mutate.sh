@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# r276: proves the tower round (engines/godot/tests/tower) sees a wrong tower, in Godot's copy (plax_tower.gd) and in
+# r276: proves the tower round (engines/rounds/tower) sees a wrong tower, in Godot's copy (plax_tower.gd) and in
 # core's law (ParallaxLayer.drawTower, GdxLayerEffects' page fog), which libGDX draws and jME runs as is. Puts in one
-# mutant at a time, runs tools/godot-parallax-shots.sh engines/godot/tests/tower for each, and fails unless every run
+# mutant at a time, runs tools/godot-parallax-shots.sh engines/rounds/tower for each, and fails unless every run
 # FAILS. Godot: no wrap (the layer drawn flat); no shade; the strips placed along the arc, not at radius sin(a) (no
 # narrowing); the tower turning the wrong way. Core: the strips placed along the arc; the page fog's shader ignoring the darkness in the blue. Restores the files on exit. Writes
 # build/r276/mutant.log, and each mutant's report in build/r276/mutants/.
@@ -31,7 +31,7 @@ if text.count(os.environ['FROM']) != 1:
     sys.exit(1)
 open(path, 'w').write(text.replace(os.environ['FROM'], os.environ['TO']))
 PY
-	if tools/godot-parallax-shots.sh engines/godot/tests/tower >"$LOG" 2>&1; then
+	if tools/godot-parallax-shots.sh engines/rounds/tower >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the tower round ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"; status=1
 	else
 		# Which stills it fails: the report's lines over the threshold.

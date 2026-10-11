@@ -8,7 +8,7 @@
 # build/r217/strength/.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
-ROUND="${1:-engines/godot/tests/fog}" MIN="${MIN:-2.5}" OUT=build/r217/strength
+ROUND="${1:-engines/rounds/fog}" MIN="${MIN:-2.5}" OUT=build/r217/strength
 rm -rf "$OUT"; mkdir -p "$OUT/plain-round"
 python3 - "$ROUND" "$OUT/plain-round" <<'PY'
 import json, os, sys

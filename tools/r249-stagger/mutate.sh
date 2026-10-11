@@ -2,7 +2,7 @@
 # r249: proves the transfer round sees the depth stagger (t07, t08). Leaves it out, one at a time and of one engine's
 # copy only: Godot's _alpha_of fading every slot at once; libGDX's reader doing the same (the Godot check then holds
 # Godot's stagger against a libGDX without one); jME's PlaxBackground dropping the style it is handed. Runs that
-# engine's frame check on engines/godot/tests/transfer for each, and fails unless every run FAILs. Restores the files
+# engine's frame check on engines/rounds/transfer for each, and fails unless every run FAILs. Restores the files
 # on exit.
 # headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
 set -u
@@ -17,7 +17,7 @@ LOG=build/r249/mutant.log
 mkdir -p build/r249
 status=0
 run() {
-	if "$2" engines/godot/tests/transfer >"$LOG" 2>&1; then
+	if "$2" engines/rounds/transfer >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the transfer round"; status=1
 	else
 		echo "caught: $1 ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"

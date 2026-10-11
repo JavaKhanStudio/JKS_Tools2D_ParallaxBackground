@@ -2,7 +2,7 @@ class_name PlaxEffects
 extends RefCounted
 ## The SHADER layers' effects (Enum_ShaderEffect), as CanvasItem shaders: core's GdxLayerEffects line for line, the same
 ## numbers (uniforms), the same picture. Change one, change core/src/.../GdxLayerEffects.java and engines/jme's
-## ParallaxEffect.frag, and run tools/godot-parallax-shots.sh engines/godot/tests/shaders.
+## ParallaxEffect.frag, and run tools/godot-parallax-shots.sh engines/rounds/shaders.
 ##
 ## Each effect works on the image's own coordinates, taken from UV: x and y in page units from the image's bottom-left,
 ## as it is drawn. region: the region's u, v, u2, v2 (v at the image's top); size: the drawn image's width and height in

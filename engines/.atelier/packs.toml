@@ -20,7 +20,7 @@ SIMON'S LAYOUT (r1, ex parallax:r317, 11 Oct): ONE repository, each reader a sub
 tests, README, CI job and release artifact. The mother board stays "parallax". He also wrote, on parallax:r312, that "JMonkey and
 libGDX should be 2 different repos". The later, explicit pick is one repository: confirm with him before creating
 any GitHub repository.
-SHARED BY EVERY READER'S CHECK: the rounds in core/test-data and engines/godot/tests, and the libGDX stills that :shots
+SHARED BY EVERY READER'S CHECK: the rounds in core/test-data and engines/rounds (a home no reader owns, r9), and the libGDX stills that :shots
 (shots/, ParallaxShots) draws from them. tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare each
 reader with those stills, and CI's godot-frames job runs both. The round file is read three times today:
 ParallaxShots, JmeParallaxShots and Godot's tests/shots.gd. parallax:r312 (waits for this board's r1) makes the two Java copies one.

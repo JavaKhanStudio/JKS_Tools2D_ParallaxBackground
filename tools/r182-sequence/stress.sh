@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # r182-sequence/stress.sh [SECONDS] — what SEQUENCE layers cost on the GPU (docs/sequence-layers.md phase 1).
-# Writes engines/godot/tests/shaders/s01.jplax (Hiver) as a .plax, each parallax4 layer a 64-slot SEQUENCE of the four
+# Writes engines/rounds/shaders/s01.jplax (Hiver) as a .plax, each parallax4 layer a 64-slot SEQUENCE of the four
 # parallax4 regions, and the same page with those layers as single images, into build/r182-stress/ with
 # HiverFog.atlas and its two pages, then runs the
 # editor repository's ./gradlew :demo:stress --plax on each (it builds this core when checked out beside it) and prints
@@ -17,9 +17,9 @@ CP=$(./gradlew -q -I tools/r178-particle-stress/classpath.gradle :core:printRunt
 # Assets-relative: the stress run's working directory is the editor's demo/assets.
 REL=$(realpath --relative-to="$EDITOR/demo/assets" "$OUT")
 # headless: ToPlax converts a .jplax to a .plax with core's Kryo, it opens no window
-java -cp "$CP" tools/r182-sequence/ToSequencePlax.java engines/godot/tests/shaders/s01.jplax "$OUT/sequence.plax" "$REL/HiverFog.atlas"
+java -cp "$CP" tools/r182-sequence/ToSequencePlax.java engines/rounds/shaders/s01.jplax "$OUT/sequence.plax" "$REL/HiverFog.atlas"
 # headless: the same conversion, the control page
-java -cp "$CP" tools/r182-sequence/ToSequencePlax.java engines/godot/tests/shaders/s01.jplax "$OUT/plain.plax" "$REL/HiverFog.atlas" --plain
+java -cp "$CP" tools/r182-sequence/ToSequencePlax.java engines/rounds/shaders/s01.jplax "$OUT/plain.plax" "$REL/HiverFog.atlas" --plain
 for page in plain sequence; do
 	echo "== $page"
 	(cd "$EDITOR" && ./gradlew -q :demo:stress --args="--plax $REL/$page.plax --seconds $SECONDS_RUN --shot $OUT/$page.png" 2>&1) \

@@ -23,14 +23,14 @@ def twin(path, kind):
     json.dump(page, open(twin_path, 'w'), indent=1)
     return twin_path
 for kind in ('flat', 'unshaded'):
-    round_ = json.load(open('engines/godot/tests/tower/round.json'))
+    round_ = json.load(open('engines/rounds/tower/round.json'))
     for scene in round_['scenes']:
         scene['page'] = twin(scene['page'], kind)
         if 'transfer' in scene:
             scene['transfer']['page'] = twin(scene['transfer']['page'], kind)
     json.dump(round_, open(os.path.join(out, kind, 'round.json'), 'w'), indent=1)
 PY
-tools/parallax-lab-shots.sh engines/godot/tests/tower "$OUT" >/dev/null || exit 1
+tools/parallax-lab-shots.sh engines/rounds/tower "$OUT" >/dev/null || exit 1
 tools/parallax-lab-shots.sh "$OUT/flat" "$OUT/flat" >/dev/null || exit 1
 tools/parallax-lab-shots.sh "$OUT/unshaded" "$OUT/unshaded" >/dev/null || exit 1
 python3 - "$OUT" "$MIN" <<'PY'
@@ -38,7 +38,7 @@ import json, os, sys
 from PIL import Image, ImageChops, ImageStat
 out, least = sys.argv[1], float(sys.argv[2])
 worst = None
-for scene in json.load(open('engines/godot/tests/tower/round.json'))['scenes']:
+for scene in json.load(open('engines/rounds/tower/round.json'))['scenes']:
     for t in (0, 6, 12):
         name = f"{scene['id']}-t{t}.png"
         a = Image.open(os.path.join(out, name)).convert('RGB')

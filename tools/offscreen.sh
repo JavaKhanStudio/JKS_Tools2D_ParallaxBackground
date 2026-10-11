@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # offscreen.sh COMMAND... — runs a command that opens a window in cage's headless display, off Simon's screen (r118).
 #
-#   tools/offscreen.sh shots/build/install/shots/bin/shots engines/godot/tests/round1 build/lab/round1
+#   tools/offscreen.sh shots/build/install/shots/bin/shots engines/rounds/round1 build/lab/round1
 #   tools/offscreen.sh java -cp "$(cat engines/jme/build/shots.classpath)" jks.tools2d.parallax.jme.JmeParallaxDemo
 #
 # The Gradle tasks that open one (:jme:run, :shots:run) do it by themselves for a

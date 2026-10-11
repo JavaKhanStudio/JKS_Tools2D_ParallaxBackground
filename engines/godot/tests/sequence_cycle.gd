@@ -1,10 +1,10 @@
 extends SceneTree
 ## PlaxPage.draw_cycle against core's SequenceCycle (r183): the first picks
-## SequenceCases.sequenceCycleOfAKnownSeedIsPinned pins, then every cycle of tests/sequence/picks.json (written by
-## tools/r183-sequence/PickTable.java from the JVM's SequenceCycle: edge and random seeds, weights of every shape). Then
-## PlaxSequence.draw, as SequenceCases holds ParallaxLayer.drawCycle: at many positions and pads, positive and
-## going back, the slots it draws are the ones a walk over every slot finds in view, in order. Prints "sequence_cycle:
-## PASS" or FAIL lines.
+## SequenceCases.sequenceCycleOfAKnownSeedIsPinned pins, then every cycle of engines/rounds/sequence/picks.json
+## (written by tools/r183-sequence/PickTable.java from the JVM's SequenceCycle: edge and random seeds, weights of every
+## shape). Then PlaxSequence.draw, as SequenceCases holds ParallaxLayer.drawCycle: at many positions and pads,
+## positive and going back, the slots it draws are the ones a walk over every slot finds in view, in order. Prints
+## "sequence_cycle: PASS" or FAIL lines.
 ##   godot --headless --path engines/godot --script res://tests/sequence_cycle.gd
 
 const PlaxPageScript := preload("res://addons/jks_parallax/plax_page.gd")
@@ -22,7 +22,8 @@ func _initialize() -> void:
 	_equal(_cycle(7, [0, 5, -3], 12), [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], "only the weighted segment")
 	_equal(PlaxPageScript.draw_cycle(5, PackedInt32Array([1]), 0).size(), 1, "a cycle holds one slot at least")
 
-	var table = JSON.parse_string(FileAccess.get_file_as_string("res://tests/sequence/picks.json"))
+	var picks := ProjectSettings.globalize_path("res://").path_join("../rounds/sequence/picks.json")
+	var table = JSON.parse_string(FileAccess.get_file_as_string(picks))
 	for pair in table.next:
 		_equal(_signed(PlaxPageScript.sequence_next(int(pair[0]) & 0xFFFFFFFF)), int(pair[1]), "next(%d)" % int(pair[0]))
 	for row in table.cycles:

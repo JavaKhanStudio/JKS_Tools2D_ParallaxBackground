@@ -2,7 +2,7 @@
 # r262: proves the shaders round (its s07) sees FOG's noise run on up across the tiles. Puts back, one engine at a time,
 # the noise inside one tile on Y (local().y) in Godot's copy, then Godot's wrap on Y not carried (wrapped_y kept 0),
 # then the noise inside one tile on Y in jME's ParallaxEffect.frag; runs that engine's frame check on
-# engines/godot/tests/shaders for each, and fails unless every run FAILS. Restores the files on exit.
+# engines/rounds/shaders for each, and fails unless every run FAILS. Restores the files on exit.
 # headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
@@ -17,7 +17,7 @@ LOG=build/r262/mutant.log
 mkdir -p build/r262
 status=0
 run() {
-	if "$2" engines/godot/tests/shaders >"$LOG" 2>&1; then
+	if "$2" engines/rounds/shaders >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the shaders round"; status=1
 	else
 		echo "caught: $1 ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1); s07: $(grep '^s07' "$LOG" | grep -o 'mean diff [0-9.]*' | tr '\n' ' '))"

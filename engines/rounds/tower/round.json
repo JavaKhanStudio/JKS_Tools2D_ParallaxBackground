@@ -4,28 +4,28 @@
  "scenes": [
   {
    "id": "w01",
-   "page": "engines/godot/tests/tower/w01.jplax",
+   "page": "engines/rounds/tower/w01.jplax",
    "atlasDir": "core/test-data/tower",
    "name": "tower-full-turn",
    "about": "Hiver's set behind a brick tower 20% of the world in radius (16 wide, in the view's middle), its wall six images round, shaded 0.65: a full turn in 12 s, half a turn at 6 s"
   },
   {
    "id": "w02",
-   "page": "engines/godot/tests/tower/w02.jplax",
+   "page": "engines/rounds/tower/w02.jplax",
    "atlasDir": "core/test-data/tower",
    "name": "tower-fogged-flipped-padded",
    "about": "the tower flipped on X, a pad of 1 between its images (the set shows through the gaps), shaded 0.8, half a turn backward, under a page fog of 0.02: libGDX's page fog shader takes the darkness in the batch colour's blue"
   },
   {
    "id": "w03",
-   "page": "engines/godot/tests/tower/w03.jplax",
+   "page": "engines/rounds/tower/w03.jplax",
    "atlasDir": "core/test-data/tower",
    "name": "tower-trimmed-trees-repeat-y",
    "about": "Hiver's far peaks (a region the atlas trimmed top and bottom) wrapped round a radius of 30% (24 wide), shaded 1 (black at its sides), flipped on Y, tiled up a page repeating on Y with a pad of 1, a quarter turn"
   },
   {
    "id": "w04",
-   "page": "engines/godot/tests/tower/w01.jplax",
+   "page": "engines/rounds/tower/w01.jplax",
    "atlasDir": "core/test-data/tower",
    "name": "tower-dolly-cross-fade",
    "about": "w01 dollied in from zoom 1 to 0.7 (the tower at its own zoom, about the view's middle), cross-fading into w02 4 s in, over 4 s",
@@ -37,7 +37,7 @@
    "transfer": {
     "at": 4,
     "seconds": 4,
-    "page": "engines/godot/tests/tower/w02.jplax"
+    "page": "engines/rounds/tower/w02.jplax"
    }
   }
  ]

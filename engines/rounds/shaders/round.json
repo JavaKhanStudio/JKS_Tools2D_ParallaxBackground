@@ -4,14 +4,14 @@
  "scenes": [
   {
    "id": "s01",
-   "page": "engines/godot/tests/shaders/s01.jplax",
+   "page": "engines/rounds/shaders/s01.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "wave-fog-repeat-X",
    "about": "c01 (repeat X, trimmed regions): the near hills (a trimmed region) ripple, a mist band drifts through FOG between the two front layers"
   },
   {
    "id": "s02",
-   "page": "engines/godot/tests/shaders/s02.jplax",
+   "page": "engines/rounds/shaders/s02.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "wave-fog-repeat-XY",
    "about": "c02 (repeat X and Y, padded), scrolling up at 30 units/s too: a ripple running down, a padded mist tiled both ways",
@@ -19,7 +19,7 @@
   },
   {
    "id": "s03",
-   "page": "engines/godot/tests/shaders/s03.jplax",
+   "page": "engines/rounds/shaders/s03.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "wave-fog-repeat-Y-mirror",
    "about": "c03 (repeat Y, mirrored copies to the right), scrolling up at 30 units/s too: a mirrored layer ripples with its copy, a flipped mirrored hill thins through FOG",
@@ -27,14 +27,14 @@
   },
   {
    "id": "s04",
-   "page": "engines/godot/tests/shaders/s04.jplax",
+   "page": "engines/rounds/shaders/s04.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "wave-fog-no-repeat",
    "about": "c05 (no repeat): a flipped layer ripples wide, clamped to its region; a WAVE with no wavelength draws plain; a FOG amplitude of 1.7 thins at most fully"
   },
   {
    "id": "s05",
-   "page": "engines/godot/tests/shaders/s01.jplax",
+   "page": "engines/rounds/shaders/s01.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "shaders-cross-fade-tinted",
    "about": "s01 cross-fading into itself (its layers cloned) while tinting orange: both pages shade on one clock, faded and tinted",
@@ -43,14 +43,14 @@
   },
   {
    "id": "s06",
-   "page": "engines/godot/tests/shaders/s06.jplax",
+   "page": "engines/rounds/shaders/s06.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "fog-across-the-tiles",
    "about": "r229: the mist alone, 20 of 40 units wide, its noise period (40) twice the image, tiling on X over near-black gradients: the noise runs on across every tile edge, also after the layer wraps (t6, t12), instead of starting again at each"
   },
   {
    "id": "s07",
-   "page": "engines/godot/tests/shaders/s07.jplax",
+   "page": "engines/rounds/shaders/s07.jplax",
    "atlasDir": "core/test-data/shaders",
    "speedY": 30,
    "name": "fog-up-the-tiles",
@@ -58,7 +58,7 @@
   },
   {
    "id": "s08",
-   "page": "engines/godot/tests/shaders/s08.jplax",
+   "page": "engines/rounds/shaders/s08.jplax",
    "atlasDir": "core/test-data/shaders",
    "speedY": 30,
    "name": "wave-up-the-tiles",

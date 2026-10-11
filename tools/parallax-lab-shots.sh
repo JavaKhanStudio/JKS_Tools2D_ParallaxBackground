@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # parallax-lab-shots.sh ROUND_DIR OUT_DIR — stills of every scene of a lab round (r73), off Simon's screen.
 #
-#   tools/parallax-lab-shots.sh engines/godot/tests/round1 build/lab/round1
+#   tools/parallax-lab-shots.sh engines/rounds/round1 build/lab/round1
 #
 # Runs the reference renderer (shots/, ParallaxShots: split out of the grading lab in r130, the only stills of a round since r157) in
 # cage's headless display on a nested Xwayland (needs cage and Xwayland), from its installDist (built first). Writes <scene>-t0/-t6/-t12.png (1280x720, or the size a scene's "resize" gives; 0, 6 and

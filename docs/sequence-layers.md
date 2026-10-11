@@ -48,7 +48,7 @@ Godot has to draw the same cycle from the same seed, so the generator is written
   JavaScript double in the browser and a 64-bit float in GDScript, and a product of one rounds differently there.
 - A game passes its own seed through the reader (a new ground each run); without one, the page's seed, which is what
   the editor previews.
-- The Godot pixel round (`engines/godot/tests/sequence`) proves the two generators agree, and a `SequenceCases` case
+- The Godot pixel round (`engines/rounds/sequence`) proves the two generators agree, and a `SequenceCases` case
   pins the first picks of a known seed, so the browser and the JVM are held to the same list.
 
 ## What phase 1 settled (r182)
@@ -76,7 +76,7 @@ Godot has to draw the same cycle from the same seed, so the generator is written
   `plax_background.gd` until then) keeps each segment's box and the edges as core does, `draw` searching and walking
   the same; `plax_background.gd`'s `set_sequence_seed` and `clear_sequence_seed` are the reader's. jME runs core as is; its `PlaxBackground` passes a game's seed on.
 - Held by `engines/godot/tests/sequence_cycle.gd` (the JVM's picks for 240 cycles, `tools/r183-sequence/PickTable.java`,
-  and the slots `PlaxSequence.draw` draws against a walk over every slot) and the pixel round `engines/godot/tests/sequence`
+  and the slots `PlaxSequence.draw` draws against a walk over every slot) and the pixel round `engines/rounds/sequence`
   (libGDX against Godot and jME, a game seed and a seeded cross-fade among its scenes). `tools/r183-sequence/mutate.sh`
   breaks the port 12 ways: each fails. A binary search gone wrong mostly hides under the slots drawn after it, so the
   slot walk, not the pixels, is what holds it.
@@ -94,6 +94,6 @@ Raised under r147, each `--after` the one before.
    `plax_page.gd`, `PlaxFormatTest`, README), the generator and the cycle builder, a game's seed, `tile()` over the
    prefix sums, `SequenceCases` in all four repeat modes and on a known seed, `FrameAllocationTest`, a stress run.
 2. Godot: the same generator in `plax_page.gd`, the cycle drawn in `plax_background.gd`, a pixel round
-   (`engines/godot/tests/sequence`), jME through the same round.
+   (`engines/rounds/sequence`), jME through the same round.
 3. The editor: a layer's segment list, a weight per segment, the seed and cycle length, "repeats every X screens" and
    its preview. After the repo split (r132), in JKS_Tools2D_ParallaxEditor.

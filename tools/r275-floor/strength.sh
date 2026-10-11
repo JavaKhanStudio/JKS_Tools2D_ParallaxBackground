@@ -15,7 +15,7 @@ rm -rf "$OUT"; mkdir -p "$OUT/flat"
 python3 - "$OUT/flat" <<'PY' || exit 1
 import json, os, sys
 out = sys.argv[1]
-round_ = json.load(open('engines/godot/tests/floor/round.json'))
+round_ = json.load(open('engines/rounds/floor/round.json'))
 def flat(path):
     page = json.load(open(path))
     for layer in page['pageModel']['pageList']:
@@ -30,14 +30,14 @@ for scene in round_['scenes']:
         scene['transfer']['page'] = flat(scene['transfer']['page'])
 json.dump(round_, open(os.path.join(out, 'round.json'), 'w'), indent=1)
 PY
-tools/parallax-lab-shots.sh engines/godot/tests/floor "$OUT" >/dev/null || exit 1
+tools/parallax-lab-shots.sh engines/rounds/floor "$OUT" >/dev/null || exit 1
 tools/parallax-lab-shots.sh "$OUT/flat" "$OUT/flat" >/dev/null || exit 1
 python3 - "$OUT" "$MIN" <<'PY'
 import json, os, sys
 from PIL import Image, ImageChops, ImageStat
 out, least = sys.argv[1], float(sys.argv[2])
 worst = None
-for scene in json.load(open('engines/godot/tests/floor/round.json'))['scenes']:
+for scene in json.load(open('engines/rounds/floor/round.json'))['scenes']:
     for t in (6, 12):
         name = f"{scene['id']}-t{t}.png"
         a = Image.open(os.path.join(out, name)).convert('RGB')

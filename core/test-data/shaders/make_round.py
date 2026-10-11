@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes the shaders round (r180, docs/effect-layers.md phase 3): core/test-data/shaders/mist.png and HiverFog.atlas
-(Hiver's regions, then a white mist band on a page of its own), and engines/godot/tests/shaders/s01-s04.jplax, each a
+(Hiver's regions, then a white mist band on a page of its own), and engines/rounds/shaders/s01-s04.jplax, each a
 conformance page (c01, c02, c03, c05) with a layer turned into a WAVE and a mist band drawn through FOG, s06.jplax,
 the mist alone tiling on X (r229), s07.jplax, an even slab (slab.png, slab.atlas) through FOG tiling on Y (r262), and
 s08.jplax, vertical stripes (stripes.png, stripes.atlas) through WAVE tiling on Y (r273).
@@ -12,7 +12,7 @@ from pathlib import Path
 from PIL import Image
 
 HERE = 'core/test-data/shaders'
-ROUND = 'engines/godot/tests/shaders'
+ROUND = 'engines/rounds/shaders'
 
 # A white band, opaque in its middle rows and clear at its top and bottom: a mist FOG thins into patches.
 W, H = 512, 128
@@ -55,7 +55,7 @@ def mist_layer(size, decal_x, decal_y, ratio, amplitude, wavelength, speed, **mo
 
 
 def page(source, out, change):
-    p = json.loads(Path(f'engines/godot/tests/conformance/{source}.jplax').read_text())
+    p = json.loads(Path(f'engines/rounds/conformance/{source}.jplax').read_text())
     p['pageModel']['atlasName'] = 'HiverFog.atlas'
     change(p['pageModel']['pageList'])
     with open(f'{ROUND}/{out}.jplax', 'w') as f:

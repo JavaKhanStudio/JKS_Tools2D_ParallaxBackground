@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes the sequence round (r183, docs/sequence-layers.md phase 2): core/test-data/sequence/segments.png and
-HiverSeq.atlas (Hiver's regions, then five segments on a page of their own), and engines/godot/tests/sequence/q01-q04.jplax,
+HiverSeq.atlas (Hiver's regions, then five segments on a page of their own), and engines/rounds/sequence/q01-q04.jplax,
 each a conformance page (c01, c02, c03, c05) with SEQUENCE layers added. The segments are loud on purpose: each its own
 colour and width, with marks that are not symmetric, so a wrong pick, a slot out of place or a flip missed shows as a
 big difference, not a 1/255 one. Run from the repository root: python3 core/test-data/sequence/make_round.py (needs
@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 HERE = 'core/test-data/sequence'
-ROUND = 'engines/godot/tests/sequence'
+ROUND = 'engines/rounds/sequence'
 H = 256
 # name: (packed width, colour, (original width, offset x) when packed with its whitespace stripped)
 SEGMENTS = {
@@ -66,7 +66,7 @@ def sequence(name, segments, seed, length, size, decal_x, decal_y, ratio, **more
 
 
 def page(source, out, change):
-    p = json.loads(Path(f'engines/godot/tests/conformance/{source}.jplax').read_text())
+    p = json.loads(Path(f'engines/rounds/conformance/{source}.jplax').read_text())
     p['pageModel']['atlasName'] = 'HiverSeq.atlas'
     change(p['pageModel']['pageList'])
     with open(f'{ROUND}/{out}.jplax', 'w') as f:

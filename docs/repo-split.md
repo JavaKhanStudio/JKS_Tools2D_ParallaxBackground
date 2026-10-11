@@ -90,7 +90,7 @@ and nothing in A stands in its way.
 
 - `demo/assets` (`Hiver`, `Printemps`: 1.2 MB of atlases and pages) is read by `PlaxFormatTest`, `JvmFixtures`,
   `ParallaxPageReaderTest` and the browser suite's reader cases (`ReaderFixtures`), and is the atlas of 14 scenes of the reader rounds.
-- The reader rounds (`demo/lab/round1`, `engines/godot/tests/conformance` and `/transfer`) also take their atlases from
+- The reader rounds (`demo/lab/round1`, `engines/rounds/conformance` and `/transfer`) also take their atlases from
   `editor/Files/Demos` (10 scenes) and `editor/Files/transfer` (6).
 - The libGDX frames the Godot and jME frames are compared with are drawn by the demo's `ParallaxLab --shots`
   (`tools/parallax-lab-shots.sh`).
@@ -113,7 +113,7 @@ So moving `demo/` and `editor/` out as they are leaves `core`'s tests and both f
    reference renderer out of `ParallaxLab`. Done when a scratch clone with `editor/` and `demo/` deleted passes
    `./gradlew build`, `tools/browser-test.sh` and both frame comparisons.
    **Done (r130, 056c9aa):** `core/test-data/samples` holds the fixtures, `shots/` (`:shots`, `ParallaxShots`) the
-   reference renderer, `engines/godot/tests/round1` a copy of the lab's round 1 (the lab keeps its own, and its
+   reference renderer, `engines/rounds/round1` a copy of the lab's round 1 (the lab keeps its own, and its
    grades), and `settings.gradle` includes `editor` and `demo` only when their folder exists.
    `tools/library-alone-check.sh` runs the four gates on a clone with both deleted: all pass, and the 202 lines of
    scores (every still of the Godot and jME rounds) are the same as the checkout's before the change, whose libGDX

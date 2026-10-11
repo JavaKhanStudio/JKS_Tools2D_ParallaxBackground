@@ -36,7 +36,7 @@
   },
   {
    "id": "q05",
-   "page": "engines/godot/tests/effects/e06.jplax",
+   "page": "engines/rounds/effects/e06.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "no-godot-scene",
    "about": "e06's PARTICLES layer names no Godot scene: nothing instanced, one warning"
@@ -80,14 +80,14 @@
   },
   {
    "id": "q09",
-   "page": "engines/godot/tests/planet/p09.jplax",
+   "page": "engines/rounds/planet/p09.jplax",
    "atlasDir": "core/test-data/particles",
    "name": "layer-anchored-planet",
    "about": "q02 round a planet of 400% (r330, core/test-data/planet/make_round.py): each tile's node lowered as one block by planet_drop_at at its box's middle, the side ones most"
   },
   {
    "id": "q10",
-   "page": "engines/godot/tests/planet/p10.jplax",
+   "page": "engines/rounds/planet/p10.jplax",
    "atlasDir": "core/test-data/particles",
    "name": "view-anchored-planet-dollied",
    "about": "q01 round a planet of 400%, dollied in from 1 to 0.7 (r330): the node and its emitter lowered by the drop at the box's middle from the emitter's place, in the layer's own view",

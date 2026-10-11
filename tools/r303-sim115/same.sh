@@ -13,7 +13,7 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 for side in old new; do
   mkdir -p "$TMP/$side"
-  git -C "$ROOT" archive "$REF" core/test-data engines/godot/tests tools/r262-fog-seam-y tools/r273-wave-seam-y \
+  git -C "$ROOT" archive "$REF" core/test-data engines/rounds tools/r262-fog-seam-y tools/r273-wave-seam-y \
     | tar -x -C "$TMP/$side"
 done
 touch "$TMP/stamp"

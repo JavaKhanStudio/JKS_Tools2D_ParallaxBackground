@@ -41,14 +41,14 @@ IndexOutOfBounds; incoming layers did not scroll during the fade and jumped when
 every frame forever. Ask `== null` deliberately.
 act() and render() run every frame: no allocation, no streams. `layers.stream().forEach` in
 act() is in MEMORY_LANE.md §5 as a defect, not as a style note.
-See it: `tools/parallax-lab-shots.sh ROUND OUT` (stills of a round's pages, off screen; engines/godot/tests/transfer
+See it: `tools/parallax-lab-shots.sh ROUND OUT` (stills of a round's pages, off screen; engines/rounds/transfer
 for cross-fades), `./gradlew :jme:run`, or the editor repository's `./gradlew :demo:run`, which builds this core
 when this checkout sits beside it.
 THE GODOT PORT DRAWS THE SAME PAGE: engines/godot/addons/jks_parallax/plax_background.gd
 copies act(), tile(), drawRegion() and the gradients line for line (r87), and the cross-fade,
 syncTransferPositions and the tint (r94). Change how a page scrolls, tiles, fades or draws here and
 change it there, or a Godot game shows a different picture: `tools/godot-parallax-shots.sh`
-renders both off screen (libGDX's frames through shots/ ParallaxShots) and fails past a mean 2/255 apart; engines/godot/tests/transfer is its
+renders both off screen (libGDX's frames through shots/ ParallaxShots) and fails past a mean 2/255 apart; engines/rounds/transfer is its
 cross-fade round. CI runs it too (ci.yml job godot-frames, Xvfb + llvmpipe): a push that
 desynchronises the port fails the build, so run it before pushing, not after.
 THE jME READER (engines/jme, r112) RUNS THIS CODE AS IS: PlaxBackground drives ParallaxPageReader
@@ -62,7 +62,7 @@ SHADER LAYERS (r180, format 7) ARE AN IMAGE LAYER THROUGH AN EFFECT, WRITTEN THR
 GdxLayerEffects (GLSL ES 1.0), Godot's plax_effects.gd, jME's resources/.../ParallaxEffect.frag, all fed
 GdxLayerEffects.uniforms, the phase from the reader's clock. The reader calls the engine's LayerEffects around the
 layer's tiles (jME's JmeLayerEffects -> JmeBatch.setEffect), never Batch.setShader. Change an effect, change all three
-and run both frame checks on engines/godot/tests/shaders. A Godot shader error is only a log line and the layer
+and run both frame checks on engines/rounds/shaders. A Godot shader error is only a log line and the layer
 draws plain: the first shaders run differed by 2-11/255 for that (TAU is a Godot built-in), so read godot.log.
 SEQUENCE LAYERS (r182, format 8) ARE A CYCLE DRAWN ONCE, THEN TILED: ParallaxLayer.sequence holds the segment regions
 in texRegion (the first sets the height), a cycle int[N] picked by SequenceCycle and its edges in LAYER HEIGHTS (slot i
@@ -70,8 +70,8 @@ starts at height * cycleEdges[i] + i * padX), so act() and draw() recompute noth
 drawCycle binary-searches the first slot in view. The generator is INTEGERS ONLY (xorshift32 13/17/5, (state >>> 1) %
 total): a float rounds differently in GWT and GDScript. SequenceCases.sequenceCycleOfAKnownSeedIsPinned pins its picks;
 Godot's port (r183: plax_page.gd draw_cycle, plax_sequence.gd draw, GDScript ints 64-bit so every << masked
-to 32 bits) matches them: engines/godot/tests/sequence_cycle.gd (the JVM's picks in tests/sequence/picks.json, and the
-slots drawn against a walk over every slot) and the pixel round engines/godot/tests/sequence, which jME runs too. Change
+to 32 bits) matches them: engines/godot/tests/sequence_cycle.gd (the JVM's picks in engines/rounds/sequence/picks.json, and the
+slots drawn against a walk over every slot) and the pixel round engines/rounds/sequence, which jME runs too. Change
 the generator or drawCycle and change both, regenerate picks.json, run tools/r183-sequence/mutate.sh. A game's seed
 (reader.setSequenceSeed, Godot set_sequence_seed) is XORed with each layer's stored one. A cycle no wider than 0 (pads
 outweighing segments) can't tile and is drawn once, culled by its slots' real extent (getCycleLeft/Right, Godot
@@ -81,19 +81,19 @@ speed over its page's front: tiled across its own view, placed from the view at 
 without the dolly a zoom scales the page about the view's corner), drawn through DollyBatch into the camera's view.
 Effects get the GAME's batch (JmeLayerEffects casts it to JmeBatch) and setView(w, h, left, floor) with the layers'
 corner, or FOG's noise slides off its image. Godot: _zoom_of/_anchor_of, each layer at its own _ppu; round
-engines/godot/tests/dolly, tools/r278-dolly/mutate.sh.
+engines/rounds/dolly, tools/r278-dolly/mutate.sh.
 A TOWER (r276, format 12 towerRadius/towerShade on an IMAGE layer) IS DRAWN AS STRIPS, NOT TILES: ParallaxLayer.drawTower,
 the front half of a cylinder in the view's middle, TOWER_STRIPS strips of equal angle, each strip's shade in the batch
 colour. UNDER libGDX's PAGE FOG THE BATCH COLOUR IS NOT A COLOUR (red fog, green page, alpha): the shade rides in its
 blue, which PAGE_FOG reads as darkness, and every other layer must keep blue 0 there. Godot: plax_tower.gd; round
-engines/godot/tests/tower, tools/r276-tower/strength.sh and mutate.sh.
+engines/rounds/tower, tools/r276-tower/strength.sh and mutate.sh.
 A PLANET (r277, format 13: the PAGE's planetRadius) BENDS THROUGH PlanetBatch, NOT IN ParallaxLayer: it wraps the layer's
 batch (over the DollyBatch when dollied) and cuts each draw(region, x, y, w, h) at 256 strips FIXED IN THE LAYER'S VIEW,
 each lowered by planetBendOf (front / speed / 2R) times dx^2. A still layer is the sky and stays flat; FLOOR and
 tower layers too; each cross-faded page is bent by its own radius (transferPlanetRadius). A PARTICLES effect is
 lowered AS ONE BLOCK by the drop at its LAYER BOX's middle (r330: Godot cannot know the live particles' box); a hook
 is never bent, it asks planetDropAt(layer, x). Godot: plax_planet.gd from _draw_region, planet_drop_at,
-plax_particles.gd; rounds engines/godot/tests/planet (p08 a hook) and particles (q09, q10),
+plax_particles.gd; rounds engines/rounds/planet (p08 a hook) and particles (q09, q10),
 tools/r277-planet/strength.sh and mutate.sh.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
@@ -136,7 +136,7 @@ so add the field there too.
 A THIRD reader has the same blind spot: engines/godot/addons/jks_parallax/plax_page.gd (the
 Godot port, r87) lists the layer fields in LAYER_DEFAULTS and reads the page's by hand. A
 field missing there loads as its default in a Godot game. Add it, and a scene using it to
-engines/godot/tests/conformance; `tools/godot-parallax-shots.sh` is the gate.
+engines/rounds/conformance; `tools/godot-parallax-shots.sh` is the gate.
 A layer field also lives on ParallaxLayer: setUpEverything copies it in, clone() copies it
 (ParallaxLayerTest), and pages/Utils_Page.buildFromPage writes it back. That is the editor's
 save path: a field it misses is dropped when the editor saves the page. BuildFromPageTest
@@ -173,7 +173,7 @@ ground_2), so "ground"+index and "ground"+position are two different keys.
 The atlas file's `filter:` line is what the game draws with: the editor writes
 MipMapLinearLinear,Linear on power-of-two pages (GLES2/WebGL1 draw a mipmapped NPOT page
 black, desktop shows nothing wrong), Nearest,Nearest for a pixel-art project. The Godot reader
-reads the same line (engines/godot/tests/pixelart).
+reads the same line (engines/rounds/pixelart).
 A mipmapped atlas needs each region's edges copied into its padding (the editor copies 25 of its 50 px): a tiled layer
 drawn 1/m of its size with fewer than m texels copied shows a line at every join (r268, tools/r268-mip-seams; lint
 fault (f)). The half-texel inset (r218) only saves a Linear atlas.
@@ -307,7 +307,7 @@ ParallaxEffect.frag (+ .j3md defines), all fed GdxLayerEffects.uniforms. Change 
 The reader calls the engine's LayerEffects (core/src/.../LayerEffects.java, jME's JmeLayerEffects) around a layer's
 tiles, NEVER Batch.setShader: JmeBatch.setShader throws, so it works in libGDX and breaks every jME game.
 Enum_ShaderEffect is APPEND ONLY (stored by name since format 7); a new effect also goes in plax_effects.gd's EFFECTS
-and in the round engines/godot/tests/shaders.
+and in the round engines/rounds/shaders.
 PAGE FOG (fogStrength, fogColor, format 10, r217; format 9's FOG-layer shaderHaze is read as its strength): every
 shader above ends in hazed() toward u_fog, and an IMAGE or SEQUENCE layer is drawn through a PLAIN one in jME (Plain
 define) and Godot ("PLAIN" material). libGDX draws them through ONE PAGE_FOG shader, the layer's fog in the batch
@@ -318,8 +318,8 @@ fetchUniformLocation(name, false): a by-name setUniformf throws when a GPU drops
 frontSpeedOf are copied in plax_effects.gd fog_of / front_speed_of. Change one, change the other.
 A Godot shader error is only a log line and the layer draws plain: read godot.log after a run (TAU is a Godot
 built-in; that name collision once moved the stills 2-11/255 with nothing failing).
-Gates: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh, given engines/godot/tests/shaders
-engines/godot/tests/fog as arguments (no argument runs every round; both fail past a mean 2/255; CI's godot-frames job runs them). A round only proves an
+Gates: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh, given engines/rounds/shaders
+engines/rounds/fog as arguments (no argument runs every round; both fail past a mean 2/255; CI's godot-frames job runs them). A round only proves an
 effect that moves its stills by more than that: tools/r180-shader-round/strength.sh (effects) and
 tools/r217-fog/strength.sh (fog) fail under 2.5/255, and tools/r217-fog/mutate.sh puts a wrong fog in one engine at a
 time and fails unless the fog round does. A new effect or a weaker scene: run them.

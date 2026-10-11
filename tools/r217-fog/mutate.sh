@@ -3,7 +3,7 @@
 # only: Godot's hazed() mixing toward the old mist white instead of the page's fog colour; Godot's fog_of without the
 # front's depth taken off; jME's material always handed the mist white; libGDX's page fog shader ignoring the incoming
 # page's fog colour during a cross-fade (f05). Runs that engine's frame check on
-# engines/godot/tests/fog for each, and fails unless every run FAILs. Restores the files on exit.
+# engines/rounds/fog for each, and fails unless every run FAILs. Restores the files on exit.
 # headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
@@ -17,7 +17,7 @@ LOG=build/r217/mutant.log
 mkdir -p build/r217
 status=0
 run() {
-	if "$2" engines/godot/tests/fog >"$LOG" 2>&1; then
+	if "$2" engines/rounds/fog >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the fog round"; status=1
 	else
 		echo "caught: $1 ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"

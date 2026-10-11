@@ -11,7 +11,7 @@
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 MIN="${MIN:-2.5}" OUT=build/r277/strength
-ROUND=engines/godot/tests/planet
+ROUND=engines/rounds/planet
 rm -rf "$OUT"; mkdir -p "$OUT/flat"
 python3 - "$OUT" "$ROUND" <<'PY' || exit 1
 import json, os, sys

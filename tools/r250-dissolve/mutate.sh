@@ -3,7 +3,7 @@
 # Godot fading its layers instead of masking them; Godot's noise read with SCREEN_UV's y down; libGDX's patches not
 # drifting (the Godot check then holds Godot's drift against a libGDX without one); jME's mask keeping each side where
 # the other should be; and, on t15's fogged page (r256), Godot's WAVE shader and jME's FOG shader each dropping the mask
-# while PLAIN keeps it. Runs that engine's frame check on engines/godot/tests/transfer for each, and fails unless every
+# while PLAIN keeps it. Runs that engine's frame check on engines/rounds/transfer for each, and fails unless every
 # run FAILs. Restores the files on exit.
 # headless: tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh render in cage.
 set -u
@@ -18,7 +18,7 @@ LOG=build/r250/mutant.log
 mkdir -p build/r250
 status=0
 run() {
-	if "$2" engines/godot/tests/transfer >"$LOG" 2>&1; then
+	if "$2" engines/rounds/transfer >"$LOG" 2>&1; then
 		echo "NOT CAUGHT: $1 passes the transfer round"; status=1
 	else
 		echo "caught: $1 ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"

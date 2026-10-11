@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the floor round (r275): engines/godot/tests/floor/round.json and its pages, the floor lab's two sets
+"""Writes the floor round (r275): engines/rounds/floor/round.json and its pages, the floor lab's two sets
 (lab.jplax, lab-purple.jplax, written by make_lab.py) with the lab's EMPTY "floor" layer turned into a FLOOR layer of
 the same box (its sizeRatio of the world height: floorHeight), its rows from the lab's speeds. Every layer in front is
 planted on it by the reader, whatever its page speed. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and
@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 HERE = 'core/test-data/floor'
-OUT = 'engines/godot/tests/floor'
+OUT = 'engines/rounds/floor'
 
 
 def page(lab, region, mapping, size, bottom, top, **more):

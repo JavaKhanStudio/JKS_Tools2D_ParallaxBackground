@@ -16,13 +16,13 @@ rm -rf "$OUT"; mkdir -p "$OUT"
 mkdir -p "$OUT/fade"
 python3 - "$OUT/fade/round.json" <<'PY' || exit 1
 import json, sys
-scenes = json.load(open('engines/godot/tests/transfer/round.json'))['scenes']
+scenes = json.load(open('engines/rounds/transfer/round.json'))['scenes']
 t15 = next(s for s in scenes if s['id'] == 't15')
 del t15['transfer']['style']
 t15['id'] = 't15fade'
 json.dump({'round': 'r250-fade', 'scenes': [t15]}, open(sys.argv[1], 'w'), indent=1)
 PY
-tools/parallax-lab-shots.sh engines/godot/tests/transfer "$OUT" >/dev/null || exit 1
+tools/parallax-lab-shots.sh engines/rounds/transfer "$OUT" >/dev/null || exit 1
 tools/parallax-lab-shots.sh "$OUT/fade" "$OUT/fade" >/dev/null || exit 1
 cp "$OUT/fade/t15fade-t6.png" "$OUT/" || exit 1
 python3 - "$OUT" "$MIN" <<'PY'

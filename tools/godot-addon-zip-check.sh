@@ -13,7 +13,7 @@ trap 'rm -rf "$P"' EXIT
 
 (cd "$P" && unzip -q "$ZIP")
 mkdir -p "$P/backgrounds"
-cp engines/godot/tests/round1/s03.jplax "$P/backgrounds/hiver.jplax"
+cp engines/rounds/round1/s03.jplax "$P/backgrounds/hiver.jplax"
 cp core/test-data/samples/Hiver.atlas core/test-data/samples/Hiver*.png "$P/backgrounds/"
 cat > "$P/project.godot" <<'CFG'
 config_version=5

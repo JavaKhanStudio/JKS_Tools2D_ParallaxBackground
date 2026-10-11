@@ -3,7 +3,7 @@ import java.util.Random;
 import jks.tools2d.parallax.SequenceCycle;
 
 /**
- * java -cp core/build/classes/java/main tools/r183-sequence/PickTable.java > engines/godot/tests/sequence/picks.json:
+ * java -cp core/build/classes/java/main tools/r183-sequence/PickTable.java > engines/rounds/sequence/picks.json:
  * SequenceCycle's picks for edge seeds (0, -1, Integer.MIN_VALUE, Integer.MAX_VALUE) and random ones, over weights of
  * every shape (zero, negative, one segment, large), so tests/sequence_cycle.gd holds Godot's port to the JVM's, bit
  * for bit, beyond SequenceCases' pinned lists (r183).

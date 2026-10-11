@@ -4,7 +4,7 @@
  "scenes": [
   {
    "id": "s01",
-   "page": "engines/godot/tests/round1/s01.jplax",
+   "page": "engines/rounds/round1/s01.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "Hiver-flat",
    "about": "Hiver-flat: every layer at the same speed: no depth from motion",
@@ -15,7 +15,7 @@
   },
   {
    "id": "s02",
-   "page": "engines/godot/tests/round1/s02.jplax",
+   "page": "engines/rounds/round1/s02.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm-whitesky",
    "about": "Calm-whitesky: sky gradient removed (white)",
@@ -23,7 +23,7 @@
   },
   {
    "id": "s03",
-   "page": "engines/godot/tests/round1/s03.jplax",
+   "page": "engines/rounds/round1/s03.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "Hiver",
    "about": "Hiver: original (control)",
@@ -31,7 +31,7 @@
   },
   {
    "id": "s04",
-   "page": "engines/godot/tests/round1/s04.jplax",
+   "page": "engines/rounds/round1/s04.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm-agent",
    "about": "Calm-agent: written from the rules alone (not from Simon's page)",
@@ -39,7 +39,7 @@
   },
   {
    "id": "s05",
-   "page": "engines/godot/tests/round1/s05.jplax",
+   "page": "engines/rounds/round1/s05.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "PurpleFairy-exaggerated",
    "about": "PurpleFairy-exaggerated: speed span x2.2 in log (5.6x -> 45x): back frozen, front whips",
@@ -49,7 +49,7 @@
   },
   {
    "id": "s06",
-   "page": "engines/godot/tests/round1/s06.jplax",
+   "page": "engines/rounds/round1/s06.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "OneNight-agent",
    "about": "OneNight-agent: written from the rules alone (not from Simon's page)",
@@ -57,7 +57,7 @@
   },
   {
    "id": "s07",
-   "page": "engines/godot/tests/round1/s07.jplax",
+   "page": "engines/rounds/round1/s07.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "Hiver-linear",
    "about": "Hiver-linear: same back/front speeds, evenly spaced instead of a constant ratio",
@@ -65,7 +65,7 @@
   },
   {
    "id": "s08",
-   "page": "engines/godot/tests/round1/s08.jplax",
+   "page": "engines/rounds/round1/s08.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm-flat",
    "about": "Calm-flat: every layer at the same speed: no depth from motion",
@@ -76,7 +76,7 @@
   },
   {
    "id": "s09",
-   "page": "engines/godot/tests/round1/s09.jplax",
+   "page": "engines/rounds/round1/s09.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "OneNight-small",
    "about": "OneNight-small: every layer half as wide: repeats show",
@@ -91,7 +91,7 @@
   },
   {
    "id": "s10",
-   "page": "engines/godot/tests/round1/s10.jplax",
+   "page": "engines/rounds/round1/s10.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm",
    "about": "Calm: original (control)",
@@ -99,7 +99,7 @@
   },
   {
    "id": "s11",
-   "page": "engines/godot/tests/round1/s11.jplax",
+   "page": "engines/rounds/round1/s11.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "OneNight-wrongsky",
    "about": "OneNight-wrongsky: gradients of a sunny day behind a night scene",
@@ -109,7 +109,7 @@
   },
   {
    "id": "s12",
-   "page": "engines/godot/tests/round1/s12.jplax",
+   "page": "engines/rounds/round1/s12.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "CalmLag",
    "about": "CalmLag: original: the editor's default layout, no art direction",
@@ -117,7 +117,7 @@
   },
   {
    "id": "s13",
-   "page": "engines/godot/tests/round1/s13.jplax",
+   "page": "engines/rounds/round1/s13.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "PurpleFairy-inverted",
    "about": "PurpleFairy-inverted: speeds reversed: the back moves fastest",
@@ -127,7 +127,7 @@
   },
   {
    "id": "s14",
-   "page": "engines/godot/tests/round1/s14.jplax",
+   "page": "engines/rounds/round1/s14.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "OneNight",
    "about": "OneNight: original (control)",
@@ -137,7 +137,7 @@
   },
   {
    "id": "s15",
-   "page": "engines/godot/tests/round1/s15.jplax",
+   "page": "engines/rounds/round1/s15.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm-compressed",
    "about": "Calm-compressed: speed span cut to a third (5.6x -> 1.8x): shallow",
@@ -147,7 +147,7 @@
   },
   {
    "id": "s16",
-   "page": "engines/godot/tests/round1/s16.jplax",
+   "page": "engines/rounds/round1/s16.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "PurpleFairy-aligned",
    "about": "PurpleFairy-aligned: every layer starts at decal X 0: joins line up at the start",
@@ -155,7 +155,7 @@
   },
   {
    "id": "s17",
-   "page": "engines/godot/tests/round1/s17.jplax",
+   "page": "engines/rounds/round1/s17.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "PurpleFairy",
    "about": "PurpleFairy: original (control)",
@@ -163,7 +163,7 @@
   },
   {
    "id": "s18",
-   "page": "engines/godot/tests/round1/s18.jplax",
+   "page": "engines/rounds/round1/s18.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "OneNight-shuffled",
    "about": "OneNight-shuffled: speeds shuffled: depth order broken",

@@ -74,8 +74,8 @@ repair.
 - Tiling reads the camera view, position and zoom: `tilesJustEnoughToCoverTheView` holds it.
 - `engines/godot/addons/jks_parallax/plax_background.gd` ports `ParallaxLayer.act`, `ParallaxPageReader.tile`/`drawRegion`,
   the cross-fade, the tint and the gradients line for line: change how a page scrolls, fades or draws, change it there,
-  and run `tools/godot-parallax-shots.sh` (`engines/godot/tests/transfer` is its cross-fade round). Its PARTICLES
-  layers are placed by `plax_particles.gd` (ParallaxPageReader's particle branch; round `engines/godot/tests/particles`),
+  and run `tools/godot-parallax-shots.sh` (`engines/rounds/transfer` is its cross-fade round). Its PARTICLES
+  layers are placed by `plax_particles.gd` (ParallaxPageReader's particle branch; round `engines/rounds/particles`),
   a FLOOR's rows measured, scrolled and drawn by `plax_floor.gd`, a SEQUENCE's cycle laid out and drawn by
   `plax_sequence.gd`, a tower's strips by `plax_tower.gd` (r307, r324: `gdlint` caps a script at 1000 lines).
 - `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
@@ -84,11 +84,11 @@ repair.
   run `tools/jme-parallax-shots.sh`.
 - An `EMPTY` layer (`Enum_LayerKind`, format 5) has no image: the reader calls the game's `LayerHook` per tile in its
   place, and so do `plax_background.gd` (`set_layer_hook`) and jME. A new layer kind goes in `Enum_LayerKind` (append
-  only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/godot/tests` (`effects` is EMPTY's).
+  only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/rounds` (`effects` is EMPTY's).
 - A `SHADER` layer's effects (`Enum_ShaderEffect`, format 7) are written three times, line for line:
   `core/src/.../GdxLayerEffects.java` (GLSL ES 1.0, WebGL too), `engines/godot/addons/jks_parallax/plax_effects.gd`
   and `engines/jme/resources/.../ParallaxEffect.frag`, all fed `GdxLayerEffects.uniforms`. Change one, change all
-  three, and run both frame checks on `engines/godot/tests/shaders`; a new effect goes in `Enum_ShaderEffect` (append
+  three, and run both frame checks on `engines/rounds/shaders`; a new effect goes in `Enum_ShaderEffect` (append
   only), `plax_effects.gd`'s `EFFECTS` and that round, strong enough that leaving it out fails
   (`tools/r180-shader-round/strength.sh`). The reader draws them through the engine's `LayerEffects`, never
   `Batch.setShader`, which `JmeBatch` throws on. FOG's x and y are `along()`, the view's x minus
@@ -101,48 +101,48 @@ repair.
   through a `PLAIN` one (jME's `Plain` define, Godot's `"PLAIN"` material); libGDX instead draws them all through one
   `PAGE_FOG` shader, each layer's fog in the batch colour (`LayerEffects.beginPageFog`), so a fogged page costs no
   flush per layer. The mix is written three times, `ParallaxPageReader.fogOf`/`frontSpeedOf` twice (Godot's
-  `PlaxEffects.fog_of`/`front_speed_of`). Run both frame checks on `engines/godot/tests/fog`;
+  `PlaxEffects.fog_of`/`front_speed_of`). Run both frame checks on `engines/rounds/fog`;
   `tools/r217-fog/strength.sh` proves leaving it out fails there, `tools/r217-fog/mutate.sh` that a wrong copy does.
 - A transfert's dissolve (`TransfertStyle.dissolve`, r250, no format change) is in those shaders' `hazed()` too: its
   alpha times `dissolved()`, FOG's noise over the camera view (libGDX's and jME's vertex `v_view`/`viewPos`, Godot's
   `SCREEN_UV` with y turned up), set per layer through `LayerEffects.setDissolve`; the reader skips the page fog's
-  shared shader during one. Run both frame checks on `engines/godot/tests/transfer` (t09, t10; t15 a fogged page with WAVE and FOG layers);
+  shared shader during one. Run both frame checks on `engines/rounds/transfer` (t09, t10; t15 a fogged page with WAVE and FOG layers);
   `tools/r250-dissolve/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A transfert through a colour (`TransfertStyle.throughColor`, r251, no format change) is in `hazed()` too: after the
   fog, mixed toward `u_grade`'s rgb by its a (jME `m_Grade`, Godot `grade`), set per layer through
   `LayerEffects.setGrade`; the gradients take `TransfertStyle.gradient` (SquareBackground, JmeGradient, Godot's
-  `_act_gradients`). Run both frame checks on `engines/godot/tests/transfer` (t11, t12, t16);
+  `_act_gradients`). Run both frame checks on `engines/rounds/transfer` (t11, t12, t16);
   `tools/r251-through-color/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A fog creep (`TransfertStyle.fogCreep`, r252, no format change) is that same grade toward a mist, with its own
   amounts: `TransfertStyle.gradeAt`/`showsIncoming` (eased, far slots first, every slot swapped at the middle), copied
-  in `plax_transfert_style.gd`'s `grade_at`/`shows_incoming`. Run both frame checks on `engines/godot/tests/transfer`
+  in `plax_transfert_style.gd`'s `grade_at`/`shows_incoming`. Run both frame checks on `engines/rounds/transfer`
   (t13, t14, t17); `tools/r252-fog-creep/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
   `SequenceCases.sequenceCycleOfAKnownSeedIsPinned`: a change there is a change of every saved page's ground. Godot's
   copy is `plax_page.gd`'s `draw_cycle` (32-bit masked) and `plax_sequence.gd`'s `draw`:
-  `engines/godot/tests/sequence_cycle.gd` holds them to the JVM's picks (`tests/sequence/picks.json`, written by
+  `engines/godot/tests/sequence_cycle.gd` holds them to the JVM's picks (`engines/rounds/sequence/picks.json`, written by
   `tools/r183-sequence/PickTable.java`) and to a walk over every slot; `tools/godot-parallax-shots.sh` runs it with the
   `sequence` round.
 - A `FLOOR` layer (r275, format 11) is drawn row by row, each row at its own speed and distance
   (`ParallaxLayer.measureFloor`/`drawFloor`, its strips cut when a setting changes, never in a frame), and
   `ParallaxPageReader.plant` moves every layer in front of it at the speed of the row under its foot, every `act()`,
   without touching its stored speed. Godot's copy is `plax_floor.gd`'s `measure`, `scroll`, `draw` and
-  `plant`; jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/godot/tests/floor`;
+  `plant`; jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/rounds/floor`;
   `tools/r275-floor/strength.sh` proves the round sees a floor against its flat twin, `mutate.sh` a wrong Godot copy.
 - The dolly (r278, `ParallaxPageReader.setDolly`, no format change) draws each layer at its own zoom
   (`dollyZoom`: `1 - k (1 - zoom)`, k its speed over its page's front), tiled across its own view and placed from the
   view at zoom 1, through `DollyBatch` (its quads and particle vertices scaled into the camera's view); the effects keep
   the game's batch (jME's casts it) and take the layers' corner in `setView(width, height, left, floor)`. Godot's copy
   is `plax_background.gd`'s `_zoom_of`/`_anchor_of` (each layer in its own view at its own `_ppu`) and
-  `plax_particles.gd`'s `place`. Change it and run both frame checks on `engines/godot/tests/dolly`;
+  `plax_particles.gd`'s `place`. Change it and run both frame checks on `engines/rounds/dolly`;
   `tools/r278-dolly/mutate.sh` proves the round sees a wrong Godot copy.
 - A tower (r276, format 12: `towerRadius`, `towerShade` on an IMAGE layer) is drawn by `ParallaxLayer.drawTower`
   (`ParallaxPageReader.towerRows` tiles it up): the front half of a cylinder in the view's middle, in
   `TOWER_STRIPS` strips of equal angle, each one `batch.draw`, its shade in the batch colour. Under libGDX's page fog
   the batch colour's red, green and alpha are the fog's: the shade rides in its blue, which `PAGE_FOG` reads as darkness
   (0 for every other layer). Godot's copy is `plax_tower.gd`; jME runs core's. Change it and run both frame checks on
-  `engines/godot/tests/tower`; `tools/r276-tower/strength.sh` proves the round sees the wrap and the shade, `mutate.sh`
+  `engines/rounds/tower`; `tools/r276-tower/strength.sh` proves the round sees the wrap and the shade, `mutate.sh`
   a wrong Godot copy and a wrong core law.
 - A planet (r277, format 13: the page's `planetRadius`) bends a page's IMAGE, SHADER and SEQUENCE layers through
   `PlanetBatch`, which wraps the layer's batch (the dolly's, when dollied) and cuts each `draw(region, x, y, w, h)` at
@@ -151,7 +151,7 @@ repair.
   PARTICLES effect is lowered as one block by the drop at its layer box's middle, and a hook asks
   `ParallaxPageReader.planetDropAt` (r330). Godot's copy is `plax_planet.gd` (called from `_draw_region`),
   `planet_drop_at` and `plax_particles.gd`'s placing; jME runs core's. Change it and run both frame checks on
-  `engines/godot/tests/planet` (p08: a hook) and `engines/godot/tests/particles` (q09, q10);
+  `engines/rounds/planet` (p08: a hook) and `engines/rounds/particles` (q09, q10);
   `tools/r277-planet/strength.sh` proves the round sees the bend, `mutate.sh` a wrong Godot copy and a wrong core law.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,

@@ -40,11 +40,11 @@ A reader is three pieces, and the third is where the work is:
    - A layer's `kind` is `IMAGE` (also when missing) or `EMPTY` (format 5): an `EMPTY` layer has no image, is
      `world_width × sizeRatio` wide and `world_height × sizeRatio` high, scrolls and tiles like an image, and calls the
      game's hook registered under its `name` once per visible tile instead of drawing. A kind the reader does not
-     know fails the load, as `Utils_Page_Json` does. `engines/godot/tests/effects` is its round.
+     know fails the load, as `Utils_Page_Json` does. `engines/rounds/effects` is its round.
    - A `SHADER` layer (format 7) is drawn as an `IMAGE` one, through its `shaderEffect`, `WAVE` or `FOG`, ported from
      `core/src/.../GdxLayerEffects.java`: the same numbers (`GdxLayerEffects.uniforms`), the same lines, the phase from
      the seconds `act` has stepped, shared by both pages of a cross-fade. An effect the reader does not know fails the
-     load. `engines/godot/tests/shaders` is its round.
+     load. `engines/rounds/shaders` is its round.
    - The page is anchored to the screen, not to the game camera.
    - A cross-fade matches the two pages from their FRONT layer: each incoming layer takes the distance its outgoing
      counterpart has scrolled from its decal; an incoming page with more layers has back layers with no counterpart,
@@ -77,15 +77,15 @@ halfway through the transfert). `./gradlew :jme:run` has the same keys.
 
 **How it is checked.** `tools/godot-parallax-shots.sh` renders the same pages in libGDX (`shots/`'s `ParallaxShots`, the grading lab's `--shots` split out in r130)
 and in Godot (`engines/godot/tests/shots.gd`), with the same 60 units/s scroll stepped at 1/60 s, 0, 6 and 12 s in,
-off screen, and compares them pixel by pixel. It runs four rounds: `engines/godot/tests/round1`, a copy of the grading lab's round 1 (`demo/lab/round1`, in the editor repository; 18 pages from four
-atlases), `engines/godot/tests/conformance` (7 pages for what round 1 lacks: trimmed regions with `useOriginalSize`,
+off screen, and compares them pixel by pixel. It runs four rounds: `engines/rounds/round1`, a copy of the grading lab's round 1 (`demo/lab/round1`, in the editor repository; 18 pages from four
+atlases), `engines/rounds/conformance` (7 pages for what round 1 lacks: trimmed regions with `useOriginalSize`,
 X+Y tiling with padding, Y tiling with mirrors, X tiling with mirrors and negative padding, no tiling, overlapping
 gradients with a translucent colour, and a `.plaxpj` with loose layers; three of them also scroll on Y at ±30 units/s,
-and two resize the window 3 s in, to 720x1280 and to 1280x1000) and `engines/godot/tests/transfer` (6 scenes that
+and two resize the window 3 s in, to 720x1280 and to 1280x1000) and `engines/rounds/transfer` (6 scenes that
 cross-fade or tint 4 s in over 4 s, so t6 is mid-fade: into a page with more layers and another atlas, into one with
 fewer, into the page on screen while tinting, with no repeat into other gradients, a translucent tint alone, and a
 second cross-fade started 1 s into the first, which drops the page fading in and brings the outgoing one back to full
-opacity, as libGDX does), and `engines/godot/tests/pixelart` (City exported with **Pixel art**, its atlas
+opacity, as libGDX does), and `engines/rounds/pixelart` (City exported with **Pixel art**, its atlas
 `filter: Nearest,Nearest`, drawn sharp, and cross-faded both ways with the same page on its `Linear` source atlas: each
 page keeps its own filter mid-fade, as a libGDX texture does; r136). A scene's `speedY`, `resize`, `transfer` and `tint` entries in `round.json` drive both
 sides.
@@ -99,7 +99,7 @@ resizes: worst 0.25; with the Y scroll reversed it scores 31.5, with the world h
 41.8. CI runs the three rounds on every push (`.github/workflows/ci.yml`, job `godot-frames`: Xvfb and Mesa llvmpipe,
 no GPU), where round 1, the conformance round and the transfer round scored 0.17, 0.24 and 0.75.
 
-`engines/godot/tests/particles` (r179) is the one round not compared by pixels: a `PARTICLES` layer is drawn by each
+`engines/rounds/particles` (r179) is the one round not compared by pixels: a `PARTICLES` layer is drawn by each
 engine's own particle system. `engines/godot/tests/particles.gd` checks, 0, 6 and 12 s into the scroll, that the
 layer's Godot scene is instanced, between the layers before and after it, at its page's opacity, and where the layer
 scrolled it (counted apart from the reader), for a `VIEW` and a `LAYER` anchor, repeating on X and on XY, through a
@@ -136,8 +136,8 @@ ports its 60 lines (opaque, colours packed as ShapeRenderer packs them). `JmeBat
 calls, `draw(region, x, y, width, height)`, and throws on every other: a reader that starts calling another fails
 there, loudly.
 
-**How it is checked.** `tools/jme-parallax-shots.sh` renders three of the Godot check's rounds (`engines/godot/tests/round1`,
-`engines/godot/tests/conformance` and `engines/godot/tests/transfer`, with their Y scroll, resizes,
+**How it is checked.** `tools/jme-parallax-shots.sh` renders three of the Godot check's rounds (`engines/rounds/round1`,
+`engines/rounds/conformance` and `engines/rounds/transfer`, with their Y scroll, resizes,
 cross-fades and tints) with libGDX and with `JmeParallaxShots`, off screen in cage, and compares them with the same
 `tools/compare-parallax-frames.py`. On 2026-09-30 (jME 3.9.0, LWJGL 3.3.6, NVIDIA): worst mean difference **0.25 /
 255** (round 1), 0.13 (conformance), 0.23 (transfer). A port with a scroll 10 % too fast (`BREAK=scroll`) scores
