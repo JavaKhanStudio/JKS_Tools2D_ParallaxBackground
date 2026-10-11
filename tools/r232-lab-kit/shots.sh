@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The labs as Simon sees them (r232), headless: every HTML lab (fog, haze, transfert, the three effects labs, the
+# The labs as Simon sees them (r232), headless: every HTML lab (fog, haze, transfert, the effects labs, the
 # browser tests' page) at the size of the window its tools/*-lab.sh opens (1580x710 inside Chrome's 1580x800), the
 # viewport only, so what needs a scroll is cut off as it is for him; and on a 390x844 phone, the whole page.
 #   tools/r232-lab-kit/shots.sh OUT [--no-build]   OUT/<lab>-desktop.png, OUT/<lab>-phone.png, and the fit checks

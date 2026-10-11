@@ -113,8 +113,8 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     // the other sets it puts the mist into (r208) are round1's s02, s05 and s06, with their atlases.
     def fogSets = ['s02', 's05', 's06'].collect { file("../engines/godot/tests/round1/${it}.jplax") }
     def fogAtlases = ['samples/transfer/calm', 'samples/Demos/PurpleFairy', 'samples/Demos/OneNight']
-    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'particles/**', 'floor/**'; fogAtlases.each { include "${it}.*" } },
-            file('../engines/godot/tests/shaders/s01.jplax'), fogSets)
+    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'particles/**', 'floor/**', 'tower/**'; fogAtlases.each { include "${it}.*" } },
+            file('../engines/godot/tests/shaders/s01.jplax'), file('../engines/godot/tests/tower/w01.jplax'), fogSets)
     doLast {
         def assets = browserTestAssets.get().asFile
         project.copy { from 'test-data/shaders/mist.png', 'test-data/samples/Hiver.png'; into assets }
@@ -152,6 +152,14 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
             filter { it.startsWith('../samples/') ? it.substring(it.lastIndexOf('/') + 1) : it }
         }
         project.copy { from 'test-data/floor'; include '*.jplax'; into new File(assets, 'floor-lab') }
+        // The tower lab's (r328, TowerLab): the tower round's w01, its atlas (Hiver, then the bricks).
+        project.copy { from 'test-data/tower/bricks.png'; into assets }
+        project.copy {
+            from 'test-data/tower/HiverTower.atlas'
+            into assets
+            filter { it.startsWith('../samples/') ? it.substring(it.lastIndexOf('/') + 1) : it }
+        }
+        project.copy { from '../engines/godot/tests/tower/w01.jplax'; into new File(assets, 'tower-lab'); rename { 'lab.jplax' } }
     }
 }
 tasks.register('browserTestWar', JavaExec) {

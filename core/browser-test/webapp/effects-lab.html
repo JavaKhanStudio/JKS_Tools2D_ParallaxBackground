@@ -6,7 +6,7 @@
 	<title>Effects lab (r224)</title>
 	<link rel="stylesheet" href="lab.css">
 	<!-- EffectsLab (r224): ?lab=fog, ?lab=snow or ?lab=all, the feature on the left, the same page without it on the right;
-	     ?lab=floor: FloorLab (r275), one panel, the floor drawn row by row. -->
+	     ?lab=floor: FloorLab (r275), one panel, the floor drawn row by row; ?lab=tower: TowerLab (r328), one panel. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
@@ -37,6 +37,9 @@
 	the ground is planted: it scrolls at the speed of the ground row under its foot, as a thing standing on the ground
 	does. Two parallax sets: Hiver on snow, and PurpleFairy on a violet ground; picking one puts the row speeds back to
 	its own.
+	<b>tower</b> (r276, r328): an image layer wrapped round a cylinder in the middle of the view, a brick tower in front
+	of Hiver; the page's scroll turns it. Its radius, how much its wall darkens toward its sides, how fast it turns
+	(its speed ratio) and how many images go round it are live; the readout gives the time a turn takes.
 	Each page is drawn by the real reader, compiled to JavaScript, as a browser game draws it. The cost line gives the
 	frame time and, per panel, its draw calls and the CPU time to submit them (the GPU's time is in the frame time).</p>
 	</details>
