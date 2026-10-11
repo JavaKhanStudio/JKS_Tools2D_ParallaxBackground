@@ -5,7 +5,9 @@ round's snowflake on a page of its own) and core/test-data/haze/lab.jplax: the h
 0.25 on its mist) with an EMPTY layer the lab's hook draws in, and p01's snow (a PARTICLES layer), both behind the mist,
 which the shipped haze leaves as they are.
 Run from the repository root: python3 core/test-data/haze/make_lab.py"""
-import copy, json, subprocess
+import copy
+import json
+import subprocess
 
 HERE = 'core/test-data/haze'
 

@@ -54,7 +54,7 @@ with sync_playwright() as p:
         for size, (w, h) in SIZES.items():
             page = browser.new_page(viewport={"width": w, "height": h})
             errors = []
-            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.on("pageerror", lambda e, errors=errors: errors.append(str(e)))
             page.goto("%s/%s%s" % (base, path, "&clip=1" if "?" in path else "?clip=1") if ready else "%s/%s" % (base, path))
             if ready:
                 page.wait_for_function("window.%s === true" % ready, timeout=90000)

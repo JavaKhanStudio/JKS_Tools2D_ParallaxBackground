@@ -23,9 +23,8 @@ import argparse
 import sys
 
 import numpy as np
-from PIL import Image
-
 from layer import components, spread
+from PIL import Image
 
 
 def box(a, r):

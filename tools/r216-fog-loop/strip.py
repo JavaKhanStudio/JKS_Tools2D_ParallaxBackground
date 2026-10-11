@@ -5,6 +5,7 @@ tick every wavelength (8.25 world units of 40 = 156.75 px of 760). Before the fi
   python3 -I tools/r216-fog-loop/strip.py BEFORE.png AFTER.png OUT.png
 """
 import sys
+
 from PIL import Image, ImageChops, ImageDraw, ImageOps
 
 before, after, out = sys.argv[1:]

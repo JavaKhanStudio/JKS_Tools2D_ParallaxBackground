@@ -7,10 +7,14 @@ page's own speeds, as before) they must not, or the measure is blind. Prints the
 
   python3 tools/r275-floor/planted.py WAR CHROME   (WAR: core/build/browserTest/war, tools/effects-lab.sh builds it;
                                                     needs Playwright, numpy, Pillow)"""
-import io, socket, subprocess, sys
+import io
+import socket
+import subprocess
+import sys
 
 import numpy as np
 from PIL import Image
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
 war, chrome = sys.argv[1:3]
@@ -62,7 +66,7 @@ def run(index, unplanted):
                 try:
                     page.goto("http://127.0.0.1:%d/effects-lab.html?lab=floor&clip=1%s" % (number, "&unplanted=1" if unplanted else ""))
                     break
-                except Exception:
+                except PlaywrightError:  # the server is not up yet
                     page.wait_for_timeout(200)
             page.wait_for_function("window.effectsLabReady === true", timeout=60000)
             page.eval_on_selector("[data-key=parallaxSet]", "(e, v) => { e.value = v; }", str(index))

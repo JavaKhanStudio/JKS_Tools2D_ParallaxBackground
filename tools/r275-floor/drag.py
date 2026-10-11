@@ -5,7 +5,9 @@ with the button still down must be the same (a pan that keeps going under a stil
 differences and exits 1 on a failure. Serve core/build/browserTest/war first.
 
   python3 tools/r275-floor/drag.py URL CHROME OUTDIR   (URL: .../effects-lab.html?lab=floor; needs Playwright, Pillow)"""
-import io, os, sys
+import io
+import os
+import sys
 
 from PIL import Image, ImageChops, ImageStat
 from playwright.sync_api import sync_playwright

@@ -395,8 +395,8 @@ def _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, strippe
     if not joins:
         return problems
     limit = SEAM if all(v == SEAM for v in limits.values()) else f"{SEAM} and its segments' own step between columns"
-    return problems + [f"(e) layer {i} ({label(l)}) chains segments whose edges differ (seam > {limit}), a cut at each"
-                       f" such join: {', '.join(joins)} (left>right seam)"]
+    return problems + [(f"(e) layer {i} ({label(l)}) chains segments whose edges differ (seam > {limit}), a cut at each"
+                       f" such join: {', '.join(joins)} (left>right seam)")]
 
 
 def _resampled(rows, k, n):
@@ -1060,7 +1060,6 @@ def round4(out_dir):
     """Round 4 (parallax:r227): is there a top to the speed span past 100x? Round 3's deeper span won or tied every
     bracket up to 100x. Calm and pure at 100x and 250x, next to round 3's anchors: Pure-art (43x, graded 5),
     Printemps-art (25x, 4) and Calm-art-100x (4) again, to watch the grading scale."""
-    s = {name: load(path) for name, (path, _) in SAMPLES.items()}
     d = {name: atlas_dir for name, (_, atlas_dir) in SAMPLES.items()}
     calm_dir, pure_dir = 'editor/Files/transfer', 'editor/Files/Demos/Day/pureTest'
     calm = math.log(12)  # calm_from_art's span

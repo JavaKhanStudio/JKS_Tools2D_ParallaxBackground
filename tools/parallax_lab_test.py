@@ -91,10 +91,10 @@ class SequenceLayers(unittest.TestCase):
         page = copy.deepcopy(self.page)
         lab.layers(page)[4]['sequenceSegments'][1]['regionName'] = 'lake'
         lab.layers(page)[4]['sequenceSegments'][2]['regionPosition'] = 3
-        self.assertEqual(["layer 4 (SEQUENCE 'strip'): segment 1 names no region lake#0 in HiverSeq.atlas: the page"
-                          " fails to load",
-                          "layer 4 (SEQUENCE 'strip'): segment 2 names no region stone#3 in HiverSeq.atlas: the page"
-                          " fails to load"], self.faults(page, self.atlas_dir))
+        self.assertEqual([("layer 4 (SEQUENCE 'strip'): segment 1 names no region lake#0 in HiverSeq.atlas: the page"
+                          " fails to load"),
+                          ("layer 4 (SEQUENCE 'strip'): segment 2 names no region stone#3 in HiverSeq.atlas: the page"
+                          " fails to load")], self.faults(page, self.atlas_dir))
 
     def test_no_segments_is_said(self):
         page = copy.deepcopy(self.page)
@@ -136,8 +136,8 @@ class SequenceLayout(unittest.TestCase):
 
     def test_a_sequence_in_front_covers_the_edge_behind_it(self):
         self.assertEqual([], self.layout(self.PAINTED), 'the pines cover the hills\' bottom edge (r239, render 06)')
-        self.assertEqual(['(b) layer 1 (hills#0): its art reaches its bottom edge, on screen at 4% of its height, and'
-                          ' no nearer layer covers that edge'], self.layout(self.PAINTED, lambda ls: ls.pop()),
+        self.assertEqual([('(b) layer 1 (hills#0): its art reaches its bottom edge, on screen at 4% of its height, and'
+                          ' no nearer layer covers that edge')], self.layout(self.PAINTED, lambda ls: ls.pop()),
                          'without the pines the edge shows: the check is not blind')
 
     def test_two_segments_whose_edges_differ_are_named(self):
@@ -332,6 +332,7 @@ class MipmappedJoins(unittest.TestCase):
     def test_the_colour_under_alpha_0_is_not_a_copy_that_differs(self):
         """A region whose edge is transparent, beside padding transparent too but of another colour: copied."""
         import tempfile
+
         import parallax_regions as regions_tool
         from PIL import Image
         with tempfile.TemporaryDirectory() as d:

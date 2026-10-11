@@ -6,7 +6,10 @@ Serve core/build/browserTest/war first (tools/effects-lab.sh builds it).
   python3 tools/r275-floor/film.py URL CHROME OUT.mp4 [SECONDS] [key=value ...]   (needs Playwright, ffmpeg)
 
 URL: http://127.0.0.1:PORT/effects-lab.html?lab=floor&clip=1. A key=value sets that control (its data-key) first."""
-import os, subprocess, sys, tempfile
+import os
+import subprocess
+import sys
+import tempfile
 
 from playwright.sync_api import sync_playwright
 

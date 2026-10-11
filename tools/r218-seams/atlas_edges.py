@@ -4,8 +4,10 @@ far the left edge is from the right (mean |RGBA| difference, the r139 'seam').
 python3 tools/r218-seams/atlas_edges.py ATLAS..."""
 import os
 import sys
+
 import numpy as np
 from PIL import Image
+
 
 def regions(path):
     lines = open(path).read().splitlines()
@@ -32,7 +34,7 @@ for atlas in sys.argv[1:]:
         r = page[y:y + h, x:x + w]
         rows = r[:, 1, 3] == 255
         rowsR = r[:, -2, 3] == 255
-        def a(col, mask):
+        def a(col, mask, r=r):
             return round(float(r[mask, col, 3].mean()), 1) if mask.any() else None
         outL = page[y:y + h, x - 1] if x > 0 else None
         outR = page[y:y + h, x + w] if x + w < page.shape[1] else None

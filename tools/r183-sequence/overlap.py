@@ -35,10 +35,9 @@ def vis(segs,ws,seed,n,size,pad,x,ordered):
         if l+H*A[segs[c[s]]]<=0: continue
         out.append(s)
     return out
-import itertools
 for segs,ws in [(['bridge','tower','stone'],[1,4,1]),(['stone','tower','bridge'],[1,3,2]),(['stone','tower','river','bridge'],[1,4,1,1]),(['stone','tower','river'],[1,3,1]),(['bridge','tower','stone'],[1,3,1])]:
   for pad in (-6,-8,-10,-12,-14,-16,-20):
-    for seed in range(0,40):
+    for seed in range(40):
       d=[]
       for x in (0,-18,-36):
         a=vis(segs,ws,seed,10,0.35,pad,x,True); b=vis(segs,ws,seed,10,0.35,pad,x,False)

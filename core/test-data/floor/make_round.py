@@ -5,7 +5,7 @@ the same box (its sizeRatio of the world height: floorHeight), its rows from the
 planted on it by the reader, whatever its page speed. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and
 engines/jme's JmeParallaxShots; tools/godot-parallax-shots.sh and tools/jme-parallax-shots.sh compare them.
 Run from the repository root: python3 core/test-data/floor/make_round.py"""
-import copy, json
+import json
 
 HERE = 'core/test-data/floor'
 OUT = 'engines/godot/tests/floor'

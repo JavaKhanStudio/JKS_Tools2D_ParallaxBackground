@@ -9,7 +9,8 @@ trees in front. Its second set (Simon: "let's try it again with another parallax
 PurpleFloor.atlas and lab-purple.jplax, round1's PurpleFairy page standing on a violet ground, its pink trees and flowers
 in front.
 Run from the repository root: python3 core/test-data/floor/make_lab.py (needs numpy and Pillow)."""
-import json, math
+import json
+import math
 
 import numpy as np
 from PIL import Image

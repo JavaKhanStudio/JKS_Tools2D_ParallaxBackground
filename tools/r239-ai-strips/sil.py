@@ -19,19 +19,19 @@ from PIL import Image
 
 SPEC = {
     # base height (fraction of h from the bottom), sines (freq, amp, sharpen), colour, sky
-    "mountains": dict(base=0.55, waves=[(2, 0.10), (3, 0.08), (5, 0.05), (11, 0.012)],
-                      ridge=True, colour=(120, 140, 175), sky=(210, 225, 240)),
-    "hills": dict(base=0.38, waves=[(3, 0.07), (5, 0.04), (8, 0.02)],
-                  ridge=False, colour=(70, 105, 95), sky=(210, 225, 240)),
-    "pines": dict(base=0.16, waves=[(2, 0.03), (5, 0.02)], ridge=False, trees=70,
-                  colour=(30, 50, 45), sky=(210, 225, 240)),
-    "dunes": dict(base=0.30, waves=[(2, 0.05), (3, 0.04), (7, 0.012)], ridge=False, colour=(200, 175, 125),
-                  sky=(210, 225, 240)),
-    "ruins": dict(base=0.14, waves=[(3, 0.02), (9, 0.01)], ridge=False, towers=26, colour=(60, 55, 55),
-                  sky=(210, 225, 240)),
-    "sea": dict(base=0.22, waves=[(17, 0.004), (29, 0.003)], ridge=False, colour=(70, 170, 170), sky=(210, 225, 240)),
-    "palms": dict(base=0.05, waves=[(2, 0.025), (5, 0.012)], ridge=False, palms=9, colour=(40, 50, 35),
-                  sky=(210, 225, 240)),
+    "mountains": {"base": 0.55, "waves": [(2, 0.10), (3, 0.08), (5, 0.05), (11, 0.012)],
+                  "ridge": True, "colour": (120, 140, 175), "sky": (210, 225, 240)},
+    "hills": {"base": 0.38, "waves": [(3, 0.07), (5, 0.04), (8, 0.02)],
+              "ridge": False, "colour": (70, 105, 95), "sky": (210, 225, 240)},
+    "pines": {"base": 0.16, "waves": [(2, 0.03), (5, 0.02)], "ridge": False, "trees": 70,
+              "colour": (30, 50, 45), "sky": (210, 225, 240)},
+    "dunes": {"base": 0.30, "waves": [(2, 0.05), (3, 0.04), (7, 0.012)], "ridge": False, "colour": (200, 175, 125),
+              "sky": (210, 225, 240)},
+    "ruins": {"base": 0.14, "waves": [(3, 0.02), (9, 0.01)], "ridge": False, "towers": 26, "colour": (60, 55, 55),
+              "sky": (210, 225, 240)},
+    "sea": {"base": 0.22, "waves": [(17, 0.004), (29, 0.003)], "ridge": False, "colour": (70, 170, 170), "sky": (210, 225, 240)},
+    "palms": {"base": 0.05, "waves": [(2, 0.025), (5, 0.012)], "ridge": False, "palms": 9, "colour": (40, 50, 35),
+              "sky": (210, 225, 240)},
 }
 
 

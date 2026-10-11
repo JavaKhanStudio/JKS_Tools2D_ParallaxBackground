@@ -16,7 +16,6 @@ import numpy as np
 from PIL import Image
 
 
-
 def bands(img):
     """(top, bottom) screen rows of each layer, top to bottom: rows brighter than the dark page."""
     lit = (img.max(axis=2) > 40).mean(axis=1) > 0.5

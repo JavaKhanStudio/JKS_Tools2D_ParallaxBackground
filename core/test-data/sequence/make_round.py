@@ -6,6 +6,7 @@ colour and width, with marks that are not symmetric, so a wrong pick, a slot out
 big difference, not a 1/255 one. Run from the repository root: python3 core/test-data/sequence/make_round.py (needs
 Pillow)."""
 import json
+
 from PIL import Image, ImageDraw
 
 HERE = 'core/test-data/sequence'

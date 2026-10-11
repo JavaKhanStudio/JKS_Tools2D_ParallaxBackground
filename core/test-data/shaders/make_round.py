@@ -5,7 +5,9 @@ conformance page (c01, c02, c03, c05) with a layer turned into a WAVE and a mist
 the mist alone tiling on X (r229), s07.jplax, an even slab (slab.png, slab.atlas) through FOG tiling on Y (r262), and
 s08.jplax, vertical stripes (stripes.png, stripes.atlas) through WAVE tiling on Y (r273).
 Run from the repository root: python3 core/test-data/shaders/make_round.py (needs Pillow)."""
-import json, math
+import json
+import math
+
 from PIL import Image
 
 HERE = 'core/test-data/shaders'

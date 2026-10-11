@@ -107,7 +107,7 @@ TREES = 3.5  # roughness under which a pine strip has no trees in it
 
 def run(cmd, log):
     with open(log, "w") as f:
-        return subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT).returncode
+        return subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT, check=False).returncode
 
 
 def solid(path):
@@ -124,7 +124,7 @@ def sky_of(path):
 
 
 def hexc(rgb):
-    return "".join(f"{int(round(min(255, max(0, v)))):02x}" for v in rgb)
+    return "".join(f"{int(round(min(255, max(0, v)))):02x}" for v in rgb)  # noqa: RUF046 (v may be a numpy float)
 
 
 def main():
@@ -175,8 +175,8 @@ def main():
         if pixel:
             gen = [PY, f"{d}/gen.py", "img2img", "--ckpt", "sdXL_v10VAEFix.safetensors", "--lora",
                    "PixelArt_XL.safetensors", "--lora-strength", "1.0", "--w", str(w), "--h", str(h), "--denoise", "0.7",
-                   "--negative", negative(NEG_XL, kind), "--prompt", f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
-                   f"{WORDS[kind]}, empty plain flat pale sky, solid background colour"]
+                   "--negative", negative(NEG_XL, kind), "--prompt", (f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
+                   f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
         else:
             gen = [PY, f"{d}/gen.py", "img2img", "--denoise", "0.65", "--negative", negative(NEG, kind), "--prompt",
                    f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]

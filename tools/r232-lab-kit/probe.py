@@ -1,7 +1,9 @@
 """Lists each control's box and its children's, for one lab (r232: how shots.py's value check was found wrong). Run it from a
 served war: python3 probe.py BASE CHROME PAGE READY W H."""
 import sys
+
 from playwright.sync_api import sync_playwright
+
 base, chrome, path, ready, w, h = sys.argv[1:]
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])

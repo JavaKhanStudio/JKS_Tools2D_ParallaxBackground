@@ -22,16 +22,16 @@ from ai_page import WORDS  # noqa: E402
 
 PASSES = [
     ("shape", "init", "1. The shape",
-     "sil.py draws the layer's outline in flat colours: a sum of sine waves that each fit a whole number of times "
+     ("sil.py draws the layer's outline in flat colours: a sum of sine waves that each fit a whole number of times "
      "across the strip, and trees placed on a circle. Its right edge runs on into its left edge: it loops by "
-     "construction."),
+     "construction.")),
     ("painted", "ai", "2. The painting",
-     "Stable Diffusion repaints the shape from the prompt (img2img: it keeps the outline and the colours, and adds "
+     ("Stable Diffusion repaints the shape from the prompt (img2img: it keeps the outline and the colours, and adds "
      "the detail). Every convolution of the model is padded with the strip's other end (circular padding), so the "
-     "painting loops too: the step where it joins itself is no bigger than the steps inside it."),
+     "painting loops too: the step where it joins itself is no bigger than the steps inside it.")),
     ("cut", "cut", "3. The cut",
-     "The flat sky is keyed out to transparency, so the layer can stand in front of the ones behind it. In pixel "
-     "style the strip is also reduced to one image pixel per art pixel and 12 colours, drawn sharp (Nearest)."),
+     ("The flat sky is keyed out to transparency, so the layer can stand in front of the ones behind it. In pixel "
+     "style the strip is also reduced to one image pixel per art pixel and 12 colours, drawn sharp (Nearest).")),
 ]
 
 CSS = """
@@ -166,7 +166,7 @@ def main():
         pixel = style == "pixel"
         title = f"{r['name']}, {style}"
         nav.append(f'<a href="#{esc(pid)}">{esc(title)}</a>')
-        first_of = lambda pattern: (sorted(glob.glob(os.path.join(d, pattern))) or [""])[0]  # noqa: E731
+        first_of = lambda pattern, d=d: (sorted(glob.glob(os.path.join(d, pattern))) or [""])[0]  # noqa: E731
         poster = copy(first_of("shots/*-t12.png"), f"{pid}-t12.png")
         film = copy(first_of("film/*.mp4"), f"{pid}.mp4")
         if film:

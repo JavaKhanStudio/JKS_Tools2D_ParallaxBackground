@@ -6,7 +6,9 @@ and SEQUENCE layer is mixed toward the fog's colour by 1 - exp(-strength (1 / sp
 in colours, through a format 9 page whose FOG layer's haze becomes its fog, and through a cross-fade into a page of
 another fog while tinting. tools/r217-fog/strength.sh checks that leaving the fog out moves every still past the rounds'
 2/255. Run from the repository root: python3 core/test-data/haze/make_round.py"""
-import copy, json, os
+import copy
+import json
+import os
 
 HERE = 'core/test-data/haze'
 ROUND = 'engines/godot/tests/fog'

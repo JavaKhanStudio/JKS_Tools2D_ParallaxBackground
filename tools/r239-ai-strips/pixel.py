@@ -17,11 +17,10 @@ for in the painted strip, exits 4.
 import argparse
 import sys
 
-import numpy as np
-from PIL import Image
-
 import creature
+import numpy as np
 from layer import islands
+from PIL import Image
 
 
 def steps(img, axis):
@@ -75,7 +74,7 @@ def main():
         rows = np.arange(y0 + q, y0 + cell - q)
         for i in range(nx):
             x0 = phx + 1 + i * pitch
-            cols = np.arange(int(round(x0 + q)), int(round(x0 + pitch - q))) % w
+            cols = np.arange(int(round(x0 + q)), int(round(x0 + pitch - q))) % w  # noqa: RUF046 (q may be a numpy float)
             small[j, i] = np.median(img[np.ix_(rows, cols)].reshape(-1, 3), axis=0)
             if mask is not None:
                 inside[j, i] = mask[np.ix_(rows, cols)].mean() > 0.5
