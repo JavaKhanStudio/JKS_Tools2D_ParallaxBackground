@@ -84,3 +84,27 @@ Gates: both engines' tools/frame-check.sh on engines/rounds/shaders and engines/
 round only proves an effect that moves its stills by more: tools/r180-shader-round/strength.sh and
 tools/r217-fog/strength.sh fail under 2.5/255; tools/r217-fog/mutate.sh fails unless the round sees a wrong copy.
 """
+
+[runtime]
+context = """
+AGENTS.md's "Runtime (core)" section (read every session) holds each feature's rule and where its Godot and jME copies
+live; SHADER effects and the page fog are #shader's. This is what it does not say.
+Map: core/src/jks/tools2d/parallax/ParallaxPageReader (scroll, tile, fade, tint), ParallaxLayer (one layer's settings
+and position), heart/Parallax_Heart (camera, batch, act/render), heart/Parallax_Utils_Page, side/SquareBackground.
+ONE PAGE, TWO HEARTS (r298): getDrawing caches one list of layers, so a reader takes a page through layersOf, which
+clones a layer another reader holds (ParallaxLayer.reader); a reader drops its own through clearLayers(), never
+layers.clear(), or the next heart gets copies the editor's edits never reach (ParallaxHeartResizeTest). Hearts call only
+getDrawing(relativePath, w, h): a stub overriding getDrawing() is ignored.
+SHIPPED BROKEN, NOTHING FAILED: tiling ignored zoom and drew a tile past every row's right edge, 39% of draw calls
+off-screen; repeatOnY and XY faded with 1 - alpha near a transfert's end; a page repeating on neither axis drew nothing;
+a target page with more layers drew one twice at double opacity, with fewer it threw; incoming layers did not scroll
+during the fade and jumped after it. `!Enum_TransfertType.NONE.equals(null)` is TRUE: ask `== null`.
+So assert by counting and placing draws: the *Cases in core/browser-test/cases record them on RecordingBatch, no window
+(BrowserSuiteTest loads the natives in @BeforeAll), every repeat mode, not only X.
+The planet wraps every layer round ONE centre because r277's curve per layer pushed far layers under near ones and
+Simon rejected it: a per-layer bend is not an option. Dolly: the effects keep the GAME's batch and setView, or FOG's
+noise slides off its image.
+README.md's layer-settings table is the documented meaning of each field: rename, rescale or repurpose one and fix it
+in the same commit. MEMORY_LANE.md §5 is HISTORY at b5a7441: a defect you fix that it lists moves to its §10 table.
+See it: tools/parallax-lab-shots.sh ROUND OUT (stills off screen), ./gradlew :jme:run, the editor repo's :demo:run.
+"""

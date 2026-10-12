@@ -10,109 +10,26 @@ description = "core: scrolling, tiling, cross-fade, the gradient squares"
 color = "#8fd0ff"
 sort = 10
 context = """
-core/src/jks/tools2d/parallax/: ParallaxPageReader (scroll, tile, fade, tint), ParallaxLayer
-(one layer's settings + position), heart/Parallax_Heart (camera, batch, act/render/resize/
-dispose), heart/Parallax_Utils_Page (cross-fade), side/SquareBackground (the two gradients).
-World size is PER HEART: each Parallax_Heart's ParallaxPageReader holds it and pushes it into
-every layer it takes (setWorldSize). heart/Gvars_Parallax only holds the last heart's size, the
-default (40 wide) for pages built without a heart: nothing a heart runs may read it.
-ParallaxHeartResizeTest.twoHeartsKeepTheirOwnWorldSize holds that. A layer is worldWidth *
-sizeRatio wide, fixed when it is built (setWorldSize moves decals, not width). Hearts call only
-getDrawing(relativePath, w, h): a stub overriding getDrawing() is ignored. ONE PAGE, TWO HEARTS (r298):
-getDrawing caches one list of layers, so a reader takes a page through ParallaxPageReader.layersOf,
-which hands back page.buildDrawing(w, h) when ParallaxLayer.reader says another reader shows them;
-a reader drops its own through clearLayers()/release, never layers.clear(), or the next heart gets
-copies the editor's preloadValue edits never reach. twoHeartsShowingOnePageKeepTheirOwnLayers.
-Gate: `./gradlew :core:test`. The reader's tests are core/browser-test/cases/.../*Cases, one class per
-subject (TilingCases, TransferCases, ShaderCases, SequenceCases...) over ReaderFixtures' builders (GWT-safe: no JUnit, no reflection), run on the JVM by core/test BrowserSuiteTest and in Chrome by
-tools/browser-test.sh. They need NO window: RecordingBatch records the draw calls, with
-GdxNativesLoader.load() in BrowserSuiteTest's @BeforeAll. Assert tiling by counting and placing
-draws — that is the tool, use it.
-TILING MUST READ THE CAMERA VIEW (position AND zoom). The old code ignored zoom and drew one
-extra tile past the right edge of every row: 39% of draw calls off-screen, no error anywhere.
-`tilesJustEnoughToCoverTheView` is the test that holds that; keep it honest.
-TEST EVERY REPEAT MODE, not just X. Only repeatOnX used the transfer opacity once; repeatOnY
-and XY used an alpha that became `1 - alpha` near the end of a fade, and a page repeating on
-NEITHER axis drew nothing at all.
-Cross-fade edges, all of them already shipped broken: a target page with MORE layers looped
-`i <= transferPosition` and drew one layer twice at double opacity; with FEWER it threw
-IndexOutOfBounds; incoming layers did not scroll during the fade and jumped when it ended.
-`!Enum_TransfertType.NONE.equals(null)` is TRUE — a null transfertType ran the transfer math
-every frame forever. Ask `== null` deliberately.
-act() and render() run every frame: no allocation, no streams. `layers.stream().forEach` in
-act() is in MEMORY_LANE.md §5 as a defect, not as a style note.
-See it: `tools/parallax-lab-shots.sh ROUND OUT` (stills of a round's pages, off screen; engines/rounds/transfer
-for cross-fades), `./gradlew :jme:run`, or the editor repository's `./gradlew :demo:run`, which builds this core
-when this checkout sits beside it.
-THE GODOT PORT DRAWS THE SAME PAGE: engines/godot/addons/jks_parallax/plax_background.gd
-copies act(), tile(), drawRegion() and the gradients line for line (r87), and the cross-fade,
-syncTransferPositions and the tint (r94). Change how a page scrolls, tiles, fades or draws here and
-change it there, or a Godot game shows a different picture: `engines/godot/tools/frame-check.sh`
-renders both off screen (libGDX's frames through shots/ ParallaxShots) and fails past a mean 2/255 apart; engines/rounds/transfer is its
-cross-fade round. CI runs it too (ci.yml job godot-frames, Xvfb + llvmpipe): a push that
-desynchronises the port fails the build, so run it before pushing, not after.
-THE jME READER (engines/jme, r112) RUNS THIS CODE AS IS: PlaxBackground drives ParallaxPageReader
-and draws through JmeBatch, a libGDX Batch in jME meshes that implements ONLY
-draw(region, x, y, width, height), the quad draw(Texture, float[], ...) and the turned region draw (a planet's, r347)
-and throws on every other draw. Make the reader call another
-Batch method, or change SquareBackground (ported in JmeGradient: it reads Gdx.graphics), and run
-`engines/jme/tools/frame-check.sh` (CI runs it in its own job, jme-frames). No libGDX backend there: a core call that reaches a gdx
-native from ParallaxPageReader or ParallaxLayer (OrthographicCamera.update -> Matrix4.prj does) throws
-UnsatisfiedLinkError in a jME game.
-SHADER LAYERS (r180, format 7) ARE AN IMAGE LAYER THROUGH AN EFFECT, WRITTEN THREE TIMES: core's
-GdxLayerEffects (GLSL ES 1.0), Godot's plax_effects.gd, jME's resources/.../ParallaxEffect.frag, all fed
-GdxLayerEffects.uniforms, the phase from the reader's clock. The reader calls the engine's LayerEffects around the
-layer's tiles (jME's JmeLayerEffects -> JmeBatch.setEffect), never Batch.setShader. Change an effect, change all three
-and run both frame checks on engines/rounds/shaders. A Godot shader error is only a log line and the layer
-draws plain: the first shaders run differed by 2-11/255 for that (TAU is a Godot built-in), so read godot.log.
-SEQUENCE LAYERS (r182, format 8) ARE A CYCLE DRAWN ONCE, THEN TILED: ParallaxLayer.sequence holds the segment regions
-in texRegion (the first sets the height), a cycle int[N] picked by SequenceCycle and its edges in LAYER HEIGHTS (slot i
-starts at height * cycleEdges[i] + i * padX), so act() and draw() recompute nothing; getTotalWidth() is the cycle.
-drawCycle binary-searches the first slot in view. The generator is INTEGERS ONLY (xorshift32 13/17/5, (state >>> 1) %
-total): a float rounds differently in GWT and GDScript. SequenceCases.sequenceCycleOfAKnownSeedIsPinned pins its picks;
-Godot's port (r183: plax_page.gd draw_cycle, plax_sequence.gd draw, GDScript ints 64-bit so every << masked
-to 32 bits) matches them: engines/godot/tests/sequence_cycle.gd (the JVM's picks in engines/rounds/sequence/picks.json, and the
-slots drawn against a walk over every slot) and the pixel round engines/rounds/sequence, which jME runs too. Change
-the generator or drawCycle and change both, regenerate picks.json, run tools/r183-sequence/mutate.sh. A game's seed
-(reader.setSequenceSeed, Godot set_sequence_seed) is XORed with each layer's stored one. A cycle no wider than 0 (pads
-outweighing segments) can't tile and is drawn once, culled by its slots' real extent (getCycleLeft/Right, Godot
-PlaxSequence.cycle_left/_right), in both (r202; SequenceCases.sequenceWhosePadsOutweighItsSegmentsIsDrawnOnce, q04 'backward').
-THE DOLLY (r278, setDolly, a game's switch, nothing stored) DRAWS EACH LAYER AT ITS OWN ZOOM, 1 - k(1 - zoom), k its
-speed over its page's front: tiled across its own view, placed from the view at zoom 1 (so it scales about the middle;
-without the dolly a zoom scales the page about the view's corner), drawn through DollyBatch into the camera's view.
-Effects get the GAME's batch (JmeLayerEffects casts it to JmeBatch) and setView(w, h, left, floor) with the layers'
-corner, or FOG's noise slides off its image. Godot: _zoom_of/_anchor_of, each layer at its own _ppu; round
-engines/rounds/dolly, tools/r278-dolly/mutate.sh.
-A TOWER (r276, format 12 towerRadius/towerShade on an IMAGE layer) IS DRAWN AS STRIPS, NOT TILES: ParallaxLayer.drawTower,
-the front half of a cylinder in the view's middle, TOWER_STRIPS strips of equal angle, each strip's shade in the batch
-colour. UNDER libGDX's PAGE FOG THE BATCH COLOUR IS NOT A COLOUR (red fog, green page, alpha): the shade rides in its
-blue, which PAGE_FOG reads as darkness, and every other layer must keep blue 0 there. Godot: plax_tower.gd; round
-engines/rounds/tower, tools/r276-tower/strength.sh and mutate.sh.
-SEEN FROM CLOSE BY (r350, format 14 towerCamera on the tower layer, radii from its axis, above 1) the tower's
-strips are scaled about the view's middle (ParallaxLayer.towerScaleAt: courses arc) and its page's slower, not still,
-IMAGE/SHADER/SEQUENCE layers go through PanoramaBatch (nearTowerOf, panoramaRadiusOf: R = f s_tower/s - D, at least
-D, so the camera is inside and every panorama covers the view); a panorama skips the planet's bend. Godot:
-plax_panorama.gd, plax_tower.gd scale_at; round scenes w05-w08; the tower lab's camera slider.
-A PLANET (r277, r347, format 13: the PAGE's planetRadius) WRAPS THROUGH PlanetBatch, NOT IN ParallaxLayer: the page is
-the side of a world turning round ONE centre R under the middle of the view's bottom, and EVERY IMAGE/SHADER/SEQUENCE
-layer, still ones too, follows that one curve (r277's per-layer curve made far layers poke under near ones: Simon
-rejected it). PlanetBatch wraps the layer's batch (over the DollyBatch when dollied, R scaled to the layer's view by
-planetInView so all layers share one circle on screen) and cuts each draw(region, x, y, w, h) at 256 strips FIXED IN
-THE LAYER'S VIEW, each drawn as a QUAD through draw(Texture, float[], ...) whose corners go to angle dx/R, radius R+h
-(placeX/placeY): upright things lean. Tiles up to planetReachOf over the view's top are drawn. FLOOR and tower layers
-stay flat; each cross-faded page wraps round its own radius (transferPlanetRadius). A PARTICLES effect is TURNED AS
-ONE BLOCK as its LAYER BOX's middle is (PlanetBatch.turn; Godot cannot know the live particles' box); a hook is never
-wrapped, it asks planetPlaceAt(layer, x, y, out) and planetAngleAt(layer, x) (planetDropAt is deprecated). JmeBatch
-draws the quads and the turned region draw a hook uses. Godot: plax_planet.gd (draw_primitive) from _draw_region,
-planet_place_at/planet_angle_at, plax_particles.gd; rounds engines/rounds/planet (p08 a hook) and particles (q09,
-q10), tools/r277-planet/strength.sh and mutate.sh.
-README.md's layer-settings table IS the documented meaning of these fields, and it is what a
-game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
-the table in the SAME commit.
-MEMORY_LANE.md §5 is the recorded history here — HISTORY, not a backlog. Its paths and
-line numbers are commit b5a7441 (`git show b5a7441:<path>` shows the original), and
-anything you fix that it still lists as broken MOVES into its §10 then/now table rather
-than being deleted.
+AGENTS.md's "Runtime (core)" section (read every session) holds each feature's rule and where its Godot and jME copies
+live; SHADER effects and the page fog are #shader's. This is what it does not say.
+Map: core/src/jks/tools2d/parallax/ParallaxPageReader (scroll, tile, fade, tint), ParallaxLayer (one layer's settings
+and position), heart/Parallax_Heart (camera, batch, act/render), heart/Parallax_Utils_Page, side/SquareBackground.
+ONE PAGE, TWO HEARTS (r298): getDrawing caches one list of layers, so a reader takes a page through layersOf, which
+clones a layer another reader holds (ParallaxLayer.reader); a reader drops its own through clearLayers(), never
+layers.clear(), or the next heart gets copies the editor's edits never reach (ParallaxHeartResizeTest). Hearts call only
+getDrawing(relativePath, w, h): a stub overriding getDrawing() is ignored.
+SHIPPED BROKEN, NOTHING FAILED: tiling ignored zoom and drew a tile past every row's right edge, 39% of draw calls
+off-screen; repeatOnY and XY faded with 1 - alpha near a transfert's end; a page repeating on neither axis drew nothing;
+a target page with more layers drew one twice at double opacity, with fewer it threw; incoming layers did not scroll
+during the fade and jumped after it. `!Enum_TransfertType.NONE.equals(null)` is TRUE: ask `== null`.
+So assert by counting and placing draws: the *Cases in core/browser-test/cases record them on RecordingBatch, no window
+(BrowserSuiteTest loads the natives in @BeforeAll), every repeat mode, not only X.
+The planet wraps every layer round ONE centre because r277's curve per layer pushed far layers under near ones and
+Simon rejected it: a per-layer bend is not an option. Dolly: the effects keep the GAME's batch and setView, or FOG's
+noise slides off its image.
+README.md's layer-settings table is the documented meaning of each field: rename, rescale or repurpose one and fix it
+in the same commit. MEMORY_LANE.md §5 is HISTORY at b5a7441: a defect you fix that it lists moves to its §10 table.
+See it: tools/parallax-lab-shots.sh ROUND OUT (stills off screen), ./gradlew :jme:run, the editor repo's :demo:run.
 """
 
 [tags.format]
