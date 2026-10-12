@@ -8,9 +8,10 @@
 # $DISPLAY. Each scene's best of RUNS runs (3) is kept. tools/parallax-bench.sh is libGDX's; tools/readers-health.sh
 # shows them side by side. Needs godot 4.x (GODOT=).
 set -u
+OUT="${1:+$(realpath -m "$1")}"  # a given OUT is the caller's path, the default the root's (r25)
 cd "$(dirname "$0")/../../.." || exit 1
 ROOT="$PWD"
-OUT="$(realpath -m "${1:-build/bench/godot.json}")"
+OUT="${OUT:-$PWD/build/bench/godot.json}"
 mkdir -p "$(dirname "$OUT")"
 GODOT="${GODOT:-godot}"
 LOG="${OUT%.json}.log"

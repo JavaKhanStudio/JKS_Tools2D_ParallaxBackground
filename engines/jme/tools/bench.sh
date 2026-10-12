@@ -7,8 +7,9 @@
 # display on a nested Xwayland, as engines/jme/tools/frame-check.sh runs its shots; ATELIER_NO_OFFSCREEN=1 runs it on
 # $DISPLAY. Each scene's best of RUNS runs (3) is kept. tools/parallax-bench.sh is libGDX's; tools/readers-health.sh shows both.
 set -u
+OUT="${1:+$(realpath -m "$1")}"  # a given OUT is the caller's path, the default the root's (r25)
 cd "$(dirname "$0")/../../.." || exit 1
-OUT="$(realpath -m "${1:-build/bench/jme.json}")"
+OUT="${OUT:-$PWD/build/bench/jme.json}"
 mkdir -p "$(dirname "$OUT")"
 ./gradlew -q :jme:shotsClasspath || exit 1
 CP="$(cat engines/jme/build/shots.classpath)"
