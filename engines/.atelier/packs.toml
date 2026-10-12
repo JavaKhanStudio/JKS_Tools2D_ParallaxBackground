@@ -15,7 +15,7 @@ A READER draws a saved page in one engine. Today, in this one repository:
                  jks-parallax-godot-X.Y.Z.zip from 2.5.0 on; the Asset Library listing is parallax:r104 (paused).
   Unity: parallax:r103 (paused). No Unity or dotnet is installed on this machine.
 EACH READER'S FOLDER holds its README.md (what it is, how a game gets it, its checks and demo) and its own scripts in
-engines/<reader>/tools/ (r11): godot's frame-check.sh, addon-zip.sh, addon-zip-check.sh; jme's frame-check.sh, bench.sh and probe/.
+engines/<reader>/tools/ (r11): godot's frame-check.sh, bench.sh, addon-zip.sh, addon-zip-check.sh; jme's frame-check.sh, bench.sh and probe/.
 Each script cd's to the repository root first, so it runs from anywhere. Scripts every reader shares stay in tools/
 (parallax-lab-shots.sh, shots-out.sh, compare-parallax-frames.py, nested-x.sh). tools/offscreen-lint.sh reads
 engines/*/tools/*.sh too: a new reader's script that opens a window runs it in cage.

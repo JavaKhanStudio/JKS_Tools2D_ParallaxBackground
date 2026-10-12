@@ -15,7 +15,7 @@ settings and what is not there yet: the root README, ["In Godot 4"](../../README
 ## This folder
 
     addons/jks_parallax/   the reader: what a game copies
-    tests/                 the runners the frame check plays: shots.gd, particles.gd, sequence_cycle.gd
+    tests/                 the runners the frame check plays: shots.gd, particles.gd, sequence_cycle.gd; bench.gd
     demo.tscn, demo.gd     Hiver and Printemps cross-faded through the reader (SPACE, T, N)
     tools/                 this reader's checks, run from anywhere (each goes to the repository root first)
 
@@ -25,6 +25,10 @@ settings and what is not there yet: the root README, ["In Godot 4"](../../README
   [`engines/rounds`](../rounds) with libGDX and with Godot, off screen in cage, and compares them still by still at
   2/255 (`build/godot/<round>/compare.png`, `report.txt`). Without arguments it plays every round. CI's `godot-frames`
   job runs it under `xvfb-run` (`ATELIER_NO_OFFSCREEN=1`). Needs `godot` 4.x (or `GODOT=`), cage, Xwayland, Pillow.
+- `tools/bench.sh [OUT_JSON]` — Godot's latency on [`engines/rounds/bench`](../rounds/bench/round.json)
+  (`tests/bench.gd`): each scene's load time, then 600 frames vsync off, timed by Godot's own clocks (act, and the
+  viewport's measured render time on the CPU and GPU), into `build/bench/godot.json`. Off screen in cage; not in CI.
+  [`tools/readers-health.sh`](../../tools/readers-health.sh) shows it beside libGDX's and jME's.
 - `tools/addon-zip.sh [OUT_DIR]` — packs the release zip (`build/godot-addon/` by default); the Release workflow runs it.
 - `tools/addon-zip-check.sh` — installs that zip into a blank Godot project, loads a page from `res://` and saves a frame
   (`build/godot-addon/check.png`): fails on an error or a blank frame.

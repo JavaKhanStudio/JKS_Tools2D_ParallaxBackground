@@ -35,7 +35,7 @@ if [ $RUN = 1 ]; then
 		case $R in
 			gdx) CMD="./gradlew :core:test && tools/parallax-bench.sh" ;;
 			godot) command -v "${GODOT:-godot}" >/dev/null || { echo "$R: godot not installed, skipped"; continue; }
-				CMD="engines/godot/tools/frame-check.sh" ;;
+				CMD="engines/godot/tools/frame-check.sh && engines/godot/tools/bench.sh" ;;
 			jme) CMD="engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh" ;;
 		esac
 		echo "$R: $CMD  (log: $LOG)"

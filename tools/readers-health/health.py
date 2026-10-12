@@ -34,7 +34,7 @@ READERS = [
     {'id': 'godot', 'name': 'Godot 4', 'folder': 'engines/godot', 'role': 'a GDScript port of core, line for line',
      'needs': 'godot', 'check': 'engines/godot/tools/frame-check.sh', 'jobs': ['Godot frames against libGDX'],
      'watch': ['engines/godot', 'core/src', 'engines/rounds'],
-     'run': 'engines/godot/tools/frame-check.sh', 'bench': None, 'bench_task': 'r20'},
+     'run': 'engines/godot/tools/frame-check.sh && engines/godot/tools/bench.sh', 'bench': 'engines/godot/tools/bench.sh'},
     {'id': 'jme', 'name': 'jMonkeyEngine 3', 'folder': 'engines/jme', 'role': "runs core's reader as is, through JmeBatch",
      'needs': 'java', 'check': 'engines/jme/tools/frame-check.sh', 'jobs': ['jME frames against libGDX'],
      'watch': ['engines/jme', 'core/src', 'engines/rounds'],
