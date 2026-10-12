@@ -24,7 +24,8 @@ import xml.etree.ElementTree as ET
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 
 # check: its frame check, whose default ROUNDS line says what it plays. job: its job's name in ci.yml. needs: the
-# program it cannot run without. watch: what, changed after its last run, makes that run stale. bench: how its
+# program it cannot run without. watch: what, changed after its last run, makes that run stale; a reader with a check
+# watches the rounds it plays too, and only those (r23: a commit to engines/rounds/bench stales nobody). bench: how its
 # build/bench/<id>.json is made, or the task that will make it.
 READERS = [
     {'id': 'gdx', 'name': 'libGDX', 'folder': 'core', 'role': 'the reference: every other reader is checked against its stills',
@@ -33,11 +34,11 @@ READERS = [
      'run': './gradlew :core:test && tools/parallax-bench.sh', 'bench': 'tools/parallax-bench.sh'},
     {'id': 'godot', 'name': 'Godot 4', 'folder': 'engines/godot', 'role': 'a GDScript port of core, line for line',
      'needs': 'godot', 'check': 'engines/godot/tools/frame-check.sh', 'jobs': ['Godot frames against libGDX'],
-     'watch': ['engines/godot', 'core/src', 'engines/rounds'],
+     'watch': ['engines/godot', 'core/src', 'engines/rounds/reader'],
      'run': 'engines/godot/tools/frame-check.sh && engines/godot/tools/bench.sh', 'bench': 'engines/godot/tools/bench.sh'},
     {'id': 'jme', 'name': 'jMonkeyEngine 3', 'folder': 'engines/jme', 'role': "runs core's reader as is, through JmeBatch",
      'needs': 'java', 'check': 'engines/jme/tools/frame-check.sh', 'jobs': ['jME frames against libGDX'],
-     'watch': ['engines/jme', 'core/src', 'engines/rounds'],
+     'watch': ['engines/jme', 'core/src', 'engines/rounds/reader'],
      'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh'},
     {'id': 'unity', 'name': 'Unity', 'folder': None, 'role': 'not written: parallax:r103, paused on its install',
      'needs': 'unity', 'paused': True},
@@ -187,7 +188,8 @@ def gather(use_ci):
         row['first'] = min((x[2] for x in runs), default=0)
         row['failed'] = [x for x in runs if x[0] == 'FAIL']
         row['missing'] = [rd for rd, v in row['rounds'].items() if not v['report']]
-        row['changed'] = changed_since(r.get('watch', []), row['first']) if runs else []
+        watch = r.get('watch', []) + list(row['rounds'])
+        row['changed'] = changed_since(watch, row['first']) if runs else []
         row['ci'] = [(name,) + ci_run['jobs'][name] for name in r.get('jobs', []) if ci_run and name in ci_run['jobs']]
         row['bench'] = bench(r['id'])
         if r.get('paused'):
@@ -200,7 +202,7 @@ def gather(use_ci):
             row['status'], row['why'] = 'never', 'never run on this machine'
         elif row['missing']:
             row['status'], row['why'] = 'stale', f"{len(row['missing'])} round(s) never run here"
-        elif row['changed'] and not ci_covers(ci_run, row['ci'], r['watch']):
+        elif row['changed'] and not ci_covers(ci_run, row['ci'], watch):
             row['status'], row['why'] = 'stale', f"{len(row['changed'])} commit(s) since its oldest run"
         elif row['changed']:
             row['status'], row['why'] = 'ok', 'CI passed since its last change; changed since its last run here'

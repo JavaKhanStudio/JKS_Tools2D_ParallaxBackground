@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """health_test.py — health.py's verdicts on a made-up checkout: a FAIL report makes its reader Failing, a round never
-run makes it Stale, all PASS makes it Healthy, a missing program Not installed. Plain Python 3: python3 tools/readers-health/health_test.py"""
+run makes it Stale, all PASS makes it Healthy, a missing program Not installed, and only a round it plays, changed, makes it Stale (r23).
+Plain Python 3: python3 tools/readers-health/health_test.py"""
 import json
 import os
+import subprocess
 import sys
 import tempfile
 
@@ -42,6 +44,31 @@ cases = [
 ]
 failed = 0
 for name, row, want in cases:
+    good = row['status'] == want
+    failed += not good
+    print(('ok   ' if good else 'FAIL ') + f"{name}: {row['status']} ({row['why']}), want {want}")
+
+
+def after_commit(path):
+    """All PASS, run an hour ago, then one commit touching only `path`: the status it leaves (r23)."""
+    health.ROOT = checkout({'a': ok, 'b': ok})
+    git = ['git', '-C', health.ROOT, '-c', 'user.name=t', '-c', 'user.email=t@t']
+    for rep in ('a', 'b'):
+        f = os.path.join(health.ROOT, 'build/fake', rep, 'report.txt')
+        os.utime(f, (os.path.getmtime(f) - 3600,) * 2)
+    with open(os.path.join(health.ROOT, path, 'round.json'), 'a') as f:
+        f.write(' ')
+    for cmd in (['init', '-q'], ['add', path], ['commit', '-qm', 'touch ' + path]):
+        subprocess.run(git + cmd, check=True)
+    health.READERS = [{'id': 'fake', 'name': 'Fake', 'role': '', 'needs': 'python3', 'check': 'tools/check.sh', 'watch': []}]
+    return health.gather(False)['readers'][0]
+
+
+cases += [
+    ('a round it plays changed is stale', after_commit('engines/rounds/a'), 'stale'),
+    ('a round it does not play changed leaves it healthy', after_commit('engines/rounds/bench'), 'ok'),
+]
+for name, row, want in cases[-2:]:
     good = row['status'] == want
     failed += not good
     print(('ok   ' if good else 'FAIL ') + f"{name}: {row['status']} ({row['why']}), want {want}")
