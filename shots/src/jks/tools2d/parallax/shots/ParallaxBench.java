@@ -74,7 +74,7 @@ public class ParallaxBench extends ApplicationAdapter
 		heart.screenSpeedConstantX = 60;
 		StringBuilder json = new StringBuilder();
 		json.append("{\"reader\": \"gdx\", \"renderer\": \"").append(escape(Gdx.gl.glGetString(GL20.GL_RENDERER)))
-				.append("\", \"frames\": ").append(FRAMES).append(", \"scenes\": [");
+				.append("\", \"measure\": \"act, render, glFinish (no swap)\", \"frames\": ").append(FRAMES).append(", \"scenes\": [");
 		for (int i = 0; i < scenes.size(); i++)
 		{
 			Scene scene = scenes.get(i);

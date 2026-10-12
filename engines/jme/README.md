@@ -17,7 +17,7 @@ from 2.5.0 on. The dependency, the setup and the gamma note: the root README,
 
     src/            the reader, published as parallax-background-jme: public API
     resources/      its effect material and shaders
-    tests/          the frame runner (JmeParallaxShots) and the demo (JmeParallaxDemo): not published
+    tests/          the frame runner (JmeParallaxShots), the bench (JmeParallaxBench) and the demo (JmeParallaxDemo): not published
     tools/          this reader's checks, run from anywhere (each goes to the repository root first)
 
 ## Checks
@@ -26,6 +26,10 @@ from 2.5.0 on. The dependency, the setup and the gamma note: the root README,
   and with jME, off screen in cage, and compares them still by still at 2/255 (`build/jme/<round>/compare.png`,
   `report.txt`). Without arguments it plays every round jME draws. `BREAK=scroll` draws jME 10 % too fast: it must
   FAIL. CI's `jme-frames` job runs it under `xvfb-run` (`ATELIER_NO_OFFSCREEN=1`). Needs cage, Xwayland, Pillow.
+- `tools/bench.sh [OUT_JSON]` — jME's latency on [`engines/rounds/bench`](../rounds/bench/round.json)
+  (`JmeParallaxBench`): each scene's load time, then 600 frames vsync off, act and render with the GPU finished (no swap, as libGDX's),
+  into `build/bench/jme.json`. Off screen in cage; not in CI (llvmpipe's numbers mean nothing).
+  [`tools/readers-health.sh`](../../tools/readers-health.sh) shows it beside libGDX's.
 - `tools/probe/` — a fresh jME game that only knows the published artifacts:
   `./gradlew :core:publishToMavenLocal :jme:publishToMavenLocal && ./gradlew -p engines/jme/tools/probe run`
   (`-Pparallax=X.Y.Z-SNAPSHOT` for another version).

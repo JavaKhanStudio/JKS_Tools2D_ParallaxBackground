@@ -38,7 +38,7 @@ READERS = [
     {'id': 'jme', 'name': 'jMonkeyEngine 3', 'folder': 'engines/jme', 'role': "runs core's reader as is, through JmeBatch",
      'needs': 'java', 'check': 'engines/jme/tools/frame-check.sh', 'jobs': ['jME frames against libGDX'],
      'watch': ['engines/jme', 'core/src', 'engines/rounds'],
-     'run': 'engines/jme/tools/frame-check.sh', 'bench': None, 'bench_task': 'r19'},
+     'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh'},
     {'id': 'unity', 'name': 'Unity', 'folder': None, 'role': 'not written: parallax:r103, paused on its install',
      'needs': 'unity', 'paused': True},
 ]
@@ -297,11 +297,13 @@ def page(d):
     p.append('</table>')
 
     p.append('<h2>Latency: the bench round</h2><p class="sub"><code>engines/rounds/bench</code>: each scene loaded (load: '
-             'page, atlas and first frame), then 600 frames at 1/60 s, vsync off, each finished on the GPU. '
+             'page, atlas and first frame), then 600 frames at 1/60 s, vsync off, each finished on the GPU, each scene\'s best of a '
+             'few runs (this GPU is shared: another session on it slows a run tenfold). '
              'Frame time in ms, mean / 95th percentile. Numbers from different GPUs do not compare: each column names its own.</p>')
     benches = [r for r in readers if r['bench']]
     p.append('<table><tr><th>Scene</th><th>Layers</th>' + ''.join(
-        f'<th>{e(r["name"])}<small>{e(r["bench"].get("renderer", ""))}<br>{e(age(r["bench"]["time"], now))}</small></th>'
+        f'<th>{e(r["name"])}<small>{e(r["bench"].get("renderer", ""))}<br>{e(r["bench"].get("measure", ""))}, best of {r["bench"].get("runs", 1)}'
+        f'<br>{e(age(r["bench"]["time"], now))}</small></th>'
         for r in benches) + '</tr>')
     for s in d['bench_scenes']:
         by = {r['id']: next((x for x in r['bench']['scenes'] if x['id'] == s['id']), None) for r in benches}
