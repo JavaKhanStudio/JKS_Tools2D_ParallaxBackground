@@ -27,6 +27,10 @@ OUT/strips (every strip, scratch), OUT/page (NAME.atlas, NAME.png, NAME.jplax, r
 --no-shots, OUT/shots (tools/parallax-lab-shots.sh: stills at 0, 6 and 12 s, contact.png). Exits 1 when lint
 finds a fault, 2 when a strip cannot be cut. Needs ComfyUI with its venv (COMFYUI_DIR, default ~/ComfyUI) holding
 dreamshaper_8 (painted) or sdXL_v10VAEFix + PixelArt_XL (pixel), and ~1.5 GB of free VRAM.
+
+The model (r346): --ckpt and --lora replace the style's (any file in ComfyUI's models/checkpoints and models/loras),
+--lora none drops the pixel style's; --steps, --cfg, --sampler, --scheduler and --denoise go to every gen.py call. An
+SDXL checkpoint (one whose name says XL, or --xl) paints at 1536x576, SD 1.5 at 1024x384. recipe.json keeps them all.
 """
 import argparse
 import json
@@ -97,10 +101,35 @@ def speeds(n, front):
 
 def roughness(path):
     """Mean second difference of the cut's top outline, px: SD 1.5 grows trees out of sil.py's pine spikes on some
-    seeds only, whatever the prompt (r246: 4.4-5.1 with trees, 1.9-2.3 spikes left smooth, 1.1 the bare shape)."""
+    seeds only, whatever the prompt (r246: 4.4-5.1 with trees, 1.9-2.3 spikes left smooth, 1.1 the bare shape).
+    Read as in a 1024 px strip: an SDXL strip's 1536 columns spread the same spikes over 1.5 times more (r346)."""
     a = np.asarray(Image.open(path).convert("RGBA"))[..., 3] > 127
     top = np.argmax(a, axis=0).astype(float)
-    return float(np.abs(np.roll(top, 1) - 2 * top + np.roll(top, -1)).mean())
+    return float(np.abs(np.roll(top, 1) - 2 * top + np.roll(top, -1)).mean()) * a.shape[1] / 1024
+
+
+# gen.py's defaults: a default run passes none of them (r305's commands), recipe.json records them all (r346).
+GEN_CKPT, GEN_LORA_STRENGTH = "dreamshaper_8.safetensors", 0.8
+GEN_SAMPLING = {"steps": 28, "cfg": 7.0, "sampler": "dpmpp_2m", "scheduler": "karras"}
+
+
+def model_of(a):
+    """What paints the strips: the style's checkpoint, LoRA and denoise unless --ckpt, --lora, --denoise say
+    otherwise; xl when the checkpoint is SDXL (1536x576), and a label for the gallery."""
+    pixel = a.style == "pixel"
+    ckpt = a.ckpt or ("sdXL_v10VAEFix.safetensors" if pixel else GEN_CKPT)
+    lora = a.lora or ("PixelArt_XL.safetensors" if pixel else None)
+    lora = None if lora == "none" else lora
+    strength = a.lora_strength if a.lora_strength is not None else 1.0 if pixel else GEN_LORA_STRENGTH
+    xl = a.xl or "xl" in ckpt.lower()
+    stem = lambda f: os.path.splitext(f)[0]  # noqa: E731
+    if not (a.ckpt or a.lora):
+        label = "SDXL 1.0 + PixelArt_XL" if pixel else "SD 1.5 dreamshaper_8"
+    else:
+        label = f"{'SDXL' if xl else 'SD 1.5'} {stem(ckpt)}" + (f" + {stem(lora)} {strength:g}" if lora else "")
+    sampling = {k: getattr(a, k) if getattr(a, k) is not None else v for k, v in GEN_SAMPLING.items()}
+    return dict(sampling, ckpt=ckpt, lora=lora, lora_strength=strength, xl=xl, label=label,
+                denoise=a.denoise if a.denoise is not None else 0.7 if pixel else 0.65)
 
 
 TREES = 3.5  # roughness under which a pine strip has no trees in it
@@ -163,6 +192,15 @@ def parse_args():
     ap.add_argument("--keep", action="store_true", help="keep the strips OUT/strips holds: only cut and lay out again"
                     " (another --sky, --fog or --front-speed, with the same --seed)")
     ap.add_argument("--no-shots", action="store_true")
+    ap.add_argument("--ckpt", help="the checkpoint; default dreamshaper_8 (painted), sdXL_v10VAEFix (pixel)")
+    ap.add_argument("--xl", action="store_true", help="the checkpoint is SDXL though its name does not say XL")
+    ap.add_argument("--lora", help="a LoRA; default none (painted), PixelArt_XL (pixel); 'none' drops the pixel one")
+    ap.add_argument("--lora-strength", type=float, help="default 0.8 (gen.py's), 1.0 for PixelArt_XL")
+    ap.add_argument("--steps", type=int, help="sampler steps, default gen.py's 28 (a Turbo checkpoint wants 6-8)")
+    ap.add_argument("--cfg", type=float, help="default gen.py's 7.0 (a Turbo checkpoint wants about 2)")
+    ap.add_argument("--sampler", help="default gen.py's dpmpp_2m")
+    ap.add_argument("--scheduler", help="default gen.py's karras")
+    ap.add_argument("--denoise", type=float, help="img2img strength over sil.py's shape: default 0.65, pixel 0.7")
     ap.add_argument("--dry-run", action="store_true", help="print every command, back to front, as if each strip took"
                     " on its first seed, and write nothing (r305: the proof that a change runs the same commands)")
     a = ap.parse_args()
@@ -191,20 +229,36 @@ class Pipeline:
         self.pixel = a.style == "pixel"
         self.ks = a.kinds.split(",") if a.kinds else kinds(a.layers, a.front)
         self.cols = colours(a.colours.split(",") if a.colours else None, a.layers)
-        self.w, self.h = (1536, 576) if self.pixel else (1024, 384)
+        self.model = model_of(a)
+        self.w, self.h = (1536, 576) if self.model["xl"] else (1024, 384)
         self.made = {}  # strip prefix -> how it was painted, for recipe.json
+
+    def model_args(self, denoise=True):
+        """gen.py's model and sampler arguments, the size and the denoise: only the ones a default run did not
+        pass, in the order it passed them, so a default run's commands stay r305's."""
+        m, out = self.model, []
+        if m["ckpt"] != GEN_CKPT:
+            out += ["--ckpt", m["ckpt"]]
+        if m["lora"]:
+            out += ["--lora", m["lora"], "--lora-strength", str(m["lora_strength"])]
+        if (self.w, self.h) != (1024, 384):
+            out += ["--w", str(self.w), "--h", str(self.h)]
+        for key in ("steps", "cfg", "sampler", "scheduler"):
+            if getattr(self.a, key) is not None:
+                out += ["--" + key, str(getattr(self.a, key))]
+        if denoise:
+            out += ["--denoise", str(m["denoise"])]
+        return out
 
     def gen_command(self, k, kind):
         """gen.py's img2img for depth k, its init, seed and out left to add."""
         a, d = self.a, HERE
         depth = "distant" if k == 0 else "foreground" if k == a.layers - 1 else "middle distance"
         if self.pixel:
-            return [PY, f"{d}/gen.py", "img2img", "--ckpt", "sdXL_v10VAEFix.safetensors", "--lora",
-                    "PixelArt_XL.safetensors", "--lora-strength", "1.0", "--w", str(self.w), "--h", str(self.h),
-                    "--denoise", "0.7", "--negative", negative(NEG_XL, kind), "--prompt",
+            return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG_XL, kind), "--prompt",
                     (f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
                      f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
-        return [PY, f"{d}/gen.py", "img2img", "--denoise", "0.65", "--negative", negative(NEG, kind), "--prompt",
+        return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG, kind), "--prompt",
                 f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
 
     def paint(self, k, kind, seed, prefix):
@@ -285,17 +339,20 @@ class Pipeline:
         vs = a.seed * 1000 + 500 + v * 10 + t
         vprompt = (f"2d game parallax background layer, {a.theme}, foreground {WORDS[ks[front]]}, "
                    "painterly, plain pale sky")
-        self.made[os.path.basename(p)] = {"prompt": vprompt, "negative": negative(NEG, ks[front]), "denoise": 0.65,
+        denoise = self.model["denoise"]
+        self.made[os.path.basename(p)] = {"prompt": vprompt, "negative": negative(NEG, ks[front]), "denoise": denoise,
                                           "seed": vs, "edgesOf": seeds[front]}
         if a.keep and os.path.exists(f"{p}_ai.png"):
             got = self.cut(p, ks[front])
             if got:
                 layers[front].append(got)
             return True
-        run(["python3", f"{d}/sil.py", ks[front], p, "--seed", str(vs), "--edges-of", str(seeds[front]),
+        size = ["--w", str(self.w), "--h", str(self.h)] if (self.w, self.h) != (1024, 384) else []
+        run(["python3", f"{d}/sil.py", ks[front], p, *size, "--seed", str(vs), "--edges-of", str(seeds[front]),
              "--colour", self.cols[front], "--quiet-join"], p + "_sil.log")
-        code = run([PY, f"{d}/gen.py", "variants", "--src", f"{src}_ai.png", "--init", f"{p}_init.png", "--tile",
-                    "x", "--n", "1", "--edge", "96", "--denoise", "0.65", "--seed", str(vs), "--negative",
+        code = run([PY, f"{d}/gen.py", "variants", *self.model_args(denoise=False), "--src", f"{src}_ai.png",
+                    "--init", f"{p}_init.png", "--tile", "x", "--n", "1", "--edge", "96", "--denoise", str(denoise),
+                    "--seed", str(vs), "--negative",
                     negative(NEG, ks[front]), "--prompt", vprompt, "--out", f"{p}_ai.png"], p + "_gen.log")
         if code:
             sys.exit(f"gen.py variants failed: {p}_gen.log")
@@ -358,11 +415,13 @@ class Pipeline:
     def write_recipe(self, layers, page, page_layers, s, sky, problems):
         """OUT/recipe.json: what made the page, strip by strip: the ones the page draws, each with the prompt and seed
         that painted it."""
-        a, pixel, name = self.a, self.pixel, self.name
+        a, name = self.a, self.name
         keep_out = ("--keep", "--no-shots")  # how this run went, not what paints the page
         recipe = {"command": shlex.join(["tools/ai-page.sh"] + [x for x in sys.argv[1:] if x not in keep_out]),
                   "theme": a.theme, "style": a.style, "name": name, "seed": a.seed, "size": [self.w, self.h],
-                  "model": "SDXL 1.0 + PixelArt_XL" if pixel else "SD 1.5 dreamshaper_8",
+                  "model": self.model["label"], "ckpt": self.model["ckpt"], "lora": self.model["lora"],
+                  "lora_strength": self.model["lora_strength"] if self.model["lora"] else None,
+                  "sampling": {k: self.model[k] for k in ("steps", "cfg", "sampler", "scheduler", "denoise")},
                   "page": f"page/{name}.jplax", "fogStrength": page.get("fogStrength", 0), "sky": list(sky),
                   "lint": problems, "layers": []}
         for k, paths in enumerate(layers):

@@ -9,6 +9,12 @@ drawn by `core` (`tools/parallax-lab-shots.sh tools/r239-ai-strips/page build/la
 8f9bb8,6f88a0,1c3036 OUT` runs the four passes below for each depth, packs the atlas, writes the `.jplax` by the
 `parallax-pages` skill's rules (its "Generating a page" section), lints it and renders it. `--help` has the rest.
 
+**Another model (r346):** `--ckpt` and `--lora` (`--lora-strength`) replace the style's checkpoint and LoRA,
+`--steps`, `--cfg`, `--sampler`, `--scheduler` and `--denoise` go to every `gen.py` call, and `recipe.json` records
+them (`ckpt`, `lora`, `lora_strength`, `sampling`). An SDXL checkpoint (its name says XL, else `--xl`) paints at
+1536x576. A Turbo checkpoint wants its own sampling: `--ckpt DreamShaperXL_Turbo_v2_1.safetensors --steps 8 --cfg 2
+--sampler dpmpp_sde` made a lint-clean painted page; `novaCartoonXL_v60` paints little people on the strips.
+
 **Examples (r239, 2026-10-10):** a forest, a beach and a post-apocalyptic city, each painted and pixel:
 `tools/r239-ai-strips/examples.sh OUT` paints the six pages and films them (`tools/ai-film.sh`). The beach and the
 city needed shapes of their own in `sil.py` (`dunes`, `sea`, `palms`, `ruins`, chosen with `--kinds`); a theme that

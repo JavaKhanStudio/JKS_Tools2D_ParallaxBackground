@@ -146,6 +146,8 @@ at most a tenth of the front's; each farther strip's bottom under the solid band
 for the whole screen; the depth fog so the back layer is `--fog` 0.6 of the way to the sky), lints it, and renders
 `OUT/shots` (0, 6, 12 s). `--style painted` is SD 1.5 at ~12 s a strip, its front a `SEQUENCE` of `--variants` 3 more
 strips; `pixel` is SDXL + PixelArt_XL at ~25 s, one PNG pixel per art pixel, drawn `Nearest`. About 2 min a page.
+`--ckpt`/`--lora` paint with another model from `~/ComfyUI/models` (r346, `docs/ai-parallax.md`), recorded in
+`recipe.json`.
 
 What is yours to choose, from the theme:
 - **`--colours`**, back to front (three are spread over any count). img2img keeps the shape's colour, so this is the
