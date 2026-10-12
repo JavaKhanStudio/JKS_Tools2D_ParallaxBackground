@@ -16,8 +16,9 @@ TITLE="CI red on $BRANCH"
 cd "$(git rev-parse --show-toplevel)" || exit 1
 say() { echo "$(date -u +%FT%TZ) $*"; }
 
-run() { # the newest CI run of SHA: "id status conclusion", empty when there is none yet
-	gh run list --workflow ci.yml --commit "$SHA" --limit 1 \
+# The push's own run: the same SHA dispatched on a ci/* branch (a break= proof, red on purpose) is not it (r342).
+run() { # the newest CI run of the push of SHA to BRANCH: "id status conclusion", empty when there is none yet
+	gh run list --workflow ci.yml --commit "$SHA" --branch "$BRANCH" --event push --limit 1 \
 		--json databaseId,status,conclusion --jq '.[] | "\(.databaseId) \(.status) \(.conclusion)"' 2>/dev/null
 }
 
