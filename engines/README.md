@@ -14,6 +14,7 @@ reader's checks and how many stills they compare, when they last ran here and in
 verdict per reader, and each reader's latency on [`rounds/bench`](rounds/bench/round.json) (few and many layers, plain
 and with effects, a cross-fade: load time, frame time). It reads what the checks left and runs nothing;
 `--run [gdx godot jme]` runs them first (about 10 minutes), `--shot F.png` screenshots it, `--open` opens it.
+On the board it is the header's **Site** button: `--serve 8797` serves it, rebuilt on each load.
 
 Unity is next (parallax:r103, paused); what it would take is in
 [docs/other-engines.md](../docs/other-engines.md#unity-and-unreal-what-they-would-take).

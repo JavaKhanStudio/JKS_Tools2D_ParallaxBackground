@@ -120,9 +120,10 @@ def ci():
     if not shutil.which('gh'):
         return None
     try:
-        runs = json.loads(sh('gh', 'run', 'list', '--workflow', 'ci.yml', '--branch', 'develop', '--limit', '10', '--json',
+        runs = json.loads(sh('gh', 'run', 'list', '--workflow', 'ci.yml', '--branch', 'develop', '--limit', '30', '--json',
                              'databaseId,headSha,createdAt,conclusion,status,url') or '[]')
-        done = [r for r in runs if r['status'] == 'completed']
+        # A cancelled run was superseded (ci.yml's cancel-in-progress): it says nothing of the code, so it never judges.
+        done = [r for r in runs if r['status'] == 'completed' and r['conclusion'] != 'cancelled']
         if not done:
             return None
         # The last finished run judges; one still running on a newer commit is only said.

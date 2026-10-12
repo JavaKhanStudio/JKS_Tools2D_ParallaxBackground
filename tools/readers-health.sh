@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# readers-health.sh [--open | --shot F.png] [--no-ci] [--run [READER...]] — the readers' dashboard (parallax-readers:r17):
+# readers-health.sh [--open | --shot F.png | --serve PORT] [--no-ci] [--run [READER...]] — the readers' dashboard (parallax-readers:r17):
 # each reader (libGDX, Godot, jME, Unity), the checks it has, when they last ran here and in CI and how, every round's
 # verdict per reader, and each one's latency on the bench round (engines/rounds/bench). Built into
 # build/readers-health/index.html by tools/readers-health/health.py, which reads what the checks left and runs nothing.
@@ -8,6 +8,7 @@
 #   tools/readers-health.sh --run godot jme  only those readers' (gdx, godot, jme)
 #   tools/readers-health.sh --open           build it and open it in a Chrome window
 #   tools/readers-health.sh --shot F.png     build it and screenshot the whole page, headless (Playwright)
+#   tools/readers-health.sh --serve PORT     serve it on 127.0.0.1:PORT, rebuilt on each load (the board's corner button)
 # --run's logs: build/readers-health/run-<reader>.log. --no-ci skips the last CI run on develop (read through gh).
 # on-screen: --open is the dashboard, a window Simon asked for; --shot is headless Chrome; --run's checks run in cage.
 set -u
@@ -19,6 +20,7 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 		--open) MODE=open ;;
 		--shot) MODE=shot; OUT="$(cd "$HERE" && realpath -m "$2")"; shift ;;
+		--serve) exec python3 tools/readers-health/serve.py "$2" ;;
 		--no-ci) CI=--no-ci ;;
 		--run) RUN=1 ;;
 		gdx|godot|jme) READERS+=("$1") ;;
