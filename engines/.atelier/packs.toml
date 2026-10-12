@@ -19,6 +19,9 @@ engines/<reader>/tools/ (r11): godot's frame-check.sh, addon-zip.sh, addon-zip-c
 Each script cd's to the repository root first, so it runs from anywhere. Scripts every reader shares stay in tools/
 (parallax-lab-shots.sh, shots-out.sh, compare-parallax-frames.py, nested-x.sh). tools/offscreen-lint.sh reads
 engines/*/tools/*.sh too: a new reader's script that opens a window runs it in cage.
+HEALTH (r17): tools/readers-health.sh builds build/readers-health/index.html from what the checks left (report.txt, JUnit,
+CI through gh, build/bench/<reader>.json); --run runs them first. A new reader is an entry in tools/readers-health/health.py's
+READERS. engines/rounds/bench is timed (tools/parallax-bench.sh), never compared: no frame check plays it.
 REFS: a bare rNN on this board is a parallax-readers task; the mother board's are written parallax:rNN
 (atelier --project parallax show rNN). Mother r317 is this board's r1.
 SIMON'S LAYOUT (r1, ex parallax:r317, 11 Oct): ONE repository, each reader a sub project under engines/<reader>/ with its own build,

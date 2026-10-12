@@ -1,0 +1,45 @@
+{
+ "round": "bench",
+ "about": "The latency round (parallax-readers:r17): not compared by pixels, timed. Each reader's bench runner loads each scene (page, atlas, first frame: its load time) then draws it 600 frames at 1/60 s steps, vsync off, each frame finished on the GPU before the clock stops (its frame time). Few and many layers, plain and with effects, and a cross-fade drawing two pages at once. The pages are other rounds'. Read by shots/.../ParallaxBench; tools/readers-health.sh shows what each reader measured.",
+ "scenes": [
+  {
+   "id": "b01",
+   "page": "engines/rounds/round1/s04.jplax",
+   "atlasDir": "core/test-data/samples/transfer",
+   "name": "few-plain",
+   "about": "6 IMAGE layers (round1 s04, Calm-agent): the simple page"
+  },
+  {
+   "id": "b02",
+   "page": "engines/rounds/round1/s12.jplax",
+   "atlasDir": "core/test-data/samples/transfer",
+   "name": "many-plain",
+   "about": "12 IMAGE layers from the same atlas as b01 (round1 s12, CalmLag): what twice the layers cost"
+  },
+  {
+   "id": "b03",
+   "page": "engines/rounds/fog/f01.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "few-effects",
+   "about": "8 layers, 3 of them SHADER (WAVE, FOG), under a page fog (fog f01)"
+  },
+  {
+   "id": "b04",
+   "page": "engines/rounds/fog/f02.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "many-effects",
+   "about": "9 layers with a SEQUENCE and a SHADER, under a night fog, repeated in X and Y, scrolling up too (fog f02)",
+   "speedY": 30
+  },
+  {
+   "id": "b05",
+   "page": "engines/rounds/round1/s12.jplax",
+   "atlasDir": "core/test-data/samples/transfer",
+   "name": "cross-fade",
+   "about": "b02 cross-fading into b04 over the whole run: 21 layers drawn each frame, the heaviest a game asks",
+   "transfer": [
+    {"at": 0, "page": "engines/rounds/fog/f02.jplax", "atlasDir": "core/test-data/haze", "seconds": 60}
+   ]
+  }
+ ]
+}

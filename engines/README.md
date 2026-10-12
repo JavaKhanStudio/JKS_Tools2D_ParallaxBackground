@@ -9,6 +9,12 @@ reference; every other reader lives here, one folder each, and is checked frame 
 | [`jme/`](jme/README.md) | jMonkeyEngine 3, runs core as is | `parallax-background-jme` on Maven Central | `jme/tools/frame-check.sh`, CI job `jme-frames` |
 | [`rounds/`](rounds) | none: the rounds every reader is checked on, and `:rounds` (`reader/`), their `round.json` read for the Java runners | | |
 
+**How they all are:** `tools/readers-health.sh` builds `build/readers-health/index.html` (parallax-readers:r17): each
+reader's checks and how many stills they compare, when they last ran here and in CI and what they said, every round's
+verdict per reader, and each reader's latency on [`rounds/bench`](rounds/bench/round.json) (few and many layers, plain
+and with effects, a cross-fade: load time, frame time). It reads what the checks left and runs nothing;
+`--run [gdx godot jme]` runs them first (about 10 minutes), `--shot F.png` screenshots it, `--open` opens it.
+
 Unity is next (parallax:r103, paused); what it would take is in
 [docs/other-engines.md](../docs/other-engines.md#unity-and-unreal-what-they-would-take).
 
@@ -41,7 +47,11 @@ Copy the shape of `jme/` (a Java engine) or `godot/` (any other one). A reader i
    [`.github/workflows/release.yml`](../.github/workflows/release.yml)'s "Package the downloads" (a script in
    `engines/<reader>/tools/`, as `godot/tools/addon-zip.sh`, or a Gradle publication, as `:jme`), and its line in
    [RELEASING.md](../RELEASING.md), "Releasing X.Y.Z".
-7. **Its duties in [AGENTS.md](../AGENTS.md):** a row in "Modules", and a bullet in "Runtime (`core`)" naming which
+7. **Its line on the dashboard:** an entry in `READERS` of
+   [`tools/readers-health/health.py`](../tools/readers-health/health.py) (its check, its CI jobs, what makes a run
+   stale), and a bench runner writing `build/bench/<reader>.json` in the shape of `shots/`'s `ParallaxBench` from the
+   bench round, run by `tools/readers-health.sh --run`.
+8. **Its duties in [AGENTS.md](../AGENTS.md):** a row in "Modules", and a bullet in "Runtime (`core`)" naming which
    core classes it copies line for line and which round proves each, as Godot's and jME's do; its CI job beside theirs.
 
 Out of the folder's hands: a new GitHub repository. Simon picked one repository with a sub project per reader
