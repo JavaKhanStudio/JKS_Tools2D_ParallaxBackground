@@ -150,7 +150,7 @@ for the whole screen; the depth fog so the back layer is `--fog` 0.6 of the way 
 `OUT/shots` (0, 6, 12 s). `--style painted` is SD 1.5 at ~12 s a strip, its front a `SEQUENCE` of `--variants` 3 more
 strips; `pixel` is SDXL + PixelArt_XL at ~25 s, one PNG pixel per art pixel, drawn `Nearest`. About 2 min a page.
 `--ckpt`/`--lora` paint with another model from `~/ComfyUI/models` (r346, `docs/ai-parallax.md`), recorded in
-`recipe.json`.
+`recipe.json`; a `.gguf` is a DiT (`--ckpt z-image-turbo-Q5_K_M.gguf`, r356), looped by a unet wrapper.
 
 What is yours to choose, from the theme:
 - **`--colours`**, back to front (three are spread over any count). img2img keeps the shape's colour, so this is the

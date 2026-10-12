@@ -15,6 +15,14 @@ them (`ckpt`, `lora`, `lora_strength`, `sampling`). An SDXL checkpoint (its name
 1536x576. A Turbo checkpoint wants its own sampling: `--ckpt DreamShaperXL_Turbo_v2_1.safetensors --steps 8 --cfg 2
 --sampler dpmpp_sde` made a lint-clean painted page; `novaCartoonXL_v60` paints little people on the strips.
 
+**A DiT (r356):** `--ckpt z-image-turbo-Q5_K_M.gguf` paints with Z-Image-Turbo, a transformer, at 1536x576: `gen.py`
+loads a `.gguf` through ComfyUI-GGUF with the Qwen3 text encoder (`--dit-clip`) and the Flux VAE (`--dit-vae`, 16
+latent channels), and samples 9 steps at cfg 1 (`res_multistep`, `simple`). A transformer has no convolution to pad,
+so `--tile x` sets a unet wrapper (`--dit-loop blend`, from parallax-ai r23) that mixes, at every step, its prediction
+with one made half a width round, so that no column comes from a copy whose join it sits on. The forest example's
+strips loop at seam ratios 0.17-1.14 (`tools/r356-dit/check.sh`, ~75 s a strip). At `--denoise` 0.65 it keeps more of
+sil.py's shape than SD 1.5 does: the pines grow trees on one seed in two or three, and the rest are painted again.
+
 **Examples (r239, 2026-10-10):** a forest, a beach and a post-apocalyptic city, each painted and pixel:
 `tools/r239-ai-strips/examples.sh OUT` paints the six pages and films them (`tools/ai-film.sh`). The beach and the
 city needed shapes of their own in `sil.py` (`dunes`, `sea`, `palms`, `ruins`, chosen with `--kinds`); a theme that

@@ -21,8 +21,16 @@ fill the hole with plausible colour first either way: below denoise 1 the start 
 turns a silhouette mask into its outline first (white lines on black, wrapping along X). With --tile x the
 ControlNet's convolutions are padded circularly too: its hint feeds every block of the UNet, and a hint
 padded with zeros at the ends would pull the strip's two ends apart.
+
+A --ckpt ending in .gguf is a DiT (r356; parallax-ai r23 proved it with tools/dit/zloop.py): Z-Image-Turbo by
+default, its transformer through ComfyUI-GGUF's UnetLoaderGGUF, --dit-clip (lumina2) and --dit-vae beside it, 9 steps
+at cfg 1 (res_multistep, simple) unless --steps and the rest say otherwise, the negative zeroed out (cfg 1 never reads
+it), a 16-channel latent. A transformer has no convolution to pad: with --tile x a unet wrapper (--dit-loop) makes
+its prediction periodic at every step, and only the VAE is padded. No ControlNet with a DiT.
 """
 import argparse
+import importlib.util
+import math
 import os
 import sys
 
@@ -67,21 +75,82 @@ def tile_x(module):
     return count
 
 
+def is_dit(ckpt):
+    return ckpt.endswith(".gguf")
+
+
+def refuse_tiled_vae(vae):
+    def refuse(*_, **__):
+        # Out of memory, comfy retries in tiles, and a tile's outer edge is padded with zeros
+        # and normalised on its own: the strip's two ends then no longer meet.
+        raise RuntimeError("VAE ran out of memory: a tiled decode or encode would break the loop. "
+                           "Free the GPU, or COMFY_CPU_VAE=1")
+
+    vae.decode_tiled_ = vae.encode_tiled_ = refuse
+
+
 def load(ckpt, lora=None, lora_strength=0.8, tile=None):
     model, clip, vae = nodes.CheckpointLoaderSimple().load_checkpoint(ckpt)[:3]
     if lora:
         model, clip = nodes.LoraLoader().load_lora(model, clip, lora, lora_strength, lora_strength)
     if tile == "x":
         n = tile_x(model.model.diffusion_model) + tile_x(vae.first_stage_model)
-
-        def refuse(*_, **__):
-            # Out of memory, comfy retries in tiles, and a tile's outer edge is padded with zeros
-            # and normalised on its own: the strip's two ends then no longer meet.
-            raise RuntimeError("VAE ran out of memory: a tiled decode or encode would break the loop. "
-                               "Free the GPU, or COMFY_CPU_VAE=1")
-
-        vae.decode_tiled_ = vae.encode_tiled_ = refuse
+        refuse_tiled_vae(vae)
         print(f"tile x: {n} convolutions padded circularly", flush=True)
+    return model, clip, vae
+
+
+def gguf_nodes():
+    """ComfyUI-GGUF's nodes, imported from COMFY/custom_nodes as a package (its own name clashes with comfy's nodes)."""
+    path = os.path.join(COMFY, "custom_nodes", "ComfyUI-GGUF")
+    spec = importlib.util.spec_from_file_location("comfyui_gguf", os.path.join(path, "__init__.py"),
+                                                  submodule_search_locations=[path])
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["comfyui_gguf"] = mod
+    spec.loader.exec_module(mod)
+    return sys.modules["comfyui_gguf.nodes"]
+
+
+def loop_wrapper(mode, patch=2):
+    """A unet function wrapper making a transformer's prediction periodic along X (parallax-ai r23's zloop.py).
+    roll: the latent rolled by a fresh offset (whole patches) before the model and back after, so the join lands
+    somewhere new each step (1 model call a step). blend: the model sees the latent as it is and rolled half a width,
+    the two predictions mixed column by column, sin^2 of the distance to each copy's own join, so no column is taken
+    from a copy whose edge it sits on (2 model calls a step)."""
+    state = {"step": 0}
+
+    def wrap(apply_model, args):
+        x, t, c = args["input"], args["timestep"], args["c"]
+        w = x.shape[-1]
+        if mode == "roll":
+            g = torch.Generator().manual_seed(1000 + state["step"])
+            s = int(torch.randint(0, w // patch, (1,), generator=g)) * patch
+            state["step"] += 1
+            return torch.roll(apply_model(torch.roll(x, s, -1), t, **c), -s, -1)
+        s = (w // 2) // patch * patch
+        a = apply_model(x, t, **c)
+        b = torch.roll(apply_model(torch.roll(x, s, -1), t, **c), -s, -1)
+        col = (torch.arange(w, device=x.device, dtype=a.dtype) + 0.5) / w
+        wa = torch.sin(math.pi * col) ** 2  # 0 at this copy's join (columns 0 and w-1), 1 in its middle
+        return a * wa + b * (1 - wa)
+
+    return wrap
+
+
+def load_dit(unet, clip_name, clip_type, vae_name, shift, tile=None, loop="blend"):
+    from comfy_extras.nodes_model_advanced import ModelSamplingAuraFlow
+
+    model = gguf_nodes().UnetLoaderGGUF().load_unet(unet)[0]
+    model = ModelSamplingAuraFlow().patch_aura(model, shift)[0]
+    clip = nodes.CLIPLoader().load_clip(clip_name, clip_type)[0]
+    vae = nodes.VAELoader().load_vae(vae_name)[0]
+    if tile == "x":
+        if loop != "none":
+            model = model.clone()
+            model.set_model_unet_function_wrapper(loop_wrapper(loop))
+        n = tile_x(vae.first_stage_model)
+        refuse_tiled_vae(vae)
+        print(f"tile x: DiT looped by {loop}, {n} VAE convolutions padded circularly", flush=True)
     return model, clip, vae
 
 
@@ -142,10 +211,16 @@ def parse_args():
     ap.add_argument("--w", type=int, default=1024)
     ap.add_argument("--h", type=int, default=384)
     ap.add_argument("--seed", type=int, default=1)
-    ap.add_argument("--steps", type=int, default=28)
-    ap.add_argument("--cfg", type=float, default=7.0)
-    ap.add_argument("--sampler", default="dpmpp_2m")
-    ap.add_argument("--scheduler", default="karras")
+    ap.add_argument("--steps", type=int, help="default 28, a DiT 9")
+    ap.add_argument("--cfg", type=float, help="default 7.0, a DiT 1.0")
+    ap.add_argument("--sampler", help="default dpmpp_2m, a DiT res_multistep")
+    ap.add_argument("--scheduler", help="default karras, a DiT simple")
+    ap.add_argument("--dit-clip", default="qwen_3_4b_fp8_mixed.safetensors", help="a DiT's text encoder")
+    ap.add_argument("--dit-clip-type", default="lumina2")
+    ap.add_argument("--dit-vae", default="z_image_ae.safetensors")
+    ap.add_argument("--dit-shift", type=float, default=3.0, help="ModelSamplingAuraFlow's shift")
+    ap.add_argument("--dit-loop", choices=["blend", "roll", "none"], default="blend",
+                    help="with --tile x, how a DiT's prediction is made to loop (none: the VAE alone wraps)")
     ap.add_argument("--denoise", type=float, default=1.0)
     ap.add_argument("--tile", choices=["x", "none"], default="none")
     ap.add_argument("--init", help="img2img: start image; variants: the new middle's start image")
@@ -161,11 +236,24 @@ def parse_args():
     ap.add_argument("--control-end", type=float, default=1.0, help="fraction of the steps the hint guides")
     ap.add_argument("--control-edge", action="store_true", help="feed the hint's outline, not the image")
     ap.add_argument("--out", required=True)
-    return ap.parse_args()
+    a = ap.parse_args()
+    for key, value in (DIT_SAMPLING if is_dit(a.ckpt) else SAMPLING).items():
+        if getattr(a, key) is None:
+            setattr(a, key, value)
+    if is_dit(a.ckpt) and (a.control or a.lora):
+        ap.error("--control and --lora: not with a DiT")
+    return a
+
+
+SAMPLING = {"steps": 28, "cfg": 7.0, "sampler": "dpmpp_2m", "scheduler": "karras"}
+DIT_SAMPLING = {"steps": 9, "cfg": 1.0, "sampler": "res_multistep", "scheduler": "simple"}  # Z-Image-Turbo's
 
 
 def txt2img(model, pos, neg, vae, a, common):
-    latent = nodes.EmptyLatentImage().generate(a.w, a.h, 1)[0]
+    if is_dit(a.ckpt):  # EmptySD3LatentImage: 16 channels
+        latent = {"samples": torch.zeros(1, 16, a.h // 8, a.w // 8), "downscale_ratio_spacial": 8}
+    else:
+        latent = nodes.EmptyLatentImage().generate(a.w, a.h, 1)[0]
     out = sample(model, pos, neg, latent, a.seed, denoise=1.0, **common)
     to_image(vae, out)[0].save(a.out)
 
@@ -180,7 +268,8 @@ def inpaint(model, pos, neg, vae, a, common):
     src = from_image(a.src)
     m = np.asarray(Image.open(a.mask).convert("L")).astype(np.float32) / 255.0
     mask = torch.from_numpy(m)[None]
-    if model.model.diffusion_model.input_blocks[0][0].in_channels == 9:
+    blocks = getattr(model.model.diffusion_model, "input_blocks", None)  # a DiT has none
+    if blocks is not None and blocks[0][0].in_channels == 9:
         # An inpainting model (dreamshaper_8Inpainting, r315) is fed the source with the hole greyed out beside
         # the noise: it sees the mask and what surrounds it, and matches its light and style. No noise mask: it
         # paints the whole image and only the mask's pixels are kept below. With one (--noise-mask), the kept latent
@@ -232,8 +321,13 @@ MODES = {"txt2img": txt2img, "img2img": img2img, "variants": variants, "inpaint"
 
 def main():
     a = parse_args()
-    model, clip, vae = load(a.ckpt, a.lora, a.lora_strength, a.tile)
-    pos, neg = encode(clip, a.prompt), encode(clip, a.negative)
+    if is_dit(a.ckpt):
+        model, clip, vae = load_dit(a.ckpt, a.dit_clip, a.dit_clip_type, a.dit_vae, a.dit_shift, a.tile, a.dit_loop)
+        pos = encode(clip, a.prompt)
+        neg = nodes.ConditioningZeroOut().zero_out(pos)[0]
+    else:
+        model, clip, vae = load(a.ckpt, a.lora, a.lora_strength, a.tile)
+        pos, neg = encode(clip, a.prompt), encode(clip, a.negative)
     if a.control:
         pos, neg = apply_control(pos, neg, a)
     common = {"steps": a.steps, "cfg": a.cfg, "sampler": a.sampler, "scheduler": a.scheduler}

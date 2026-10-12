@@ -31,6 +31,8 @@ dreamshaper_8 (painted) or sdXL_v10VAEFix + PixelArt_XL (pixel), and ~1.5 GB of 
 The model (r346): --ckpt and --lora replace the style's (any file in ComfyUI's models/checkpoints and models/loras),
 --lora none drops the pixel style's; --steps, --cfg, --sampler, --scheduler and --denoise go to every gen.py call. An
 SDXL checkpoint (one whose name says XL, or --xl) paints at 1536x576, SD 1.5 at 1024x384. recipe.json keeps them all.
+A .gguf --ckpt is a DiT (r356: --ckpt z-image-turbo-Q5_K_M.gguf): gen.py's DiT loader and loop, 1536x576, its own
+sampling defaults (9 steps, cfg 1, res_multistep, simple); no LoRA.
 """
 import argparse
 import json
@@ -111,23 +113,29 @@ def roughness(path):
 # gen.py's defaults: a default run passes none of them (r305's commands), recipe.json records them all (r346).
 GEN_CKPT, GEN_LORA_STRENGTH = "dreamshaper_8.safetensors", 0.8
 GEN_SAMPLING = {"steps": 28, "cfg": 7.0, "sampler": "dpmpp_2m", "scheduler": "karras"}
+DIT_SAMPLING = {"steps": 9, "cfg": 1.0, "sampler": "res_multistep", "scheduler": "simple"}  # gen.py's for a .gguf
 
 
 def model_of(a):
     """What paints the strips: the style's checkpoint, LoRA and denoise unless --ckpt, --lora, --denoise say
-    otherwise; xl when the checkpoint is SDXL (1536x576), and a label for the gallery."""
+    otherwise; xl when the checkpoint is SDXL or a DiT (1536x576), and a label for the gallery."""
     pixel = a.style == "pixel"
     ckpt = a.ckpt or ("sdXL_v10VAEFix.safetensors" if pixel else GEN_CKPT)
     lora = a.lora or ("PixelArt_XL.safetensors" if pixel else None)
     lora = None if lora == "none" else lora
     strength = a.lora_strength if a.lora_strength is not None else 1.0 if pixel else GEN_LORA_STRENGTH
-    xl = a.xl or "xl" in ckpt.lower()
+    dit = ckpt.endswith(".gguf")
+    if dit and lora:
+        sys.exit("--lora: not with a DiT (--lora none drops the pixel style's)")
+    xl = a.xl or dit or "xl" in ckpt.lower()
     stem = lambda f: os.path.splitext(f)[0]  # noqa: E731
     if not (a.ckpt or a.lora):
         label = "SDXL 1.0 + PixelArt_XL" if pixel else "SD 1.5 dreamshaper_8"
     else:
-        label = f"{'SDXL' if xl else 'SD 1.5'} {stem(ckpt)}" + (f" + {stem(lora)} {strength:g}" if lora else "")
-    sampling = {k: getattr(a, k) if getattr(a, k) is not None else v for k, v in GEN_SAMPLING.items()}
+        family = "DiT" if dit else "SDXL" if xl else "SD 1.5"
+        label = f"{family} {stem(ckpt)}" + (f" + {stem(lora)} {strength:g}" if lora else "")
+    defaults = DIT_SAMPLING if dit else GEN_SAMPLING
+    sampling = {k: getattr(a, k) if getattr(a, k) is not None else v for k, v in defaults.items()}
     return dict(sampling, ckpt=ckpt, lora=lora, lora_strength=strength, xl=xl, label=label,
                 denoise=a.denoise if a.denoise is not None else 0.7 if pixel else 0.65)
 
@@ -192,7 +200,8 @@ def parse_args():
     ap.add_argument("--keep", action="store_true", help="keep the strips OUT/strips holds: only cut and lay out again"
                     " (another --sky, --fog or --front-speed, with the same --seed)")
     ap.add_argument("--no-shots", action="store_true")
-    ap.add_argument("--ckpt", help="the checkpoint; default dreamshaper_8 (painted), sdXL_v10VAEFix (pixel)")
+    ap.add_argument("--ckpt", help="the checkpoint; default dreamshaper_8 (painted), sdXL_v10VAEFix (pixel); a .gguf is"
+                    " a DiT (z-image-turbo-Q5_K_M.gguf)")
     ap.add_argument("--xl", action="store_true", help="the checkpoint is SDXL though its name does not say XL")
     ap.add_argument("--lora", help="a LoRA; default none (painted), PixelArt_XL (pixel); 'none' drops the pixel one")
     ap.add_argument("--lora-strength", type=float, help="default 0.8 (gen.py's), 1.0 for PixelArt_XL")
