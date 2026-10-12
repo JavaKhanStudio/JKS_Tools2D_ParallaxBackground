@@ -115,52 +115,24 @@ description = ".plax / .jplax / .plaxpj, the Kryo and JSON serializers, back-com
 color = "#f2b263"
 sort = 20
 context = """
-core/src-jvm/jks/tools2d/parallax/pages/*_Serializer.java, pages/Utils_Page.java (load),
-pages/Json_MixIns.java (what Jackson skips), heart/GVars_Serialization.java (the Kryo instance).
-They live in src-jvm because core/src is translated by GWT (AGENTS.md, "Browser (GWT)"): no
-Kryo or Jackson annotation goes on a model class, a new format file is excluded by name in
-core/src/jks/tools2d/parallax/Parallax.gwt.xml, and `./gradlew :core:gwtCheck` fails if not.
-NEVER REORDER THE REGISTRATIONS in GVars_Serialization.prepareKryo. Registration order IS
-the class id written into every .plax ever exported (Color = 9, Parallax_Model = 10…).
-Append only — the javadoc says so and it is the single most expensive rule here.
-`kryo.setReferences(true)` MUST STAY. The files were written by Kryo 5.0.0-RC1, whose
-default was on; Kryo 5.0 final turned it off. With it off, every existing .plax decodes as
-garbage and throws NOTHING: the atlas name comes back "??????Hiver.atlas" and the layer list
-empty. MEMORY_LANE.md §4 is the whole story — and it is HISTORY, not a backlog: its paths and
-line numbers are commit b5a7441, and anything you fix that it still lists as broken MOVES into
-its §10 then/now table rather than being deleted.
-New fields go behind a version bump, written AND read on the same branch, exactly like
-flipY: `if (WholePage_Model_Serializer.currentVersion(kryo) >= 2)`. Format 1 files (the
-2019-2023 editor) must keep loading — Parallax_Model_Serializer wrote flipX and never flipY,
-so every vertically flipped layer came back unflipped.
-A new stored field is ALSO read in core/src pages/Utils_Page_Json, the browser build's
-loader (.jplax/.plaxpj through libGDX's JsonReader). It maps every field by hand, no
-reflection: a field it does not name loads as its default in a browser game and throws
-nothing. JsonPageTest compares it with the Kryo read through PlaxFormatTest.assertPageEquals,
-so add the field there too.
-A THIRD reader has the same blind spot: engines/godot/addons/jks_parallax/plax_page.gd (the
-Godot port, r87) lists the layer fields in LAYER_DEFAULTS and reads the page's by hand. A
-field missing there loads as its default in a Godot game. Add it, and a scene using it to
-engines/rounds/conformance; `engines/godot/tools/frame-check.sh` is the gate.
-A layer field also lives on ParallaxLayer: setUpEverything copies it in, clone() copies it
-(ParallaxLayerTest), and pages/Utils_Page.buildFromPage writes it back. That is the editor's
-save path: a field it misses is dropped when the editor saves the page. BuildFromPageTest
-round-trips a page through it.
-Color_Serializer writes channels in A, B, G, R order. That is deliberate now; leave it.
-Gate: `./gradlew :core:test`. PlaxFormatTest walks every .plax under core/test-data/samples
-(byte copies of the 2019 editor's six and the demo's two, r130: core/test-data/samples/README.md
-says where each came from) and checks it against the .plaxpj saved in the same 2019 session;
-core/test-data/onboard holds copies of On Board's four pages for JsonPageTest. It reads the
-`parallax.repoRoot` system property, which core/build.gradle sets — run the class straight
-from an IDE without it and it hunts for samples in the wrong folder.
-README.md's table of the three file formats mirrors these shapes; change what one holds and
-fix the table in the SAME commit.
-THE SAMPLE FILES ARE THE FIXTURES. Never re-export or overwrite core/test-data/samples, nor
-their originals in the editor repository, to make a test pass: they are the 2019 evidence and the only proof the legacy path still works.
-Shapes: .plax = Kryo binary (what games load), .jplax = JSON (what browser games load, and
-tooling), .plaxpj = the editor
-project. A page names its atlas BY FILE NAME; a layer names an image by region name AND its
-position among the regions sharing that name — never by name alone.
+AGENTS.md (".plax is a file format", and "Browser" for clone()) lists every place a stored field goes (Kryo serializer behind a version bump,
+Utils_Page_Json, plax_page.gd, buildFromPage, clone()) and the rules: prepareKryo append only, setReferences(true).
+This is why they bite, and what it leaves out.
+Every miss is SILENT. With setReferences off, every 2019 .plax decodes as garbage and throws nothing: the atlas comes back
+"??????Hiver.atlas", the layer list empty (MEMORY_LANE.md §4; Kryo 5.0.0-RC1 wrote them with references on). A field the
+browser's Utils_Page_Json or Godot's plax_page.gd does not name loads as its default. Parallax_Model_Serializer once
+wrote flipX and never flipY: every vertically flipped layer came back unflipped, the reason for the version guard
+`currentVersion(kryo) >= N`. Format 1 files (no version marker, the 2019-2023 editor) must keep loading.
+Proof of a new field: PlaxFormatTest.assertPageEquals (JsonPageTest compares the JSON read with the Kryo one through it),
+BuildFromPageTest, ParallaxLayerTest, and a scene using it in engines/rounds/conformance under
+engines/godot/tools/frame-check.sh.
+Files: core/src-jvm/jks/tools2d/parallax/pages/*_Serializer.java, pages/Json_MixIns.java (what Jackson skips),
+heart/GVars_Serialization.java. A new src-jvm file is excluded by name in Parallax.gwt.xml; `:core:gwtCheck` fails if not.
+Color_Serializer writes A, B, G, R. Deliberate now: leave it.
+PlaxFormatTest reads the `parallax.repoRoot` property core/build.gradle sets: run from an IDE without it, it hunts for the
+samples in the wrong folder. core/test-data/samples is the 2019 evidence: never re-export it to make a test pass.
+A layer names its image by region name AND its position among same-named regions, never by name alone.
+MEMORY_LANE.md is HISTORY at commit b5a7441, not a backlog: a defect you fix that it lists moves to its §10 table.
 """
 
 [tags.assets]
@@ -169,34 +141,23 @@ description = "Atlases, packing, flatten, loose PNGs, filtering"
 color = "#7fd6a6"
 sort = 40
 context = """
-The library's side of atlases; packing, flatten and export are the editor's, on the
-parallax-editor board (its #assets pack, in the editor repository's .atelier/packs.toml).
-A page names its atlas BY FILE NAME and finds it next to the page (relativePath), through
-Gvars_Parallax's AssetManager. A layer names a region by NAME + POSITION among same-named
-regions; index -1 means a name used once. TexturePacker numbers files from 1 (ground_1,
-ground_2), so "ground"+index and "ground"+position are two different keys.
-The atlas file's `filter:` line is what the game draws with: the editor writes
-MipMapLinearLinear,Linear on power-of-two pages (GLES2/WebGL1 draw a mipmapped NPOT page
-black, desktop shows nothing wrong), Nearest,Nearest for a pixel-art project. The Godot reader
-reads the same line (engines/rounds/pixelart).
+The library's side of atlases; packing, flatten and export are the editor's (board parallax-editor, its #assets pack).
+A page names its atlas BY FILE NAME, found next to the page (relativePath) through Gvars_Parallax's AssetManager. A layer
+names a region by NAME + POSITION among same-named regions (index -1: a name used once). TexturePacker numbers files
+from 1 (ground_1, ground_2), so "ground"+index and "ground"+position are two different keys.
+The atlas's `filter:` line is what the game draws with: MipMapLinearLinear,Linear on power-of-two pages (GLES2/WebGL1 draw
+a mipmapped NPOT page BLACK, a desktop shows nothing wrong), Nearest,Nearest for pixel art. Godot reads the same line
+(engines/rounds/pixelart).
 A mipmapped atlas needs each region's edges copied into its padding (the editor copies 25 of its 50 px): a tiled layer
-drawn 1/m of its size with fewer than m texels copied shows a line at every join (r268, tools/r268-mip-seams; lint
-fault (f)). The half-texel inset (r218) only saves a Linear atlas.
-useOriginalSize: an atlas packed with whitespace stripped (non-zero `offset:` lines) draws its
-regions at their original size only when the page says so.
-ETC2 (d13, r125, r173): Gvars_Parallax.setCompressedAtlases(on) makes atlasFile() load
-<name>.etc2.atlas instead of <name>.atlas, when that copy exists; supportsEtc2() is true on
-OpenGL ES 3 only (desktops unpack ETC2 to RGBA, browsers cannot read the gzipped pages).
-pages/Utils_Etc2_Atlas loads its <name>_N.zktx pages with their OWN mip levels: a compressed
-texture cannot glGenerateMipmap. Fixtures: core/test-data/etc2 (byte copies of an editor
-export, never re-exported), Etc2AtlasMipmapTest. On Android (r140, the atelier-phone emulator,
-GLES 3.1): tools/android-etc2-check.sh loads City PNG and ETC2 as a game does and fails on any
-GL error; libGDX's own TextureAtlas loader still raises GL_INVALID_OPERATION from glGenerateMipmap
-there, and on a real Adreno 650 (r206) too. The emulator cannot prove the memory (its host driver
-unpacks ETC2): tools/android-etc2-memory.sh does on a Qualcomm phone, from the kgsl driver's
-page_alloc (Samsung's GL mtrack leaves textures out): Hiver 65.8 MiB PNG, 17.9 MiB ETC2.
-PIXMAPS AND TEXTURES ARE NATIVE MEMORY: dispose what you load; the AssetManager owns what it
-loaded.
+drawn 1/m of its size with fewer than m texels copied shows a line at every join (r268, tools/r268-mip-seams). The
+half-texel inset (r218) only saves a Linear atlas.
+useOriginalSize: an atlas packed with whitespace stripped (non-zero `offset:` lines) draws its regions at their original
+size only when the page says so.
+ETC2 (r125, r173): Gvars_Parallax.setCompressedAtlases(on) loads <name>.etc2.atlas when it exists; supportsEtc2() is true
+on OpenGL ES 3 only. pages/Utils_Etc2_Atlas loads the .zktx pages with their OWN mip levels: a compressed texture cannot
+glGenerateMipmap, and libGDX's own TextureAtlas loader raises GL_INVALID_OPERATION there (emulator and Adreno 650, r206).
+Fixtures core/test-data/etc2 (never re-exported), Etc2AtlasMipmapTest. tools/android-etc2-check.sh proves it on the
+atelier-phone emulator; memory only on a Qualcomm phone (tools/android-etc2-memory.sh: Hiver 65.8 MiB PNG, 17.9 ETC2).
 """
 
 # No `docs` tag (doubt d2, decision B, 2026-09-14): documentation work carries the tag of the
@@ -208,95 +169,25 @@ description = "Gradle, CI, dependency versions, Maven Central"
 color = "#e8938f"
 sort = 50
 context = """
-gradle.properties holds EVERY dependency version (gdx, lwjgl, kryo, jackson, gwt, junit, jme) and the
-published `version`. Nothing pins a version inline; add new ones there.
-build.gradle (root: encoding, lint, JUnit platform for all modules), core/build.gradle
-(sources in src/ = GWT-translatable, src-jvm/ = Kryo/Jackson, test/; publishing; gwtCheck),
-shots/build.gradle, engines/jme/build.gradle, settings.gradle, .github/workflows/{ci,release,snapshot}.yml, RELEASING.md.
-core compiles to `options.release = 11` — games consume it, including on Android. Its tests,
-shots and jme are 17. A Java 12+ API used in core/src fails the build with a
-message about the API, never about the rule.
-`repositoriesMode = FAIL_ON_PROJECT_REPOS` in settings.gradle: declaring a repository in a
-module's build.gradle FAILS the build. Repositories go in settings.gradle only.
-Gates, exactly what CI runs on JDK 17, 21 AND 25 (.github/workflows/ci.yml, job build):
-  ./gradlew build                              compile + test everything, and :core:gwtCheck
-                                               (GWT compiles core/src to JavaScript, ~20 s)
-  tools/browser-test.sh                        the browser suite in headless Chrome (below)
-  tools/offscreen-lint.sh && tools/offscreen-lint-test.sh   no tools/*.sh opens a window unguarded (below)
-  tools/lint.sh                                ruff (ruff.toml), shellcheck, gdlint (gdlintrc) on every tracked
-                                               .py/.sh/.gd, each through uvx at the version pinned in it (r314).
-                                               Run it before a push: a new probe in tools/ lands lint-clean.
-And once each, on JDK 17 with xvfb-run + Mesa, one job per reader: godot-frames runs
-engines/godot/tools/frame-check.sh, jme-frames engines/jme/tools/frame-check.sh; each fails on a FAIL.
-GIT HOOKS (r332, r339): this clone has `git config core.hooksPath tools/githooks` (a new clone needs
-that line; a session's hooks reach them through atelier's proxy). Three rails, cheapest first:
-  pre-commit  tools/pre-commit-check.sh: lint.sh on the .py/.sh/.gd the commit STAGES (as staged, mode
-              included: ruff EXE001 reads it), offscreen-lint on a staged tools/*.sh. Refused: fix, git
-              add, commit again. Nothing to amend, nothing to re-push: lint as you write, not after.
-  pre-push    tools/pre-push-check.sh: the same on the exact commit sent to develop, master or
-              release/*, in a throwaway worktree, ~3 s. Fix the commit, never --no-verify.
-  after push  tools/ci-watch.sh, started in the background by pre-push: waits for CI on the pushed
-              commit and, when it is red, adds ONE #build task "CI red on <branch>" with the failed jobs
-              and the log's end (a later red run notes it). Log: .git/ci-watch/<sha>.log. CI_WATCH=0
-              starts none. Seeing that task open: do not push on top of red without fixing it.
-None of them runs ./gradlew build or browser-test.sh: those stay yours before a push (CI does, and a
-red one comes back as that task). Proofs: tools/pre-commit-check-test.sh, tools/pre-push-check-test.sh,
-tools/ci-watch-test.sh.
-NO WINDOW ON SIMON'S SCREEN (r118, r144): every JavaExec task calls rootProject.offscreen(it) (it
-opens a window: an agent's, ATELIER_AGENT or CLAUDECODE=1, goes to a headless cage, and fails
-without cage) or rootProject.headless(it) (it opens none); gradle/offscreen.gradle stops the build
-on one that does neither. A new module's `application` plugin makes a `run` task: wire it. A
-script that opens a window runs it in cage (WLR_BACKENDS=headless) or through tools/offscreen.sh;
-a nested X server inside cage comes from tools/nested-x.sh (a free display: a fixed :9 broke
-two runs at once, r142).
-tools/offscreen-lint.sh (CI, job build) fails a tools/*.sh that runs java, an installDist bin/,
-godot or a browser without either, unless it carries `# on-screen: <why>` (r171). A java launch
-that opens no window (a converter) passes with `# headless: <why>` on the line above it (r197).
-The process-level rail under all of these (r118): .claude/settings.json gives every Claude session in
-this checkout DISPLAY="" and WAYLAND_DISPLAY=no-screen-for-agents, so a launch that slips past them
-FAILS ("Failed to open display") instead of popping up on Simon's desk. Cage needs neither. Do not
-put the screen back in a session's env; when Simon asks to watch, prefix that one command with
-DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 ATELIER_NO_OFFSCREEN=1. tools/agent-screen-check.sh proves it.
-Inside cage that rail is gone: cage hands its children its own variables. Never `env -u WAYLAND_DISPLAY`
-alone there: GLFW 3.4 (LWJGL 3.3.6) then tries the default wayland-0, which is Simon's gnome-shell, and
-106 jME windows reached his screen that way (r234). Add XDG_SESSION_TYPE=x11 to pick cage's nested X.
-agent-screen-check.sh runs every such launch against a sentinel wayland-0 (--only-sentinel: that alone).
-The labs' open mode (fog/haze/transfert-lab.sh with no argument, effects-lab.sh --lab L, browser-test.sh --open)
-points Chrome at wayland-0 when the env has no display: tools/agent-window-guard.sh refuses it under ATELIER_AGENT
-or CLAUDECODE=1 (r237). A new script that opens a window Simon asked for sources it the same way.
-The editor and demo are another repository since the split (r130-r133, docs/repo-split.md):
-JKS_Tools2D_ParallaxEditor, board parallax-editor. The library's gates read core/test-data
-and draw their libGDX frames with :shots (shots/, ParallaxShots). The editor's build takes core
-from Central, or builds this checkout's when it sits beside it: a core change shows in its
-:editor:run without publishing. Its zip is released there, not here.
-Releases: develop (always -SNAPSHOT, every push publishes one) → release/X.Y → master, tagged
-vX.Y.Z. RELEASING.md is the procedure; follow it rather than inventing one. The release
-workflow REFUSES to run when the tag and gradle.properties disagree.
-Two artifacts share that version (r116): :core is parallax-background, :jme (engines/jme/src)
-is parallax-background-jme, each with its own mavenPublishing block; the release and snapshot
-workflows publish both. Its classes are public API. `./gradlew :core:publishToMavenLocal
-:jme:publishToMavenLocal && ./gradlew -p engines/jme/tools/probe run` proves a fresh jME game uses it.
-A fix reaches a game as a snapshot, not a release (Simon, r57): push develop, and the game pins
-the timestamped build (X.Y.Z-yyyyMMdd.HHmmss-N, RELEASING.md "Test versions"). Do not raise a
-release to ship one fix. `./gradlew -p tools/snapshot-probe resolve` proves a snapshot resolves.
-Browser suite (r68): tools/browser-test.sh builds :core:browserTestWar (GWT, ~20 s, not part of
-`build`), serves it with python3 and runs it in headless Chrome; exit 1 unless every case passes.
-Its cases (core/browser-test/cases) also run on the JVM in :core:test (BrowserSuiteTest).
-Maven Central needs four repository secrets (MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD,
-SIGNING_KEY, SIGNING_KEY_PASSWORD; all four are set). Without them a tag push FAILS before
-building anything; only a hand-run Release with `without_central` ticked skips Central, and
-says so in the run summary. Central then takes minutes to an hour: done means
-https://repo1.maven.org/maven2/io/github/javakhanstudio/parallax-background/maven-metadata.xml
-lists the version, not a green run.
-README.md IS THE PUBLISHED FRONT PAGE and it is accurate today — keep it that way. Its module
-map and the code map at the end mirror this build: move a class or a module and fix both in the
-SAME commit. Its badges point at the CI workflow FILE PATH and at the Central artifact
-coordinates, so renaming either breaks a badge silently, visible only on the GitHub page.
-NOTICE and the README's Credits section exist because "Cleaning house" (cd6ebc3, 2019-04-28)
-deleted the credit to Rahul Verma's ParallaxBackground-libgdx, which Apache-2.0 REQUIRES. Never
-trim them, and keep the 2014 inceptionYear in core/build.gradle's pom.
-Javadoc runs with `Xdoclint:none` (core/build.gradle), so a broken or missing tag will NOT fail
-the build. Read what you wrote; nothing else will.
+AGENTS.md (read every session) already holds the build's rules: every version in gradle.properties, core at release 11,
+repositories in settings.gradle only, CI's gates and the git hooks. This is what it does not say.
+Before a push, `./gradlew build` and `tools/browser-test.sh` are yours: no hook runs them. A red CI run comes back as a
+#build task "CI red on <branch>": fix it before pushing more. A refused hook: fix the commit, never --no-verify.
+INSIDE CAGE the agent-env rail is gone (cage hands its children its own variables). Never `env -u WAYLAND_DISPLAY` alone
+there: GLFW 3.4 then tries wayland-0, Simon's gnome-shell, and 106 jME windows reached his screen that way (r234). Add
+XDG_SESSION_TYPE=x11. A nested X server comes from tools/nested-x.sh (a fixed :9 broke two runs at once, r142); a lab's
+open mode sources tools/agent-window-guard.sh, which refuses under ATELIER_AGENT or CLAUDECODE=1 (r237).
+RELEASES follow RELEASING.md, never an invented procedure: develop (-SNAPSHOT, every push publishes one) -> release/X.Y
+-> master, tagged vX.Y.Z; release.yml refuses a tag that disagrees with gradle.properties. A fix reaches a game as a
+snapshot, not a release (Simon, r57): do not raise a release to ship one fix. Two artifacts share the version (r116):
+parallax-background (:core) and parallax-background-jme (:jme, engines/jme/src is public API); both workflows publish both.
+A tag push without the four Central secrets FAILS before building; only a hand-run Release with without_central skips
+Central. Done means Central's maven-metadata.xml lists the version (minutes to an hour), not a green run.
+README.md is the published front page: its module map and code map mirror the build (move a class or module, fix both in
+the same commit), and its badges name ci.yml's FILE PATH and the Central coordinates: a rename breaks one silently.
+NOTICE and README's Credits exist because "Cleaning house" (cd6ebc3, 2019) deleted the credit to Rahul Verma's
+ParallaxBackground-libgdx, which Apache-2.0 requires: never trim them, keep inceptionYear 2014 in core/build.gradle.
+Javadoc runs with Xdoclint:none (core/build.gradle): a broken tag does not fail the build. Read what you wrote.
 """
 
 [tags.shader]
@@ -308,25 +199,19 @@ sort = 15
 context = """
 EVERY EFFECT IS WRITTEN THREE TIMES, LINE FOR LINE: core/src/jks/tools2d/parallax/GdxLayerEffects.java (GLSL ES 1.0,
 WebGL too), engines/godot/addons/jks_parallax/plax_effects.gd, engines/jme/resources/jks/tools2d/parallax/jme/
-ParallaxEffect.frag (+ .j3md defines), all fed GdxLayerEffects.uniforms. Change one, change all three.
-The reader calls the engine's LayerEffects (core/src/.../LayerEffects.java, jME's JmeLayerEffects) around a layer's
-tiles, NEVER Batch.setShader: JmeBatch.setShader throws, so it works in libGDX and breaks every jME game.
-Enum_ShaderEffect is APPEND ONLY (stored by name since format 7); a new effect also goes in plax_effects.gd's EFFECTS
-and in the round engines/rounds/shaders.
-PAGE FOG (fogStrength, fogColor, format 10, r217; format 9's FOG-layer shaderHaze is read as its strength): every
-shader above ends in hazed() toward u_fog, and an IMAGE or SEQUENCE layer is drawn through a PLAIN one in jME (Plain
-define) and Godot ("PLAIN" material). libGDX draws them through ONE PAGE_FOG shader, the layer's fog in the batch
-colour's red and its page in the green (LayerEffects.beginPageFog): a flush per layer cost 0.08 ms CPU each on
-:demo:stress. The reader puts the tint back in the batch colour after each such layer: forget it and the next SHADER
-layer draws black or red (PageFogCases.pageFogDrawsTheImageLayersInOneShaderTheirFogInTheBatchColor). Set uniforms by
-fetchUniformLocation(name, false): a by-name setUniformf throws when a GPU drops one. ParallaxPageReader.fogOf and
-frontSpeedOf are copied in plax_effects.gd fog_of / front_speed_of. Change one, change the other.
-A Godot shader error is only a log line and the layer draws plain: read godot.log after a run (TAU is a Godot
-built-in; that name collision once moved the stills 2-11/255 with nothing failing).
-Gates: engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh, given engines/rounds/shaders
-engines/rounds/fog as arguments (no argument runs every round; both fail past a mean 2/255; CI's godot-frames job runs them). A round only proves an
-effect that moves its stills by more than that: tools/r180-shader-round/strength.sh (effects) and
-tools/r217-fog/strength.sh (fog) fail under 2.5/255, and tools/r217-fog/mutate.sh puts a wrong fog in one engine at a
-time and fails unless the fog round does. A new effect or a weaker scene: run them.
-A new stored field is a format bump: the format, browser JSON and Godot readers (AGENTS.md ".plax is a file format").
+ParallaxEffect.frag (+ .j3md defines), all fed GdxLayerEffects.uniforms. AGENTS.md's Runtime section says which
+transfert styles (dissolve, through a colour, fog creep) and seams (FOG's along()) also live in hazed().
+The reader calls the engine's LayerEffects around a layer's tiles, NEVER Batch.setShader: JmeBatch.setShader throws, so
+it works in libGDX and breaks every jME game. Enum_ShaderEffect is APPEND ONLY (stored by name since format 7).
+PAGE FOG (format 10, r217): libGDX draws a fogged page's IMAGE and SEQUENCE layers through ONE PAGE_FOG shader, the
+layer's fog in the batch colour's red and its page in the green (LayerEffects.beginPageFog): a flush per layer cost
+0.08 ms CPU each on :demo:stress. The reader puts the tint back in the batch colour after each such layer: forget it and
+the next SHADER layer draws black or red (PageFogCases.pageFogDrawsTheImageLayersInOneShaderTheirFogInTheBatchColor).
+A tower's shade rides in that colour's blue (#runtime). Set uniforms by fetchUniformLocation(name, false): a by-name
+setUniformf throws when a GPU drops one.
+A Godot shader error is only a log line and the layer draws plain: read godot.log after a run (TAU is a Godot built-in;
+that collision once moved the stills 2-11/255 with nothing failing).
+Gates: both engines' tools/frame-check.sh on engines/rounds/shaders and engines/rounds/fog (fail past a mean 2/255). A
+round only proves an effect that moves its stills by more: tools/r180-shader-round/strength.sh and
+tools/r217-fog/strength.sh fail under 2.5/255; tools/r217-fog/mutate.sh fails unless the round sees a wrong copy.
 """
