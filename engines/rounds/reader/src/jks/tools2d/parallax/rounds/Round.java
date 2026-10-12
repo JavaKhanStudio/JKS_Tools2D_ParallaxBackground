@@ -31,8 +31,8 @@ import jks.tools2d.parallax.TransfertStyle;
  * started {@code at} seconds into the scroll (r94, engines/rounds/transfer); {@code "speedY": 30} also scroll up, and
  * {@code "resize": {"at": 3, "size": [720, 1280]}} resize the window mid-scroll (r95, engines/rounds/conformance);
  * {@code "hooks": {"slot": {"region": "parallax4", "position": 1}}} draws the EMPTY layer named slot with that atlas
- * region stretched over each tile (r177, engines/rounds/effects; {@code "planet": true} lowers it by
- * {@code planetDropAt} at the tile's middle, r330); {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that
+ * region stretched over each tile (r177, engines/rounds/effects; {@code "planet": true} stands it on its tile's foot
+ * round the page's planet, placed by {@code planetPlaceAt} and turned by {@code planetAngleAt}, r347); {@code "sequenceSeed": 1234} draws the SEQUENCE layers from that
  * game seed (r183, engines/rounds/sequence); {@code "film": {"seconds": 8, "fps": 30}} goes on scrolling after the last
  * still and saves every frame of those seconds, {@code <id>-f0000.png} on (r239: tools/ai-film.sh makes them a video;
  * libGDX only); {@code "zoom": [1, 0.5]} zooms the camera straight from the first at 0 s to the second at 12 s, set
@@ -74,7 +74,7 @@ public final class Round
 	{
 		public String layer, region;
 		public int position;
-		/** Round a planet, the region lowered by its layer's drop at the tile's middle (r330). */
+		/** Round a planet, the region stood on its tile's foot: placed and turned as the planet says (r347). */
 		public boolean planet;
 	}
 

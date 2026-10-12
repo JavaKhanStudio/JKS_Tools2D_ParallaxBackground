@@ -8,7 +8,8 @@
 #                drag the picture or hold the arrow keys to pan; Hiver or PurpleFairy, the layers in front planted on the ground
 #   --lab tower  r276's tower (TowerLab, r328): a brick tower in front of Hiver, turning; radius, shade, speed, images round,
 #                where the camera stands (r350: close by, the courses arc and Hiver wraps round the tower)
-#   --lab planet r277's planet with r330's snow and hooked towers (PlanetLab): radius, how the towers follow, snow anchor
+#   --lab planet the planet (PlanetLab, r277, r347: the page on a turning world) with r330's snow and hooked towers: radius,
+#                how the towers stand, snow anchor
 # The readout gives the frame time, and each panel's draw calls and CPU time.
 #   tools/effects-lab.sh --lab L                 the lab: a Chrome window, served until it closes
 #   tools/effects-lab.sh --lab L --shot F.png    one still, headless (6 s into the scroll)

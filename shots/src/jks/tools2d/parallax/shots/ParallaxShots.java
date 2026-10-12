@@ -17,6 +17,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import org.lwjgl.glfw.GLFW;
@@ -113,8 +114,19 @@ public class ParallaxShots extends ApplicationAdapter
 		{
 			TextureRegion region = Round.findRegion(page.getLoadedAtlas(), hook.region, hook.position);
 			boolean planet = hook.planet;
-			heart.parallaxReader.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x,
-					planet ? y - heart.parallaxReader.planetDropAt(layer, x + width / 2) : y, width, height));
+			Vector2 foot = new Vector2();
+			heart.parallaxReader.setLayerHook(hook.layer, (batch, layer, x, y, width, height) ->
+			{
+				if (!planet)
+				{
+					batch.draw(region, x, y, width, height);
+					return;
+				}
+				// Stood on its tile's foot, leaning as the planet says (r347).
+				heart.parallaxReader.planetPlaceAt(layer, x + width / 2, y, foot);
+				batch.draw(region, foot.x - width / 2, foot.y, width / 2, 0, width, height, 1, 1,
+						heart.parallaxReader.planetAngleAt(layer, x + width / 2));
+			});
 			hooked.add(hook.layer);
 		}
 		if (scene.sequenceSeed != null)

@@ -7,7 +7,8 @@ import com.badlogic.gdx.graphics.g2d.Batch;
  * layer's name with {@link ParallaxPageReader#setLayerHook}. Called every frame, in the layer's place in the draw
  * order, once for each tile of the layer the view shows: on the axes the page repeats on, a box the layer's size,
  * scrolled and placed as an image layer would be. Runs every frame: allocate nothing. Round a planet the hook is not
- * bent: it lowers what it draws at x by {@link ParallaxPageReader#planetDropAt} (r330).
+ * bent: it draws what stands at a point where {@link ParallaxPageReader#planetPlaceAt} puts it, turned by
+ * {@link ParallaxPageReader#planetAngleAt} (r347).
  */
 public interface LayerHook
 {

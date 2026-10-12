@@ -27,7 +27,11 @@ extends CanvasLayer
 ##
 ## called in the layer's place in the draw order, once per tile of it the view shows, `rect` in screen pixels and
 ## `modulate` the page's tint at the layer's opacity. A layer with no hook draws nothing. Round a planet the hook is
-## not bent: it lowers what it draws by planet_drop_at(l, x) (r330).
+## not bent: it draws what stands at a point where planet_place_at(l, point) puts it, turned by planet_angle_at(l, x)
+## (r347):
+##
+##   canvas.draw_set_transform(bg.planet_place_at(l, foot), bg.planet_angle_at(l, foot.x))
+##   canvas.draw_texture_rect(tower, Rect2(-w / 2, -h, w, h), false, modulate)
 ##
 ## A PARTICLES layer instances the Godot scene its page names, between the layers before and after it: PlaxParticles.
 ##
@@ -46,8 +50,9 @@ extends CanvasLayer
 ## An IMAGE layer with a tower radius is wrapped round a cylinder in the view's middle, its scroll turning it
 ## (PlaxTower, r276).
 ##
-## A page with a planet (PlaxPage.planet_radius, r277) bends its IMAGE, SHADER and SEQUENCE layers down toward the
-## view's sides, the far ones more (PlaxPlanet).
+## A page with a planet (PlaxPage.planet_radius, r277, r347) is the side of a world turning round one centre under the
+## view: its IMAGE, SHADER and SEQUENCE layers are wrapped round it alike, each turning at its own speed, and what
+## stands up leans out from it (PlaxPlanet).
 ##
 ## Each layer is drawn by its own child of the gradients' canvas, in draw order, so that a particle node can sit between
 ## two of them. Not ported yet: atlas regions packed rotated.
@@ -125,9 +130,10 @@ var _world_height := 22.5
 var _ppu := 1.0
 var _screen_h := 0.0
 var _modulate := Color.WHITE
-# Set by _draw_layer: how much the layer drawn is bent round its page's planet (PlaxPlanet.bend_of; 0 flat), and the
-# width of its view.
-var _bend := 0.0
+# Set by _draw_layer: the radius of the planet the layer drawn is wrapped round, in its view (PlaxPlanet.radius_of; 0
+# flat), how far over its view's top a tile still shows round it (PlaxPlanet.reach_of), and the width of its view.
+var _planet := 0.0
+var _reach := 0.0
 var _view_w := 0.0
 # Set by _draw_layer: the panorama the layer drawn is wrapped in round its page's near tower (PlaxPanorama: rho, q,
 # the strips' edges and scales), empty when flat; and the eye it is scaled about.
@@ -252,16 +258,36 @@ func set_layer_hook(layer_name: String, hook: Callable) -> void:
 	_redraw()
 
 
-## ParallaxPageReader.planetDropAt (r330): how far layer `l` is lowered round its page's planet at `x`, both in the
-## screen pixels a hook draws in: bend dx², bend PlaxPlanet.bend_of and dx from the middle of the view the layer is
-## drawn in, the curve its page's IMAGE layers follow. For a hook to lower what it draws; 0 for no planet and a still
-## layer. Called from a hook, the view is the layer's own (dolly).
+## ParallaxPageReader.planetPlaceAt (r347): where the point `at` of layer `l` is drawn round its page's planet, both
+## in the screen pixels a hook draws in: the view is the side of a world turning round one centre under the middle of
+## its bottom, x along the ground's arc and y along the radius. For a hook to place what it draws, turned by
+## planet_angle_at; `at` for no planet. Called from a hook, the view is the layer's own (dolly).
+func planet_place_at(l: Dictionary, at: Vector2) -> Vector2:
+	var radius := _planet_of(l)
+	if not radius > 0:
+		return at
+	var to := PlaxPlanet.place(radius, _view_w, at.x / _ppu, (_screen_h - at.y) / _ppu)
+	return Vector2(to.x * _ppu, _screen_h - to.y * _ppu)
+
+
+## ParallaxPageReader.planetAngleAt: how far what stands at `x` (screen pixels) in layer `l` leans round its page's
+## planet, in radians clockwise, as Node2D.rotation and draw_set_transform take it: out along the radius. 0 for no
+## planet.
+func planet_angle_at(l: Dictionary, x: float) -> float:
+	return PlaxPlanet.angle_at(_planet_of(l), _view_w, x / _ppu)
+
+
+## How far the ground under `x` (screen pixels) is lowered round layer `l`'s planet, in pixels: what PlaxParticles
+## culls by. Deprecated for a hook (r347: round a planet its drawing leans too; use planet_place_at and
+## planet_angle_at).
 func planet_drop_at(l: Dictionary, x: float) -> float:
+	return planet_place_at(l, Vector2(x, _screen_h)).y - _screen_h
+
+
+## The radius of the planet layer `l`'s page runs round, in its view (PlaxPlanet.radius_of); 0 for none.
+func _planet_of(l: Dictionary) -> float:
 	var from_page := transfer_page if l.incoming else page
-	var bend := PlaxPlanet.bend_of(from_page.planet_radius, world_width,
-			PlaxEffects.front_speed_of(transfer_layers if l.incoming else layers), l.model)
-	var dx := x / _ppu - _view_w / 2
-	return bend * dx * dx * _ppu
+	return PlaxPlanet.radius_of(from_page.planet_radius, world_width, _zoom_of(l), zoom)
 
 
 ## Draws every SEQUENCE layer's cycle, on screen and fading in, from `seed` XOR the seed its page stores rather than
@@ -737,7 +763,8 @@ func _draw_layer(l: Dictionary) -> void:
 	var view_w := world_width * z
 	var view_h := _world_height * z
 	_view_w = view_w
-	_bend = 0.0
+	_planet = 0.0
+	_reach = 0.0
 	_panorama = []
 	_eye_y = view_h / 2
 	# Behind a tower seen from close by: a panorama round its axis (ParallaxPageReader.drawImageLayer); else, round the
@@ -750,9 +777,8 @@ func _draw_layer(l: Dictionary) -> void:
 		_panorama = [front * pano / (camera + pano), camera / pano, PackedFloat32Array(), PackedFloat32Array()]
 		PlaxPanorama.lay_out(_panorama[0], _panorama[1], view_w, _panorama[2], _panorama[3])
 	elif m.kind == "IMAGE" or m.kind == "SHADER" or m.kind == "SEQUENCE":
-		var from_page := transfer_page if l.incoming else page
-		_bend = PlaxPlanet.bend_of(from_page.planet_radius, world_width,
-				PlaxEffects.front_speed_of(transfer_layers if l.incoming else layers), m)
+		_planet = _planet_of(l)
+		_reach = PlaxPlanet.reach_of(_planet, view_w, view_h)
 	if m.kind == "EMPTY":
 		# No mirrored copy: the hook draws what it likes in each tile.
 		var hook: Callable = _hooks.get(m.name, Callable())
@@ -782,7 +808,8 @@ func _draw_layer(l: Dictionary) -> void:
 		PlaxFloor.draw(self, l, y, view_w, view_h)
 		return
 	if PlaxTower.is_tower(l):
-		_bend = 0.0
+		_planet = 0.0
+		_reach = 0.0
 		# Round its tower in the view's middle, tiled up as the page says; no mirrored copy.
 		PlaxTower.draw_rows(self, l, x, y, view_w, view_h)
 		return
@@ -837,10 +864,12 @@ func _tile(
 	var start_x := x - ceilf((x + right) / step_x) * step_x if tile_x else x
 	var start_y := y - ceilf((y + height) / step_y) * step_y if tile_y else y
 	var count_x := int(ceilf((view_w - left - start_x) / step_x)) + 1 if tile_x else 1
-	var count_y := int(ceilf((view_h - start_y) / step_y)) + 1 if tile_y else 1
+	# Round a planet the view's top corners show what lies a little over it.
+	var top := view_h + _reach
+	var count_y := int(ceilf((top - start_y) / step_y)) + 1 if tile_y else 1
 	for row in count_y:
 		var draw_y := start_y + row * step_y
-		if draw_y + height <= 0 or draw_y >= view_h:
+		if draw_y + height <= 0 or draw_y >= top:
 			continue
 		for column in count_x:
 			var draw_x := start_x + column * step_x
@@ -878,9 +907,9 @@ func _draw_region(l: Dictionary, x: float, y: float, width: float, height: float
 		# Behind a near tower: cut in strips, each placed round the panorama and scaled about the eye.
 		PlaxPanorama.draw(self, r.texture, src, left, bottom, draw_w, draw_h, fx, fy, _panorama, _eye_y, _view_w)
 		return
-	if _bend > 0:
-		# Round the page's planet: cut in strips, each lowered (ParallaxPageReader.drawImageLayer).
-		PlaxPlanet.draw(self, r.texture, src, left, bottom, draw_w, draw_h, fx, fy, _bend, _view_w)
+	if _planet > 0:
+		# Round the page's planet: cut in strips, each wrapped round it (ParallaxPageReader.drawImageLayer).
+		PlaxPlanet.draw(self, r.texture, src, left, bottom, draw_w, draw_h, fx, fy, _planet, _view_w)
 		return
 	var px := Vector2(draw_w, draw_h) * _ppu
 	var origin := Vector2(left * _ppu, _screen_h - (bottom + draw_h) * _ppu)

@@ -187,8 +187,9 @@ public class PlaxBackground extends BaseAppState
 
 	/**
 	 * Makes {@code hook} draw every EMPTY layer named {@code name}, as {@link ParallaxPageReader#setLayerHook}: through
-	 * the {@link JmeBatch} it is handed, whose only draw is {@code draw(region, x, y, width, height)} (a region of a
-	 * {@link JmeAtlas}); null removes it.
+	 * the {@link JmeBatch} it is handed, whose draws are {@code draw(region, x, y, width, height)} and, to stand a thing
+	 * on a page round a planet, {@code draw(region, x, y, originX, originY, width, height, scaleX, scaleY, rotation)} (a
+	 * region of a {@link JmeAtlas}); null removes it.
 	 */
 	public void setLayerHook(String name, LayerHook hook)
 	{reader.setLayerHook(name, hook);}

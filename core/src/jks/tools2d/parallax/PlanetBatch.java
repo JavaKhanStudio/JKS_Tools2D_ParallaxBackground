@@ -9,12 +9,15 @@ import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.math.Matrix4;
 
 /**
- * The batch a layer bent round the page's planet is drawn through ({@link ParallaxPageReader#planetBendOf}, r277,
- * docs/depth-tricks.md §3): each {@code draw(region, x, y, width, height)}, the one call every engine's batch draws, is
- * cut where it crosses the {@link #STRIPS} vertical strips of equal width the layer's view is divided in, and each piece
- * is lowered by {@code bend dx²}, dx from the view's middle to its strip's middle. The strips are fixed in the view, so
- * the art scrolls through a still curve; what lies outside the view is not drawn. The other draws (none a bent layer
- * makes) and the rest go to the batch under it as is. One per reader, set for each layer; nothing allocated in a frame.
+ * The batch a layer round the page's planet is drawn through (r277, r347: docs/depth-tricks.md §3): the layer's view is
+ * the side of a world turning round one centre {@code radius} under the middle of the view's bottom. A point
+ * {@code (x, y)} of the view goes to the angle {@code (x - middle) / radius} round it, at {@code radius} plus its height
+ * over the view's bottom from it ({@link #placeX}, {@link #placeY}): what scrolls across turns round the centre, and
+ * what stands up leans out along the radius. Each {@code draw(region, x, y, width, height)}, the one call every
+ * engine's batch draws, is cut where it crosses the {@link #STRIPS} vertical strips of equal width the view is divided
+ * in, and each piece drawn as the quad its four corners go to, through {@code draw(Texture, float[], ...)}; what lies
+ * outside the view is not drawn. {@link #turn} instead turns a particle effect as one block, every vertex of its
+ * sprites. The rest goes to the batch under it as is. One per reader, set for each layer; nothing allocated in a frame.
  */
 final class PlanetBatch implements Batch
 {
@@ -22,30 +25,58 @@ final class PlanetBatch implements Batch
 	static final int STRIPS = 256;
 
 	private Batch batch;
-	private float bend, viewLeft, viewWidth;
-	/** The piece of a region a strip draws, set before each piece's draw. */
-	private final TextureRegion piece = new TextureRegion();
+	private float radius, middle, ground, viewLeft, viewWidth;
+	/** Set by {@link #turn}: the sprites' vertices turned as one block, from (pivotX, pivotY) to (toX, toY). */
+	private boolean turning;
+	private float pivotX, pivotY, toX, toY, cos, sin;
+	/** A strip's quad, SpriteBatch's 20 floats; a turned sprite's vertices. */
+	private final float[] quad = new float[20];
+	private float[] turned = new float[20];
 
-	/** Draws through {@code batch}, bent by {@code bend} (lowered {@code bend dx²}) across the view from {@code viewLeft}. */
-	PlanetBatch set(Batch batch, float bend, float viewLeft, float viewWidth)
+	/**
+	 * Draws through {@code batch}, round a centre {@code radius} under the middle of the view {@code viewWidth} wide from
+	 * {@code (viewLeft, viewBottom)}.
+	 */
+	PlanetBatch set(Batch batch, float radius, float viewLeft, float viewBottom, float viewWidth)
 	{
 		this.batch = batch;
-		this.bend = bend;
+		this.radius = radius;
 		this.viewLeft = viewLeft;
 		this.viewWidth = viewWidth;
+		middle = viewLeft + viewWidth / 2;
+		ground = viewBottom;
+		turning = false;
 		return this;
 	}
 
-	/** How far strip {@code strip} of a view {@code viewWidth} wide is lowered, bent by {@code bend}. */
-	static float dropOf(float bend, float viewWidth, int strip)
+	/**
+	 * Turns the sprites drawn next ({@code draw(Texture, float[], ...)}: a particle effect's) as one block: moved and
+	 * turned as the point {@code (x, y)} is, their middle.
+	 */
+	PlanetBatch turn(float x, float y)
 	{
-		float dx = (strip + 0.5f - STRIPS / 2f) * (viewWidth / STRIPS);
-		return bend * dx * dx;
+		pivotX = x;
+		pivotY = y;
+		toX = placeX(radius, middle, ground, x, y);
+		toY = placeY(radius, middle, ground, x, y);
+		double angle = -(x - middle) / radius;
+		cos = (float) Math.cos(angle);
+		sin = (float) Math.sin(angle);
+		turning = true;
+		return this;
 	}
+
+	/** Where {@code (x, y)} goes across, round a centre {@code radius} under {@code (middle, ground)}. */
+	static float placeX(float radius, float middle, float ground, float x, float y)
+	{return middle + (radius + y - ground) * (float) Math.sin((x - middle) / radius);}
+
+	/** Where {@code (x, y)} goes up, round a centre {@code radius} under {@code (middle, ground)}. */
+	static float placeY(float radius, float middle, float ground, float x, float y)
+	{return ground - radius + (radius + y - ground) * (float) Math.cos((x - middle) / radius);}
 
 	/**
 	 * The region over {@code x} to {@code x + width} (a negative width, flipped on X, runs it right to left), cut at the
-	 * strips, each piece lowered by its strip's drop.
+	 * strips, each piece the quad its corners go to.
 	 */
 	@Override
 	public void draw(TextureRegion region, float x, float y, float width, float height)
@@ -55,23 +86,30 @@ final class PlanetBatch implements Batch
 			return;
 		int first = Math.max(0, (int) Math.floor((a - viewLeft) / step));
 		int last = Math.min(STRIPS - 1, (int) Math.floor((b - viewLeft) / step));
-		float u = region.getU(), u2 = region.getU2();
-		piece.setTexture(region.getTexture());
+		float u = region.getU(), u2 = region.getU2(), v = region.getV(), v2 = region.getV2(), color = batch.getPackedColor();
 		for (int strip = first; strip <= last; strip++)
 		{
 			float p0 = Math.max(a, viewLeft + strip * step), p1 = Math.min(b, viewLeft + (strip + 1) * step);
 			if (!(p1 > p0))
 				continue;
 			// The piece's share of the region, from x along the width: decreasing when it runs right to left.
-			float t0 = (p0 - x) / width, t1 = (p1 - x) / width;
-			if (piece.getTexture() != null)
-				piece.setRegion(u + (u2 - u) * Math.min(t0, t1), region.getV(), u + (u2 - u) * Math.max(t0, t1), region.getV2());
-			float drop = dropOf(bend, viewWidth, strip);
-			if (width > 0)
-				batch.draw(piece, p0, y - drop, p1 - p0, height);
-			else
-				batch.draw(piece, p1, y - drop, p0 - p1, height);
+			float u0 = u + (u2 - u) * ((p0 - x) / width), u1 = u + (u2 - u) * ((p1 - x) / width);
+			// SpriteBatch's order: bottom left, top left, top right, bottom right.
+			corner(0, p0, y, color, u0, v2);
+			corner(5, p0, y + height, color, u0, v);
+			corner(10, p1, y + height, color, u1, v);
+			corner(15, p1, y, color, u1, v2);
+			batch.draw(region.getTexture(), quad, 0, 20);
 		}
+	}
+
+	private void corner(int at, float x, float y, float color, float u, float v)
+	{
+		quad[at] = placeX(radius, middle, ground, x, y);
+		quad[at + 1] = placeY(radius, middle, ground, x, y);
+		quad[at + 2] = color;
+		quad[at + 3] = u;
+		quad[at + 4] = v;
 	}
 
 	@Override
@@ -118,9 +156,28 @@ final class PlanetBatch implements Batch
 	public void draw(Texture texture, float x, float y, float width, float height)
 	{batch.draw(texture, x, y, width, height);}
 
+	/** A sprite's vertices (a particle's): turned as one block after {@link #turn}, as is otherwise. */
 	@Override
 	public void draw(Texture texture, float[] spriteVertices, int offset, int count)
-	{batch.draw(texture, spriteVertices, offset, count);}
+	{
+		if (!turning)
+		{
+			batch.draw(texture, spriteVertices, offset, count);
+			return;
+		}
+		if (turned.length < count)
+			turned = new float[count];
+		for (int i = 0; i < count; i += 5)
+		{
+			float dx = spriteVertices[offset + i] - pivotX, dy = spriteVertices[offset + i + 1] - pivotY;
+			turned[i] = toX + dx * cos - dy * sin;
+			turned[i + 1] = toY + dx * sin + dy * cos;
+			turned[i + 2] = spriteVertices[offset + i + 2];
+			turned[i + 3] = spriteVertices[offset + i + 3];
+			turned[i + 4] = spriteVertices[offset + i + 4];
+		}
+		batch.draw(texture, turned, 0, count);
+	}
 
 	@Override
 	public void begin()

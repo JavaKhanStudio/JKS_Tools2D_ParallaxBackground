@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# strength.sh — how much the bend moves the planet round's stills (r277).
+# strength.sh — how much the planet moves the planet round's stills (r277, r347).
 #
-# The reader rounds fail past a mean 2/255 apart: a reader that drew a page flat would pass a scene the bend moves by
+# The reader rounds fail past a mean 2/255 apart: a reader that drew a page flat would pass a scene the planet moves by
 # less. Each scene has a "flat" twin, its pages' planetRadius 0. This renders the round and the twins with libGDX
 # (tools/parallax-lab-shots.sh, off screen) and prints, per still, how far each is from its twin; it fails when one is
 # under MIN (default 2.5, past the rounds' 2); p07-t0, the flat page before it fades into a round one, is

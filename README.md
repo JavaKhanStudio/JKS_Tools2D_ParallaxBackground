@@ -101,18 +101,21 @@ A **page** (`WholePage_Model`) is one complete background:
 - **Two gradient squares** (`SquareBackground`) drawn behind the layers, one covering the top of the screen and one
   the bottom, each going from a bottom color to a top color.
 - **Repeat on X / Y**: whether layers are tiled horizontally, vertically, both, or drawn once.
-- **Planet** (`planetRadius`, format 13, r277, docs/depth-tricks.md §3): the page's ground runs round a planet of that
-  radius, in percent of the world width (0, the default: flat, as every page saved before). Each `IMAGE`, `SHADER`
-  and `SEQUENCE` layer is lowered by `dx² × d / 2R` at `dx` from the view's middle, R the radius and d the layer's
-  depth, the page's fastest speed ratio X over its own (1 for the front layer, 4 for one scrolling a quarter as fast):
-  the far layers bend down toward the view's sides more, a still layer (speed 0) is the sky and stays flat, and so do
-  the gradients, `FLOOR` and tower layers. A `PARTICLES` layer's effect is lowered as one block by the drop at the
-  middle of its layer's box (each tile's, anchored to the `LAYER`), and an `EMPTY` layer's hook is not bent: it asks
-  the drop at an x, `reader.planetDropAt(layer, x)` (Godot's `planet_drop_at(l, x)`, in its rect's pixels), and lowers
-  what it draws by it (r330). On a 40-wide view, a layer of depth 4 drops
-  `400 × 4 / 2R` units at the sides: 800 (R = 320 units) drops it 2.5, the front 0.6. A bent layer uncovers what is
-  behind it at the sides (the gradients under the farthest). Drawn as 256 vertical strips across the view, each piece
-  one `batch.draw(region, x, y, width, height)` lowered by its strip's drop; a cross-fade bends each page by its own.
+- **Planet** (`planetRadius`, format 13, r277, r347, docs/depth-tricks.md §3): the page is the side of a world turning
+  round one centre, that radius (in percent of the world width; 0, the default: flat, as every page saved before)
+  under the middle of the view's bottom. Every `IMAGE`, `SHADER` and `SEQUENCE` layer, a still one too, is wrapped
+  round it alike: a point `dx` from the view's middle and `h` over its bottom goes to the angle `dx / R` round the
+  centre, `R + h` from it. So each layer turns at its own speed (its parallax), what stands up leans out from the
+  centre, and as every layer follows the same curve, none shows under another. The gradients, `FLOOR` and tower
+  layers stay flat. A `PARTICLES` layer's effect is turned as one block, as the middle of its layer's box is (each
+  tile's, anchored to the `LAYER`). An `EMPTY` layer's hook is not wrapped: it asks where a point goes,
+  `reader.planetPlaceAt(layer, x, y, out)`, and how far what stands there leans, `reader.planetAngleAt(layer, x)`
+  (degrees counterclockwise, libGDX's `rotation`; Godot's `planet_place_at(l, point)` and `planet_angle_at(l, x)`, in
+  its rect's pixels and radians clockwise), and draws there turned; `planetDropAt`, r330's drop, is deprecated. On a
+  40-wide view a radius of 400% (160 units) drops the ground 1.25 units at the sides and leans it 7.2°; the view's
+  top corners show a little of what is over its top. Drawn as 256 vertical strips across the view, each piece one
+  quad, `batch.draw(texture, vertices, 0, 20)`, its corners placed round the centre; a cross-fade wraps each page
+  round its own; dollied, every layer is wrapped round the same circle on screen.
 - **Fog** (`fogStrength`, `fogColor`, format 10): a depth fog over the whole page. Each `IMAGE`, `SEQUENCE` and
   `SHADER` layer is mixed toward the fog's colour, its colour only, by `1 − exp(−strength × (1 / speed − 1 / front))`,
   speed its speed ratio X and front the page's fastest one, both as sizes: the slower a layer scrolls, the farther it
@@ -246,10 +249,12 @@ More:
 - **A rolling world (the planet):** a page's planet (see "Planet" in "Concepts") is set by the page; a game changes it
   with `heart.parallaxReader.setPlanetRadius(radius)` (the page on screen; a cross-fade brings in the next page's own),
   or on the `WholePage_Model` (`planetRadius`) before showing it, as with Godot's `PlaxPage.planet_radius`. Each strip
-  is one `batch.draw(region, x, y, width, height)`: a frame allocates nothing. A hook drawing in an `EMPTY` layer
-  lowers what it draws at x by `heart.parallaxReader.planetDropAt(layer, x)` (0 on a flat page): each thing at its own
-  x follows the curve, the whole tile at the tile's middle drops as a block. `tools/effects-lab.sh --lab planet` shows
-  both, and the snow, moving.
+  is one quad, `batch.draw(texture, vertices, 0, 20)`: a frame allocates nothing. A hook drawing in an `EMPTY` layer
+  stands a thing on its foot: `reader.planetPlaceAt(layer, footX, footY, out)` is where the foot goes (the foot itself on
+  a flat page), `reader.planetAngleAt(layer, footX)` how far it leans, and
+  `batch.draw(region, out.x - w / 2, out.y, w / 2, 0, w, h, 1, 1, angle)` draws it there; a jME game's `JmeBatch`
+  draws that call too. Each thing on its own foot, or the whole tile turned about its middle's.
+  `tools/effects-lab.sh --lab planet` shows both, and the snow, moving.
 - **Depth fog:** a page's fog (see "Concepts") is set by the page itself; a game changes it with
   `heart.parallaxReader.setFog(strength, color)` (the page on screen; a cross-fade brings in the next page's own), or
   on the `WholePage_Model` (`setFogStrength`, `fogColor`) before showing it, as with Godot's `PlaxPage.fog_strength` /

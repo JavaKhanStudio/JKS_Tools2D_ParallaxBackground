@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# r277: proves the planet round (engines/rounds/planet) sees a wrong bend, in Godot's copy (plax_planet.gd,
-# plax_background.gd) and in core's law (ParallaxPageReader.planetBendOf, PlanetBatch), which libGDX draws and jME runs
+# r277, r347: proves the planet round (engines/rounds/planet) sees a wrong planet, in Godot's copy (plax_planet.gd,
+# plax_background.gd) and in core's law (PlanetBatch, ParallaxPageReader.planetInView), which libGDX draws and jME runs
 # as is. Puts in one mutant at a time, runs engines/godot/tools/frame-check.sh engines/rounds/planet for each, and fails
-# unless every run FAILS. Godot: no bend; every layer bent as the front (no depth); dx from the view's left, not its
-# middle; the incoming page bent by the outgoing page's planet. Core: dx from the view's left; every layer bent as the
-# front. r330's: a hook handed no drop (Godot's planet_drop_at, core's planetDropAt: the planet round's p08), and
-# Godot's particle nodes left flat, per LAYER tile and for a VIEW effect (engines/rounds/particles, q09 and q10,
-# whose particles.gd works the drop out apart: libGDX's particle drop is held by core's PlanetCases instead).
+# unless every run FAILS. Godot: no planet; a leaning-less copy (each point only lowered by the ground's drop under it,
+# not wrapped along the radius); the angle from the view's left, not its middle; the incoming page round the outgoing
+# page's planet; a dollied layer's radius not scaled to its view (p06); a hook not turned (planet_angle_at 0) and not
+# placed (planet_place_at as is: p08). Core: leaning-less; the dolly's radius not scaled; a hook not turned. Godot's
+# particle nodes not turned, per LAYER tile and for a VIEW effect, and placed but not rotated (engines/rounds/particles,
+# q09 and q10, whose particles.gd works the turn out apart: libGDX's is held by core's PlanetCases instead).
 # Restores the files on exit. Writes build/r277/mutant.log, and each mutant's report in build/r277/mutants/.
 # headless: engines/godot/tools/frame-check.sh renders in cage.
 set -u
@@ -55,37 +56,47 @@ PY
 	cp "$LOG" "build/r277/mutants/$n.log"
 	restore
 }
-mutant "$PLANET" "Godot: no bend, every layer drawn flat" \
-	'return front / speed / (2 * r)' \
+mutant "$PLANET" "Godot: no planet, every layer drawn flat" \
+	'return r * z / zoom if r > 0 else 0.0' \
 	'return 0.0'
-mutant "$PLANET" "Godot: every layer bent as the front, not by its depth" \
-	'return front / speed / (2 * r)' \
-	'return 1.0 / (2 * r)'
-mutant "$PLANET" "Godot: dx from the view's left, not its middle" \
-	'var dx := (strip + 0.5 - STRIPS / 2.0) * (view_w / STRIPS)' \
-	'var dx := (strip + 0.5) * (view_w / STRIPS)'
-# Two tabs in: _draw_layer's, not planet_drop_at's.
-mutant "$BG" "Godot: the incoming page bent by the outgoing page's planet" \
-	$'\t\tvar from_page := transfer_page if l.incoming else page' \
-	$'\t\tvar from_page := page'
-mutant "$BATCH" "core: dx from the view's left, not its middle" \
-	'float dx = (strip + 0.5f - STRIPS / 2f) * (viewWidth / STRIPS);' \
-	'float dx = (strip + 0.5f) * (viewWidth / STRIPS);'
-mutant "$READER" "core: every layer bent as the front, not by its depth" \
-	'return front / speed / (2 * r);' \
-	'return 1 / (2 * r);'
-mutant "$BG" "Godot: a hook handed no drop (planet_drop_at 0)" \
-	'return bend * dx * dx * _ppu' \
-	'return 0.0 * bend * dx * dx * _ppu'
-mutant "$READER" "core: a hook handed no drop (planetDropAt 0)" \
-	'		return bend * dx * dx;
-	}' \
-	'		return 0 * bend * dx * dx;
-	}'
-ROUND=particles mutant "$PARTICLES" "Godot: a LAYER tile's particle node left flat" \
-	'_bg._screen_h - y * ppu + _bg.planet_drop_at(l, (x + width / 2) * ppu)' \
-	'_bg._screen_h - y * ppu'
-ROUND=particles mutant "$PARTICLES" "Godot: a VIEW effect's particle node left flat" \
-	'var drop := _bg.planet_drop_at(l, (anchor.x + decal_x + l.width / 2) * ppu)' \
-	'var drop := 0.0'
+mutant "$PLANET" "Godot: leaning-less, each point only lowered by the ground's drop under it" \
+	'return Vector2(view_w / 2 + (radius + y) * sin(a), -radius + (radius + y) * cos(a))' \
+	'return Vector2(x, y - radius * (1 - cos(a)))'
+mutant "$PLANET" "Godot: the angle from the view's left, not its middle" \
+	'var a := (x - view_w / 2) / radius' \
+	'var a := x / radius'
+mutant "$BG" "Godot: the incoming page round the outgoing page's planet" \
+	'var from_page := transfer_page if l.incoming else page' \
+	'var from_page := page'
+mutant "$PLANET" "Godot: a dollied layer's radius not scaled to its view" \
+	'return r * z / zoom if r > 0 else 0.0' \
+	'return r if r > 0 else 0.0'
+mutant "$BG" "Godot: a hook not turned (planet_angle_at 0)" \
+	'return PlaxPlanet.angle_at(_planet_of(l), _view_w, x / _ppu)' \
+	'return 0.0 * PlaxPlanet.angle_at(_planet_of(l), _view_w, x / _ppu)'
+mutant "$BG" "Godot: a hook not placed (planet_place_at as is)" \
+	'	if not radius > 0:
+		return at
+	var to := PlaxPlanet.place' \
+	'	if true:
+		return at
+	var to := PlaxPlanet.place'
+mutant "$BATCH" "core: leaning-less, each point only lowered by the ground's drop under it" \
+	'{return middle + (radius + y - ground) * (float) Math.sin((x - middle) / radius);}' \
+	'{return x;}'
+mutant "$READER" "core: a dollied layer's radius not scaled to its view" \
+	'return radius > 0 ? radius * viewWidth / (viewportWidth * cameraZoom) : 0;' \
+	'return radius > 0 ? radius : 0;'
+mutant "$READER" "core: a hook not turned (planetAngleAt 0)" \
+	'return radius > 0 ? -(x - (viewLeft + viewWidth / 2)) / radius * MathUtils.radiansToDegrees : 0;' \
+	'return 0;'
+ROUND=particles mutant "$PARTICLES" "Godot: a LAYER tile's particle node not turned" \
+	'node.position = _turned(l, Vector2(x, y), middle)' \
+	'node.position = Vector2(x * ppu, _bg._screen_h - y * ppu)'
+ROUND=particles mutant "$PARTICLES" "Godot: a VIEW effect's particle node not turned" \
+	'node.position = _turned(l, Vector2(anchor.x + l.travel_x, anchor.y + l.travel_y), middle)' \
+	'node.position = Vector2((anchor.x + l.travel_x) * ppu, _bg._screen_h - (anchor.y + l.travel_y) * ppu)'
+ROUND=particles mutant "$PARTICLES" "Godot: particle nodes placed round the planet but not rotated" \
+	'* ppu, -(at.y - middle.y) * ppu).rotated(turn)' \
+	'* ppu, -(at.y - middle.y) * ppu).rotated(0.0)'
 exit $status

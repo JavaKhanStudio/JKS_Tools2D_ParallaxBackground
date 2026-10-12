@@ -53,7 +53,8 @@ cross-fade round. CI runs it too (ci.yml job godot-frames, Xvfb + llvmpipe): a p
 desynchronises the port fails the build, so run it before pushing, not after.
 THE jME READER (engines/jme, r112) RUNS THIS CODE AS IS: PlaxBackground drives ParallaxPageReader
 and draws through JmeBatch, a libGDX Batch in jME meshes that implements ONLY
-draw(region, x, y, width, height) and throws on every other draw. Make the reader call another
+draw(region, x, y, width, height), the quad draw(Texture, float[], ...) and the turned region draw (a planet's, r347)
+and throws on every other draw. Make the reader call another
 Batch method, or change SquareBackground (ported in JmeGradient: it reads Gdx.graphics), and run
 `engines/jme/tools/frame-check.sh` (CI runs it in its own job, jme-frames). No libGDX backend there: a core call that reaches a gdx
 native from ParallaxPageReader or ParallaxLayer (OrthographicCamera.update -> Matrix4.prj does) throws
@@ -92,14 +93,19 @@ strips are scaled about the view's middle (ParallaxLayer.towerScaleAt: courses a
 IMAGE/SHADER/SEQUENCE layers go through PanoramaBatch (nearTowerOf, panoramaRadiusOf: R = f s_tower/s - D, at least
 D, so the camera is inside and every panorama covers the view); a panorama skips the planet's bend. Godot:
 plax_panorama.gd, plax_tower.gd scale_at; round scenes w05-w08; the tower lab's camera slider.
-A PLANET (r277, format 13: the PAGE's planetRadius) BENDS THROUGH PlanetBatch, NOT IN ParallaxLayer: it wraps the layer's
-batch (over the DollyBatch when dollied) and cuts each draw(region, x, y, w, h) at 256 strips FIXED IN THE LAYER'S VIEW,
-each lowered by planetBendOf (front / speed / 2R) times dx^2. A still layer is the sky and stays flat; FLOOR and
-tower layers too; each cross-faded page is bent by its own radius (transferPlanetRadius). A PARTICLES effect is
-lowered AS ONE BLOCK by the drop at its LAYER BOX's middle (r330: Godot cannot know the live particles' box); a hook
-is never bent, it asks planetDropAt(layer, x). Godot: plax_planet.gd from _draw_region, planet_drop_at,
-plax_particles.gd; rounds engines/rounds/planet (p08 a hook) and particles (q09, q10),
-tools/r277-planet/strength.sh and mutate.sh.
+A PLANET (r277, r347, format 13: the PAGE's planetRadius) WRAPS THROUGH PlanetBatch, NOT IN ParallaxLayer: the page is
+the side of a world turning round ONE centre R under the middle of the view's bottom, and EVERY IMAGE/SHADER/SEQUENCE
+layer, still ones too, follows that one curve (r277's per-layer curve made far layers poke under near ones: Simon
+rejected it). PlanetBatch wraps the layer's batch (over the DollyBatch when dollied, R scaled to the layer's view by
+planetInView so all layers share one circle on screen) and cuts each draw(region, x, y, w, h) at 256 strips FIXED IN
+THE LAYER'S VIEW, each drawn as a QUAD through draw(Texture, float[], ...) whose corners go to angle dx/R, radius R+h
+(placeX/placeY): upright things lean. Tiles up to planetReachOf over the view's top are drawn. FLOOR and tower layers
+stay flat; each cross-faded page wraps round its own radius (transferPlanetRadius). A PARTICLES effect is TURNED AS
+ONE BLOCK as its LAYER BOX's middle is (PlanetBatch.turn; Godot cannot know the live particles' box); a hook is never
+wrapped, it asks planetPlaceAt(layer, x, y, out) and planetAngleAt(layer, x) (planetDropAt is deprecated). JmeBatch
+draws the quads and the turned region draw a hook uses. Godot: plax_planet.gd (draw_primitive) from _draw_region,
+planet_place_at/planet_angle_at, plax_particles.gd; rounds engines/rounds/planet (p08 a hook) and particles (q09,
+q10), tools/r277-planet/strength.sh and mutate.sh.
 README.md's layer-settings table IS the documented meaning of these fields, and it is what a
 game developer reads before depending on this. Rename, rescale or repurpose a setting and fix
 the table in the SAME commit.

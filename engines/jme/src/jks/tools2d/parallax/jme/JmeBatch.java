@@ -14,7 +14,9 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Affine2;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.utils.NumberUtils;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.MatParamTexture;
 import com.jme3.material.Material;
@@ -34,9 +36,11 @@ import com.jme3.util.BufferUtils;
 /**
  * libGDX's {@link Batch}, drawn by jME: what lets {@link jks.tools2d.parallax.ParallaxPageReader} draw a page in a jME
  * scene unchanged. Between {@link #begin()} and {@link #end()} it collects the quads of
- * {@link #draw(TextureRegion, float, float, float, float)}, the only draw the reader calls, into one mesh per run of the
- * same texture, in draw order, as SpriteBatch flushes. The quads keep libGDX's packed vertex colour (8 bits a channel,
- * the alpha's lowest bit dropped) and its blending (source alpha, one minus source alpha).
+ * {@link #draw(TextureRegion, float, float, float, float)}, the reader's draw, of
+ * {@link #draw(Texture, float[], int, int)}, a page round a planet's (r347), and of the turned region draw a game's hook
+ * stands a thing on a planet with, into one mesh per run of the same texture, in draw order, as SpriteBatch flushes.
+ * The quads keep libGDX's packed vertex colour (8 bits a channel, the alpha's lowest bit dropped) and its blending
+ * (source alpha, one minus source alpha).
  * <p>
  * Positions are in the reader's world units, mapped to pixels by {@link #setView}. A SHADER layer's run is drawn with
  * the material {@link #setEffect} names, which {@link JmeLayerEffects} sets around its tiles. The other draws, libGDX
@@ -135,12 +139,7 @@ public class JmeBatch implements Batch
 	@Override
 	public void draw(TextureRegion region, float x, float y, float width, float height)
 	{
-		Texture2D texture = ((JmeAtlas.PageTexture) region.getTexture()).texture;
-		if (current == null || current.texture != texture)
-			current = nextRun(texture);
-
-		Run run = current;
-		ensureCapacity(run, run.quads + 1);
+		Run run = quad(region.getTexture());
 		float left = (x - viewLeft) * pixelsPerUnitX, bottom = (y - viewBottom) * pixelsPerUnitY;
 		float right = (x + width - viewLeft) * pixelsPerUnitX, top = (y + height - viewBottom) * pixelsPerUnitY;
 		float u = region.getU(), v = region.getV(), u2 = region.getU2(), v2 = region.getV2();
@@ -150,6 +149,68 @@ public class JmeBatch implements Batch
 		vertex(run, run.quads * 4 + 2, right, top, u2, v);
 		vertex(run, run.quads * 4 + 3, right, bottom, u2, v2);
 		run.quads++;
+	}
+
+	/**
+	 * Quads, SpriteBatch's 20 floats each (x, y, packed colour, u, v; bottom left, top left, top right, bottom right): a
+	 * strip of a page round a planet, its corners where the planet puts them.
+	 */
+	@Override
+	public void draw(Texture texture, float[] spriteVertices, int offset, int count)
+	{
+		for (int at = offset; at + 20 <= offset + count; at += 20)
+		{
+			Run run = quad(texture);
+			for (int corner = 0; corner < 4; corner++)
+			{
+				int i = at + corner * 5, index = run.quads * 4 + corner;
+				vertex(run, index, (spriteVertices[i] - viewLeft) * pixelsPerUnitX, (spriteVertices[i + 1] - viewBottom) * pixelsPerUnitY,
+						spriteVertices[i + 3], spriteVertices[i + 4]);
+				int abgr = NumberUtils.floatToIntColor(spriteVertices[i + 2]);
+				run.colors[index * 4] = (byte) abgr;
+				run.colors[index * 4 + 1] = (byte) (abgr >>> 8);
+				run.colors[index * 4 + 2] = (byte) (abgr >>> 16);
+				run.colors[index * 4 + 3] = (byte) (abgr >>> 24);
+			}
+			run.quads++;
+		}
+	}
+
+	/**
+	 * The region turned by {@code rotation} degrees counterclockwise about {@code (x + originX, y + originY)} and scaled
+	 * about it, as SpriteBatch draws it: what a game's hook stands a thing with on a page round a planet.
+	 */
+	@Override
+	public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height,
+			float scaleX, float scaleY, float rotation)
+	{
+		Run run = quad(region.getTexture());
+		float ox = x + originX, oy = y + originY;
+		float left = -originX * scaleX, bottom = -originY * scaleY;
+		float right = (width - originX) * scaleX, top = (height - originY) * scaleY;
+		float cos = MathUtils.cosDeg(rotation), sin = MathUtils.sinDeg(rotation);
+		float u = region.getU(), v = region.getV(), u2 = region.getU2(), v2 = region.getV2();
+		turned(run, run.quads * 4, ox, oy, left, bottom, cos, sin, u, v2);
+		turned(run, run.quads * 4 + 1, ox, oy, left, top, cos, sin, u, v);
+		turned(run, run.quads * 4 + 2, ox, oy, right, top, cos, sin, u2, v);
+		turned(run, run.quads * 4 + 3, ox, oy, right, bottom, cos, sin, u2, v2);
+		run.quads++;
+	}
+
+	private void turned(Run run, int index, float ox, float oy, float dx, float dy, float cos, float sin, float u, float v)
+	{
+		vertex(run, index, (ox + dx * cos - dy * sin - viewLeft) * pixelsPerUnitX, (oy + dx * sin + dy * cos - viewBottom) * pixelsPerUnitY,
+				u, v);
+	}
+
+	/** The run the next quad of {@code texture} goes in, room made for it. */
+	private Run quad(Texture texture)
+	{
+		Texture2D page = ((JmeAtlas.PageTexture) texture).texture;
+		if (current == null || current.texture != page)
+			current = nextRun(page);
+		ensureCapacity(current, current.quads + 1);
+		return current;
 	}
 
 	private void vertex(Run run, int index, float x, float y, float u, float v)
@@ -315,9 +376,10 @@ public class JmeBatch implements Batch
 	public void setPackedColor(float packedColor)
 	{throw unsupported();}
 
+	/** The colour as {@link Color#toFloatBits()} packs it: what a planet's quads carry ({@link #setColor}'s bytes). */
 	@Override
 	public float getPackedColor()
-	{throw unsupported();}
+	{return NumberUtils.intToFloatColor((alpha & 0xFF) << 24 | (blue & 0xFF) << 16 | (green & 0xFF) << 8 | red & 0xFF);}
 
 	@Override
 	public void draw(Texture texture, float x, float y, float originX, float originY, float width, float height, float scaleX,
@@ -346,17 +408,8 @@ public class JmeBatch implements Batch
 	{throw unsupported();}
 
 	@Override
-	public void draw(Texture texture, float[] spriteVertices, int offset, int count)
-	{throw unsupported();}
-
-	@Override
 	public void draw(TextureRegion region, float x, float y)
 	{draw(region, x, y, region.getRegionWidth(), region.getRegionHeight());}
-
-	@Override
-	public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height,
-			float scaleX, float scaleY, float rotation)
-	{throw unsupported();}
 
 	@Override
 	public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height,

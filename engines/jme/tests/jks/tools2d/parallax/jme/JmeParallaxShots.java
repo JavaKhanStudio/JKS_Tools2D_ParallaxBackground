@@ -12,6 +12,7 @@ import org.lwjgl.glfw.GLFW;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.FileLocator;
 import com.jme3.system.AppSettings;
@@ -179,8 +180,19 @@ public class JmeParallaxShots extends SimpleApplication
 		{
 			TextureRegion region = Round.findRegion(atlas, hook.region, hook.position);
 			boolean planet = hook.planet;
-			bg.setLayerHook(hook.layer, (batch, layer, x, y, width, height) -> batch.draw(region, x,
-					planet ? y - bg.getReader().planetDropAt(layer, x + width / 2) : y, width, height));
+			Vector2 foot = new Vector2();
+			bg.setLayerHook(hook.layer, (batch, layer, x, y, width, height) ->
+			{
+				if (!planet)
+				{
+					batch.draw(region, x, y, width, height);
+					return;
+				}
+				// Stood on its tile's foot, leaning as the planet says (r347).
+				bg.getReader().planetPlaceAt(layer, x + width / 2, y, foot);
+				batch.draw(region, foot.x - width / 2, foot.y, width / 2, 0, width, height, 1, 1,
+						bg.getReader().planetAngleAt(layer, x + width / 2));
+			});
 			hooked.add(hook.layer);
 		}
 		if (scene.sequenceSeed != null)

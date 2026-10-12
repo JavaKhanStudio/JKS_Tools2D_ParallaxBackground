@@ -14,12 +14,17 @@ import com.badlogic.gdx.math.Matrix4;
 /**
  * A {@link Batch} that draws nothing and records the x, y, width and height of every 5-argument draw, the ones the
  * reader makes, then the batch color's red and alpha (and of a region's draw, its green and blue, then the region's u
- * and u2); and of every particle, its own color's. The reader cases
+ * and u2); and of every particle, its own color's. Every sprite's vertices go in {@link #quads} too, and every turned
+ * region draw (a hook's, round a planet) in {@link #turned}. The reader cases
  * ({@link ReaderFixtures}) record the reader on it: a java.lang.reflect.Proxy would too, but GWT does not have one.
  */
 public class RecordingBatch implements Batch
 {
 	public final List<float[]> draws = new ArrayList<>();
+	/** Every {@code draw(Texture, float[], ...)}: a copy of its vertices, SpriteBatch's 5 floats each (x, y, color, u, v). */
+	public final List<float[]> quads = new ArrayList<>();
+	/** Every turned region draw: x, y, originX, originY, width, height, rotation. */
+	public final List<float[]> turned = new ArrayList<>();
 	private final Color color = new Color(Color.WHITE), vertexColor = new Color();
 	private final Matrix4 projection = new Matrix4(), transform = new Matrix4();
 
@@ -48,13 +53,16 @@ public class RecordingBatch implements Batch
 	@Override
 	public void draw(Texture texture, float[] spriteVertices, int offset, int count)
 	{
+		float[] quad = new float[count];
+		System.arraycopy(spriteVertices, offset, quad, 0, count);
+		quads.add(quad);
 		Color.abgr8888ToColor(vertexColor, spriteVertices[offset + 2]);
 		draws.add(new float[] { spriteVertices[offset], spriteVertices[offset + 1], spriteVertices[offset + 10] - spriteVertices[offset],
 				spriteVertices[offset + 11] - spriteVertices[offset + 1], vertexColor.r, vertexColor.a });
 	}
 
 	@Override public void draw(TextureRegion region, float x, float y) {}
-	@Override public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height, float scaleX, float scaleY, float rotation) {}
+	@Override public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height, float scaleX, float scaleY, float rotation) {turned.add(new float[] { x, y, originX, originY, width, height, rotation });}
 	@Override public void draw(TextureRegion region, float x, float y, float originX, float originY, float width, float height, float scaleX, float scaleY, float rotation, boolean clockwise) {}
 	@Override public void draw(TextureRegion region, float width, float height, Affine2 transform) {}
 	@Override public void flush() {}

@@ -60,9 +60,10 @@ public class WholePage_Model
 
 	/**
 	 * The radius of the planet the page's ground runs round, in percent of the world width; 0, the default: none, the
-	 * layers are flat. Each layer is bent down by {@code dx² d / 2R} at {@code dx} from the view's middle, d its depth
-	 * from its speed against the front's, so the far layers bend more and a still one (the sky) not at all
-	 * ({@link jks.tools2d.parallax.ParallaxPageReader#planetBendOf}). Stored since format 13.
+	 * layers are flat. The page is the side of a world turning round one centre that far under the middle of the view's
+	 * bottom: every IMAGE, SHADER and SEQUENCE layer is wrapped round it alike, x along the ground's arc and y along the
+	 * radius, so each turns at its own speed and what stands up leans out from the centre (r347,
+	 * {@link jks.tools2d.parallax.ParallaxPageReader#planetPlaceAt}). Stored since format 13.
 	 */
 	public float planetRadius;
 

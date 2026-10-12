@@ -80,7 +80,7 @@ repair.
   a FLOOR's rows measured, scrolled and drawn by `plax_floor.gd`, a SEQUENCE's cycle laid out and drawn by
   `plax_sequence.gd`, a tower's strips by `plax_tower.gd` (r307, r324: `gdlint` caps a script at 1000 lines).
 - `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
-  `draw(region, x, y, width, height)`, and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
+  `draw(region, x, y, width, height)` (and a planet's quads and turned draw, r347), and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
   method, change the gradients, or make `ParallaxPageReader` or `ParallaxLayer` reach a libGDX native (`OrthographicCamera.update` does), and
   run `engines/jme/tools/frame-check.sh`.
 - An `EMPTY` layer (`Enum_LayerKind`, format 5) has no image: the reader calls the game's `LayerHook` per tile in its
@@ -148,15 +148,19 @@ repair.
   radii from its axis, above 1), each strip is scaled about the view's middle (`ParallaxLayer.towerScaleAt`: the
   courses arc) and the page's slower IMAGE, SHADER and SEQUENCE layers are drawn through `PanoramaBatch`
   (`ParallaxPageReader.nearTowerOf`/`panoramaRadiusOf`), Godot's `plax_panorama.gd`; round scenes w05-w08.
-- A planet (r277, format 13: the page's `planetRadius`) bends a page's IMAGE, SHADER and SEQUENCE layers through
-  `PlanetBatch`, which wraps the layer's batch (the dolly's, when dollied) and cuts each `draw(region, x, y, w, h)` at
-  `PlanetBatch.STRIPS` strips fixed in the layer's view, each lowered by `planetBendOf` times dx² (dx from the view's
-  middle to the strip's); a still layer, FLOOR and tower layers stay flat, each cross-faded page bent by its own. A
-  PARTICLES effect is lowered as one block by the drop at its layer box's middle, and a hook asks
-  `ParallaxPageReader.planetDropAt` (r330). Godot's copy is `plax_planet.gd` (called from `_draw_region`),
-  `planet_drop_at` and `plax_particles.gd`'s placing; jME runs core's. Change it and run both frame checks on
-  `engines/rounds/planet` (p08: a hook) and `engines/rounds/particles` (q09, q10);
-  `tools/r277-planet/strength.sh` proves the round sees the bend, `mutate.sh` a wrong Godot copy and a wrong core law.
+- A planet (r277, r347, format 13: the page's `planetRadius`) wraps a page's IMAGE, SHADER and SEQUENCE layers, still ones
+  too, round one centre R under the middle of the view's bottom through `PlanetBatch`, which wraps the layer's batch
+  (the dolly's, when dollied: R scaled to the layer's view, `planetInView`) and cuts each `draw(region, x, y, w, h)` at
+  `PlanetBatch.STRIPS` strips fixed in the layer's view, each drawn as a quad (`draw(Texture, float[], ...)`) whose
+  corners go to the angle dx / R, R + h from the centre (`placeX`/`placeY`; dx from the view's middle, h over its
+  bottom); the tiles just over the view's top are drawn (`planetReachOf`). FLOOR and tower layers stay flat, each
+  cross-faded page wrapped round its own. A PARTICLES effect is turned as one block as its layer box's middle is
+  (`PlanetBatch.turn`), and a hook asks `ParallaxPageReader.planetPlaceAt`/`planetAngleAt` and draws turned
+  (`JmeBatch` draws the quads and the turned region draw). Godot's copy is `plax_planet.gd` (quads by
+  `draw_primitive`, from `_draw_region`), `planet_place_at`/`planet_angle_at` and `plax_particles.gd`'s placing; jME
+  runs core's. Change it and run both frame checks on `engines/rounds/planet` (p08: a hook) and
+  `engines/rounds/particles` (q09, q10); `tools/r277-planet/strength.sh` proves the round sees the planet,
+  `mutate.sh` a wrong Godot copy (a leaning-less one among them) and a wrong core law.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,

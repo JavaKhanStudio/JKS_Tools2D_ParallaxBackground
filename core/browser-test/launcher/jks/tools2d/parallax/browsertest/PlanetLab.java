@@ -9,6 +9,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
@@ -23,13 +25,14 @@ import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
 
 /**
- * The planet lab (r330): r277's planet bending a page with a snowfall (a PARTICLES layer) and a game's towers (an EMPTY
- * layer, drawn by a hook) among its layers, so the two ways those follow the ground can be seen moving. The page is the
- * effects lab's "all" one (the haze lab's s01: Hiver, towers, snow, a FOG mist, WAVE trees). The reader lowers each
- * snow effect as one block by the drop at the middle of its layer's box ({@link ParallaxPageReader#planetDropAt}); the
- * hook asks that drop itself, and the towers choice shows what a hook can do with it: lower each tower at its own x,
- * lower its whole tile at the tile's middle, or ignore it. The planet radius at 0 is the flat page. One panel, the
- * whole world, the page lowered so its ground is at the frame's bottom. Opened with effects-lab.html?lab=planet: tools/effects-lab.sh --lab planet.
+ * The planet lab (r330, r347): a page round its planet, the side of a world turning round one centre under the view,
+ * with a snowfall (a PARTICLES layer) and a game's towers (an EMPTY layer, drawn by a hook) among its layers, so the
+ * ways those follow the ground can be seen moving. The page is the effects lab's "all" one (the haze lab's s01: Hiver,
+ * towers, snow, a FOG mist, WAVE trees). The reader turns each snow effect as one block, as the middle of its layer's
+ * box turns; the hook asks where a point goes and how far it leans ({@link ParallaxPageReader#planetPlaceAt},
+ * {@link ParallaxPageReader#planetAngleAt}), and the towers choice shows what a hook can do with it: stand each tower
+ * on its own foot, turn its whole tile about the tile's middle, or ignore it. The planet radius at 0 is the flat page.
+ * One panel, the whole world, the page lowered so its ground is at the frame's bottom. Opened with effects-lab.html?lab=planet: tools/effects-lab.sh --lab planet.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.effectsLabAct(seconds)} steps the heart at 1/60 s.
  */
@@ -41,7 +44,7 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 	static final int FRAME_WIDTH = FloorLab.FRAME_WIDTH, FRAME_HEIGHT = FloorLab.FRAME_HEIGHT;
 	/** What the lab opens on: a planet of 400% (160 units, the planet round's p08), scrolling at 40 units a second. */
 	static final float RADIUS = 400, SCROLL = 40;
-	static final String[] TOWER_NAMES = { "each tower at its own x", "the tile as one block", "flat (the hook ignores it)" };
+	static final String[] TOWER_NAMES = { "each on its own foot", "the tile as one block", "flat (the hook ignores it)" };
 	static final String[] ANCHOR_NAMES = { "VIEW", "LAYER" };
 	/**
 	 * How far down the lab sets the page's layers, in percent of the world height: s01 sits in the upper world (the
@@ -52,7 +55,7 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 	static final String TOWERS = "towers";
 
 	private Parallax_Heart heart;
-	private ParallaxLayer snow, towerLayer, front;
+	private ParallaxLayer snow, towerLayer;
 	private SpriteBatch batch;
 	private Texture pixel;
 	private TextureRegion block;
@@ -64,10 +67,11 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 	private float frameSeconds, frames;
 	private int drawCalls;
 	private String costLine = "";
+	private final Vector2 place = new Vector2();
 
 	/**
-	 * The effects lab's towers: dark boxes across each tile the reader hands it, each lowered as {@link #towerMode}
-	 * says by the drop the reader gives at its x.
+	 * The effects lab's towers: dark boxes across each tile the reader hands it, each placed and turned as
+	 * {@link #towerMode} says by where the reader puts its foot or the tile's.
 	 */
 	private final LayerHook towers = new LayerHook()
 	{
@@ -80,12 +84,27 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 			ParallaxPageReader reader = heart.parallaxReader;
 			Color c = batch.getColor();
 			batch.setColor(c.r * 0.15f, c.g * 0.135f, c.b * 0.195f, c.a);
-			float tile = towerMode == 1 ? reader.planetDropAt(layer, x + width / 2) : 0;
+			float middle = x + width / 2, tile = towerMode == 1 ? reader.planetAngleAt(layer, middle) : 0;
+			float cos = MathUtils.cosDeg(tile), sin = MathUtils.sinDeg(tile);
+			if (towerMode == 1)
+				reader.planetPlaceAt(layer, middle, y, place);
 			for (int i = 0; i < shape.length; i += 3)
 			{
-				float left = x + shape[i] * width, wide = shape[i + 1] * width;
-				float drop = towerMode == 0 ? reader.planetDropAt(layer, left + wide / 2) : tile;
-				batch.draw(block, left, y - drop, wide, shape[i + 2] * height);
+				float wide = shape[i + 1] * width, foot = x + shape[i] * width + wide / 2, tall = shape[i + 2] * height;
+				if (towerMode == 2)
+				{
+					batch.draw(block, foot - wide / 2, y, wide, tall);
+					continue;
+				}
+				float angle = tile, footX = place.x + (foot - middle) * cos, footY = place.y + (foot - middle) * sin;
+				if (towerMode == 0)
+				{
+					reader.planetPlaceAt(layer, foot, y, place);
+					footX = place.x;
+					footY = place.y;
+					angle = reader.planetAngleAt(layer, foot);
+				}
+				batch.draw(block, footX - wide / 2, footY, wide / 2, 0, wide, tall, 1, 1, angle);
 			}
 		}
 	};
@@ -116,8 +135,6 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 				snow = layer;
 			else if (layer.getKind() == Enum_LayerKind.EMPTY)
 				towerLayer = layer;
-			if (front == null || Math.abs(layer.getParallaxSpeedRatioX()) > Math.abs(front.getParallaxSpeedRatioX()))
-				front = layer;
 		}
 		if (snow == null || towerLayer == null)
 			throw new IllegalStateException(PAGE + " has no snow or no towers");
@@ -140,10 +157,10 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 		radius = LabControls.slider(document, controls, "planetRadius",
 				"planet radius (percent of the world width; 0 is flat, the smaller the rounder)", 0, 1500, 10, RADIUS);
 		towersChoice = LabControls.choice(document, controls, "towersHook",
-				"towers (the game's hook asks the reader how far the ground drops at an x, and lowers what it draws by it, or not)",
+				"towers (the game's hook asks the reader where a foot goes and how far it leans, and draws there, or not)",
 				TOWER_NAMES, 0);
 		anchor = LabControls.choice(document, controls, "snowAnchor",
-				"snow anchor (VIEW: one snowfall over the view, lowered at its box's middle; LAYER: one per tile, each lowered at its own)",
+				"snow anchor (VIEW: one snowfall over the view, turned as its box's middle; LAYER: one per tile, each turned as its own)",
 				ANCHOR_NAMES, 0);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, SCROLL);
 		readout = LabControls.readout(document, controls, "effects-readout");
@@ -157,17 +174,11 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 		towerMode = LabControls.read(towersChoice);
 		snow.setAnchor(LabControls.read(anchor) == 1 ? Enum_ParticleAnchor.LAYER : Enum_ParticleAnchor.VIEW);
 		heart.screenSpeedConstantX = LabControls.read(scroll);
-		float frontSpeed = Math.abs(front.getParallaxSpeedRatioX());
-		readout.setInnerText((r > 0 ? "radius " + two(r * WORLD_WIDTH / 100) + " units; at the view's side the front layer drops "
-				+ two(sideDrop(r, frontSpeed, front)) + ", the towers " + two(sideDrop(r, frontSpeed, towerLayer)) + ", the snow "
-				+ two(sideDrop(r, frontSpeed, snow)) + " units" : "flat") + "; " + costLine);
-	}
-
-	/** How far {@code layer} drops at the view's side, {@code WORLD_WIDTH / 2} from its middle, round a planet of {@code r}. */
-	private static float sideDrop(float r, float frontSpeed, ParallaxLayer layer)
-	{
-		float half = WORLD_WIDTH / 2;
-		return ParallaxPageReader.planetBendOf(r, WORLD_WIDTH, frontSpeed, layer) * half * half;
+		// At the view's side, half the world from its middle: the ground's drop and lean, every layer's alike.
+		float units = r * WORLD_WIDTH / 100, side = units > 0 ? WORLD_WIDTH / 2 / units : 0;
+		readout.setInnerText((r > 0 ? "radius " + two(units) + " units; at the view's side the ground drops "
+				+ two(units * (1 - (float) Math.cos(side))) + " units and leans " + two(side * MathUtils.radiansToDegrees) + "°"
+				: "flat") + "; " + costLine);
 	}
 
 	/** {@code value} to two decimals, for the readout. */

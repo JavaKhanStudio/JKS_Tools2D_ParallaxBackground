@@ -81,11 +81,11 @@ little at their edges.
   panorama takes the place of the planet's bend; PARTICLES and hooks stay flat. Godot's copy is `plax_panorama.gd`
   and `plax_tower.gd`'s `scale_at`; round scenes w05-w08; the tower lab's camera slider.
 
-### 3. Planet: layers bent by their distance
+### 3. Planet: the page on a turning world
 
-Animal Crossing's rolling world: the farther a thing along the ground, the lower it sinks. On screen a layer at depth d
-drops by `dx² · d / 2R` at `dx` from the middle, so the far layers bend more and the sky does not. Cheap, a strong style;
-it does not read as depth as much as the floor does.
+Animal Crossing's rolling world: the farther a thing along the ground, the lower it sinks. r277 built that as a curve
+per layer (`dx² · d / 2R`, the far layers bending more); r347 replaced it with a turning world, every layer wrapped
+round one centre (the last bullet). Cheap, a strong style; it does not read as depth as much as the floor does.
 
 - Built: a page setting (the planet's radius; depth from each layer's speed against the front's), vertical strips each
   lowered, a format bump, the three readers.
@@ -102,6 +102,23 @@ it does not read as depth as much as the floor does.
   Godot does not know); a still one stays flat. A hook is not bent: `ParallaxPageReader.planetDropAt(layer, x)` (Godot
   `planet_drop_at`) gives the drop at x, and the hook lowers what it draws by it, each thing at its own x or its tile as
   a block. Lab: `tools/effects-lab.sh --lab planet` (PlanetLab). Rounds: planet's p08 (a hook), particles' q09, q10.
+- Replaced (r347). Simon on r330's lab: "the black bars stay straight and we can CLEARLY see them poke from the
+  bottom ... it does not feel like a world rotating, it feels like a bad curve applied at some levels but not others".
+  The curve was fixed in the view and the art slid through it; the far layers dropped more than the near ones, so
+  their bottoms showed under the near layers at the sides; the strips were flat steps. A numpy mock
+  (`tools/r347-planet-turn/mock.py`, now and turning side by side) settled it: "1: A · 2: A ... we still need some
+  level of interaction based on the layer, but yes, we do need everything to be curved a bit". Built: the page is
+  the side of a world turning round one centre R under the middle of the view's bottom; a point `dx` from the
+  middle and `h` over the bottom goes to the angle `dx / R`, `R + h` from the centre (`PlanetBatch.placeX/placeY`).
+  Every IMAGE, SHADER and SEQUENCE layer, a still one too, follows that one curve, so none pokes under another; the
+  layer's part is its speed, each turning at its own. Each strip is a quad whose four corners are placed so, through
+  `draw(Texture, float[], ...)` (no stairs, upright things lean); a dollied layer's R is scaled to its view so every
+  layer lies on one circle on screen; the tiles just over the view's top are drawn, its corners showing them
+  (`planetReachOf`). A PARTICLES effect is turned as one block, moved and turned as its box's middle
+  (`PlanetBatch.turn`; Godot's node `position` and `rotation`). A hook asks `planetPlaceAt(layer, x, y, out)` and
+  `planetAngleAt(layer, x)` and draws turned; `planetDropAt` is deprecated. jME's `JmeBatch` learned the quad draw and
+  the turned region draw. Godot: `plax_planet.gd` draws each quad with `draw_primitive`; `planet_place_at`,
+  `planet_angle_at`; `plax_particles.gd`. FLOOR and tower layers still stay flat; not built: a shader version.
 
 ### 4. Dolly: a zoom that scales each layer by its depth
 

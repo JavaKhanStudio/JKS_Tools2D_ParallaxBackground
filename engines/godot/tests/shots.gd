@@ -85,12 +85,14 @@ static func _set_hooks(bg: PlaxBackground, hooks: Dictionary) -> void:
 		bg.set_layer_hook(layer_name, Callable())
 	for layer_name in hooks:
 		var region: Dictionary = bg.atlas.find_region(hooks[layer_name].region, int(hooks[layer_name].position))
-		# "planet": round a planet, lowered by the layer's drop at the tile's middle (r330).
+		# "planet": round a planet, stood on its tile's foot, placed and turned as the planet says (r347).
 		var planet: bool = hooks[layer_name].get("planet", false)
 		bg.set_layer_hook(layer_name, func(canvas: CanvasItem, rect: Rect2, modulate: Color, l: Dictionary) -> void:
 			var at := rect
 			if planet:
-				at.position.y += bg.planet_drop_at(l, rect.get_center().x)
+				var foot := Vector2(rect.get_center().x, rect.end.y)
+				canvas.draw_set_transform(bg.planet_place_at(l, foot), bg.planet_angle_at(l, foot.x))
+				at.position = Vector2(-rect.size.x / 2, -rect.size.y)
 			canvas.draw_texture_rect_region(region.texture, at,
 					Rect2(region.x, region.y, region.width, region.height), modulate))
 

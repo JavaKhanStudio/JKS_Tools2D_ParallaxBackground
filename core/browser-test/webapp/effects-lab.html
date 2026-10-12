@@ -7,7 +7,7 @@
 	<link rel="stylesheet" href="lab.css">
 	<!-- EffectsLab (r224): ?lab=fog, ?lab=snow or ?lab=all, the feature on the left, the same page without it on the right;
 	     ?lab=floor: FloorLab (r275), one panel, the floor drawn row by row; ?lab=tower: TowerLab (r328), one panel;
-	     ?lab=planet: PlanetLab (r330), one panel. -->
+	     ?lab=planet: PlanetLab (r330, r347), one panel. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
@@ -41,10 +41,11 @@
 	<b>tower</b> (r276, r328): an image layer wrapped round a cylinder in the middle of the view, a brick tower in front
 	of Hiver; the page's scroll turns it. Its radius, how much its wall darkens toward its sides, how fast it turns
 	(its speed ratio) and how many images go round it are live; the readout gives the time a turn takes.
-	<b>planet</b> (r277, r330): the page bent round a planet, the far layers more, with a snowfall (a PARTICLES layer)
-	and a game's towers (an EMPTY layer, drawn by a hook) among its layers. The reader lowers each snowfall as one block
-	by how far the ground drops at the middle of its box; the hook asks the reader that drop at any x and lowers what it
-	draws by it: each tower at its own x, its whole tile at once, or not at all. A radius of 0 is the flat page.
+	<b>planet</b> (r277, r330, r347): the page on a turning world, every layer wrapped round one centre under the view,
+	each turning at its own speed, what stands up leaning out from it; with a snowfall (a PARTICLES layer) and a game's
+	towers (an EMPTY layer, drawn by a hook) among its layers. The reader turns each snowfall as one block, as the middle
+	of its box turns; the hook asks the reader where a foot goes and how far it leans, and draws there: each tower on
+	its own foot, its whole tile turned at once, or not at all. A radius of 0 is the flat page.
 	Each page is drawn by the real reader, compiled to JavaScript, as a browser game draws it. The cost line gives the
 	frame time and, per panel, its draw calls and the CPU time to submit them (the GPU's time is in the frame time).</p>
 	</details>

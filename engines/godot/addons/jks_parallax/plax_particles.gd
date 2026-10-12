@@ -10,7 +10,8 @@ extends RefCounted
 ## bottom-left moved by the layer's decal, and the particles already out drift by the layer's scroll: the node moves
 ## with the layer and its process material's emission_shape_offset moves back by as much (a CPUParticles2D is converted
 ## to a GPUParticles2D for that). A layer with no scene draws nothing, and the reader warns once. Round a planet
-## (r330), each instance is lowered as one block by the drop at the middle of its layer's box (planet_drop_at).
+## (r347), each instance is turned as one block, moved and turned as the middle of its layer's box is
+## (PlaxBackground.planet_place_at, planet_angle_at; core's PlanetBatch.turn).
 
 var _bg: PlaxBackground
 # PARTICLES layers already warned about ("<page id>:<layer index>"): a page that draws no particles says so once.
@@ -79,14 +80,14 @@ func _place_view_particles(l: Dictionary) -> void:
 	var node: Node2D = _instance(l, Vector2i.ZERO)
 	var z := _bg._zoom_of(l)
 	var ppu := _bg._ppu
-	var screen_h := _bg._screen_h
 	var anchor := _bg._anchor_of(z)
 	node.scale = node.get_meta("plax_scale") / z
 	var decal_x: float = l.model.decal_X_Ratio * (_bg.world_width / 100.0)
 	var decal_y: float = l.model.decal_Y_Ratio * (_bg._world_height / 100.0)
-	# Round a planet, lowered by the drop at the middle of the layer's box from the emitter's place.
-	var drop := _bg.planet_drop_at(l, (anchor.x + decal_x + l.width / 2) * ppu)
-	node.position = Vector2((anchor.x + l.travel_x) * ppu, screen_h - (anchor.y + l.travel_y) * ppu + drop)
+	# Round a planet, turned as the middle of the layer's box from the emitter's place.
+	var middle := Vector2(anchor.x + decal_x + l.width / 2, anchor.y + decal_y + l.height / 2)
+	node.position = _turned(l, Vector2(anchor.x + l.travel_x, anchor.y + l.travel_y), middle)
+	node.rotation = _bg.planet_angle_at(l, middle.x * ppu)
 	if node.has_meta("plax_offset"):
 		# In the node's own pixels, which its scale makes ppu on screen: those of zoom 1.
 		var authored: Vector3 = node.get_meta("plax_offset")
@@ -94,14 +95,14 @@ func _place_view_particles(l: Dictionary) -> void:
 				-(l.travel_x - decal_x) * ppu * z, (l.travel_y - decal_y) * ppu * z, 0)
 	else:
 		# A custom process material cannot be moved back: the emitter stays at the decal, and nothing drifts.
-		node.position = Vector2((anchor.x + decal_x) * ppu, screen_h - (anchor.y + decal_y) * ppu + drop)
+		node.position = _turned(l, Vector2(anchor.x + decal_x, anchor.y + decal_y), middle)
 
 
 ## LAYER: an instance at the bottom-left corner of each tile the view shows, as PlaxBackground._tile places them. On a
 ## repeated axis a tile counts as shown while its box and a GPUParticles2D's visibility_rect reach into the view; a
 ## CPUParticles2D has none, so its box grown by its own size each way. On an axis not repeated there is one tile,
-## always kept. Round a planet each is lowered by the drop at its box's middle, and a tile counts as shown down to the
-## most a tile reaching into the view can be lowered.
+## always kept. Round a planet each is turned as its box's middle is, and a tile counts as shown down to the most the
+## ground falls under a tile reaching into the view.
 func _place_tile_particles(l: Dictionary) -> void:
 	var z := _bg._zoom_of(l)
 	var ppu := _bg._ppu
@@ -134,7 +135,9 @@ func _place_tile_particles(l: Dictionary) -> void:
 			var node: Node2D = _instance(l, key)
 			var x: float = anchor.x + l.travel_x + (kx * step_x if repeat_x and step_x > 0 else 0.0)
 			var y: float = anchor.y + l.travel_y + (ky * step_y if repeat_y and step_y > 0 else 0.0)
-			node.position = Vector2(x * ppu, _bg._screen_h - y * ppu + _bg.planet_drop_at(l, (x + width / 2) * ppu))
+			var middle := Vector2(x + width / 2, y + height / 2)
+			node.position = _turned(l, Vector2(x, y), middle)
+			node.rotation = _bg.planet_angle_at(l, middle.x * ppu)
 			node.scale = node.get_meta("plax_scale") / z
 	for key in l.instances.keys():
 		if not shown.has(key):
@@ -142,6 +145,16 @@ func _place_tile_particles(l: Dictionary) -> void:
 			l.instances.erase(key)
 			l.canvas.remove_child(node)
 			l.pool.append(node)
+
+
+## Where the point `at` of an effect (page units, y up) is drawn in screen pixels, the effect turned as one block round
+## its page's planet, moved and turned as `middle` is (PlanetBatch.turn); as is when flat.
+func _turned(l: Dictionary, at: Vector2, middle: Vector2) -> Vector2:
+	var ppu := _bg._ppu
+	var screen_h := _bg._screen_h
+	var to := _bg.planet_place_at(l, Vector2(middle.x * ppu, screen_h - middle.y * ppu))
+	var turn := _bg.planet_angle_at(l, middle.x * ppu)
+	return to + Vector2((at.x - middle.x) * ppu, -(at.y - middle.y) * ppu).rotated(turn)
 
 
 ## The first and last tile index whose reach (from..to, from its corner) meets 0..view, tiles at origin + k * step;

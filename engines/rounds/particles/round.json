@@ -1,6 +1,6 @@
 {
  "round": "particles",
- "about": "PARTICLES layers in Godot (r179, docs/effect-layers.md phase 2). Not a pixel comparison: each engine draws its own particle system. engines/godot/tests/particles.gd scrolls each scene at 60 units/s, stepped at 1/60 s, and checks at 0, 6 and 12 s that the layer's Godot scene is instanced, between the layers before and after it, where its layer has scrolled it; it saves a still of each. Pages and scenes from core/test-data/particles (libGDX's round there). Its q06 to q08 zoom the camera, dollied or not (r278); q09 and q10 are round a planet (r330), each node lowered by the drop at its box's middle.",
+ "about": "PARTICLES layers in Godot (r179, docs/effect-layers.md phase 2). Not a pixel comparison: each engine draws its own particle system. engines/godot/tests/particles.gd scrolls each scene at 60 units/s, stepped at 1/60 s, and checks at 0, 6 and 12 s that the layer's Godot scene is instanced, between the layers before and after it, where its layer has scrolled it; it saves a still of each. Pages and scenes from core/test-data/particles (libGDX's round there). Its q06 to q08 zoom the camera, dollied or not (r278); q09 and q10 are round a planet (r330, r347), each node turned as one block as its box's middle is.",
  "scenes": [
   {
    "id": "q01",
@@ -83,14 +83,14 @@
    "page": "engines/rounds/planet/p09.jplax",
    "atlasDir": "core/test-data/particles",
    "name": "layer-anchored-planet",
-   "about": "q02 round a planet of 400% (r330, core/test-data/planet/make_round.py): each tile's node lowered as one block by planet_drop_at at its box's middle, the side ones most"
+   "about": "q02 round a planet of 400% (r330, core/test-data/planet/make_round.py): each tile's node turned as one block as its box's middle is, the side ones most (r347)"
   },
   {
    "id": "q10",
    "page": "engines/rounds/planet/p10.jplax",
    "atlasDir": "core/test-data/particles",
    "name": "view-anchored-planet-dollied",
-   "about": "q01 round a planet of 400%, dollied in from 1 to 0.7 (r330): the node and its emitter lowered by the drop at the box's middle from the emitter's place, in the layer's own view",
+   "about": "q01 round a planet of 400%, dollied in from 1 to 0.7 (r330): the node and its emitter turned as the box's middle from the emitter's place is (r347), in the layer's own view",
    "zoom": [
     1,
     0.7

@@ -7,6 +7,8 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Disposable;
 
 import jks.tools2d.parallax.heart.Gvars_Parallax;
@@ -30,8 +32,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * SEQUENCE layer's cycle is the one its page stores the seed of, unless the game passes its own
  * ({@link #setSequenceSeed}). A FLOOR layer is drawn row by row, each row at its depth
  * ({@link ParallaxLayer#drawFloor}), and every layer in front of it scrolls at the speed of its row under the layer's
- * foot ({@link #plant}). A page with a planet ({@link #setPlanetRadius}) bends its IMAGE, SHADER and SEQUENCE layers down
- * toward the view's sides, the far ones more ({@link #planetBendOf}).
+ * foot ({@link #plant}). A page with a planet ({@link #setPlanetRadius}) is the side of a world turning round one centre
+ * under the view: its IMAGE, SHADER and SEQUENCE layers are wrapped round it alike, each turning at its own speed, and
+ * what stands up leans out from it ({@link PlanetBatch}).
  */
 public class ParallaxPageReader implements Disposable
 {
@@ -116,8 +119,16 @@ public class ParallaxPageReader implements Disposable
 	 */
 	private ParallaxLayer nearTower, transferNearTower;
 	private final PanoramaBatch panoramaBatch = new PanoramaBatch();
-	/** The bend of the PARTICLES layer being drawn ({@link #planetBendOf}): each effect is lowered as one block. */
-	private float particleBend;
+	/**
+	 * The planet's radius in the view of the PARTICLES layer being drawn ({@link #planetInView}): each effect is turned
+	 * round it as one block. 0: flat.
+	 */
+	private float particlePlanet;
+	/**
+	 * How far above the view's top a flat tile of the layer being drawn still shows round a planet: the view's top
+	 * corners show what lies that much higher ({@link #planetReachOf}). 0: flat.
+	 */
+	private float planetReach;
 
 	/**
 	 * Shows {@code newLayers} after the current ones. A layer another reader already shows is cloned, so each reader
@@ -264,35 +275,79 @@ public class ParallaxPageReader implements Disposable
 	{return planetRadius;}
 
 	/**
-	 * How much a layer is bent round its page's planet (r277, docs/depth-tricks.md §3): it is lowered by
-	 * {@code bend dx²} at {@code dx} from the view's middle, bend being {@code d / 2R}, R the planet's radius
-	 * ({@code radius} percent of {@code worldWidth}) and d the layer's depth, its page's fastest speed ratio X
-	 * ({@code front}, {@link #frontSpeedOf}) over its own, as magnitudes: 1 for the front layer, the slower the farther.
-	 * That is a point along a planet's surface dropping {@code s² / 2R} at a distance s, seen in perspective. 0 for no
-	 * planet, a page that does not scroll and a still layer: the sky, which is not on the ground.
+	 * The planet's radius, in world units, in the view being drawn, for the page on screen or the incoming one: the page's
+	 * {@code radius} percent of the world width, scaled as the view is against the camera's (a dollied layer's view is
+	 * scaled back into the camera's, so every layer of a page is wrapped round the same circle on screen). 0 for none.
 	 */
-	public static float planetBendOf(float radius, float worldWidth, float front, ParallaxLayer layer)
+	private float planetInView(boolean incoming)
 	{
-		float r = radius * (worldWidth / 100), speed = Math.abs(layer.getParallaxSpeedRatioX());
-		if (!(r > 0) || !(front > 0) || !(speed > 0))
-			return 0;
-		return front / speed / (2 * r);
+		float radius = (incoming ? transferPlanetRadius : planetRadius) * (worldWidth / 100);
+		return radius > 0 ? radius * viewWidth / (viewportWidth * cameraZoom) : 0;
+	}
+
+	/** Whether {@code layer} is one of the page a cross-fade brings in. */
+	private boolean incoming(ParallaxLayer layer)
+	{
+		if (transferLayers == layers)
+			return false;
+		for (int i = 0, n = transferLayers.size(); i < n; i++)
+			if (transferLayers.get(i) == layer)
+				return true;
+		return false;
 	}
 
 	/**
-	 * How far {@code layer} is lowered at {@code x} round its page's planet (r330): {@code bend dx²}, bend its
-	 * {@link #planetBendOf} and dx from the middle of the view it is drawn in, the curve its page's IMAGE layers follow.
-	 * For a {@link LayerHook} to lower what it draws at x in an EMPTY layer; 0 for no planet and a still layer. Called
-	 * from a hook, the view is the layer's own (dollied, {@link #setDolly}).
+	 * How far above a view {@code viewWidth} by {@code viewHeight} its top corners show, wrapped round a planet of
+	 * {@code radius} under its bottom ({@link PlanetBatch}): {@code √((R + h)² + (w / 2)²) - R - h}. 0 for none.
 	 */
+	static float planetReachOf(float radius, float viewWidth, float viewHeight)
+	{
+		if (!(radius > 0))
+			return 0;
+		float far = radius + viewHeight;
+		return (float) Math.sqrt(far * far + viewWidth * viewWidth / 4) - far;
+	}
+
+	/**
+	 * Where the point {@code (x, y)} of {@code layer} is drawn round its page's planet (r347, {@link PlanetBatch}): the
+	 * view is the side of a world turning round one centre under the middle of its bottom, x along the ground's arc and
+	 * y along the radius. For a {@link LayerHook} to place what it draws in an EMPTY layer, turned by
+	 * {@link #planetAngleAt}; {@code (x, y)} for no planet. Called from a hook, the view is the layer's own (dollied,
+	 * {@link #setDolly}).
+	 * 
+	 * @return {@code out}, set
+	 */
+	public Vector2 planetPlaceAt(ParallaxLayer layer, float x, float y, Vector2 out)
+	{
+		float radius = planetInView(incoming(layer)), middle = viewLeft + viewWidth / 2;
+		if (!(radius > 0))
+			return out.set(x, y);
+		return out.set(PlanetBatch.placeX(radius, middle, viewBottom, x, y), PlanetBatch.placeY(radius, middle, viewBottom, x, y));
+	}
+
+	/**
+	 * How far, in degrees counterclockwise (libGDX's {@code rotation}), what stands at {@code x} in {@code layer} leans
+	 * round its page's planet: out along the radius, to the right right of the view's middle (a negative angle). 0 for
+	 * no planet. See {@link #planetPlaceAt}.
+	 */
+	public float planetAngleAt(ParallaxLayer layer, float x)
+	{
+		float radius = planetInView(incoming(layer));
+		return radius > 0 ? -(x - (viewLeft + viewWidth / 2)) / radius * MathUtils.radiansToDegrees : 0;
+	}
+
+	/**
+	 * How far the ground under {@code x} is lowered round {@code layer}'s planet: the view's bottom less where
+	 * {@link #planetPlaceAt} puts {@code (x, bottom)}.
+	 * 
+	 * @deprecated r347: round a planet a hook's drawing leans too; place it by {@link #planetPlaceAt} and turn it by
+	 *             {@link #planetAngleAt}.
+	 */
+	@Deprecated
 	public float planetDropAt(ParallaxLayer layer, float x)
 	{
-		boolean incoming = false;
-		for (int i = 0, n = transferLayers.size(); i < n && !incoming; i++)
-			incoming = transferLayers.get(i) == layer && transferLayers != layers;
-		float bend = planetBendOf(incoming ? transferPlanetRadius : planetRadius, worldWidth, incoming ? transferFrontSpeed : frontSpeed, layer);
-		float dx = x - (viewLeft + viewWidth / 2);
-		return bend * dx * dx;
+		float radius = planetInView(incoming(layer));
+		return radius > 0 ? viewBottom - PlanetBatch.placeY(radius, viewLeft + viewWidth / 2, viewBottom, x, viewBottom) : 0;
 	}
 
 	/** Tints every layer toward {@code color} over {@code inXSecondes}. */
@@ -633,8 +688,8 @@ public class ParallaxPageReader implements Disposable
 
 	/**
 	 * A PARTICLES layer: its effect from the view's corner plus its decal (VIEW), or in each tile (LAYER); round a planet,
-	 * each effect lowered as one block by the drop at the middle of its layer's box ({@link #planetDropAt}, r330): a
-	 * box's middle is known to every engine, the live particles' are not.
+	 * each effect turned as one block, moved and turned as the middle of its layer's box is ({@link PlanetBatch#turn},
+	 * r347): a box's middle is known to every engine, the live particles' are not.
 	 */
 	private void drawParticleLayer(ParallaxLayer layer, Batch batch, Batch drawn, float originX, float originY, boolean incoming)
 	{
@@ -645,15 +700,23 @@ public class ParallaxPageReader implements Disposable
 		release(batch);
 		int srcColor = batch.getBlendSrcFunc(), dstColor = batch.getBlendDstFunc();
 		int srcAlpha = batch.getBlendSrcFuncAlpha(), dstAlpha = batch.getBlendDstFuncAlpha();
-		particleBend = planetBendOf(incoming ? transferPlanetRadius : planetRadius, worldWidth, incoming ? transferFrontSpeed : frontSpeed, layer);
+		particlePlanet = planetInView(incoming);
 		if (layer.getAnchor() == Enum_ParticleAnchor.VIEW)
 		{
 			float x = anchorLeft + layer.getDecalPercentX() * (layer.getWorldWidth() / 100);
-			float y = anchorBottom + drawingHeight + layer.getDecalPercentY() * (layer.getWorldHeight() / 100)
-					- particleDrop(x + layer.getWidth() / 2);
-			if (x + particles.getMaxX() > viewLeft && x + particles.getMinX() < viewLeft + viewWidth
-					&& y + particles.getMaxY() > viewBottom && y + particles.getMinY() < viewBottom + viewHeight)
-				particles.draw(drawn, x, y, batch.getColor());
+			float y = anchorBottom + drawingHeight + layer.getDecalPercentY() * (layer.getWorldHeight() / 100);
+			// Round a planet, where the middle of its box goes, as far down and across as it goes.
+			float midX = x + layer.getWidth() / 2, midY = y + layer.getHeight() / 2, dx = 0, dy = 0;
+			Batch to = drawn;
+			if (particlePlanet > 0)
+			{
+				to = planetBatch.set(drawn, particlePlanet, viewLeft, viewBottom, viewWidth).turn(midX, midY);
+				dx = PlanetBatch.placeX(particlePlanet, viewLeft + viewWidth / 2, viewBottom, midX, midY) - midX;
+				dy = PlanetBatch.placeY(particlePlanet, viewLeft + viewWidth / 2, viewBottom, midX, midY) - midY;
+			}
+			if (x + dx + particles.getMaxX() > viewLeft && x + dx + particles.getMinX() < viewLeft + viewWidth
+					&& y + dy + particles.getMaxY() > viewBottom && y + dy + particles.getMinY() < viewBottom + viewHeight)
+				particles.draw(to, x, y, batch.getColor());
 		}
 		else
 			tile(layer, drawn, originX, originY, repeatOnX, repeatOnY, false, null);
@@ -702,10 +765,9 @@ public class ParallaxPageReader implements Disposable
 		// Behind a tower seen from close by: a panorama round its axis, cut in strips, each placed and scaled.
 		ParallaxLayer near = incoming ? transferNearTower : nearTower;
 		float panorama = panoramaRadiusOf(near, layer);
-		// Round the page's planet: its tiles and its mirrored copy cut in strips, each lowered. Not a floor, a tower or a
-		// panorama.
-		float bend = layer.kind == Enum_LayerKind.FLOOR || tower || panorama > 0 ? 0
-				: planetBendOf(incoming ? transferPlanetRadius : planetRadius, worldWidth, incoming ? transferFrontSpeed : frontSpeed, layer);
+		// Round the page's planet: its tiles and its mirrored copy cut in strips, each wrapped round it. Not a floor, a
+		// tower or a panorama.
+		float planet = layer.kind == Enum_LayerKind.FLOOR || tower || panorama > 0 ? 0 : planetInView(incoming);
 		if (panorama > 0)
 		{
 			// At its own scale: the camera's distance to the tower's front, f, over the panorama's middle's, D + R.
@@ -713,8 +775,11 @@ public class ParallaxPageReader implements Disposable
 			drawn = panoramaBatch.set(drawn, front * panorama / (camera + panorama), camera / panorama, viewLeft + viewWidth / 2,
 					viewBottom + viewHeight / 2, viewLeft, viewWidth);
 		}
-		else if (bend > 0)
-			drawn = planetBatch.set(drawn, bend, viewLeft, viewWidth);
+		else if (planet > 0)
+		{
+			drawn = planetBatch.set(drawn, planet, viewLeft, viewBottom, viewWidth);
+			planetReach = planetReachOf(planet, viewWidth, viewHeight);
+		}
 		if (layer.kind == Enum_LayerKind.FLOOR)
 			// Its rows across the whole view, whatever the page repeats; no mirrored copy.
 			layer.drawFloor(drawn, originY, viewLeft, viewLeft + viewWidth, viewBottom, viewBottom + viewHeight);
@@ -733,6 +798,7 @@ public class ParallaxPageReader implements Disposable
 				tile(layer, drawn, originX + layer.padX + layer.getWidth(), originY, false, true, true, null);
 		}
 
+		planetReach = 0;
 		if (shaded)
 			effects.end(batch, layer);
 		else if (packed)
@@ -779,10 +845,12 @@ public class ParallaxPageReader implements Disposable
 		float left = particles != null ? particles.getMinX() : sequence ? layer.getCycleLeft() : 0;
 		float right = particles != null ? particles.getMaxX() : sequence ? layer.getCycleRight() : width;
 		float bottom = particles == null ? 0 : particles.getMinY(), top = particles == null ? height : particles.getMaxY();
-		if (particles != null && particleBend > 0)
-			// Round a planet each tile's effect is lowered by the drop at its box's middle: as far, at most, as one whose
-			// particles just reach into the view at its side.
+		if (particles != null && particlePlanet > 0)
+			// Round a planet each tile's effect is turned as its box's middle is: lowered, at most, as the ground is under
+			// one whose particles just reach into the view at its side.
 			bottom -= particleDrop(viewLeft - Math.max(right - width / 2, width / 2 - left));
+		// Round a planet the view's top corners show what lies a little over it.
+		float viewTop = viewBottom + viewHeight + planetReach;
 
 		// A step <= 0 (e.g. a negative padding larger than the image) can't tile: draw the layer once.
 		float stepX = layer.getTotalWidth(), stepY = layer.getTotalHeight();
@@ -791,12 +859,12 @@ public class ParallaxPageReader implements Disposable
 		float startX = tileX ? x - (float) Math.ceil((x + right - viewLeft) / stepX) * stepX : x;
 		float startY = tileY ? y - (float) Math.ceil((y + top - viewBottom) / stepY) * stepY : y;
 		int countX = tileX ? (int) Math.ceil((viewLeft + viewWidth - left - startX) / stepX) + 1 : 1;
-		int countY = tileY ? (int) Math.ceil((viewBottom + viewHeight - bottom - startY) / stepY) + 1 : 1;
+		int countY = tileY ? (int) Math.ceil((viewTop - bottom - startY) / stepY) + 1 : 1;
 
 		for (int row = 0; row < countY; row++)
 		{
 			float drawY = startY + row * stepY;
-			if (drawY + top <= viewBottom || drawY + bottom >= viewBottom + viewHeight)
+			if (drawY + top <= viewBottom || drawY + bottom >= viewTop)
 				continue;
 
 			for (int column = 0; column < countX; column++)
@@ -807,9 +875,11 @@ public class ParallaxPageReader implements Disposable
 
 				if (particles != null)
 				{
-					float dropped = drawY - particleDrop(drawX + width / 2);
-					if (dropped + top > viewBottom && dropped + particles.getMinY() < viewBottom + viewHeight)
-						particles.draw(batch, drawX, dropped, batch.getColor());
+					if (particlePlanet > 0)
+						particles.draw(planetBatch.set(batch, particlePlanet, viewLeft, viewBottom, viewWidth)
+								.turn(drawX + width / 2, drawY + height / 2), drawX, drawY, batch.getColor());
+					else
+						particles.draw(batch, drawX, drawY, batch.getColor());
 				}
 				else if (layer.kind == Enum_LayerKind.SEQUENCE)
 					layer.drawCycle(batch, drawX, drawY, viewLeft, viewLeft + viewWidth,
@@ -824,11 +894,10 @@ public class ParallaxPageReader implements Disposable
 		}
 	}
 
-	/** How far the PARTICLES layer being drawn lowers an effect whose box's middle is at {@code x}: {@link #planetDropAt}. */
+	/** How far the ground under {@code x} is lowered round the planet of the PARTICLES layer being drawn. */
 	private float particleDrop(float x)
 	{
-		float dx = x - (viewLeft + viewWidth / 2);
-		return particleBend * dx * dx;
+		return viewBottom - PlanetBatch.placeY(particlePlanet, viewLeft + viewWidth / 2, viewBottom, x, viewBottom);
 	}
 
 	public void resetTransfert()
