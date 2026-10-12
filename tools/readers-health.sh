@@ -11,13 +11,14 @@
 # --run's logs: build/readers-health/run-<reader>.log. --no-ci skips the last CI run on develop (read through gh).
 # on-screen: --open is the dashboard, a window Simon asked for; --shot is headless Chrome; --run's checks run in cage.
 set -u
+HERE="$PWD"  # --shot F is the caller's path, read after the cd below (r24)
 cd "$(dirname "$0")/.." || exit 1
 MODE=build OUT="" RUN=0 CI=""
 READERS=()
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--open) MODE=open ;;
-		--shot) MODE=shot; OUT="$(realpath -m "$2")"; shift ;;
+		--shot) MODE=shot; OUT="$(cd "$HERE" && realpath -m "$2")"; shift ;;
 		--no-ci) CI=--no-ci ;;
 		--run) RUN=1 ;;
 		gdx|godot|jme) READERS+=("$1") ;;
