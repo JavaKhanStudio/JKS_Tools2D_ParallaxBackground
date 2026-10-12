@@ -33,7 +33,9 @@ done
 for f in "$B"/r239/pinesw?.png "$B"/r239/pinesv_?.png; do
 	[ -f "$f" ] && cut 0 "$f" "$T/r239_$(basename "$f")"
 done
-for f in "$B"/r242/run/*_layer.png "$B"/r246/*/strips/*_cut.png; do
+# r349: ai-page.sh's examples (r239's six, painted and pixel) and r346's SDXL pages, painted at 1536 px.
+for f in "$B"/r242/run/*_layer.png "$B"/r246/*/strips/*_cut.png "$B"/ai/examples/*/strips/*_cut.png \
+	"$B"/r346/turbo/strips/*_cut.png; do
 	[ -f "$f" ] || continue
 	src="${f%_cut.png}_ai.png" # ai-page.sh's names; r242's run.sh names are hills_ai.png, pinesw0.png
 	[ -f "$src" ] || src="${f%_layer.png}_ai.png"
@@ -63,6 +65,15 @@ plant pines_deer "$B/r239/pinesw1.png" 640,350 deer "--colour 7a5a3a"
 S="$B/r246/snow/strips"
 plant snow0_bird "$S/l0_ai.png" 300,300 bird - --mask "$S/l0_mask.png" --grow 8
 plant snow3_bird "$S/l3_ai.png" 500,330 bird - --mask "$S/l3_mask.png" --grow 40
+# Standing on the ridge (r349): keyed mostly clear, never inside the mass. novaCartoonXL's people on its hills (r346),
+# and planted ones on r239's hills and r246's snowy mountains.
+N="$B/r346/nova/strips"
+[ -f "$N/l1_ai.png" ] && cut 4 "$N/l1_ai.png" "$T/nova_l1_cut.png" --mask "$N/l1_mask.png" --grow 8
+# With sil.py's mask, as ai-page.sh cuts: without one, a dark figure keys opaque and is the mass's own edge.
+plant hills_person "$B/r239/hills_ai.png" 600,0 person "--colour 2a2420" --mask "$B/r239/hills_mask.png" --grow 8
+plant hills_red_person "$B/r239/hills_ai.png" 300,0 person "--colour 8a2a2a --size 0.8" \
+	--mask "$B/r239/hills_mask.png" --grow 8
+plant snow0_person "$S/l0_ai.png" 700,0 person "--colour 3a2a20" --mask "$S/l0_mask.png" --grow 8
 # Pixel art (r243): pixel.py looks at the painted SDXL strip, its art pixels 16 px cells; a bird 4 times the size
 # (120 x 48 px, ~9 cells: under 6 is texture).
 if [ -f "$B/r243/hills_xl.png" ]; then

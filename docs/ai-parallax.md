@@ -157,8 +157,13 @@ it (r244); an SDXL ControlNet is untried.
   `tools/r261-creature/sweep.sh` passes every strip on disk (r239, r242, r243, r246: 27) and flags the 8 creatures it
   plants (`plant.py`: birds and deer on mountains, hills, pines, snowy pines, among painted trees, in pixel art); 15
   strips it was not tuned on (r244, r239-run) pass too. `mutate.sh` takes each rule out in turn and the sweep fails.
-  Missed by design: a creature on the silhouette's edge, and one the colour, shape and size of the layer's own flecks
-  (a white bird among snow flecks).
+  Missed by design: one the colour, shape and size of the layer's own flecks (a white bird among snow flecks).
+  Since r349, a figure standing *on* the silhouette (novaCartoonXL paints people on hilltops, r346) is refused too:
+  `layer.py` keys it mostly clear, so `creature.on_ridge` looks just above the mass, for a blob of pixels 80 off the
+  line between the sky and the mass's colour (a pixel half sky, half hill is on it; snow lit on a ridge is in the mass,
+  not above it). Painted strips only: a pixel-art palette is off any such line. The sweep adds r239's six example
+  pages and r346's SDXL page (64 strips pass), flags novaCartoonXL's hills and three planted people; still missed, a
+  figure the colour of the sky or of the land under it.
 - Each layer is painted on its own: nothing makes their colours agree but `--colours`, which the init image carries.
   `ai-page.sh` paints them at full contrast and gives the distance with the page's depth fog (`fogStrength`, r217).
 

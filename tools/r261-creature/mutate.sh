@@ -32,5 +32,12 @@ mutate "crowd by colour only" "and 1 / 3 < t / tall < 3 and 1 / 3 < n / size < 3
 mutate "crowd without size" " and 1 / 3 < n / size < 3" ""
 mutate "no edge rule" "if k in edge or not" "if not"
 mutate "solid only (alpha >= 0.95)" "solid = spread(alpha >= 0.5, -4)" "solid = spread(alpha >= 0.95, -4)"
+# r349's ridge check
+mutate "no ridge check" "found += on_ridge(rgb, alpha, sky," "found += 0 * on_ridge(rgb, alpha, sky,"
+mutate "ridge on the mass's edge too" "above = spread(mass, 2 * r) & ~spread(mass, -1)" "above = spread(mass, 2 * r) & ~solid"
+mutate "ridge: far from the sky only" "off = np.linalg.norm(rgb - (sky + t[..., None] * seg), axis=2)" \
+	"off = np.linalg.norm(rgb - sky, axis=2)"
+mutate "ridge: far from the mass only" "off = np.linalg.norm(rgb - (sky + t[..., None] * seg), axis=2)" \
+	"off = np.linalg.norm(rgb - land, axis=2)"
 [ $bad = 0 ] && echo "mutate: every rule killed" || echo "mutate: rules no strip proves, above"
 exit $bad

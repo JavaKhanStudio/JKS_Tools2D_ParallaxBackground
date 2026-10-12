@@ -8,10 +8,15 @@ is compared with the mass's colour around it (a box mean, R px each way, taken a
 time) and with how much the mass varies there (that difference's mean, 2R px each way): a pixel stands out when it is
 both --far from the mean and --times the variation. A blob of them --min to --max px big is a creature unless:
   - it touches the mass's edge: sky or far haze at the foot of a gap between trees, which the silhouette mask made
-    opaque (a creature standing on the silhouette is missed too);
+    opaque (a creature standing on the silhouette is the ridge check's, below);
   - another blob has its colour (within 30), its shape (height/width within 3x) and its size (within 3x): texture
     repeats, snow on pines and trees on a slope stand out in crowds. A wide bird among upright trees of its colour is
     still alone; a creature the colour, shape and size of the layer's own flecks is missed.
+The ridge check (r349), on a painted strip whose sky is given: a figure standing ON the outline (novaCartoonXL paints
+people on hilltops) is keyed mostly clear and never inside the mass. Above the mass, within 2R px of it, a pixel is
+odd when it is --ridge-far from the line between the sky and the mass's colour below it (a box mean, 2R px each way):
+a pixel half sky, half hill sits on that line, a red coat does not. A blob of them --min px big or more is a figure.
+Only above: the mass's own lit edge (snow on a ridge, a glint on the sea's horizon) is off that line too.
 Exits 4 and names each one (x, y, size). layer.py and pixel.py call find() on the painted strip and exit 4 too, so
 ai-page.sh paints the strip again on the next seed. tools/r261-creature/sweep.sh holds it to every strip on disk and to
 planted creatures, mutate.sh proves each rule above is needed.
@@ -81,6 +86,27 @@ def find(rgb, alpha, lo=50, hi=3000, r=12, far=40, times=3.0, like=30, crowd=0):
     return found
 
 
+def on_ridge(rgb, alpha, sky, lo=50, r=12, far=80):
+    """[(x, y, size)] of each blob just above alpha's mass whose colour no mix of the sky and the mass makes."""
+    mass = alpha >= 0.5
+    solid = spread(mass, -4)
+    above = spread(mass, 2 * r) & ~spread(mass, -1)
+    m = solid.astype(np.float64)
+    land = box(rgb * m[..., None], 2 * r) / np.maximum(box(m, 2 * r), 1)[..., None]
+    seg = land - sky
+    t = np.clip(((rgb - sky) * seg).sum(axis=2) / np.maximum((seg * seg).sum(axis=2), 1), 0, 1)
+    off = np.linalg.norm(rgb - (sky + t[..., None] * seg), axis=2)
+    label, sizes = components(above & (off > far))
+    found = []
+    for k, size in enumerate(sizes):
+        if size >= lo:
+            ys, xs = np.nonzero(label == k + 1)
+            if xs.max() - xs.min() > rgb.shape[1] // 2:  # across the join
+                xs = np.where(xs < rgb.shape[1] // 2, xs + rgb.shape[1], xs)
+            found.append((int(xs.mean()) % rgb.shape[1], int(ys.mean()), int(size)))
+    return found
+
+
 def show(src, alpha, found):
     """src with what find() does not look at dimmed, and a red box around each blob it found."""
     from PIL import ImageDraw
@@ -100,6 +126,7 @@ def main():
     ap.add_argument("--src", help="the painted strip it came from: look there, through the cut's alpha")
     ap.add_argument("--min", type=int, default=50, help="px, in a 1024 px wide strip; never under six art pixels")
     ap.add_argument("--max", type=int, default=3000, help="px, in a 1024 px wide strip")
+    ap.add_argument("--ridge-far", type=float, default=80, help="painted strips: the ridge check's distance, 0: off")
     ap.add_argument("--show", help="write the strip here, each blob in a red box, the mass outside the check dimmed")
     a = ap.parse_args()
     cut = Image.open(a.cut).convert("RGBA")
@@ -111,6 +138,9 @@ def main():
     # The box: 12 px in a 1024 px strip, and three art pixels at least (pixel art's creature is wider than 12 px).
     r = max(int(12 * k ** 0.5), int(3 * cell)) if cell > 1.5 else int(12 * k ** 0.5)
     found = find(rgb, alpha, max(int(a.min * k), int(6 * cell ** 2)), int(a.max * k), r=r)
+    if cell <= 1.5 and a.ridge_far:  # pixel art's palette is off any line between two colours
+        sky = np.median(rgb[:8].reshape(-1, 3), axis=0)  # layer.py's
+        found += on_ridge(rgb, alpha, sky, int(a.min * k), r, a.ridge_far)
     for x, y, size in found:
         print(f"{a.src or a.cut}: a creature? {size} px blob at x={x} y={y}", file=sys.stderr)
     if a.show:

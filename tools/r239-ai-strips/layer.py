@@ -14,7 +14,7 @@ pixels less than T of the way from the sky to the mass's colour, open to the cle
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
-A creature SD painted inside the mass (a bird, an animal: creature.py, r261) exits 4, after the PNG is written;
+A creature SD painted inside the mass or standing on it (a bird, an animal, a person: creature.py, r261, r349) exits 4, after the PNG is written;
 --no-creatures skips the check.
 --pixel N: pixel art. Box-downscale by N, quantise to --colours colours (one palette for the
 layer, or --palette's), and cut alpha hard at 50%: every pixel is one palette colour, fully opaque or fully clear.
@@ -195,8 +195,8 @@ def pixelate(out, a):
     return Image.fromarray(arr, "RGBA")
 
 
-def check(out, img, alpha, a):
-    """Exits 3 on art at the top row, 4 on a creature in the mass (unless --no-creatures)."""
+def check(out, img, sky, alpha, a):
+    """Exits 3 on art at the top row, 4 on a creature in the mass or standing on it (unless --no-creatures)."""
     cut = int((np.asarray(out)[0, :, 3] > 0).sum())
     if cut:
         # Art on the top row is cut flat on screen (the parallax_lab lint's fault a).
@@ -204,7 +204,11 @@ def check(out, img, alpha, a):
         sys.exit(3)
     if not a.no_creatures:
         import creature  # it imports this module
-        found = creature.find(img.astype(np.float64), alpha)
+        rgb = img.astype(np.float64)
+        k = img.shape[1] / 1024  # creature.py's sizes are for a 1024 px strip (r349: SDXL's are 1536)
+        r = int(12 * k)
+        found = creature.find(rgb, alpha, int(50 * k * k), int(3000 * k * k), r=r)
+        found += creature.on_ridge(rgb, alpha, sky, int(50 * k * k), r)
         for x, y, size in found:
             print(f"{a.src}: a creature? {size} px blob at x={x} y={y}", file=sys.stderr)
         if found:
@@ -220,7 +224,7 @@ def main():
     if a.pixel > 1:
         out = pixelate(out, a)
     out.save(a.out)
-    check(out, img, alpha, a)
+    check(out, img, sky, alpha, a)
 
 
 if __name__ == "__main__":
