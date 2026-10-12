@@ -68,7 +68,7 @@ backed means "not contradicted", not proven.
 | R7 | Full-frame planes at their natural size; strips any width | hypothesis, then §6 | R1: OneNight-small 3 (control 3). R2: CalmTree3-art-narrow 3 (art 4); Calm-art-narrow 4 (art 4) | **backed for full-frame planes** (shrunk, their bottoms show); width does not matter for strips |
 | R8 | Stagger starting offsets | samples | PurpleFairy-aligned 3 (control 3) | **not backed**: harmless, no longer a rule |
 | R9 | Each layer's bottom edge hidden by the layer in front or below the screen | layout | (every render) | kept, and extended: every CUT edge (bottom, top, crop) is hidden (§6) |
-| R10 | Speed Y ~0.6 x speed X | samples | not tested: the lab scrolls X only | open |
+| R10 | Speed Y ~0.6 x speed X | samples | R5 (a sway with no player): y0 **4** / **5**, y0.3 3 / 2, y0.6 2 / 3, y1.0 2 / 2 (Calm / Pure) | **not backed where nothing is followed**: a page that holds still on Y beat every nonzero ratio on both pages; 0.3-1.0 in noise. **Open** for a camera that follows a player on Y (§10) |
 | R11 | Start from the art (§6), not from rules or the editor's layout | round 1's "random values" | R2: every *-art page graded at or above Simon's: Hiver 4 / 3, Calm 4 / 3, OneNight 4 / 3, PurpleFairy 3 / 3, CalmTree3 4 / 4 | **backed**: three wins, two ties, no loss. R3: the skill (version 2) on three atlases never paged: Pure 5, Printemps 4 against Simon's 2, Boss 4 |
 
 What the lab cannot show: vertical scroll, cross-fades between pages (the demo does), and a game drawn over the page.
@@ -235,4 +235,30 @@ built by r227 with its `tools/parallax_lab.py round4`). One question: is there a
 - Pure's 250x is x1.99 a layer, the top of the skill's x1.6-x2.0 (step 5): x2.0 is now graded level or above x1.6
   twice.
 - **Still open**: speed Y (R10), which the lab cannot scroll; the span past 250x is not worth a round: the gain has
-  flattened.
+  flattened. Round 5 (§10) swayed the view to grade it.
+
+## 10. Round 5 results (r348)
+
+Graded by Simon on 2026-10-12, 1-5, `demo/lab/round5/grades.json` (editor repository, bb01c25) joined with
+`round.json` (built by parallax-editor r82, 98d163e). One question: how fast should the layers move up and down
+(R10)? The view sways 12 units up and down over 6 s while it scrolls; each page is drawn at speed Y 0, 0.3, 0.6 and
+1.0 x its speed X. On Calm the sway moves the front tree line by about 3, 17, 41 and 70 px.
+
+| Page | y 0 | y 0.3 | y 0.6 | y 1.0 |
+|------|-----|-------|-------|-------|
+| Calm-art-100x | **4** | 3 | 2 | 2 |
+| Pure-art 43x | **5** | 2 | 3 | 2 |
+
+- **Speed Y 0 won on both pages**, by one and two points over the next. At 0 no layer moves on Y: the page holds
+  still while the view sways, so nothing shows the sway at all.
+- **What it backs, and what not**: in the lab no player is followed, so the sway is motion with no cause on screen.
+  The round backs "a background that bobs with nothing to follow reads worse than a still one", not "a game whose
+  camera follows a jumping or climbing player wants speed Y 0": there the vertical parallax has a cause, and this
+  round did not show one. That question needs the demo, where the camera follows something.
+- **Among 0.3, 0.6 and 1.0 the order is noise**: 0.3 graded under 0.6 on Pure and above it on Calm. Nothing here
+  prefers the samples' 0.6 to another nonzero ratio.
+- **The scale moved down again, by one**: with no sway, 0.6 is the ratio every earlier round drew, and both pages at
+  0.6 lost a point against round 4 (Calm-art-100x 3 to 2, Pure-art 4 to 3), as in rounds 3 and 4. Read within itself.
+- The faint line at the bottom of Calm's sway at 0.6 and 1.0 (where the front strip's cut bottom meets the ground
+  gradient, 05533f) is not singled out: Pure, which has no such line, graded 1.0 as low (2 and 2).
+- **Still open**: R10 for a game that moves its camera on Y on purpose.

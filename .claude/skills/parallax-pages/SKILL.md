@@ -91,7 +91,10 @@ nothing there. README.md's "Snow, rain and smoke" says how wide a `VIEW` effect'
    the gain flattens (Pure 100x graded under 43x): 40x-250x do not hurt, deeper does not keep winning. A page that
    scatters its planes can still fail deep (45x scored 2 on Simon's PurpleFairy in round 1): the limit is the page's.
    Lint warns past 250x, the deepest graded.
-   Speed Y ~0.6 x speed X *(open)*.
+   Speed Y: **0 when the camera's Y moves with nothing on screen to explain it** (a sway, a shake, a menu or title
+   background): in round 5 a page that held still on Y beat 0.3, 0.6 and 1.0 x speed X on both pages (4 and 5
+   against 2-3). For a game whose camera follows a player up and down, still open: 0.6 is the samples' ratio, and
+   round 5 cannot tell 0.3, 0.6 and 1.0 apart (docs/parallax-design.md §10).
 6. **Gradients cover, in the art's colours.** Set them to what they must blend with: the sky behind the farthest
    layer, the ground under the nearest one (Hiver's snow is the bottom gradient in the hills' `e0e8dd`). A layer
    with translucent parts shows the gradient boundary through it: use one gradient for the whole screen
