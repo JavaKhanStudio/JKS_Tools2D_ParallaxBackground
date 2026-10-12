@@ -2,7 +2,8 @@
 """Writes the tower round (r276, docs/depth-tricks.md §2): core/test-data/tower/bricks.png, a brick wall with windows,
 seamless both ways (r266's mock tower, made taller); HiverTower.atlas, Hiver's regions then the bricks on a page of
 their own; and engines/rounds/tower/round.json and its pages: the floor lab's Hiver set (its EMPTY floor dropped)
-with a tower in front, its wall six bricks images round, turning a full turn in the 12 s the shots scroll.
+with a tower in front, its wall six bricks images round, turning a full turn in the 12 s the shots scroll; w05 to w08
+(r350) the same towers seen from close by (towerCamera): the courses arc, the set behind wraps round as panoramas.
 Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots;
 engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh compare them.
 Run from the repository root: python3 core/test-data/tower/make_round.py (needs numpy and Pillow)."""
@@ -94,6 +95,12 @@ w02 = write('w02', page(tower(20, 6, 0.8, -0.5, flipX=True, padX=1.0), fogStreng
 peaks = tower(30, 1, 1.0, 0.25, regionName='parallax4', regionPosition=2, flipY=True, padY=1.0, decal_Y_Ratio=10)
 peaks['sizeRatio'] = 1.4
 w03 = write('w03', page(peaks, repeatOnY=True))
+# r350: the camera close by. w05 w01's at 3.3 radii (the tower lab's); w06 w02's at 2 (its trees, faster than the tower
+# turning backward, stay flat); w07 w03's ridge at 4 on a page repeating on Y.
+w05 = write('w05', page(tower(20, 6, 0.65, 1, towerCamera=3.3)))
+w06 = write('w06', page(tower(20, 6, 0.8, -0.5, flipX=True, padX=1.0, towerCamera=2.0), fogStrength=0.02,
+                        fogColor={'r': 0.88, 'g': 0.9, 'b': 0.93, 'a': 1}))
+w07 = write('w07', page(dict(peaks, towerCamera=4.0), repeatOnY=True))
 scenes = [
     {'id': 'w01', 'page': w01, 'atlasDir': HERE, 'name': 'tower-full-turn',
      'about': "Hiver's set behind a brick tower 20% of the world in radius (16 wide, in the view's middle), its wall six "
@@ -109,11 +116,26 @@ scenes = [
      'about': "w01 dollied in from zoom 1 to 0.7 (the tower at its own zoom, about the view's middle), cross-fading into "
               "w02 4 s in, over 4 s",
      'zoom': [1, 0.7], 'dolly': True, 'transfer': {'at': 4, 'seconds': 4, 'page': w02}},
+    {'id': 'w05', 'page': w05, 'atlasDir': HERE, 'name': 'tower-near-full-turn',
+     'about': "w01 seen from close by (r350, towerCamera 3.3 radii, the r266 mock's field of view): the courses arc about "
+              "the view's middle, and Hiver's four layers, all slower than the tower, wrap round it as panoramas, wider "
+              "and taller toward the sides"},
+    {'id': 'w06', 'page': w06, 'atlasDir': HERE, 'name': 'tower-near-fogged-flipped-padded',
+     'about': "w02 seen from 2 radii: the panoramas show through the pads, under the page fog; the trees (0.04), faster "
+              "than the tower turning backward (0.035), stay flat"},
+    {'id': 'w07', 'page': w07, 'atlasDir': HERE, 'name': 'tower-near-trimmed-repeat-y',
+     'about': "w03's ridge seen from 4 radii, tiled up a page repeating on Y: each row of the wall scaled about the "
+              "view's middle, the set behind wrapped round"},
+    {'id': 'w08', 'page': w05, 'atlasDir': HERE, 'name': 'tower-near-dolly-cross-fade',
+     'about': "w05 dollied in from zoom 1 to 0.7 (each panorama in its own view), cross-fading into w06 4 s in, over 4 s",
+     'zoom': [1, 0.7], 'dolly': True, 'transfer': {'at': 4, 'seconds': 4, 'page': w06}},
 ]
 with open(f'{OUT}/round.json', 'w') as f:
     json.dump({'round': 'tower',
                'about': "Tower layers (r276, docs/depth-tricks.md §2): an IMAGE layer wrapped round a cylinder in the view's "
-                        "middle, its scroll turning it, darker toward its sides. Godot draws its own strips "
+                        "middle, its scroll turning it, darker toward its sides; seen from close by (r350, w05-w08), "
+                        "its courses arcing and the set behind wrapped round it as panoramas (PanoramaBatch, Godot's "
+                        "plax_panorama.gd). Godot draws its own strips "
                         "(plax_tower.gd's draw); jME runs core's ParallaxLayer.drawTower. Written by "
                         "core/test-data/tower/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd "
                         "and engines/jme's JmeParallaxShots.",

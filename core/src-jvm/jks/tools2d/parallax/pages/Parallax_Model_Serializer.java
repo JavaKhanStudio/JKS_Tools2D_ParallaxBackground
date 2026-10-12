@@ -87,6 +87,9 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			output.writeFloat(model.towerRadius);
 			output.writeFloat(model.towerShade);
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 14)
+			output.writeFloat(model.towerCamera);
 	}
 
 	@Override
@@ -178,6 +181,9 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			model.towerRadius = input.readFloat();
 			model.towerShade = input.readFloat();
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 14)
+			model.towerCamera = input.readFloat();
 
 		return model;
 	}

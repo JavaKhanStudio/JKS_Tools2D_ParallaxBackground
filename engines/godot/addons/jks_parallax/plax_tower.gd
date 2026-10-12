@@ -27,15 +27,22 @@ static func draw_rows(bg: PlaxBackground, l: Dictionary, x: float, y: float, vie
 		var draw_y := start_y + row * step_y
 		if draw_y + height <= 0 or draw_y >= view_h:
 			continue
-		draw(bg, l, view_w / 2, x, draw_y, 0.0, view_w)
+		draw(bg, l, view_w / 2, x, draw_y, 0.0, view_w, view_h / 2)
+
+
+## ParallaxLayer.towerScaleAt: how much a tower seen from `camera` radii from its axis scales its wall at angle `a` from
+## its front, about the view's middle: (camera - 1) / (camera - cos a); 1 for a camera up to 1 (far away).
+static func scale_at(camera: float, a: float) -> float:
+	return (camera - 1) / (camera - cos(a)) if camera > 1 else 1.0
 
 
 ## ParallaxLayer.drawTower: the layer round a cylinder of its radius (percent of the world width) whose axis is at
 ## `axis_x`, its box's bottom at `y`. The point an arc s round the wall from its front shows what the flat layer, its
 ## tile at `x`, shows at axis_x + s, drawn at axis_x + radius sin(s / radius); the front half cut in TOWER_STRIPS strips
 ## of equal angle and at each image's edges, each piece at 1 - towerShade (1 - cos a) of the tint, at its middle.
+## Seen from close by (towerCamera above 1, r350), each piece is also scaled about `eye_y` by scale_at at its middle.
 static func draw(bg: PlaxBackground, l: Dictionary, axis_x: float, x: float, y: float, view_left: float,
-		view_right: float) -> void:
+		view_right: float, eye_y: float) -> void:
 	var m: Dictionary = l.model
 	var radius: float = m.towerRadius * (bg.world_width / 100.0)
 	var width: float = l.width
@@ -65,7 +72,7 @@ static func draw(bg: PlaxBackground, l: Dictionary, axis_x: float, x: float, y: 
 	var src := PlaxEffects.drawn_rect(l.region)
 	var texture: Texture2D = l.region.texture
 	var ppu := bg._ppu
-	var top := bg._screen_h - (bottom + draw_h) * ppu
+	var camera: float = m.towerCamera
 	var tint := bg._modulate
 	for k in range(first, last + 1):
 		var left := corner + k * step
@@ -83,16 +90,19 @@ static func draw(bg: PlaxBackground, l: Dictionary, axis_x: float, x: float, y: 
 				continue
 			var x0 := axis_x + radius * sin(p0 / radius)
 			var x1 := axis_x + radius * sin(p1 / radius)
-			var bright: float = 1 - m.towerShade * (1 - cos((p0 + p1) / (2 * radius)))
+			var mid := (p0 + p1) / (2 * radius)
+			var bright: float = 1 - m.towerShade * (1 - cos(mid))
+			var scale := scale_at(camera, mid)
+			var piece_y := eye_y + (bottom - eye_y) * scale
 			# The piece's share of its image, left to right; flipped on X the image runs right to left.
 			var f0 := (p0 - left) / image_w
 			var f1 := (p1 - left) / image_w
 			var g0 := 1 - f1 if fx else f0
 			var g1 := 1 - f0 if fx else f1
 			var piece := Rect2(src.position.x + src.size.x * g0, src.position.y, src.size.x * (g1 - g0), src.size.y)
-			var px := Vector2((x1 - x0) * ppu, draw_h * ppu)
+			var px := Vector2((x1 - x0) * ppu, draw_h * scale * ppu)
 			var shade := Color(tint.r * bright, tint.g * bright, tint.b * bright, tint.a)
-			var origin := Vector2(x0 * ppu, top)
+			var origin := Vector2(x0 * ppu, bg._screen_h - piece_y * ppu - px.y)
 			if fx or fy:
 				bg._target.draw_set_transform(
 					origin + Vector2(px.x if fx else 0.0, px.y if fy else 0.0), 0, Vector2(-1 if fx else 1, -1 if fy else 1))

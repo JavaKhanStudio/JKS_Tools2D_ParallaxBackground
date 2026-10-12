@@ -1,6 +1,6 @@
 {
  "round": "tower",
- "about": "Tower layers (r276, docs/depth-tricks.md \u00a72): an IMAGE layer wrapped round a cylinder in the view's middle, its scroll turning it, darker toward its sides. Godot draws its own strips (plax_tower.gd's draw); jME runs core's ParallaxLayer.drawTower. Written by core/test-data/tower/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "about": "Tower layers (r276, docs/depth-tricks.md \u00a72): an IMAGE layer wrapped round a cylinder in the view's middle, its scroll turning it, darker toward its sides; seen from close by (r350, w05-w08), its courses arcing and the set behind wrapped round it as panoramas (PanoramaBatch, Godot's plax_panorama.gd). Godot draws its own strips (plax_tower.gd's draw); jME runs core's ParallaxLayer.drawTower. Written by core/test-data/tower/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
  "scenes": [
   {
    "id": "w01",
@@ -38,6 +38,44 @@
     "at": 4,
     "seconds": 4,
     "page": "engines/rounds/tower/w02.jplax"
+   }
+  },
+  {
+   "id": "w05",
+   "page": "engines/rounds/tower/w05.jplax",
+   "atlasDir": "core/test-data/tower",
+   "name": "tower-near-full-turn",
+   "about": "w01 seen from close by (r350, towerCamera 3.3 radii, the r266 mock's field of view): the courses arc about the view's middle, and Hiver's four layers, all slower than the tower, wrap round it as panoramas, wider and taller toward the sides"
+  },
+  {
+   "id": "w06",
+   "page": "engines/rounds/tower/w06.jplax",
+   "atlasDir": "core/test-data/tower",
+   "name": "tower-near-fogged-flipped-padded",
+   "about": "w02 seen from 2 radii: the panoramas show through the pads, under the page fog; the trees (0.04), faster than the tower turning backward (0.035), stay flat"
+  },
+  {
+   "id": "w07",
+   "page": "engines/rounds/tower/w07.jplax",
+   "atlasDir": "core/test-data/tower",
+   "name": "tower-near-trimmed-repeat-y",
+   "about": "w03's ridge seen from 4 radii, tiled up a page repeating on Y: each row of the wall scaled about the view's middle, the set behind wrapped round"
+  },
+  {
+   "id": "w08",
+   "page": "engines/rounds/tower/w05.jplax",
+   "atlasDir": "core/test-data/tower",
+   "name": "tower-near-dolly-cross-fade",
+   "about": "w05 dollied in from zoom 1 to 0.7 (each panorama in its own view), cross-fading into w06 4 s in, over 4 s",
+   "zoom": [
+    1,
+    0.7
+   ],
+   "dolly": true,
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/rounds/tower/w06.jplax"
    }
   }
  ]

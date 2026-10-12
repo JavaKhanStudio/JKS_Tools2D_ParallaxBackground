@@ -17,7 +17,9 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * itself ({@link ParallaxLayer#drawTower}), turning as the page scrolls. Its page is the tower round's w01
  * (core/test-data/tower/make_round.py): Hiver's set behind a brick tower. The sliders set the tower layer live: its
  * radius (percent of the world width), its shade, its speed ratio (how fast the scroll turns it) and how many images go
- * round it (its width: 2 pi r over that many); the camera scroll moves the page. One panel, the whole world. Opened with
+ * round it (its width: 2 pi r over that many), where the camera stands (r350: close by, the courses arc and Hiver's
+ * layers, all slower than the tower, wrap round it as panoramas, {@link jks.tools2d.parallax.ParallaxPageReader#panoramaRadiusOf});
+ * the camera scroll moves the page. One panel, the whole world. Opened with
  * effects-lab.html?lab=tower: tools/effects-lab.sh --lab tower.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.effectsLabAct(seconds)} steps the heart at 1/60 s.
@@ -30,11 +32,16 @@ public class TowerLab extends ApplicationAdapter implements LabKit.Clip
 	static final int FRAME_WIDTH = FloorLab.FRAME_WIDTH, FRAME_HEIGHT = FloorLab.FRAME_HEIGHT;
 	/** What the lab opens on: w01's tower (20%, shade 0.65, six images round), a turn about every 12 s at scroll 40. */
 	static final float RADIUS = 20, SHADE = 0.65f, SPEED = 0.1f, AROUND = 6, SCROLL = 40;
+	/**
+	 * Where the camera opens (r350): 3.3 tower radii from the axis, the tower's front 18.4 units away, so the view's
+	 * 20 units each side are the r266 mock's 47 degrees.
+	 */
+	static final float CAMERA = 3.3f;
 
 	private Parallax_Heart heart;
 	private ParallaxLayer tower;
 	private SpriteBatch batch;
-	private InputElement radius, shade, speed, around, scroll;
+	private InputElement radius, shade, speed, around, camera, scroll;
 	private Element readout;
 	private boolean clip;
 	private float frameSeconds, frames;
@@ -74,6 +81,7 @@ public class TowerLab extends ApplicationAdapter implements LabKit.Clip
 		shade = LabControls.slider(document, controls, "towerShade", "shade (how much the wall darkens as it turns away: 0 flat, 1 black at its sides)", 0, 1, 0.01f, SHADE);
 		speed = LabControls.slider(document, controls, "towerSpeed", "tower's speed (ratio: how fast the scroll turns it; the trees in front of the peaks are 0.04)", 0, 0.4f, 0.001f, SPEED);
 		around = LabControls.slider(document, controls, "imagesRound", "images round (how many bricks images go round the tower: each is 2 pi r over that many wide, and as tall for its shape)", 1, 12, 1, AROUND);
+		camera = LabControls.slider(document, controls, "towerCamera", "camera (tower radii from its axis; 1 or less: far away, the courses straight and the page flat; close by, the courses arc and the page behind wraps round)", 1, 6, 0.1f, CAMERA);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, SCROLL);
 		readout = LabControls.readout(document, controls, "effects-readout");
 	}
@@ -85,6 +93,8 @@ public class TowerLab extends ApplicationAdapter implements LabKit.Clip
 		float sc = LabControls.read(scroll);
 		float units = r * WORLD_WIDTH / 100, circumference = (float) (2 * Math.PI) * units;
 		tower.setTower(r, LabControls.read(shade));
+		float c = LabControls.read(camera);
+		tower.setTowerCamera(c);
 		tower.setSizeRatio(circumference / n / WORLD_WIDTH);
 		tower.setParallaxSpeedRatioX(s);
 		heart.screenSpeedConstantX = sc;
@@ -92,6 +102,7 @@ public class TowerLab extends ApplicationAdapter implements LabKit.Clip
 		readout.setInnerText("radius " + two(units) + " units (" + two(2 * units) + " wide), " + Math.round(n) + " images round, each "
 				+ two(tower.getRegionWidth()) + " by " + two(tower.getRegionHeight()) + " units; "
 				+ (turn > 0 ? "a turn every " + two(turn) + " s" : "not turning")
+				+ (c > 1 ? "; the camera " + two(c * units) + " units from the axis" : "; the camera far away")
 				+ "; " + costLine);
 	}
 

@@ -3,17 +3,24 @@
 # core's law (ParallaxLayer.drawTower, GdxLayerEffects' page fog), which libGDX draws and jME runs as is. Puts in one
 # mutant at a time, runs engines/godot/tools/frame-check.sh engines/rounds/tower for each, and fails unless every run
 # FAILS. Godot: no wrap (the layer drawn flat); no shade; the strips placed along the arc, not at radius sin(a) (no
-# narrowing); the tower turning the wrong way. Core: the strips placed along the arc; the page fog's shader ignoring the darkness in the blue. Restores the files on exit. Writes
+# narrowing); the tower turning the wrong way; seen from close by (r350), the courses straight, and the set behind left
+# flat. Core: the strips placed along the arc; the page fog's shader ignoring the darkness in the blue; the courses
+# straight; the panoramas unscaled (PanoramaBatch). Restores the files on exit. Writes
 # build/r276/mutant.log, and each mutant's report in build/r276/mutants/.
 # headless: engines/godot/tools/frame-check.sh renders in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 TOWER=engines/godot/addons/jks_parallax/plax_tower.gd
+PANORAMA=engines/godot/addons/jks_parallax/plax_panorama.gd
 LAYER=core/src/jks/tools2d/parallax/ParallaxLayer.java
 EFFECTS=core/src/jks/tools2d/parallax/GdxLayerEffects.java
+BATCH=core/src/jks/tools2d/parallax/PanoramaBatch.java
 SAVED=$(mktemp -d)
-cp "$TOWER" "$LAYER" "$EFFECTS" "$SAVED"
-restore() { cp "$SAVED/plax_tower.gd" "$TOWER"; cp "$SAVED/ParallaxLayer.java" "$LAYER"; cp "$SAVED/GdxLayerEffects.java" "$EFFECTS"; }
+cp "$TOWER" "$PANORAMA" "$LAYER" "$EFFECTS" "$BATCH" "$SAVED"
+restore() {
+	cp "$SAVED/plax_tower.gd" "$TOWER"; cp "$SAVED/plax_panorama.gd" "$PANORAMA"; cp "$SAVED/ParallaxLayer.java" "$LAYER"
+	cp "$SAVED/GdxLayerEffects.java" "$EFFECTS"; cp "$SAVED/PanoramaBatch.java" "$BATCH"
+}
 trap 'restore; rm -rf "$SAVED"' EXIT
 LOG=build/r276/mutant.log
 mkdir -p build/r276/mutants
@@ -45,7 +52,7 @@ mutant "$TOWER" "Godot: no wrap, the layer drawn flat" \
 	'return l.model.kind == "IMAGE" and l.model.towerRadius > 0' \
 	'return false'
 mutant "$TOWER" "Godot: no shade" \
-	'var bright: float = 1 - m.towerShade * (1 - cos((p0 + p1) / (2 * radius)))' \
+	'var bright: float = 1 - m.towerShade * (1 - cos(mid))' \
 	'var bright: float = 1.0'
 mutant "$TOWER" "Godot: strips along the arc, not at radius sin(a)" \
 	'var x0 := axis_x + radius * sin(p0 / radius)
@@ -61,4 +68,16 @@ mutant "$LAYER" "core: strips along the arc, not at radius sin(a)" \
 mutant "$EFFECTS" "core: the page fog's shader ignoring the darkness in the blue" \
 	'vec4(u_tint * (1.0 - v_color.b), v_color.a)' \
 	'vec4(u_tint, v_color.a)'
+mutant "$TOWER" "Godot: seen from close by, the courses straight" \
+	'return (camera - 1) / (camera - cos(a)) if camera > 1 else 1.0' \
+	'return 1.0'
+mutant "$PANORAMA" "Godot: seen from close by, the set behind left flat" \
+	'	if tower.is_empty() or is_same(tower, l) or PlaxTower.is_tower(l):' \
+	'	if true:'
+mutant "$LAYER" "core: seen from close by, the courses straight" \
+	'{return camera > 1 ? (camera - 1) / (camera - (float) Math.cos(a)) : 1;}' \
+	'{return 1;}'
+mutant "$BATCH" "core: the panoramas placed but not scaled about the eye" \
+	'float scale = scales[strip], ' \
+	'float scale = 1, '
 exit $status

@@ -6,7 +6,8 @@
 #   --lab all    every effect that ships, together on s01: page fog, FOG mist, WAVE trees, a game's towers, snow
 #   --lab floor  r275's floor (FloorLab): a ground drawn row by row, each row at its depth (one panel);
 #                drag the picture or hold the arrow keys to pan; Hiver or PurpleFairy, the layers in front planted on the ground
-#   --lab tower  r276's tower (TowerLab, r328): a brick tower in front of Hiver, turning; radius, shade, speed, images round
+#   --lab tower  r276's tower (TowerLab, r328): a brick tower in front of Hiver, turning; radius, shade, speed, images round,
+#                where the camera stands (r350: close by, the courses arc and Hiver wraps round the tower)
 #   --lab planet r277's planet with r330's snow and hooked towers (PlanetLab): radius, how the towers follow, snow anchor
 # The readout gives the frame time, and each panel's draw calls and CPU time.
 #   tools/effects-lab.sh --lab L                 the lab: a Chrome window, served until it closes

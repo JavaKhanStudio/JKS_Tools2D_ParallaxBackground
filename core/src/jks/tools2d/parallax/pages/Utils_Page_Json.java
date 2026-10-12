@@ -142,6 +142,7 @@ public final class Utils_Page_Json
 		layer.floorHeight = readFloat(json, "floorHeight", layer.floorHeight);
 		layer.towerRadius = readFloat(json, "towerRadius", layer.towerRadius);
 		layer.towerShade = readFloat(json, "towerShade", layer.towerShade);
+		layer.towerCamera = readFloat(json, "towerCamera", layer.towerCamera);
 		return layer;
 	}
 

@@ -110,6 +110,12 @@ public class ParallaxPageReader implements Disposable
 	/** The planet's radius of the page on screen ({@link #setPlanetRadius}), and of the page a cross-fade brings in. */
 	private float planetRadius, transferPlanetRadius;
 	private final PlanetBatch planetBatch = new PlanetBatch();
+	/**
+	 * Each page's tower seen from close by ({@link #nearTowerOf}), refreshed each draw: the layers slower than it are drawn
+	 * round it as panoramas, through {@link #panoramaBatch}.
+	 */
+	private ParallaxLayer nearTower, transferNearTower;
+	private final PanoramaBatch panoramaBatch = new PanoramaBatch();
 	/** The bend of the PARTICLES layer being drawn ({@link #planetBendOf}): each effect is lowered as one block. */
 	private float particleBend;
 
@@ -336,6 +342,8 @@ public class ParallaxPageReader implements Disposable
 		view(cameraZoom);
 		frontSpeed = frontSpeedOf(layers);
 		transferFrontSpeed = frontSpeedOf(transferLayers);
+		nearTower = nearTowerOf(layers);
+		transferNearTower = nearTowerOf(transferLayers);
 		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();
 		boolean throughColor = transfertStyle.grades() && !transferLayers.isEmpty();
 		// A dissolve begins each layer with its own mask, a transfert through a colour or a fog creep with its own grade:
@@ -475,6 +483,53 @@ public class ParallaxPageReader implements Disposable
 	}
 
 	/** The fastest speed ratio X of {@code page}, as a magnitude: its front, for {@link #fogOf}. 0 for no layer. */
+	/**
+	 * The tower of {@code page} seen from close by ({@link ParallaxLayer#isNearTower}), the fastest when there are more;
+	 * null when none: the page's layers are drawn flat behind its towers.
+	 */
+	public static ParallaxLayer nearTowerOf(List<ParallaxLayer> page)
+	{
+		ParallaxLayer tower = null;
+		for (int i = 0, n = page.size(); i < n; i++)
+		{
+			ParallaxLayer layer = page.get(i);
+			if (layer.isNearTower() && (tower == null || Math.abs(layer.getParallaxSpeedRatioX()) > Math.abs(tower.getParallaxSpeedRatioX())))
+				tower = layer;
+		}
+		return tower;
+	}
+
+	/**
+	 * The radius, in world units, of the panorama {@code layer} is wrapped in round {@code tower} (r350,
+	 * {@link PanoramaBatch}); 0 when it is drawn flat. An IMAGE, SHADER or SEQUENCE layer slower than the tower and not
+	 * still is behind it. Seen from the camera {@code D} from the axis ({@link ParallaxLayer#getTowerCamera} radii
+	 * {@code r}), the tower's front is {@code f = D - r} away and the layer as far as its speed says, {@code f s_tower / s}
+	 * (a speed is 1 / distance); the middle of its far side, so {@code R = f s_tower / s - D}, at least {@code D}: the
+	 * camera stays inside every panorama, which then covers the view.
+	 * A still layer is the sky; FLOOR, PARTICLES and EMPTY layers and other towers stay flat.
+	 */
+	public static float panoramaRadiusOf(ParallaxLayer tower, ParallaxLayer layer)
+	{
+		if (tower == null || layer == tower || layer.isTower())
+			return 0;
+		Enum_LayerKind kind = layer.getKind();
+		if (kind != Enum_LayerKind.IMAGE && kind != Enum_LayerKind.SHADER && kind != Enum_LayerKind.SEQUENCE)
+			return 0;
+		float speed = Math.abs(layer.getParallaxSpeedRatioX()), towerSpeed = Math.abs(tower.getParallaxSpeedRatioX());
+		if (!(speed > 0) || !(speed < towerSpeed))
+			return 0;
+		float camera = towerCameraOf(tower);
+		return Math.max(camera, (camera - towerRadiusOf(tower)) * towerSpeed / speed - camera);
+	}
+
+	/** How far the camera looking at {@code tower} stands from its axis, in world units. */
+	static float towerCameraOf(ParallaxLayer tower)
+	{return towerRadiusOf(tower) * tower.getTowerCamera();}
+
+	/** {@code tower}'s radius in world units. */
+	static float towerRadiusOf(ParallaxLayer tower)
+	{return tower.getTowerRadius() * (tower.getWorldWidth() / 100);}
+
 	public static float frontSpeedOf(List<ParallaxLayer> page)
 	{
 		float front = 0;
@@ -644,10 +699,21 @@ public class ParallaxPageReader implements Disposable
 		}
 
 		boolean tower = layer.isTower();
-		// Round the page's planet: its tiles and its mirrored copy cut in strips, each lowered. Not a floor nor a tower.
-		float bend = layer.kind == Enum_LayerKind.FLOOR || tower ? 0
+		// Behind a tower seen from close by: a panorama round its axis, cut in strips, each placed and scaled.
+		ParallaxLayer near = incoming ? transferNearTower : nearTower;
+		float panorama = panoramaRadiusOf(near, layer);
+		// Round the page's planet: its tiles and its mirrored copy cut in strips, each lowered. Not a floor, a tower or a
+		// panorama.
+		float bend = layer.kind == Enum_LayerKind.FLOOR || tower || panorama > 0 ? 0
 				: planetBendOf(incoming ? transferPlanetRadius : planetRadius, worldWidth, incoming ? transferFrontSpeed : frontSpeed, layer);
-		if (bend > 0)
+		if (panorama > 0)
+		{
+			// At its own scale: the camera's distance to the tower's front, f, over the panorama's middle's, D + R.
+			float camera = towerCameraOf(near), front = camera - towerRadiusOf(near);
+			drawn = panoramaBatch.set(drawn, front * panorama / (camera + panorama), camera / panorama, viewLeft + viewWidth / 2,
+					viewBottom + viewHeight / 2, viewLeft, viewWidth);
+		}
+		else if (bend > 0)
 			drawn = planetBatch.set(drawn, bend, viewLeft, viewWidth);
 		if (layer.kind == Enum_LayerKind.FLOOR)
 			// Its rows across the whole view, whatever the page repeats; no mirrored copy.
@@ -692,7 +758,7 @@ public class ParallaxPageReader implements Disposable
 			float drawY = startY + row * stepY;
 			if (drawY + height <= viewBottom || drawY >= viewBottom + viewHeight)
 				continue;
-			layer.drawTower(batch, viewLeft + viewWidth / 2, x, drawY, viewLeft, viewLeft + viewWidth, packed);
+			layer.drawTower(batch, viewLeft + viewWidth / 2, x, drawY, viewLeft, viewLeft + viewWidth, viewBottom + viewHeight / 2, packed);
 		}
 	}
 

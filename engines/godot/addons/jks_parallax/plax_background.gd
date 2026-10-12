@@ -129,6 +129,10 @@ var _modulate := Color.WHITE
 # width of its view.
 var _bend := 0.0
 var _view_w := 0.0
+# Set by _draw_layer: the panorama the layer drawn is wrapped in round its page's near tower (PlaxPanorama: rho, q,
+# the strips' edges and scales), empty when flat; and the eye it is scaled about.
+var _panorama: Array = []
+var _eye_y := 0.0
 # What draws each EMPTY layer, by layer name.
 var _hooks := {}
 # Seconds acted: the SHADER layers' clock, shared by both pages of a cross-fade (ParallaxPageReader.effectTime).
@@ -734,7 +738,18 @@ func _draw_layer(l: Dictionary) -> void:
 	var view_h := _world_height * z
 	_view_w = view_w
 	_bend = 0.0
-	if m.kind == "IMAGE" or m.kind == "SHADER" or m.kind == "SEQUENCE":
+	_panorama = []
+	_eye_y = view_h / 2
+	# Behind a tower seen from close by: a panorama round its axis (ParallaxPageReader.drawImageLayer); else, round the
+	# page's planet.
+	var near := PlaxPanorama.near_tower_of(transfer_layers if l.incoming else layers)
+	var pano := PlaxPanorama.radius_of(near, l, world_width)
+	if pano > 0:
+		var camera := PlaxPanorama.camera_of(near, world_width)
+		var front: float = camera - near.model.towerRadius * (world_width / 100.0)
+		_panorama = [front * pano / (camera + pano), camera / pano, PackedFloat32Array(), PackedFloat32Array()]
+		PlaxPanorama.lay_out(_panorama[0], _panorama[1], view_w, _panorama[2], _panorama[3])
+	elif m.kind == "IMAGE" or m.kind == "SHADER" or m.kind == "SEQUENCE":
 		var from_page := transfer_page if l.incoming else page
 		_bend = PlaxPlanet.bend_of(from_page.planet_radius, world_width,
 				PlaxEffects.front_speed_of(transfer_layers if l.incoming else layers), m)
@@ -859,6 +874,10 @@ func _draw_region(l: Dictionary, x: float, y: float, width: float, height: float
 	var bottom: float = y + height * ((1 - l.trim_bottom - l.packed_h) if fy else l.trim_bottom)
 	var r: Dictionary = l.region
 	var src := PlaxEffects.drawn_rect(r)
+	if not _panorama.is_empty():
+		# Behind a near tower: cut in strips, each placed round the panorama and scaled about the eye.
+		PlaxPanorama.draw(self, r.texture, src, left, bottom, draw_w, draw_h, fx, fy, _panorama, _eye_y, _view_w)
+		return
 	if _bend > 0:
 		# Round the page's planet: cut in strips, each lowered (ParallaxPageReader.drawImageLayer).
 		PlaxPlanet.draw(self, r.texture, src, left, bottom, draw_w, draw_h, fx, fy, _bend, _view_w)

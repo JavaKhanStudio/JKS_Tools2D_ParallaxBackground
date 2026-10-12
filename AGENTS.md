@@ -144,7 +144,10 @@ repair.
   the batch colour's red, green and alpha are the fog's: the shade rides in its blue, which `PAGE_FOG` reads as darkness
   (0 for every other layer). Godot's copy is `plax_tower.gd`; jME runs core's. Change it and run both frame checks on
   `engines/rounds/tower`; `tools/r276-tower/strength.sh` proves the round sees the wrap and the shade, `mutate.sh`
-  a wrong Godot copy and a wrong core law.
+  a wrong Godot copy and a wrong core law. Seen from close by (r350, format 14: the tower layer's `towerCamera`, in
+  radii from its axis, above 1), each strip is scaled about the view's middle (`ParallaxLayer.towerScaleAt`: the
+  courses arc) and the page's slower IMAGE, SHADER and SEQUENCE layers are drawn through `PanoramaBatch`
+  (`ParallaxPageReader.nearTowerOf`/`panoramaRadiusOf`), Godot's `plax_panorama.gd`; round scenes w05-w08.
 - A planet (r277, format 13: the page's `planetRadius`) bends a page's IMAGE, SHADER and SEQUENCE layers through
   `PlanetBatch`, which wraps the layer's batch (the dolly's, when dollied) and cuts each `draw(region, x, y, w, h)` at
   `PlanetBatch.STRIPS` strips fixed in the layer's view, each lowered by `planetBendOf` times dx² (dx from the view's

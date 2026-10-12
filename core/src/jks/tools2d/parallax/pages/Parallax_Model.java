@@ -92,6 +92,13 @@ public class Parallax_Model
 	 * {@code 1 - towerShade (1 - cos a)} of its brightness. Stored since format 12, {@link #DEFAULT_TOWER_SHADE} before.
 	 */
 	public float towerShade = DEFAULT_TOWER_SHADE;
+	/**
+	 * Where the camera looking at a tower stands, in tower radii from its axis (above 1); 0, the default: far away, the
+	 * wall's courses straight and the page behind it flat. Above 1, the wall's strips are scaled up and down about the
+	 * view's middle by their distance, so its courses arc, and the page's layers slower than the tower wrap round it as
+	 * panoramas (docs/depth-tricks.md §2, r350). Stored since format 14.
+	 */
+	public float towerCamera;
 
 	public boolean isFlipX()
 	{return flipX;}
@@ -261,6 +268,12 @@ public class Parallax_Model
 
 	public void setTowerShade(float towerShade)
 	{this.towerShade = towerShade;}
+
+	public float getTowerCamera()
+	{return towerCamera;}
+
+	public void setTowerCamera(float towerCamera)
+	{this.towerCamera = towerCamera;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

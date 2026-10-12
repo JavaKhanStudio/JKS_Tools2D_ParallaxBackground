@@ -67,6 +67,19 @@ little at their edges.
   blue as darkness (`rgb * (1 - b)` before the fog's mix), 0 for every other layer; elsewhere the strip's rgb is
   multiplied. Drawn by `ParallaxLayer.drawTower`, `plax_tower.gd`'s `draw`; round `engines/rounds/tower`. Not
   built: the panoramas behind curving at their edges (a flat parallax behind reads well enough), a shader version.
+- Built (r350, Simon on the tower lab: "Why is the tower there but the background not round?", then the mock's look
+  and the arced courses): format 14's `towerCamera` on the tower layer, where the camera stands in tower radii from
+  its axis (0, or up to 1: far away, r276's look). Close by, each strip of the wall is scaled about the view's middle
+  by its front's distance over its own, `(c - 1) / (c - cos a)`, so the courses arc (no cut in height: each strip is
+  one quad, scaled), and the page's `IMAGE`, `SHADER` and `SEQUENCE` layers slower than the tower, not still, are the
+  far side of a cylinder round its axis (`PanoramaBatch`): of radius `R = f s_tower / s - D` (`D` the camera's
+  distance, `f = D - r` its distance to the tower's front, the layer `f s_tower / s` away as its speed says), at least
+  `D` so the camera is inside and every panorama covers the view; its point at angle `t` drawn at
+  `rho sin t (q + 1) / (q + cos t)` from the axis (`q = D / R`, `rho = f R / (D + R)` its radius at its own scale)
+  and scaled about the eye by `(q + 1) / (q + cos t)`: as flat in the middle, wider and taller at the sides. 128
+  strips fixed in the view. The tower's own strips stay where r276 put them (`r sin a`, not in perspective). A
+  panorama takes the place of the planet's bend; PARTICLES and hooks stay flat. Godot's copy is `plax_panorama.gd`
+  and `plax_tower.gd`'s `scale_at`; round scenes w05-w08; the tower lab's camera slider.
 
 ### 3. Planet: layers bent by their distance
 

@@ -78,6 +78,7 @@ public final class Utils_Page
 		model.floorHeight = page.getFloorHeight();
 		model.towerRadius = page.getTowerRadius();
 		model.towerShade = page.getTowerShade();
+		model.towerCamera = page.getTowerCamera();
 		return model;
 	}
 }

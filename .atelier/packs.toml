@@ -87,6 +87,11 @@ the front half of a cylinder in the view's middle, TOWER_STRIPS strips of equal 
 colour. UNDER libGDX's PAGE FOG THE BATCH COLOUR IS NOT A COLOUR (red fog, green page, alpha): the shade rides in its
 blue, which PAGE_FOG reads as darkness, and every other layer must keep blue 0 there. Godot: plax_tower.gd; round
 engines/rounds/tower, tools/r276-tower/strength.sh and mutate.sh.
+SEEN FROM CLOSE BY (r350, format 14 towerCamera on the tower layer, radii from its axis, above 1) the tower's
+strips are scaled about the view's middle (ParallaxLayer.towerScaleAt: courses arc) and its page's slower, not still,
+IMAGE/SHADER/SEQUENCE layers go through PanoramaBatch (nearTowerOf, panoramaRadiusOf: R = f s_tower/s - D, at least
+D, so the camera is inside and every panorama covers the view); a panorama skips the planet's bend. Godot:
+plax_panorama.gd, plax_tower.gd scale_at; round scenes w05-w08; the tower lab's camera slider.
 A PLANET (r277, format 13: the PAGE's planetRadius) BENDS THROUGH PlanetBatch, NOT IN ParallaxLayer: it wraps the layer's
 batch (over the DollyBatch when dollied) and cuts each draw(region, x, y, w, h) at 256 strips FIXED IN THE LAYER'S VIEW,
 each lowered by planetBendOf (front / speed / 2R) times dx^2. A still layer is the sky and stays flat; FLOOR and

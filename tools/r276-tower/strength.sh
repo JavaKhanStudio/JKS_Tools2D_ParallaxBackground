@@ -3,14 +3,15 @@
 #
 # The reader rounds fail past a mean 2/255 apart: a reader that drew a tower flat, or unshaded, would pass a scene the
 # wrap or the shade moves by less. Each scene has two twins: "flat", its tower's radius 0 (today's flat layer), and
-# "unshaded", its tower's shade 0 (wrapped, no darkening). This renders the round and its twins with libGDX
-# (tools/parallax-lab-shots.sh, off screen) and prints, per still, how far each is from its twin; it fails when one is
-# under MIN (default 2.5, past the rounds' 2). Writes build/r276/strength/.
+# "unshaded", its tower's shade 0 (wrapped, no darkening); a scene whose tower is seen from close by (r350, w05-w08) a
+# third, "far", its towerCamera 0 (the courses straight, the set behind flat). This renders the round and its twins
+# with libGDX (tools/parallax-lab-shots.sh, off screen) and prints, per still, how far each is from its twin; it fails
+# when one is under MIN (default 2.5, past the rounds' 2). Writes build/r276/strength/.
 # headless: tools/parallax-lab-shots.sh renders in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 MIN="${MIN:-2.5}" OUT=build/r276/strength
-rm -rf "$OUT"; mkdir -p "$OUT/flat" "$OUT/unshaded"
+rm -rf "$OUT"; mkdir -p "$OUT/flat" "$OUT/unshaded" "$OUT/far"
 python3 - "$OUT" <<'PY' || exit 1
 import json, os, sys
 out = sys.argv[1]
@@ -18,11 +19,11 @@ def twin(path, kind):
     page = json.load(open(path))
     for layer in page['pageModel']['pageList']:
         if layer.get('towerRadius', 0) > 0:
-            layer['towerRadius' if kind == 'flat' else 'towerShade'] = 0
+            layer[{'flat': 'towerRadius', 'unshaded': 'towerShade', 'far': 'towerCamera'}[kind]] = 0
     twin_path = os.path.join(out, kind, os.path.basename(path))
     json.dump(page, open(twin_path, 'w'), indent=1)
     return twin_path
-for kind in ('flat', 'unshaded'):
+for kind in ('flat', 'unshaded', 'far'):
     round_ = json.load(open('engines/rounds/tower/round.json'))
     for scene in round_['scenes']:
         scene['page'] = twin(scene['page'], kind)
@@ -33,6 +34,7 @@ PY
 tools/parallax-lab-shots.sh engines/rounds/tower "$OUT" >/dev/null || exit 1
 tools/parallax-lab-shots.sh "$OUT/flat" "$OUT/flat" >/dev/null || exit 1
 tools/parallax-lab-shots.sh "$OUT/unshaded" "$OUT/unshaded" >/dev/null || exit 1
+tools/parallax-lab-shots.sh "$OUT/far" "$OUT/far" >/dev/null || exit 1
 python3 - "$OUT" "$MIN" <<'PY'
 import json, os, sys
 from PIL import Image, ImageChops, ImageStat
@@ -43,7 +45,8 @@ for scene in json.load(open('engines/rounds/tower/round.json'))['scenes']:
         name = f"{scene['id']}-t{t}.png"
         a = Image.open(os.path.join(out, name)).convert('RGB')
         line = name
-        for kind in ('flat', 'unshaded'):
+        near = any(l.get('towerCamera', 0) > 1 for l in json.load(open(scene['page']))['pageModel']['pageList'])
+        for kind in ('flat', 'unshaded') + (('far',) if near else ()):
             b = Image.open(os.path.join(out, kind, name)).convert('RGB')
             mean = sum(ImageStat.Stat(ImageChops.difference(a, b)).mean) / 3
             line += f'  from its {kind} twin {mean:.2f} / 255'

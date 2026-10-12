@@ -18,7 +18,8 @@ import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 
 /**
  * ParallaxPageReader's cases on tower layers (r276): an IMAGE layer wrapped round a cylinder in the view's middle, its
- * scroll turning it, its strips darker toward its sides. Shared builders in {@link ReaderFixtures}.
+ * scroll turning it, its strips darker toward its sides; seen from close by (r350), its strips scaled about the view's
+ * middle and its page's slower layers wrapped round it as panoramas. Shared builders in {@link ReaderFixtures}.
  */
 final class TowerCases extends ReaderFixtures
 {
@@ -31,7 +32,11 @@ final class TowerCases extends ReaderFixtures
 				new BrowserCase("reader: towerUnderThePageFogDarkensInTheBlue", () -> new TowerCases().towerUnderThePageFogDarkensInTheBlue()),
 				new BrowserCase("reader: towerDrawsOnlyWhatTheViewShows", () -> new TowerCases().towerDrawsOnlyWhatTheViewShows()),
 				new BrowserCase("reader: towerFlippedRunsItsImageTheOtherWay", () -> new TowerCases().towerFlippedRunsItsImageTheOtherWay()),
-				new BrowserCase("reader: towerRadiusOnAnotherKindDrawsItFlat", () -> new TowerCases().towerRadiusOnAnotherKindDrawsItFlat()));
+				new BrowserCase("reader: towerRadiusOnAnotherKindDrawsItFlat", () -> new TowerCases().towerRadiusOnAnotherKindDrawsItFlat()),
+				new BrowserCase("reader: nearTowerArcsItsCoursesAboutTheViewsMiddle", () -> new TowerCases().nearTowerArcsItsCoursesAboutTheViewsMiddle()),
+				new BrowserCase("reader: layersBehindANearTowerWrapRoundItInEveryRepeatMode", () -> new TowerCases().layersBehindANearTowerWrapRoundItInEveryRepeatMode()),
+				new BrowserCase("reader: panoramaRadiusGrowsWithDistanceAndHoldsTheCameraInside", () -> new TowerCases().panoramaRadiusGrowsWithDistanceAndHoldsTheCameraInside()),
+				new BrowserCase("reader: onlySlowerMovingLayersWrapRoundANearTower", () -> new TowerCases().onlySlowerMovingLayersWrapRoundANearTower()));
 	}
 
 	/** The tower's radius: 25% of the 40-wide world. */
@@ -281,5 +286,134 @@ final class TowerCases extends ReaderFixtures
 		flat.setTower(0, 0.65f);
 		drawn(true, false, flat);
 		isTrue(draws.size() >= 2 && draws.size() <= 3, "radius 0: flat: " + draws.size());
+	}
+
+	/** The view's middle, where a tower seen from close by scales about: the 22.5-high view's. */
+	private static final float EYE = 22.5f / 2;
+
+	/**
+	 * Seen from 3 radii, each strip of the tower is scaled about the view's middle by its front's distance over its own,
+	 * {@code (3 - 1) / (3 - cos a)}: 1 at the front, 2/3 at the sides, so its bottom (under the eye) rises toward the
+	 * sides and its courses arc; from 1 radius or less, from far away: every strip as high as the layer.
+	 */
+	void nearTowerArcsItsCoursesAboutTheViewsMiddle()
+	{
+		ParallaxLayer tower = tower();
+		tower.setTowerCamera(3);
+		isTrue(tower.isNearTower(), "a tower with a camera of 3 is seen from close by");
+		drawn(true, false, tower);
+		equal(ParallaxLayer.TOWER_STRIPS, draws.size(), 3, "one row of strips");
+		float bottom = 0.05f * 22.5f, front = 0, side = Float.MAX_VALUE;
+		for (float[] draw : draws)
+		{
+			float scale = draw[3] / 10;
+			equal(EYE + (bottom - EYE) * scale, draw[1], 1e-4f, "scaled about the view's middle");
+			isTrue(scale <= 1 + 1e-5f && scale >= 2f / 3 - 1e-3f, "between 2/3 and 1: " + scale);
+			front = Math.max(front, scale);
+			side = Math.min(side, scale);
+		}
+		equal(1, front, 1e-3f, "the front at its own height");
+		equal(2f / 3, side, 1e-2f, "the sides at 2/3 of it");
+		float[] sideStrip = draws.get(0), middle = draws.get(draws.size() / 2);
+		isTrue(sideStrip[1] > middle[1], "its bottom rises toward the sides: " + sideStrip[1] + " over " + middle[1]);
+		equal(ParallaxLayer.towerScaleAt(3, 1), (3 - 1) / (3 - (float) Math.cos(1)), 1e-6f, "the scale's law");
+
+		for (float camera : new float[] { 0, 1 })
+		{
+			ParallaxLayer far = tower();
+			far.setTowerCamera(camera);
+			isTrue(!far.isNearTower(), "a camera of " + camera + " is far away");
+			drawn(true, false, far);
+			for (float[] draw : draws)
+				equal(10, draw[3], 1e-4f, "camera " + camera + ": every strip as high as the layer");
+		}
+	}
+
+	/**
+	 * A layer slower than a tower seen from close by is a panorama round its axis: cut in the view's strips, edge to edge
+	 * across the view, as flat at the middle and taller toward the sides, every piece scaled about the view's middle, so
+	 * its bottom (under the eye) drops toward the sides; in every repeat mode. The tower's camera at 0: flat again.
+	 */
+	void layersBehindANearTowerWrapRoundItInEveryRepeatMode()
+	{
+		for (boolean[] mode : new boolean[][] { { true, false }, { false, true }, { true, true }, { false, false } })
+		{
+			String repeat = "repeat X " + mode[0] + ", Y " + mode[1];
+			ParallaxLayer back = layer(10), tower = tower();
+			tower.setTowerCamera(3);
+			drawn(mode[0], mode[1], back, tower);
+			List<float[]> pieces = new ArrayList<>();
+			for (float[] draw : draws)
+				if (Math.abs(draw[1] + draw[3] - (EYE + (0.1f * 22.5f + 22.5f - EYE) * (draw[3] / 22.5f))) < 1e-3f)
+					pieces.add(draw);
+			isTrue(pieces.size() >= 100, repeat + ": the back layer cut in strips, each scaled about the middle: " + pieces.size());
+			pieces.sort((a, b) -> Float.compare(left(a), left(b)));
+			equal(0, left(pieces.get(0)), 1e-3f, repeat + ": from the view's left edge");
+			equal(40, right(pieces.get(pieces.size() - 1)), 1e-3f, repeat + ": to its right one");
+			float middle = Float.MAX_VALUE, side = 0;
+			for (int i = 0; i < pieces.size(); i++)
+			{
+				float[] piece = pieces.get(i);
+				if (i > 0)
+					equal(right(pieces.get(i - 1)), left(piece), 1e-3f, repeat + ": piece " + i + " starts where the one before ends");
+				float scale = piece[3] / 22.5f;
+				isTrue(scale >= 1 - 1e-4f, repeat + ": never smaller than flat: " + scale);
+				middle = Math.min(middle, scale);
+				side = Math.max(side, scale);
+			}
+			equal(1, middle, 1e-2f, repeat + ": as flat at the middle");
+			isTrue(side > 1.2f, repeat + ": taller toward the sides: " + side);
+			isTrue(pieces.get(0)[1] < pieces.get(pieces.size() / 2)[1], repeat + ": its bottom drops toward the sides");
+
+			ParallaxLayer flatBack = layer(10), farTower = tower();
+			drawn(mode[0], mode[1], flatBack, farTower);
+			int flat = 0;
+			for (float[] draw : draws)
+				if (Math.abs(draw[3] - 22.5f) < 1e-4f && Math.abs(draw[2]) > 39)
+					flat++;
+			isTrue(flat >= 1, repeat + ": a tower seen from far away leaves it flat");
+		}
+	}
+
+	/**
+	 * The panorama's radius: the tower's front 2 radii away (camera 3, radius 10), a layer 4 times slower is 80 away, its
+	 * radius 80 - 30 = 50; one hardly slower would sit inside the camera's circle, so it is held at the camera's 30.
+	 */
+	void panoramaRadiusGrowsWithDistanceAndHoldsTheCameraInside()
+	{
+		ParallaxPageReader reader = reader(true, false);
+		reader.setWorldSize(40, 22.5f);
+		ParallaxLayer tower = tower(), back = layer(10);
+		tower.setTowerCamera(3);
+		reader.addLayers(list(back, tower));
+		ParallaxLayer taken = reader.layers.get(1);
+		equal(taken, ParallaxPageReader.nearTowerOf(reader.layers), "the page's near tower");
+		ParallaxLayer slow = reader.layers.get(0);
+		slow.setParallaxSpeedRatioX(0.0125f);
+		equal(50, ParallaxPageReader.panoramaRadiusOf(taken, slow), 1e-3f, "4 times slower: radius 50");
+		slow.setParallaxSpeedRatioX(0.04f);
+		equal(30, ParallaxPageReader.panoramaRadiusOf(taken, slow), 1e-3f, "hardly slower: held at the camera's distance");
+		taken.setTowerCamera(0);
+		equal(null, ParallaxPageReader.nearTowerOf(reader.layers), "no near tower when it is seen from far away");
+	}
+
+	/** Behind a near tower, a still layer (the sky), a faster one (in front of it) and a SHADER-less hook stay flat. */
+	void onlySlowerMovingLayersWrapRoundANearTower()
+	{
+		ParallaxLayer tower = tower();
+		tower.setTowerCamera(3);
+		ParallaxLayer still = layer(10), faster = layer(10);
+		still.setParallaxSpeedRatioX(0);
+		faster.setParallaxSpeedRatioX(0.08f);
+		equal(0, ParallaxPageReader.panoramaRadiusOf(tower, still), 0, "a still layer is the sky");
+		equal(0, ParallaxPageReader.panoramaRadiusOf(tower, faster), 0, "a faster one is in front of the tower");
+		equal(0, ParallaxPageReader.panoramaRadiusOf(tower, tower), 0, "nor the tower itself");
+		equal(0, ParallaxPageReader.panoramaRadiusOf(null, still), 0, "no tower, no panorama");
+		drawn(true, false, still, faster, tower);
+		int flat = 0;
+		for (float[] draw : draws)
+			if (Math.abs(draw[3] - 22.5f) < 1e-4f)
+				flat++;
+		isTrue(flat >= 2 && flat <= 6, "both drawn as flat tiles: " + flat);
 	}
 }

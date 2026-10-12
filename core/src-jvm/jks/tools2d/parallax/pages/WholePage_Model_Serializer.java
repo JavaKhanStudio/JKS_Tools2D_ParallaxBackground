@@ -37,13 +37,15 @@ import com.esotericsoftware.kryo.io.Output;
  * Older files read 0 and {@link Parallax_Model#DEFAULT_TOWER_SHADE}: no layer is wrapped round a tower.</li>
  * <li>version 13: the version 12 layout with the page's planetRadius (a float) stored after fogColor. Older files read
  * 0: no layer is bent round a planet.</li>
+ * <li>version 14: the version 13 layout with each layer's towerCamera (a float) stored after towerShade. Older files
+ * read 0: a tower's courses are straight and the page behind it flat.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 13;
+	static final int CURRENT_VERSION = 14;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

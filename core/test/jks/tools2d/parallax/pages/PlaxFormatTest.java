@@ -121,6 +121,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(floorLayer());
 		original.pageModel.pageList.get(1).towerRadius = 12.5f;
 		original.pageModel.pageList.get(1).towerShade = 0.3f;
+		original.pageModel.pageList.get(1).towerCamera = 3.3f;
 		original.fogColor = new Color(0.2f, 0.3f, 0.5f, 1);
 		original.planetRadius = 650;
 
@@ -165,6 +166,25 @@ class PlaxFormatTest
 		assertEquals(12.5f, reread.pageModel.pageList.get(1).towerRadius, "a tower's radius is stored since format 12");
 		assertEquals(0.3f, reread.pageModel.pageList.get(1).towerShade, "and its shade");
 		assertEquals(650, reread.planetRadius, "the page's planet is stored since format 13");
+		assertEquals(3.3f, reread.pageModel.pageList.get(1).towerCamera, "a tower's camera is stored since format 14");
+	}
+
+	/** Format 13 has no tower camera: written there, a tower reads 0 (seen from far away). */
+	@Test
+	void format13FilesStillLoadWithoutATowerCamera() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.get(1).towerRadius = 12.5f;
+		original.pageModel.pageList.get(1).towerCamera = 3.3f;
+
+		byte[] written = write(original, 13);
+		assertEquals(13, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		assertEquals(12.5f, reread.pageModel.pageList.get(1).towerRadius, "format 13 has the tower");
+		assertEquals(0, reread.pageModel.pageList.get(1).towerCamera, "and no camera");
+		original.pageModel.pageList.get(1).towerCamera = 0;
+		assertPageEquals(original, reread);
 	}
 
 	/** Format 12 has no planet: written there, the page reads radius 0 (flat). */
@@ -545,6 +565,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(7, floorLayer());
 		original.pageModel.pageList.get(0).towerRadius = 12.5f;
 		original.pageModel.pageList.get(0).towerShade = 0.3f;
+		original.pageModel.pageList.get(0).towerCamera = 3.3f;
 		original.planetRadius = 650;
 
 		String json = JSON.writeValueAsString(original);
@@ -630,6 +651,7 @@ class PlaxFormatTest
 			assertEquals(expected.floorHeight, actual.floorHeight, name);
 			assertEquals(expected.towerRadius, actual.towerRadius, name);
 			assertEquals(expected.towerShade, actual.towerShade, name);
+			assertEquals(expected.towerCamera, actual.towerCamera, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

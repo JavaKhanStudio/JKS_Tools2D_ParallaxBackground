@@ -92,9 +92,10 @@ public class ParallaxLayer
 
 	/**
 	 * The radius of the tower an IMAGE layer is wrapped round, in percent of the world width (0: flat), and how much its
-	 * wall darkens as it turns away: see {@link Parallax_Model#towerRadius}.
+	 * wall darkens as it turns away, and where the camera stands from its axis: see {@link Parallax_Model#towerRadius}
+	 * and {@link Parallax_Model#towerCamera}.
 	 */
-	private float towerRadius, towerShade = Parallax_Model.DEFAULT_TOWER_SHADE;
+	private float towerRadius, towerShade = Parallax_Model.DEFAULT_TOWER_SHADE, towerCamera;
 	/** The strip of the image a tower's piece draws, set before each piece's draw; made once, with the regions. */
 	private TextureRegion towerStrip;
 
@@ -302,6 +303,7 @@ public class ParallaxLayer
 		}
 		setFloor(model.floorMapping, model.floorTopSpeed, model.floorRows, model.floorHeight);
 		setTower(model.towerRadius, model.towerShade);
+		setTowerCamera(model.towerCamera);
 	}
 
 	public void resetPosition()
@@ -442,6 +444,7 @@ public class ParallaxLayer
 		copy.plantedSpeedX = plantedSpeedX;
 		copy.towerRadius = towerRadius;
 		copy.towerShade = towerShade;
+		copy.towerCamera = towerCamera;
 		// Set before each piece is drawn, and read by the batch at once: shared.
 		copy.towerStrip = towerStrip;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
@@ -1115,6 +1118,29 @@ public class ParallaxLayer
 		towerShade = shade;
 	}
 
+	/**
+	 * Where the camera looking at the tower stands, in tower radii from its axis: above 1, its courses arc and the page's
+	 * slower layers wrap round it ({@link Parallax_Model#towerCamera}); 0 (or up to 1), far away. Kept on every kind.
+	 */
+	public float getTowerCamera()
+	{return towerCamera;}
+
+	/** Sets {@link #getTowerCamera}, in tower radii from its axis. */
+	public void setTowerCamera(float camera)
+	{towerCamera = camera;}
+
+	/** True when this is a tower seen from close by: its courses arc, and its page's slower layers wrap round it. */
+	public boolean isNearTower()
+	{return isTower() && towerCamera > 1;}
+
+	/**
+	 * How much a tower seen from {@code camera} radii from its axis ({@link #getTowerCamera}) scales its wall at angle
+	 * {@code a} from its front, about the view's middle: its front's distance over the strip's,
+	 * {@code (camera - 1) / (camera - cos a)}; 1 for a camera up to 1 (far away).
+	 */
+	public static float towerScaleAt(float camera, float a)
+	{return camera > 1 ? (camera - 1) / (camera - (float) Math.cos(a)) : 1;}
+
 	/** True when the reader wraps this layer round a tower ({@link #drawTower}): an IMAGE layer with a radius. */
 	public boolean isTower()
 	{return kind == Enum_LayerKind.IMAGE && towerRadius > 0;}
@@ -1132,11 +1158,13 @@ public class ParallaxLayer
 	 * tiles follow each other round it, padX apart, whatever the page repeats; flips mirror each image in its own place.
 	 * The front half, cut in {@link #TOWER_STRIPS} strips of equal angle and at each image's edges, one
 	 * {@code batch.draw(region, x, y, width, height)} a piece, the ones outside {@code viewLeft} to {@code viewRight}
-	 * skipped; each piece at {@code 1 - towerShade (1 - cos a)} of its brightness, at its middle. {@code packed}: the batch
+	 * skipped; each piece at {@code 1 - towerShade (1 - cos a)} of its brightness, at its middle. Seen from close by
+	 * ({@link #isNearTower}), each piece is also scaled up and down about {@code eyeY} by {@link #towerScaleAt} at its
+	 * middle, so the courses arc toward the eye at the sides (r350). {@code packed}: the batch
 	 * colour holds the page fog's numbers ({@link LayerEffects#beginPageFog}), the darkness goes in its blue; otherwise
 	 * its red, green and blue are multiplied. The batch colour is put back after. Nothing allocated.
 	 */
-	public void drawTower(Batch batch, float axisX, float x, float y, float viewLeft, float viewRight, boolean packed)
+	public void drawTower(Batch batch, float axisX, float x, float y, float viewLeft, float viewRight, float eyeY, boolean packed)
 	{
 		float radius = towerRadius * (worldWidth / 100), width = getRegionWidth(), height = getRegionHeight();
 		if (!(radius > 0) || !(width > 0) || !(height > 0))
@@ -1178,7 +1206,8 @@ public class ParallaxLayer
 				if (!(p1 > p0))
 					continue;
 				float x0 = axisX + radius * (float) Math.sin(p0 / radius), x1 = axisX + radius * (float) Math.sin(p1 / radius);
-				float bright = 1 - towerShade * (1 - (float) Math.cos((p0 + p1) / (2 * radius)));
+				float mid = (p0 + p1) / (2 * radius), bright = 1 - towerShade * (1 - (float) Math.cos(mid));
+				float scale = towerScaleAt(towerCamera, mid), pieceY = eyeY + (drawY - eyeY) * scale, pieceH = drawH * scale;
 				// The piece's share of its image, left to right; flipped on X the image runs right to left.
 				float f0 = (p0 - left) / imageWidth, f1 = (p1 - left) / imageWidth;
 				if (image.getTexture() != null)
@@ -1191,9 +1220,9 @@ public class ParallaxLayer
 				else
 					batch.setColor(r * bright, g * bright, b * bright, a);
 				if (flipX)
-					batch.draw(towerStrip, x1, drawY, x0 - x1, drawH);
+					batch.draw(towerStrip, x1, pieceY, x0 - x1, pieceH);
 				else
-					batch.draw(towerStrip, x0, drawY, x1 - x0, drawH);
+					batch.draw(towerStrip, x0, pieceY, x1 - x0, pieceH);
 			}
 		}
 		batch.setColor(r, g, b, a);

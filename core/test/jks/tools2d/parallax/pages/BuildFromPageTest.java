@@ -59,6 +59,7 @@ class BuildFromPageTest
 		// Wrapped round a tower.
 		sky.towerRadius = 12.5f;
 		sky.towerShade = 0.4f;
+		sky.towerCamera = 3.3f;
 		page.pageModel.pageList.add(sky);
 
 		Parallax_Model birds = new Parallax_Model();
@@ -145,6 +146,7 @@ class BuildFromPageTest
 		assertEquals(48, saved.pageModel.pageList.get(5).floorRows);
 		assertEquals(12.5f, saved.pageModel.pageList.get(0).towerRadius, "the tower's radius");
 		assertEquals(0.4f, saved.pageModel.pageList.get(0).towerShade, "and its shade");
+		assertEquals(3.3f, saved.pageModel.pageList.get(0).towerCamera, "and where its camera stands");
 	}
 
 	/** A layer in front of a floor moves at the speed the reader plants it at, and saves the speed it was given. */
