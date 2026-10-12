@@ -2,8 +2,9 @@
 
     python3 tools/r356-dit/sheet.py OUT/strips sheet.png
 
-Exits 1 when a strip's seam ratio is 2 or more. A cut (_cut.png) is not measured: a near-flat layer's median
-step is a fraction of a level, and a join under one level reads as a ratio of 3 (r356's l2_cut: 0.62 / 0.2).
+Exits 1 when a strip's seam ratio is 2 or more and its join's colour step is a level or more. On a near-flat strip
+the median step is a fraction of a level, and a join under the one level a PNG can show reads as a ratio over 2
+(r357's hills: 0.58 / 0.26 = 2.25, nothing to see). A cut (_cut.png) is not measured: its flat fill does that too.
 """
 import glob
 import os
@@ -16,13 +17,16 @@ import seam
 
 
 def main(strips, out):
-    rows, worst = [], 0.0
+    rows, worst, bad = [], 0.0, 0
     for path in sorted(glob.glob(os.path.join(strips, "l*_ai.png"))):
         name = os.path.basename(path)[:-len(".png")]
         a = seam.load(path)
-        ratio = seam.step(a[:, -1], a[:, 0]) / seam.inner(a)
+        join = seam.step(a[:, -1], a[:, 0])
+        ratio = join / seam.inner(a)
         worst = max(worst, ratio)
-        print(f"{name}: seam ratio {ratio:.2f}")
+        shows = ratio >= 2 and join >= 1
+        bad += shows
+        print(f"{name}: seam ratio {ratio:.2f}, join step {join:.2f} levels" + ("  SHOWS" if shows else ""))
         im = Image.open(path).convert("RGB")
         w, h = im.size
         twice = Image.new("RGB", (2 * w, h))
@@ -40,8 +44,8 @@ def main(strips, out):
         sheet.paste(r, (0, y))
         y += r.height
     sheet.save(out)
-    print(f"{out}: {len(rows)} strips, worst seam ratio {worst:.2f}")
-    return 1 if worst >= 2 else 0
+    print(f"{out}: {len(rows)} strips, worst seam ratio {worst:.2f}, {bad} seams that show")
+    return 1 if bad else 0
 
 
 if __name__ == "__main__":

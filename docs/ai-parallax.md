@@ -20,8 +20,10 @@ loads a `.gguf` through ComfyUI-GGUF with the Qwen3 text encoder (`--dit-clip`) 
 latent channels), and samples 9 steps at cfg 1 (`res_multistep`, `simple`). A transformer has no convolution to pad,
 so `--tile x` sets a unet wrapper (`--dit-loop blend`, from parallax-ai r23) that mixes, at every step, its prediction
 with one made half a width round, so that no column comes from a copy whose join it sits on. The forest example's
-strips loop at seam ratios 0.17-1.14 (`tools/r356-dit/check.sh`, ~75 s a strip). At `--denoise` 0.65 it keeps more of
-sil.py's shape than SD 1.5 does: the pines grow trees on one seed in two or three, and the rest are painted again.
+strips loop at seam ratios 0.17-1.14 (`tools/r356-dit/check.sh`, ~75 s a strip). Its `--denoise` is 0.75 (r357,
+`tools/r357-dit-denoise/sweep.py`, five seeds each): at 0.65 it keeps sil.py's spikes and the pines grow trees on two
+seeds in five; at 0.85 every strip paints misty ranges of its own behind the trees, which the cut keeps as
+half-transparent ghosts, 9-19 levels off `--colours`.
 
 **Examples (r239, 2026-10-10):** a forest, a beach and a post-apocalyptic city, each painted and pixel:
 `tools/r239-ai-strips/examples.sh OUT` paints the six pages and films them (`tools/ai-film.sh`). The beach and the

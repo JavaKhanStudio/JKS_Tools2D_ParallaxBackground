@@ -32,7 +32,7 @@ The model (r346): --ckpt and --lora replace the style's (any file in ComfyUI's m
 --lora none drops the pixel style's; --steps, --cfg, --sampler, --scheduler and --denoise go to every gen.py call. An
 SDXL checkpoint (one whose name says XL, or --xl) paints at 1536x576, SD 1.5 at 1024x384. recipe.json keeps them all.
 A .gguf --ckpt is a DiT (r356: --ckpt z-image-turbo-Q5_K_M.gguf): gen.py's DiT loader and loop, 1536x576, its own
-sampling defaults (9 steps, cfg 1, res_multistep, simple); no LoRA.
+sampling defaults (9 steps, cfg 1, res_multistep, simple) and --denoise 0.75 (r357); no LoRA.
 """
 import argparse
 import json
@@ -114,6 +114,10 @@ def roughness(path):
 GEN_CKPT, GEN_LORA_STRENGTH = "dreamshaper_8.safetensors", 0.8
 GEN_SAMPLING = {"steps": 28, "cfg": 7.0, "sampler": "dpmpp_2m", "scheduler": "karras"}
 DIT_SAMPLING = {"steps": 9, "cfg": 1.0, "sampler": "res_multistep", "scheduler": "simple"}  # gen.py's for a .gguf
+# Z-Image keeps sil.py's shape at 0.65 (pines: 3 of 5 seeds grow no trees) and paints misty ranges of its own into a
+# layer at 0.85 (kept as half-transparent ghosts, the colour 9-19 levels off --colours): 0.75 grows trees on every seed
+# and keeps the colour (r357, tools/r357-dit-denoise/sweep.py).
+DIT_DENOISE = 0.75
 
 
 def model_of(a):
@@ -137,7 +141,7 @@ def model_of(a):
     defaults = DIT_SAMPLING if dit else GEN_SAMPLING
     sampling = {k: getattr(a, k) if getattr(a, k) is not None else v for k, v in defaults.items()}
     return dict(sampling, ckpt=ckpt, lora=lora, lora_strength=strength, xl=xl, label=label,
-                denoise=a.denoise if a.denoise is not None else 0.7 if pixel else 0.65)
+                denoise=a.denoise if a.denoise is not None else 0.7 if pixel else DIT_DENOISE if dit else 0.65)
 
 
 TREES = 3.5  # roughness under which a pine strip has no trees in it
@@ -209,7 +213,7 @@ def parse_args():
     ap.add_argument("--cfg", type=float, help="default gen.py's 7.0 (a Turbo checkpoint wants about 2)")
     ap.add_argument("--sampler", help="default gen.py's dpmpp_2m")
     ap.add_argument("--scheduler", help="default gen.py's karras")
-    ap.add_argument("--denoise", type=float, help="img2img strength over sil.py's shape: default 0.65, pixel 0.7")
+    ap.add_argument("--denoise", type=float, help="img2img strength over sil.py's shape: default 0.65, pixel 0.7, a DiT 0.75")
     ap.add_argument("--dry-run", action="store_true", help="print every command, back to front, as if each strip took"
                     " on its first seed, and write nothing (r305: the proof that a change runs the same commands)")
     a = ap.parse_args()

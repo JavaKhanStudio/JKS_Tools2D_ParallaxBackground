@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # check.sh [OUT] — r356's proof: tools/ai-page.sh paints r239's forest example with Z-Image-Turbo (a DiT, looped by
-# gen.py's unet wrapper), and every strip it painted loops: seam ratio under 2 (sheet.py, which also writes
+# gen.py's unet wrapper), and every strip it painted loops: seam ratio under 2, or a join under one level (sheet.py, which also writes
 # OUT/strips-twice.png). About 12 min on the RTX 5060; ~75 s a strip, the pines retried when no trees grow.
 # headless: --no-shots, nothing but ComfyUI in-process; the page's stills are ai-page.sh's without it.
 set -u
