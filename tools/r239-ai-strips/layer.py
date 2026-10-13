@@ -9,8 +9,12 @@ this is per pixel, so the alpha loops too.
 --mask (sil.py's) --grow G: the silhouette helps the key, for a layer whose colours come near the sky's (snow under
 a pale sky keys half clear): alpha is 1 inside the mask, and the colour key's only within G px of it, so what SD paints
 far from the shape (a horizon behind hills) goes too. Pines grow past their shape: give them a larger G (r246).
+Under --mask each pixel is keyed against the sky round it, the clear pixels past G px of the mask (r358): SD's sky
+warms toward the foot and has clouds, and against the top rows' colour it stayed half opaque round the shape, a glow.
 --gap T: the foot of a gap SD painted deeper than the shape is sky or far haze, which the mask made opaque (r263):
 pixels less than T of the way from the sky to the mass's colour, open to the clear sky, key along that line (0: off).
+--edge E: alpha still half clear more than E px from a solid pixel is SD's haze or a ghost behind the shape, not a
+soft edge: it goes clear or solid (0: off).
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
@@ -74,6 +78,33 @@ def components(mask):
     return label, sizes[1:]
 
 
+def box(a, r):
+    """Sum over a (2r+1)-px square round each pixel, wrapping along X and clamped along Y."""
+    p = np.pad(a, [(r + 1, r), (0, 0)] + [(0, 0)] * (a.ndim - 2), mode="edge")
+    p = np.concatenate([p[:, -r - 1:], p, p[:, :r]], axis=1).cumsum(0).cumsum(1)
+    h, w = a.shape[:2]
+    n = 2 * r + 1
+    return p[n:n + h, n:n + w] - p[:h, n:n + w] - p[n:n + h, :w] + p[:h, :w]
+
+
+def local_sky(img, sky, clear, r):
+    """The sky behind each pixel: the mean of the clear pixels within r px (wider where there are none), else the
+    top rows' sky. SD paints a sky that changes down the strip and round the shape (a warmer haze at its foot,
+    clouds): keyed against the top rows' colour, that haze stays half opaque and draws a glow over the layer
+    behind (r358)."""
+    out = np.broadcast_to(sky, img.shape).copy()
+    known = clear.astype(np.float64)
+    done = np.zeros(clear.shape, bool)
+    for k in (1, 2, 4):
+        # a box twice (a tent), or the edges of the box draw squares in the key
+        q = max(r * k // 2, 1)
+        wsum = box(box(known, q), q)
+        here = ~done & (wsum > 0.5)
+        out[here] = box(box(img * known[..., None], q), q)[here] / wsum[here][:, None]
+        done |= here
+    return out
+
+
 def islands(mask):
     """Each 4-connected component of mask but the largest, as one mask; column 0 touches column w-1."""
     label, sizes = components(mask)
@@ -90,12 +121,23 @@ def ungap(img, sky, alpha, reach):
     mass = alpha > 0.95
     if not mass.any():
         return alpha
-    axis = np.median(img[mass], axis=0) - sky
-    t = (img - sky) @ axis / max(float(axis @ axis), 1.0)
+    axis = np.median(img[mass], axis=0) - sky  # sky: one colour, or each pixel's
+    t = ((img - sky) * axis).sum(-1) / np.maximum((axis * axis).sum(-1), 1.0)
     label, _ = components((t > -0.15) & (t < reach))
     open_ = np.unique(label[alpha < 0.05])
     gap = np.isin(label, open_[open_ > 0])
     return np.where(gap, np.minimum(alpha, np.clip(t / reach, 0, 1)), alpha)
+
+
+def unglow(alpha, edge):
+    """alpha with its half-clear haze made clear or solid: past edge px of a solid pixel a pixel is not a silhouette's
+    soft edge but a glow SD painted round it or a pale ghost behind it, which drawn half opaque over the layer behind
+    shows as a shadow round the shape (r358). Its alpha goes through a steep ramp, 0 below 0.4, 1 above 0.6."""
+    solid = alpha >= 0.95
+    far = ~spread(solid, edge) & (alpha < 0.95)
+    out = alpha.copy()
+    out[far] = np.clip((alpha[far] - 0.4) / 0.2, 0, 1)
+    return out
 
 
 def unspeck(alpha, cut):
@@ -124,6 +166,7 @@ def parse_args():
     ap.add_argument("--mask", help="sil.py's _mask.png: opaque inside it, keyed only within --grow px of it")
     ap.add_argument("--grow", type=int, default=12)
     ap.add_argument("--gap", type=float, default=0.6, help="key pale pixels open to the sky up to this far toward the mass (0: off)")
+    ap.add_argument("--edge", type=int, default=2, help="half-clear alpha past this many px of a solid pixel goes clear or solid (0: off)")
     ap.add_argument("--keep-islands", action="store_true", help="keep alpha islands apart from the main mass")
     ap.add_argument("--pixel", type=int, default=0)
     ap.add_argument("--colours", type=int, default=12)
@@ -133,24 +176,30 @@ def parse_args():
 
 
 def key(img, sky, a):
-    """The layer's alpha: the colour key, helped by --mask, its gaps keyed and its islands cut."""
+    """(alpha, sky): the layer's alpha, the colour key helped by --mask, its gaps keyed and its islands cut; and the
+    sky it was keyed against, each pixel's (local_sky's under --mask)."""
+    m = None
+    if a.mask:
+        m = np.asarray(Image.open(a.mask).convert("L").resize(img.shape[1::-1])) > 127
+        sky = local_sky(img, sky, ~spread(m, a.grow), a.grow + 8)
     d = np.linalg.norm(img - sky, axis=2)
     # The ramp ends near the layer's own distance from the sky: a fixed one marks a pixel half
     # sky, half hill as solid, a light line along the silhouette.
     far = a.far if a.far else 0.85 * float(np.median(d[d > 48])) if (d > 48).any() else 48
     alpha = np.clip((d - a.near) / (far - a.near), 0, 1)
-    if a.mask:
-        m = np.asarray(Image.open(a.mask).convert("L").resize(alpha.shape[::-1])) > 127
+    if m is not None:
         # SD moves an outline by a few px: opaque only 8 px inside the shape, or sky comes in with it.
         alpha = np.where(spread(m, -8), 1.0, np.where(spread(m, a.grow), alpha, 0.0))
     if a.gap:
         alpha = ungap(img, sky, alpha, a.gap)
+    if a.edge:
+        alpha = unglow(alpha, a.edge)
     if not a.keep_islands:
         cut = islands(alpha > 0.5)
         if cut.any():
             alpha = unspeck(alpha, cut)
             print(f"{a.out}: {int(cut.sum())} px of alpha islands cut", file=sys.stderr)
-    return alpha
+    return alpha, sky
 
 
 def unmix(img, sky, alpha):
@@ -219,8 +268,8 @@ def main():
     a = parse_args()
     img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
     sky = np.median(img[:8].reshape(-1, 3), axis=0)
-    alpha = key(img, sky, a)
-    out = unmix(img, sky, alpha)
+    alpha, behind = key(img, sky, a)
+    out = unmix(img, behind, alpha)
     if a.pixel > 1:
         out = pixelate(out, a)
     out.save(a.out)

@@ -149,6 +149,15 @@ it (r244); an SDXL ControlNet is untried.
   the mass's median colour (1); the pixels under 0.6, and not whiter than the sky (snow), that reach the clear sky
   through each other are keyed along it, so the foot fades clear and the edge takes the trees' colour.
   `tools/r263-gap/pale.py` counts what stays pale and opaque near a point.
+- **A glow round every shape** (r358, R0's "shadows around the buildings", "odd shadows around the trees"): SD's sky
+  is not one colour, it warms toward the foot and has clouds, and the key read it from the top rows only, so the sky
+  within `--grow` of the mask stayed half opaque, a band of even width round each building, and SD's pale haze and
+  ghost towers round the shape too. Under `--mask` each pixel is now keyed against the sky round it (`local_sky`: the
+  clear pixels past `--grow`, within `--grow` + 8 px), and alpha still half clear more than `--edge` px (2) from a
+  solid pixel is not a soft edge: a 0.4 to 0.6 ramp makes it clear or solid (`unglow`). On the painted examples the
+  translucent share of a layer fell from 8-31 % to 3-8 % (post-apo), 10-13 % to 3-4 % (forest pines), 23-51 % to
+  14-19 % (beach palms, their fronds kept). `tools/r358-glow/recut.sh` re-cuts them without the GPU, `compose.py`
+  draws before and after, `mutate.sh` proves `layer_test.py` sees either half taken out.
 - **A join on a tree's flank** (r246): the strip loops, but its join fell where the outline steps steeply, above three
   quarters of the strip's own column steps, and a `SEQUENCE` repeats that join at every segment: lint (e) at 21 and 22
   against 20. `sil.py --quiet-join` turns the shape so the join falls on its flattest 16 px; variants turn by their
