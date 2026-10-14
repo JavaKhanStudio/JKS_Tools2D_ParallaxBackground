@@ -12,12 +12,14 @@ docs/depth-tricks.md §5. Passes:
      ~/.cache/huggingface), run on the painting padded with its own other end, so the depth loops too. Its output is
      relative disparity: larger is nearer;
   3. bands: --layers clusters of that disparity (k-means in one dimension), far to near, small islands merged into
-     what surrounds them; a thing the band's edge cuts (SAM 2.1 small's masks: Hugging Face
-     facebook/sam2.1-hiera-small, Apache-2.0, ~180 MB) given whole to the band at its foot; then a colour pass that pulls into a nearer band the thin parts of it the model judged far
-     (a branch), and a small patch standing above its band's top edge handed to the farther band round it. A layer
-     holds its own band, and every nearer pixel under its band's top edge (a tree's trunk in front of the hills): the
-     layer stays solid to its bottom, as a painted strip is. Over columns where a nearer thing hides the band, its top
-     edge is the lower of its two sides;
+     what surrounds them; a thing a band's edge cuts (SAM 2.1 small's masks: Hugging Face
+     facebook/sam2.1-hiera-small, Apache-2.0, ~180 MB) given whole to the band at its foot; then a colour pass that
+     pulls into a nearer band the thin parts of it the model judged far (a branch), and a small patch standing above
+     its band's top edge handed to the farther band round it; last, every other piece of a layer apart from its mass
+     joined to it (a leaf beside its crown) or handed to the farther band round it (a speck floating over the layer).
+     A layer holds its own band, and every nearer pixel under its band's top edge (a tree's trunk in front of the
+     hills): the layer stays solid to its bottom, as a painted strip is. Over columns where a nearer thing hides the
+     band, its top edge is the lower of its two sides;
   4. holes: those nearer pixels, grown by --grow px over the soft edge depth leaves, are filled with the layer's own
      colours and repainted by dreamshaper_8's inpainting model (gen.py inpaint, tile x). The camera scrolls past
      every one of them.
@@ -293,6 +295,52 @@ def strays(L, n, area):
     return L[:, w:2 * w]
 
 
+def alpha_of(L, k):
+    """Layer k's pixels: its band, and every nearer pixel under the band's top edge."""
+    rows = np.arange(L.shape[0])[:, None]
+    return (L == k) | ((rows >= topline(L, k)[None]) & (L > k))
+
+
+def loose(L, n, near=3, rounds=2):
+    """Each piece of a layer apart from its mass, front to back: within near px of the mass (a leaf beside its crown),
+    the gap between them joins the layer; farther (a speck of crown or field the depth judged nearer, floating over
+    the layer at its speed), its band's pixels go to the farther band round it, never to nothing, so no hole opens
+    where it was. A piece handed back is a piece of the farther layer, seen again in its turn; a second round catches
+    what the first moved under a top edge. On the painting laid three times side by side, for the join (r359)."""
+    w = L.shape[1]
+    for _ in range(rounds):
+        moved = False
+        for k in range(n - 1, 0, -1):
+            T = np.tile(L, 3)
+            lab, count = ndimage.label(alpha_of(T, k))
+            if count < 2:
+                continue
+            sizes = ndimage.sum(np.ones(lab.shape), lab, index=np.arange(1, count + 1))
+            mass = np.isin(lab, 1 + np.nonzero(sizes == sizes.max())[0])  # one piece round the join, or three alike
+            dist = ndimage.distance_transform_edt(~mass)
+            for i, sl in enumerate(ndimage.find_objects(lab)):
+                if sizes[i] == sizes.max():
+                    continue
+                box = tuple(slice(max(0, q.start - near - 3), q.stop + near + 3) for q in sl)
+                piece, t = lab[box] == i + 1, T[box]
+                d = dist[box][piece].min()
+                if d <= near:
+                    j = int(np.ceil(d)) + 1
+                    both = piece | mass[box]
+                    gap = ndimage.binary_closing(both, iterations=j) & ~both & ndimage.binary_dilation(piece, iterations=j)
+                    t[gap & (t < k)] = k
+                else:
+                    ring = ndimage.binary_dilation(piece, iterations=2) & ~piece & (t < k)
+                    if not ring.any():
+                        continue
+                    t[piece & (t == k)] = np.bincount(t[ring], minlength=n).argmax()
+                moved = True
+            L = T[:, w:2 * w]
+        if not moved:
+            break
+    return L
+
+
 def looped(fn, *arrays):
     """fn run on each array laid three times side by side, its middle copy kept: whatever fn does across the join
     (labels, a pyramid, distances) it does as the tiled layer shows it."""
@@ -437,6 +485,7 @@ def depth_bands(img, n, cut):
     outlines(img, masks).save(os.path.join(cut, "objects.png"))
     L = by_colour(L, img, n)
     L = strays(L, n, w * h // 150)
+    L = loose(L, n)
     colour_bands(L, n).save(os.path.join(cut, "bands.png"))
     log("bands, far to near: " + ", ".join(f"{k}: disparity {centres[k]:.2f}, {(L == k).mean():.0%} of the pixels"
                                           for k in range(n)))
@@ -447,8 +496,7 @@ def cut_layer(k, img, dn, L, centres, cut, a):
     """4. Layer k and its hole, repainted: (layer, its recipe entry)."""
     h, w = img.shape[:2]
     n = a.layers
-    rows = np.arange(h)[:, None]
-    alpha = np.ones((h, w), bool) if k == 0 else (L == k) | ((rows >= topline(L, k)[None]) & (L > k))
+    alpha = np.ones((h, w), bool) if k == 0 else alpha_of(L, k)
     hole = alpha & grow(L > k, a.grow) if k < n - 1 else np.zeros_like(alpha)
     # The sky between a crown's branches is band k too, tinted by the leaves round it: left as a start for the
     # fill, the repaint grows a small tree there. Islands of the layer's own pixels inside the hole join it.
