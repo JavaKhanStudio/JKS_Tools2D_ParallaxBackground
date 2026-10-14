@@ -11,6 +11,7 @@
 	<inherits name="com.badlogic.gdx" />
 
 	<source path="">
+		<exclude name="LurkerCover.java" />
 		<exclude name="heart/GVars_Serialization.java" />
 		<exclude name="pages/*_Serializer.java" />
 		<exclude name="pages/Json_MixIns.java" />

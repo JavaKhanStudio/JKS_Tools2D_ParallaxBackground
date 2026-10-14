@@ -78,7 +78,7 @@ def page_with_figure(size, height_units):
     start = 40 + 60 * FIGURE_SPEED * ENTERS_AT
     layer = copy.deepcopy(layers[4])
     layer.update({
-        'regionName': 'figure', 'regionPosition': 0, 'flipX': False,
+        'kind': 'LURKER', 'regionName': 'figure', 'regionPosition': 0, 'flipX': False,
         'parallaxScalingSpeedX': FIGURE_SPEED, 'parallaxScalingSpeedY': FIGURE_SPEED * 0.8,
         'sizeRatio': width / 40, 'decal_X_Ratio': start / 40 * 100, 'decal_Y_Ratio': FOOT_Y,
         'padX': pad, 'padXFactor': 0.0,

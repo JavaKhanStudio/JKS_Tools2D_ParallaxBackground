@@ -63,18 +63,30 @@ Readers cannot read a texture's alpha every frame (three engines; the GPU holds 
 on the CPU, when it saves, from the atlas images it already has:
 
 - For each nearer layer that repeats on X, the figure's place against that layer's tile depends only on their
-  relative offset `d`, modulo that layer's period (`width + padX`): both scroll, at different speeds.
+  relative offset `d`, modulo that layer's period P (`width + padX`): both scroll, at different speeds. `d` is the
+  figure's tile corner minus the nearer layer's (`currentDistanceX`, plus the tiles' steps for the copy in view);
+  their Y apart is taken at rest, from their decals.
 - The editor sweeps `d` over one period and keeps the intervals where that layer's opaque pixels (alpha at least 250)
   cover the figure's whole box, grown by a margin (4% of the figure's height) for the camera's Y and zoom.
-- `lurkerCover` holds triplets: (how many layers in front of the lurker that layer is, from `d`, to `d`), in world
-  units of the page's saved world. A layer moved, resized or re-ordered in the editor is worked out again at the next
+- `lurkerCover` holds triplets: (how many layers in front of the lurker that layer is, from `d`, to `d`), from in
+  [0, P), to at least from and possibly past P: the figure is covered at `d` when `((d - from) mod P + P) mod P <=
+  to - from`; (n, 0, P) when that layer covers it at every offset. World units of the world the sweep was given (the
+  editor's, 40 wide; `tools/lurker-cover.sh` takes 40 x 22.5 by default): `padX` is not scaled with the world, so a
+  reader in a world of another width cannot rescale it exactly. Only IMAGE layers cover (not towers); a nearer
+  layer's mirrored copy counts with it, and the figure's box is its pixels of alpha above 0. A layer moved, resized or re-ordered in the editor is worked out again at the next
   save; a page saved without them (or with a nearer layer's image missing) has none, and the figure switches only
   outside the view.
 - Covered by two layers together (a trunk of one, a branch of the other) is not counted: only one layer covering it
   whole. The figure switches less often, never in sight.
 
-The sweep lives in `core/src-jvm` (`LurkerCover`, it reads `Pixmap`s), used by the editor and by the rounds' tools,
-and tested in `core/test`.
+The sweep lives in `core/src-jvm` (`LurkerCover`, phase 2, r369: it reads an atlas page's alpha, from `Pixmap`s or
+any image), used by the editor and by the rounds' tools (`tools/lurker-cover.sh` bakes a `.jplax`), and tested in
+`core/test` (`LurkerCoverTest`, a bar with a gap, to the texel).
+
+On r363's demo (v01, Hiver's pines, `tools/r369-lurker-cover/agree.py` against film.sh's frames) the film shows no
+figure pixel from 21.0 to 23.6 s, and the cover finds 21.17 to 21.62 s of it: no frame inside an interval shows a
+pixel. The rest is hidden by the pines' soft edges, or two layers together: at alpha 230 it finds 29 of those 63
+frames, at 128 the figure shows inside an interval (13 frames, up to 8 px).
 
 ## Per frame (no allocation)
 

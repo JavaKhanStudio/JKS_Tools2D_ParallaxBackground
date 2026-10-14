@@ -1309,6 +1309,14 @@ public class ParallaxLayer
 	public TextureRegion getDrawnRegion()
 	{return drawnRegions == null ? null : drawnRegions.get(0);}
 
+	/** Where the packed image's left edge sits in the layer's box, unflipped, in fractions of its width; 0 untrimmed. */
+	float getTrimLeft()
+	{return trimLeft;}
+
+	/** Where the packed image's bottom sits in the layer's box, unflipped, in fractions of its height; 0 untrimmed. */
+	float getTrimBottom()
+	{return trimBottom;}
+
 	public boolean isUseOriginalSize()
 	{return useOriginalSize;}
 
