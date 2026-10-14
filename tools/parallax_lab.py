@@ -159,7 +159,8 @@ def speed_faults(page):
                             ' look painted on (round 4: 250x won on Pure and tied on calm, but past ~40x deeper no longer'
                             ' wins every time)')
         steps = [s[i] / s[i - 1] for i in range(1, n) if s[i - 1] > 0 and s[i] > 0]
-        flat = [i + 1 for i, r in enumerate(steps) if r < 1.02]
+        # A LURKER figure stands on the layer behind it at its speed, or its feet skate (r366): one plane is meant.
+        flat = [i + 1 for i, r in enumerate(steps) if r < 1.02 and layers(page)[i + 1].get('kind') != 'LURKER']
         if flat and not drops:
             problems.append(f'layers {flat} move at the speed of the one behind: they fuse into one plane')
     return problems

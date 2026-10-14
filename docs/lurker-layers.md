@@ -112,5 +112,8 @@ jME runs core's.
    draws, the depth-height hint, `lurkerCover` worked out on save, and the preview showing it vanish.
 6. README: a "Lurker layers" section (the rule, the depth size, the skating), and AGENTS.md's runtime line.
 
+A page painted by `tools/ai-page.sh` gets one on request (`--lurker`, r366): the figure painted alone, standing on
+the layer behind it at that layer's speed, its height its depth's, `lurkerCover` baked by `tools/lurker-cover.sh`.
+
 Not in it: a figure that moves on its own (walks, turns its head), sound, a lurker on a planet or a tower page (drawn
 flat, as FLOOR is, until asked).

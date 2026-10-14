@@ -163,6 +163,12 @@ What is yours to choose, from the theme:
   `mountains,ruins,ruins,ruins` (`tools/r239-ai-strips/examples.sh`). Keep a word that has its own layer out of the
   theme: "turquoise sea" in a beach's theme paints sea haze into the palms' sky, which keys to a faint band ending at a
   SEQUENCE join.
+- **`--lurker "a hooded figure"`**, only when asked for a figure (r366): one figure, painted alone, in a LURKER layer
+  (`docs/lurker-layers.md`) between layers A and A+1 (`--lurker-between A,A+1`, default the two front ones). It
+  stands on A's ground at A's speed (its feet do not skate) and is drawn at its depth's height: `--lurker-height`
+  (2.3 world units at the front's depth) times A's speed over the front's, small behind a far layer. Every other
+  strip still forbids creatures. `tools/r366-lurker/film.sh OUT/page OUT` films it beside its twin without it and
+  writes stills where it shows and where the front hides it.
 
 `tools/ai-film.sh OUT/page FILM 8 30` films the page: core's frames off screen, `FILM/a01.mp4` and a 640px `.gif`.
 Give it `OUT/film` and put OUT under `build/ai`: `tools/ai-gallery.sh` then shows the page, its film and how each

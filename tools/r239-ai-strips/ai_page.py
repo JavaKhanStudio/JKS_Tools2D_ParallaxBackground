@@ -33,6 +33,14 @@ The model (r346): --ckpt and --lora replace the style's (any file in ComfyUI's m
 SDXL checkpoint (one whose name says XL, or --xl) paints at 1536x576, SD 1.5 at 1024x384. recipe.json keeps them all.
 A .gguf --ckpt is a DiT (r356: --ckpt z-image-turbo-Q5_K_M.gguf): gen.py's DiT loader and loop, 1536x576, its own
 sampling defaults (9 steps, cfg 1, res_multistep, simple) and --denoise 0.75 (r357); no LoRA.
+
+A lurker, only on request (r366): --lurker "a hooded figure" paints one figure, alone, and puts it in a LURKER layer
+(format 15, docs/lurker-layers.md) between layers A and A+1 (--lurker-between A,A+1, back to front from 0; default the
+two front ones). Every other strip keeps the creature-free negative prompt and creature.py; the figure's own is
+checked the other way (lurker.py crop: one figure, whole). It stands on layer A, at A's speed, so its feet do not
+skate, on the flattest stretch of A's ground, and comes by once every --lurker-every tiles of A. Its height is its
+depth's (r363): --lurker-height (its height at the front layer's depth, 2.3 units: r363's v01) times A's speed over
+the front's. tools/lurker-cover.sh bakes where the layer in front covers it whole. Painted style only.
 """
 import argparse
 import json
@@ -151,6 +159,17 @@ TREES = 3.5  # roughness under which a pine strip has no trees in it
 TEXTURE = 1.0
 
 
+# The lurker (r366): its init's size per model family (portrait: one standing figure), how far img2img may move
+# its generic silhouette (0.75 keeps the colour of the layer it stands on, 0.85 darkens it: build/r366/proto), and
+# what its negative drops (the figure is asked for) and adds (what would stand with it).
+LURKER_SIZE = {False: (512, 768), True: (832, 1216)}
+LURKER_DENOISE = 0.75
+LURKER_NEG = ("text, watermark, frame, border, buildings, foreground grass, birds, crowd, two people, ground, "
+              "landscape, trees, cropped")
+LURKER_HEIGHT = 2.3  # world units at the front's depth: r363's v01, 1.8 at speed 0.032 beside pines at 0.041
+LURKER_SINK = 0.02  # of its height: its foot and the shadow SD paints under it go into the ground
+
+
 DRY_RUN = False  # --dry-run: print each command instead of running it
 
 
@@ -177,6 +196,23 @@ def sky_of(path):
 
 def hexc(rgb):
     return "".join(f"{int(round(min(255, max(0, v)))):02x}" for v in rgb)  # noqa: RUF046 (v may be a numpy float)
+
+
+def foothold(cut, width_px, lowest):
+    """Where a figure width_px wide stands on a cut layer: (its middle's column, its foot's row), on the flattest
+    stretch of the layer's ground no lower than row `lowest` (else the highest). Ground, not a tree on it: the
+    outline's lowest row within 48 px (of 1024) each way is the ground under the trees, a foot over it costs twice
+    its height over it. A tie goes to the higher stretch."""
+    a = np.asarray(Image.open(cut).convert("RGBA"))[..., 3] > 127
+    h, w = a.shape
+    top = np.where(a.any(axis=0), np.argmax(a, axis=0), h)
+    r, g = max(1, width_px // 2), max(1, 48 * w // 1024)
+    under = np.stack([np.roll(top, i) for i in range(-r, r + 1)])  # the outline's rows under its feet, per middle
+    ground = np.stack([np.roll(top, i) for i in range(-g, g + 1)]).max(axis=0)
+    foot, peak = under.max(axis=0), under.min(axis=0)
+    cost = (foot - peak) + 2 * (ground - foot) + np.where(foot > lowest, 10 * h, 0)
+    best = min(range(w), key=lambda x: (cost[x], foot[x]))
+    return best, int(foot[best])
 
 
 def log(s):
@@ -218,6 +254,12 @@ def parse_args():
     ap.add_argument("--sampler", help="default gen.py's dpmpp_2m")
     ap.add_argument("--scheduler", help="default gen.py's karras")
     ap.add_argument("--denoise", type=float, help="img2img strength over sil.py's shape: default 0.65, pixel 0.7, a DiT 0.75")
+    ap.add_argument("--lurker", help="paint one figure (e.g. 'a hooded figure') into a LURKER layer: only on request")
+    ap.add_argument("--lurker-between", help="A,A+1: the two layers it goes between (back to front from 0), standing"
+                    " on A at its speed; default the two front ones")
+    ap.add_argument("--lurker-height", type=float, default=LURKER_HEIGHT, help="its height in world units were it at"
+                    " the front layer's depth; drawn that times A's speed over the front's")
+    ap.add_argument("--lurker-every", type=int, default=1, help="it comes by once every N tiles of the layer under it")
     ap.add_argument("--dry-run", action="store_true", help="print every command, back to front, as if each strip took"
                     " on its first seed, and write nothing (r305: the proof that a change runs the same commands)")
     a = ap.parse_args()
@@ -228,6 +270,15 @@ def parse_args():
         a.layers, a.front = len(given), given[-1]
     if not 2 <= a.layers <= 6:
         ap.error("--layers: 2 to 6")
+    if a.lurker_between and not a.lurker:
+        ap.error("--lurker-between: with --lurker")
+    if a.lurker:
+        if a.style == "pixel":
+            ap.error("--lurker: painted style only")
+        between = [int(x) for x in a.lurker_between.split(",")] if a.lurker_between else [a.layers - 2, a.layers - 1]
+        if len(between) != 2 or between[1] != between[0] + 1 or not 0 <= between[0] < a.layers - 1:
+            ap.error(f"--lurker-between: A,A+1 with A from 0 to {a.layers - 2}")
+        a.lurker_on = between[0]
     return a
 
 
@@ -250,16 +301,17 @@ class Pipeline:
         self.w, self.h = (1536, 576) if self.model["xl"] else (1024, 384)
         self.made = {}  # strip prefix -> how it was painted, for recipe.json
 
-    def model_args(self, denoise=True):
-        """gen.py's model and sampler arguments, the size and the denoise: only the ones a default run did not
-        pass, in the order it passed them, so a default run's commands stay r305's."""
+    def model_args(self, denoise=True, size=None):
+        """gen.py's model and sampler arguments, the size (the strips' unless given) and the denoise: only the ones
+        a default run did not pass, in the order it passed them, so a default run's commands stay r305's."""
         m, out = self.model, []
+        w, h = size or (self.w, self.h)
         if m["ckpt"] != GEN_CKPT:
             out += ["--ckpt", m["ckpt"]]
         if m["lora"]:
             out += ["--lora", m["lora"], "--lora-strength", str(m["lora_strength"])]
-        if (self.w, self.h) != (1024, 384):
-            out += ["--w", str(self.w), "--h", str(self.h)]
+        if (w, h) != (1024, 384):
+            out += ["--w", str(w), "--h", str(h)]
         for key in ("steps", "cfg", "sampler", "scheduler"):
             if getattr(self.a, key) is not None:
                 out += ["--" + key, str(getattr(self.a, key))]
@@ -381,6 +433,78 @@ class Pipeline:
             return True
         return False
 
+    def lurker_command(self):
+        """gen.py's img2img for the lurker's figure, its init, seed and out left to add: its own size, denoise and
+        negative, the figure in the prompt."""
+        a = self.a
+        return [PY, f"{HERE}/gen.py", "img2img", *self.model_args(denoise=False, size=LURKER_SIZE[self.model["xl"]]),
+                "--denoise", str(LURKER_DENOISE), "--negative", LURKER_NEG, "--prompt",
+                (f"2d game parallax background layer, {a.theme}, {a.lurker}, full body, standing alone, "
+                 "painterly, plain pale sky")]
+
+    def paint_lurker(self):
+        """The lurker's figure: lurker.py's init (a standing silhouette in the colour of the layer it stands on, over
+        that layer's painted sky), gen.py, layer.py without creature.py, then lurker.py crop, which refuses anything
+        but one whole figure; on the next seed while refused. Its cropped figure's path."""
+        a, d, k = self.a, HERE, self.a.lurker_on
+        p = os.path.join(self.strips, "lurker")
+        w, h = LURKER_SIZE[self.model["xl"]]
+        gen = self.lurker_command()
+        for t in range(a.tries):
+            seed = a.seed * 1000 + 900 + t
+            self.made["lurker"] = {"prompt": gen[gen.index("--prompt") + 1], "negative": LURKER_NEG,
+                                   "denoise": LURKER_DENOISE, "seed": seed}
+            if a.keep and t == 0 and os.path.exists(f"{p}_ai.png"):
+                self.made["lurker"]["seed"] = int(Path(f"{p}_seed.txt").read_text())
+            else:
+                sky = "SKY" if a.dry_run else hexc(sky_of(os.path.join(self.strips, f"l{k}_ai.png")))
+                if not a.dry_run:
+                    Path(f"{p}_seed.txt").write_text(str(seed))
+                if run(["python3", f"{d}/lurker.py", "init", p, "--sky", sky, "--colour", self.cols[k], "--w", str(w),
+                        "--h", str(h), "--seed", str(seed)], p + "_sil.log"):
+                    sys.exit(f"lurker.py init failed: {p}_sil.log")
+                if run(gen + ["--init", f"{p}_init.png", "--seed", str(seed), "--out", f"{p}_ai.png"], p + "_gen.log"):
+                    sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {p}_gen.log")
+            code = run(["python3", f"{d}/layer.py", f"{p}_ai.png", f"{p}_cut.png", "--mask", f"{p}_mask.png", "--grow",
+                        str(48 * w // 512), "--no-creatures"], p + "_cut.log")
+            code = code or run(["python3", f"{d}/lurker.py", "crop", f"{p}_cut.png", f"{p}_fig.png"], p + "_crop.log")
+            if a.dry_run:
+                return f"{p}_fig.png"
+            for step in ("cut", "crop"):
+                if os.path.exists(f"{p}_{step}.log"):
+                    log(Path(f"{p}_{step}.log").read_text().rstrip())
+            if not code:
+                log(f"lurker: '{a.lurker}', seed {self.made['lurker']['seed']}, standing on layer {k}")
+                return f"{p}_fig.png"
+            log(f"lurker seed {seed}: refused, painting again")
+        sys.exit(f"lurker: {a.tries} figures refused (more than one, cut off, or not standing); another --seed, or "
+                 "more --tries")
+
+    def lurker_layer(self, fig, layers, bottoms, s):
+        """The LURKER layer for figure fig: at the speed of layer A, which it stands on, its height its depth's, its
+        foot on A's ground where nothing of it is under the solid band of the layer in front (so a gap can show it
+        whole), once every --lurker-every tiles of A."""
+        a, k = self.a, self.a.lurker_on
+        fw, fh = Image.open(fig).size
+        height = a.lurker_height * s[k] / s[-1]
+        width = height * fw / fh
+        ground = Image.open(layers[k][0])
+        world_h = lab.SCREEN_W * ground.height / ground.width  # sizeRatio 1
+        front_h = lab.SCREEN_W * Image.open(layers[k + 1][0]).height / Image.open(layers[k + 1][0]).width
+        band = bottoms[k + 1] + min(solid(p) for p in layers[k + 1]) * front_h  # the solid band's top, world units
+        lowest = int(ground.height * (1 - (band - bottoms[k]) / world_h))
+        col, row = foothold(layers[k][0], max(1, round(width / lab.SCREEN_W * ground.width)), lowest)
+        foot = bottoms[k] + (ground.height - row) / ground.height * world_h - LURKER_SINK * height
+        period = lab.SCREEN_W * a.lurker_every
+        left = (col / ground.width * lab.SCREEN_W - width / 2) % period
+        layer = lab.layer("lurker", speed=round(s[k], 5), size=round(width / lab.SCREEN_W, 5),
+                          dx=round(100 * left / lab.SCREEN_W, 3), dy=round(100 * foot / lab.SCREEN_H, 3),
+                          pad_x=round(period - width, 4))
+        layer.update(kind="LURKER", name="lurker", lurkerSeed=a.seed, lurkerOdds=3)
+        self.made["lurker"].update(between=[k, k + 1], height=round(height, 3), speed=round(s[k], 5),
+                                   every=a.lurker_every, column=col, footRow=row)
+        return layer
+
     def bottoms(self, layers):
         """Each layer's bottom edge, world units up: the front at 0, each farther one under the solid band of the one
         in front of it, a fifth of it deep, so its bottom edge never shows (skill step 3)."""
@@ -393,12 +517,13 @@ class Pipeline:
             bottoms[k] = bottoms[k + 1] + 0.8 * band
         return bottoms
 
-    def write_page(self, layers):
-        """Packs the atlas and writes NAME.jplax and round.json: the page, its layers' speeds, and its scene."""
+    def write_page(self, layers, fig=None):
+        """Packs the atlas and writes NAME.jplax and round.json: the page, its layers' speeds, and its scene; fig, the
+        lurker's figure, in a LURKER layer in front of the one it stands on."""
         a, ks, name, page_dir = self.a, self.ks, self.name, self.page_dir
         s = speeds(len(ks), a.front_speed)
         files = [(f"l{k}" if len(paths) == 1 else f"l{k}_{i}", p) for k, paths in enumerate(layers)
-                 for i, p in enumerate(paths)]
+                 for i, p in enumerate(paths)] + ([("lurker", fig)] if fig else [])
         make_page.pack(name, files, "Nearest,Nearest" if self.pixel else "Linear,Linear", out=page_dir)
         bottoms = self.bottoms(layers)
         page_layers = []
@@ -412,6 +537,8 @@ class Pipeline:
                            sequenceSegments=[{"regionName": f"l{k}_{i}", "regionPosition": 0, "weight": 1}
                                              for i in range(len(paths))])
                 page_layers.append(seq)
+        if fig:
+            page_layers.insert(a.lurker_on + 1, self.lurker_layer(fig, layers, bottoms, s))
         horizon = sky_of(os.path.join(self.strips, "l0_ai.png"))
         sky = a.sky.split(",") if a.sky else (hexc(horizon * 0.72 + np.array([20, 40, 90]) * 0.28), hexc(horizon))
         page = lab.page_of(f"{name}.atlas", page_layers, sky=sky, ground=(sky[1], sky[1]), top_size=0.0,
@@ -424,7 +551,8 @@ class Pipeline:
             json.dump(page, f, indent=1)
         rel = os.path.relpath(page_dir, ROOT)
         scene = {"id": "a01", "page": f"{rel}/{name}.jplax", "atlasDir": rel, "name": name,
-                 "about": f"r246 ai-page: '{a.theme}', {a.style}, {len(ks)} layers ({', '.join(ks)}), seed {a.seed}"}
+                 "about": f"r246 ai-page: '{a.theme}', {a.style}, {len(ks)} layers ({', '.join(ks)}), seed {a.seed}"
+                          + (f", lurker '{a.lurker}' between {a.lurker_on} and {a.lurker_on + 1}" if fig else "")}
         with open(os.path.join(page_dir, "round.json"), "w") as f:
             json.dump({"round": name, "about": scene["about"], "scenes": [scene]}, f, indent=1)
         return page, page_layers, s, sky, scene
@@ -441,6 +569,9 @@ class Pipeline:
                   "sampling": {k: self.model[k] for k in ("steps", "cfg", "sampler", "scheduler", "denoise")}, "texture": TEXTURE,
                   "page": f"page/{name}.jplax", "fogStrength": page.get("fogStrength", 0), "sky": list(sky),
                   "lint": problems, "layers": []}
+        if "lurker" in self.made:
+            recipe["lurker"] = dict(self.made["lurker"], figure=a.lurker, strip="lurker")
+        page_layers = [l for l in page_layers if l.get("kind") != "LURKER"]  # one a depth, as layers
         for k, paths in enumerate(layers):
             strips_k = []
             for path in paths:
@@ -455,6 +586,9 @@ class Pipeline:
         with open(os.path.join(self.out, "recipe.json"), "w") as f:
             json.dump(recipe, f, indent=1)
 
+    def cover_command(self):
+        return [os.path.join(ROOT, "tools", "lurker-cover.sh"), os.path.join(self.page_dir, f"{self.name}.jplax")]
+
     def shots_command(self):
         return [os.path.join(ROOT, "tools", "parallax-lab-shots.sh"), self.page_dir, os.path.join(self.out, "shots")]
 
@@ -467,12 +601,19 @@ def main():
     layers, seeds = p.paint_depths()
     if not p.pixel and a.variants:
         p.paint_variants(layers, seeds)
+    fig = p.paint_lurker() if a.lurker else None
     if a.dry_run:
-        print(f"make_page.pack {p.name}", *(path for paths in layers for path in paths))
+        print(f"make_page.pack {p.name}", *(path for paths in layers for path in paths), *([fig] if fig else []))
+        if fig:
+            print(shlex.join(p.cover_command()))
         print("(no shots)" if a.no_shots else shlex.join(p.shots_command()))
         return 0
-    page, page_layers, s, sky, scene = p.write_page(layers)
+    page, page_layers, s, sky, scene = p.write_page(layers, fig)
     rel = os.path.relpath(p.page_dir, ROOT)
+    if fig and run(p.cover_command(), os.path.join(p.strips, "lurker_cover.log")):
+        sys.exit(f"lurker-cover.sh failed: {p.strips}/lurker_cover.log")
+    if fig:
+        log(Path(p.strips, "lurker_cover.log").read_text().rstrip())
     problems = lab.lint(lab.load(scene["page"]), rel)
     p.write_recipe(layers, page, page_layers, s, sky, problems)
     print(f"{rel}/{p.name}.jplax")
