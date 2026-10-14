@@ -25,6 +25,11 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * every side by {@link #MARGIN} of its height for the camera's Y and zoom. Only one layer covering it whole counts. The
  * layers are taken at rest, at their decal: their Y apart is the one they are saved with.
  * <p>
+ * A nearer SEQUENCE layer's slots hold the segments its seed picks, and a game may draw its cycle from another seed: it
+ * covers the figure only where every segment it can pick (weight above 0) would, swept in one slot and laid at each
+ * slot of the cycle (r385). Its segments must then be as wide as each other, or the slots move with the seed: one of
+ * another width leaves that layer out.
+ * <p>
  * The result is triplets (how many layers in front of the lurker that layer is, from, to), from in [0, P) and to at
  * least from, possibly past P: the figure is covered at offset d when {@code ((d - from) mod P + P) mod P <= to - from}.
  * A layer covering every offset gives (n, 0, P). World units of the world the layers were built for: padX is not scaled
@@ -103,32 +108,36 @@ public final class LurkerCover
 			{
 				ParallaxLayer near = layers.get(lurker + n);
 				float period = near.getTotalWidth();
-				if (near.kind != Enum_LayerKind.IMAGE || near.isTower() || !(period > 0))
+				List<Tile> tiles = tilesOf(near);
+				if (tiles == null || near.isTower() || !(period > 0))
 					continue;
+				// A SEQUENCE layer's runs are swept in one slot, repeated as many times as the cycle has slots.
+				int slots = near.kind == Enum_LayerKind.SEQUENCE ? near.getSequenceLength() : 1;
+				float step = period / slots;
 				float apart = restY(figure) - restY(near);
-				float[] runs = coveredRuns(near, apart + bottom, apart + top, repeatOnY, alpha, opaque);
+				float[] runs = coveredRuns(near, tiles, step, apart + bottom, apart + top, repeatOnY, alpha, opaque);
 				for (int r = 0; r < runs.length; r += 2)
 				{
-					float from, to;
-					if (runs[r + 1] - runs[r] > period)
+					if (runs[r + 1] - runs[r] > step)
 					{
 						// Covered all along: every offset.
-						from = 0;
-						to = period;
+						out.add((float) n);
+						out.add(0f);
+						out.add(period);
+						continue;
 					}
-					else
+					float from = runs[r] - left, to = runs[r + 1] - right;
+					if (to < from)
+						continue;
+					float turns = (float) Math.floor(from / step);
+					from -= turns * step;
+					to -= turns * step;
+					for (int slot = 0; slot < slots; slot++)
 					{
-						from = runs[r] - left;
-						to = runs[r + 1] - right;
-						if (to < from)
-							continue;
-						float turns = (float) Math.floor(from / period);
-						from -= turns * period;
-						to -= turns * period;
+						out.add((float) n);
+						out.add(from + slot * step);
+						out.add(to + slot * step);
 					}
-					out.add((float) n);
-					out.add(from);
-					out.add(to);
 				}
 			}
 			float[] cover = new float[out.size()];
@@ -144,14 +153,68 @@ public final class LurkerCover
 	private static float restY(ParallaxLayer layer)
 	{return layer.getDecalPercentY() * (layer.getWorldHeight() / 100);}
 
-	/** Where a layer's packed image is drawn in its box: left, bottom, width, height; null when it cannot be read. */
-	private static float[] imageBox(ParallaxLayer layer, boolean fx, boolean fy)
+	/** One image a layer draws in a box of its own: its region, the box's size, and where the packed image sits in it. */
+	private static final class Tile
 	{
-		float width = layer.getWidth(), height = layer.getHeight();
-		float trimLeft = layer.getTrimLeft(), trimBottom = layer.getTrimBottom();
-		float packedWidth = layer.getPackedWidthRatio(), packedHeight = layer.getPackedHeightRatio();
-		return new float[] { width * (fx ? 1 - trimLeft - packedWidth : trimLeft), height * (fy ? 1 - trimBottom - packedHeight : trimBottom),
-				width * packedWidth, height * packedHeight };
+		final TextureRegion region;
+		final float width, height, trimLeft, trimBottom, packedWidth, packedHeight;
+
+		Tile(TextureRegion region, float width, float height, float trimLeft, float trimBottom, float packedWidth, float packedHeight)
+		{
+			this.region = region;
+			this.width = width;
+			this.height = height;
+			this.trimLeft = trimLeft;
+			this.trimBottom = trimBottom;
+			this.packedWidth = packedWidth;
+			this.packedHeight = packedHeight;
+		}
+
+		/** An IMAGE or LURKER layer's one image. */
+		static Tile of(ParallaxLayer layer)
+		{
+			return new Tile(layer.getRegion(), layer.getWidth(), layer.getHeight(), layer.getTrimLeft(), layer.getTrimBottom(),
+					layer.getPackedWidthRatio(), layer.getPackedHeightRatio());
+		}
+	}
+
+	/**
+	 * The images a nearer layer can draw in one tile or slot: an IMAGE layer's one, each segment a SEQUENCE layer can
+	 * pick; null when it covers nothing (another kind, or a SEQUENCE whose segments are not as wide as each other).
+	 */
+	private static List<Tile> tilesOf(ParallaxLayer near)
+	{
+		List<Tile> tiles = new ArrayList<>();
+		if (near.kind == Enum_LayerKind.IMAGE)
+			tiles.add(Tile.of(near));
+		else if (near.kind == Enum_LayerKind.SEQUENCE && near.getSequenceLength() > 0)
+		{
+			List<TextureRegion> regions = near.getTexRegion();
+			boolean anyWeighs = false;
+			for (int i = 0; i < regions.size(); i++)
+				anyWeighs |= near.getSequenceSegments().get(i).weight > 0;
+			float height = near.getHeight(), aspect = -1;
+			for (int i = 0; i < regions.size(); i++)
+			{
+				if (anyWeighs && near.getSequenceSegments().get(i).weight <= 0)
+					continue;
+				float[] box = near.getSegmentBox(i);
+				if (aspect < 0)
+					aspect = box[0];
+				else if (Math.abs(box[0] - aspect) > aspect * 1e-4f)
+					return null;
+				tiles.add(new Tile(regions.get(i), height * box[0], height, box[1], box[2], box[3], box[4]));
+			}
+		}
+		return tiles.isEmpty() ? null : tiles;
+	}
+
+	/** Where a tile's packed image is drawn in its box: left, bottom, width, height. */
+	private static float[] imageBox(Tile tile, boolean fx, boolean fy)
+	{
+		return new float[] { tile.width * (fx ? 1 - tile.trimLeft - tile.packedWidth : tile.trimLeft),
+				tile.height * (fy ? 1 - tile.trimBottom - tile.packedHeight : tile.trimBottom), tile.width * tile.packedWidth,
+				tile.height * tile.packedHeight };
 	}
 
 	/** True when the layer's region can be read pixel for pixel: not turned in its atlas. */
@@ -177,7 +240,7 @@ public final class LurkerCover
 				}
 		if (maxX < 0)
 			return null;
-		float[] image = imageBox(figure, figure.flipX, figure.flipY);
+		float[] image = imageBox(Tile.of(figure), figure.flipX, figure.flipY);
 		float sx = image[2] / columns, sy = image[3] / rows;
 		// Image columns from its left, rows from its top: flipped, they land from the other side.
 		int left = figure.flipX ? columns - 1 - maxX : minX, right = figure.flipX ? columns - 1 - minX : maxX;
@@ -187,69 +250,31 @@ public final class LurkerCover
 
 	/**
 	 * The stretches of X, from the layer's tile corner, over which every point of the band {@code bottom..top} (from the
-	 * same corner) is drawn opaque by the layer: from, to pairs, each starting in [0, P), merged across the joins between
-	 * tiles. A pair longer than P: covered all along.
+	 * same corner) is drawn opaque by the layer, whichever of {@code tiles} it draws: from, to pairs, each starting in
+	 * [0, period), merged across the joins between tiles {@code period} apart. A pair longer than the period: covered all
+	 * along.
 	 */
-	private static float[] coveredRuns(ParallaxLayer near, float bottom, float top, boolean repeatOnY, Alpha alpha, int opaque)
+	private static float[] coveredRuns(ParallaxLayer near, List<Tile> tiles, float period, float bottom, float top, boolean repeatOnY,
+			Alpha alpha, int opaque)
 	{
-		TextureRegion region = near.getRegion();
-		if (!readable(region))
-			return new float[0];
-		int columns = Math.abs(region.getRegionWidth()), rows = Math.abs(region.getRegionHeight());
-		boolean fx = near.flipX;
-		float[] image = imageBox(near, fx, near.flipY);
-		float sx = image[2] / columns, sy = image[3] / rows;
-
-		// The copies of the image the band can meet, drawn up the layer's box: their bottom and whether they are flipped.
-		List<float[]> copies = new ArrayList<>();
-		float stepY = near.getTotalHeight();
-		if (repeatOnY && stepY > 0)
+		List<float[]> tile = null;
+		for (Tile each : tiles)
 		{
-			for (long m = (long) Math.floor((bottom - image[1] - image[3]) / stepY); m <= (long) Math.ceil((top - image[1]) / stepY); m++)
-				copies.add(new float[] { image[1] + m * stepY, near.flipY ? 1 : 0 });
+			List<float[]> runs = tileRuns(near, each, bottom, top, repeatOnY, alpha, opaque);
+			tile = tile == null ? runs : intersect(tile, runs);
+			if (tile.isEmpty())
+				return new float[0];
 		}
-		else
-		{
-			copies.add(new float[] { image[1], near.flipY ? 1 : 0 });
-			if (near.isMirror)
-				// Stacked above the strip, flipped on Y (ParallaxPageReader draws it when the page tiles on X alone).
-				copies.add(new float[] { near.getHeight() + near.padY + imageBox(near, fx, !near.flipY)[1], near.flipY ? 0 : 1 });
-		}
-		// Between the copies, or past them, nothing is drawn: the band must lie within them end to end.
-		copies.sort((a, b) -> Float.compare(a[0], b[0]));
-		float reached = bottom;
-		for (float[] copy : copies)
-			if (copy[0] <= reached && copy[0] + image[3] > reached)
-				reached = copy[0] + image[3];
-		if (reached < top)
-			return new float[0];
-
-		// Each column of texels, from the left as drawn: opaque over the whole band?
-		List<Float> tile = new ArrayList<>();
-		int runStart = -1;
-		for (int column = 0; column <= columns; column++)
-		{
-			boolean covered = column < columns && columnCovers(alpha, opaque, region, fx ? columns - 1 - column : column, copies, rows, sy, image[3], bottom, top);
-			if (covered && runStart < 0)
-				runStart = column;
-			else if (!covered && runStart >= 0)
-			{
-				tile.add(image[0] + runStart * sx);
-				tile.add(image[0] + column * sx);
-				runStart = -1;
-			}
-		}
-		if (tile.isEmpty())
-			return new float[0];
 
 		// The same stretches in the tiles around, merged where one tile's meets the next one's.
-		float period = near.getTotalWidth();
+		float touch = Float.MAX_VALUE;
+		for (Tile each : tiles)
+			touch = Math.min(touch, each.width * each.packedWidth / Math.abs(each.region.getRegionWidth()) * 1e-3f);
 		List<float[]> all = new ArrayList<>();
 		for (int m = -2; m <= 3; m++)
-			for (int i = 0; i < tile.size(); i += 2)
-				all.add(new float[] { tile.get(i) + m * period, tile.get(i + 1) + m * period });
+			for (float[] run : tile)
+				all.add(new float[] { run[0] + m * period, run[1] + m * period });
 		all.sort((a, b) -> Float.compare(a[0], b[0]));
-		float touch = sx * 1e-3f;
 		List<float[]> merged = new ArrayList<>();
 		for (float[] run : all)
 		{
@@ -276,6 +301,75 @@ public final class LurkerCover
 		float[] runs = new float[out.size()];
 		for (int i = 0; i < runs.length; i++)
 			runs[i] = out.get(i);
+		return runs;
+	}
+
+	/** Where two lists of stretches, each sorted and apart, are both: the stretches they share. */
+	private static List<float[]> intersect(List<float[]> a, List<float[]> b)
+	{
+		List<float[]> out = new ArrayList<>();
+		for (int i = 0, j = 0; i < a.size() && j < b.size();)
+		{
+			float from = Math.max(a.get(i)[0], b.get(j)[0]), to = Math.min(a.get(i)[1], b.get(j)[1]);
+			if (from < to)
+				out.add(new float[] { from, to });
+			if (a.get(i)[1] < b.get(j)[1])
+				i++;
+			else
+				j++;
+		}
+		return out;
+	}
+
+	/** The stretches of X, from the box's corner, where one tile alone is opaque over the whole band; sorted, apart. */
+	private static List<float[]> tileRuns(ParallaxLayer near, Tile tile, float bottom, float top, boolean repeatOnY, Alpha alpha, int opaque)
+	{
+		List<float[]> runs = new ArrayList<>();
+		TextureRegion region = tile.region;
+		if (!readable(region))
+			return runs;
+		int columns = Math.abs(region.getRegionWidth()), rows = Math.abs(region.getRegionHeight());
+		boolean fx = near.flipX;
+		float[] image = imageBox(tile, fx, near.flipY);
+		float sx = image[2] / columns, sy = image[3] / rows;
+
+		// The copies of the image the band can meet, drawn up the layer's box: their bottom and whether they are flipped.
+		List<float[]> copies = new ArrayList<>();
+		float stepY = near.getTotalHeight();
+		if (repeatOnY && stepY > 0)
+		{
+			for (long m = (long) Math.floor((bottom - image[1] - image[3]) / stepY); m <= (long) Math.ceil((top - image[1]) / stepY); m++)
+				copies.add(new float[] { image[1] + m * stepY, near.flipY ? 1 : 0 });
+		}
+		else
+		{
+			copies.add(new float[] { image[1], near.flipY ? 1 : 0 });
+			if (near.isMirror)
+				// Stacked above the strip, flipped on Y (ParallaxPageReader draws it when the page tiles on X alone).
+				copies.add(new float[] { near.getHeight() + near.padY + imageBox(tile, fx, !near.flipY)[1], near.flipY ? 0 : 1 });
+		}
+		// Between the copies, or past them, nothing is drawn: the band must lie within them end to end.
+		copies.sort((a, b) -> Float.compare(a[0], b[0]));
+		float reached = bottom;
+		for (float[] copy : copies)
+			if (copy[0] <= reached && copy[0] + image[3] > reached)
+				reached = copy[0] + image[3];
+		if (reached < top)
+			return runs;
+
+		// Each column of texels, from the left as drawn: opaque over the whole band?
+		int runStart = -1;
+		for (int column = 0; column <= columns; column++)
+		{
+			boolean covered = column < columns && columnCovers(alpha, opaque, region, fx ? columns - 1 - column : column, copies, rows, sy, image[3], bottom, top);
+			if (covered && runStart < 0)
+				runStart = column;
+			else if (!covered && runStart >= 0)
+			{
+				runs.add(new float[] { image[0] + runStart * sx, image[0] + column * sx });
+				runStart = -1;
+			}
+		}
 		return runs;
 	}
 

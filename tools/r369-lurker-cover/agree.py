@@ -1,11 +1,13 @@
 """agree.py TRACK FILM — the baked lurkerCover against the r363 film, frame by frame (r369).
 
     python3 tools/r369-lurker-cover/agree.py build/r369/v01-track.txt build/r363/film
+    python3 tools/r369-lurker-cover/agree.py TRACK build/r366/film a01 a00 0   # r385: r366's film, any difference
 
 TRACK is tools/lurker-cover.sh's LURKER_TRACK output on make.py's v01 (one line a film frame: covered, seen or out);
 FILM is tools/r363-reveal/film.sh's, whose frames count the figure's pixels as moments.py does (v01 against v00). Fails
 when a frame the cover calls covered shows a figure pixel: the one rule's guarantee. Prints, half a second apart, the
-pixels and the verdict, and how many of the frames showing none the cover finds.
+pixels and the verdict, and how many of the frames showing none the cover finds. WITH WITHOUT name the film's scenes
+with and without the figure (v01 v00), THRESHOLD the difference over r+g+b a figure pixel needs (30).
 """
 import os
 import sys
@@ -16,13 +18,13 @@ from PIL import Image
 FPS, START = 24, 12.0
 
 
-def shown(film, f):
-    a = np.asarray(Image.open(os.path.join(film, 'frames', f'v01-f{f:04d}.png')).convert('RGB'), dtype=int)
-    b = np.asarray(Image.open(os.path.join(film, 'frames', f'v00-f{f:04d}.png')).convert('RGB'), dtype=int)
-    return int((np.abs(a - b).sum(2) > 30).sum())
+def shown(film, f, ids, threshold):
+    a = np.asarray(Image.open(os.path.join(film, 'frames', f'{ids[0]}-f{f:04d}.png')).convert('RGB'), dtype=int)
+    b = np.asarray(Image.open(os.path.join(film, 'frames', f'{ids[1]}-f{f:04d}.png')).convert('RGB'), dtype=int)
+    return int((np.abs(a - b).sum(2) > threshold).sum())
 
 
-def main(track, film):
+def main(track, film, ids=('v01', 'v00'), threshold=30):
     states = {}
     with open(track) as f:
         for line in f:
@@ -31,9 +33,9 @@ def main(track, film):
                 states[int(parts[0])] = parts[2]
     bad, hidden, found = [], 0, 0
     for f in sorted(states):
-        if not os.path.exists(os.path.join(film, 'frames', f'v01-f{f:04d}.png')):
+        if not os.path.exists(os.path.join(film, 'frames', f'{ids[0]}-f{f:04d}.png')):
             break
-        px, state = shown(film, f), states[f]
+        px, state = shown(film, f, ids, threshold), states[f]
         if state == 'covered' and px:
             bad.append((f, px))
         if state != 'out' and not px:
@@ -49,4 +51,4 @@ def main(track, film):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], tuple(sys.argv[3:5]) or ('v01', 'v00'), int(sys.argv[5]) if len(sys.argv) > 5 else 30)

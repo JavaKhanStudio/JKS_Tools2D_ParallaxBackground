@@ -1317,6 +1317,19 @@ public class ParallaxLayer
 	float getTrimBottom()
 	{return trimBottom;}
 
+	/**
+	 * A SEQUENCE layer's segment (index in {@link #getTexRegion()}): its width in layer heights, then where its packed
+	 * image sits in its slot as {@link #getTrimLeft}, {@link #getTrimBottom}, {@link #getPackedWidthRatio} and
+	 * {@link #getPackedHeightRatio} say for one region. Null for other kinds.
+	 */
+	float[] getSegmentBox(int segment)
+	{
+		if (segmentAspect == null)
+			return null;
+		return new float[] { segmentAspect[segment], segmentTrimLeft[segment], segmentTrimBottom[segment], segmentPackedWidth[segment],
+				segmentPackedHeight[segment] };
+	}
+
 	public boolean isUseOriginalSize()
 	{return useOriginalSize;}
 

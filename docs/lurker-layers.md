@@ -72,7 +72,10 @@ on the CPU, when it saves, from the atlas images it already has:
   [0, P), to at least from and possibly past P: the figure is covered at `d` when `((d - from) mod P + P) mod P <=
   to - from`; (n, 0, P) when that layer covers it at every offset. World units of the world the sweep was given (the
   editor's, 40 wide; `tools/lurker-cover.sh` takes 40 x 22.5 by default): `padX` is not scaled with the world, so a
-  reader in a world of another width cannot rescale it exactly. Only IMAGE layers cover (not towers); a nearer
+  reader in a world of another width cannot rescale it exactly. Only IMAGE and SEQUENCE layers cover (not towers). A SEQUENCE's
+  slots hold what its seed picks, and a game may give it another seed: it covers only where every segment it can pick
+  (weight above 0) would, swept in one slot and laid at each slot of the cycle (r385); its segments must be as wide as
+  each other, or the slots move with the seed and it covers nothing. A nearer
   layer's mirrored copy counts with it, and the figure's box is its pixels of alpha above 0. A layer moved, resized or re-ordered in the editor is worked out again at the next
   save; a page saved without them (or with a nearer layer's image missing) has none, and the figure switches only
   outside the view.
@@ -87,6 +90,10 @@ On r363's demo (v01, Hiver's pines, `tools/r369-lurker-cover/agree.py` against f
 figure pixel from 21.0 to 23.6 s, and the cover finds 21.17 to 21.62 s of it: no frame inside an interval shows a
 pixel. The rest is hidden by the pines' soft edges, or two layers together: at alpha 230 it finds 29 of those 63
 frames, at 128 the figure shows inside an interval (13 frames, up to 8 px).
+
+On r366's ai-page.sh page (dark pine forest, its front a SEQUENCE of four pine strips, 8 slots;
+`tools/r385-sequence-cover/check.sh`) it finds 3 intervals a slot, 24 in all: 33 frames of the film inside one, none
+of them differing from the page without its figure by a single pixel value.
 
 ## Per frame (no allocation)
 

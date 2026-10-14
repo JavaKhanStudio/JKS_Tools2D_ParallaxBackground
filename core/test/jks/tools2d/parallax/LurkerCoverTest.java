@@ -124,6 +124,43 @@ class LurkerCoverTest
 		assertArrayEquals(new float[0], LurkerCover.cover(List.of(figure(4), bar(0)), 0, false, false, pixels));
 	}
 
+	/**
+	 * A SEQUENCE in front, of the bar and a second bar (rows 44..63) with its gap at 70..80, two slots: the figure is
+	 * covered only where both are opaque, 0..40, 50..70 and 80..100 of a slot, 80..100 meeting the next slot's 0..40;
+	 * laid at each slot of the cycle, 200 long, whatever the seed picks (r385).
+	 */
+	@Test
+	void aSequenceCoversWhereEverySegmentItCanPickDoes()
+	{
+		for (int y = 44; y < 64; y++)
+			for (int x = 0; x < 100; x++)
+				alpha[y][x] = x >= 70 && x < 80 ? 0 : 255;
+		float[] both = { 1, 49.4f, 64.6f, 1, 149.4f, 164.6f, 1, 79.4f, 134.6f, 1, 179.4f, 234.6f };
+		for (int seed = 1; seed <= 4; seed++)
+			assertArrayEquals(both, cover(figure(4), sequence(new int[] { 1, 1 }, seed, new TextureRegion(page, 0, 44, 100, 20))), 1e-4f);
+		// A segment of weight 0 is never drawn: the bar alone, in each slot.
+		assertArrayEquals(new float[] { 1, 49.4f, 134.6f, 1, 149.4f, 234.6f },
+				cover(figure(4), sequence(new int[] { 1, 0 }, 1, new TextureRegion(page, 0, 44, 100, 20))), 1e-4f);
+	}
+
+	/** A segment of another width moves the slots with the seed: that SEQUENCE covers nothing. */
+	@Test
+	void aSequenceOfUnevenSegmentsCoversNothing()
+	{
+		for (int y = 44; y < 64; y++)
+			for (int x = 0; x < 120; x++)
+				alpha[y][x] = 255;
+		assertArrayEquals(new float[0], cover(figure(4), sequence(new int[] { 1, 1 }, 1, new TextureRegion(page, 0, 44, 120, 20))));
+	}
+
+	/** A SEQUENCE layer of two slots, the bar its first segment and {@code second} its second, as the bar is sized. */
+	private ParallaxLayer sequence(int[] weights, int seed, TextureRegion second)
+	{
+		ParallaxLayer sequence = ParallaxLayer.sequence(List.of(new TextureRegion(page, 0, 0, 100, 20), second), weights, seed, 2, 100, 1);
+		sequence.setWorldSize(100, 100);
+		return sequence;
+	}
+
 	/** Read from Pixmaps, the same; a page with no Pixmap leaves the cover empty. */
 	@Test
 	void pixmapsGiveTheSameAndAMissingOneNone()
