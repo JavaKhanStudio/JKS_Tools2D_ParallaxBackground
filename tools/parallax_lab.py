@@ -737,12 +737,14 @@ def fairy_from_art(ratio=4 / 3, front=0.1):
     """PurpleFairy: seven full-frame 1920x1080 regions, back to front 7 (sky and far wave) 6 (far hills) 5 (bare
     trees, far) 4 (canopy trees) 3 (pink trees) 2 (grass and butterflies) 1 (front grass). All at size 1 and decal Y 0:
     together they are the picture the painter drew. Speeds a constant ratio: the tree rows shrink by about a third
-    per row (5 -> 4 -> 3)."""
+    per row (5 -> 4 -> 3). PurpleFairy-loop.atlas is the 2019 sheet with region 3's edges reworked so it tiles: the
+    web's rays thinned out at its left edge, the cut leaf closed at its right (parallax-ai r40; the original's seam
+    is 74)."""
     order = ['7', '6', '5', '4', '3', '2', '1']
     stagger = [0, 37, 71, 13, 53, 89, 29]
     L = [layer(name, speed=front / ratio ** (len(order) - 1 - i), size=1.0, dx=stagger[i], dy=0)
          for i, name in enumerate(order)]
-    return page_of('PurpleFairy.atlas', L, sky=('4b1f52', '6d2975'), ground=('6d2975', '4b1f52'), original_size=True)
+    return page_of('PurpleFairy-loop.atlas', L, sky=('4b1f52', '6d2975'), ground=('6d2975', '4b1f52'), original_size=True)
 
 
 def hiver_from_art(front=0.08):

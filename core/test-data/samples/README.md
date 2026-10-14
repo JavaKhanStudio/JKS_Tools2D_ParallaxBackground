@@ -9,3 +9,4 @@ originals holds: never re-export or overwrite them (AGENTS.md).
 | `Hiver.*`, `Printemps.*`, `hiver/`, `printemps/` | `demo/assets` | `PlaxFormatTest`, `JvmFixtures`, the rounds' `atlasDir` `core/test-data/samples` |
 | `Aa new/`, `Demos/City.plax`, `transfer/calm.plax*` | `editor/Files` | `PlaxFormatTest`, `JvmFixtures`: the 2019 editor's `.plax`, format 1 |
 | `Demos/*.atlas`, `Demos/*.png`, `transfer/calm.atlas`, `transfer/calm.png` | `editor/Files/Demos`, `editor/Files/transfer` | the rounds' `atlasDir` `core/test-data/samples/Demos` and `/transfer` |
+| `Demos/PurpleFairy-loop.*` | not a copy: `PurpleFairy.png` with region 3's edge columns reworked to tile (parallax-ai r40, 1340 px), its atlas `PurpleFairy.atlas` naming that sheet (r367) | `tools/parallax_lab.py` `fairy_from_art` |

@@ -346,5 +346,22 @@ class MipmappedJoins(unittest.TestCase):
             self.assertEqual(64, lab._copied(regions_tool, {}, r, 'left'))
 
 
+class FairyLoop(unittest.TestCase):
+    """PurpleFairy's region 3 cut the web's rays at its left edge and a leaf at its right: seam 74, a line every repeat
+    (r139). fairy_from_art() reads PurpleFairy-loop.atlas, whose region 3 is parallax-ai r40's rework (r367)."""
+    DEMOS = 'core/test-data/samples/Demos'
+
+    def seams(self, page):
+        return [p for p in lab.lint(page, self.DEMOS) if p.startswith('(e)')]
+
+    def test_the_art_page_has_no_seam(self):
+        self.assertEqual([], self.seams(lab.fairy_from_art()))
+
+    def test_the_2019_region_still_has_its_seam(self):
+        page = lab.fairy_from_art()
+        page['pageModel']['atlasName'] = 'PurpleFairy.atlas'
+        self.assertEqual(1, len([p for p in self.seams(page) if '(3#0)' in p]), self.seams(page))
+
+
 if __name__ == '__main__':
     unittest.main()
