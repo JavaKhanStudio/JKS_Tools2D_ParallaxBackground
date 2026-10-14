@@ -150,7 +150,10 @@ displacement shader on one image and its depth map is the other way, and the cos
 - Built (r279): `tools/depth-page.sh PAINTING OUT` (`tools/r279-depth-page/depth_page.py`), Depth Anything V2 Small
   in the ComfyUI venv, the holes repainted by `gen.py inpaint` with `--tile x` so every layer loops, by
   dreamshaper_8's inpainting model, which sees the mask and the painting round it (r315: an ordinary checkpoint left a
-  soft band at a repaired join, birds and brighter patches; one with a noise mask, a pale veil). Each step that
+  soft band at a repaired join, birds and brighter patches; one with a noise mask, a pale veil). A band's edge runs
+  where the depth crosses a threshold, through a pine clump's crowns; SAM 2.1 small's masks give a thing the edge cuts
+  whole to the band at its foot (r360: snapping the edge to the painting's colour edges failed on the brushwork,
+  `tools/r360-band-edges/geodesic.py`). Each step that
   looks across the painting (the depth, the islands, the fill) runs on it laid three times side by side, or a band's
   edge steps at the join. How to use it and what to look for: the parallax-pages skill, "From one painting".
 

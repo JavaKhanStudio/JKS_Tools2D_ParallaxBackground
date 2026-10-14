@@ -179,8 +179,9 @@ its top row, a creature, or no trees) stops the run: another `--seed`.
 
 When the art is one flat painting, not layers, `tools/depth-page.sh` cuts it into a page by its depth
 (`docs/depth-tricks.md` §5): Depth Anything V2 Small (Apache-2.0, in `~/.cache/huggingface`, Simon's pick) gives each
-pixel a depth, `--layers` depth bands become the layers, and dreamshaper_8's inpainting model
-(`dreamshaper_8Inpainting.safetensors` in `~/ComfyUI/models/checkpoints`, r315) repaints what each band hid. About 2 min.
+pixel a depth, `--layers` depth bands become the layers, SAM 2.1 small (Apache-2.0, ~180 MB in `~/.cache/huggingface`,
+r360) outlines each pine and hill so that a band's edge does not cut one in two, and dreamshaper_8's inpainting model
+(`dreamshaper_8Inpainting.safetensors` in `~/ComfyUI/models/checkpoints`, r315) repaints what each band hid. About 3 min.
 
 ```bash
 ~/ComfyUI/venv/bin/python tools/r239-ai-strips/gen.py txt2img --w 1024 --h 576 --tile x --seed 1 \
@@ -193,7 +194,8 @@ every layer is the painting's full width at sizeRatio 1, so its height is the sc
 median depth (front `--front-speed` 0.08, none under a twentieth of it); the back layer is opaque, the painted sky.
 `--theme` is the repaint's prompt: say what the painting shows.
 
-Look at `OUT/cut/sheet.png` (the painting, its depth, its bands, each layer before and after the repaint) and at the
+Look at `OUT/cut/sheet.png` (the painting, its depth, its bands, each layer before and after the repaint), at
+`OUT/cut/objects.png` (SAM's masks: a thing it did not outline can still be cut by a band's edge) and at the
 frames at 6 and 12 s, where the layers have slid apart: a repaint is seen everywhere a nearer thing stood once the
 camera moves. What it gets wrong: a repainted patch darker or brighter than the painting round it (`--denoise`, 0.8
 by default; 0.9 invents more, a rock spire in a trunk's place); a nearer band's edge cut

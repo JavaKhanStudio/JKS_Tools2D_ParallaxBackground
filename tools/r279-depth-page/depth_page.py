@@ -12,7 +12,8 @@ docs/depth-tricks.md §5. Passes:
      ~/.cache/huggingface), run on the painting padded with its own other end, so the depth loops too. Its output is
      relative disparity: larger is nearer;
   3. bands: --layers clusters of that disparity (k-means in one dimension), far to near, small islands merged into
-     what surrounds them, then a colour pass that pulls into a nearer band the thin parts of it the model judged far
+     what surrounds them; a thing the band's edge cuts (SAM 2.1 small's masks: Hugging Face
+     facebook/sam2.1-hiera-small, Apache-2.0, ~180 MB) given whole to the band at its foot; then a colour pass that pulls into a nearer band the thin parts of it the model judged far
      (a branch), and a small patch standing above its band's top edge handed to the farther band round it. A layer
      holds its own band, and every nearer pixel under its band's top edge (a tree's trunk in front of the hills): the
      layer stays solid to its bottom, as a painted strip is. Over columns where a nearer thing hides the band, its top
@@ -27,7 +28,7 @@ docs/depth-tricks.md §5. Passes:
      none under a twentieth of it. The back layer is opaque (the painted sky); the gradients take its top and bottom
      colours.
 
-Writes OUT/recipe.json (the command and each pass, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
+Writes OUT/recipe.json (the command and each pass, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, objects.png (SAM's masks), bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
 NAME.png, NAME.jplax, round.json) and, unless --no-shots, OUT/shots (tools/parallax-lab-shots.sh, cage: stills at 0,
 6 and 12 s). Exits 1 when lint finds a fault. Runs in the ComfyUI venv (COMFYUI_DIR, default ~/ComfyUI), which holds
 transformers, scipy and torch; needs --ckpt in its models/checkpoints (dreamshaper_8Inpainting.safetensors, Civitai
@@ -56,6 +57,7 @@ import seam  # noqa: E402
 
 ROOT = lab.ROOT
 MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
+SAM = "facebook/sam2.1-hiera-small"
 NEG = ("text, watermark, frame, border, people, birds, flying bird, animals, tree in the sky, close-up, "
        "foreground object, blurry")
 WORDS = ["far distance", "middle distance", "near", "foreground"]  # the inpaint prompt's depth, back to front
@@ -98,6 +100,48 @@ def depth_of(img):
     out = out + step[:, None] * (left / 2)[None] - step[:, None] * (right / 2)[None]
     del est
     torch.cuda.empty_cache()  # dreamshaper needs the memory next
+    return out
+
+
+def masks_of(img):
+    """SAM 2.1 small's automatic masks, one per thing it outlines (a pine, a hill, a cloud), each whole across the join:
+    run on the painting, then on it rolled by half its width, whose masks over the middle are the ones the join cut."""
+    import torch
+    from transformers import pipeline
+    w = img.shape[1]
+    sam = pipeline("mask-generation", model=SAM, device=0 if torch.cuda.is_available() else -1)
+
+    def run(a):
+        out = sam(Image.fromarray(a), points_per_batch=64, points_per_crop=64, pred_iou_thresh=0.7,
+                  stability_score_thresh=0.8)
+        return [np.asarray(m, bool) for m in out["masks"]]
+    keep = [m for m in run(img) if not (m[:, 0].any() or m[:, -1].any())]
+    keep += [np.roll(m, -(w // 2), axis=1) for m in run(np.roll(img, w // 2, axis=1))
+             if m[:, w // 2 - 1].any() or m[:, w // 2].any()]
+    sam.model.to("cpu")  # dreamshaper needs the memory next
+    torch.cuda.empty_cache()
+    return keep
+
+
+def objects(L, masks, n, most=0.03, least=0.05):
+    """A mask cut by a band's edge, over exactly two neighbouring bands (least or more of it in each), joins the band
+    at its foot (its lowest seventh) whole: depth judges a pine's crown against the sky behind it, and its foot is where
+    it stands. Masks over most of the painting or more (the sky, the river), or over three bands (a field down a slope),
+    are ground, not things, and stay cut. Largest first, so a pine inside a clump has the last word; on the bands as
+    depth cut them, so one mask's move does not decide another's (r360)."""
+    h, w = L.shape
+    out = L.copy()
+    rows = np.arange(h)[:, None]
+    for m in sorted(masks, key=lambda m: -m.sum()):
+        area = m.sum()
+        if not area or area > most * h * w:
+            continue
+        on = np.nonzero(np.bincount(L[m], minlength=n) >= least * area)[0]
+        if len(on) != 2 or on[1] - on[0] != 1:
+            continue
+        ys = np.nonzero(m.any(axis=1))[0]
+        foot = m & (rows >= ys[-1] - max(2, (ys[-1] - ys[0]) // 7))
+        out[m] = np.bincount(L[foot], minlength=n).argmax()
     return out
 
 
@@ -318,6 +362,16 @@ def islands(mask, area, beside):
     return np.isin(comp, np.intersect1d(small, touching))
 
 
+def outlines(img, masks):
+    """The painting dimmed, each SAM mask in a colour of its own and outlined in white."""
+    rng = np.random.default_rng(3)
+    out = img.astype(np.float32) * 0.35
+    for m in sorted(masks, key=lambda m: -m.sum()):
+        out[m] = img[m] * 0.35 + rng.integers(40, 255, 3) * 0.65
+        out[m & ~ndimage.binary_erosion(m)] = 255
+    return Image.fromarray(out.astype(np.uint8))
+
+
 def colour_bands(L, n):
     pal = np.array([(70, 90, 160), (90, 160, 120), (220, 180, 80), (220, 90, 70), (200, 80, 200), (240, 240, 240)])
     return Image.fromarray(pal[L % len(pal)].astype(np.uint8))
@@ -378,6 +432,9 @@ def depth_bands(img, n, cut):
     dn = np.clip((d - lo) / (hi - lo), 0, 1)
     Image.fromarray((dn * 255).astype(np.uint8)).save(os.path.join(cut, "depth.png"))
     L, centres = bands(dn, n, min_area=w * h // 150)
+    masks = masks_of(img)
+    L = objects(L, masks, n)
+    outlines(img, masks).save(os.path.join(cut, "objects.png"))
     L = by_colour(L, img, n)
     L = strays(L, n, w * h // 150)
     colour_bands(L, n).save(os.path.join(cut, "bands.png"))
@@ -477,7 +534,7 @@ def main():
     recipe = {"tool": "depth-page", "command": shlex.join(["tools/depth-page.sh"] + [x for x in sys.argv[1:]
                                                                                     if x not in ("--keep", "--no-shots")]),
               "theme": a.theme, "name": name, "seed": a.seed, "size": [w, h], "denoise": a.denoise,
-              "model": f"Depth Anything V2 Small + SD 1.5 {a.ckpt} (repaints)", "page": f"page/{name}.jplax",
+              "model": f"Depth Anything V2 Small + SAM 2.1 small + SD 1.5 {a.ckpt} (repaints)", "page": f"page/{name}.jplax",
               "negative": NEG, "fogStrength": 0, "layers": []}
 
     img = mend_loop(np.asarray(im), cut, a, recipe)
