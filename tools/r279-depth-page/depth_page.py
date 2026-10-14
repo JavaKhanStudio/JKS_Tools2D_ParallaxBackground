@@ -20,7 +20,8 @@ docs/depth-tricks.md §5. Passes:
      joined to it (a leaf beside its crown) or handed to the farther band round it (a speck floating over the layer).
      A layer holds its own band, and every nearer pixel under its band's top edge (a tree's trunk in front of the
      hills): the layer stays solid to its bottom, as a painted strip is. Over columns where a nearer thing hides the
-     band, its top edge is the lower of its two sides;
+     band, its outline on each side goes on behind it, mirrored and eased from one side's height to the other's
+     (r373: a clump behind a trunk no longer ends in a straight edge);
   4. holes: those nearer pixels, grown by --grow px over the soft edge depth leaves, are filled with the layer's own
      colours and repainted by dreamshaper_8's inpainting model (gen.py inpaint, tile x). The camera scrolls past
      every one of them.
@@ -288,21 +289,55 @@ def see_through(L, dn, centres, img, n, window=41, margin=0.8, rim=0.8, rounds=4
     return np.where(moved, j, L)
 
 
-def topline(L, k):
-    """Per column, the first row of band k. A run of columns without it (a nearer thing stands there, or right above
-    its first row) takes the lower of the two rows either side: a line drawn between them, from tall pines on one side
-    to low ground on the other, leaves a tall thin hole that the repaint fills with a spike of the nearer thing's
-    shape, a wedge where the pines are short (r322)."""
-    h, w = L.shape
+def shown(L, k):
+    """(the columns where band k's first row is its own top, its first row per column). A first row with a nearer
+    band right above it is where the nearer thing ends, not where band k begins: kept, a strip of grass under a trunk
+    sets the run's lower side, and the layer's edge steps down beside the hill (r322)."""
+    w = L.shape[1]
     has = (L == k).any(axis=0)
     first = np.argmax(L == k, axis=0)
-    if not has.any():
-        return np.full(w, float(h))
-    # A first row with a nearer band right above it is where the nearer thing ends, not where band k begins: kept, a
-    # strip of grass under a trunk sets the run's lower side, and the layer's edge steps down beside the hill (r322).
     hidden = (first > 0) & (L[np.maximum(first - 1, 0), np.arange(w)] > k)
     if (has & ~hidden).any():
         has &= ~hidden
+    return has, first
+
+
+SLIVER = 8  # px: a run of columns showing band k narrower than this, between nearer things, is part of their run
+
+
+def unsliver(has):
+    """has without its runs narrower than SLIVER, wrapping along X: a column or two of the band seen between a pine
+    and the trunk in front of it would split the trunk's run, and the outline mirrored into each half would step."""
+    w = len(has)
+    if has.all() or not has.any():
+        return has
+    out, x, start = has.copy(), 0, int(np.argmin(has))  # from a column without the band: each run seen whole
+    while x < w:
+        c = (start + x) % w
+        if not has[c]:
+            x += 1
+            continue
+        run = 0
+        while has[(c + run) % w] and run < w:
+            run += 1
+        if run < SLIVER:
+            out[[(c + i) % w for i in range(run)]] = False
+        x += run
+    return out if out.any() else has
+
+
+def topline(L, k, behind=True):
+    """Per column, the first row of band k. A run of columns without it (a nearer thing stands there, or right above
+    its first row) takes the lower of the two rows either side, the run's floor: a line drawn between them, from tall
+    pines on one side to low ground on the other, left a sloped wedge (r322). behind: over the run, the outline on
+    each side goes on, mirrored into it, its height over the floor eased from one side's to the other's: a pine clump
+    whose left part stood behind a trunk tapers down to the field on the trunk's other side, where the floor alone cut
+    it with a straight vertical edge that showed once the trunk slid past (r373). alpha_of then takes every pixel
+    under that outline in the run, so the repaint fills the clump's shape, not a spike of the trunk's."""
+    h, w = L.shape
+    has, first = shown(L, k)
+    if not has.any():
+        return np.full(w, float(h))
     first = first.astype(float)
     out = first.copy()
     x = 0
@@ -319,6 +354,59 @@ def topline(L, k):
         for i in range(run):
             out[(c + i) % w] = low
         x += run
+    if not behind:
+        return out
+    floor, out = out, out.copy()
+    for c, run in runs_of(unsliver(has)):
+        low = max(floor[(c - 1) % w], floor[(c + run) % w])  # the merged run's own sides, over any sliver in it
+        for i, (left, right, eased) in enumerate(mirrored(c, run, w)):
+            # A mirrored column in a run of its own reads that run's floor.
+            out[(c + i) % w] = low - (1 - eased) * (low - min(floor[left], low)) - eased * (low - min(floor[right], low))
+    return out
+
+
+def runs_of(has):
+    """(first column, length) of each run of columns without the band, wrapping along X."""
+    w, out, x = len(has), [], 0
+    if has.all() or not has.any():
+        return out
+    start = int(np.argmax(has))  # from a column that has the band, so every run has both sides
+    while x < w:
+        c = (start + x) % w
+        if has[c]:
+            x += 1
+            continue
+        run = 0
+        while not has[(c + run) % w]:
+            run += 1
+        out.append((c, run))
+        x += run
+    return out
+
+
+def mirrored(c, run, w):
+    """For each column of a run: the column its left side mirrors into it, the right side's, and how far the right
+    side weighs (eased from 0 to 1 across the run)."""
+    for i in range(run):
+        t = (i + 0.5) / run
+        yield (c - 1 - i) % w, (c + 2 * run - 1 - i) % w, t * t * (3 - 2 * t)
+
+
+def behind_start(src, img, known, L, k):
+    """The repaint's start over the runs where band k goes on behind a nearer thing: the painting's own pixels beside
+    the run, mirrored into it as its outline is (topline), each side's eased, where those are layer k's; fill()'s
+    blur elsewhere. From the blur alone, the inpaint left the clump behind the trunk a smooth olive mass (r373)."""
+    w = L.shape[1]
+    has = unsliver(shown(L, k)[0])
+    out = src.copy()
+    for c, run in runs_of(has):
+        for i, (left, right, eased) in enumerate(mirrored(c, run, w)):
+            x = (c + i) % w
+            kl, kr = known[:, left], known[:, right]
+            both = (1 - eased) * img[:, left] * kl[:, None] + eased * img[:, right] * kr[:, None]
+            weight = (1 - eased) * kl + eased * kr
+            take = (weight > 0.25) & ~known[:, x]
+            out[take, x] = both[take] / weight[take, None]
     return out
 
 
@@ -336,7 +424,7 @@ def strays(L, n, area):
             continue
         sizes = ndimage.sum(np.ones(L.shape), comp, index=np.arange(1, count + 1))
         small = np.isin(comp, 1 + np.nonzero(sizes < area)[0])
-        top = topline(np.where(small, -1, L), k)
+        top = topline(np.where(small, -1, L), k, behind=False)
         for i in np.unique(comp[small]):
             isl = comp == i
             ys, xs = np.nonzero(isl)
@@ -349,9 +437,12 @@ def strays(L, n, area):
 
 
 def alpha_of(L, k):
-    """Layer k's pixels: its band, and every nearer pixel under the band's top edge."""
+    """Layer k's pixels: its band, and every nearer pixel under the band's top edge; over a run of columns where a
+    nearer thing hides the band, every pixel under it (the sky there too: band k goes on behind, r373)."""
     rows = np.arange(L.shape[0])[:, None]
-    return (L == k) | ((rows >= topline(L, k)[None]) & (L > k))
+    has = unsliver(shown(L, k)[0])
+    behind = ~has & (L > k).any(axis=0)  # a gap in the band with nothing nearer in it stays a gap
+    return (L == k) | ((rows >= topline(L, k)[None]) & ((L > k) | behind[None]))
 
 
 def loose(L, n, near=3, rounds=2):
@@ -551,13 +642,16 @@ def cut_layer(k, img, dn, L, centres, cut, a):
     h, w = img.shape[:2]
     n = a.layers
     alpha = np.ones((h, w), bool) if k == 0 else alpha_of(L, k)
-    hole = alpha & grow(L > k, a.grow) if k < n - 1 else np.zeros_like(alpha)
+    # The hole: what nearer things hid, and what alpha_of took behind them that is no part of band k (r373).
+    hole = alpha & (grow(L > k, a.grow) | (L < k)) if k < n - 1 else np.zeros_like(alpha)
     # The sky between a crown's branches is band k too, tinted by the leaves round it: left as a start for the
     # fill, the repaint grows a small tree there. Islands of the layer's own pixels inside the hole join it.
     if hole.any():
         hole |= looped(lambda m, o: islands(m, w * h // 150, o), alpha & ~hole, hole)
     cut_k = os.path.join(cut, f"l{k}")
     src = looped(fill, img, alpha & ~hole)
+    if hole.any() and k:  # the back layer is opaque, and nothing goes on behind its sky
+        src = behind_start(src, img.astype(np.float32), alpha & ~hole, L, k)
     Image.fromarray(np.dstack([img, alpha * 255]).astype(np.uint8)).save(f"{cut_k}_raw.png")
     done = f"{cut_k}_painted.png"
     word = WORDS[min(3, round(k * 3 / max(1, n - 1)))]
