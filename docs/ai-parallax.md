@@ -183,6 +183,13 @@ it (r244); an SDXL ControlNet is untried.
   not above it). Painted strips only: a pixel-art palette is off any such line. The sweep adds r239's six example
   pages and r346's SDXL page (64 strips pass), flags novaCartoonXL's hills and three planted people; still missed, a
   figure the colour of the sky or of the land under it.
+  Since r362, that figure too when it has a head: novaCartoonXL painted a person in the ruins' own dark (parallax-ai's
+  R1 post-apo page, a giant among the buildings), and one wider than `find`'s box, whose mean is then the figure
+  itself. `creature.on_neck` opens the outline (the cut's mass, and painted pixels near it nearer its colour than the
+  sky's: masts `sil.py` keyed off a roof still stand over it) along X: a head on a neck comes off as an island. A round
+  one, with sky over it, whose column widens again to shoulders, is refused. Of the 365 strips on disk, it adds R1's two figures and
+  nothing else (`tools/r261-creature/disk.sh`: a commit's answers against the working tree's, over every strip in this
+  checkout and parallax-ai's); the sweep checks them, two strips it must pass, and a figure planted on r239's ruins.
 - Each layer is painted on its own: nothing makes their colours agree but `--colours`, which the init image carries.
   `ai-page.sh` paints them at full contrast and gives the distance with the page's depth fog (`fogStrength`, r217).
 

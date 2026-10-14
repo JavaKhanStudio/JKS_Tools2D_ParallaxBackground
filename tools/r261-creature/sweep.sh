@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # headless: numpy on PNGs, no window
 # sweep.sh [BUILD] — r261: creature.py over every AI strip on disk (none may be flagged) and over planted ones (each
-# must be). The strips are scratch from r239/r242/r243/r246 runs (run.sh, run-xl.sh, ai-page.sh); a missing one is
-# skipped. Prints FLAG/PASS per strip and exits 1 on a wrong answer. SHOW=DIR: creature.py --show's picture of each.
+# must be). The strips are scratch from r239/r242/r243/r246 runs (run.sh, run-xl.sh, ai-page.sh), and parallax-ai's
+# R1 and R6a rounds (R362_R1, beside this checkout); a missing one is skipped. Prints FLAG/PASS per strip and exits 1 on a wrong answer. SHOW=DIR: creature.py --show's picture of each.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 [ -n "${SHOW:-}" ] && mkdir -p "$SHOW"
@@ -74,6 +74,21 @@ plant hills_person "$B/r239/hills_ai.png" 600,0 person "--colour 2a2420" --mask 
 plant hills_red_person "$B/r239/hills_ai.png" 300,0 person "--colour 8a2a2a --size 0.8" \
 	--mask "$B/r239/hills_mask.png" --grow 8
 plant snow0_person "$S/l0_ai.png" 700,0 person "--colour 3a2a20" --mask "$S/l0_mask.png" --grow 8
+# A figure the mass's own colour, or too big for find()'s box (r362): on_neck's round head on a thin neck.
+# novaCartoonXL's on parallax-ai's R1 ruins (l2 standing, black on brown; l3 on a roof, sil.py's cut keyed its head
+# off), and one planted on r239's ruins, cut by colour: sil.py's mask keys a planted figure off whole, harmlessly.
+R1="${R362_R1:-../JKS_Tools2D_ParallaxAI/build/rounds/r1/nova-postapo/strips}"
+for l in l2 l3; do
+	[ -f "$R1/${l}_cut.png" ] && check 4 "$R1/${l}_cut.png" "$R1/${l}_ai.png"
+done
+# and none in R1's far towers, half sky (l3v3), in palms whose fronds reach the strip's top (r239-ex's beach2), nor in
+# rooftop clutter under masts sil.py keyed off (parallax-ai's R6a, bir-postapo l1: the painted strip has them)
+[ -f "$R1/l3v3_cut.png" ] && check 0 "$R1/l3v3_cut.png" "$R1/l3v3_ai.png"
+R6="${R1%/r1/*}/r6a/bir-postapo/strips"
+[ -f "$R6/l1_cut.png" ] && check 0 "$R6/l1_cut.png" "$R6/l1_ai.png"
+P="$B/r239-ex/beach2-painted/strips"
+[ -f "$P/l3v3_cut.png" ] && check 0 "$P/l3v3_cut.png" "$P/l3v3_ai.png"
+plant postapo_figure "$B/ai/examples/postapo-painted/strips/l3_ai.png" 520,0 figure "--colour 1f1e1e --size 3"
 # Pixel art (r243): pixel.py looks at the painted SDXL strip, its art pixels 16 px cells; a bird 4 times the size
 # (120 x 48 px, ~9 cells: under 6 is texture).
 if [ -f "$B/r243/hills_xl.png" ]; then

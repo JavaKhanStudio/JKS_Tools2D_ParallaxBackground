@@ -7,7 +7,8 @@ A bird in flight (body and two swept wings, ~30 x 12 px at --size 1) or a standi
 ~34 x 30 px), drawn antialiased (4x supersampled) in --colour, by default a third of the colour under it: SD paints a
 creature darker than the land it stands on. --at is its middle. A person (~12 x 34 px, r349) or anything --stand
 stands ON the land at --at's X, its feet where the painted strip first leaves the sky (layer.py's: its top rows'
-median, 48 away): the ridge check's figure, which novaCartoonXL paints on hilltops.
+median, 48 away): the ridge check's figure, which novaCartoonXL paints on hilltops. A figure (r362, ~12 x 42 px: a
+10 px round head on a 2 px neck) stands too: on_neck's, novaCartoonXL's person on a roof in the mass's own colour.
 """
 import argparse
 
@@ -22,6 +23,9 @@ SHAPES = {  # polygons in px at --size 1, around (0, 0)
              [(4, 3), (7, 3), (7, 15), (5, 15)], [(8, 3), (11, 3), (11, 15), (9, 15)]],
     "person": [[(-2, -19), (2, -19), (3, -15), (2, -13), (6, -11), (6, 3), (3, 3), (3, 15), (0, 15), (-1, 5), (-2, 15),
                 (-5, 15), (-4, 3), (-6, 3), (-6, -11), (-2, -13), (-3, -15)]],
+    "figure": [[(5 * np.cos(a), -22 + 5 * np.sin(a)) for a in np.linspace(0, 2 * np.pi, 16, endpoint=False)],
+               [(-1, -18), (1, -18), (1, -15), (6, -14), (6, 3), (3, 3), (3, 15), (0, 15), (-1, 5), (-2, 15),
+                (-5, 15), (-4, 3), (-6, 3), (-6, -14), (-1, -15)]],
 }
 
 
@@ -33,11 +37,11 @@ def main():
     ap.add_argument("--kind", choices=SHAPES, default="bird")
     ap.add_argument("--size", type=float, default=1.0)
     ap.add_argument("--colour", help="hex RGB; default a third of the colour under it")
-    ap.add_argument("--stand", action="store_true", help="feet on the land at --at's X (a person always stands)")
+    ap.add_argument("--stand", action="store_true", help="feet on the land at --at's X (a person or a figure always stands)")
     a = ap.parse_args()
     im = Image.open(a.src).convert("RGB")
     x, y = (int(v) for v in a.at.split(","))
-    if a.stand or a.kind == "person":
+    if a.stand or a.kind in ("person", "figure"):
         rgb = np.asarray(im).astype(float)
         sky = np.median(rgb[:8].reshape(-1, 3), axis=0)
         ground = int(np.argmax(np.linalg.norm(rgb[:, x] - sky, axis=1) > 48))

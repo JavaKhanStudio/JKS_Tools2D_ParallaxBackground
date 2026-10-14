@@ -18,7 +18,7 @@ soft edge: it goes clear or solid (0: off).
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
-A creature SD painted inside the mass or standing on it (a bird, an animal, a person: creature.py, r261, r349) exits 4, after the PNG is written;
+A creature SD painted inside the mass or standing on it (a bird, an animal, a person: creature.py, r261, r349, r362) exits 4, after the PNG is written;
 --no-creatures skips the check.
 --pixel N: pixel art. Box-downscale by N, quantise to --colours colours (one palette for the
 layer, or --palette's), and cut alpha hard at 50%: every pixel is one palette colour, fully opaque or fully clear.
@@ -258,6 +258,7 @@ def check(out, img, sky, alpha, a):
         r = int(12 * k)
         found = creature.find(rgb, alpha, int(50 * k * k), int(3000 * k * k), r=r)
         found += creature.on_ridge(rgb, alpha, sky, int(50 * k * k), r)
+        found += creature.on_neck(rgb, alpha, sky, r)
         for x, y, size in found:
             print(f"{a.src}: a creature? {size} px blob at x={x} y={y}", file=sys.stderr)
         if found:

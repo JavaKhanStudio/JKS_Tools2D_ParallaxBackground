@@ -39,5 +39,18 @@ mutate "ridge: far from the sky only" "off = np.linalg.norm(rgb - (sky + t[..., 
 	"off = np.linalg.norm(rgb - sky, axis=2)"
 mutate "ridge: far from the mass only" "off = np.linalg.norm(rgb - (sky + t[..., None] * seg), axis=2)" \
 	"off = np.linalg.norm(rgb - land, axis=2)"
+# r362's neck check
+mutate "no neck check" "found += on_neck(rgb, alpha, sky, r)" "found += 0 * on_neck(rgb, alpha, sky, r)"
+mutate "neck: the cut's outline only" "m = mass | (spread(mass, 4 * r) & (t > 0.5))" "m = mass"
+mutate "neck: far towers in the outline" "& (t > 0.5))" "& (t > 0.1))"
+mutate "neck: the outline far from the mass" "spread(mass, 4 * r) & (t" "spread(mass, 12 * r) & (t"
+mutate "neck: any head size" "if size < (2 * n + 1) ** 2 // 2:" "if size < 8:"
+mutate "neck: any head proportions" "if not 0.6 < h / w < 1.8 or" "if"
+mutate "neck: any head shape" " or size < 0.6 * w * h:" ":"
+mutate "neck: no sky over it" "].mean() >= cap:" "].mean() >= 2:"
+mutate "neck: straight down" "x = (a + b) // 2  # a neck leans" "pass  # a neck leans"
+mutate "neck: through the sky" "if not m[y, x]:
+                    break" "pass"
+mutate "neck: no shoulders" "if b - a + 1 >= 0.8 * w:" "if True:"
 [ $bad = 0 ] && echo "mutate: every rule killed" || echo "mutate: rules no strip proves, above"
 exit $bad

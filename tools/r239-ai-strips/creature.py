@@ -17,6 +17,12 @@ people on hilltops) is keyed mostly clear and never inside the mass. Above the m
 odd when it is --ridge-far from the line between the sky and the mass's colour below it (a box mean, 2R px each way):
 a pixel half sky, half hill sits on that line, a red coat does not. A blob of them --min px big or more is a figure.
 Only above: the mass's own lit edge (snow on a ridge, a glint on the sea's horizon) is off that line too.
+The neck check (r362), on a painted strip too: a figure the mass's own colour, or one wider than the box (whose mean is
+then the figure itself), is neither of the above; novaCartoonXL paints one standing among ruins. The outline (the mass,
+and painted pixels near it nearer its colour than the sky's: masts sil.py keyed off) is opened along X, rows narrower
+than r/4 to 5r/12 each way taken out: a head on a neck comes off as an island. It is a figure when it is round (h/w
+0.6 to 1.8, filling 0.6 of its box), has sky over it (a pine's tier has its spire) and, down through the neck, widens
+again to shoulders 0.8 its width (a chunk on a mast does not).
 Exits 4 and names each one (x, y, size). layer.py and pixel.py call find() on the painted strip and exit 4 too, so
 ai-page.sh paints the strip again on the next seed. tools/r261-creature/sweep.sh holds it to every strip on disk and to
 planted creatures, mutate.sh proves each rule above is needed.
@@ -107,6 +113,60 @@ def on_ridge(rgb, alpha, sky, lo=50, r=12, far=80):
     return found
 
 
+def on_neck(rgb, alpha, sky, r, cap=0.05):
+    """[(x, y, size)] of each head on a neck in alpha's outline: a figure the mass's own colour, or too big for
+    find()'s box."""
+    mass = alpha >= 0.5
+    # The outline as painted: sil.py's cut may have keyed masts off a roof, which the painted strip still has over
+    # what would be a head. Only what is nearer the mass's colour than the sky's (far grey towers behind are no
+    # figure), and near the mass (a palm's fronds at the strip's top are not).
+    land = np.median(rgb[spread(mass, -4)], axis=0)
+    seg = land - sky
+    t = ((rgb - sky) * seg).sum(axis=2) / max((seg * seg).sum(), 1)
+    m = mass | (spread(mass, 4 * r) & (t > 0.5))
+    found = []
+    for n in (r // 4, r // 3, 5 * r // 12):
+        # Opened along X: rows narrower than 2n + 1 go, a neck with them, and the head is an island.
+        e = m.copy()
+        for d in range(1, n + 1):
+            e &= np.roll(m, d, 1) & np.roll(m, -d, 1)
+        for d in range(1, n + 1):
+            e |= np.roll(e, d, 1) | np.roll(e, -d, 1)
+        label, sizes = components(e & m)
+        for k, size in enumerate(sizes):
+            if size < (2 * n + 1) ** 2 // 2:
+                continue
+            ys, xs = np.nonzero(label == k + 1)
+            w, h = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
+            # A head is round: it fills most of its box (a disc 0.79); a ragged chunk on a spike does not.
+            if not 0.6 < h / w < 1.8 or size < 0.6 * w * h:
+                continue
+            # Sky over it: a pine's top tier has its spire, a palm's crown the next frond.
+            if ys.min() > 0 and m[max(ys.min() - h, 0):ys.min(), xs.min():xs.max() + 1].mean() >= cap:
+                continue
+            # Down from its middle, through the neck the opening took, to shoulders as wide as 0.8 of it. A chunk on a
+            # tower's mast never widens again; a palm's crown on its thin bent trunk loses the column before the ground.
+            x = int(np.median(xs[ys == ys.max()]))
+            for y in range(ys.max() + 1, m.shape[0]):
+                if not m[y, x]:
+                    break
+                a = b = x
+                while a > 0 and m[y, a - 1] and x - a < 3 * w:
+                    a -= 1
+                while b < m.shape[1] - 1 and m[y, b + 1] and b - x < 3 * w:
+                    b += 1
+                x = (a + b) // 2  # a neck leans: follow its middle
+                if b - a + 1 >= 0.8 * w:
+                    found.append((int(xs.mean()), int(ys.mean()), int(size), w, h))
+                    break
+    # Named once: the same head is found at each n.
+    figs = []
+    for f in sorted(found, key=lambda f: -f[2]):
+        if not any(abs(f[0] - g[0]) < max(f[3], g[3]) and abs(f[1] - g[1]) < max(f[4], g[4]) for g in figs):
+            figs.append(f)
+    return [f[:3] for f in figs]
+
+
 def show(src, alpha, found):
     """src with what find() does not look at dimmed, and a red box around each blob it found."""
     from PIL import ImageDraw
@@ -141,6 +201,7 @@ def main():
     if cell <= 1.5 and a.ridge_far:  # pixel art's palette is off any line between two colours
         sky = np.median(rgb[:8].reshape(-1, 3), axis=0)  # layer.py's
         found += on_ridge(rgb, alpha, sky, int(a.min * k), r, a.ridge_far)
+        found += on_neck(rgb, alpha, sky, r)
     for x, y, size in found:
         print(f"{a.src or a.cut}: a creature? {size} px blob at x={x} y={y}", file=sys.stderr)
     if a.show:
