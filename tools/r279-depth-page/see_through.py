@@ -6,7 +6,8 @@ sky's (blue over red by 40 and over green by 15), and its opaque area, beside a 
     ~/ComfyUI/venv/bin/python tools/r279-depth-page/see_through.py RUN --crop l3 X0 Y0 X1 Y1 OUT.png [BEFORE_RUN]
 
 A crown's gaps cleared show as the count falling in the near layers and their opaque area falling by about as much;
-leaves eaten, as the area falling by much more. The count also takes a river's water, which is the front's own ground:
+leaves eaten, as the leaf-green pixels lost (the painting's colour under what a layer no longer covers: green over red
+by 10 and over blue by 5) growing past a few hundred. The count also takes a river's water, which is the front's own ground:
 read it beside the crop. --crop writes the layer over magenta, cropped (painting coordinates) and enlarged 3 times,
 the before run's above it when one is given.
 """
@@ -39,6 +40,14 @@ def counts(run):
         k += 1
 
 
+def green_lost(before, after, k):
+    """How many leaf-green pixels of the painting layer k covered before and no longer does."""
+    img = np.asarray(Image.open(f"{after}/cut/painting.png").convert("RGB")).astype(int)
+    was, now = (np.asarray(layer(r, f"l{k}"))[..., 3] > 128 for r in (before, after))
+    green = (img[..., 1] > img[..., 0] + 10) & (img[..., 1] > img[..., 2] + 5)
+    return int((was & ~now & green).sum())
+
+
 def crop(runs, name, box, out):
     tiles = []
     for run in runs:
@@ -67,7 +76,8 @@ def main(argv):
         line = f"l{k}: sky {now[0]:6d}  opaque {now[1]:7d}"
         if len(rows) > 1 and k < len(rows[1]):
             was = rows[1][k]
-            line += f"   before: sky {was[0]:6d}  opaque {was[1]:7d}  ({now[1] - was[1]:+d} px)"
+            line += f"   before: sky {was[0]:6d}  opaque {was[1]:7d}  ({now[1] - was[1]:+d} px"
+            line += f", {green_lost(runs[1], runs[0], k)} leaf green lost)"
         print(line)
     return 0
 
