@@ -14,7 +14,8 @@ docs/depth-tricks.md §5. Passes:
   3. bands: --layers clusters of that disparity (k-means in one dimension), far to near, small islands merged into
      what surrounds them; a thing a band's edge cuts (SAM 2.1 small's masks: Hugging Face
      facebook/sam2.1-hiera-small, Apache-2.0, ~180 MB) given whole to the band at its foot; then a colour pass that
-     pulls into a nearer band the thin parts of it the model judged far (a branch), and a small patch standing above
+     pulls into a nearer band the thin parts of it the model judged far (a branch), its mirror handing back to the
+     farther band the sky and ridge seen between a crown's branches (r361), and a small patch standing above
      its band's top edge handed to the farther band round it; last, every other piece of a layer apart from its mass
      joined to it (a leaf beside its crown) or handed to the farther band round it (a speck floating over the layer).
      A layer holds its own band, and every nearer pixel under its band's top edge (a tree's trunk in front of the
@@ -213,14 +214,8 @@ def by_colour(L, img, n, reach=16, window=41, rounds=8, margin=0.6, apart=40):
     gently sloping ground both sides of a cut are the same green, and texture alone would fray the cut.
     """
     rgb = img.astype(np.float32)
-    mode = ("nearest", "wrap", "nearest")
     for _ in range(rounds):
-        means = []
-        for k in range(n):
-            m = (L == k).astype(np.float32)
-            cnt = ndimage.uniform_filter(m, window, mode=("nearest", "wrap"))
-            sm = ndimage.uniform_filter(rgb * m[..., None], (window, window, 1), mode=mode)
-            means.append((sm / np.maximum(cnt, 1e-6)[..., None], cnt))
+        means = band_means(L, rgb, n, window)
         moved = 0
         for k in range(n):
             near_k = grow(L == k, reach) & (L != k) & (means[k][1] > 0.05)
@@ -233,6 +228,64 @@ def by_colour(L, img, n, reach=16, window=41, rounds=8, margin=0.6, apart=40):
         if not moved:
             break
     return L
+
+
+def band_means(L, rgb, n, window):
+    """Per band, (its mean colour round each pixel over window px, wrapping along X; its share of the window)."""
+    out = []
+    for k in range(n):
+        m = (L == k).astype(np.float32)
+        cnt = ndimage.uniform_filter(m, window, mode=("nearest", "wrap"))
+        sm = ndimage.uniform_filter(rgb * m[..., None], (window, window, 1), mode=("nearest", "wrap", "nearest"))
+        out.append((sm / np.maximum(cnt, 1e-6)[..., None], cnt))
+    return out
+
+
+def see_through(L, dn, centres, img, n, window=41, margin=0.8, rim=0.8, rounds=40, apart=40, third=1 / 3, far=96):
+    """by_colour's mirror: the sky and the ridge seen between a crown's branches, which depth blurs to near and
+    merge_small and shut_in hand to the crown, go back to the farther band, else the near layer carries them opaque
+    and they slide over the scene behind (r361). A pixel of band k goes to the farther band j whose mean colour round
+    it (window px; where j has none, its mean at the nearest place that has, up to far px) it matches better, by
+    margin, than its own band's, the two means apart by more than apart (0-441), where depth itself put it in the
+    first third of the way from j to k. Then, a ring a round, every pixel beside a moved one that matches j, or the
+    moved pixels round it (the sky as the crown frames it), by rim goes too, so a gap clears to the leaves round it.
+    The means are taken once, before any move: taken again, a moved leaf tints the sky's mean green and the next ring
+    eats its clump. Grown only from the moved pixels, never from band j's own edge: on the ground that edge runs
+    between lit and shaded fields, and growing from it frays the cut. A gap depth judged wholly near stays."""
+    rgb = img.astype(np.float32)
+    w = L.shape[1]
+    M = []
+    for mean, cnt in band_means(L, rgb, n, window):
+        has = cnt > 0.02
+        if not has.any():
+            mean = np.full_like(mean, np.nan)
+        elif not has.all():
+            dist, (iy, ix) = ndimage.distance_transform_edt(~np.tile(has, 3), return_indices=True)
+            dist, iy, ix = dist[:, w:2 * w], iy[:, w:2 * w], ix[:, w:2 * w] % w
+            mean = mean[iy, ix]
+            mean[dist > far] = np.nan
+        M.append(mean)
+    M = np.stack(M)  # once, on the bands as they came: the moved pixels' colours never tint the band they went to
+    own = np.take_along_axis(M, L[None, ..., None].repeat(3, -1), 0)[0]
+    d_own = np.linalg.norm(rgb - own, axis=-1)
+    D = np.linalg.norm(rgb[None] - M, axis=-1)
+    D = np.where((np.arange(n)[:, None, None] < L[None]) & ~np.isnan(D), D, np.inf)
+    j, dj = D.argmin(0), D.min(0)
+    mj = np.take_along_axis(M, j[None, ..., None].repeat(3, -1), 0)[0]
+    like = (L > 0) & np.isfinite(dj) & (np.linalg.norm(own - mj, axis=-1) > apart)
+    moved = like & (dj < margin * d_own) & (dn < centres[j] + (centres[L] - centres[j]) * third)
+    seeds = moved.astype(np.float32)
+    cnt = ndimage.uniform_filter(seeds, window, mode=("nearest", "wrap"))
+    gap = ndimage.uniform_filter(rgb * seeds[..., None], (window, window, 1), mode=("nearest", "wrap", "nearest"))
+    gap /= np.maximum(cnt, 1e-6)[..., None]
+    d_gap = np.where(cnt * window * window > 0.5, np.linalg.norm(rgb - gap, axis=-1), np.inf)  # no moved pixel: none
+    rim_ok = like & (np.minimum(dj, d_gap) < rim * d_own)
+    for _ in range(rounds):
+        more = rim_ok & ~moved & grow(moved, 1)
+        if not more.any():
+            break
+        moved |= more
+    return np.where(moved, j, L)
 
 
 def topline(L, k):
@@ -484,6 +537,7 @@ def depth_bands(img, n, cut):
     L = objects(L, masks, n)
     outlines(img, masks).save(os.path.join(cut, "objects.png"))
     L = by_colour(L, img, n)
+    L = see_through(L, dn, centres, img, n)
     L = strays(L, n, w * h // 150)
     L = loose(L, n)
     colour_bands(L, n).save(os.path.join(cut, "bands.png"))

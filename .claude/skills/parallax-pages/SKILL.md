@@ -201,7 +201,9 @@ camera moves. What it gets wrong: a repainted patch darker or brighter than the 
 by default; 0.9 invents more, a rock spire in a trunk's place); a nearer band's edge cut
 straight down where its neighbour was taller (the tool takes the lower side over a gap rather than paint a spike);
 a thin part of a near thing the small model judged far, left behind in the back layer (the colour pass catches what
-hangs from a crown; another painting may need it tuned, `by_colour` in `tools/r279-depth-page/depth_page.py`);
+hangs from a crown; another painting may need it tuned, `by_colour` in `tools/r279-depth-page/depth_page.py`); the sky or a ridge left opaque in a crown's gaps, sliding with
+the tree over the scene behind (`see_through` clears a gap depth half saw; one it judged wholly near stays:
+`tools/r279-depth-page/see_through.py OUT` counts the sky each layer carries);
 a small bird in a repainted sky, whatever the negative prompt says; and, on a painting that did not loop, its
 repaired join, which reads as a soft vertical band once the layers slide: paint one that loops instead.
 
