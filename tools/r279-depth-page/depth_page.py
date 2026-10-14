@@ -13,7 +13,9 @@ docs/depth-tricks.md §5. Passes:
      relative disparity: larger is nearer;
   3. bands: --layers clusters of that disparity (k-means in one dimension), far to near, small islands merged into
      what surrounds them; a thing a band's edge cuts (SAM 2.1 small's masks: Hugging Face
-     facebook/sam2.1-hiera-small, Apache-2.0, ~180 MB) given whole to the band at its foot; then a colour pass that
+     facebook/sam2.1-hiera-small, Apache-2.0, ~180 MB) given whole to the band at its foot, and so is a field a
+     band's edge cut straight across its grass, which SAM prompted with two points across that cut outlines to its
+     shadow's edge, hedge or bank (r374: a field down a slope was cut in slabs); then a colour pass that
      pulls into a nearer band the thin parts of it the model judged far (a branch), its mirror handing back to the
      farther band the sky and ridge seen between a crown's branches (r361), and a small patch standing above
      its band's top edge handed to the farther band round it; last, every other piece of a layer apart from its mass
@@ -32,7 +34,7 @@ docs/depth-tricks.md §5. Passes:
      none under a twentieth of it. The back layer is opaque (the painted sky); the gradients take its top and bottom
      colours.
 
-Writes OUT/recipe.json (the command and each pass, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, objects.png (SAM's masks), bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
+Writes OUT/recipe.json (the command and each pass, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, objects.png (SAM's masks), fields.png (the prompted fields), bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
 NAME.png, NAME.jplax, round.json) and, unless --no-shots, OUT/shots (tools/parallax-lab-shots.sh, cage: stills at 0,
 6 and 12 s). Exits 1 when lint finds a fault. Runs in the ComfyUI venv (COMFYUI_DIR, default ~/ComfyUI), which holds
 transformers, scipy and torch; needs --ckpt in its models/checkpoints (dreamshaper_8Inpainting.safetensors, Civitai
@@ -127,25 +129,174 @@ def masks_of(img):
     return keep
 
 
-def objects(L, masks, n, most=0.03, least=0.05):
-    """A mask cut by a band's edge, over exactly two neighbouring bands (least or more of it in each), joins the band
-    at its foot (its lowest seventh) whole: depth judges a pine's crown against the sky behind it, and its foot is where
-    it stands. Masks over most of the painting or more (the sky, the river), or over three bands (a field down a slope),
-    are ground, not things, and stay cut. Largest first, so a pine inside a clump has the last word; on the bands as
-    depth cut them, so one mask's move does not decide another's (r360)."""
+def slab_cuts(L, img, k, reach=24, apart=25):
+    """Per column, the row where band k + 1 starts under band k through one surface (the same colour 2-10 px above and
+    below, nothing but those two bands within reach rows): a field down a slope that depth cut in two. -1 elsewhere: a
+    cut along a hedge, a tree's foot, a crown against the sky."""
     h, w = L.shape
+    rgb = img.astype(np.float32)
+    out = np.full(w, -1)
+    for x in range(w):
+        xs = [(x + d) % w for d in range(-3, 4)]
+        for y in np.nonzero((L[:-1, x] == k) & (L[1:, x] == k + 1))[0] + 1:
+            if not reach <= y < h - reach or not np.isin(L[y - reach:y + reach, x], (k, k + 1)).all():
+                continue
+            above, below = rgb[y - 10:y - 2][:, xs].reshape(-1, 3), rgb[y + 2:y + 10][:, xs].reshape(-1, 3)
+            if np.linalg.norm(above.mean(0) - below.mean(0)) < apart:
+                out[x] = y
+                break
+    return out
+
+
+def fields_of(img, L, n, every=96, least=24, off=16, sure=0.4, most=0.25, stray=0.05):
+    """SAM 2.1 small prompted with two points across a slab cut (slab_cuts), off px above and below it, every every px
+    along a run of least columns or more: the field the cut runs through, whole, to its painted edges (a hedge, a
+    shadow's edge, the river bank), which the automatic masks never give (r374). Of its three masks, the best scored of
+    those that hold both points, scored sure or more, over at most most of the painting, with under stray of it outside
+    the two bands; only its piece holding both points (SAM adds a ragged patch of a lit field across a trunk, valley,
+    which moved left a blocky patch of the near layer in the middle of the grass). A field that reaches one end of the
+    painting and not the other is asked again with a third point just across the join, on the row it reaches the end
+    at: SAM stops a field at the join for one prompt and not for another, and the two halves would go to two bands
+    (river's lit field). One mask per outline."""
+    import torch
+    from transformers import Sam2Model, Sam2Processor
+    w = L.shape[1]
+    prompts = []
+    for k in range(n - 1):
+        cut = slab_cuts(L, img, k)
+        for c, run in runs_of(cut < 0):
+            if run < least:
+                continue
+            count = max(1, round(run / every))
+            for i in range(count):
+                x = (c + int((i + 0.5) * run / count)) % w
+                prompts.append((k, [(x, int(cut[x] - off)), (x, int(cut[x] + off))]))
+    if not prompts:
+        return []
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    proc = Sam2Processor.from_pretrained(SAM)
+    model = Sam2Model.from_pretrained(SAM).to(dev)
+
+    def ask(k, points, shift):
+        """The best-scored fitting mask for points on the painting rolled by shift, or None."""
+        inp = proc(images=Image.fromarray(np.roll(img, shift, axis=1)),
+                   input_points=[[[[(x + shift) % w, y] for x, y in points]]], input_labels=[[[1] * len(points)]],
+                   return_tensors="pt").to(dev)
+        with torch.no_grad():
+            got = model(**inp, multimask_output=True)
+        masks = proc.post_process_masks(got.pred_masks.cpu(), inp["original_sizes"])[0][0].numpy() > 0
+        best, top = None, sure
+        for m, score in zip(masks, got.iou_scores[0, 0].cpu().numpy()):
+            m = piece_at(np.roll(m, -shift, axis=1), points)
+            if (score >= top and m.any() and 0.005 < m.mean() <= most
+                    and (~np.isin(L[m], (k, k + 1))).mean() < stray):
+                best, top = m, score
+        return best
+
+    out = []
+    for k, points in prompts:
+        m = ask(k, points, w // 2 - points[0][0])
+        if m is not None and m[:, 0].any() != m[:, -1].any():
+            end = 0 if m[:, 0].any() else w - 1
+            across = (w - 9 if end == 0 else 8, int(np.median(np.nonzero(m[:, end])[0])))
+            whole = ask(k, points + [across], w // 2)
+            m = whole if whole is not None else m
+        if m is not None and not any((m & o).sum() > 0.8 * (m | o).sum() for o in out):
+            out.append(m)
+    model.to("cpu")  # dreamshaper needs the memory next
+    torch.cuda.empty_cache()
+    return out
+
+
+def piece_at(m, points):
+    """The piece of mask m holding every (x, y) of points, its gaps under 2 px closed and its holes filled (SAM's
+    prompted masks are hatched: moved as they come, the farther band shows through in rows of pinholes), on the
+    painting laid three times side by side, each point in any copy and the piece's three copies laid back on one, so
+    a piece across the join is whole; empty when they lie in two pieces."""
+    w = m.shape[1]
+    lab, _ = ndimage.label(ndimage.binary_closing(np.tile(m, 3), iterations=2))
+    i = lab[points[0][1], w + points[0][0]]
+    if not i or any(i not in lab[y, [x, w + x, 2 * w + x]] for x, y in points):
+        return np.zeros_like(m)
+    piece = ndimage.binary_fill_holes(lab == i)
+    return piece[:, :w] | piece[:, w:2 * w] | piece[:, 2 * w:]
+
+
+FIELD_MOST = 0.25  # a prompted field may be a quarter of the painting: the near field often is
+
+
+def foot_of(L, m, n, most=0.03, least=0.05):
+    """The band a mask joins whole, or -1: cut by a band's edge, over exactly two neighbouring bands (least or more of
+    it in each), it joins the band at its foot (its lowest seventh): depth judges a pine's crown against the sky behind
+    it, and its foot is where it stands. Masks over most of the painting or more (the sky, the river), or over three
+    bands (a field down a slope), are ground, not things, and stay cut: fields_of finds the field a cut runs through,
+    given here with a larger most."""
+    h, w = L.shape
+    area = m.sum()
+    if not area or area > most * h * w:
+        return -1
+    on = np.nonzero(np.bincount(L[m], minlength=n) >= least * area)[0]
+    if len(on) != 2 or on[1] - on[0] != 1:
+        return -1
+    ys = np.nonzero(m.any(axis=1))[0]
+    foot = m & (np.arange(h)[:, None] >= ys[-1] - max(2, (ys[-1] - ys[0]) // 7))
+    return int(np.bincount(L[foot], minlength=n).argmax())
+
+
+def objects(L, masks, n, most=0.03, least=0.05):
+    """Each mask foot_of moves, given whole to its band. Largest first, so a pine inside a clump has the last word; on
+    the bands as depth cut them, so one mask's move does not decide another's (r360)."""
     out = L.copy()
-    rows = np.arange(h)[:, None]
     for m in sorted(masks, key=lambda m: -m.sum()):
-        area = m.sum()
-        if not area or area > most * h * w:
+        k = foot_of(L, m, n, most, least)
+        if k >= 0:
+            out[m] = k
+    return out
+
+
+def agreeing(L, fields, n, share=0.1):
+    """The fields foot_of moves, largest first, but one overlapping a larger kept one (share or more of it) that goes
+    to another band. A field over three bands (river's lit field, round the join and down past the pines' shadow) comes
+    back as overlapping masks over two bands each, to two bands: each moved, the one moved last cut the other with a
+    straight vertical edge, at the join on river (r374, lint (e)). The larger holds more of the surface."""
+    kept = []
+    for m in sorted(fields, key=lambda m: -m.sum()):
+        k = foot_of(L, m, n, FIELD_MOST)
+        if k >= 0 and not any(j != k and (m & o).sum() >= share * m.sum() for o, j in kept):
+            kept.append((m, k))
+    return [m for m, _ in kept]
+
+
+def with_fields(L, fields, n, few=4):
+    """L with the fields moved (objects), but those whose move leaves the two ends of the painting in different bands
+    on a row: SAM splits a field that runs round the join at different places from different prompts, and moved, the
+    two halves meet a few px apart or not at all (river's lit field in the GPU run of r374: lint (e), seam 76). A row
+    whose moved end finds its band again within reach px of the other end is closed across (mend_join) first; a field
+    still at more than few differing rows is dropped (SAM's masks are hatched at their edge: a row or two never close),
+    one round at a time, as a dropped field can mend another's end."""
+    fields = list(fields)
+    while True:
+        out = mend_join(objects(L, fields, n, most=FIELD_MOST), L)
+        differ = out[:, 0] != out[:, -1]
+        bad = [i for i, m in enumerate(fields) if (differ & (m[:, 0] | m[:, -1])).sum() > few]
+        if not bad:
+            return out
+        fields = [m for i, m in enumerate(fields) if i not in bad]
+
+
+def mend_join(out, before, reach=32):
+    """out with each row whose two ends differ, one of them moved from before, given the moved end's band from the
+    other end inward up to where that band starts again, when it does within reach px; in place."""
+    w = out.shape[1]
+    for r in np.nonzero(out[:, 0] != out[:, -1])[0]:
+        moved = (out[r, 0] != before[r, 0], out[r, -1] != before[r, -1])
+        if moved[0] == moved[1]:
             continue
-        on = np.nonzero(np.bincount(L[m], minlength=n) >= least * area)[0]
-        if len(on) != 2 or on[1] - on[0] != 1:
-            continue
-        ys = np.nonzero(m.any(axis=1))[0]
-        foot = m & (rows >= ys[-1] - max(2, (ys[-1] - ys[0]) // 7))
-        out[m] = np.bincount(L[foot], minlength=n).argmax()
+        band = out[r, 0] if moved[0] else out[r, -1]
+        inward = np.arange(w - 1, w - 1 - reach, -1) if moved[0] else np.arange(reach)
+        at = np.nonzero(out[r, inward] == band)[0]
+        if len(at):
+            out[r, inward[:at[0]]] = band
     return out
 
 
@@ -627,6 +778,9 @@ def depth_bands(img, n, cut):
     masks = masks_of(img)
     L = objects(L, masks, n)
     outlines(img, masks).save(os.path.join(cut, "objects.png"))
+    fields = agreeing(L, fields_of(img, L, n), n)
+    L = with_fields(L, fields, n)
+    outlines(img, fields).save(os.path.join(cut, "fields.png"))
     L = by_colour(L, img, n)
     L = see_through(L, dn, centres, img, n)
     L = strays(L, n, w * h // 150)

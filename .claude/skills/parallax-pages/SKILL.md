@@ -187,7 +187,8 @@ its top row, a creature, or no trees) stops the run: another `--seed`.
 When the art is one flat painting, not layers, `tools/depth-page.sh` cuts it into a page by its depth
 (`docs/depth-tricks.md` §5): Depth Anything V2 Small (Apache-2.0, in `~/.cache/huggingface`, Simon's pick) gives each
 pixel a depth, `--layers` depth bands become the layers, SAM 2.1 small (Apache-2.0, ~180 MB in `~/.cache/huggingface`,
-r360) outlines each pine and hill so that a band's edge does not cut one in two, and dreamshaper_8's inpainting model
+r360) outlines each pine and hill so that a band's edge does not cut one in two, and each field a band's edge would
+cut in a straight line across its grass (r374), and dreamshaper_8's inpainting model
 (`dreamshaper_8Inpainting.safetensors` in `~/ComfyUI/models/checkpoints`, r315) repaints what each band hid. About 3 min.
 
 ```bash
@@ -202,7 +203,8 @@ median depth (front `--front-speed` 0.08, none under a twentieth of it); the bac
 `--theme` is the repaint's prompt: say what the painting shows.
 
 Look at `OUT/cut/sheet.png` (the painting, its depth, its bands, each layer before and after the repaint), at
-`OUT/cut/objects.png` (SAM's masks: a thing it did not outline can still be cut by a band's edge) and at the
+`OUT/cut/objects.png` (SAM's masks: a thing it did not outline can still be cut by a band's edge),
+`OUT/cut/fields.png` (the fields it was prompted for, where a cut ran through one surface) and at the
 frames at 6 and 12 s, where the layers have slid apart: a repaint is seen everywhere a nearer thing stood once the
 camera moves. What it gets wrong: a repainted patch darker or brighter than the painting round it (`--denoise`, 0.8
 by default; 0.9 invents more, a rock spire in a trunk's place); a nearer band's edge cut

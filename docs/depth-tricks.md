@@ -153,7 +153,10 @@ displacement shader on one image and its depth map is the other way, and the cos
   soft band at a repaired join, birds and brighter patches; one with a noise mask, a pale veil). A band's edge runs
   where the depth crosses a threshold, through a pine clump's crowns; SAM 2.1 small's masks give a thing the edge cuts
   whole to the band at its foot (r360: snapping the edge to the painting's colour edges failed on the brushwork,
-  `tools/r360-band-edges/geodesic.py`). The sky between a crown's branches, blurred to near by depth, goes back to
+  `tools/r360-band-edges/geodesic.py`). A field down a slope, which no automatic mask holds whole, is found by SAM
+  prompted with two points across the cut and goes whole to the band at its foot, so its layer ends on the field's own
+  edge, a shadow, a hedge, a bank (r374, `fields_of`; snapping the cut to the nearest edge row failed there: no edge
+  within 40 rows of the river's near field, `tools/r374-field-cuts/fields.py` compares the cuts). The sky between a crown's branches, blurred to near by depth, goes back to
   the farther band where depth half saw it and its colour is that band's (r361, `see_through`; counted by
   `tools/r279-depth-page/see_through.py`): kept, the front layer carries it opaque over the scene behind. Each step that
   looks across the painting (the depth, the islands, the fill) runs on it laid three times side by side, or a band's
