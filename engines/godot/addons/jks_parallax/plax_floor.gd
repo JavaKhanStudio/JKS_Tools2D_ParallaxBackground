@@ -85,10 +85,10 @@ static func planted_speed_on(floor: Dictionary, l: Dictionary, world_height: flo
 
 
 ## ParallaxLayer.getFootY: where a layer stands, its decal, and over it the rows an atlas trimmed off an IMAGE or SHADER
-## layer's image's bottom.
+## layer's image's bottom (a LURKER's too: drawn as an IMAGE layer).
 static func foot_y(l: Dictionary, world_height: float) -> float:
 	var foot: float = l.model.decal_Y_Ratio * (world_height / 100.0)
-	if l.model.kind == "IMAGE" or l.model.kind == "SHADER":
+	if l.model.kind in ["IMAGE", "SHADER", "LURKER"]:
 		foot += l.height * ((1 - l.trim_bottom - l.packed_h) if l.model.flipY else l.trim_bottom)
 	return foot
 

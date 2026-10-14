@@ -339,7 +339,7 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 			_add_canvas(sequence)
 			built.append(sequence)
 			continue
-		if model.kind != "IMAGE" and model.kind != "SHADER" and model.kind != "FLOOR":
+		if not model.kind in ["IMAGE", "SHADER", "FLOOR", "LURKER"]:
 			var e := {"model": model, "region": {}, "distance_x": 0.0, "distance_y": 0.0}
 			if model.kind == "PARTICLES":
 				e.scene = _particles.scene_of(model, from_page, from_atlas, i)
@@ -370,7 +370,7 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		l.haze = 0.0 if l.model.kind == "EMPTY" or l.model.kind == "PARTICLES" \
 				else PlaxEffects.fog_of(from_page.fog_strength, front, l.model)
 		l.fog_color = Vector3(from_page.fog_color.r, from_page.fog_color.g, from_page.fog_color.b)
-		if l.haze > 0 and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "FLOOR"):
+		if l.haze > 0 and l.model.kind in ["IMAGE", "SEQUENCE", "FLOOR", "LURKER"]:
 			l.canvas.material = PlaxEffects.material("PLAIN")
 	return built
 
@@ -720,14 +720,14 @@ func _share_of(l: Dictionary) -> float:
 ## Whether a dissolve draws the layer through its mask now: an IMAGE, SEQUENCE, SHADER or FLOOR one, during a dissolve.
 func _masked(l: Dictionary) -> bool:
 	return (not transfer_layers.is_empty() and _style != null and _style.kind == "DISSOLVE"
-			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER" or l.model.kind == "FLOOR"))
+			and l.model.kind in ["IMAGE", "SEQUENCE", "SHADER", "FLOOR", "LURKER"])
 
 
 ## Whether a transfert through a colour or a fog creep mixes the layer toward it now: an IMAGE, SEQUENCE, SHADER or
 ## FLOOR one, during one.
 func _graded(l: Dictionary) -> bool:
 	return (not transfer_layers.is_empty() and _style != null and _style.grades()
-			and (l.model.kind == "IMAGE" or l.model.kind == "SEQUENCE" or l.model.kind == "SHADER" or l.model.kind == "FLOOR"))
+			and l.model.kind in ["IMAGE", "SEQUENCE", "SHADER", "FLOOR", "LURKER"])
 
 
 ## Takes the dissolve's mask and the colour's grade off `page`'s layers: the PLAIN material either gave a layer that had

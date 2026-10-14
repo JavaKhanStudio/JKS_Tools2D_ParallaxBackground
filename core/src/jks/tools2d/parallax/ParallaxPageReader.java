@@ -766,8 +766,8 @@ public class ParallaxPageReader implements Disposable
 		ParallaxLayer near = incoming ? transferNearTower : nearTower;
 		float panorama = panoramaRadiusOf(near, layer);
 		// Round the page's planet: its tiles and its mirrored copy cut in strips, each wrapped round it. Not a floor, a
-		// tower or a panorama.
-		float planet = layer.kind == Enum_LayerKind.FLOOR || tower || panorama > 0 ? 0 : planetInView(incoming);
+		// tower or a panorama, nor a lurker (drawn flat until asked, docs/lurker-layers.md).
+		float planet = layer.kind == Enum_LayerKind.FLOOR || layer.kind == Enum_LayerKind.LURKER || tower || panorama > 0 ? 0 : planetInView(incoming);
 		if (panorama > 0)
 		{
 			// At its own scale: the camera's distance to the tower's front, f, over the panorama's middle's, D + R.

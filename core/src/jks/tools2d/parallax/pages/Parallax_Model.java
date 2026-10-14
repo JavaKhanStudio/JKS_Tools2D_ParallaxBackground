@@ -100,6 +100,23 @@ public class Parallax_Model
 	 */
 	public float towerCamera;
 
+	/**
+	 * Where a LURKER layer's draws start, as {@link #sequenceSeed} does (0 starts from SequenceCycle's zero seed). Stored
+	 * since format 15.
+	 */
+	public int lurkerSeed;
+	/**
+	 * After a LURKER layer's figure has gone, each later sighting has 1 chance in this of showing it; 1 at least.
+	 * Stored since format 15, 3 before.
+	 */
+	public int lurkerOdds = 3;
+	/**
+	 * Where the layers in front of a LURKER layer cover its figure wholly, worked out by the editor when it saves:
+	 * triplets (how many layers in front of the lurker that layer is, from, to), the relative offset in world units of
+	 * the page's saved world. Empty: the figure switches only outside the view. Stored since format 15.
+	 */
+	public float[] lurkerCover = new float[0];
+
 	public boolean isFlipX()
 	{return flipX;}
 
@@ -274,6 +291,24 @@ public class Parallax_Model
 
 	public void setTowerCamera(float towerCamera)
 	{this.towerCamera = towerCamera;}
+
+	public int getLurkerSeed()
+	{return lurkerSeed;}
+
+	public void setLurkerSeed(int lurkerSeed)
+	{this.lurkerSeed = lurkerSeed;}
+
+	public int getLurkerOdds()
+	{return lurkerOdds;}
+
+	public void setLurkerOdds(int lurkerOdds)
+	{this.lurkerOdds = lurkerOdds;}
+
+	public float[] getLurkerCover()
+	{return lurkerCover;}
+
+	public void setLurkerCover(float[] lurkerCover)
+	{this.lurkerCover = lurkerCover;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

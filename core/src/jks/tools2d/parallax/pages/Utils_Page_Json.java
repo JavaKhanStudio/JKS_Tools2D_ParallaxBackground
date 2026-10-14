@@ -143,6 +143,16 @@ public final class Utils_Page_Json
 		layer.towerRadius = readFloat(json, "towerRadius", layer.towerRadius);
 		layer.towerShade = readFloat(json, "towerShade", layer.towerShade);
 		layer.towerCamera = readFloat(json, "towerCamera", layer.towerCamera);
+		layer.lurkerSeed = json.getInt("lurkerSeed", layer.lurkerSeed);
+		layer.lurkerOdds = json.getInt("lurkerOdds", layer.lurkerOdds);
+		JsonValue cover = json.get("lurkerCover");
+		if (cover != null && cover.isArray())
+		{
+			layer.lurkerCover = new float[cover.size];
+			int i = 0;
+			for (JsonValue value = cover.child; value != null; value = value.next)
+				layer.lurkerCover[i++] = Float.intBitsToFloat(Float.floatToIntBits(value.asFloat()));
+		}
 		return layer;
 	}
 

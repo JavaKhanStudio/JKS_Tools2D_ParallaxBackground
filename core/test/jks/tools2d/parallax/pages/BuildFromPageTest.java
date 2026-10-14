@@ -2,6 +2,7 @@ package jks.tools2d.parallax.pages;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.nio.file.Path;
@@ -91,6 +92,10 @@ class BuildFromPageTest
 		Parallax_Model floor = PlaxFormatTest.floorLayer();
 		floor.regionName = "sky";
 		page.pageModel.pageList.add(floor);
+
+		Parallax_Model lurker = PlaxFormatTest.lurkerLayer();
+		lurker.regionName = "snowflake";
+		page.pageModel.pageList.add(lurker);
 		return page;
 	}
 
@@ -147,6 +152,12 @@ class BuildFromPageTest
 		assertEquals(12.5f, saved.pageModel.pageList.get(0).towerRadius, "the tower's radius");
 		assertEquals(0.4f, saved.pageModel.pageList.get(0).towerShade, "and its shade");
 		assertEquals(3.3f, saved.pageModel.pageList.get(0).towerCamera, "and where its camera stands");
+		assertEquals(Enum_LayerKind.LURKER, saved.pageModel.pageList.get(6).kind);
+		assertEquals(-1640531527, saved.pageModel.pageList.get(6).lurkerSeed, "the lurker's seed");
+		assertEquals(5, saved.pageModel.pageList.get(6).lurkerOdds, "its odds");
+		assertEquals(6, saved.pageModel.pageList.get(6).lurkerCover.length, "and its cover");
+		assertNotSame(page.preloadValue.get(6).getLurkerCover(), saved.pageModel.pageList.get(6).lurkerCover,
+				"saved as a copy: the editor works the layer's cover out again at its next save");
 	}
 
 	/** A layer in front of a floor moves at the speed the reader plants it at, and saves the speed it was given. */
@@ -162,10 +173,10 @@ class BuildFromPageTest
 		ParallaxPageReader reader = new ParallaxPageReader();
 		reader.addLayers(page.preloadValue);
 		reader.act(1 / 60f, 10, 0);
-		assertEquals(0.06f, page.preloadValue.get(6).getActingSpeedX(), 1e-6f, "standing at the floor's foot: its bottom row's speed");
+		assertEquals(0.06f, page.preloadValue.get(7).getActingSpeedX(), 1e-6f, "standing at the floor's foot: its bottom row's speed");
 
 		assertSameLayers(page, saved(page));
-		assertEquals(0.04f, saved(page).pageModel.pageList.get(6).parallaxScalingSpeedX);
+		assertEquals(0.04f, saved(page).pageModel.pageList.get(7).parallaxScalingSpeedX);
 	}
 
 	/** A game's seed redraws the cycle on screen, never the seed the editor saves. */

@@ -1,5 +1,6 @@
 package jks.tools2d.parallax.pages;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -119,6 +120,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(shaderLayer());
 		original.pageModel.pageList.add(sequenceLayer());
 		original.pageModel.pageList.add(floorLayer());
+		original.pageModel.pageList.add(lurkerLayer());
 		original.pageModel.pageList.get(1).towerRadius = 12.5f;
 		original.pageModel.pageList.get(1).towerShade = 0.3f;
 		original.pageModel.pageList.get(1).towerCamera = 3.3f;
@@ -134,14 +136,14 @@ class PlaxFormatTest
 		assertTrue(reread.pageModel.pageList.get(0).flipY, "flipY is stored since format 2");
 		assertTrue(reread.pageModel.pageList.get(0).mirror, "mirror is stored since format 3");
 		assertTrue(reread.useOriginalSize, "useOriginalSize is stored since format 4");
-		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 5);
+		Parallax_Model slot = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 6);
 		assertEquals(Enum_LayerKind.EMPTY, slot.kind, "kind is stored since format 5");
 		assertEquals("birds", slot.name, "name is stored since format 5");
-		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 4);
+		Parallax_Model snow = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 5);
 		assertEquals("effects/snow.p", snow.particlesLibgdx, "the libGDX effect is stored since format 6");
 		assertEquals("effects/snow.tscn", snow.particlesGodot, "the Godot scene is stored since format 6");
 		assertEquals(Enum_ParticleAnchor.VIEW, snow.particlesAnchor, "the anchor is stored since format 6");
-		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
+		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 4);
 		assertEquals(Enum_LayerKind.SHADER, fog.kind, "SHADER is a kind since format 7");
 		assertEquals(Enum_ShaderEffect.FOG, fog.shaderEffect, "the effect is stored since format 7");
 		assertEquals(0.6f, fog.shaderAmplitude, "its amplitude");
@@ -150,14 +152,14 @@ class PlaxFormatTest
 		assertEquals(0, fog.shaderHaze, "its depth haze is no longer stored since format 10");
 		assertEquals(0.25f, reread.getFogStrength(), "it is the page's fog's strength, stored since format 10");
 		assertEquals(new Color(0.2f, 0.3f, 0.5f, 1), reread.fogColor, "and the fog's colour");
-		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
+		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
 		assertEquals(Enum_LayerKind.SEQUENCE, ground.kind, "SEQUENCE is a kind since format 8");
 		assertEquals(3, ground.sequenceSegments.size(), "the segments are stored since format 8");
 		assertEquals("parallax3", ground.sequenceSegments.get(1).regionName, "a segment's region");
 		assertEquals(50, ground.sequenceSegments.get(1).weight, "and its weight");
 		assertEquals(-1640531527, ground.sequenceSeed, "the seed, negative ones too");
 		assertEquals(24, ground.sequenceLength, "the cycle's length");
-		Parallax_Model floor = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		Parallax_Model floor = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 2);
 		assertEquals(Enum_LayerKind.FLOOR, floor.kind, "FLOOR is a kind since format 11");
 		assertEquals(Enum_FloorMapping.LINE_SCROLL, floor.floorMapping, "the mapping is stored since format 11");
 		assertEquals(0.016f, floor.floorTopSpeed, "the top row's speed");
@@ -167,6 +169,51 @@ class PlaxFormatTest
 		assertEquals(0.3f, reread.pageModel.pageList.get(1).towerShade, "and its shade");
 		assertEquals(650, reread.planetRadius, "the page's planet is stored since format 13");
 		assertEquals(3.3f, reread.pageModel.pageList.get(1).towerCamera, "a tower's camera is stored since format 14");
+		Parallax_Model lurker = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals(Enum_LayerKind.LURKER, lurker.kind, "LURKER is a kind since format 15");
+		assertEquals(-1640531527, lurker.lurkerSeed, "its seed is stored since format 15, negative ones too");
+		assertEquals(5, lurker.lurkerOdds, "and its odds");
+		assertArrayEquals(new float[] { 1, 0.25f, 3.5f, 2, -4, 1.75f }, lurker.lurkerCover, "and where it is covered");
+	}
+
+	/** A LURKER layer: a figure the nearer layers hide, with its draws' seed, its odds and where it is covered. */
+	static Parallax_Model lurkerLayer()
+	{
+		Parallax_Model lurker = new Parallax_Model();
+		lurker.kind = Enum_LayerKind.LURKER;
+		lurker.regionName = "parallax2";
+		lurker.name = "hooded";
+		lurker.lurkerSeed = -1640531527;
+		lurker.lurkerOdds = 5;
+		lurker.lurkerCover = new float[] { 1, 0.25f, 3.5f, 2, -4, 1.75f };
+		lurker.sizeRatio = 0.2f;
+		lurker.padX = 30;
+		lurker.parallaxScalingSpeedX = 0.032f;
+		return lurker;
+	}
+
+	/** Format 14 has no lurker fields: written there, a layer reads seed 0, odds 3 and no cover. */
+	@Test
+	void format14FilesStillLoadWithoutLurkerFields() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.get(1).towerCamera = 3.3f;
+		original.pageModel.pageList.get(1).lurkerSeed = 9;
+		original.pageModel.pageList.get(1).lurkerOdds = 5;
+		original.pageModel.pageList.get(1).lurkerCover = new float[] { 1, 0, 2 };
+
+		byte[] written = write(original, 14);
+		assertEquals(14, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		assertEquals(3.3f, reread.pageModel.pageList.get(1).towerCamera, "format 14 has the tower's camera");
+		assertEquals(0, reread.pageModel.pageList.get(1).lurkerSeed, "and no lurker seed");
+		assertEquals(3, reread.pageModel.pageList.get(1).lurkerOdds, "the default odds");
+		assertEquals(0, reread.pageModel.pageList.get(1).lurkerCover.length, "no cover");
+		original.pageModel.pageList.get(1).lurkerSeed = 0;
+		original.pageModel.pageList.get(1).lurkerOdds = 3;
+		original.pageModel.pageList.get(1).lurkerCover = new float[0];
+		assertPageEquals(original, reread);
 	}
 
 	/** Format 13 has no tower camera: written there, a tower reads 0 (seen from far away). */
@@ -563,6 +610,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.add(5, shaderLayer());
 		original.pageModel.pageList.add(6, sequenceLayer());
 		original.pageModel.pageList.add(7, floorLayer());
+		original.pageModel.pageList.add(8, lurkerLayer());
 		original.pageModel.pageList.get(0).towerRadius = 12.5f;
 		original.pageModel.pageList.get(0).towerShade = 0.3f;
 		original.pageModel.pageList.get(0).towerCamera = 3.3f;
@@ -652,6 +700,9 @@ class PlaxFormatTest
 			assertEquals(expected.towerRadius, actual.towerRadius, name);
 			assertEquals(expected.towerShade, actual.towerShade, name);
 			assertEquals(expected.towerCamera, actual.towerCamera, name);
+			assertEquals(expected.lurkerSeed, actual.lurkerSeed, name);
+			assertEquals(expected.lurkerOdds, actual.lurkerOdds, name);
+			assertArrayEquals(expected.lurkerCover, actual.lurkerCover, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

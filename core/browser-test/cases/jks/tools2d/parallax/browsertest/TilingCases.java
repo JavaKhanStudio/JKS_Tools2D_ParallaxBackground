@@ -4,11 +4,13 @@ import static jks.tools2d.parallax.browsertest.Check.equal;
 import static jks.tools2d.parallax.browsertest.Check.isFalse;
 import static jks.tools2d.parallax.browsertest.Check.isTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 
 /**
  * ParallaxPageReader's cases on tiling: a layer tiled just enough to cover the camera view, its stripped regions,
@@ -24,7 +26,38 @@ final class TilingCases extends ReaderFixtures
 				new BrowserCase("reader: strippedRegionKeepsItsOriginalHeightWhenTilingOnY", () -> new TilingCases().strippedRegionKeepsItsOriginalHeightWhenTilingOnY()),
 				new BrowserCase("reader: strippedRegionIsStretchedWhenThePageSaysSo", () -> new TilingCases().strippedRegionIsStretchedWhenThePageSaysSo()),
 				new BrowserCase("reader: mirrorStacksAFlippedStripAcrossTheTiledOne", () -> new TilingCases().mirrorStacksAFlippedStripAcrossTheTiledOne()),
-				new BrowserCase("reader: negativePaddingLargerThanTheImageDoesNotHang", () -> new TilingCases().negativePaddingLargerThanTheImageDoesNotHang()));
+				new BrowserCase("reader: negativePaddingLargerThanTheImageDoesNotHang", () -> new TilingCases().negativePaddingLargerThanTheImageDoesNotHang()),
+				new BrowserCase("reader: aLurkerLayerDrawsAsAnImageLayer", () -> new TilingCases().aLurkerLayerDrawsAsAnImageLayer()));
+	}
+
+	/** Until the reader draws its sightings (docs/lurker-layers.md phase 3), a LURKER layer is an IMAGE layer, always there. */
+	void aLurkerLayerDrawsAsAnImageLayer()
+	{
+		boolean[][] modes = { { true, false }, { false, true }, { true, true }, { false, false } };
+		for (boolean[] mode : modes)
+		{
+			List<float[]> image = drawsOf(Enum_LayerKind.IMAGE, mode[0], mode[1]);
+			List<float[]> lurker = drawsOf(Enum_LayerKind.LURKER, mode[0], mode[1]);
+			String repeat = "repeat X " + mode[0] + ", Y " + mode[1];
+			isTrue(!image.isEmpty(), repeat + ": the image layer draws");
+			equal(image.size(), lurker.size(), repeat + ": draws");
+			for (int i = 0; i < image.size(); i++)
+				for (int k = 0; k < 4; k++)
+					equal(Float.floatToIntBits(image.get(i)[k]), Float.floatToIntBits(lurker.get(i)[k]), repeat + ": draw " + i + "[" + k + "]");
+		}
+	}
+
+	private List<float[]> drawsOf(Enum_LayerKind kind, boolean onX, boolean onY)
+	{
+		ParallaxPageReader reader = reader(onX, onY);
+		ParallaxLayer layer = new ParallaxLayer(kind, new ArrayList<>(Arrays.asList(region(400, 800))), true, 40, 0.032f, 0.02f, 0.1f);
+		layer.setPadX(6);
+		layer.setDecalPercentY(10);
+		reader.addLayers(list(layer));
+		draws.clear();
+		reader.act(1 / 60f, 500, 30);
+		reader.draw(camera, batch);
+		return new ArrayList<>(draws);
 	}
 
 	void tilesJustEnoughToCoverTheView()

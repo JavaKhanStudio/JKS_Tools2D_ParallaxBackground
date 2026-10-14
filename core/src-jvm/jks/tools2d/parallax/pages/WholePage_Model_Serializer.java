@@ -39,13 +39,15 @@ import com.esotericsoftware.kryo.io.Output;
  * 0: no layer is bent round a planet.</li>
  * <li>version 14: the version 13 layout with each layer's towerCamera (a float) stored after towerShade. Older files
  * read 0: a tower's courses are straight and the page behind it flat.</li>
+ * <li>version 15: the version 14 layout with each layer's lurkerSeed and lurkerOdds (ints) and lurkerCover (a count, a
+ * varint, then its floats) stored after towerCamera. Older files read 0, 3 and none, and have no LURKER layer.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 14;
+	static final int CURRENT_VERSION = 15;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

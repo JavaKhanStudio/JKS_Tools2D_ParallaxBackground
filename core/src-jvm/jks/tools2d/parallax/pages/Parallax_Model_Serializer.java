@@ -90,6 +90,16 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		if (WholePage_Model_Serializer.currentVersion(kryo) >= 14)
 			output.writeFloat(model.towerCamera);
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 15)
+		{
+			output.writeInt(model.lurkerSeed);
+			output.writeInt(model.lurkerOdds);
+			int cover = model.lurkerCover == null ? 0 : model.lurkerCover.length;
+			output.writeVarInt(cover, true);
+			for (int i = 0; i < cover; i++)
+				output.writeFloat(model.lurkerCover[i]);
+		}
 	}
 
 	@Override
@@ -184,6 +194,15 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		if (WholePage_Model_Serializer.currentVersion(kryo) >= 14)
 			model.towerCamera = input.readFloat();
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 15)
+		{
+			model.lurkerSeed = input.readInt();
+			model.lurkerOdds = input.readInt();
+			model.lurkerCover = new float[input.readVarInt(true)];
+			for (int i = 0; i < model.lurkerCover.length; i++)
+				model.lurkerCover[i] = input.readFloat();
+		}
 
 		return model;
 	}

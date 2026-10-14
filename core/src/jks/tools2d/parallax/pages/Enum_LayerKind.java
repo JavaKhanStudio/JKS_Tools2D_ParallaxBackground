@@ -37,4 +37,11 @@ public enum Enum_LayerKind
 	 * foot. See {@link Enum_FloorMapping}, docs/depth-tricks.md §1.
 	 */
 	FLOOR,
+	/**
+	 * A figure the nearer layers hide (format 15): an atlas region tiled as an IMAGE layer's, seen in their gaps, and
+	 * gone from the next gap after it has been seen; there again by chance, from {@link Parallax_Model#lurkerSeed} and
+	 * {@link Parallax_Model#lurkerOdds}, while {@link Parallax_Model#lurkerCover} says where it is wholly hidden.
+	 * Drawn as an IMAGE layer, always there, until the reader draws its sightings (docs/lurker-layers.md).
+	 */
+	LURKER,
 }

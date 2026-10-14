@@ -116,6 +116,36 @@ class ParallaxLayerTest
 		assertEquals(7, copy.getCurrentDistanceX());
 	}
 
+	/** A LURKER layer's copy is a lurker, with its seed, its odds and its cover. */
+	@Test
+	void aLurkerLayerClonesAsALurker()
+	{
+		ParallaxLayer layer = new ParallaxLayer(Enum_LayerKind.LURKER, new ArrayList<>(List.of(region(200, 400))), true, 40, 0.032f, 0, 0.1f);
+		float[] cover = { 1, 0.25f, 3.5f };
+		layer.setLurker(-7, 5, cover);
+		layer.setCurrentDistanceX(7);
+
+		ParallaxLayer copy = layer.clone();
+
+		assertSame(Enum_LayerKind.LURKER, copy.getKind());
+		assertEquals(layer.getTexRegion(), copy.getTexRegion());
+		assertEquals(layer.getWidth(), copy.getWidth());
+		assertEquals(-7, copy.getLurkerSeed());
+		assertEquals(5, copy.getLurkerOdds());
+		assertSame(cover, copy.getLurkerCover());
+		assertEquals(7, copy.getCurrentDistanceX());
+	}
+
+	/** Odds below 1 would never show the figure, or divide by 0: kept at 1. No cover is an empty one, never null. */
+	@Test
+	void lurkerOddsAreOneAtLeast()
+	{
+		ParallaxLayer layer = new ParallaxLayer(Enum_LayerKind.LURKER, new ArrayList<>(List.of(region(200, 400))), true, 40, 0.032f, 0, 0.1f);
+		layer.setLurker(0, 0, null);
+		assertEquals(1, layer.getLurkerOdds());
+		assertEquals(0, layer.getLurkerCover().length);
+	}
+
 	/** A SEQUENCE layer's copy draws the same cycle, from arrays of its own: a game's seed redraws one in place. */
 	@Test
 	void aSequenceLayerClonesItsCycle()

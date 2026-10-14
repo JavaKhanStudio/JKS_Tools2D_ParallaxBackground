@@ -79,6 +79,9 @@ public final class Utils_Page
 		model.towerRadius = page.getTowerRadius();
 		model.towerShade = page.getTowerShade();
 		model.towerCamera = page.getTowerCamera();
+		model.lurkerSeed = page.getLurkerSeed();
+		model.lurkerOdds = page.getLurkerOdds();
+		model.lurkerCover = page.getLurkerCover().clone();
 		return model;
 	}
 }

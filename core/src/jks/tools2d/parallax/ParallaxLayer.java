@@ -96,6 +96,13 @@ public class ParallaxLayer
 	 * and {@link Parallax_Model#towerCamera}.
 	 */
 	private float towerRadius, towerShade = Parallax_Model.DEFAULT_TOWER_SHADE, towerCamera;
+
+	/**
+	 * A LURKER layer's seed, odds and cover: see {@link Parallax_Model#lurkerSeed}, {@link Parallax_Model#lurkerOdds} and
+	 * {@link Parallax_Model#lurkerCover}. Kept on every kind.
+	 */
+	private int lurkerSeed, lurkerOdds = 3;
+	private float[] lurkerCover = new float[0];
 	/** The strip of the image a tower's piece draws, set before each piece's draw; made once, with the regions. */
 	private TextureRegion towerStrip;
 
@@ -244,12 +251,13 @@ public class ParallaxLayer
 		return layer;
 	}
 
-	/** True for the kinds that draw a region: IMAGE, SHADER, SEQUENCE and FLOOR. */
+	/** True for the kinds that draw a region: IMAGE, SHADER, SEQUENCE, FLOOR and LURKER. */
 	public boolean drawsImage()
 	{return drawsImage(kind);}
 
 	private static boolean drawsImage(Enum_LayerKind kind)
-	{return kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER || kind == Enum_LayerKind.SEQUENCE || kind == Enum_LayerKind.FLOOR;}
+	{return kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER || kind == Enum_LayerKind.SEQUENCE || kind == Enum_LayerKind.FLOOR
+			|| kind == Enum_LayerKind.LURKER;}
 
 	/**
 	 * A FLOOR layer: {@code region} in an image layer's box, {@code worldDimension} wide, drawn as {@code rows} rows from
@@ -304,6 +312,7 @@ public class ParallaxLayer
 		setFloor(model.floorMapping, model.floorTopSpeed, model.floorRows, model.floorHeight);
 		setTower(model.towerRadius, model.towerShade);
 		setTowerCamera(model.towerCamera);
+		setLurker(model.lurkerSeed, model.lurkerOdds, model.lurkerCover);
 	}
 
 	public void resetPosition()
@@ -445,6 +454,10 @@ public class ParallaxLayer
 		copy.towerRadius = towerRadius;
 		copy.towerShade = towerShade;
 		copy.towerCamera = towerCamera;
+		copy.lurkerSeed = lurkerSeed;
+		copy.lurkerOdds = lurkerOdds;
+		// Replaced, never changed: shared.
+		copy.lurkerCover = lurkerCover;
 		// Set before each piece is drawn, and read by the batch at once: shared.
 		copy.towerStrip = towerStrip;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
@@ -1129,6 +1142,26 @@ public class ParallaxLayer
 	public void setTowerCamera(float camera)
 	{towerCamera = camera;}
 
+	/** Where a LURKER layer's draws start ({@link Parallax_Model#lurkerSeed}). Kept on every kind. */
+	public int getLurkerSeed()
+	{return lurkerSeed;}
+
+	/** After a LURKER layer's figure has gone, each later sighting shows it by 1 chance in this, 1 at least. */
+	public int getLurkerOdds()
+	{return lurkerOdds;}
+
+	/** Where the layers in front of a LURKER layer cover it wholly ({@link Parallax_Model#lurkerCover}); never null. */
+	public float[] getLurkerCover()
+	{return lurkerCover;}
+
+	/** Sets a LURKER layer's seed, its odds (1 at least) and its cover (null: none). The cover is kept, not copied. */
+	public void setLurker(int seed, int odds, float[] cover)
+	{
+		lurkerSeed = seed;
+		lurkerOdds = Math.max(1, odds);
+		lurkerCover = cover == null ? new float[0] : cover;
+	}
+
 	/** True when this is a tower seen from close by: its courses arc, and its page's slower layers wrap round it. */
 	public boolean isNearTower()
 	{return isTower() && towerCamera > 1;}
@@ -1252,7 +1285,7 @@ public class ParallaxLayer
 	public float getFootY()
 	{
 		float foot = decalPercentY * (worldHeight / 100);
-		if (kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER)
+		if (kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER || kind == Enum_LayerKind.LURKER)
 			foot += getRegionHeight() * (flipY ? 1 - trimBottom - packedHeightRatio : trimBottom);
 		return foot;
 	}

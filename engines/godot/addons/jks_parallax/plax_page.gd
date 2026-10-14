@@ -14,11 +14,13 @@ const LAYER_DEFAULTS := {
 	"sequenceSegments": [], "sequenceSeed": 0, "sequenceLength": 16,
 	"floorMapping": "MODE7", "floorTopSpeed": 0.0, "floorRows": 96, "floorHeight": 0.0,
 	"towerRadius": 0.0, "towerShade": 0.65, "towerCamera": 0.0,
+	"lurkerSeed": 0, "lurkerOdds": 3, "lurkerCover": [],
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
 ## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects, a SEQUENCE
-## layer's cycle drawn by draw_cycle, a FLOOR layer's rows by PlaxFloor.draw.
-const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER", "SEQUENCE", "FLOOR"]
+## layer's cycle drawn by draw_cycle, a FLOOR layer's rows by PlaxFloor.draw, a LURKER layer as an IMAGE one, always
+## there (its sightings are docs/lurker-layers.md's phase 4).
+const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER", "SEQUENCE", "FLOOR", "LURKER"]
 ## How a FLOOR layer's rows map its image (Enum_FloorMapping).
 const FLOOR_MAPPINGS := ["MODE7", "LINE_SCROLL"]
 ## What a seed of 0 starts from (SequenceCycle.ZERO_SEED): xorshift never leaves 0.
