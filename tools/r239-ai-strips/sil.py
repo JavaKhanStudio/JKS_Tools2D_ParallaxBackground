@@ -5,6 +5,9 @@
 KIND: mountains | hills | pines | dunes | sea | ruins | palms (r239's examples: a beach, a post-apocalyptic city). Writes OUT_PREFIX_mask.png (white = the layer, antialiased) and
 OUT_PREFIX_init.png (the shape in flat colours over a flat sky), the start image diffusion paints over.
 img2img at 0.65 keeps much of that colour: --colour (hex) sets the layer's for a theme (r246).
+--texture 1 (r365) textures the fill of a kind whose SPEC has a "texture" (mountains, hills, sea, dunes): img2img
+paints detail only where its start has some, and a flat fill came out a flat bar. Its keys: amp (the noise's strength),
+aspect (its rows against its columns: the sea's thin streaks), light (the shape embossed), foot (darker toward it).
 --quiet-join turns the shape so the loop's join falls where its outline is flattest (a tree's flank there
 steps past what a SEQUENCE's joins may show); a variant (--edges-of) turns by its kept seed's, so it still fits.
 Every curve is a sum of sines of whole frequencies over the width, and every tree sits at a
@@ -20,16 +23,17 @@ from PIL import Image
 SPEC = {
     # base height (fraction of h from the bottom), sines (freq, amp, sharpen), colour, sky
     "mountains": {"base": 0.55, "waves": [(2, 0.10), (3, 0.08), (5, 0.05), (11, 0.012)],
-                  "ridge": True, "colour": (120, 140, 175), "sky": (210, 225, 240)},
+                  "ridge": True, "colour": (120, 140, 175), "sky": (210, 225, 240), "texture": {"amp": 1.5, "foot": 0.25}},
     "hills": {"base": 0.38, "waves": [(3, 0.07), (5, 0.04), (8, 0.02)],
-              "ridge": False, "colour": (70, 105, 95), "sky": (210, 225, 240)},
+              "ridge": False, "colour": (70, 105, 95), "sky": (210, 225, 240), "texture": {"amp": 1.2}},
     "pines": {"base": 0.16, "waves": [(2, 0.03), (5, 0.02)], "ridge": False, "trees": 70,
               "colour": (30, 50, 45), "sky": (210, 225, 240)},
     "dunes": {"base": 0.30, "waves": [(2, 0.05), (3, 0.04), (7, 0.012)], "ridge": False, "colour": (200, 175, 125),
-              "sky": (210, 225, 240)},
+              "sky": (210, 225, 240), "texture": {"light": 1.0, "amp": 1.5}},
     "ruins": {"base": 0.14, "waves": [(3, 0.02), (9, 0.01)], "ridge": False, "towers": 26, "colour": (60, 55, 55),
               "sky": (210, 225, 240)},
-    "sea": {"base": 0.22, "waves": [(17, 0.004), (29, 0.003)], "ridge": False, "colour": (70, 170, 170), "sky": (210, 225, 240)},
+    "sea": {"base": 0.22, "waves": [(17, 0.004), (29, 0.003)], "ridge": False, "colour": (70, 170, 170),
+            "sky": (210, 225, 240), "texture": {"aspect": 20, "light": 0.0, "amp": 3}},
     "palms": {"base": 0.05, "waves": [(2, 0.025), (5, 0.012)], "ridge": False, "palms": 9, "colour": (40, 50, 35),
               "sky": (210, 225, 240)},
 }
@@ -57,6 +61,7 @@ def main():
     ap.add_argument("--edge", type=int, default=96, help="kept px at each end, then as many to blend")
     ap.add_argument("--quiet-join", action="store_true", help="turn the shape: the join where the outline is flattest")
     ap.add_argument("--colour", help="the layer's colour in the init image, hex RRGGBB; default the kind's")
+    ap.add_argument("--texture", type=float, default=0, help="texture in the init's fill, 0 (flat, r239) to 1 (r365)")
     a = ap.parse_args()
     spec, w, h = SPEC[a.kind], a.w, a.h
     ss = 4  # supersample for antialiased edges
@@ -90,8 +95,55 @@ def main():
     shade = np.linspace(0.85, 1.1, h)[:, None, None]  # darker at the top of the layer, as haze lifts
     rgb = tuple(int(a.colour[i:i + 2], 16) for i in (0, 2, 4)) if a.colour else spec["colour"]
     col = np.array(rgb, np.float32) * shade
+    if a.texture and "texture" in spec:  # the front kinds paint detail from their outline (r365's l3v1 lost a crown)
+        col = col * texture(spec, np.random.default_rng(a.seed + 7), mask, a.texture)[..., None]
     init = sky * (1 - mask[..., None]) + col * mask[..., None]
     Image.fromarray(init.clip(0, 255).astype(np.uint8)).save(f"{a.out}_init.png")
+
+
+def noise(rng, w, h, cells, aspect):
+    """Value noise in -1..1 over (h, w): a random grid `cells` across, `cells * h / w * aspect` down (aspect > 1:
+    thin streaks along X, the sea's), smoothly interpolated; it wraps along X, so it loops with the shape."""
+    cy = max(2, round(cells * h / w * aspect))
+    grid = rng.uniform(-1, 1, (cy + 1, cells))
+    fx = np.arange(w) / w * cells
+    fy = np.arange(h) / h * cy
+    x0, y0 = np.floor(fx).astype(int), np.floor(fy).astype(int)
+    tx, ty = fx - x0, fy - y0
+    tx, ty = tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)
+    x1 = (x0 + 1) % cells
+    y1 = np.minimum(y0 + 1, cy)
+    a = grid[y0][:, x0] * (1 - tx) + grid[y0][:, x1] * tx
+    b = grid[y1][:, x0] * (1 - tx) + grid[y1][:, x1] * tx
+    return a * (1 - ty[:, None]) + b * ty[:, None]
+
+
+def soften(a, r):
+    """a box-blurred three times by r px (about a Gaussian), wrapping along X, clamped along Y."""
+    for _ in range(3):
+        p = np.concatenate([a[:, -r:], a, a[:, :r]], axis=1)
+        a = sum(p[:, i:i + a.shape[1]] for i in range(2 * r + 1)) / (2 * r + 1)
+        p = np.pad(a, [(r, r), (0, 0)], mode="edge")
+        a = sum(p[i:i + a.shape[0]] for i in range(2 * r + 1)) / (2 * r + 1)
+    return a
+
+
+def texture(spec, rng, mask, amount):
+    """A brightness factor round 1 for the init's fill (r365): img2img at 0.65 paints detail only where its start has
+    some, and a flat fill came out a flat bar (the beach's sea, sand and far mountains). Value noise at three scales,
+    the shape embossed, lit from the upper left (a peak's or a dune's two faces, a darker crest), and darker toward the
+    foot (a far range's; a haze toward the sky there made SD paint a sea). Wraps along X."""
+    t = spec.get("texture", {})
+    h, w = mask.shape
+    aspect = t.get("aspect", 1.0)
+    octaves = ((5, 0.09), (13, 0.06), (34, 0.035))  # cells across, strength
+    n = t.get("amp", 1.0) * sum(amp * noise(rng, w, h, cells, aspect) for cells, amp in octaves)
+    soft = soften(mask, max(2, h // 48))
+    down = np.pad(soft, [(3, 0), (0, 0)], mode="edge")[:-3] - np.pad(soft, [(0, 3), (0, 0)], mode="edge")[3:]
+    light = np.roll(soft, 3, axis=1) - np.roll(soft, -3, axis=1) + down
+    top = np.argmax(mask > 0.5, axis=0)  # the outline's row in each column
+    below = np.maximum(np.arange(h)[:, None] - top[None, :], 0) / max(1, h - int(top.min()))
+    return 1 + amount * (n + light * t.get("light", 0.6) - t.get("foot", 0.0) * below)
 
 
 def palms(spec, rng, W, H, top):

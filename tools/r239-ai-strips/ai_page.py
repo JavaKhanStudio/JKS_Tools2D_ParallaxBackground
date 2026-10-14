@@ -145,6 +145,10 @@ def model_of(a):
 
 
 TREES = 3.5  # roughness under which a pine strip has no trees in it
+# sil.py's init is a flat fill without it, and img2img at 0.65 paints detail only where its start has some: the beach's
+# sea, sand and far mountains came out plain bars (r365). 1: value noise, the shape embossed, the far kinds darker
+# toward the foot, the sea's noise in streaks.
+TEXTURE = 1.0
 
 
 DRY_RUN = False  # --dry-run: print each command instead of running it
@@ -288,7 +292,7 @@ class Pipeline:
             with open(prefix + "_seed.txt", "w") as f:  # what a kept strip was painted with: its variants' ends
                 f.write(str(seed))
         if run(["python3", f"{d}/sil.py", kind, prefix, "--w", str(self.w), "--h", str(self.h), "--seed", str(seed),
-                "--colour", self.cols[k], "--quiet-join"], prefix + "_sil.log"):
+                "--colour", self.cols[k], "--quiet-join", "--texture", str(TEXTURE)], prefix + "_sil.log"):
             sys.exit(f"sil.py failed: {prefix}_sil.log")
         if run(gen + ["--init", f"{prefix}_init.png", "--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
                prefix + "_gen.log"):
@@ -362,7 +366,7 @@ class Pipeline:
             return True
         size = ["--w", str(self.w), "--h", str(self.h)] if (self.w, self.h) != (1024, 384) else []
         run(["python3", f"{d}/sil.py", ks[front], p, *size, "--seed", str(vs), "--edges-of", str(seeds[front]),
-             "--colour", self.cols[front], "--quiet-join"], p + "_sil.log")
+             "--colour", self.cols[front], "--quiet-join", "--texture", str(TEXTURE)], p + "_sil.log")
         code = run([PY, f"{d}/gen.py", "variants", *self.model_args(denoise=False), "--src", f"{src}_ai.png",
                     "--init", f"{p}_init.png", "--tile", "x", "--n", "1", "--edge", "96", "--denoise", str(denoise),
                     "--seed", str(vs), "--negative",
@@ -434,7 +438,7 @@ class Pipeline:
                   "theme": a.theme, "style": a.style, "name": name, "seed": a.seed, "size": [self.w, self.h],
                   "model": self.model["label"], "ckpt": self.model["ckpt"], "lora": self.model["lora"],
                   "lora_strength": self.model["lora_strength"] if self.model["lora"] else None,
-                  "sampling": {k: self.model[k] for k in ("steps", "cfg", "sampler", "scheduler", "denoise")},
+                  "sampling": {k: self.model[k] for k in ("steps", "cfg", "sampler", "scheduler", "denoise")}, "texture": TEXTURE,
                   "page": f"page/{name}.jplax", "fogStrength": page.get("fogStrength", 0), "sky": list(sky),
                   "lint": problems, "layers": []}
         for k, paths in enumerate(layers):
