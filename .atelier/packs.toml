@@ -138,3 +138,45 @@ Gates: both engines' tools/frame-check.sh on engines/rounds/shaders and engines/
 round only proves an effect that moves its stills by more: tools/r180-shader-round/strength.sh and
 tools/r217-fog/strength.sh fail under 2.5/255; tools/r217-fog/mutate.sh fails unless the round sees a wrong copy.
 """
+
+[tags.ai]
+label = "AI pages"
+description = "Painting a page's strips from a theme: tools/ai-page.sh, tools/r239-ai-strips (ai_page, gen, layer, sil, creature), animated layers. Cutting one painting by depth is #depth"
+color = "#c99be0"
+sort = 60
+context = """
+The parallax-pages skill's "Generating a page" says how to run ai-page.sh and what to look at; docs/ai-parallax.md why.
+Map: ai_page.py drives it all (strips, cut, atlas, .jplax, lint, stills), gen.py paints (ComfyUI's nodes IN-PROCESS,
+no server), sil.py the silhouette init, layer.py keys a strip against its sky, creature.py refuses figures.
+gen.py is shared: tools/r279-depth-page runs it in a subprocess for its repaints, so a gen.py change is #depth's too.
+ONE GPU, 8 GB, and two lanes (#ai, #depth) may run at once: nvidia-smi before a run, never stop another process to
+free it. An OOM that does not scale with size is kept activations: an in-process script runs under
+torch.inference_mode() (gen.py does; r375 lost an hour to its absence in anim.py).
+A graded round may predate the fix it blames: r364 built a rule against ghosts R1's _cut.png showed, cut the evening
+before r358 cleared them on HEAD. ls -l the artefacts against the fix's commit date, re-cut on HEAD first.
+A hung strip is not a slow one: ai_page kills a command past --timeout (600 s) and retries once (r377); a dpmpp_sde
+strip hangs after step 1 with the GPU idle (r388).
+Gates: python3 tools/r239-ai-strips/layer_test.py (no GPU) after any layer.py change; tools/lint.sh (ruff, CI's
+pinned version); then a page run and its stills, looked at, before and after on the same --seed.
+"""
+
+[tags.depth]
+label = "Depth pages"
+description = "One flat painting cut into a page by its depth: tools/depth-page.sh, tools/r279-depth-page (bands, SAM outlines, fields, see-through, repaint)"
+color = "#8fb3e0"
+sort = 61
+context = """
+The parallax-pages skill's "From one painting (r279)" says how to run it and what each sheet shows;
+docs/depth-tricks.md §5 why. Everything is tools/r279-depth-page/depth_page.py, run in the ComfyUI venv
+(tools/depth-page.sh): Depth Anything V2 Small, depth bands, SAM 2.1 small's masks, then gen.py inpaint in a
+subprocess for what each band hid. gen.py is #ai's file: change it and say so on the #ai lane's ticket.
+ONE GPU, 8 GB, and two lanes (#ai, #depth) may run at once: nvidia-smi before a run; a gen.py failure there
+reads "free VRAM?" and is another session's run, not your bug.
+Every rule here was tuned on a few paintings (valley, river, noloop): a new rule can bring back an old fault on
+another one (r386: r322's olive slab back on HEAD). Run the examples (tools/r279-depth-page/examples.sh) before
+and after, in a HEAD worktree for the before, and compare them all, not only the painting the ticket names.
+A metric must see the fault on the before image: tools/r279-depth-page/see_through.py OUT counts sky each layer
+carries; a count that reads the same before and after proves nothing.
+Look at OUT/cut/sheet.png, objects.png, fields.png AND the 6 and 12 s frames: a repaint shows only once layers slide.
+Gate: tools/lint.sh (ruff), then the examples' stills, attached.
+"""
