@@ -213,6 +213,11 @@ models in `~/ComfyUI`, `anim.py`'s docstring), on the 8 GB GPU: 49 frames of a 1
   as a halo: `rekey.py` keys each frame's own alpha where it moves.
 - Water already moves for free: a `SHADER` layer's `WAVE` (`wave.py` draws it as frames to compare). The AI earns
   its atlas space on what no shader does, leaves and fronds.
+- What comes next is `docs/animated-layers.md` (Simon's choices on r375): an animated patch on a layer (format 16),
+  `ai-page.sh --animate`, a stronger motion (`anim.py --free`), and shader animations for water and clouds
+  (`shaders.py`: swell, glint, billow, drawn as frames; `demo-shaders.sh`). `loopcheck.py` measures a frame's X
+  seam against its own inner columns as well (x seam inner): a glint's specks spike the ratio wherever they fall, so
+  the X check is only as sharp as the clip's own columns (2.5 on the palm crowns' edges, 3.4 on glint).
 
 ## Plan
 

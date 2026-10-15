@@ -8,7 +8,9 @@ time seam  = mean |colour step| from the last frame back to the first / median |
              inside the clip. About 1: the wrap is as smooth as the motion itself. Above 2: a jump shows.
 motion     = that median step, in 0..255 per pixel of the moving part. Below 0.3: the clip barely moves.
 x seam     = seam.py's ratio of every frame's right edge into its left one (a layer strip tiles in X): the worst
-             frame. The still strip's own ratio is the reference.
+             frame. Its references: the still strip's own ratio, and the same ratio between neighbour columns inside
+             the frames (x seam inner, the worst of 8 places a frame): sparse bright specks (a glint) spike it
+             wherever they fall, so a join only fails above what the clip's own columns reach.
 moving box = the box round every pixel that ever changes, and its share of the strip: what a layer would store
              frame by frame if only that part were animated (partial animation).
 Only pixels opaque in --alpha (the layer's cut) count, when given.
@@ -54,11 +56,15 @@ def measure(frames, opaque=None, changed=2.0):
     alpha = (keep * 255).astype(np.float32)[..., None]
     xs = [seam.step(np.concatenate([f[:, -1], alpha[:, -1]], 1), np.concatenate([f[:, 0], alpha[:, 0]], 1))
           / seam.inner(np.concatenate([f, alpha], 2)) for f in frames]
+    places = [w * k // 9 for k in range(1, 9)]
+    xin = [seam.step(np.concatenate([f[:, c], alpha[:, c]], 1), np.concatenate([f[:, c + 1], alpha[:, c + 1]], 1))
+           / seam.inner(np.concatenate([f, alpha], 2)) for f in frames for c in places]
     ys, xs_ = np.nonzero(moved)
     box = [int(xs_.min()), int(ys.min()), int(xs_.max()) + 1, int(ys.max()) + 1] if moved.any() else None
     share = ((box[2] - box[0]) * (box[3] - box[1]) / (w * h)) if box else 0.0
     return {"frames": n, "motion": round(inner, 3), "max_step": round(max(steps), 3), "wrap_step": round(wrap, 3),
-            "time_seam": round(wrap / inner, 2), "x_seam_worst": round(max(xs), 2), "moving_box": box,
+            "time_seam": round(wrap / inner, 2), "x_seam_worst": round(max(xs), 2),
+            "x_seam_inner": round(max(xin), 2), "moving_box": box,
             "moving_share": round(share, 3)}
 
 
@@ -68,8 +74,9 @@ def verdict(m, still_x_seam=None):
         bad.append("barely moves")
     if m["time_seam"] > 2.0:
         bad.append(f"jumps at the wrap ({m['time_seam']}x the motion)")
-    if still_x_seam is not None and m["x_seam_worst"] > max(2.0, 1.5 * still_x_seam):
-        bad.append(f"stops tiling in X (worst frame {m['x_seam_worst']}, still {still_x_seam:.2f})")
+    if still_x_seam is not None and m["x_seam_worst"] > max(2.0, 1.5 * still_x_seam, m.get("x_seam_inner", 0)):
+        bad.append(f"stops tiling in X (worst frame {m['x_seam_worst']}, still {still_x_seam:.2f}, "
+                   f"inside the frames {m.get('x_seam_inner')})")
     return "PASS" if not bad else "FAIL: " + "; ".join(bad)
 
 

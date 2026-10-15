@@ -10,7 +10,8 @@ The first frame's mask is black, so the clip starts on the strip and stays near 
 the rest of the strip still, which is what makes an animation partial: outside it every frame is the strip's own
 pixels, pasted back after the decode, and the model is only given the rows the mask can reach (--context more round
 them). --edge keeps that many columns at each end still (feathered), so every frame tiles in X as the strip did.
-The clip does not loop: loopcut.py cuts one out of it. (--hold-end 4 holds the last latent to the strip too, a loop
+--free lets the moving part go of the strip after the first frame, for a stronger motion (r375: Simon found the
+first one too gentle). The clip does not loop: loopcut.py cuts one out of it. (--hold-end 4 holds the last latent to the strip too, a loop
 by construction, but Wan's VAE draws a clip's first frame apart from the rest, and the wrap pops: r375's palms-v1.)
 Models (~11 GB, Comfy-Org/Wan_2.1_ComfyUI_repackaged): diffusion_models/wan2.1_vace_1.3B_fp16.safetensors,
 text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors, vae/wan_2.1_vae.safetensors. The text encoder runs on the
@@ -92,6 +93,10 @@ def main():
     ap.add_argument("--weights", default="default", help="fp8_e4m3fn halves the model's 4 GB")
     ap.add_argument("--no-match", action="store_true", help="keep the model's colours (see match_colours)")
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--free", type=float, default=0.0,
+                    help="0..1: how far the moving part of every frame after the first is let go of the strip (its"
+                         " control pixels faded to VACE's grey): 0 holds it to the strip, the r375 palms' gentle stir")
+    ap.add_argument("--strength", type=float, default=1.0, help="WanVaceToVideo's: how hard the control holds")
     ap.add_argument("--hold-end", type=int, default=0,
                     help="frames at the end held to the strip too (4: one latent): a loop by construction, but it pops")
     a = ap.parse_args()
@@ -119,7 +124,11 @@ def main():
     masks[:1] = 0
     if a.hold_end:
         masks[n - a.hold_end:] = 0
-    control = torch.from_numpy(np.repeat(band[None], n, 0))
+    control = np.repeat(band[None], n, 0)
+    if a.free:  # the first frame keeps the strip whole: the clip starts on it
+        let = a.free * masks[1:, ..., None]
+        control[1:] = control[1:] * (1 - let) + 0.5 * let
+    control = torch.from_numpy(control)
     control_masks = torch.from_numpy(masks)
 
     ModelSamplingSD3, TrimVideoLatent, WanVaceToVideo = wan_nodes()
@@ -130,7 +139,7 @@ def main():
     pos = nodes.CLIPTextEncode().encode(clip, a.prompt)[0]
     neg = nodes.CLIPTextEncode().encode(clip, NEGATIVE)[0]
     del clip
-    pos, neg, latent, trim = WanVaceToVideo.execute(pos, neg, vae, w, y1 - y0, n, 1, 1.0, control_video=control,
+    pos, neg, latent, trim = WanVaceToVideo.execute(pos, neg, vae, w, y1 - y0, n, 1, a.strength, control_video=control,
                                                     control_masks=control_masks)
     latent = nodes.KSampler().sample(model, a.seed, a.steps, a.cfg, "uni_pc", "simple", pos, neg, latent)[0]
     if trim:
