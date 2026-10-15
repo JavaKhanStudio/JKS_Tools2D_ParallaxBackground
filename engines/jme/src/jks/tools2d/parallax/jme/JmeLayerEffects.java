@@ -100,6 +100,7 @@ public class JmeLayerEffects implements LayerEffects
 		{
 			Material material = new Material(assets, MATERIAL);
 			material.setBoolean("Fog", kind == Enum_ShaderEffect.FOG);
+			material.setBoolean("Swell", kind == Enum_ShaderEffect.SWELL);
 			material.setBoolean("Plain", kind == null);
 			JmeBatch.renderAsRuns(material);
 			s = new Shaded(material, kind);
@@ -149,6 +150,7 @@ public class JmeLayerEffects implements LayerEffects
 		{
 			s.patch = new Material(assets, MATERIAL);
 			s.patch.setBoolean("Fog", s.kind == Enum_ShaderEffect.FOG);
+			s.patch.setBoolean("Swell", s.kind == Enum_ShaderEffect.SWELL);
 			s.patch.setBoolean("Plain", s.kind == null);
 			JmeBatch.renderAsRuns(s.patch);
 		}

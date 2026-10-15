@@ -19,8 +19,8 @@ extends RefCounted
 ## r408), its numbers set by apply.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
-const EFFECTS := ["WAVE", "FOG"]
-## Enum_ShaderEffect.FOG_PERIOD: how many wavelengths FOG's patches run before they repeat.
+const EFFECTS := ["WAVE", "FOG", "SWELL"]
+## Enum_ShaderEffect.FOG_PERIOD: how many wavelengths FOG's patches run before they repeat, SWELL's waves too.
 const FOG_PERIOD := 8
 ## Enum_ShaderEffect.FOG_PERIOD_Y: how many wavelengths they run up before they repeat (r262).
 const FOG_PERIOD_Y := 10
@@ -118,6 +118,23 @@ const _FOG := _HEAD + """void fragment() {
 }
 """
 
+## SWELL (r431): each pixel read from where two crossing travelling waves move it, up to amplitude sideways and half
+## that up and down, the image wrapped across and held at its top and bottom rows; whole turns over FOG_PERIOD
+## wavelengths across and FOG_PERIOD_Y up.
+const _SWELL := _HEAD + """void fragment() {
+	vec2 a = along(SCREEN_UV);
+	float L = effect.y;
+	float t = effect.z / L;
+	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);
+	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);
+	vec2 l = local(UV) + effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));
+	vec2 f = vec2(fract(l.x / size.x), clamp(l.y / size.y, 0.0, 1.0));
+	vec2 uv = vec2(mix(region.x, region.z, f.x), mix(region.w, region.y, f.y));
+	vec4 image = texture(TEXTURE, uv);
+	COLOR = hazed(glinted(TEXTURE, tint * image, image, uv, SCREEN_UV), SCREEN_UV);
+}
+"""
+
 ## PLAIN: no effect, the depth fog only.
 const _PLAIN := _HEAD + """void fragment() {
 	COLOR = hazed(tint * texture(TEXTURE, UV), SCREEN_UV);
@@ -131,7 +148,7 @@ static var _shaders := {}
 static func material(effect_name: String) -> ShaderMaterial:
 	if not _shaders.has(effect_name):
 		var shader := Shader.new()
-		shader.code = _FOG if effect_name == "FOG" else _PLAIN if effect_name == "PLAIN" else _WAVE
+		shader.code = {"FOG": _FOG, "SWELL": _SWELL, "PLAIN": _PLAIN}.get(effect_name, _WAVE)
 		_shaders[effect_name] = shader
 	var m := ShaderMaterial.new()
 	m.shader = _shaders[effect_name]
@@ -139,7 +156,7 @@ static func material(effect_name: String) -> ShaderMaterial:
 
 
 ## ParallaxLayer.getShaderPhase: speed * seconds wrapped to where the effect repeats (one wavelength, FOG_PERIOD for
-## FOG), never negative; 0 without a wavelength.
+## FOG and SWELL), never negative; 0 without a wavelength.
 static func phase(model: Dictionary, seconds: float) -> float:
 	var wavelength: float = model.shaderWavelength
 	if not wavelength > 0:
@@ -149,8 +166,8 @@ static func phase(model: Dictionary, seconds: float) -> float:
 	return p + period if p < 0 else p
 
 
-## ParallaxLayer.getShaderPeriod: where the effect repeats, one wavelength, FOG_PERIOD for FOG, at least FOG's for a
-## glinting layer; 0 without a wavelength.
+## ParallaxLayer.getShaderPeriod: where the effect repeats, one wavelength, FOG_PERIOD for FOG and SWELL, at least
+## FOG's for a glinting layer; 0 without a wavelength.
 static func period(model: Dictionary) -> float:
 	var wavelength: float = model.get("shaderWavelength", 0.0)
 	if not wavelength > 0:
@@ -166,13 +183,13 @@ static func glints(model: Dictionary) -> bool:
 
 ## ParallaxLayer.periodAcross: the wavelengths the effect runs across before it repeats, FOG's with it when glinting.
 static func _across(model: Dictionary) -> int:
-	var own := FOG_PERIOD if model.get("shaderEffect", "") == "FOG" else 1
+	var own := FOG_PERIOD if model.get("shaderEffect", "") in ["FOG", "SWELL"] else 1
 	return _least_multiple(own, FOG_PERIOD) if glints(model) else own
 
 
 ## ParallaxLayer.periodUp: the same up.
 static func _up(model: Dictionary) -> int:
-	var own := FOG_PERIOD_Y if model.get("shaderEffect", "") == "FOG" else 1
+	var own := FOG_PERIOD_Y if model.get("shaderEffect", "") in ["FOG", "SWELL"] else 1
 	return _least_multiple(own, FOG_PERIOD_Y) if glints(model) else own
 
 
@@ -196,8 +213,8 @@ static func effect_start_x(l: Dictionary) -> float:
 	return fmod(start, p) if p > 0 else start
 
 
-## ParallaxLayer.getShaderPeriodY: where the effect repeats up, one wavelength, FOG_PERIOD_Y for FOG, at least FOG's
-## for a glinting layer; 0 without one.
+## ParallaxLayer.getShaderPeriodY: where the effect repeats up, one wavelength, FOG_PERIOD_Y for FOG and SWELL, at
+## least FOG's for a glinting layer; 0 without one.
 static func period_y(model: Dictionary) -> float:
 	var wavelength: float = model.get("shaderWavelength", 0.0)
 	if not wavelength > 0:

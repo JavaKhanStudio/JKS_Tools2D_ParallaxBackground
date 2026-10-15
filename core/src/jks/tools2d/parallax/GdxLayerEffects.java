@@ -164,6 +164,27 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "}\n";
 
 	/**
+	 * SWELL (r431, the animation lab's, r375, r419): each pixel read from where two crossing travelling waves move it,
+	 * up to amplitude sideways and half that up and down, the image wrapped across (the layer tiles) and held at its top
+	 * and bottom rows. t is the phase in wavelengths. Every term is whole turns over 8 wavelengths across (8 and 5) and 10
+	 * up (6 and 9), and the phase wraps at 8 (Enum_ShaderEffect.period): the swell runs on across the layer's wrap.
+	 */
+	static final String SWELL = FRAGMENT_HEAD
+			+ "void main()\n"
+			+ "{\n"
+			+ "	vec2 a = along();\n"
+			+ "	float L = u_effect.y;\n"
+			+ "	float t = u_effect.z / L;\n"
+			+ "	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);\n"
+			+ "	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);\n"
+			+ "	vec2 l = local() + u_effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));\n"
+			+ "	vec2 f = vec2(fract(l.x / u_size.x), clamp(l.y / u_size.y, 0.0, 1.0));\n"
+			+ "	vec2 uv = vec2(mix(u_region.x, u_region.z, f.x), mix(u_region.w, u_region.y, f.y));\n"
+			+ "	vec4 image = texture2D(u_texture, uv);\n"
+			+ "	gl_FragColor = hazed(glinted(v_color * image, image, uv));\n"
+			+ "}\n";
+
+	/**
 	 * The page fog ({@link LayerEffects#beginPageFog}): the tint a uniform, the batch color's red the layer's fog, its
 	 * green which page's fog colour, its blue how much darker a tower's strip is drawn (0 for every other layer:
 	 * {@link ParallaxLayer#drawTower}), its alpha the layer's. Mixed as hazed() does, after the darkening.
@@ -235,6 +256,8 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		{
 			case FOG:
 				return FOG;
+			case SWELL:
+				return SWELL;
 			case WAVE:
 			default:
 				return WAVE;

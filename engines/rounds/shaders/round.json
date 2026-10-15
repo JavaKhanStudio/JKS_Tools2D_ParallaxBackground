@@ -1,6 +1,6 @@
 {
  "round": "shaders",
- "about": "SHADER layers (r180, docs/effect-layers.md phase 3): conformance pages with a layer drawn through WAVE and a white mist band (core/test-data/shaders/mist.png, in HiverFog.atlas) drawn through FOG, in every repeat mode, and a cross-fade into the page on screen while tinting. The effects move on the reader's clock, so t6 and t12 catch them at different phases. Written by core/test-data/shaders/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "about": "SHADER layers (r180, docs/effect-layers.md phase 3): conformance pages with a layer drawn through WAVE and a white mist band (core/test-data/shaders/mist.png, in HiverFog.atlas) drawn through FOG, in every repeat mode, a checker through SWELL (r431), and a cross-fade into the page on screen while tinting. The effects move on the reader's clock, so t6 and t12 catch them at different phases. Written by core/test-data/shaders/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
  "scenes": [
   {
    "id": "s01",
@@ -63,6 +63,20 @@
    "speedY": 30,
    "name": "wave-up-the-tiles",
    "about": "r273: black and white vertical stripes through WAVE (amplitude 0.3), 20 of 40 units wide and 5 tall, its wavelength (1.5) not dividing the image, tiling on Y and scrolled up so it wraps there (t6, t12): the ripple runs on across every tile edge on Y instead of jumping sideways at each"
+  },
+  {
+   "id": "s09",
+   "page": "engines/rounds/shaders/s09.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "swell-across-the-tiles",
+   "about": "r431: a black and white checker through SWELL (amplitude 0.3, the animation lab's wavelength 1.25 and speed 0.3), 18 of 40 units wide (no whole number of its 10-unit period), tiling on X and wrapped by the scroll (t6, t12): the squares bent by two crossing travelling waves, which are whole turns over 8 wavelengths across, so they run on across every tile edge and the wrap"
+  },
+  {
+   "id": "s10",
+   "page": "engines/rounds/shaders/s10.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "swell-flipped-no-repeat",
+   "about": "r431: the same checker through SWELL, the world's width, repeating on neither axis and flipped on X: the waves run leftward from its right edge (along() turned), the image wrapped across within itself and held at its top and bottom rows"
   }
  ]
 }

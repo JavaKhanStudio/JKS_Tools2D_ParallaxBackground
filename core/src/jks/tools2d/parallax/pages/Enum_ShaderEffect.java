@@ -20,9 +20,17 @@ public enum Enum_ShaderEffect
 	 * {@code wavelength} wide, which drift left at {@code speed}. A plain white image is a moving fog over the layers
 	 * behind it. The patches come back the same only every {@link #FOG_PERIOD} wavelengths across (r216).
 	 */
-	FOG;
+	FOG,
+	/**
+	 * A swell, for water (r431, the animation lab's, Simon on r419): the painted crests bent by two travelling waves
+	 * that cross, each pixel of the image moved sideways and up and down by up to {@code amplitude}, the waves about
+	 * {@code wavelength} long, running at {@code speed}. WAVE slides whole rows; this bends them. Its waves are whole
+	 * turns over {@link #FOG_PERIOD} wavelengths across and {@link #FOG_PERIOD_Y} up, its periods too: at one wavelength,
+	 * its second wave jumped each time the layer wrapped (r419).
+	 */
+	SWELL;
 
-	/** How many wavelengths FOG's patches run before they repeat: its x frequencies are 7, 17 and 23 per 8. */
+	/** How many wavelengths FOG's patches run before they repeat: its x frequencies are 7, 17 and 23 per 8. SWELL's too. */
 	public static final int FOG_PERIOD = 8;
 
 	/** How many wavelengths FOG's patches run up before they repeat: its y terms come back every 2, 2 and 1.25 (r262). */
@@ -30,9 +38,9 @@ public enum Enum_ShaderEffect
 
 	/** How many wavelengths this effect runs before it repeats: its phase is wrapped there. */
 	public int period()
-	{return this == FOG ? FOG_PERIOD : 1;}
+	{return this == FOG || this == SWELL ? FOG_PERIOD : 1;}
 
 	/** How many wavelengths this effect runs up before it repeats. */
 	public int periodY()
-	{return this == FOG ? FOG_PERIOD_Y : 1;}
+	{return this == FOG || this == SWELL ? FOG_PERIOD_Y : 1;}
 }

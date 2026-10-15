@@ -58,8 +58,10 @@ final class WebGlCases
 			if (!program.isCompiled())
 				failed.add(effect + ": " + program.getLog());
 			else
-				// The numbers each reads: FOG places its noise by the view (along(), r229, r262), not inside the image.
+				// The numbers each reads: FOG places its noise by the view (along(), r229, r262), not inside the image; SWELL
+				// both, its waves along the layer moving the image's own pixels (r431).
 				for (String uniform : effect == Enum_ShaderEffect.FOG ? new String[] { "u_effect", "u_across", "u_up" }
+						: effect == Enum_ShaderEffect.SWELL ? new String[] { "u_region", "u_size", "u_effect", "u_across", "u_up" }
 						: new String[] { "u_region", "u_size", "u_effect" })
 					if (program.fetchUniformLocation(uniform, false) < 0)
 						failed.add(effect + " has no " + uniform);

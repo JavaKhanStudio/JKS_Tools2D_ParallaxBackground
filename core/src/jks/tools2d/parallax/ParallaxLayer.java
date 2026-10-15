@@ -962,7 +962,7 @@ public class ParallaxLayer
 
 	/**
 	 * Where the effect is after {@code seconds} of the reader's clock, in world units: {@code speed * seconds} wrapped
-	 * to where the effect repeats, one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD} for FOG, so a shader
+	 * to where the effect repeats, one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD} for FOG and SWELL, so a shader
 	 * is handed a small number however long the game runs. 0 when the wavelength is not positive.
 	 */
 	public float getShaderPhase(double seconds)
@@ -975,7 +975,7 @@ public class ParallaxLayer
 	}
 
 	/**
-	 * Where the effect repeats, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD} for FOG;
+	 * Where the effect repeats, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD} for FOG and SWELL;
 	 * 0 without a wavelength. A glinting layer's is at least FOG's, whatever its effect ({@link #glints}).
 	 */
 	public float getShaderPeriod()
@@ -1029,7 +1029,7 @@ public class ParallaxLayer
 	}
 
 	/**
-	 * Where the effect repeats up, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD_Y} for FOG;
+	 * Where the effect repeats up, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD_Y} for FOG and SWELL;
 	 * 0 without a wavelength. A glinting layer's is at least FOG's ({@link #glints}).
 	 */
 	public float getShaderPeriodY()

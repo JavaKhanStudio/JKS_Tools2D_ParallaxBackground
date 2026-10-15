@@ -29,6 +29,7 @@ final class ShaderCases extends ReaderFixtures
 				new BrowserCase("reader: shaderLayerIsTiledThroughItsEffectInEveryRepeatMode", () -> new ShaderCases().shaderLayerIsTiledThroughItsEffectInEveryRepeatMode()),
 				new BrowserCase("reader: shaderPhaseFollowsTheReaderClockAndWraps", () -> new ShaderCases().shaderPhaseFollowsTheReaderClockAndWraps()),
 				new BrowserCase("reader: fogPhaseWrapsAtItsPeriod", () -> new ShaderCases().fogPhaseWrapsAtItsPeriod()),
+				new BrowserCase("reader: swellRepeatsOverFogsPeriods", () -> new ShaderCases().swellRepeatsOverFogsPeriods()),
 				new BrowserCase("reader: fogNoiseRunsOnAcrossTheTiles", () -> new ShaderCases().fogNoiseRunsOnAcrossTheTiles()),
 				new BrowserCase("reader: fogNoiseRunsOnUpTheTiles", () -> new ShaderCases().fogNoiseRunsOnUpTheTiles()),
 				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ShaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
@@ -116,6 +117,32 @@ final class ShaderCases extends ReaderFixtures
 		equal(1, fog.getShaderPhase(12.5), 1e-4f, "25 wraps to 1 past 24");
 		equal(20, fog.getShaderPhase(-2), 1e-4f, "-4 wraps to 20");
 		equal(1, shaded(0.5f, 3, 2).getShaderPhase(2), 1e-4f, "WAVE still wraps at one wavelength");
+	}
+
+	/**
+	 * r431: SWELL's waves are whole turns over 8 wavelengths across and 10 up, FOG's periods: its phase wraps there, and
+	 * so does where it starts along the layer. At one wavelength its second wave (5 turns in 8) jumped each time the layer
+	 * wrapped (r419). Its amplitude, in world units, is not held within 1 as FOG's is, and it has a shader of its own.
+	 */
+	void swellRepeatsOverFogsPeriods()
+	{
+		ParallaxLayer swell = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.SWELL, 1.7f, 10, 2);
+		equal(80, swell.getShaderPeriod(), 0, "8 wavelengths across");
+		equal(100, swell.getShaderPeriodY(), 0, "10 wavelengths up");
+		equal(30, swell.getShaderPhase(15), 1e-4f, "30 is past one wavelength, inside 8");
+		equal(4, swell.getShaderPhase(42), 1e-4f, "84 wraps to 4 past 80");
+		swell.setParallaxSpeedRatioX(1);
+		for (int i = 0; i < 5; i++)
+			swell.act(1, 25, 0, true, false);
+		float apart = Math.abs((swell.getEffectStartX() + 125) % 80);
+		isTrue(apart < 1e-3f || Math.abs(apart - 80) < 1e-3f, "starts at " + swell.getEffectStartX() + ", the unwrapped -125 modulo 80");
+		isTrue(Math.abs(swell.getEffectStartX()) < 80, "and stays within the period");
+		float[] numbers = GdxLayerEffects.uniforms(swell, 3, new float[15]);
+		equal(1.7f, numbers[6], 0, "the amplitude in world units, as stored");
+		equal(10, numbers[7], 0, "wavelength");
+		equal(3, numbers[8], 0, "phase");
+		isTrue(GdxLayerEffects.fragment(Enum_ShaderEffect.SWELL) != GdxLayerEffects.fragment(Enum_ShaderEffect.FOG)
+				&& GdxLayerEffects.fragment(Enum_ShaderEffect.SWELL) != GdxLayerEffects.fragment(Enum_ShaderEffect.WAVE), "a shader of its own");
 	}
 
 	/**

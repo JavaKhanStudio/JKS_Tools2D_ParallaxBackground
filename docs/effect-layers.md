@@ -149,6 +149,22 @@ texture reads a pixel (not measured on `:demo:stress`). The glint is sparse by d
 by over 32 (`tools/r427-glint/strength.sh`), and `tools/r427-glint/mutate.sh` fails a Godot copy without it, with
 the sun off the middle, frozen, a one-sided crest or the effect's own period, and a jME material never handed it.
 
+Swell, r431 (no format change, Simon on r419: "ship SWELL as the lab draws it now"): `SWELL` appended to
+`Enum_ShaderEffect`, the animation lab's GLSL (r375, r407) written three times. Each pixel is read from where two
+crossing travelling waves move it (`l += amplitude × (0.6 sin p1 + 0.4 sin p2, 0.5 (0.6 cos p1 − 0.4 cos p2))`), the
+image wrapped across with `fract` and held at its top and bottom rows, then `glinted()` and `hazed()` as every effect.
+Its waves turn 8 and 5 times over 8 wavelengths across, 6 and 9 over 10 up, so its periods are FOG's
+(`Enum_ShaderEffect.period`): at one wavelength the second wave jumped each time the layer wrapped (r419). A reader
+before r431 fails a page naming it ("written by a newer version"), as for any effect it does not know: the format
+stores the effect by name, its layout unchanged. The beach sea it was made for is soft: plain, it is only 1.35/255 off
+its swell on the mean, under the rounds' 2/255, so `engines/rounds/shaders` gates it on a crisp checker (s09 tiled on
+X, 18 units wide so no tile edge falls on its period; s10 flipped and not repeating: 3.6 to 7.8/255 by
+`tools/r180-shader-round/strength.sh`) and the glint round's g03
+draws the sea itself, swelled and glinting, under its `pixelsOff` gate. `tools/r431-swell/mutate.sh` fails a Godot copy
+drawn through WAVE, over one wavelength, with the second wave at 1/1.7 turns, sideways only or laid on each tile, and a
+jME material never told SWELL or with the second wave at 1/1.7. Holding the top and bottom rows seams a layer tiled on Y
+at each tile edge: r434 asks which edges SWELL should wrap.
+
 ## Saying what an engine cannot draw
 
 `core/src` gets a table, `EffectSupport`: for each kind and each effect, whether libGDX, the browser, Godot and jME

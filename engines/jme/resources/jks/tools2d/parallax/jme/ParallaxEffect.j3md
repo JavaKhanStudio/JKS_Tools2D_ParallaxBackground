@@ -10,8 +10,10 @@ MaterialDef ParallaxEffect {
         Vector2 Size
         // Amplitude, wavelength, phase.
         Vector3 Effect
-        // FOG; WAVE when false.
+        // FOG; WAVE when false, and Swell false.
         Boolean Fog
+        // SWELL (r431).
+        Boolean Swell
         // No effect: a layer drawn through the depth fog, a dissolve's mask or a grade only.
         Boolean Plain
         // The depth fog at the layer, 0 to 1: the color mixed toward FogColor.
@@ -46,6 +48,7 @@ MaterialDef ParallaxEffect {
 
         Defines {
             FOG : Fog
+            SWELL : Swell
             PLAIN : Plain
         }
     }
