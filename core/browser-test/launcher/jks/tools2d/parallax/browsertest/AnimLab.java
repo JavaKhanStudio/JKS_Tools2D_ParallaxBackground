@@ -456,7 +456,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 * <li>REFLECT (r419, after Simon: "more feeling of reflexion"): drawn on the beach's far range flipped over the sea
 	 * ({@link #RANGE}), not on the sea: below the horizon, the range squashed by u_squash (a true mirror of a range taller
 	 * than the sea is deep shows only its foot), drawn as a silhouette of the water's colour darkened by u_water.a, the
-	 * sea showing through where the range is clear but for a thin sheen of the haze's colour near the horizon, cut in bands u_reflect.w high that slide sideways by the layer's amplitude and thin out, faded out
+	 * sea showing through where the range is clear but for a thin sheen of the haze's colour near the horizon, cut in
+	 * bands u_reflect.w high that slide sideways by the layer's amplitude and thin out, faded out
 	 * u_reflect.y under the horizon, at most u_reflect.z opaque. u_reflect.x: how far under the horizon the range's
 	 * foot is. Its x terms are whole turns over FOG's periods, its time terms whole multiples of t.</li>
 	 * </ul>
@@ -485,7 +486,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "uniform vec2 u_glintB;\n"
 			+ "uniform vec4 u_reflect;\n"
 			+ "uniform vec4 u_water;\n"
-						+ "uniform float u_squash;\n"
+			+ "uniform float u_squash;\n"
 			+ "const float TAU = 6.2831853;\n"
 			+ "vec4 hazed(vec4 color)\n"
 			+ "{\n"
