@@ -397,6 +397,44 @@ def band_means(L, rgb, n, window):
     return out
 
 
+def filled(mean, has, far):
+    """mean where has, else its value at the nearest place that has (wrapping along X), up to far px; past it NaN."""
+    if not has.any():
+        return np.full_like(mean, np.nan)
+    if has.all():
+        return mean
+    w = has.shape[1]
+    dist, (iy, ix) = ndimage.distance_transform_edt(~np.tile(has, 3), return_indices=True)
+    dist, iy, ix = dist[:, w:2 * w], iy[:, w:2 * w], ix[:, w:2 * w] % w
+    mean = mean[iy, ix]
+    mean[dist > far] = np.nan
+    return mean
+
+
+def sky_hued(L, dn, centres, rgb, own, n, window, far, margin=0.5, apart=20, dim=0.65):
+    """The sky seen through a crown that depth judged wholly near (r380): pixels of band 2 or nearer whose hue (their
+    colour less its grey) is nearer the sky's round them (band 0 at the sky's depth, its mean over window px, up to
+    far px from it) than their own band's, and than grey, by margin, and farther than their band's centre. The sky
+    there is darkened by the leaves round it, so by colour it is nearer the crown's; its hue is still the sky's.
+    Band k's hue is its core's, its pixels at or past its centre: its mean over all of them is tinted by the gaps
+    themselves. Band 1 never: the haze tints the band just in front of the sky toward its hue (river's far forest).
+    Than grey: a cool shadow under a clump beside a white cloud is as near the whitish sky there as the green. And
+    at least dim as bright as the sky: the leaves darken it, a tuft painted in the pale sky's hue is darker still
+    (valley: moved, it stayed in the back layer, unrepainted, and floated off its branch)."""
+    (sky, seen), = band_means(np.where((L == 0) & (dn <= SKY), 0, 1), rgb, 1, window)
+    sky = filled(sky, seen > 0.02, far)
+    core = np.where(dn >= centres[L], L, -1)
+    core = np.stack([filled(mean, cnt > 0.02, far) for mean, cnt in band_means(core, rgb, n, window)])
+    core = np.take_along_axis(core, L[None, ..., None].repeat(3, -1), 0)[0]
+    core = np.where(np.isnan(core), own, core)
+    hue, hue_own, hue_sky = (v - v.mean(-1, keepdims=True) for v in (rgb, core, sky))
+    h_own, h_sky = np.linalg.norm(hue - hue_own, axis=-1), np.linalg.norm(hue - hue_sky, axis=-1)
+    grey = np.linalg.norm(hue_sky, axis=-1)
+    return ((L > 1) & ~np.isnan(h_sky) & (np.linalg.norm(hue_own - hue_sky, axis=-1) > apart)
+            & (rgb.mean(-1) >= dim * sky.mean(-1))
+            & (h_sky < margin * np.minimum(h_own, grey)) & (dn < centres[L]))
+
+
 def see_through(L, dn, centres, img, n, window=41, margin=0.8, rim=0.8, rounds=40, apart=40, third=1 / 3, far=96):
     """by_colour's mirror: the sky and the ridge seen between a crown's branches, which depth blurs to near and
     merge_small and shut_in hand to the crown, go back to the farther band, else the near layer carries them opaque
@@ -407,21 +445,11 @@ def see_through(L, dn, centres, img, n, window=41, margin=0.8, rim=0.8, rounds=4
     moved pixels round it (the sky as the crown frames it), by rim goes too, so a gap clears to the leaves round it.
     The means are taken once, before any move: taken again, a moved leaf tints the sky's mean green and the next ring
     eats its clump. Grown only from the moved pixels, never from band j's own edge: on the ground that edge runs
-    between lit and shaded fields, and growing from it frays the cut. A gap depth judged wholly near stays."""
+    between lit and shaded fields, and growing from it frays the cut. A gap depth judged wholly near is seeded by its
+    hue instead (sky_hued, r380), and grows the same way."""
     rgb = img.astype(np.float32)
-    w = L.shape[1]
-    M = []
-    for mean, cnt in band_means(L, rgb, n, window):
-        has = cnt > 0.02
-        if not has.any():
-            mean = np.full_like(mean, np.nan)
-        elif not has.all():
-            dist, (iy, ix) = ndimage.distance_transform_edt(~np.tile(has, 3), return_indices=True)
-            dist, iy, ix = dist[:, w:2 * w], iy[:, w:2 * w], ix[:, w:2 * w] % w
-            mean = mean[iy, ix]
-            mean[dist > far] = np.nan
-        M.append(mean)
-    M = np.stack(M)  # once, on the bands as they came: the moved pixels' colours never tint the band they went to
+    # once, on the bands as they came: the moved pixels' colours never tint the band they went to
+    M = np.stack([filled(mean, cnt > 0.02, far) for mean, cnt in band_means(L, rgb, n, window)])
     own = np.take_along_axis(M, L[None, ..., None].repeat(3, -1), 0)[0]
     d_own = np.linalg.norm(rgb - own, axis=-1)
     D = np.linalg.norm(rgb[None] - M, axis=-1)
@@ -430,6 +458,9 @@ def see_through(L, dn, centres, img, n, window=41, margin=0.8, rim=0.8, rounds=4
     mj = np.take_along_axis(M, j[None, ..., None].repeat(3, -1), 0)[0]
     like = (L > 0) & np.isfinite(dj) & (np.linalg.norm(own - mj, axis=-1) > apart)
     moved = like & (dj < margin * d_own) & (dn < centres[j] + (centres[L] - centres[j]) * third)
+    back = sky_hued(L, dn, centres, rgb, own, n, window, far) & ~moved
+    j = np.where(back, 0, j)
+    moved |= back
     seeds = moved.astype(np.float32)
     cnt = ndimage.uniform_filter(seeds, window, mode=("nearest", "wrap"))
     gap = ndimage.uniform_filter(rgb * seeds[..., None], (window, window, 1), mode=("nearest", "wrap", "nearest"))

@@ -1,4 +1,4 @@
-"""depth_page's rules (r378) on a painting made up here: no GPU, no files from a run.
+"""depth_page's rules (r378), and see_through's sky by hue (r380), on paintings made up here: no GPU, no files from a run.
 
     ~/ComfyUI/venv/bin/python tools/r279-depth-page/rules_test.py
 
@@ -120,6 +120,65 @@ class SkyTwigsTest(unittest.TestCase):
             parallax_rules.parse_forced(["no_such=on"], dp.RULES)
         with self.assertRaises(ValueError):
             parallax_rules.parse_forced(["sky_twigs=maybe"], dp.RULES)
+
+
+def crown_scene():
+    """For see_through (r380): a sky (band 0) over hazed land (band 1), a field (band 2) and a crown (band 3) hanging
+    into the sky. In the crown, the sky darkened by the leaves at a depth judged near (a gap), a pale grey underside
+    beside a white cloud, and a blue flower as near as the leaves; a blue spruce beside it whose shade is the sky's
+hue, a tuft of the sky's hue half as bright as it; in band 1, a far forest of the sky's hue."""
+    n, h, w = 4, 128, 256
+    centres = np.array([0.02, 0.3, 0.55, 0.8])
+    L = np.zeros((h, w), int)
+    img = np.zeros((h, w, 3), np.uint8)
+    dn = np.zeros((h, w))
+    img[:] = (85, 110, 150)
+    img[70:100, 140:220] = (200, 205, 215)  # white clouds low in the sky
+    L[100:], img[100:], dn[100:] = 1, (110, 135, 130), 0.3
+    forest = np.zeros((h, w), bool)
+    forest[100:108, 20:120] = True
+    img[forest], dn[forest] = (65, 90, 130), 0.15
+    L[118:], img[118:], dn[118:] = 2, (110, 150, 70), 0.55
+    L[10:96, 80:200], img[10:96, 80:200], dn[10:96, 80:200] = 3, (70, 110, 50), 0.82
+    gap = np.zeros((h, w), bool)
+    gap[22:62, 100:140] = True  # wholly inside the crown, 12 px from the sky, wide: most of the crown round it
+    img[gap], dn[gap] = (65, 85, 120), 0.7
+    shadow = np.zeros((h, w), bool)
+    shadow[84:96, 150:190] = True  # the crown's underside, on the white clouds
+    img[shadow], dn[shadow] = (140, 150, 142), 0.7
+    flower = np.zeros((h, w), bool)
+    flower[30:36, 170:176] = True
+    img[flower], dn[flower] = (60, 80, 115), 0.85
+    L[10:96, 210:250], img[10:96, 210:250], dn[10:96, 210:250] = 3, (95, 120, 150), 0.82  # a blue spruce
+    needles = np.zeros((h, w), bool)
+    needles[40:60, 222:238] = True  # its shade, the sky's own hue
+    img[needles], dn[needles] = (75, 100, 140), 0.7
+    tuft = np.zeros((h, w), bool)
+    tuft[64:76, 84:96] = True  # a tuft of the sky's hue, half as bright
+    img[tuft], dn[tuft] = (40, 58, 90), 0.7
+    return L, dn, centres, img, n, gap, shadow, flower, forest, needles, tuft
+
+
+class SeeThroughTest(unittest.TestCase):
+    def test_the_sky_in_a_crown_depth_judged_near_goes_back_a_shadow_a_flower_a_spruce_a_tuft_and_a_far_forest_stay(self):
+        L, dn, centres, img, n, gap, shadow, flower, forest, needles, tuft = crown_scene()
+        out = dp.see_through(L.copy(), dn, centres, img, n)
+        self.assertGreater((out[gap] == 0).mean(), 0.8)
+        self.assertTrue((out[shadow] == 3).all())
+        self.assertTrue((out[flower] == 3).all())
+        self.assertTrue((out[forest] == 1).all())
+        self.assertTrue((out[needles] == 3).all())
+        self.assertTrue((out[tuft] == 3).all())
+
+    def test_a_wide_gap_is_seeded_to_its_middle_by_the_crown_s_core_hue(self):
+        """The crown's mean over the window round the gap's middle is mostly the gap: it alone would seed only the
+        gap's edges, and the rings, which cross no twig darker than the gap's own edge, leave its middle."""
+        L, dn, centres, img, n, gap, *_ = crown_scene()
+        rgb = img.astype(np.float32)
+        own = np.stack([dp.filled(m, c > 0.02, 96) for m, c in dp.band_means(L, rgb, n, 41)])
+        own = np.take_along_axis(own, L[None, ..., None].repeat(3, -1), 0)[0]
+        seeds = dp.sky_hued(L, dn, centres, rgb, own, n, 41, 96)
+        self.assertGreater(seeds[gap].mean(), 0.9)
 
 
 if __name__ == "__main__":
