@@ -231,6 +231,15 @@ def solid(path):
     return float(np.argmin(rows) if not rows.all() else len(rows)) / len(rows)
 
 
+def opaque(path):
+    """Height share, from the bottom, of the rows fully opaque (alpha 255) in every column: what a farther layer's bottom
+    edge may hide behind. Not solid()'s rows, 99 % opaque: the tip of a notch between two front trees reaches into
+    them, and the sky showed there under the farther layer's bottom (r381)."""
+    a = np.asarray(Image.open(path).convert("RGBA"))[..., 3] == 255
+    rows = a.all(axis=1)[::-1]
+    return float(np.argmin(rows) if not rows.all() else len(rows)) / len(rows)
+
+
 def sky_of(path):
     """The painted sky: the median of the strip's top rows, as layer.py reads it."""
     img = np.asarray(Image.open(path).convert("RGB")).astype(float)
@@ -551,14 +560,15 @@ class Pipeline:
         return layer
 
     def bottoms(self, layers):
-        """Each layer's bottom edge, world units up: the front at 0, each farther one under the solid band of the one
-        in front of it, a fifth of it deep, so its bottom edge never shows (skill step 3)."""
+        """Each layer's bottom edge, world units up: the front at 0, each farther one under the fully opaque band of the
+        one in front of it (every column of every SEQUENCE segment, opaque()), a fifth of it deep, so its bottom edge
+        never shows (skill step 3), nor the sky under it at a notch's tip (r381)."""
         bottoms, hs = [0.0] * len(self.ks), []
         for paths in layers:
             img = Image.open(paths[0])
             hs.append(lab.SCREEN_W * img.height / img.width)  # sizeRatio 1
         for k in range(len(self.ks) - 2, -1, -1):
-            band = min(solid(p) for p in layers[k + 1]) * hs[k + 1]
+            band = min(opaque(p) for p in layers[k + 1]) * hs[k + 1]
             bottoms[k] = bottoms[k + 1] + 0.8 * band
         return bottoms
 

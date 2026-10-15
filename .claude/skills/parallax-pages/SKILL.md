@@ -145,7 +145,7 @@ tools/ai-page.sh --theme "red desert mesas at sunset" --layers 3 --style pixel -
 
 It paints a looping strip per depth (mountains at the back, hills between, `--front` pines or hills), cuts them,
 packs `OUT/page/<name>.atlas`, writes `<name>.jplax` by this skill's rules (front 0.08, x2.0 a layer back, the back one
-at most a tenth of the front's; each farther strip's bottom under the solid band of the one in front; one gradient
+at most a tenth of the front's; each farther strip's bottom under the rows of the one in front opaque in every column, a notch's tip included (r381); one gradient
 for the whole screen; the depth fog so the back layer is `--fog` 0.6 of the way to the sky), lints it, and renders
 `OUT/shots` (0, 6, 12 s). `--style painted` is SD 1.5 at ~12 s a strip, its front a `SEQUENCE` of `--variants` 3 more
 strips; `pixel` is SDXL + PixelArt_XL at ~25 s, one PNG pixel per art pixel, drawn `Nearest`. About 2 min a page.
