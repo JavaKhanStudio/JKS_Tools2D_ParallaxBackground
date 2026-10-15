@@ -115,7 +115,7 @@ with sync_playwright() as p:
         got = json.loads(page.input_value("#anim-copy-json"))
         keys = {"view", "zoom", "cameraScroll", "cloudDrift", "waveAmplitude", "waveWavelength", "waveSpeed", "swellAmplitude", "swellWavelength",
                 "swellSpeed", "glintStrength", "glintSize", "glintDensity", "glintSpeed", "glintCrest", "sunX", "sunWidth", "billowAmplitude", "billowWavelength", "billowSpeed",
-                "reflectStrength", "reflectDepth", "reflectRipple", "reflectBand", "reflectTint", "reflectSquash"}
+                "reflectStrength", "reflectDepth", "reflectRipple", "reflectBand", "reflectShade", "reflectSquash"}
         moved = {"swellAmplitude": {"started": 0.12, "now": 0.2}, "view": {"started": 0, "now": 5}}
         if set(got["settings"]) != keys or got["changed"] != moved:
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))

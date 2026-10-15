@@ -72,8 +72,6 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	static final float SEA_HORIZON = 84 / 384f;
 	/** The beach sea's mean colour (beach-sea.png's water), what REFLECT tints the mirrored range toward. */
 	static final float[] WATER = { 0.37f, 0.71f, 0.79f };
-	/** The beach page's sky at its top (topHalf_top), what REFLECT mirrors deep under the horizon; its haze colour nearer. */
-	static final float[] SKY = { 0.31f, 0.56f, 0.82f };
 	/**
 	 * Where each heart's frame is held, as a fraction of the frame's height from its bottom, at the panel's middle: the
 	 * beach's sea, calm's clouds; REFLECT's views lower, on the water under the horizon.
@@ -90,7 +88,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	private SelectElement view;
 	private InputElement zoom, scroll, waveAmplitude, waveWavelength, waveSpeed, swellAmplitude, swellWavelength, swellSpeed, glintStrength,
 			glintSize, glintDensity, glintSpeed, glintCrest, sunX, sunWidth, billowAmplitude, billowWavelength, billowSpeed, drift, reflectStrength,
-			reflectDepth, reflectRipple, reflectBand, reflectTint, reflectSquash;
+			reflectDepth, reflectRipple, reflectBand, reflectShade, reflectSquash;
 	private Element readout;
 	private final Element[] labels = new Element[4];
 	private boolean clip;
@@ -207,12 +205,12 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		billowAmplitude = LabControls.slider(document, controls, "billowAmplitude", "BILLOW amplitude (world units)", 0, 1.5f, 0.02f, 0.3f);
 		billowWavelength = LabControls.slider(document, controls, "billowWavelength", "BILLOW wavelength (world units)", 1, 20, 0.25f, 6);
 		billowSpeed = LabControls.slider(document, controls, "billowSpeed", "BILLOW speed (world units/s)", 0, 2, 0.05f, 0.4f);
-		reflectStrength = LabControls.slider(document, controls, "reflectStrength", "REFLECT strength (the mirrored range's opacity at the horizon)", 0, 1, 0.05f, 0.75f);
+		reflectStrength = LabControls.slider(document, controls, "reflectStrength", "REFLECT strength (the mirrored range's opacity at the horizon)", 0, 1, 0.05f, 0.85f);
 		reflectDepth = LabControls.slider(document, controls, "reflectDepth", "REFLECT depth (world units under the horizon where it has faded out)", 0.5f, 6, 0.1f, 4.5f);
 		reflectRipple = LabControls.slider(document, controls, "reflectRipple", "REFLECT ripple (sideways shift of its bands, world units, at the horizon; twice that at its depth)", 0, 0.4f, 0.01f, 0.05f);
 		reflectBand = LabControls.slider(document, controls, "reflectBand", "REFLECT bands (their height, world units: thinner, a more broken reflection)", 0.03f, 0.6f, 0.01f, 0.1f);
-		reflectTint = LabControls.slider(document, controls, "reflectTint", "REFLECT tint (how much of the water's colour it takes)", 0, 1, 0.05f, 0.7f);
-		reflectSquash = LabControls.slider(document, controls, "reflectSquash", "REFLECT squash (the range's height over the reflection's: 1 a true mirror, which on this thin sea shows only the range's foot)", 1, 5, 0.1f, 2.5f);
+		reflectShade = LabControls.slider(document, controls, "reflectShade", "REFLECT shade (how much darker than the water the range's mirror is: 0 the water's own colour)", 0, 0.9f, 0.05f, 0.5f);
+		reflectSquash = LabControls.slider(document, controls, "reflectSquash", "REFLECT squash (the range's height over the reflection's: 1 a true mirror, which on this thin sea shows only the range's foot; 5 puts the beach range's peaks 1 to 1.5 world units under the horizon)", 1, 8, 0.1f, 5);
 		readout = LabControls.readout(document, controls, "anim-readout");
 	}
 
@@ -246,7 +244,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		reflect[1] = LabControls.read(reflectDepth);
 		reflect[2] = LabControls.read(reflectStrength);
 		reflect[3] = LabControls.read(reflectBand);
-		reflect[4] = LabControls.read(reflectTint);
+		reflect[4] = LabControls.read(reflectShade);
 		reflect[5] = LabControls.read(reflectSquash);
 		float rr = LabControls.read(reflectRipple);
 		for (int i = 0; i < hearts.length; i++)
@@ -392,7 +390,6 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			float[] r = lab.reflect;
 			program.setUniformf(program.fetchUniformLocation("u_reflect", false), r[0], r[1], r[2], r[3]);
 			program.setUniformf(program.fetchUniformLocation("u_water", false), WATER[0], WATER[1], WATER[2], r[4]);
-			program.setUniformf(program.fetchUniformLocation("u_sky", false), SKY[0], SKY[1], SKY[2]);
 			program.setUniformf(program.fetchUniformLocation("u_squash", false), r[5]);
 			return true;
 		}
@@ -458,9 +455,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 * out (r409: clouds always get their own layer).</li>
 	 * <li>REFLECT (r419, after Simon: "more feeling of reflexion"): drawn on the beach's far range flipped over the sea
 	 * ({@link #RANGE}), not on the sea: below the horizon, the range squashed by u_squash (a true mirror of a range taller
-	 * than the sea is deep shows only its foot), the sky mirrored where the range is clear (u_fog at the horizon, u_sky
-	 * deeper), the range's mirror darkened by the water's colour (u_water, its a how much) so its silhouette reads in the
-	 * sheen, cut in bands u_reflect.w high that slide sideways by the layer's amplitude and thin out, faded out
+	 * than the sea is deep shows only its foot), drawn as a silhouette of the water's colour darkened by u_water.a, the
+	 * sea showing through where the range is clear but for a thin sheen of the haze's colour near the horizon, cut in bands u_reflect.w high that slide sideways by the layer's amplitude and thin out, faded out
 	 * u_reflect.y under the horizon, at most u_reflect.z opaque. u_reflect.x: how far under the horizon the range's
 	 * foot is. Its x terms are whole turns over FOG's periods, its time terms whole multiples of t.</li>
 	 * </ul>
@@ -489,8 +485,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "uniform vec2 u_glintB;\n"
 			+ "uniform vec4 u_reflect;\n"
 			+ "uniform vec4 u_water;\n"
-			+ "uniform vec3 u_sky;\n"
-			+ "uniform float u_squash;\n"
+						+ "uniform float u_squash;\n"
 			+ "const float TAU = 6.2831853;\n"
 			+ "vec4 hazed(vec4 color)\n"
 			+ "{\n"
@@ -561,13 +556,14 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "	color.rgb = min(color.rgb + u_glint.x * glow * vec3(1.0, 0.96, 0.85), 1.0);\n"
 			+ "#endif\n"
 			+ "#ifdef REFLECT\n"
-			// Where the range is clear, the sky it stands in, mirrored too, as the sky's light on the water: the haze's
-			// colour at the horizon, the sky's top colour (u_sky) deeper. The range's mirror takes the water's colour over
-			// it, as water darkens what it mirrors: on a hazed page the range is barely off the sky, and its silhouette
-			// reads only so, dark in the sheen.
-			+ "	vec3 sky = mix(u_fog, u_sky, smoothstep(0.0, 1.0, 1.4 * deep));\n"
-			+ "	vec3 range = mix(color.rgb, color.rgb * u_water.rgb * 1.25, u_water.a);\n"
-			+ "	color = vec4(mix(sky, range, image.a), v_color.a * keep);\n"
+			// The range's mirror is a silhouette: the water's colour, darker by u_water.a, a fifth of the painting kept. The
+			// painted range is barely off the sky (10/255 on the beach page), so mirrored as painted it only paled the sea
+			// (Simon on r419: "I don't see the reflect"). Where the range is clear the sea shows through, but for a thin
+			// sheen of the haze's colour, the sky's light, near the horizon.
+			+ "	vec3 range = mix(u_water.rgb, color.rgb, 0.2) * (1.0 - u_water.a);\n"
+			+ "	float sheen = 0.3 * (1.0 - smoothstep(0.0, 0.4, deep));\n"
+			+ "	float cover = image.a + (1.0 - image.a) * sheen;\n"
+			+ "	color = vec4(mix(u_fog, range, image.a / max(cover, 0.001)), v_color.a * keep * cover);\n"
 			+ "#endif\n"
 			+ "	gl_FragColor = hazed(color);\n"
 			+ "}\n";
