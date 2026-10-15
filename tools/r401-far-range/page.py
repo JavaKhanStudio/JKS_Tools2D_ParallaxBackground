@@ -70,8 +70,7 @@ def main():
     spec = {"name": "r401", "title": "r401: a pale far range painted round a layer's shape, kept, half clear, or keyed out?",
             "intro": "SD paints pale far ranges round a near layer's shape (between the mesas, behind the pines). "
                      "Today's key cuts them in patches. Which of A, B or C should it do instead? Each box shows two "
-                     "versions of the same page: pick them under <b>Left</b> and <b>Right</b>, drag the yellow line, "
-                     "or press <b>Flicker</b> (the clearest: the same place, one version then the other). A, B and C are mockups painted onto today's cut, region by region.",
+                     "versions of the same page: pick them under <b>Left</b> and <b>Right</b> and drag the yellow line. A, B and C are mockups painted onto today's cut, region by region.",
             "sections": sections}
     with open(os.path.join(out, "spec.json"), "w") as f:
         json.dump(spec, f, indent=1)
