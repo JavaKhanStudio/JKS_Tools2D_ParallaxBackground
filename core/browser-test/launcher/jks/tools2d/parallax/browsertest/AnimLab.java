@@ -377,6 +377,11 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			if (!batch.isDrawing())
 				program.bind();
 			LabKit.setEffect(program, numbers(layer, phase), fogAmount, fogColor.r, fogColor.g, fogColor.b);
+			// WAVE is GdxLayerEffects' own source, whose glint (r427) has uniforms of these names, u_glintB a vec4: set
+			// there, the lab's numbers lit WAVE's shipped glint and divided along() by a zero u_glintB.zw, a white sea
+			// (r419). Its glint stays off, as on a layer whose glintStrength is 0.
+			if (program == wave)
+				return true;
 			float[] g = lab.glint;
 			// GLINT's time in pulses, by the reader's clock, wrapped at a whole number: every time term is whole turns.
 			float time = (float) (heart.parallaxReader.getEffectTime() * g[2] % 1000.0);

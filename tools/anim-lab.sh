@@ -75,6 +75,10 @@ with sync_playwright() as p:
     errors = []
     # A failed load is reported below with its URL: the console's line names none (r320: it was the favicon).
     page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and errors.append(m.text))
+    # WebGL's own errors come as warnings, and the frame still draws: a uniform the lab set on a shipped shader of the
+    # wrong size painted WAVE's sea white with nothing failing (r419). Any of them fails the run.
+    webgl = []
+    page.on("console", lambda m: m.type == "warning" and "WebGL" in m.text and webgl.append(m.text))
     page.on("pageerror", lambda e: errors.append(str(e)))
     # Chrome asks every page for a favicon: the lab has none.
     page.on("response", lambda r: r.status >= 400 and not r.url.endswith("/favicon.ico") and errors.append("%d %s" % (r.status, r.url)))
@@ -124,6 +128,8 @@ with sync_playwright() as p:
     if errors:
         print("page errors: %s" % errors, file=sys.stderr)
     browser.close()
+    if webgl:
+        sys.exit("WebGL errors (%d), first: %s" % (len(webgl), webgl[0]))
 PY
 if [ $MODE = views ]; then
 	mkdir -p "$OUT" && cp "$FRAMES"/view*.png "$OUT"/ && echo "stills: $OUT/view*.png"
