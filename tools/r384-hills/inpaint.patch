@@ -1,0 +1,206 @@
+diff --git a/.claude/skills/parallax-pages/SKILL.md b/.claude/skills/parallax-pages/SKILL.md
+index 7aa59c6..7f267cf 100644
+--- a/.claude/skills/parallax-pages/SKILL.md
++++ b/.claude/skills/parallax-pages/SKILL.md
+@@ -154,6 +154,9 @@ at most a tenth of the front's; each farther strip's bottom under the rows of th
+ for the whole screen; the depth fog so the back layer is `--fog` 0.6 of the way to the sky), lints it, and renders
+ `OUT/shots` (0, 6, 12 s). `--style painted` is SD 1.5 at ~12 s a strip, its front a `SEQUENCE` of `--variants` 3 more
+ strips; `pixel` is SDXL + PixelArt_XL at ~25 s, one PNG pixel per art pixel, drawn `Nearest`. About 2 min a page.
++Painted with the default model and no `--denoise`, the hills are inpainted inside their shape at 1.0 by
++`dreamshaper_8Inpainting` (r384, Simon's pick in hills-lab): img2img painted them one flat green. Their skyline is
++SD's own, near sil.py's.
+ `--ckpt`/`--lora` paint with another model from `~/ComfyUI/models` (r346, `docs/ai-parallax.md`), recorded in
+ `recipe.json`; a `.gguf` is a DiT (`--ckpt z-image-turbo-Q5_K_M.gguf`, r356), looped by a unet wrapper.
+ Every strip is painted with a plain sky, keyed out: no layer carries clouds. A page that wants them asks `--clouds`
+diff --git a/docs/ai-parallax.md b/docs/ai-parallax.md
+index abdb2f3..29fb72a 100644
+--- a/docs/ai-parallax.md
++++ b/docs/ai-parallax.md
+@@ -43,7 +43,7 @@ bands, and each layer cut, masked, repainted and as drawn (r279's three are in `
+ | Pass | Tool | What it does |
+ |------|------|--------------|
+ | 1. Shape | `sil.py` | Draws the layer's silhouette (ridge, hills, treeline) as a sum of sines of whole frequencies over the width, with trees placed on a cylinder. It loops by construction, like an SVG would, and it stays editable: a seed and a few numbers. `--texture 1` (`ai-page.sh` passes it, r365) gives the flat kinds' fill something to paint from: looping value noise, the shape embossed, far mountains darker toward their foot, the sea's noise in streaks. img2img at 0.65 paints detail only where its start has some: from a flat fill the beach's sea, sand and far mountains came out plain bars (colour std inside the shape 6-10; 10-21 textured, the shapes kept, `tools/r365-init/measure.py`). The front kinds (pines, palms, ruins) stay flat: their outline is detail enough, and a texture there cost a palm its crown. A haze toward the sky at a mountain's foot made SD paint a sea there. |
+-| 2. Paint | `gen.py img2img --tile x` | SD 1.5 (`dreamshaper_8`) repaints the flat silhouette at denoise 0.65, with every convolution of the UNet and the VAE padded **circularly along X** (circular padding). The model paints on a cylinder, so the strip's right edge runs on into its left one. Spikes come out as real pines. |
++| 2. Paint | `gen.py img2img --tile x` | SD 1.5 (`dreamshaper_8`) repaints the flat silhouette at denoise 0.65, with every convolution of the UNet and the VAE padded **circularly along X** (circular padding). The model paints on a cylinder, so the strip's right edge runs on into its left one. Spikes come out as real pines. The hills alone (default model, no `--denoise`) are inpainted inside their shape at 1.0 by `dreamshaper_8Inpainting`, the sky kept exactly (r384): img2img left them one flat green (colour std inside 0.4-5, 50-68 inpainted, the skyline SD's own at alpha IoU 0.79-0.89). |
+ | 3. Vary | `sil.py --edges-of` + `gen.py variants` | More strips, **edge-locked variants**, that start and end on the first one's columns: a new silhouette whose ends are the first one's, painted only in the middle (noise mask), then the first strip's outer 8 px laid back exactly. **Any variant can follow any other**, so one `SEQUENCE` layer chains them in a different order every cycle. |
+ | 4. Cut | `layer.py` | Keys the flat sky out to alpha, takes edge colours from solid neighbours (no light rim), cuts the alpha islands apart from the layer's mass (around the loop; `--keep-islands` for clouds), their faint edge down to the alpha around it, so a speck in half-keyed haze leaves the haze, not a square hole (r264), and fails on art cut at the top row. `--pixel 4 --colours 10`: box-downscales, quantises to one palette (`--palette`: shared by all segments of a sequence) and cuts alpha hard, for a page drawn `Nearest`. |
+ 
+diff --git a/tools/r239-ai-strips/ai_page.py b/tools/r239-ai-strips/ai_page.py
+index d0a3efe..c50afdb 100755
+--- a/tools/r239-ai-strips/ai_page.py
++++ b/tools/r239-ai-strips/ai_page.py
+@@ -101,6 +101,15 @@ NEG_XL = "clouds, sun, moon, birds, animals, creatures, gradient, text, watermar
+ WORDS = {"mountains": "rocky mountain range", "hills": "rolling hills with small trees",
+          "pines": "dark pine forest treeline silhouette", "dunes": "sand dunes", "sea": "calm sea, flat horizon",
+          "ruins": "ruined city skyline, broken skyscrapers silhouette", "palms": "palm trees silhouette on a sandy shore"}
++# dreamshaper_8's img2img paints the hills one flat green whatever the init carries (r384: colour std inside 0.4-5).
++# Inpainted inside sil.py's shape at full strength by its inpainting twin, the sky kept exactly, they get folds and
++# small round trees (std 50-68), under SD's own skyline (alpha IoU 0.79-0.89 against img2img's): Simon's pick in
++# hills-lab, "inpaint 1.0, round" (tools/r384-hills/try.py's inpf). Its negative keeps the conifers and the misty
++# ranges 0.70 painted behind out. Only for the default SD 1.5 painted with no --denoise: the other models' hills
++# were never tried.
++HILLS_INPAINT = {"ckpt": "dreamshaper_8Inpainting.safetensors", "denoise": 1.0,
++                 "words": "rolling hills with small round trees, folds and shadows",
++                 "negative": ", distant mountains, misty mountain range, fog, haze, pine trees, conifers"}
+ GROW = {"mountains": 8, "hills": 8, "pines": 40, "dunes": 8, "sea": 4, "ruins": 16, "palms": 24}  # layer.py --grow, px
+ DEFAULT_COLOURS = ["7a869e", "4f7a5a", "1f3a30"]  # sil.py's kinds, at full contrast: the fog gives the distance
+ # --clouds (r409): not a depth (no --kinds word), a strip of their own behind the back layer.
+@@ -496,9 +505,25 @@ class Pipeline:
+             return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG_XL, kind), "--prompt",
+                     (f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
+                      f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
++        if self.inpaints(kind):
++            h = HILLS_INPAINT
++            return [PY, f"{d}/gen.py", "inpaint", *self.model_args(denoise=False), "--ckpt", h["ckpt"], "--denoise",
++                    str(h["denoise"]), "--negative", negative(NEG, kind) + h["negative"], "--prompt",
++                    f"2d game parallax background layer, {a.theme}, {depth} {h['words']}, painterly, plain pale sky"]
+         return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG, kind), "--prompt",
+                 f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
+ 
++    def inpaints(self, kind):
++        """Whether depth's kind is painted by HILLS_INPAINT: hills, by the default SD 1.5, with no --denoise."""
++        return kind == "hills" and not self.pixel and self.model["ckpt"] == GEN_CKPT and self.a.denoise is None
++
++    @staticmethod
++    def source_args(gen, prefix):
++        """What gen.py starts from: sil.py's init, inpainted inside its mask or taken whole by img2img."""
++        if gen[2] == "inpaint":
++            return ["--src", f"{prefix}_init.png", "--mask", f"{prefix}_mask.png"]
++        return ["--init", f"{prefix}_init.png"]
++
+     def paint(self, k, kind, seed, prefix):
+         """sil.py, gen.py, then the cut: the cut layer's path, or None when it reaches its top row or holds a
+         creature."""
+@@ -507,6 +532,8 @@ class Pipeline:
+         self.made[os.path.basename(prefix)] = {"prompt": gen[gen.index("--prompt") + 1],
+                                                "negative": gen[gen.index("--negative") + 1],
+                                                "denoise": float(gen[gen.index("--denoise") + 1])}
++        if gen[2] == "inpaint":
++            self.made[os.path.basename(prefix)]["inpaint"] = HILLS_INPAINT["ckpt"]
+         if a.keep and os.path.exists(f"{prefix}_ai.png"):
+             return self.cut(prefix, kind)
+         if not a.dry_run:
+@@ -515,7 +542,7 @@ class Pipeline:
+         if run(["python3", f"{d}/sil.py", kind, prefix, "--w", str(self.w), "--h", str(self.h), "--seed", str(seed),
+                 "--colour", self.cols[k], "--quiet-join", "--texture", str(TEXTURE)], prefix + "_sil.log"):
+             sys.exit(f"sil.py failed: {prefix}_sil.log")
+-        if run(gen + ["--init", f"{prefix}_init.png", "--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
++        if run(gen + self.source_args(gen, prefix) + ["--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
+                prefix + "_gen.log"):
+             sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {prefix}_gen.log")
+         return self.cut(prefix, kind)
+diff --git a/tools/r239-ai-strips/hills_paint_test.py b/tools/r239-ai-strips/hills_paint_test.py
+new file mode 100644
+index 0000000..25b1b19
+--- /dev/null
++++ b/tools/r239-ai-strips/hills_paint_test.py
+@@ -0,0 +1,62 @@
++"""How ai_page.py paints each depth (r384): the hills of the default SD 1.5, with no --denoise, inpainted inside
++sil.py's shape at 1.0 by dreamshaper_8Inpainting (HILLS_INPAINT, Simon's pick in hills-lab); every other depth, model
++and --denoise img2img as before. No GPU: ai_page.py --dry-run's commands.
++
++    python3 tools/r239-ai-strips/hills_paint_test.py
++"""
++import os
++import shlex
++import subprocess
++import sys
++import tempfile
++import unittest
++
++HERE = os.path.dirname(os.path.abspath(__file__))
++sys.path.insert(0, HERE)
++import ai_page  # noqa: E402
++
++
++def commands(*args):
++    """Each strip's gen.py command (its words split), back to front, of a dry run with args."""
++    with tempfile.TemporaryDirectory() as d:
++        out = subprocess.run([sys.executable, os.path.join(HERE, "ai_page.py"), "--theme", "misty pine forest",
++                              "--layers", "4", *args, "--dry-run", d], capture_output=True, text=True, check=True)
++    return [shlex.split(line.split(" > ")[0]) for line in out.stdout.splitlines() if "/gen.py " in line]
++
++
++def strip(cmd):
++    return os.path.basename(cmd[cmd.index("--out") + 1])
++
++
++def mode(cmd):
++    return cmd[2]
++
++
++class HillsPaintTest(unittest.TestCase):
++
++    def test_default_hills_are_inpainted_inside_the_shape_at_full_strength(self):
++        cmds = {strip(c): c for c in commands()}
++        hills = cmds["l2_ai.png"]  # 4 layers: mountains, mountains, hills, pines
++        self.assertEqual(mode(hills), "inpaint")
++        self.assertEqual(hills[hills.index("--ckpt") + 1], ai_page.HILLS_INPAINT["ckpt"])
++        self.assertEqual(float(hills[hills.index("--denoise") + 1]), 1.0)
++        self.assertEqual(hills.count("--denoise"), 1)
++        self.assertNotIn("--init", hills)
++        self.assertIn("--src", hills)
++        self.assertTrue(hills[hills.index("--src") + 1].endswith("l2_init.png"))
++        self.assertTrue(hills[hills.index("--mask") + 1].endswith("l2_mask.png"))
++        self.assertIn("small round trees", hills[hills.index("--prompt") + 1])
++        self.assertIn("conifers", hills[hills.index("--negative") + 1])
++        for k in ("l0_ai.png", "l1_ai.png", "l3_ai.png"):
++            self.assertEqual(mode(cmds[k]), "img2img", k)
++            self.assertNotIn("--ckpt", cmds[k])
++
++    def test_another_model_or_a_denoise_keeps_img2img(self):
++        for args in (["--denoise", "0.7"], ["--ckpt", "openjourney-v4.ckpt"], ["--style", "pixel"]):
++            for c in commands(*args):
++                if strip(c).startswith("l"):
++                    self.assertNotEqual(mode(c), "inpaint", (args, strip(c)))
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tools/r384-hills/mutate.sh b/tools/r384-hills/mutate.sh
+new file mode 100755
+index 0000000..35c46e5
+--- /dev/null
++++ b/tools/r384-hills/mutate.sh
+@@ -0,0 +1,41 @@
++#!/usr/bin/env bash
++# headless: unit tests, no window
++# mutate.sh — r384's proof: each part of the hills' inpaint recipe in ai_page.py broken in turn, hills_paint_test.py
++# must fail on an assertion (a FAIL, not an import error: a mutant that breaks the import passes nothing).
++# Copies tools/*.py and tools/r239-ai-strips into a scratch folder; the clean copy must pass first. Exits 1 when one
++# survives.
++set -u
++cd "$(dirname "$0")/../.." || exit 1
++WORK=$(mktemp -d)
++trap 'rm -rf "$WORK"' EXIT
++cp tools/*.py "$WORK/"
++cp -r tools/r239-ai-strips "$WORK/"
++T="$WORK/r239-ai-strips/hills_paint_test.py"
++python3 "$T" >"$WORK/clean.log" 2>&1 || { echo "the clean copy fails: $WORK/clean.log"; cat "$WORK/clean.log"; exit 2; }
++survived=0
++mutate() {  # name, the line as it is, the line broken
++	cp tools/r239-ai-strips/ai_page.py "$WORK/r239-ai-strips/ai_page.py"
++	python3 - "$WORK/r239-ai-strips/ai_page.py" "$2" "$3" <<'PY' || { echo "$1: the line is gone, update mutate.sh"; exit 2; }
++import sys
++p, old, new = sys.argv[1:]
++s = open(p).read()
++if s.count(old) != 1:
++    sys.exit(1)
++open(p, "w").write(s.replace(old, new))
++PY
++	python3 "$T" >"$WORK/$1.log" 2>&1
++	if ! grep -q '^FAIL:' "$WORK/$1.log"; then
++		echo "SURVIVED  $1"; tail -5 "$WORK/$1.log"
++		survived=1
++	else
++		echo "killed    $1 ($(grep -c '^FAIL:' "$WORK/$1.log") failing)"
++	fi
++}
++mutate no-inpaint 'return kind == "hills" and not self.pixel' 'return False and not self.pixel'
++mutate any-denoise ' and self.a.denoise is None' ''
++mutate any-ckpt 'self.model["ckpt"] == GEN_CKPT and ' ''
++mutate init-not-src 'if gen[2] == "inpaint":
++            return ["--src"' 'if False:
++            return ["--src"'
++mutate old-words '"words": "rolling hills with small round trees, folds and shadows"' '"words": "rolling hills with small trees"'
++exit $survived
