@@ -302,6 +302,34 @@ def with_fields(L, fields, n, few=4):
         fields = [m for i, m in enumerate(fields) if i not in bad]
 
 
+def kept_fields(L, moved, fields, edge=6):
+    """L, but each pixel of a field that the passes after with_fields handed to a farther band than the field's
+    (moved), under a pixel of that field still in its band: see_through took a dark tuft of grass for sky between
+    branches, necks a strip at the layer's top for a neck. Each was a notch in the nearer layer's field, through which
+    the farther layer's repaint showed as it slid (river, r387). At the field's top edge, what they handed back stays
+    back: the ridge seen between a far hill's trees. Then each field's part in its band closed by a disk of radius
+    edge px: SAM's prompted mask is ragged where a field meets the trees behind it, and each notch it left in the
+    field's edge showed those trees, in the farther layer, as a dark scallop once the layers slid."""
+    if not fields:
+        return L
+    field = np.any(fields, axis=0)
+    back = field & (moved > L)
+    stayed = field & (moved == L)
+    out = L.copy()
+    for k in np.unique(moved[back]):
+        under = np.maximum.accumulate(stayed & (L == k), axis=0)  # a pixel of the field in band k above, same column
+        take = back & (moved == k) & under
+        out[take] = k
+    disk = np.hypot(*np.mgrid[-edge:edge + 1, -edge:edge + 1]) <= edge
+    for k in np.unique(moved[field]):
+        if k == 0:
+            continue
+        own = field & (moved == k) & (out == k)
+        shut = looped(lambda m: ndimage.binary_closing(m, structure=disk), own)
+        out[shut & (out < k)] = k
+    return out
+
+
 def mend_join(out, before, reach=32):
     """out with each row whose two ends differ, one of them moved from before, given the moved end's band from the
     other end inward up to where that band starts again, when it does within reach px; in place."""
@@ -592,6 +620,17 @@ def mirrored(c, run, w):
         yield (c - 1 - i) % w, (c + 2 * run - 1 - i) % w, t * t * (3 - 2 * t)
 
 
+def field_colours(img, field, sigma=8):
+    """Each pixel of field, the mean of the field's colours round it (a Gaussian of sigma px, over the field only,
+    wrapping along X): its light and shade, not a track or a bush on it."""
+    f = field.astype(np.float32)
+
+    def blur(v):
+        return ndimage.gaussian_filter(v, sigma, mode=("nearest", "wrap"))
+    wgt = np.maximum(blur(f), 1e-6)
+    return np.dstack([blur(img[..., c].astype(np.float32) * f) / wgt for c in range(3)])
+
+
 def behind_start(src, img, known, L, k):
     """The repaint's start over the runs where band k goes on behind a nearer thing: the painting's own pixels beside
     the run, mirrored into it as its outline is (topline), each side's eased, where those are layer k's; fill()'s
@@ -859,8 +898,9 @@ def mend_loop(img, cut, a, recipe):
 
 
 def depth_bands(img, n, cut):
-    """2. Depth, 3. bands: (dn, L, centres, masks), the depth normalised to 0..1, each pixel's band, far 0 to near
-    n-1, and SAM's masks (the clouds are read from them, r409)."""
+    """2. Depth, 3. bands: (dn, L, centres, ground, masks), the depth normalised to 0..1, each pixel's band, far 0 to
+    near n-1, the fields fields_of found (r387: the layers behind one seed their hole with it) and SAM's masks (the
+    clouds are read from them, r409)."""
     h, w = img.shape[:2]
     # r391: each GPU step under the lock gen.py and anim.py take, its memory freed before it ends; gen.py (the loop,
     # the repaints) takes it itself, outside these
@@ -878,19 +918,21 @@ def depth_bands(img, n, cut):
         fields = fields_of(img, L, n)
     fields = agreeing(L, fields, n)
     L = with_fields(L, fields, n)
+    moved = L.copy()
     outlines(img, fields).save(os.path.join(cut, "fields.png"))
     L = by_colour(L, img, n)
     L = see_through(L, dn, centres, img, n)
     L = strays(L, n, w * h // 150)
     L = loose(L, n)
     L = loose(necks(L, dn, n), n)  # the stubs a neck leaves are loose pieces
+    L = kept_fields(L, moved, fields)
     colour_bands(L, n).save(os.path.join(cut, "bands.png"))
     log("bands, far to near: " + ", ".join(f"{k}: disparity {centres[k]:.2f}, {(L == k).mean():.0%} of the pixels"
                                           for k in range(n)))
-    return dn, L, centres, masks
+    return dn, L, centres, np.any(fields, axis=0) if fields else np.zeros((h, w), bool), masks
 
 
-def cut_layer(k, img, dn, L, centres, cut, a):
+def cut_layer(k, img, dn, L, centres, ground, cut, a):
     """4. Layer k and its hole, repainted: (layer, its recipe entry). With the sky apart (r409: L is -1 there), band
     0 is cut as a nearer band is, its outline going on behind what hides it."""
     h, w = img.shape[:2]
@@ -920,6 +962,12 @@ def cut_layer(k, img, dn, L, centres, cut, a):
     src = looped(fill, img, alpha & ~hole)
     if hole.any() and not back:  # the back layer is opaque, and nothing goes on behind its sky
         src = behind_start(src, img.astype(np.float32), alpha & ~hole, L, k)
+    # A field moved to a nearer band goes on behind itself: its own colours, blurred, start the repaint there. From the
+    # fill alone, river's l2 under its moved fields was repainted as a dark forest, seen at l3's edge as it slid; from
+    # its pixels, a track across the field was painted again behind it, a second track once the layers slid (r387).
+    field = hole & ground & (L > k)
+    if field.any():
+        src[field] = field_colours(img, ground & (L > k))[field]
     Image.fromarray(np.dstack([img, alpha * 255]).astype(np.uint8)).save(f"{cut_k}_raw.png")
     done = f"{cut_k}_painted.png"
     word = WORDS[min(3, round(k * 3 / max(1, n - 1)))]
@@ -1253,7 +1301,7 @@ def main():
               "negative": NEG, "fogStrength": 0, "layers": []}
 
     img = mend_loop(np.asarray(im), cut, a, recipe)
-    dn, L, centres, masks = depth_bands(img, n, cut)
+    dn, L, centres, ground, masks = depth_bands(img, n, cut)
     layers = []
     # r409: clouds always on a layer of their own, behind the far range and over a sky with none: BILLOW on a back
     # layer holding sky, clouds and range warped the mountains too, and painted clouds could not drift.
@@ -1269,7 +1317,7 @@ def main():
         recipe["layers"].append(entry)
         log(f"clouds: {clouds.mean():.1%} of the painting, on a layer of their own over the filled sky")
     for k in range(n):
-        layer, entry = cut_layer(k, img, dn, L, centres, cut, a)
+        layer, entry = cut_layer(k, img, dn, L, centres, ground, cut, a)
         layers.append(layer)
         recipe["layers"].append(entry)
     s = speeds_of(layers, a.front_speed)

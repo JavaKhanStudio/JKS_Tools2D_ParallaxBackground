@@ -172,7 +172,8 @@ class CloudsTest(unittest.TestCase):
         saved = dp.gen
         dp.gen = lambda argv, logfile: shutil.copy(argv[argv.index("--src") + 1], argv[argv.index("--out") + 1])
         try:
-            layer, entry = dp.cut_layer(0, self.s["img"], self.s["dn"], S, [0.0, 0.4, 0.8], self.cut, args())
+            layer, entry = dp.cut_layer(0, self.s["img"], self.s["dn"], S, [0.0, 0.4, 0.8],
+                                         np.zeros((H, W), bool), self.cut, args())
         finally:
             dp.gen = saved
         part = np.asarray(Image.open(layer["path"]).convert("RGBA"))[..., 3]

@@ -20,13 +20,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 import depth_page as dp
 
 
-def finish(L, dn, centres, img, n):
-    """depth_bands' passes after the masks."""
+def finish(L, dn, centres, img, n, fields=()):
+    """depth_bands' passes after the masks, the moved fields kept whole at the end (r387)."""
     h, w = L.shape
+    moved = L
     L = dp.by_colour(L, img, n)
     L = dp.see_through(L, dn, centres, img, n)
     L = dp.strays(L, n, w * h // 150)
-    return dp.loose(L, n)
+    return dp.kept_fields(dp.loose(L, n), moved, list(fields))
 
 
 def slabs(L, img, n):
@@ -46,7 +47,7 @@ def main():
     fields = dp.agreeing(L, dp.fields_of(img, L, n), n)
     dp.outlines(img, fields).save(os.path.join(out, f"{name}_fields.png"))
     cuts = {"before": finish(L, dn, centres, img, n),
-            "after": finish(dp.with_fields(L, fields, n), dn, centres, img, n)}
+            "after": finish(dp.with_fields(L, fields, n), dn, centres, img, n, fields)}
     for tag, cut in cuts.items():
         b = np.asarray(dp.colour_bands(cut, n)).astype(np.float32)
         shown = (img * 0.55 + b * 0.45).astype(np.uint8)

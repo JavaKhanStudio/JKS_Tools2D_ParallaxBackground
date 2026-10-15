@@ -55,7 +55,7 @@ def bands(cache_file, out, path):
     os.makedirs(os.path.join(out, "cut"), exist_ok=True)
     dp.log = lambda s: None
     dp.gpu_lock.held = lambda what: contextlib.nullcontext()  # nothing here runs on the GPU
-    _, L, _ = dp.depth_bands(c["img"], 4, os.path.join(out, "cut"))
+    L = dp.depth_bands(c["img"], 4, os.path.join(out, "cut"))[1]  # (dn, L, centres, ground, masks) since r387
     np.save(os.path.join(out, "L.npy"), L)
     Image.fromarray(c["img"]).save(os.path.join(out, "cut", "painting.png"))
 

@@ -39,13 +39,17 @@ def main():
     dn = np.clip((d - lo) / (hi - lo), 0, 1)
     L, centres = dp.bands(dn, n, min_area=w * h // 150)
     steps = [("bands", lambda L: L), ("objects", lambda L: dp.objects(L, masks, n)),
-             ("fields", lambda L: dp.with_fields(L, dp.agreeing(L, fields, n), n)),
+             ("fields", lambda L: dp.with_fields(L, kept.setdefault("fields", dp.agreeing(L, fields, n)), n)),
              ("by_colour", lambda L: dp.by_colour(L, img, n)),
              ("see_through", lambda L: dp.see_through(L, dn, centres, img, n)),
              ("strays", lambda L: dp.strays(L, n, w * h // 150)), ("loose", lambda L: dp.loose(L, n)),
-             ("necks", lambda L: dp.loose(dp.necks(L, dn, n), n))]
+             ("necks", lambda L: dp.loose(dp.necks(L, dn, n), n)),
+             ("kept_fields", lambda L: dp.kept_fields(L, kept["moved"], kept["fields"]))]
+    kept = {}  # the fields agreeing kept, and L just after with_fields: kept_fields' inputs
     for i, (name, fn) in enumerate(steps):
         L = fn(L) if i else L
+        if name == "fields":
+            kept["moved"] = L
         alpha = dp.alpha_of(L, k)
         hole = alpha & (dp.grow(L > k, 3) | (L < k))
         box = hole[y0:y1, x0:x1]

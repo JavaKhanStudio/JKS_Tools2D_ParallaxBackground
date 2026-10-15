@@ -1,18 +1,23 @@
-"""depth_page's rules (r378), see_through's sky by hue (r380) and foot_of's hidden feet (r386), on paintings made up
-here: no GPU, no files from a run.
+"""depth_page's rules (r378), see_through's sky by hue (r380), foot_of's hidden feet (r386) and the moved fields kept
+whole and seeding the layers behind (r387), on paintings made up here: no GPU, no files from a run.
 
     ~/ComfyUI/venv/bin/python tools/r279-depth-page/rules_test.py
 
 A sky over a land, a crown (the hole) hanging into the sky, a twig's tip left beside it in the back layer, a hedge's
 dark line in the land touching the hole, a broad dark mountain touching it too, a dark cloud against the crown, the sky's own blue in a narrow gap
 between two white clouds under the crown, and a thin dark stroke the painting has far out in the sky.
+tools/r387-fields/mutate.sh takes each part of r387's fix out and proves a case here fails.
 """
 import argparse
 import os
+import shutil
 import sys
+import tempfile
+import types
 import unittest
 
 import numpy as np
+from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import depth_page as dp
@@ -208,6 +213,78 @@ class FootTest(unittest.TestCase):
     def test_a_foot_partly_in_the_halo_is_judged_on_the_part_seen(self):
         L, pine = pine_scene(slice(112, 126))  # 14 columns of band 2, 6 of band 1; the halo reaches x 123
         self.assertEqual(dp.foot_of(L, pine, 4), 1)
+
+
+def field_scene():
+    """For kept_fields (r387): far land (band 2) over a near field (band 3) from row 60, SAM's mask of it ragged at its
+    top: a 4 px notch and a 40 px bay left out of it, and a 20 px dip. After with_fields (moved), a later pass handed
+    back a tuft inside the field and a strip along the dip's floor, its top edge there."""
+    moved = np.full((H, W), 2)
+    moved[60:] = 3
+    mask = moved == 3
+    notch = np.zeros((H, W), bool)
+    notch[60:64, 30:34] = True
+    bay = np.zeros((H, W), bool)
+    bay[60:66, 150:190] = True
+    moved[notch | bay] = 2
+    mask &= ~(notch | bay)
+    L = moved.copy()
+    tuft = np.zeros((H, W), bool)
+    tuft[80:104, 60:90] = True  # wider than the closing shuts
+    strip = np.zeros((H, W), bool)
+    strip[66:68, 100:120] = True  # the field's top row there: nothing of it above
+    mask[60:66, 100:120] = False
+    moved[60:66, 100:120] = 2
+    L[60:66, 100:120] = 2
+    L[tuft | strip] = 2
+    return L, moved, [mask], notch, bay, tuft
+
+
+class KeptFieldsTest(unittest.TestCase):
+    def test_a_tuft_inside_goes_back_to_the_field_a_strip_on_its_top_edge_stays_back(self):
+        L, moved, fields, *_, tuft = field_scene()
+        out = dp.kept_fields(L, moved, fields)
+        self.assertTrue((out[tuft] == 3).all())
+        self.assertTrue((out[66:68, 106:114] == 2).all())  # the closing rounds the dip's corners, not its floor
+
+    def test_a_notch_in_the_field_s_edge_is_closed_a_bay_is_not(self):
+        L, moved, fields, notch, bay, *_ = field_scene()
+        out = dp.kept_fields(L, moved, fields)
+        self.assertTrue((out[61:64, 30:34] == 3).all())  # all but its mouth, the field's own top row
+        self.assertTrue((L[notch] == 2).all())
+        self.assertGreater((out[bay] == 2).mean(), 0.9)
+
+    def test_a_field_seeds_its_light_not_a_track_on_it(self):
+        img = np.full((H, W, 3), 140, np.uint8)
+        img[:, :, 1] = 180
+        field = np.zeros((H, W), bool)
+        field[60:] = True
+        img[90:94, :] = (60, 50, 40)  # a track across it
+        img[:60] = (20, 40, 20)  # a dark forest above it
+        seed = dp.field_colours(img, field)
+        self.assertLess(np.abs(seed[91, 100] - (140, 180, 140)).max(), 30)
+        self.assertLess(np.abs(seed[61, 100] - (140, 180, 140)).max(), 20)
+
+    def test_a_moved_field_starts_its_own_repaint_in_the_layer_behind(self):
+        img = np.zeros((H, W, 3), np.uint8)
+        img[:60] = (20, 40, 20)  # a dark forest, band 2
+        img[60:] = (140, 180, 140)  # the field, moved whole to band 3
+        img[90:94] = (60, 50, 40)  # a track across it
+        L = np.full((H, W), 2)
+        L[60:] = 3
+        cut = tempfile.mkdtemp(prefix="r387-")
+        saved = dp.gen
+        dp.gen = lambda argv, logfile: shutil.copy(argv[argv.index("--src") + 1], argv[argv.index("--out") + 1])
+        try:
+            a = types.SimpleNamespace(layers=4, grow=6, theme="green hills", forced={}, denoise=0.8, seed=1, ckpt="x",
+                                      keep=False)
+            dp.cut_layer(2, img, np.zeros((H, W)), L, [0.0, 0.3, 0.6, 0.9], L == 3, cut, a)
+            src = np.asarray(Image.open(os.path.join(cut, "l2_src.png")).convert("RGB")).astype(int)
+        finally:
+            dp.gen = saved
+            shutil.rmtree(cut)
+        self.assertLess(np.abs(src[80, 100] - (140, 180, 140)).max(), 30)  # the field's light, not the forest's dark
+        self.assertLess(np.abs(src[92, 100] - (140, 180, 140)).max(), 40)  # and no second track
 
 
 if __name__ == "__main__":
