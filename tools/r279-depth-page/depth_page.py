@@ -1025,7 +1025,7 @@ def clouds_of(img, dn, L, masks, least=200, most=0.5, share=0.9, lift=CLOUD_LIFT
 
 
 def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin=0.3, neck=2, nearer=0.3, rim=8,
-              pale=0.15):
+              pale=0.15, haze=1.5, seam=12):
     """L with the sky, -1, apart from band 0, the far range: band 0's pixels at the sky's depth and its clouds. Within
     reach px of a nearer thing, a range pixel whose colour is within margin of its distance to the range round it (the
     mean over window px) from the sky round it goes to the sky: depth's halo round a crown judged the sky beside it
@@ -1035,6 +1035,10 @@ def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin
     that distance goes to the sky too (r420: sky painted beside a peak's flank, judged a shade farther than the sky
     is, rode on the range as a pale shard, noloop); its means are the ones above, the rim in the range's: at 0.2,
     still with the rim out of them, valley's hazy far hills went to the sky in notches. Then a piece of the range
+    within haze x the sky's depth, touching the sky, under area / 10 px and meeting it with no edge (the colour across
+    its border steps under seam, the median) goes to the sky: the end of a far ridge the sky took, a shade nearer, cut
+    in a step where the range layer carried it (r423, noloop and valley); a far peak of the range against the sky,
+    hazy as it is, is bigger, and a small one is edged. Then a piece of the range
     under area px goes to the sky unless the range is most of its rim (the sky between a crown's leaves: kept, the
     range layer carried it as specks floating in the sky); a piece of the sky under area px with the range most of its
     rim joins the range (a pale cliff). Then a thin piece of the range
@@ -1056,6 +1060,7 @@ def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin
             to_sky, to_rng = np.linalg.norm(rgb - sky_m, axis=2), np.linalg.norm(rgb - rng_m, axis=2)
         edge = (S == 0) & ~zone & grow(S == -1, rim)
         S[(zone & (to_sky < margin * to_rng)) | (edge & (to_sky < pale * to_rng))] = -1
+        S[ridge_ends(np.tile(S, 3), np.tile(dn, 3), np.tile(rgb, (1, 3, 1)), area // 10, haze, seam)[:, w:2 * w]] = -1
     S = np.tile(S, 3)
     for k in (0, -1):
         comp, count = ndimage.label(S == k)
@@ -1080,6 +1085,30 @@ def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin
     # the filled sky as a blue hole in the hills (river).
     S[(S == -1) & (np.arange(S.shape[0])[:, None] >= range_top(S)[None])] = 0
     return S
+
+
+def ridge_ends(S, dn, rgb, small, haze, seam):
+    """sky_apart's pieces of the range (0 in S) within haze x SKY of depth, touching the sky (-1), under small px,
+    whose colour steps under seam across their border with the sky (the median over the border's pixel pairs)."""
+    near = (S == 0) & (dn <= SKY * haze)
+    comp, count = ndimage.label(near)
+    if not count:
+        return near
+    labels, steps = [], []
+    for a, b in (((slice(1, None),), (slice(None, -1),)), ((slice(None, -1),), (slice(1, None),)),
+                 ((slice(None), slice(1, None)), (slice(None), slice(None, -1))),
+                 ((slice(None), slice(None, -1)), (slice(None), slice(1, None)))):
+        pair = near[a] & (S[b] == -1)
+        labels.append(comp[a][pair])
+        steps.append(np.linalg.norm(rgb[a][pair] - rgb[b][pair], axis=1))
+    labels, steps = np.concatenate(labels), np.concatenate(steps)
+    index = np.arange(1, count + 1)
+    sizes = ndimage.sum(np.ones(S.shape), comp, index=index)
+    touch = np.isin(index, labels)
+    med = np.full(count, np.inf)
+    if touch.any():
+        med[touch] = ndimage.median(steps, labels, index=index[touch])
+    return np.isin(comp, index[touch & (sizes < small) & (med < seam)])
 
 
 def range_top(S):

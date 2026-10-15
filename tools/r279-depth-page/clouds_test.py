@@ -8,7 +8,8 @@ ridge in the sky, darker than it; a bird, a dark speck in the sky, and a twig's 
 in depth's halo; a mist in the range that depth judged as far as the sky; a pine on the range's left flank, a gap in it as
 far as the range hanging over the range's top by a 1 px neck (r416), and a thin tip of the range with the sky all round
 it; on the right flank, away from anything nearer, sky painted on the range's top a shade farther than the sky is (r420)
-and beside it a hazy strip 0.85 of the way to the sky's colour. SAM's masks: the cloud, the sky round it, the ridge.
+and beside it a hazy strip 0.85 of the way to the sky's colour; a low far ridge in the sky over the range's left foot,
+its end a shade nearer and joined to the range (r423), and a knob of the range's left flank as far, edged against the sky. SAM's masks: the cloud, the sky round it, the ridge.
 tools/r409-clouds/mutate.sh takes each fix out and proves a case here fails.
 """
 import argparse
@@ -54,12 +55,18 @@ def scene():
     tip = (rows >= 45) & (rows < 51) & (cols == 135)  # the range's top at x 135 is row 51
     shard = rng & (rows < peak + 6) & (cols >= 233) & (cols < 238)  # 19 px from the trunk: no nearer thing in reach
     haze = rng & (rows < peak + 4) & (cols >= 241) & (cols < 252)
+    low = (rows >= 80) & (rows < 90) & (cols >= 50) & (cols < 66)  # the range's top at x < 70 is row 90
+    end = low & (rows >= 85) & (cols >= 62)  # the ridge goes on over it and beside it, as noloop's did
+    low &= ~end
+    knob = rng & (rows < peak + 4) & (cols >= 150) & (cols < 154)
     img[rng], dn[rng] = RANGE, 0.1
     img[pine], dn[pine], L[pine] = (40, 90, 40), 0.8, 2
     img[hang | neck | tip], dn[hang | neck | tip], L[hang | neck | tip] = RANGE, 0.1, 0
     img[shard], dn[shard] = SKY, 0.02
     img[haze] = (3 * np.array(RANGE) + 17 * np.array(SKY)) // 20  # depth haze, as valley's far hills: gone at 0.2
     rng &= ~shard
+    img[low | end] = RIDGE
+    dn[end] = dn[knob] = 0.012  # within haze x SKY
     img[cloud] = CLOUD
     rim = dp.grow(cloud, 3) & ~cloud & ~rng  # its soft edge, half way to the sky, out of SAM's outline
     img[rim] = (np.array(CLOUD) + SKY) // 2
@@ -75,7 +82,7 @@ def scene():
     sky_mask = (L == 0) & ~rng & ~cloud & ~ridge
     return {"img": img, "dn": dn, "L": L, "rng": rng, "cloud": cloud, "ridge": ridge, "gap": gap, "bird": bird,
             "crown": crown, "trunk": trunk, "halo": halo, "pale": pale, "peak": peak, "hang": hang, "tip": tip,
-            "shard": shard, "haze": haze,
+            "shard": shard, "haze": haze, "low": low, "end": end, "knob": knob,
             "masks": [cloud, sky_mask, ridge]}
 
 
@@ -124,6 +131,12 @@ class CloudsTest(unittest.TestCase):
         _, S = self.split()
         self.assertTrue((S[self.s["shard"]] == -1).all())  # in the range, a pale shard sliding with it (noloop, r420)
         self.assertTrue((S[self.s["haze"]] == 0).all())  # cut out, the range in notches (valley at 0.2)
+
+    def test_the_end_of_a_far_ridge_the_sky_took_goes_with_it_an_edged_knob_of_the_range_stays(self):
+        _, S = self.split()
+        self.assertTrue((S[self.s["low"]] == -1).all())
+        self.assertTrue((S[self.s["end"]] == -1).all())  # in the range, a step in its top edge (noloop, r423)
+        self.assertTrue((S[self.s["knob"]] == 0).all())
 
     def test_the_sky_layer_has_no_cloud_and_no_bird_and_keeps_the_ridge(self):
         clouds, S = self.split()
