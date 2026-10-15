@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Animation lab (r407): SWELL, GLINT, BILLOW</title>
+	<link rel="stylesheet" href="lab.css">
+	<!-- AnimLab (r407): r375's shader animations as lab GLSL, by the real reader: the beach sea four ways, a cloud layer. -->
+	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+</head>
+<body class="lab">
+	<header class="lab-bar">
+		<h1>Animation lab <span class="lab-question">which shader animations ship?</span></h1>
+		<span id="anim-copy-state" class="lab-copy-state"></span>
+		<button id="anim-copy" class="lab-copy">Copy settings</button>
+	</header>
+	<div id="anim-lab" class="lab-stage">
+		<div id="embed-browsertests"></div>
+		<div id="anim-labels" class="lab-labels"></div>
+	</div>
+	<div id="anim-controls" class="lab-controls"></div>
+	<textarea id="anim-copy-json" class="lab-copy-json" hidden readonly></textarea>
+	<details class="lab-about">
+		<summary>What this lab shows</summary>
+		<p id="anim-about">The shader animations r375 proposed for water and clouds, written as they would ship (GLSL ES 1.0,
+	sines only, in world units across the layer, so they run on across its tiles), drawn by the real reader compiled to
+	JavaScript. None is in the library yet: pick here, then each one picked is written three times (libGDX, Godot, jME).
+	<b>The sea</b> is r365's AI beach page, its sea a SHADER layer drawn four ways. <b>WAVE</b> is what ships today: whole
+	rows slide sideways. <b>SWELL</b>: the water moved by two crossing travelling waves, sideways and up and down, so the
+	painted crests bend. <b>GLINT</b>: sun glitter, specks of light where three bent waves peak at once, only on the lit
+	part of the water. <b>SWELL + GLINT</b>: both in one shader, the swell's numbers the layer's, the glint's its own.
+	<b>The clouds</b> are round1's calm page, its clouds on a layer of their own (as a generated page will have them,
+	r409), drawn still and under <b>BILLOW</b>, in the page and alone (the mountains in front left out): the clouds churn in place, a slow warp of their
+	pixels. Their drift (the page's at rest speed) can be slowed to judge the churn alone. The view picks four panels
+	or one effect close; zoom enlarges the frame (the panels stay sharp: it is drawn at that size). Amplitudes and
+	wavelengths are in world units, the readout gives them in the image's pixels. Copy settings gives every slider as
+	JSON for the card.</p>
+	</details>
+	<script src="lab.js"></script>
+	<script>
+	labCopy('anim', function () {
+		return {
+			lab: 'anim-lab', view: document.querySelector('select[data-key=view]').selectedOptions[0].textContent,
+			readout: document.getElementById('anim-readout').textContent
+		};
+	});
+	</script>
+</body>
+</html>

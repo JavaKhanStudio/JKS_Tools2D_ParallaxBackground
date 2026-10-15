@@ -165,3 +165,7 @@ body.lab {
 	.ctl { grid-template-columns: minmax(5em, 9em) minmax(70px, 1fr) max-content; min-height: 36px; }
 	.ctl-choice select { height: 32px; }
 }
+
+/* The browser tests' page names the labs (r407): tools/browser-test.sh --open is one click from each. */
+.lab-links { margin: 6px 0 10px; font-size: 14px; color: var(--muted); }
+.lab-links a { color: inherit; padding: 4px 2px; }

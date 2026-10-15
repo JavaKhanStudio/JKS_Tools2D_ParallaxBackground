@@ -113,7 +113,7 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     // the other sets it puts the mist into (r208) are round1's s02, s05 and s06, with their atlases.
     def fogSets = ['s02', 's05', 's06'].collect { file("../engines/rounds/round1/${it}.jplax") }
     def fogAtlases = ['samples/transfer/calm', 'samples/Demos/PurpleFairy', 'samples/Demos/OneNight']
-    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'particles/**', 'floor/**', 'tower/**'; fogAtlases.each { include "${it}.*" } },
+    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'anim/**', 'particles/**', 'floor/**', 'tower/**'; fogAtlases.each { include "${it}.*" } },
             file('../engines/rounds/shaders/s01.jplax'), file('../engines/rounds/tower/w01.jplax'), fogSets)
     doLast {
         def assets = browserTestAssets.get().asFile
@@ -143,6 +143,10 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
             filter { it.startsWith('../') && it.endsWith('.png') ? it.substring(it.lastIndexOf('/') + 1) : it }
         }
         project.copy { from 'test-data/haze/lab.jplax'; into new File(assets, 'haze-lab') }
+        // The animation lab's (r407, AnimLab): r365's AI beach page, its sea animated (core/test-data/anim/README.md). Its
+        // clouds pages are the fog lab's sets, copied above.
+        project.copy { from 'test-data/anim'; include 'beach.png', 'beach-sea.png', 'beach.atlas'; into assets }
+        project.copy { from 'test-data/anim/beach.jplax'; into new File(assets, 'anim-lab') }
         // The floor lab's (r275, FloorLab): core/test-data/floor/make_lab.py's page, its atlas (Hiver, then the ground).
         // Its second set, PurpleFairy on a violet ground (PurpleFairy.png is copied above, with the fog lab's sets).
         project.copy { from 'test-data/floor'; include '*.png'; into assets }

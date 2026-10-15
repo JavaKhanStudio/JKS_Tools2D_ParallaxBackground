@@ -9,6 +9,7 @@ LABS = [
     ("fog", "fog-lab.html", "fogLabReady"),
     ("haze", "haze-lab.html", "hazeLabReady"),
     ("transfert", "transfert-lab.html", "transfertLabReady"),
+    ("anim", "anim-lab.html", "animLabReady"),
     ("effects-fog", "effects-lab.html?lab=fog", "effectsLabReady"),
     ("effects-snow", "effects-lab.html?lab=snow", "effectsLabReady"),
     ("effects-all", "effects-lab.html?lab=all", "effectsLabReady"),
