@@ -69,6 +69,8 @@ class JsonPageTest
 		kryo.useOriginalSize = true;
 		kryo.topHalf_top = new Color(0.1f, 0.2f, 0.3f, 0.4f);
 		kryo.pageModel.pageList.add(PlaxFormatTest.lurkerLayer());
+		PlaxFormatTest.animate(kryo.pageModel.pageList.get(0));
+		kryo.pageModel.pageList.add(PlaxFormatTest.animate(PlaxFormatTest.shaderLayer()));
 
 		PlaxFormatTest.assertPageEquals(kryo, Utils_Page_Json.readPage(PlaxFormatTest.JSON.writeValueAsString(kryo)));
 	}
@@ -105,5 +107,9 @@ class JsonPageTest
 		assertEquals(0, layer.lurkerSeed);
 		assertEquals(3, layer.lurkerOdds);
 		assertEquals(0, layer.lurkerCover.length);
+		assertEquals("", layer.animRegion);
+		assertEquals(0, layer.animX);
+		assertEquals(0, layer.animY);
+		assertEquals(Parallax_Model.DEFAULT_ANIM_FPS, layer.animFps);
 	}
 }

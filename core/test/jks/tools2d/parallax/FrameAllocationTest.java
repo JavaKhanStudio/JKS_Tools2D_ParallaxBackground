@@ -33,7 +33,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 /**
  * The rule "act() and draw() run every frame: no allocation" as a gate: a big page, every repeat mode, a cross-fade and
  * a tint, measured with the thread's allocation counter. One layer in ten plays core/test-data/particles/snow.p, one in
- * ten is a SHADER layer, half WAVE, half FOG, one in ten a SEQUENCE of 64 slots, drawn from the game's seed.
+ * ten is a SHADER layer, half WAVE, half FOG, one in ten a SEQUENCE of 64 slots, drawn from the game's seed; one IMAGE
+ * and one SHADER layer in ten carry an animated patch.
  */
 class FrameAllocationTest
 {
@@ -148,6 +149,12 @@ class FrameAllocationTest
 			layer.setPadY(random.nextFloat() * 5);
 			layer.setFlipX(random.nextBoolean());
 			layer.setMirror(random.nextBoolean());
+			// One IMAGE and one SHADER layer in ten with an animated patch: its frame picked, and drawn after each tile.
+			if (i % 10 == 2 || i % 10 == 3)
+			{
+				layer.setAnim("fronds", 300, 40, 12);
+				layer.setAnimFrames(new ArrayList<>(List.of(narrowRegion(), region(), narrowRegion())));
+			}
 			// One in ten wrapped round a tower (drawn so on an IMAGE layer only), its strips cut every frame.
 			if (i % 10 == 0)
 				layer.setTower(5 + random.nextFloat() * 40, 0.65f);

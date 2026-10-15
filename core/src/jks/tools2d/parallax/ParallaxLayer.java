@@ -103,6 +103,25 @@ public class ParallaxLayer
 	 */
 	private int lurkerSeed, lurkerOdds = 3;
 	private float[] lurkerCover = new float[0];
+
+	/**
+	 * An IMAGE or SHADER layer's animated patch: see {@link Parallax_Model#animRegion}, {@link Parallax_Model#animX} and
+	 * {@link Parallax_Model#animFps}. Kept on every kind, drawn on those two.
+	 */
+	private String animRegion = "";
+	private int animX, animY;
+	private float animFps = Parallax_Model.DEFAULT_ANIM_FPS;
+	/**
+	 * The patch's frames as drawn (inset by half a texel, as {@link #drawnRegions}), null when it has none; and per frame
+	 * its size in pixels and where its packed image sits in it, measured by {@link #measureAnim} when the frames or the
+	 * layer's region change, never in a frame. Replaced, never changed: a copy shares them.
+	 */
+	private List<TextureRegion> animFrames, animTexRegions;
+	private float[] animWidth, animHeight, animTrimLeft, animTrimBottom, animPackedWidth, animPackedHeight;
+	/** The frame drawn, set by the reader from its clock before the layer's tiles ({@link #setAnimTime}). */
+	private int animFrame;
+	/** The layer's image in pixels, the size {@link #animX} and {@link #animY} are taken in. */
+	private float imageWidth = 1, imageHeight = 1;
 	/** The strip of the image a tower's piece draws, set before each piece's draw; made once, with the regions. */
 	private TextureRegion towerStrip;
 
@@ -313,6 +332,7 @@ public class ParallaxLayer
 		setTower(model.towerRadius, model.towerShade);
 		setTowerCamera(model.towerCamera);
 		setLurker(model.lurkerSeed, model.lurkerOdds, model.lurkerCover);
+		setAnim(model.animRegion, model.animX, model.animY, model.animFps);
 	}
 
 	public void resetPosition()
@@ -334,7 +354,10 @@ public class ParallaxLayer
 		if (kind == Enum_LayerKind.SEQUENCE)
 			drawCycle(batch, x, y, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, flipX, flipY);
 		else if (drawsImage())
+		{
 			drawRegion(batch, drawnRegions.get(0), x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, flipX, flipY);
+			drawAnim(batch, x, y, flipX, flipY);
+		}
 	}
 
 	/** Draws the mirrored copy: flipped vertically when tiling on X, horizontally when tiling on Y. */
@@ -345,7 +368,28 @@ public class ParallaxLayer
 		if (kind == Enum_LayerKind.SEQUENCE)
 			drawCycle(batch, x, y, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, fx, fy);
 		else if (drawsImage())
+		{
 			drawRegion(batch, drawnRegions.get(0), x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, fx, fy);
+			drawAnim(batch, x, y, fx, fy);
+		}
+	}
+
+	/**
+	 * Draws the animated patch's current frame over the tile at (x, y), through the same batch call as the tile: its
+	 * place in the region scaled to the drawn size, mirrored with the tile by a flip. Only an IMAGE or SHADER layer's.
+	 */
+	private void drawAnim(Batch batch, float x, float y, boolean fx, boolean fy)
+	{
+		if (animFrames == null || (kind != Enum_LayerKind.IMAGE && kind != Enum_LayerKind.SHADER))
+			return;
+		float width = getRegionWidth(), height = getRegionHeight();
+		float scaleX = width / imageWidth, scaleY = height / imageHeight;
+		int frame = animFrame;
+		float patchWidth = animWidth[frame] * scaleX, patchHeight = animHeight[frame] * scaleY;
+		float left = fx ? x + width - (animX * scaleX + patchWidth) : x + animX * scaleX;
+		float bottom = fy ? y + height - (animY * scaleY + patchHeight) : y + animY * scaleY;
+		drawRegion(batch, animFrames.get(frame), left, bottom, patchWidth, patchHeight, animTrimLeft[frame], animTrimBottom[frame],
+				animPackedWidth[frame], animPackedHeight[frame], fx, fy);
 	}
 
 	/**
@@ -458,6 +502,20 @@ public class ParallaxLayer
 		copy.lurkerOdds = lurkerOdds;
 		// Replaced, never changed: shared.
 		copy.lurkerCover = lurkerCover;
+		copy.animRegion = animRegion;
+		copy.animX = animX;
+		copy.animY = animY;
+		copy.animFps = animFps;
+		copy.animFrame = animFrame;
+		// Replaced, never changed: shared.
+		copy.animFrames = animFrames;
+		copy.animTexRegions = animTexRegions;
+		copy.animWidth = animWidth;
+		copy.animHeight = animHeight;
+		copy.animTrimLeft = animTrimLeft;
+		copy.animTrimBottom = animTrimBottom;
+		copy.animPackedWidth = animPackedWidth;
+		copy.animPackedHeight = animPackedHeight;
 		// Set before each piece is drawn, and read by the batch at once: shared.
 		copy.towerStrip = towerStrip;
 		copy.parallaxSpeedRatioX = parallaxSpeedRatioX;
@@ -468,6 +526,8 @@ public class ParallaxLayer
 		copy.decalPercentY = decalPercentY;
 		copy.regionWidth = regionWidth;
 		copy.regionHeight = regionHeight;
+		copy.imageWidth = imageWidth;
+		copy.imageHeight = imageHeight;
 		copy.useOriginalSize = useOriginalSize;
 		copy.trimLeft = trimLeft;
 		copy.trimBottom = trimBottom;
@@ -1162,6 +1222,102 @@ public class ParallaxLayer
 		lurkerCover = cover == null ? new float[0] : cover;
 	}
 
+	/** The name of the animated patch's frames in the page's atlas ({@link Parallax_Model#animRegion}); empty: none. */
+	public String getAnimRegion()
+	{return animRegion;}
+
+	/** Where the patch's bottom-left corner lies in the layer's region, in its pixels from its bottom-left. */
+	public int getAnimX()
+	{return animX;}
+
+	public int getAnimY()
+	{return animY;}
+
+	/** The patch's frames a second. */
+	public float getAnimFps()
+	{return animFps;}
+
+	/** Sets the patch's frames' name (null: none), its place in the region's pixels and its frame rate. */
+	public void setAnim(String region, int x, int y, float fps)
+	{
+		animRegion = region == null ? "" : region;
+		animX = x;
+		animY = y;
+		animFps = fps;
+	}
+
+	/** The patch's frames, as given to {@link #setAnimFrames}; null when it has none. */
+	public List<TextureRegion> getAnimFrames()
+	{return animFrames == null ? null : animTexRegions;}
+
+	/**
+	 * The patch's frames, in order (null or empty: none), each drawn at its own size and trim: the page finds them in its
+	 * atlas when it builds the layer. Not in a frame: it measures them.
+	 */
+	public void setAnimFrames(List<TextureRegion> frames)
+	{
+		animTexRegions = frames == null || frames.isEmpty() ? null : frames;
+		animFrame = 0;
+		measureAnim();
+	}
+
+	/** The frame drawn: {@code floor(time × fps)} modulo the frame count, on the reader's clock ({@link Parallax_Model#animFps}). */
+	public void setAnimTime(double time)
+	{
+		if (animFrames == null)
+			return;
+		int count = animFrames.size();
+		// A NaN frame rate casts to frame 0; a negative one plays backwards.
+		int frame = (int) (Math.floor(time * animFps) % count);
+		animFrame = frame < 0 ? frame + count : frame;
+	}
+
+	/** The frame {@link #setAnimTime} chose. */
+	public int getAnimFrame()
+	{return animFrame;}
+
+	/** Each frame's pixel size and trim, as {@link #setTexRegion} measures the layer's region. */
+	private void measureAnim()
+	{
+		if (animTexRegions == null)
+		{
+			animFrames = null;
+			return;
+		}
+		int count = animTexRegions.size();
+		List<TextureRegion> drawn = new ArrayList<>(count);
+		float[] width = new float[count], height = new float[count], left = new float[count], bottom = new float[count];
+		float[] packedWidth = new float[count], packedHeight = new float[count];
+		for (int i = 0; i < count; i++)
+		{
+			TextureRegion frame = animTexRegions.get(i);
+			drawn.add(insetByHalfATexel(frame));
+			width[i] = frame.getRegionWidth();
+			height[i] = frame.getRegionHeight();
+			packedWidth[i] = packedHeight[i] = 1;
+			if (useOriginalSize && frame instanceof AtlasRegion)
+			{
+				AtlasRegion atlasRegion = (AtlasRegion) frame;
+				if (atlasRegion.originalWidth > 0 && atlasRegion.originalHeight > 0)
+				{
+					left[i] = atlasRegion.offsetX / atlasRegion.originalWidth;
+					bottom[i] = atlasRegion.offsetY / atlasRegion.originalHeight;
+					packedWidth[i] = (float) atlasRegion.packedWidth / atlasRegion.originalWidth;
+					packedHeight[i] = (float) atlasRegion.packedHeight / atlasRegion.originalHeight;
+					width[i] = atlasRegion.originalWidth;
+					height[i] = atlasRegion.originalHeight;
+				}
+			}
+		}
+		animWidth = width;
+		animHeight = height;
+		animTrimLeft = left;
+		animTrimBottom = bottom;
+		animPackedWidth = packedWidth;
+		animPackedHeight = packedHeight;
+		animFrames = drawn;
+	}
+
 	/** True when this is a tower seen from close by: its courses arc, and its page's slower layers wrap round it. */
 	public boolean isNearTower()
 	{return isTower() && towerCamera > 1;}
@@ -1374,6 +1530,8 @@ public class ParallaxLayer
 				imageHeight = atlasRegion.originalHeight;
 			}
 		}
+		this.imageWidth = imageWidth;
+		this.imageHeight = imageHeight;
 
 		if (isWidth)
 		{
@@ -1389,6 +1547,7 @@ public class ParallaxLayer
 		if (kind == Enum_LayerKind.SEQUENCE)
 			measureSegments();
 		measureFloor();
+		measureAnim();
 	}
 
 	/** Each segment's width in layer heights and where its packed image sits, as {@link #setTexRegion} does for one. */

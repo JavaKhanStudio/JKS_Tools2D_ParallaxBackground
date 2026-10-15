@@ -15,6 +15,7 @@ const LAYER_DEFAULTS := {
 	"floorMapping": "MODE7", "floorTopSpeed": 0.0, "floorRows": 96, "floorHeight": 0.0,
 	"towerRadius": 0.0, "towerShade": 0.65, "towerCamera": 0.0,
 	"lurkerSeed": 0, "lurkerOdds": 3, "lurkerCover": [],
+	"animRegion": "", "animX": 0, "animY": 0, "animFps": 12.0,
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
 ## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects, a SEQUENCE

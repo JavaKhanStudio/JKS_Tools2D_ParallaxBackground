@@ -82,6 +82,8 @@ public class Parallax_Model
 
 	/** What a layer saved before format 12, or without one, darkens toward its tower's sides: the r266 mock's. */
 	public static final float DEFAULT_TOWER_SHADE = 0.65f;
+	/** An animated patch's frame rate in a layer saved before format 16, or without one. */
+	public static final float DEFAULT_ANIM_FPS = 12;
 	/**
 	 * The radius of the tower an IMAGE layer is wrapped round, in percent of the world width; 0, the default: none, the
 	 * layer is flat. Stored since format 12.
@@ -116,6 +118,21 @@ public class Parallax_Model
 	 * the page's saved world. Empty: the figure switches only outside the view. Stored since format 15.
 	 */
 	public float[] lurkerCover = new float[0];
+
+	/**
+	 * An IMAGE or SHADER layer's animated patch (docs/animated-layers.md): the name of its frames in the page's atlas,
+	 * the regions of that name in atlas order, as many frames as there are; empty (or null): none. Stored since format
+	 * 16.
+	 */
+	public String animRegion = "";
+	/**
+	 * Where the patch's bottom-left corner lies in the layer's region, in that region's pixels from its bottom-left:
+	 * drawn at the tile's corner plus {@code animX} times the drawn width over the region's, and so on Y. Stored since
+	 * format 16.
+	 */
+	public int animX, animY;
+	/** The patch's frames a second, on the reader's clock. Stored since format 16, {@link #DEFAULT_ANIM_FPS} before. */
+	public float animFps = DEFAULT_ANIM_FPS;
 
 	public boolean isFlipX()
 	{return flipX;}
@@ -309,6 +326,30 @@ public class Parallax_Model
 
 	public void setLurkerCover(float[] lurkerCover)
 	{this.lurkerCover = lurkerCover;}
+
+	public String getAnimRegion()
+	{return animRegion;}
+
+	public void setAnimRegion(String animRegion)
+	{this.animRegion = animRegion;}
+
+	public int getAnimX()
+	{return animX;}
+
+	public void setAnimX(int animX)
+	{this.animX = animX;}
+
+	public int getAnimY()
+	{return animY;}
+
+	public void setAnimY(int animY)
+	{this.animY = animY;}
+
+	public float getAnimFps()
+	{return animFps;}
+
+	public void setAnimFps(float animFps)
+	{this.animFps = animFps;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

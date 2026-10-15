@@ -761,6 +761,8 @@ public class ParallaxPageReader implements Disposable
 			}
 		}
 
+		// The animated patch's frame, on the clock the effects run on: drawn after each tile (ParallaxLayer.draw).
+		layer.setAnimTime(effectTime);
 		boolean tower = layer.isTower();
 		// Behind a tower seen from close by: a panorama round its axis, cut in strips, each placed and scaled.
 		ParallaxLayer near = incoming ? transferNearTower : nearTower;

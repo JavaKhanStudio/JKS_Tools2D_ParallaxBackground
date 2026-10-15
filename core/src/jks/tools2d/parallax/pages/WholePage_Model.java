@@ -357,7 +357,20 @@ public class WholePage_Model
 
 		layer.setUseOriginalSize(useOriginalSize);
 		layer.setUpEverything(parallax);
+		if ((parallax.kind == Enum_LayerKind.IMAGE || parallax.kind == Enum_LayerKind.SHADER)
+				&& parallax.animRegion != null && !parallax.animRegion.isEmpty())
+			layer.setAnimFrames(findFrames(parallax.animRegion, atlas));
 		return layer;
+	}
+
+	/** An animated patch's frames: the atlas's regions named {@code regionName}, in atlas order; one at least. */
+	protected List<TextureRegion> findFrames(String regionName, TextureAtlas atlas)
+	{
+		List<TextureRegion> frames = new ArrayList<>();
+		frames.add(findRegion(regionName, 0, atlas));
+		for (AtlasRegion frame; (frame = loadedRegion.get(regionName + (frames.size() + 1))) != null;)
+			frames.add(frame);
+		return frames;
 	}
 
 	/**

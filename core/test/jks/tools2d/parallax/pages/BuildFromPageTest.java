@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,7 +19,9 @@ import com.badlogic.gdx.assets.loaders.FileHandleResolver;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.GdxNativesLoader;
+import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
@@ -43,6 +48,11 @@ class BuildFromPageTest
 		TextureAtlas atlas = new TextureAtlas();
 		atlas.addRegion("sky", page, 0, 0, 192, 108);
 		atlas.addRegion("snowflake", page, 200, 0, 8, 8);
+		// An animated patch's three frames, the second named anything else in between: atlas order, by name.
+		atlas.addRegion("fronds", page, 0, 120, 40, 20);
+		atlas.addRegion("other", page, 0, 200, 4, 4);
+		atlas.addRegion("fronds", page, 40, 120, 40, 20);
+		atlas.addRegion("fronds", page, 80, 120, 40, 20);
 		return atlas;
 	}
 
@@ -77,6 +87,7 @@ class BuildFromPageTest
 		Parallax_Model fog = PlaxFormatTest.shaderLayer();
 		fog.regionName = "sky";
 		fog.regionPosition = 0;
+		PlaxFormatTest.animate(fog).animRegion = "fronds";
 		page.pageModel.pageList.add(fog);
 
 		Parallax_Model ground = new Parallax_Model();
@@ -144,6 +155,10 @@ class BuildFromPageTest
 		assertEquals(Enum_ParticleAnchor.VIEW, saved.pageModel.pageList.get(2).particlesAnchor);
 		assertEquals(Enum_LayerKind.SHADER, saved.pageModel.pageList.get(3).kind);
 		assertEquals(Enum_ShaderEffect.FOG, saved.pageModel.pageList.get(3).shaderEffect);
+		assertEquals("fronds", saved.pageModel.pageList.get(3).animRegion, "its animated patch");
+		assertEquals(412, saved.pageModel.pageList.get(3).animX, "where it lies");
+		assertEquals(-3, saved.pageModel.pageList.get(3).animY);
+		assertEquals(7.5f, saved.pageModel.pageList.get(3).animFps, "its frame rate");
 		assertEquals(Enum_LayerKind.SEQUENCE, saved.pageModel.pageList.get(4).kind);
 		assertEquals("snowflake", saved.pageModel.pageList.get(4).sequenceSegments.get(1).regionName);
 		assertEquals(Enum_LayerKind.FLOOR, saved.pageModel.pageList.get(5).kind);
@@ -158,6 +173,31 @@ class BuildFromPageTest
 		assertEquals(6, saved.pageModel.pageList.get(6).lurkerCover.length, "and its cover");
 		assertNotSame(page.preloadValue.get(6).getLurkerCover(), saved.pageModel.pageList.get(6).lurkerCover,
 				"saved as a copy: the editor works the layer's cover out again at its next save");
+	}
+
+	/** An animated patch's frames are the atlas's regions of its name, in atlas order, found when the page loads. */
+	@Test
+	void anAnimatedPatchFindsItsFramesInTheAtlas()
+	{
+		WholePage_Model page = page();
+		TextureAtlas atlas = atlas();
+		page.forceLoad(atlas);
+
+		List<TextureRegion> frames = page.preloadValue.get(3).getAnimFrames();
+		assertEquals(3, frames.size(), "every region named fronds");
+		for (int i = 0; i < 3; i++)
+			assertSame(atlas.getRegions().get(i == 0 ? 2 : i + 3), frames.get(i), "frame " + i + " in atlas order");
+		assertNull(page.preloadValue.get(0).getAnimFrames(), "a layer without a patch has none");
+	}
+
+	/** A patch whose frames the atlas does not have fails the load, naming them, as a missing layer region does. */
+	@Test
+	void anAnimatedPatchWithoutFramesFailsTheLoad()
+	{
+		WholePage_Model page = page();
+		page.pageModel.pageList.get(3).animRegion = "palms";
+		GdxRuntimeException thrown = assertThrows(GdxRuntimeException.class, () -> page.forceLoad(atlas()));
+		assertTrue(thrown.getMessage().contains("'palms'"), thrown.getMessage());
 	}
 
 	/** A layer in front of a floor moves at the speed the reader plants it at, and saves the speed it was given. */

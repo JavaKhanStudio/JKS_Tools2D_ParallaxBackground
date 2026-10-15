@@ -41,13 +41,16 @@ import com.esotericsoftware.kryo.io.Output;
  * read 0: a tower's courses are straight and the page behind it flat.</li>
  * <li>version 15: the version 14 layout with each layer's lurkerSeed and lurkerOdds (ints) and lurkerCover (a count, a
  * varint, then its floats) stored after towerCamera. Older files read 0, 3 and none, and have no LURKER layer.</li>
+ * <li>version 16: the version 15 layout with each layer's animated patch, animRegion (a string, empty: none), animX and
+ * animY (ints) and animFps (a float), stored after lurkerCover. Older files read none, 0, 0 and
+ * {@link Parallax_Model#DEFAULT_ANIM_FPS}.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 15;
+	static final int CURRENT_VERSION = 16;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

@@ -124,6 +124,7 @@ class PlaxFormatTest
 		original.pageModel.pageList.get(1).towerRadius = 12.5f;
 		original.pageModel.pageList.get(1).towerShade = 0.3f;
 		original.pageModel.pageList.get(1).towerCamera = 3.3f;
+		animate(original.pageModel.pageList.get(2));
 		original.fogColor = new Color(0.2f, 0.3f, 0.5f, 1);
 		original.planetRadius = 650;
 
@@ -174,6 +175,45 @@ class PlaxFormatTest
 		assertEquals(-1640531527, lurker.lurkerSeed, "its seed is stored since format 15, negative ones too");
 		assertEquals(5, lurker.lurkerOdds, "and its odds");
 		assertArrayEquals(new float[] { 1, 0.25f, 3.5f, 2, -4, 1.75f }, lurker.lurkerCover, "and where it is covered");
+		Parallax_Model palms = reread.pageModel.pageList.get(2);
+		assertEquals("palms_anim", palms.animRegion, "an animated patch's frames are stored since format 16");
+		assertEquals(412, palms.animX, "where it lies");
+		assertEquals(-3, palms.animY, "below the region too");
+		assertEquals(7.5f, palms.animFps, "and its frame rate");
+	}
+
+	/** An animated patch (format 16): the frames named palms_anim, 412 pixels across the layer's region, 7.5 a second. */
+	static Parallax_Model animate(Parallax_Model layer)
+	{
+		layer.animRegion = "palms_anim";
+		layer.animX = 412;
+		layer.animY = -3;
+		layer.animFps = 7.5f;
+		return layer;
+	}
+
+	/** Format 15 has no animated patch: written there, a layer reads none, at 0, 0 and 12 frames a second. */
+	@Test
+	void format15FilesStillLoadWithoutAnAnimatedPatch() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.get(1).lurkerSeed = 9;
+		animate(original.pageModel.pageList.get(1));
+
+		byte[] written = write(original, 15);
+		assertEquals(15, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		assertEquals(9, reread.pageModel.pageList.get(1).lurkerSeed, "format 15 has the lurker's seed");
+		assertEquals("", reread.pageModel.pageList.get(1).animRegion, "and no animated patch");
+		assertEquals(0, reread.pageModel.pageList.get(1).animX);
+		assertEquals(0, reread.pageModel.pageList.get(1).animY);
+		assertEquals(Parallax_Model.DEFAULT_ANIM_FPS, reread.pageModel.pageList.get(1).animFps, "the default frame rate");
+		original.pageModel.pageList.get(1).animRegion = "";
+		original.pageModel.pageList.get(1).animX = 0;
+		original.pageModel.pageList.get(1).animY = 0;
+		original.pageModel.pageList.get(1).animFps = Parallax_Model.DEFAULT_ANIM_FPS;
+		assertPageEquals(original, reread);
 	}
 
 	/** A LURKER layer: a figure the nearer layers hide, with its draws' seed, its odds and where it is covered. */
@@ -607,13 +647,14 @@ class PlaxFormatTest
 		original.useOriginalSize = true;
 		original.pageModel.pageList.add(2, emptyLayer());
 		original.pageModel.pageList.add(4, particleLayer());
-		original.pageModel.pageList.add(5, shaderLayer());
+		original.pageModel.pageList.add(5, animate(shaderLayer()));
 		original.pageModel.pageList.add(6, sequenceLayer());
 		original.pageModel.pageList.add(7, floorLayer());
 		original.pageModel.pageList.add(8, lurkerLayer());
 		original.pageModel.pageList.get(0).towerRadius = 12.5f;
 		original.pageModel.pageList.get(0).towerShade = 0.3f;
 		original.pageModel.pageList.get(0).towerCamera = 3.3f;
+		animate(original.pageModel.pageList.get(1));
 		original.planetRadius = 650;
 
 		String json = JSON.writeValueAsString(original);
@@ -703,6 +744,10 @@ class PlaxFormatTest
 			assertEquals(expected.lurkerSeed, actual.lurkerSeed, name);
 			assertEquals(expected.lurkerOdds, actual.lurkerOdds, name);
 			assertArrayEquals(expected.lurkerCover, actual.lurkerCover, name);
+			assertEquals(expected.animRegion, actual.animRegion, name);
+			assertEquals(expected.animX, actual.animX, name);
+			assertEquals(expected.animY, actual.animY, name);
+			assertEquals(expected.animFps, actual.animFps, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

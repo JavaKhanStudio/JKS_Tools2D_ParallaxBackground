@@ -136,6 +136,50 @@ class ParallaxLayerTest
 		assertEquals(7, copy.getCurrentDistanceX());
 	}
 
+	/** A layer's copy keeps its animated patch: its frames, its place, its rate and the frame it is on. */
+	@Test
+	void anAnimatedPatchClonesWithItsLayer()
+	{
+		ParallaxLayer layer = ParallaxLayer.shader(region(1920, 1080), 40, 0.5f, Enum_ShaderEffect.WAVE, 0.4f, 6, 1);
+		List<TextureRegion> frames = new ArrayList<>(List.of(region(200, 100), region(200, 100), region(200, 100)));
+		layer.setAnim("fronds", 412, -3, 7.5f);
+		layer.setAnimFrames(frames);
+		layer.setAnimTime(0.3);
+
+		ParallaxLayer copy = layer.clone();
+
+		assertEquals("fronds", copy.getAnimRegion());
+		assertEquals(412, copy.getAnimX());
+		assertEquals(-3, copy.getAnimY());
+		assertEquals(7.5f, copy.getAnimFps());
+		assertSame(frames, copy.getAnimFrames());
+		assertEquals(2, copy.getAnimFrame(), "floor(0.3 x 7.5) = 2");
+	}
+
+	/** Frame floor(time x fps) modulo the count; a null name is none, and a NaN or negative rate never picks outside. */
+	@Test
+	void anAnimatedPatchPicksItsFrameFromTheClock()
+	{
+		ParallaxLayer layer = new ParallaxLayer(region(1920, 1080), true, 40, 0.02f, 0.02f, 1);
+		layer.setAnim(null, 0, 0, 12);
+		assertEquals("", layer.getAnimRegion());
+		layer.setAnimFrames(new ArrayList<>(List.of(region(20, 10), region(20, 10), region(20, 10), region(20, 10))));
+		layer.setAnimTime(0);
+		assertEquals(0, layer.getAnimFrame());
+		layer.setAnimTime(1 / 12.0 * 3.25);
+		assertEquals(3, layer.getAnimFrame());
+		layer.setAnimTime(1 / 12.0 * 5.25);
+		assertEquals(1, layer.getAnimFrame(), "the fifth frame past the last is the second");
+		layer.setAnim("fronds", 0, 0, -12);
+		layer.setAnimTime(1 / 12.0 * 0.25);
+		assertEquals(3, layer.getAnimFrame(), "backwards");
+		layer.setAnim("fronds", 0, 0, Float.NaN);
+		layer.setAnimTime(2);
+		assertEquals(0, layer.getAnimFrame());
+		layer.setAnimFrames(null);
+		assertNull(layer.getAnimFrames());
+	}
+
 	/** Odds below 1 would never show the figure, or divide by 0: kept at 1. No cover is an empty one, never null. */
 	@Test
 	void lurkerOddsAreOneAtLeast()

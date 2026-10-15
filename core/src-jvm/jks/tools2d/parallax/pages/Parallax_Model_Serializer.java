@@ -100,6 +100,14 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			for (int i = 0; i < cover; i++)
 				output.writeFloat(model.lurkerCover[i]);
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 16)
+		{
+			output.writeString(model.animRegion == null ? "" : model.animRegion);
+			output.writeInt(model.animX);
+			output.writeInt(model.animY);
+			output.writeFloat(model.animFps);
+		}
 	}
 
 	@Override
@@ -202,6 +210,14 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			model.lurkerCover = new float[input.readVarInt(true)];
 			for (int i = 0; i < model.lurkerCover.length; i++)
 				model.lurkerCover[i] = input.readFloat();
+		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 16)
+		{
+			model.animRegion = input.readString();
+			model.animX = input.readInt();
+			model.animY = input.readInt();
+			model.animFps = input.readFloat();
 		}
 
 		return model;

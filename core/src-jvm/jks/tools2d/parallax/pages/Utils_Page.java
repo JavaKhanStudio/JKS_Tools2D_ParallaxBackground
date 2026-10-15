@@ -82,6 +82,10 @@ public final class Utils_Page
 		model.lurkerSeed = page.getLurkerSeed();
 		model.lurkerOdds = page.getLurkerOdds();
 		model.lurkerCover = page.getLurkerCover().clone();
+		model.animRegion = page.getAnimRegion();
+		model.animX = page.getAnimX();
+		model.animY = page.getAnimY();
+		model.animFps = page.getAnimFps();
 		return model;
 	}
 }

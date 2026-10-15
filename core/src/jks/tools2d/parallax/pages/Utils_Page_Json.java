@@ -153,6 +153,12 @@ public final class Utils_Page_Json
 			for (JsonValue value = cover.child; value != null; value = value.next)
 				layer.lurkerCover[i++] = Float.intBitsToFloat(Float.floatToIntBits(value.asFloat()));
 		}
+		String anim = readString(json, "animRegion");
+		if (anim != null)
+			layer.animRegion = anim;
+		layer.animX = json.getInt("animX", layer.animX);
+		layer.animY = json.getInt("animY", layer.animY);
+		layer.animFps = readFloat(json, "animFps", layer.animFps);
 		return layer;
 	}
 
