@@ -1024,7 +1024,7 @@ def clouds_of(img, dn, L, masks, least=200, most=0.5, share=0.9, lift=CLOUD_LIFT
     return out & (L == 0)
 
 
-def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin=0.3):
+def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin=0.3, neck=2, nearer=0.3):
     """L with the sky, -1, apart from band 0, the far range: band 0's pixels at the sky's depth and its clouds. Within
     reach px of a nearer thing, a range pixel whose colour is within margin of its distance to the range round it (the
     mean over window px) from the sky round it goes to the sky: depth's halo round a crown judged the sky beside it
@@ -1032,7 +1032,12 @@ def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin
     colour: a far range is hazy, and at 1, still at 0.5, its flank beside a trunk went to the sky, the range cut in a
     wall there (valley). Then a piece of the range under area px goes to the sky unless the range is most of its rim
     (the sky between a crown's leaves: kept, the range layer carried it as specks floating in the sky); a piece of the
-    sky under area px with the range most of its rim joins the range (a pale cliff). On the painting laid three times
+    sky under area px with the range most of its rim joins the range (a pale cliff). Then a thin piece of the range
+    (gone when it is opened by neck px) rising more than neck px over its top edge goes to the sky when a nearer thing
+    is on nearer of its rim (r416: a crown's gaps judged as far as the range; the range layer carried them, repainted,
+    as lumps on the peak's flank that slid with it, valley); a peak's tip, the sky all round it, stays, and so does
+    the range's edge beside a trunk. The top is range_top with the thin pieces read as nearer things: read as sky,
+    a speck under a trunk unhid its column and the range's top fell in a V there. On the painting laid three times
     side by side, for the join."""
     w = L.shape[1]
     S = np.where((L == 0) & ((dn <= SKY) | clouds), -1, L)
@@ -1054,6 +1059,15 @@ def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin
             ranged = (S[ring] == 0).mean() > 0.5
             if ranged != (k == 0):
                 S[isl] = -1 - k
+    thin = (S == 0) & ~ndimage.binary_opening(S == 0, iterations=neck)
+    rise = range_top(np.where(thin, 1, S))[None] - np.arange(S.shape[0])[:, None]  # rows over the range's top
+    comp, count = ndimage.label(thin & (rise > -neck))
+    for i, sl in enumerate(ndimage.find_objects(comp)):
+        sl = tuple(slice(max(0, d.start - 2), d.stop + 2) for d in sl)
+        piece = comp[sl] == i + 1
+        ring = ndimage.binary_dilation(piece, iterations=2) & ~piece
+        if rise[sl][piece].max() > neck and (S[sl][ring] > 0).mean() >= nearer:
+            S[sl][piece] = -1
     S = S[:, w:2 * w]
     # Under the range's top edge nothing is sky: a pale patch between far hills at the sky's depth, cut out, showed
     # the filled sky as a blue hole in the hills (river).
