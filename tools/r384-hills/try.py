@@ -8,7 +8,8 @@ Each candidate paints OUT/<name>/s<seed>_{init,mask,ai,cut}.png as ai_page.py's 
 A strip already on disk is not painted again: delete it to repaint.
 results.tsv: what it printed (o70n over 4 seeds, then all over 3). hills.patch: o70n in ai_page.py (WORDS["hills"],
 the hills' negative, HILLS_DENOISE for SD 1.5 painted), not applied: at 0.70 SD paints pale misty ranges behind the
-hills, which layer.py keeps with clipped tops (r384's question).
+hills, which layer.py keeps with clipped tops (r384's question). gate.patch: inpf in ai_page.py with canopy()'s gate
+(features2.py), not applied: r437's theme_for took "pine forest" out of the hills' prompt, and s437 paints no trees.
 """
 import argparse
 import os
@@ -40,6 +41,8 @@ def prompt(words):
 # What 0.70 paints behind the hills (r384's pale ghost ranges): named in every second-round candidate's negative.
 GHOSTS = ", distant mountains, misty mountain range, fog, haze"
 FOLDS = "rolling hills with small round trees, folds and shadows"
+FOREST = "rolling hills covered in a forest of small round leafy trees, folds and shadows"
+THEME437 = "misty in the mountains at dawn"  # THEME as ai_page.theme_for gives it to the hills (r437)
 
 # name: (prompt, colour, denoise[, more negative[, how]]). how, the second round (after Simon found o70n worse, its
 # ghosts): "control" guides img2img with the mask's outline (gen.py --control-edge, lineart), so a high denoise keeps
@@ -68,6 +71,13 @@ CANDIDATES = {
     "inp75": (prompt(BEFORE), COLOUR, 0.75, GHOSTS, "inpaint"),
     "inpf75": (prompt(FOLDS), COLOUR, 0.75, GHOSTS + ", pine trees, conifers", "inpaint"),
     "inpf85": (prompt(FOLDS), COLOUR, 0.85, GHOSTS + ", pine trees, conifers", "inpaint"),
+    # r437 strikes the theme's "pine forest" from every layer but the pines' (ai_page.theme_for) and puts it in their
+    # negative: the hills' prompt lost the word that grew inpf's trees. s437: what ai_page paints since; forest: the
+    # forest named in the hills' own words.
+    "s437": (prompt(FOLDS).replace(THEME, THEME437), COLOUR, 1.0, GHOSTS + ", pine trees, conifers, pine forest",
+             "inpaint"),
+    "forest": (prompt(FOREST).replace(THEME, THEME437), COLOUR, 1.0, GHOSTS + ", pine trees, conifers, pine forest",
+               "inpaint"),
     "ctlh": (prompt(FOLDS), COLOUR, 0.90, ", pine trees, conifers, distant mountains", "control-half"),
 }
 
