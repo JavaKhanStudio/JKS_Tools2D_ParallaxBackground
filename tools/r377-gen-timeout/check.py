@@ -4,9 +4,12 @@
 
 A fake gen.py (a sleep) stands in for a hung strip, at a 2 s timeout: one that hangs every time is killed twice and
 returns ai_page.TIMED_OUT with both logs kept; one that hangs only on its first try (a marker file) succeeds on the
-second, its argv the first's; one that finishes is run once. Exit 1 on any failure. No GPU, no window.
+second, its argv the first's; one that finishes is run once. A killed try leaves its py-spy stack in <log>.hung.stack
+(r388), naming the fake's line, one "== try" per kill (with py-spy installed; without it, a line saying so). Exit 1 on
+any failure. No GPU, no window.
 """
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -24,6 +27,7 @@ if sys.argv[2] == "always" or (sys.argv[2] == "once" and n == 0):
     time.sleep(60)
 """
 fails = 0
+SPY = shutil.which("py-spy") or os.access(os.path.expanduser("~/.local/bin/py-spy"), os.X_OK)
 
 
 def case(name, mode, want_code, want_tries, want_hung):
@@ -39,10 +43,15 @@ def case(name, mode, want_code, want_tries, want_hung):
         got = sorted(os.listdir(tries))
         argvs = {Path(tries, g).read_text() for g in got}
         hung = os.path.exists(log + ".hung")
-        ok = code == want_code and len(got) == want_tries and len(argvs) == 1 and hung == want_hung and took < 10
+        stack = Path(log + ".hung.stack").read_text() if os.path.exists(log + ".hung.stack") else ""
+        kills = want_tries if want_code == ai_page.TIMED_OUT else want_tries - 1
+        named = "gen.py" in stack if SPY else "py-spy not found" in stack
+        stacked = stack.count("== try") == kills and (named or kills == 0)
+        ok = (code == want_code and len(got) == want_tries and len(argvs) == 1 and hung == want_hung and stacked
+              and took < 10 + 5 * kills)
         fails += not ok
         print(f"{'OK  ' if ok else 'FAIL'} {name}: code {code}, {len(got)} tries, same argv {len(argvs) == 1}, "
-              f".hung {hung}, {took:.1f} s; log: {Path(log).read_text().strip().splitlines()[-1]}")
+              f".hung {hung}, stacks {stack.count('== try')} naming the fake {named}, {took:.1f} s; log: {Path(log).read_text().strip().splitlines()[-1]}")
 
 
 case("hangs every time", "always", ai_page.TIMED_OUT, 2, True)

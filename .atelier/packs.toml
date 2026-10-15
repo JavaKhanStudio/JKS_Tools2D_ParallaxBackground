@@ -157,7 +157,8 @@ torch.inference_mode() (gen.py does; r375 lost an hour to its absence in anim.py
 A graded round may predate the fix it blames: r364 built a rule against ghosts R1's _cut.png showed, cut the evening
 before r358 cleared them on HEAD. ls -l the artefacts against the fix's commit date, re-cut on HEAD first.
 A hung strip is not a slow one: ai_page kills a command past --timeout (600 s) and retries once (r377); a dpmpp_sde
-strip hangs after step 1 with the GPU idle (r388).
+strip hung after step 1 with the GPU idle, once, not again in 100 runs since r391's lock: py-spy dumps a hung try's
+stacks into <log>.hung.stack before the kill (r388), read it before guessing.
 A key, layout or lint change bites a painting its ticket never named (r364, r382, r383, r398 each did): cut EVERY
 painted strip again before and after, the before in a HEAD worktree, no GPU: tools/r364-ghosts/recut.sh LAYERPY OUT
 over R1 (../JKS_Tools2D_ParallaxAI/build/rounds/r1/*/) and build/ai/examples/* (tools/r358-glow/recut.sh: the

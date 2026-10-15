@@ -72,6 +72,7 @@ import math
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -234,11 +235,38 @@ def waiting_on_gpu(log):
     return head.rfind(gpu_lock.WAITING) > head.rfind(gpu_lock.TAKEN)
 
 
+def dump_stacks(pgid, path, tries):
+    """r388: before a hung command is killed, py-spy dumps every process of its session (native frames and locals)
+    into PATH, appended per try, so the next hang names where it spins. Skipped, with a line saying so, without
+    py-spy (pip install --user py-spy)."""
+    spy = shutil.which("py-spy") or os.path.expanduser("~/.local/bin/py-spy")
+    with open(path, "a") as out:
+        out.write(f"== try {tries}, {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        if not os.access(spy, os.X_OK):
+            out.write("py-spy not found: no stack\n")
+            return
+        for pid in sorted(int(d) for d in os.listdir("/proc") if d.isdigit()):
+            try:
+                if os.getpgid(pid) != pgid:
+                    continue
+            except OSError:
+                continue
+            out.write(f"-- pid {pid}\n")
+            out.flush()
+            try:
+                subprocess.run([spy, "dump", "--native", "--locals", "--pid", str(pid)], stdout=out,
+                               stderr=subprocess.STDOUT, timeout=60, check=False)
+            except subprocess.TimeoutExpired:
+                out.write("py-spy dump took over 60 s\n")
+
+
 def run(cmd, log, timeout=None):
     if DRY_RUN:
         print(shlex.join(cmd), ">", log)
         return 0
     timeout = TIMEOUT if timeout is None else timeout
+    if os.path.exists(log + ".hung.stack"):  # an earlier run's: dump_stacks appends per try
+        os.remove(log + ".hung.stack")
     for tries in (1, 2):
         with open(log, "w") as f:
             # its own session: a kill takes whatever it started with it
@@ -253,9 +281,10 @@ def run(cmd, log, timeout=None):
                 if not waiting_on_gpu(log):  # r391: another lane's GPU step is not this command hanging
                     ran += now - last
                 last = now
+            dump_stacks(p.pid, log + ".hung.stack", tries)
             os.killpg(p.pid, 9)
             p.wait()
-            f.write(f"\nai_page: killed after {timeout} s (try {tries} of 2)\n")
+            f.write(f"\nai_page: killed after {timeout} s (try {tries} of 2), stacks in {log}.hung.stack\n")
         os.replace(log, log + ".hung")
         print(f"ai_page: {os.path.basename(cmd[1] if len(cmd) > 1 else cmd[0])} hung past {timeout} s "
               f"({log}.hung){', running it again' if tries == 1 else ''}", file=sys.stderr)
