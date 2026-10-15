@@ -130,6 +130,8 @@ jME runs core's.
    over 32), and `BREAK=lurker` (jME reveals the figure every step: always there) must fail it.
    `tools/r370-lurker/Sightings.java` runs a page's sightings on the shots' clock without GL.
 4. Godot: `plax_lurker.gd`, the same round in Godot's frame check, and a mutant that switches in sight failing it.
+   Done (r371): 0.04/255, 0.000% of pixels off; `tools/r371-lurker/mutate.sh`'s five wrong copies (always there,
+   switching in sight, the seen rule left out, the step unmasked to 64 bits, the cover ignored) each fail it.
 5. The editor (its own board): the kind in the kind tab, seed and odds with the "how often" line and the seed's first
    draws, the depth-height hint, `lurkerCover` worked out on save, and the preview showing it vanish.
 6. README: a "Lurker layers" section (the rule, the depth size, the skating), and AGENTS.md's runtime line.

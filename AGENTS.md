@@ -97,9 +97,10 @@ repair.
   reader runs its sightings in `act()` (every step, against the last draw's view) and in `draw()`
   (`ParallaxPageReader.sightLurkers`, `reveal(name)`), its draws from `SequenceCycle.next`, integers only; where the
   layers in front cover it is baked once from the atlas (`src-jvm` `LurkerCover`, `tools/lurker-cover.sh`), never read
-  from a texture at run time. jME runs core's; Godot draws it always there until r371 (phase 4) copies it. Change the
-  rule and run `LurkerCases` and the jME frame check on `engines/rounds/lurker` (`pixelsOff`: the figure is too small for
-  the mean); `BREAK=lurker` must fail it, `tools/r370-lurker/mutate.sh` proves `LurkerCases` sees a wrong rule.
+  from a texture at run time. jME runs core's; Godot's copy is `plax_lurker.gd` (r371, `reveal_lurker(name)`). Change
+  the rule and run `LurkerCases` and both frame checks on `engines/rounds/lurker` (`pixelsOff`: the figure is too small
+  for the mean); `BREAK=lurker` must fail jME's, `tools/r370-lurker/mutate.sh` proves `LurkerCases` sees a wrong rule,
+  `tools/r371-lurker/mutate.sh` that Godot's check sees a wrong copy.
 - An `EMPTY` layer (`Enum_LayerKind`, format 5) has no image: the reader calls the game's `LayerHook` per tile in its
   place, and so do `plax_background.gd` (`set_layer_hook`) and jME. A new layer kind goes in `Enum_LayerKind` (append
   only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/rounds` (`effects` is EMPTY's).

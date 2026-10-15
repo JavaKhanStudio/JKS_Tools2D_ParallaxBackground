@@ -19,8 +19,8 @@ const LAYER_DEFAULTS := {
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
 ## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects, a SEQUENCE
-## layer's cycle drawn by draw_cycle, a FLOOR layer's rows by PlaxFloor.draw, a LURKER layer as an IMAGE one, always
-## there (its sightings are docs/lurker-layers.md's phase 4).
+## layer's cycle drawn by draw_cycle, a FLOOR layer's rows by PlaxFloor.draw, a LURKER layer as an IMAGE one while
+## its sightings say it is there (PlaxLurker).
 const KINDS := ["IMAGE", "EMPTY", "PARTICLES", "SHADER", "SEQUENCE", "FLOOR", "LURKER"]
 ## How a FLOOR layer's rows map its image (Enum_FloorMapping).
 const FLOOR_MAPPINGS := ["MODE7", "LINE_SCROLL"]

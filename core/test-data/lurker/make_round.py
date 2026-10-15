@@ -50,7 +50,7 @@ def main():
             'about': "LURKER layers' sightings (format 15, r370; docs/lurker-layers.md): the figure appears or vanishes "
                      "only while nothing of it is on screen, gone at the sighting after one where it was seen, else "
                      "there by its seed's draws, 1 in lurkerOdds (3). r363's demo, Hiver's pines in front, the cover "
-                     "baked by LurkerCover (r369). jME runs core's ParallaxPageReader; Godot's copy is phase 4 (r371). "
+                     "baked by LurkerCover (r369). jME runs core's ParallaxPageReader; Godot's copy is plax_lurker.gd (r371). "
                      "Written by core/test-data/lurker/make_round.py.",
             # The figure is 0.07% of a still: no mean threshold sees it. A wrong switch moves that many pixels by more
             # than 32; the readers agree to 0.00% (tools/compare-parallax-frames.py).

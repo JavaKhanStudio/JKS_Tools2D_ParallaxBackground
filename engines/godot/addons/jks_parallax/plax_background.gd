@@ -47,6 +47,11 @@ extends CanvasLayer
 ##
 ##   bg.set_sequence_seed(randi())
 ##
+## A LURKER layer's figure appears or vanishes only while nothing of it is on screen (PlaxLurker): gone at the sighting
+## after one where it was seen, there by chance from its seed, or when the game says:
+##
+##   bg.reveal_lurker("hooded")
+##
 ## An IMAGE layer with a tower radius is wrapped round a cylinder in the view's middle, its scroll turning it
 ## (PlaxTower, r276).
 ##
@@ -151,6 +156,8 @@ var _sequence_seed := 0
 var _has_sequence_seed := false
 # Places the PARTICLES layers' nodes.
 var _particles: PlaxParticles
+# The camera zoom of the last draw of a LURKER layer, which act()'s sightings run against; NAN before it (PlaxLurker).
+var _lurker_zoom := NAN
 
 
 func _init() -> void:
@@ -258,6 +265,14 @@ func set_layer_hook(layer_name: String, hook: Callable) -> void:
 		_hooks[layer_name] = hook
 	else:
 		_hooks.erase(layer_name)
+	_redraw()
+
+
+## ParallaxPageReader.reveal: the next sighting of every LURKER layer named `layer_name` shows its figure, at once when
+## it is not in sight now, else from the end of this sighting: a game's sure first scare (PlaxLurker).
+func reveal_lurker(layer_name: String) -> void:
+	PlaxLurker.reveal(layers, layer_name)
+	PlaxLurker.reveal(transfer_layers, layer_name)
 	_redraw()
 
 
@@ -593,6 +608,8 @@ func act(delta: float) -> void:
 	if _tint_elapsed < _tint_duration:
 		_tint_elapsed = minf(_tint_duration, _tint_elapsed + delta)
 		tint = _tint_from.lerp(_tint_to, _tint_elapsed / _tint_duration)
+	# Every step, drawn or not: a sighting between two draws counts. Against the last draw's view.
+	PlaxLurker.sight(self, _lurker_zoom)
 	_particles.place()
 	_redraw()
 
@@ -768,6 +785,12 @@ func _set_modulate(alpha: float) -> bool:
 ## A layer's canvas draws it; a layer at alpha 0 is not drawn. `patches`: its patches' canvas draws them (_add_canvas).
 func _draw_layer(l: Dictionary, patches := false) -> void:
 	_part = (2 if patches else 1) if l.has("anim_canvas") else 0
+	if page != null and l.model.kind == "LURKER":
+		# The lurkers against this view; a figure not there is not drawn (PlaxLurker).
+		_lurker_zoom = zoom
+		PlaxLurker.sight(self, zoom)
+		if not PlaxLurker.is_there(l):
+			return
 	if page == null or not _set_modulate(_alpha_of(l)):
 		return
 	# Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.

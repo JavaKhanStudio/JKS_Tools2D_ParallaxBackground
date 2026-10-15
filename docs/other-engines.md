@@ -67,6 +67,8 @@ A reader is three pieces, and the third is where the work is:
   their Godot scene, instanced and placed between the layers' canvases.
 - `plax_floor.gd` (`PlaxFloor`): a `FLOOR` layer's rows (`ParallaxLayer.measureFloor`), measured when it is built or
   resized; the background draws them.
+- `plax_lurker.gd` (`PlaxLurker`): a `LURKER` layer's sightings (`ParallaxPageReader.sightLurkers`): whether its
+  figure is drawn, switched only while nothing of it is on screen; `PlaxBackground.reveal_lurker(name)`.
 - `plax_effects.gd` (`PlaxEffects`) and `plax_transfert_style.gd` (`PlaxTransfertStyle`): the `SHADER` layers' effects
   and the page fog, and how a cross-fade is drawn.
 
