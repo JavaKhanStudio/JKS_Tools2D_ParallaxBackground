@@ -127,6 +127,10 @@ public class ParallaxLayer
 	private float[] animWidth, animHeight, animTrimLeft, animTrimBottom, animPackedWidth, animPackedHeight;
 	/** The frame drawn, set by the reader from its clock before the layer's tiles ({@link #setAnimTime}). */
 	private int animFrame;
+	/** That clock, in seconds: what a SHADER layer's glint pulses by ({@link GdxLayerEffects#glintUniforms}). */
+	private double effectTime;
+	/** How strongly a SHADER layer's painted crests catch the sun: {@link Parallax_Model#glintStrength}. */
+	private float glintStrength;
 	/**
 	 * What {@link #draw} and {@link #drawMirror} draw of a tile: {@link #DRAW_ALL}, or the reader's two passes over a
 	 * SHADER layer with a patch, {@link #DRAW_IMAGE} then {@link #DRAW_PATCH} (r397, {@link LayerEffects#beginPatch}).
@@ -345,6 +349,7 @@ public class ParallaxLayer
 		setTowerCamera(model.towerCamera);
 		setLurker(model.lurkerSeed, model.lurkerOdds, model.lurkerCover);
 		setAnim(model.animRegion, model.animX, model.animY, model.animFps);
+		glintStrength = model.glintStrength;
 	}
 
 	public void resetPosition()
@@ -536,6 +541,8 @@ public class ParallaxLayer
 		copy.animY = animY;
 		copy.animFps = animFps;
 		copy.animFrame = animFrame;
+		copy.effectTime = effectTime;
+		copy.glintStrength = glintStrength;
 		copy.drawPart = drawPart;
 		// Replaced, never changed: shared.
 		copy.animFrames = animFrames;
@@ -962,14 +969,51 @@ public class ParallaxLayer
 	{
 		if (!(shaderWavelength > 0))
 			return 0;
-		double period = (double) shaderWavelength * (shaderEffect == null ? 1 : shaderEffect.period());
+		double period = (double) shaderWavelength * periodAcross();
 		double phase = (seconds * shaderSpeed) % period;
 		return (float) (phase < 0 ? phase + period : phase);
 	}
 
-	/** Where the effect repeats, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD} for FOG; 0 without a wavelength. */
+	/**
+	 * Where the effect repeats, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD} for FOG;
+	 * 0 without a wavelength. A glinting layer's is at least FOG's, whatever its effect ({@link #glints}).
+	 */
 	public float getShaderPeriod()
-	{return shaderWavelength > 0 ? shaderWavelength * (shaderEffect == null ? 1 : shaderEffect.period()) : 0;}
+	{return shaderWavelength > 0 ? shaderWavelength * periodAcross() : 0;}
+
+	/**
+	 * Whether this layer's painted crests catch the sun after its effect: a SHADER layer with a positive glint strength
+	 * and wavelength. Its glint's waves are whole turns over the effect's period, so the period is the least multiple of
+	 * the effect's and of FOG's (8 wavelengths across, 10 up), and the glint runs on across the layer's wrap (r408).
+	 */
+	public boolean glints()
+	{return kind == Enum_LayerKind.SHADER && glintStrength > 0 && shaderWavelength > 0;}
+
+	/** How many wavelengths the effect runs across before it repeats: the effect's own, FOG's with it when glinting. */
+	private int periodAcross()
+	{
+		int own = shaderEffect == null ? 1 : shaderEffect.period();
+		return glints() ? leastMultiple(own, Enum_ShaderEffect.FOG_PERIOD) : own;
+	}
+
+	/** {@link #periodAcross} up. */
+	private int periodUp()
+	{
+		int own = shaderEffect == null ? 1 : shaderEffect.periodY();
+		return glints() ? leastMultiple(own, Enum_ShaderEffect.FOG_PERIOD_Y) : own;
+	}
+
+	static int leastMultiple(int a, int b)
+	{
+		int x = a, y = b;
+		while (y != 0)
+		{
+			int r = x % y;
+			x = y;
+			y = r;
+		}
+		return a / x * b;
+	}
 
 	/**
 	 * Where FOG's noise starts on X, in world units from the view's left edge, wrapped to {@link #getShaderPeriod}: the
@@ -984,9 +1028,12 @@ public class ParallaxLayer
 		return period > 0 ? start % period : start;
 	}
 
-	/** Where the effect repeats up, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD_Y} for FOG; 0 without a wavelength. */
+	/**
+	 * Where the effect repeats up, in world units: one wavelength for WAVE, {@link Enum_ShaderEffect#FOG_PERIOD_Y} for FOG;
+	 * 0 without a wavelength. A glinting layer's is at least FOG's ({@link #glints}).
+	 */
 	public float getShaderPeriodY()
-	{return shaderWavelength > 0 ? shaderWavelength * (shaderEffect == null ? 1 : shaderEffect.periodY()) : 0;}
+	{return shaderWavelength > 0 ? shaderWavelength * periodUp() : 0;}
 
 	/**
 	 * {@link #getEffectStartX} on Y: where FOG's noise and WAVE's ripple start, in world units above the layers' y 0, wrapped to
@@ -1307,9 +1354,14 @@ public class ParallaxLayer
 		measureAnim();
 	}
 
-	/** The frame drawn: {@code floor(time × fps)} modulo the frame count, on the reader's clock ({@link Parallax_Model#animFps}). */
+	/**
+	 * The frame drawn: {@code floor(time × fps)} modulo the frame count, on the reader's clock
+	 * ({@link Parallax_Model#animFps}); the clock kept for the glint ({@link #getEffectTime}). Set before the layer's effect
+	 * begins.
+	 */
 	public void setAnimTime(double time)
 	{
+		effectTime = time;
 		if (animFrames == null)
 			return;
 		int count = animFrames.size();
@@ -1317,6 +1369,17 @@ public class ParallaxLayer
 		int frame = (int) (Math.floor(time * animFps) % count);
 		animFrame = frame < 0 ? frame + count : frame;
 	}
+
+	/** The reader's clock, in seconds, as {@link #setAnimTime} last gave it. */
+	public double getEffectTime()
+	{return effectTime;}
+
+	/** How strongly a SHADER layer's painted crests catch the sun, 0: none ({@link Parallax_Model#glintStrength}). */
+	public float getGlintStrength()
+	{return glintStrength;}
+
+	public void setGlintStrength(float strength)
+	{glintStrength = strength;}
 
 	/** The frame {@link #setAnimTime} chose. */
 	public int getAnimFrame()

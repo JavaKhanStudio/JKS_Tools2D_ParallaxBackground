@@ -44,6 +44,10 @@ public class JmeLayerEffects implements LayerEffects
 		final Vector4f grade = new Vector4f();
 		final Vector3f across = new Vector3f();
 		final Vector3f up = new Vector3f();
+		final Vector4f glint = new Vector4f();
+		final Vector2f sun = new Vector2f();
+		final Vector4f glintA = new Vector4f();
+		final Vector4f glintB = new Vector4f();
 		float haze;
 		/**
 		 * The layer's animated patch's material (r397), made when first drawn: the same vectors but its frame's region
@@ -63,7 +67,7 @@ public class JmeLayerEffects implements LayerEffects
 	private final AssetManager assets;
 	/** By layer, dropped with it: a page's layers go when the game stops showing it. */
 	private final Map<ParallaxLayer, Shaded> shaded = new WeakHashMap<>();
-	private final float[] numbers = new float[15];
+	private final float[] numbers = new float[15], glints = new float[14];
 	/** The view's size in world units, which FOG's noise is laid across, and where the layers' y 0 is ({@link #setView}). */
 	private float viewWidth, viewHeight, viewLeft, viewFloor;
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}). */
@@ -122,6 +126,15 @@ public class JmeLayerEffects implements LayerEffects
 		s.material.setVector2("Cells", s.cells);
 		s.grade.set(gradeR, gradeG, gradeB, Math.max(0, Math.min(1, gradeAmount)));
 		s.material.setVector4("Grade", s.grade);
+		GdxLayerEffects.glintUniforms(layer, glints);
+		s.glint.set(glints[0], glints[1], glints[2], glints[3]);
+		s.sun.set(glints[4], glints[5]);
+		s.glintA.set(glints[6], glints[7], glints[8], glints[9]);
+		s.glintB.set(glints[10], glints[11], glints[12], glints[13]);
+		s.material.setVector4("Glint", s.glint);
+		s.material.setVector2("Sun", s.sun);
+		s.material.setVector4("GlintA", s.glintA);
+		s.material.setVector4("GlintB", s.glintB);
 		((JmeBatch) batch).setEffect(s.material);
 		return true;
 	}
@@ -152,6 +165,10 @@ public class JmeLayerEffects implements LayerEffects
 		s.patch.setVector4("Dissolve", s.dissolve);
 		s.patch.setVector2("Cells", s.cells);
 		s.patch.setVector4("Grade", s.grade);
+		s.patch.setVector4("Glint", s.glint);
+		s.patch.setVector2("Sun", s.sun);
+		s.patch.setVector4("GlintA", s.glintA);
+		s.patch.setVector4("GlintB", s.glintB);
 		((JmeBatch) batch).setEffect(s.patch);
 		return true;
 	}

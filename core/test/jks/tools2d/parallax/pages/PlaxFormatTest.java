@@ -117,7 +117,7 @@ class PlaxFormatTest
 			assertEquals(Enum_LayerKind.IMAGE, layer.kind, "files older than format 5 hold image layers");
 		original.pageModel.pageList.add(emptyLayer());
 		original.pageModel.pageList.add(particleLayer());
-		original.pageModel.pageList.add(shaderLayer());
+		original.pageModel.pageList.add(glint(shaderLayer()));
 		original.pageModel.pageList.add(sequenceLayer());
 		original.pageModel.pageList.add(floorLayer());
 		original.pageModel.pageList.add(lurkerLayer());
@@ -152,6 +152,7 @@ class PlaxFormatTest
 		assertEquals(-1.25f, fog.shaderSpeed, "its speed");
 		assertEquals(0, fog.shaderHaze, "its depth haze is no longer stored since format 10");
 		assertEquals(0.25f, reread.getFogStrength(), "it is the page's fog's strength, stored since format 10");
+		assertEquals(0.45f, fog.glintStrength, "its glint is stored since format 17");
 		assertEquals(new Color(0.2f, 0.3f, 0.5f, 1), reread.fogColor, "and the fog's colour");
 		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
 		assertEquals(Enum_LayerKind.SEQUENCE, ground.kind, "SEQUENCE is a kind since format 8");
@@ -190,6 +191,31 @@ class PlaxFormatTest
 		layer.animY = -3;
 		layer.animFps = 7.5f;
 		return layer;
+	}
+
+	/** A glint on a SHADER layer's crests (format 17). */
+	static Parallax_Model glint(Parallax_Model layer)
+	{
+		layer.glintStrength = 0.45f;
+		return layer;
+	}
+
+	/** Format 16 has no glint: written there, a layer reads none. */
+	@Test
+	void format16FilesStillLoadWithoutAGlint() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.add(animate(glint(shaderLayer())));
+
+		byte[] written = write(original, 16);
+		assertEquals(16, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals("palms_anim", fog.animRegion, "format 16 has the animated patch");
+		assertEquals(0, fog.glintStrength, "and no glint");
+		original.pageModel.pageList.get(original.pageModel.pageList.size() - 1).glintStrength = 0;
+		assertPageEquals(original, reread);
 	}
 
 	/** Format 15 has no animated patch: written there, a layer reads none, at 0, 0 and 12 frames a second. */
@@ -647,7 +673,7 @@ class PlaxFormatTest
 		original.useOriginalSize = true;
 		original.pageModel.pageList.add(2, emptyLayer());
 		original.pageModel.pageList.add(4, particleLayer());
-		original.pageModel.pageList.add(5, animate(shaderLayer()));
+		original.pageModel.pageList.add(5, animate(glint(shaderLayer())));
 		original.pageModel.pageList.add(6, sequenceLayer());
 		original.pageModel.pageList.add(7, floorLayer());
 		original.pageModel.pageList.add(8, lurkerLayer());
@@ -748,6 +774,7 @@ class PlaxFormatTest
 			assertEquals(expected.animX, actual.animX, name);
 			assertEquals(expected.animY, actual.animY, name);
 			assertEquals(expected.animFps, actual.animFps, name);
+			assertEquals(expected.glintStrength, actual.glintStrength, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

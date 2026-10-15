@@ -1,0 +1,23 @@
+{
+ "round": "glint",
+ "about": "A SHADER layer's glint (r408, r427, format 17): r407's beach sea alone, glinting as the animation lab drew it, zoomed in on so the water fills the still. The glint is sparse by design (Simon on r407: 'super aggressive'), so a reader that left it out moves a still by under 1/255 on the mean: pixelsOff gates it, a missing glint moving 0.13% to 0.6% of a still by over 32 (tools/r427-glint/strength.sh). Written by core/test-data/anim/make_round.py. Read by shots/.../ParallaxShots, engines/godot/tests/shots.gd and engines/jme's JmeParallaxShots.",
+ "pixelsOff": 0.05,
+ "scenes": [
+  {
+   "id": "g01",
+   "page": "engines/rounds/glint/g01.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "name": "glint-after-wave",
+   "about": "the sea through WAVE with a glint of 0.5: the painted crests lit in pieces that fade in place, in a sun's column in the view's middle; the pieces are whole turns over the effect's period, which a glinting layer takes as FOG's (8 wavelengths across, 10 up), so they run on across the sea's wrap"
+  },
+  {
+   "id": "g02",
+   "page": "engines/rounds/glint/g02.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "name": "glint-after-fog",
+   "about": "the same sea through FOG (0.15) with the same glint: the glint comes after the effect, before the page's fog"
+  }
+ ]
+}

@@ -159,6 +159,7 @@ public final class Utils_Page_Json
 		layer.animX = json.getInt("animX", layer.animX);
 		layer.animY = json.getInt("animY", layer.animY);
 		layer.animFps = readFloat(json, "animFps", layer.animFps);
+		layer.glintStrength = readFloat(json, "glintStrength", layer.glintStrength);
 		return layer;
 	}
 

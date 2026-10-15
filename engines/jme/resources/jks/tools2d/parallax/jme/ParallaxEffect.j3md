@@ -28,6 +28,12 @@ MaterialDef ParallaxEffect {
         Vector3 Across : 0.0 0.0 1.0
         // The same up the layer: the view's height, where the noise starts from its bottom, 1 or -1 (flipped on Y).
         Vector3 Up : 0.0 0.0 1.0
+        // The glint (GdxLayerEffects.glintUniforms): strength (0: none), density, pulses, crest reach; the sun's column;
+        // the waves' whole turns across and up; the third's, then the effect's periods.
+        Vector4 Glint : 0.0 0.0 0.0 0.0
+        Vector2 Sun : 0.5 0.3
+        Vector4 GlintA : 0.0 0.0 0.0 0.0
+        Vector4 GlintB : 0.0 0.0 1.0 1.0
     }
 
     Technique {

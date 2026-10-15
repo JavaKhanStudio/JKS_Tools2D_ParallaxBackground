@@ -86,6 +86,7 @@ public final class Utils_Page
 		model.animX = page.getAnimX();
 		model.animY = page.getAnimY();
 		model.animFps = page.getAnimFps();
+		model.glintStrength = page.getGlintStrength();
 		return model;
 	}
 }

@@ -33,7 +33,8 @@ final class ShaderCases extends ReaderFixtures
 				new BrowserCase("reader: fogNoiseRunsOnUpTheTiles", () -> new ShaderCases().fogNoiseRunsOnUpTheTiles()),
 				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ShaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
 				new BrowserCase("reader: aShaderLayerWithoutItsEffectIsDrawnPlain", () -> new ShaderCases().aShaderLayerWithoutItsEffectIsDrawnPlain()),
-				new BrowserCase("reader: shaderNumbersAreTheDrawnImages", () -> new ShaderCases().shaderNumbersAreTheDrawnImages()));
+				new BrowserCase("reader: shaderNumbersAreTheDrawnImages", () -> new ShaderCases().shaderNumbersAreTheDrawnImages()),
+				new BrowserCase("reader: glintWavesAreWholeTurnsOverTheEffectPeriod", () -> new ShaderCases().glintWavesAreWholeTurnsOverTheEffectPeriod()));
 	}
 
 	/**
@@ -298,5 +299,44 @@ final class ShaderCases extends ReaderFixtures
 		equal(0, numbers[6], 0, "no wavelength: no shift");
 		equal(1, numbers[7], 0, "and a wavelength that divides safely");
 		equal(0, numbers[8], 0, "at phase 0");
+	}
+
+	/**
+	 * A SHADER layer's glint (r408): its waves are whole turns over the effect's period, which a glinting layer takes as
+	 * FOG's (8 wavelengths across, 10 up) whatever its effect, so it runs on across the layer's wrap; it pulses on the
+	 * reader's clock; no strength, no wavelength or not a SHADER layer: none.
+	 */
+	void glintWavesAreWholeTurnsOverTheEffectPeriod()
+	{
+		ParallaxLayer layer = new ParallaxLayer(Enum_LayerKind.SHADER, Arrays.asList(region(1920, 1080)), true, 40, 0, 0, 1);
+		layer.setShaderEffect(Enum_ShaderEffect.WAVE);
+		layer.setShaderWavelength(2);
+		equal(2, layer.getShaderPeriod(), 0, "WAVE alone repeats every wavelength");
+		layer.setGlintStrength(0.5f);
+		equal(16, layer.getShaderPeriod(), 0, "glinting, every 8 across");
+		equal(20, layer.getShaderPeriodY(), 0, "and 10 up");
+		layer.setAnimTime(12.5);
+		float[] glint = GdxLayerEffects.glintUniforms(layer, new float[14]);
+		equal(0.5f, glint[0], 0, "its strength");
+		equal(Float.floatToIntBits((float) (12.5 * GdxLayerEffects.GLINT_TWINKLE % 1000.0)), Float.floatToIntBits(glint[2]), 0, "its pulses on the reader's clock");
+		for (int k = 6; k < 12; k++)
+			equal(Math.round(glint[k]), glint[k], 0, "wave " + k + " a whole number of turns");
+		// 16 world units over 2.5 glints of 0.8: 8 pieces across; 20 up over 0.9: 22 rows.
+		equal(8, glint[6], 0, "pieces across the period");
+		equal(22, glint[7], 0, "rows up it");
+		equal(16, glint[12], 0, "over the period across");
+		equal(20, glint[13], 0, "and up");
+
+		layer.setShaderEffect(Enum_ShaderEffect.FOG);
+		equal(16, layer.getShaderPeriod(), 0, "FOG's own period is the glint's");
+		layer.setShaderWavelength(0);
+		equal(0, GdxLayerEffects.glintUniforms(layer, glint)[0], 0, "no wavelength: no glint");
+		layer.setShaderWavelength(2);
+		layer.setGlintStrength(0);
+		equal(0, GdxLayerEffects.glintUniforms(layer, glint)[0], 0, "no strength: none");
+		ParallaxLayer image = new ParallaxLayer(region(1920, 1080), true, 40, 0, 0, 1);
+		image.setShaderWavelength(2);
+		image.setGlintStrength(0.5f);
+		isTrue(!image.glints(), "an IMAGE layer never glints");
 	}
 }

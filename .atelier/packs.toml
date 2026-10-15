@@ -137,6 +137,9 @@ that collision once moved the stills 2-11/255 with nothing failing).
 Gates: both engines' tools/frame-check.sh on engines/rounds/shaders and engines/rounds/fog (fail past a mean 2/255). A
 round only proves an effect that moves its stills by more: tools/r180-shader-round/strength.sh and
 tools/r217-fog/strength.sh fail under 2.5/255; tools/r217-fog/mutate.sh fails unless the round sees a wrong copy.
+GLINT (format 17, r427) is no effect but a layer's glintStrength: glinted() ends every effect before hazed(), in all
+three copies. Its round, engines/rounds/glint, gates on pixelsOff, not the mean: the glint is sparse, and leaving it out
+moves a still by under 1/255 (tools/r427-glint/strength.sh, mutate.sh). A glinting layer's period is at least FOG's.
 """
 
 [tags.ai]

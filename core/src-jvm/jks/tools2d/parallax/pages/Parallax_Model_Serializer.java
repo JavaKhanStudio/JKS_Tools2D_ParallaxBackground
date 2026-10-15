@@ -108,6 +108,9 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			output.writeInt(model.animY);
 			output.writeFloat(model.animFps);
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 17)
+			output.writeFloat(model.glintStrength);
 	}
 
 	@Override
@@ -219,6 +222,9 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 			model.animY = input.readInt();
 			model.animFps = input.readFloat();
 		}
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 17)
+			model.glintStrength = input.readFloat();
 
 		return model;
 	}

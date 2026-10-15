@@ -1,0 +1,66 @@
+{
+ "topHalf_top": {
+  "r": 0.3098039,
+  "g": 0.5607843,
+  "b": 0.8156863,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 0.8117647,
+  "g": 0.8941176,
+  "b": 0.9490196,
+  "a": 1.0
+ },
+ "topHalfSize": 0.0,
+ "bottomHalf_top": {
+  "r": 0.8117647,
+  "g": 0.8941176,
+  "b": 0.9490196,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 0.8117647,
+  "g": 0.8941176,
+  "b": 0.9490196,
+  "a": 1.0
+ },
+ "bottomHalfSize": 1.0,
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "pageModel": {
+  "atlasName": "beach.atlas",
+  "outside": false,
+  "pageList": [
+   {
+    "regionName": "l1",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.02,
+    "parallaxScalingSpeedY": 0.012,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 2.7,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false,
+    "kind": "SHADER",
+    "shaderEffect": "WAVE",
+    "shaderAmplitude": 0.06,
+    "shaderWavelength": 1.25,
+    "shaderSpeed": 0.3,
+    "glintStrength": 0.5
+   }
+  ]
+ },
+ "fogStrength": 0.00814,
+ "fogColor": {
+  "r": 0.8117647,
+  "g": 0.8941176,
+  "b": 0.9490196,
+  "a": 1.0
+ }
+}

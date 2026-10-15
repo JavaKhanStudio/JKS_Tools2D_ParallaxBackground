@@ -134,6 +134,13 @@ public class Parallax_Model
 	/** The patch's frames a second, on the reader's clock. Stored since format 16, {@link #DEFAULT_ANIM_FPS} before. */
 	public float animFps = DEFAULT_ANIM_FPS;
 
+	/**
+	 * How strongly a SHADER layer's painted crests catch the sun after its effect, 0 to 1.5 (light added); 0, the
+	 * default: no glint (docs/effect-layers.md, r408). Drawn only with a positive {@link #shaderWavelength}: the glint
+	 * loops over the effect's period. Stored since format 17.
+	 */
+	public float glintStrength;
+
 	public boolean isFlipX()
 	{return flipX;}
 
@@ -350,6 +357,12 @@ public class Parallax_Model
 
 	public void setAnimFps(float animFps)
 	{this.animFps = animFps;}
+
+	public float getGlintStrength()
+	{return glintStrength;}
+
+	public void setGlintStrength(float glintStrength)
+	{this.glintStrength = glintStrength;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

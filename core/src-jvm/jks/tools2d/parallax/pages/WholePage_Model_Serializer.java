@@ -44,13 +44,15 @@ import com.esotericsoftware.kryo.io.Output;
  * <li>version 16: the version 15 layout with each layer's animated patch, animRegion (a string, empty: none), animX and
  * animY (ints) and animFps (a float), stored after lurkerCover. Older files read none, 0, 0 and
  * {@link Parallax_Model#DEFAULT_ANIM_FPS}.</li>
+ * <li>version 17: the version 16 layout with each layer's glintStrength (a float) stored after animFps. Older files read
+ * 0: no layer glints.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 16;
+	static final int CURRENT_VERSION = 17;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

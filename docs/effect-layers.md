@@ -134,6 +134,21 @@ through a cross-fade between two fogs while tinting (0.35 and 0.13 / 255); leavi
 6.9 to 46 / 255 (`tools/r217-fog/strength.sh`), and `tools/r217-fog/mutate.sh` fails a wrong colour or depth in
 Godot, jME or libGDX's page shader.
 
+Glint, r427 (format 17, Simon on r408: "ship GLINT as the lab draws it now", as "a strength on any SHADER layer,
+applied after its effect"): the page stores one number, a `SHADER` layer's `glintStrength` (0: none). Every effect
+shader ends in `glinted()` before `hazed()`: the image's crests, a pixel brighter than the water 0.2 world units above
+and below it (read at the texture coordinate the effect sampled, so a `WAVE`'s shifted rows glint where they are drawn,
+clamped to the region), are lit in pieces that two waves pick and a third fades in and out in place, inside a sun's
+column in the view's middle. The animation lab's other knobs (size 0.8, density 0.6, twinkle 0.3 a second, crest 0.2,
+sun 0.5 and 0.3 of the view) are `GdxLayerEffects.GLINT_*`, copied in `plax_effects.gd`; `GdxLayerEffects.glintUniforms`
+hands every engine the numbers. The waves are whole turns over the effect's period, which a glinting layer takes as
+FOG's (8 wavelengths across, 10 up) whatever its effect (`ParallaxLayer.glints`), so the glint loops and runs on across
+the layer's wrap; WAVE's ripple is unchanged by the longer period. Off, it is a branch on a uniform; on, two more
+texture reads a pixel (not measured on `:demo:stress`). The glint is sparse by design, so `engines/rounds/glint`
+(the beach sea zoomed in on) gates on pixels off (`pixelsOff` 0.05%): leaving it out moves 0.13 to 0.6% of a still
+by over 32 (`tools/r427-glint/strength.sh`), and `tools/r427-glint/mutate.sh` fails a Godot copy without it, with
+the sun off the middle, frozen, a one-sided crest or the effect's own period, and a jME material never handed it.
+
 ## Saying what an engine cannot draw
 
 `core/src` gets a table, `EffectSupport`: for each kind and each effect, whether libGDX, the browser, Godot and jME

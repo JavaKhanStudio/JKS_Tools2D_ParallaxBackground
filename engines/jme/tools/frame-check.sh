@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # frame-check.sh [ROUND_DIR...] — the jMonkeyEngine reader (engines/jme) against the libGDX runtime, frame by frame (r112).
 #
-#   engines/jme/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /effects, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet, /animated and /lurker
+#   engines/jme/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /effects, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet, /animated, /lurker and /glint
 #   engines/jme/tools/frame-check.sh engines/rounds/round1
 #
 # The same rounds and stills as engines/godot/tools/frame-check.sh: libGDX's (tools/parallax-lab-shots.sh, 0, 6 and 12 s into
@@ -17,7 +17,7 @@ ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/effects engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated engines/rounds/lurker)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/effects engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated engines/rounds/lurker engines/rounds/glint)
 ./gradlew -q :jme:shotsClasspath || exit 1
 CP="$(cat engines/jme/build/shots.classpath)"
 status=0

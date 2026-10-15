@@ -115,6 +115,12 @@ repair.
   drawing height and `getEffectStartY` (`wrappedY`, `wrapped_y`), not the tile's own: the noise runs on across the
   tiles (r229 on X, round `shaders` s06, `tools/r229-fog-seam/mutate.sh`; r262 on Y, s07,
   `tools/r262-fog-seam-y/mutate.sh`). WAVE's y is `along().y` too (r273, s08, `tools/r273-wave-seam-y/mutate.sh`).
+- A `SHADER` layer's glint (format 17, r427: `glintStrength`, its only stored number) ends every effect shader in
+  `glinted()`, before `hazed()`, written three times like the effects and fed `GdxLayerEffects.glintUniforms` (Godot's
+  `PlaxEffects._apply_glint`, its `GLINT_*` copied). A glinting layer's period is at least FOG's
+  (`ParallaxLayer.glints`, `periodAcross`/`periodUp`; Godot's `_across`/`_up`), so the glint loops across the wrap.
+  Change it and run both frame checks on `engines/rounds/glint`, gated by `pixelsOff` (the glint is too sparse for
+  the mean); `tools/r427-glint/strength.sh` proves the round sees it, `mutate.sh` a wrong Godot or jME copy.
 - A page's depth fog (`fogStrength`, `fogColor`, format 10; format 9's `shaderHaze` is read as its strength) ends
   every one of those shaders in `hazed()`, toward the fog's colour (`u_fog`), and draws an IMAGE or SEQUENCE layer
   through a `PLAIN` one (jME's `Plain` define, Godot's `"PLAIN"` material); libGDX instead draws them all through one

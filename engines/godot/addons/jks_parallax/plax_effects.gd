@@ -15,7 +15,8 @@ extends RefCounted
 ## across its tiles, so FOG has no seam at a tile edge (r229); up: the same up the view, from its bottom
 ## (effect_start_y), -1 flipped on Y (r262), which WAVE's ripple reads too (r273). TAU is Godot's own (2 pi). "PLAIN" is
 ## no effect: an IMAGE or SEQUENCE layer the page's depth fog reaches, or any a dissolve masks or a transfert through a
-## colour grades.
+## colour grades. glinted(): the sun on a SHADER layer's painted crests after its effect (GdxLayerEffects.glintUniforms,
+## r408), its numbers set by apply.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
 const EFFECTS := ["WAVE", "FOG"]
@@ -23,6 +24,15 @@ const EFFECTS := ["WAVE", "FOG"]
 const FOG_PERIOD := 8
 ## Enum_ShaderEffect.FOG_PERIOD_Y: how many wavelengths they run up before they repeat (r262).
 const FOG_PERIOD_Y := 10
+## GdxLayerEffects' GLINT_*: what a page does not store of the glint, as the animation lab drew it (r408).
+const GLINT_SIZE := 0.8
+const GLINT_CREST := 0.2
+const GLINT_DENSITY := 0.6
+const GLINT_TWINKLE := 0.3
+const GLINT_SUN_X := 0.5
+const GLINT_SUN_WIDTH := 0.3
+const GLINT_ACROSS := [1.0, 1.37, 0.53]
+const GLINT_UP := [1.0, -0.71, 1.3]
 
 const _HEAD := """shader_type canvas_item;
 uniform vec4 region;
@@ -35,6 +45,10 @@ uniform vec2 cells;
 uniform vec4 grade;
 uniform vec3 across = vec3(0.0, 0.0, 1.0);
 uniform vec3 up = vec3(0.0, 0.0, 1.0);
+uniform vec4 glint;
+uniform vec2 sun = vec2(0.5, 0.3);
+uniform vec4 glint_a;
+uniform vec4 glint_b = vec4(0.0, 0.0, 1.0, 1.0);
 varying vec4 tint;
 void vertex() {
 	tint = COLOR;
@@ -59,6 +73,24 @@ float dissolved(vec2 screen_uv) {
 vec4 hazed(vec4 color, vec2 screen_uv) {
 	return vec4(mix(mix(color.rgb, fog_color, haze), grade.rgb, grade.a), color.a * dissolved(screen_uv));
 }
+vec4 glinted(sampler2D tex, vec4 color, vec4 image, vec2 uv, vec2 screen_uv) {
+	if (glint.x <= 0.0)
+		return color;
+	const vec3 LUMA = vec3(0.299, 0.587, 0.114);
+	float dv = glint.w / size.y * (region.w - region.y);
+	float lo = min(region.y, region.w), hi = max(region.y, region.w);
+	vec4 above = texture(tex, vec2(uv.x, clamp(uv.y - dv, lo, hi)));
+	vec4 below = texture(tex, vec2(uv.x, clamp(uv.y + dv, lo, hi)));
+	float ridge = dot(image.rgb, LUMA) - 0.5 * (dot(above.rgb, LUMA) + dot(below.rgb, LUMA));
+	float crest = smoothstep(0.005, 0.035, ridge) * min(above.a, below.a) * image.a;
+	float sun_at = (screen_uv.x - sun.x) / sun.y;
+	vec2 q = along(screen_uv) / glint_b.zw;
+	float n = (cos(TAU * (glint_a.x * q.x + glint_a.y * q.y))
+		+ 0.6 * cos(TAU * (glint_a.z * q.x + glint_a.w * q.y + 0.3))) / 1.6;
+	float pulse = 0.5 + 0.5 * cos(TAU * (glint.z + 1.5 * sin(TAU * (glint_b.x * q.x + glint_b.y * q.y))));
+	float glow = smoothstep(1.0 - glint.y, 1.0, n) * pulse * pulse * crest * exp(-sun_at * sun_at);
+	return vec4(min(color.rgb + glint.x * glow * vec3(1.0, 0.96, 0.85), 1.0), color.a);
+}
 """
 
 ## WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region; y is
@@ -66,7 +98,9 @@ vec4 hazed(vec4 color, vec2 screen_uv) {
 const _WAVE := _HEAD + """void fragment() {
 	float shift = effect.x * sin(TAU * (along(SCREEN_UV).y - effect.z) / effect.y);
 	float u = clamp(UV.x + shift / size.x * (region.z - region.x), min(region.x, region.z), max(region.x, region.z));
-	COLOR = hazed(tint * texture(TEXTURE, vec2(u, UV.y)), SCREEN_UV);
+	vec2 uv = vec2(u, UV.y);
+	vec4 image = texture(TEXTURE, uv);
+	COLOR = hazed(glinted(TEXTURE, tint * image, image, uv, SCREEN_UV), SCREEN_UV);
 }
 """
 
@@ -77,9 +111,10 @@ const _FOG := _HEAD + """void fragment() {
 	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
 		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
 		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
-	vec4 color = tint * texture(TEXTURE, UV);
+	vec4 image = texture(TEXTURE, UV);
+	vec4 color = tint * image;
 	color.a *= 1.0 - effect.x * n;
-	COLOR = hazed(color, SCREEN_UV);
+	COLOR = hazed(glinted(TEXTURE, color, image, UV, SCREEN_UV), SCREEN_UV);
 }
 """
 
@@ -109,17 +144,46 @@ static func phase(model: Dictionary, seconds: float) -> float:
 	var wavelength: float = model.shaderWavelength
 	if not wavelength > 0:
 		return 0.0
-	var period := wavelength * (FOG_PERIOD if model.shaderEffect == "FOG" else 1)
+	var period := wavelength * _across(model)
 	var p := fmod(seconds * float(model.shaderSpeed), period)
 	return p + period if p < 0 else p
 
 
-## ParallaxLayer.getShaderPeriod: where the effect repeats, one wavelength, FOG_PERIOD for FOG; 0 without a wavelength.
+## ParallaxLayer.getShaderPeriod: where the effect repeats, one wavelength, FOG_PERIOD for FOG, at least FOG's for a
+## glinting layer; 0 without a wavelength.
 static func period(model: Dictionary) -> float:
 	var wavelength: float = model.get("shaderWavelength", 0.0)
 	if not wavelength > 0:
 		return 0.0
-	return wavelength * (FOG_PERIOD if model.get("shaderEffect", "") == "FOG" else 1)
+	return wavelength * _across(model)
+
+
+## ParallaxLayer.glints: a SHADER layer with a positive glint strength and wavelength.
+static func glints(model: Dictionary) -> bool:
+	return (model.get("kind", "") == "SHADER" and float(model.get("glintStrength", 0.0)) > 0
+			and float(model.get("shaderWavelength", 0.0)) > 0)
+
+
+## ParallaxLayer.periodAcross: the wavelengths the effect runs across before it repeats, FOG's with it when glinting.
+static func _across(model: Dictionary) -> int:
+	var own := FOG_PERIOD if model.get("shaderEffect", "") == "FOG" else 1
+	return _least_multiple(own, FOG_PERIOD) if glints(model) else own
+
+
+## ParallaxLayer.periodUp: the same up.
+static func _up(model: Dictionary) -> int:
+	var own := FOG_PERIOD_Y if model.get("shaderEffect", "") == "FOG" else 1
+	return _least_multiple(own, FOG_PERIOD_Y) if glints(model) else own
+
+
+static func _least_multiple(a: int, b: int) -> int:
+	var x := a
+	var y := b
+	while y != 0:
+		var r := x % y
+		x = y
+		y = r
+	return a / x * b
 
 
 ## ParallaxLayer.getEffectStartX: where FOG's noise starts on X, in page units from the view's left, wrapped to the
@@ -132,12 +196,13 @@ static func effect_start_x(l: Dictionary) -> float:
 	return fmod(start, p) if p > 0 else start
 
 
-## ParallaxLayer.getShaderPeriodY: where the effect repeats up, one wavelength, FOG_PERIOD_Y for FOG; 0 without one.
+## ParallaxLayer.getShaderPeriodY: where the effect repeats up, one wavelength, FOG_PERIOD_Y for FOG, at least FOG's
+## for a glinting layer; 0 without one.
 static func period_y(model: Dictionary) -> float:
 	var wavelength: float = model.get("shaderWavelength", 0.0)
 	if not wavelength > 0:
 		return 0.0
-	return wavelength * (FOG_PERIOD_Y if model.get("shaderEffect", "") == "FOG" else 1)
+	return wavelength * _up(model)
 
 
 ## ParallaxLayer.getEffectStartY: where FOG's noise starts on Y, in page units from the view's bottom, wrapped to
@@ -178,6 +243,26 @@ static func apply(
 			phase(model, seconds) if on else 0.0))
 	m.set_shader_parameter("across", Vector3(view_w, left + effect_start_x(l), -1.0 if model.flipX else 1.0))
 	m.set_shader_parameter("up", Vector3(view_h, floor_y + effect_start_y(l), -1.0 if model.flipY else 1.0))
+	_apply_glint(m, model, seconds)
+
+
+## GdxLayerEffects.glintUniforms: the glint's numbers, its strength 0 for a layer that does not glint; each wave a whole
+## number of turns over the effect's period.
+static func _apply_glint(m: ShaderMaterial, model: Dictionary, seconds: float) -> void:
+	var on := glints(model)
+	var period_x := period(model) if on else 1.0
+	var period_up := period_y(model) if on else 1.0
+	m.set_shader_parameter("glint", Vector4(float(model.get("glintStrength", 0.0)) if on else 0.0, GLINT_DENSITY,
+			fmod(seconds * GLINT_TWINKLE, 1000.0), GLINT_CREST))
+	m.set_shader_parameter("sun", Vector2(GLINT_SUN_X, GLINT_SUN_WIDTH))
+	var across := period_x / (2.5 * GLINT_SIZE)
+	var up_turns := period_up / 0.9
+	var t: Array[float] = []
+	for k in 3:
+		t.append(maxf(1.0, floorf(GLINT_ACROSS[k] * across + 0.5)))
+		t.append(floorf(GLINT_UP[k] * up_turns + 0.5))
+	m.set_shader_parameter("glint_a", Vector4(t[0], t[1], t[2], t[3]))
+	m.set_shader_parameter("glint_b", Vector4(t[4], t[5], period_x, period_up))
 
 
 ## LayerEffects.setDissolve on a layer's material: `side` 0 (none), 1 (outgoing) or 2 (incoming), at the slot's `ramp`,
