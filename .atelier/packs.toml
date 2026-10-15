@@ -188,6 +188,9 @@ another one (r386: r322's olive slab back on HEAD). Run the examples (tools/r279
 and after, in a HEAD worktree for the before, and compare them all, not only the painting the ticket names.
 A metric must see the fault on the before image: tools/r279-depth-page/see_through.py OUT counts sky each layer
 carries; a count that reads the same before and after proves nothing.
+A fix right for one model or one kind of painting only goes in depth_page.RULES (tools/parallax_rules.py, r378):
+named conditions asked in order, the cheap ones first, recorded per layer in recipe.json's "rules"; --rule NAME=on|off
+forces one. Its cases go in tools/r279-depth-page/rules_test.py (no GPU), each check failing one when removed.
 Look at OUT/cut/sheet.png, objects.png, fields.png AND the 6 and 12 s frames: a repaint shows only once layers slide.
-Gate: tools/lint.sh (ruff), then the examples' stills, attached.
+Gate: tools/lint.sh (ruff), rules_test.py, then the examples' stills, attached.
 """

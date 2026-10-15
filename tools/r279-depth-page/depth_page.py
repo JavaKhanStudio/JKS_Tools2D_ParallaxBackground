@@ -26,7 +26,9 @@ docs/depth-tricks.md §5. Passes:
      (r373: a clump behind a trunk no longer ends in a straight edge);
   4. holes: those nearer pixels, grown by --grow px over the soft edge depth leaves, are filled with the layer's own
      colours and repainted by dreamshaper_8's inpainting model (gen.py inpaint, tile x). The camera scrolls past
-     every one of them.
+     every one of them. Before it, RULES are weighed on each layer's hole (tools/parallax_rules.py, r378): a fix
+     for one case, applied only where its conditions hold (sky_twigs: the twig tips Depth Anything V2 Small judged
+     as far as the sky, kept in a tree page's back layer as birds, join its hole); --rule NAME=on|off forces one.
   Every step that looks across the painting (depth, islands, fill) sees it as the tiled layer shows it, its two
   ends joined: else a band's edge steps at the join, lint fault (e).
   5. the page: every layer the painting's full width at sizeRatio 1, bottom on the screen's bottom, cut 2 rows
@@ -34,7 +36,7 @@ docs/depth-tricks.md §5. Passes:
      none under a twentieth of it. The back layer is opaque (the painted sky); the gradients take its top and bottom
      colours.
 
-Writes OUT/recipe.json (the command and each pass, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, objects.png (SAM's masks), fields.png (the prompted fields), bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
+Writes OUT/recipe.json (the command and each pass, each layer's rules weighed, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, objects.png (SAM's masks), fields.png (the prompted fields), bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
 NAME.png, NAME.jplax, round.json) and, unless --no-shots, OUT/shots (tools/parallax-lab-shots.sh, cage: stills at 0,
 6 and 12 s). Exits 1 when lint finds a fault. Runs in the ComfyUI venv (COMFYUI_DIR, default ~/ComfyUI), which holds
 transformers, scipy and torch; needs --ckpt in its models/checkpoints (dreamshaper_8Inpainting.safetensors, Civitai
@@ -60,6 +62,7 @@ sys.path.insert(0, AI)
 import gpu_lock  # noqa: E402
 import make_page  # noqa: E402
 import parallax_lab as lab  # noqa: E402
+import parallax_rules  # noqa: E402
 import seam  # noqa: E402
 
 ROOT = lab.ROOT
@@ -771,9 +774,15 @@ def parse_args():
     ap.add_argument("--name", help="the atlas and page name; default the painting's")
     ap.add_argument("--keep", action="store_true", help="keep OUT/cut's repainted layers: only lay the page out again")
     ap.add_argument("--no-shots", action="store_true")
+    ap.add_argument("--rule", action="append", metavar="NAME=on|off",
+                    help="force a rule on or off, whatever its conditions say: " + ", ".join(r.name for r in RULES))
     a = ap.parse_args()
     if not 2 <= a.layers <= 6:
         ap.error("--layers: 2 to 6")
+    try:
+        a.forced = parallax_rules.parse_forced(a.rule, RULES)
+    except ValueError as e:
+        ap.error(str(e))
     return a
 
 
@@ -846,6 +855,12 @@ def cut_layer(k, img, dn, L, centres, cut, a):
     # fill, the repaint grows a small tree there. Islands of the layer's own pixels inside the hole join it.
     if hole.any():
         hole |= looped(lambda m, o: islands(m, w * h // 150, o), alpha & ~hole, hole)
+    ctx = {"k": k, "n": n, "theme": a.theme, "depth_model": MODEL, "img": img, "dn": dn, "alpha": alpha, "hole": hole}
+    rules = parallax_rules.weigh(RULES, ctx, a.forced)
+    hole = ctx["hole"]
+    for r in rules:
+        if r["applied"]:
+            log(f"layer {k}: rule {r['rule']}: {r['moved']} px")
     cut_k = os.path.join(cut, f"l{k}")
     src = looped(fill, img, alpha & ~hole)
     if hole.any() and k:  # the back layer is opaque, and nothing goes on behind its sky
@@ -875,8 +890,61 @@ def cut_layer(k, img, dn, L, centres, cut, a):
     layer = {"path": f"{cut_k}.png", "disparity": med, "top": top, "hole": float(hole.mean())}
     entry = {"strip": f"l{k}", "disparity": round(med, 3), "top": top,
              "repainted": round(float(hole.mean()), 4), "seed": a.seed * 100 + k,
-             "prompt": f"{a.theme}, {word} scenery, painterly, seamless" if hole.any() else None}
+             "prompt": f"{a.theme}, {word} scenery, painterly, seamless" if hole.any() else None, "rules": rules}
     return layer, entry
+
+
+SKY = 0.01  # disparity, normalised: the depth's farthest 1 % is clipped to 0, the sky
+
+
+def sky_twigs(img, dn, own, hole, dark=40, half=4.5, window=31, sky_share=0.5):
+    """A layer's own pixels that are a twig's tip against the sky: a dark piece (darker by dark than the bright of
+    what is round it, grown into its own soft edge a third as dark) touching the hole, nowhere wider than 2 x half px,
+    and with at least sky_share of the ring 4 to 8 px round it (past the depth's soft halo) at the sky's depth, and
+    its darkest tenth darker than that ring's. A ridge's or a hedge's dark line has land round it, a mountain or a
+    dark cloud is broad, the blue between two white clouds no darker than the sky round them."""
+    lum = img.astype(np.float32).mean(axis=2)
+    bright = looped(lambda v: ndimage.percentile_filter(v, 75, size=window), np.where(own, lum, 0))
+    seed = own & (lum < bright - dark)
+    d = looped(lambda m, s_: ndimage.binary_propagation(s_, mask=m), own & (lum < bright - dark / 3), seed)
+    comp = looped(lambda m: ndimage.label(m)[0], d)
+    width = looped(ndimage.distance_transform_edt, d)  # each dark pixel's distance to the piece's edge
+    out = np.zeros_like(d)
+    for i in np.unique(comp[d & grow(hole, 2)]):
+        piece = comp == i
+        if width[piece].max() > half:
+            continue
+        ring = grow(piece, 8) & own & ~grow(piece, 4)
+        if not ring.any() or (dn[ring] <= SKY).mean() < sky_share:
+            continue
+        if np.percentile(lum[piece], 10) > np.percentile(lum[ring], 10) - dark / 2:  # blue between white clouds
+            continue
+        out |= piece
+    return grow(out, 1) & own  # its anti-aliased rim
+
+
+def _twigs_found(c):
+    c["twigs"] = sky_twigs(c["img"], c["dn"], c["alpha"] & ~c["hole"], c["hole"])
+    return c["twigs"].any()
+
+
+def _twigs_to_hole(c):
+    c["hole"] = c["hole"] | c["twigs"]
+    return c["twigs"].sum()
+
+
+# r378: rules for one case, weighed on each layer's hole before its repaint (parallax_rules); recipe.json's layers
+# say what each decided.
+RULES = [
+    parallax_rules.Rule(
+        "sky_twigs", "a tree's twig tips the depth judged as far as the sky are repainted as sky, not kept as birds",
+        when=[("the back layer", lambda c: c["k"] == 0),
+              ("depth by Depth Anything V2 Small", lambda c: c["depth_model"] == MODEL),
+              ("the theme names a tree", lambda c: re.search(r"\b(tree|pine|oak|forest|wood|jungle|palm)",
+                                                            c["theme"], re.IGNORECASE) is not None),
+              ("thin dark pieces against the sky touch the hole", _twigs_found)],
+        act=_twigs_to_hole),
+]
 
 
 def speeds_of(layers, front_speed):
