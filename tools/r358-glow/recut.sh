@@ -11,16 +11,18 @@ L=$1 O=$2
 mkdir -p "$O"
 for e in build/ai/examples/*-painted; do
 	[ -f "$e/recipe.json" ] || continue
-	python3 - "$e/recipe.json" <<'PY' | while read -r name strip grow; do
+	python3 - "$e/recipe.json" <<'PY' | while read -r name strip grow kind ckpt; do
 import json, sys
 sys.path.insert(0, "tools/r239-ai-strips")
-from ai_page import GROW
+from ai_page import GEN_CKPT, GROW
 r = json.load(open(sys.argv[1]))
 for lay in r["layers"]:
     for s in lay["strips"]:
-        print(r["name"], s["strip"], GROW[lay["kind"]])
+        print(r["name"], s["strip"], GROW[lay["kind"]], lay["kind"], r.get("ckpt") or GEN_CKPT)
 PY
+		rules=()
+		grep -q -- '"--kind"' "$L" && rules=(--kind "$kind" --ckpt "$ckpt")  # r400's RULES, as ai_page.py weighs them
 		python3 "$L" "$e/strips/${strip}_ai.png" "$O/${name}_$strip.png" --mask "$e/strips/${strip}_mask.png" \
-			--grow "$grow" --no-creatures 2>/dev/null
+			--grow "$grow" --no-creatures "${rules[@]}" 2>/dev/null
 	done
 done

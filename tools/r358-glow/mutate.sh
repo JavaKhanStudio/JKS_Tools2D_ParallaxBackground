@@ -8,7 +8,7 @@ S=tools/r239-ai-strips
 bad=0
 mutant() { # NAME PYTHON-EDIT
 	d=$(mktemp -d -p .git r358-mutant.XXXX)
-	cp "$S"/layer.py "$S"/layer_test.py "$S"/creature.py "$d"/
+	cp "$S"/layer.py "$S"/layer_test.py "$S"/creature.py tools/parallax_rules.py "$d"/
 	python3 - "$d/layer.py" "$2" <<'PY'
 import sys
 p, edit = sys.argv[1], sys.argv[2]

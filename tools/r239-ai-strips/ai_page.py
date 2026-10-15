@@ -36,6 +36,9 @@ The model (r346): --ckpt and --lora replace the style's (any file in ComfyUI's m
 SDXL checkpoint (one whose name says XL, or --xl) paints at 1536x576, SD 1.5 at 1024x384. recipe.json keeps them all.
 A .gguf --ckpt is a DiT (r356: --ckpt z-image-turbo-Q5_K_M.gguf): gen.py's DiT loader and loop, 1536x576, its own
 sampling defaults (9 steps, cfg 1, res_multistep, simple) and --denoise 0.75 (r357); no LoRA.
+A fix right for one model or one kind of layer only is one of layer.py's RULES (r400, tools/parallax_rules.py), weighed
+on each painted strip's kind and checkpoint: recipe.json keeps, per strip, each rule's record (applied or not, which
+conditions held, px moved). --rule NAME=on|off forces one on every strip (misty_pines: dreamshaper_8's misty foot pines).
 
 A lurker, only on request (r366): --lurker "a hooded figure" paints one figure, alone, and puts it in a LURKER layer
 (format 15, docs/lurker-layers.md) between layers A and A+1 (--lurker-between A,A+1, back to front from 0; default the
@@ -75,8 +78,10 @@ sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 import animate  # noqa: E402
 import gpu_lock  # noqa: E402
+import layer  # noqa: E402
 import make_page  # noqa: E402
 import parallax_lab as lab  # noqa: E402
+import parallax_rules  # noqa: E402
 
 ROOT = lab.ROOT
 PY = os.path.join(os.environ.get("COMFYUI_DIR", os.path.expanduser("~/ComfyUI")), "venv", "bin", "python")
@@ -333,9 +338,16 @@ def parse_args():
     ap.add_argument("--animate-free", type=float, default=animate.FREE,
                     help="anim.py --free: 0 holds the moving part to the strip (a gentle stir), 1 lets it go")
     ap.add_argument("--animate-fps", type=float, default=animate.FPS, help="the patch's rate, give or take one")
+    ap.add_argument("--rule", action="append", default=[], metavar="NAME=on|off",
+                    help="force one of layer.py's rules on every painted strip, whatever its conditions: "
+                    + ", ".join(r.name for r in layer.RULES))
     ap.add_argument("--timeout", type=int, default=TIMEOUT,
                     help="seconds a command (a strip: 10-60) may take before it is killed and run once more (r377)")
     a = ap.parse_args()
+    try:
+        parallax_rules.parse_forced(a.rule, layer.RULES)
+    except ValueError as e:
+        ap.error(str(e))
     if a.kinds:
         given = a.kinds.split(",")
         if any(k not in WORDS for k in given):
@@ -452,16 +464,23 @@ class Pipeline:
         return self.cut(prefix, kind)
 
     def cut(self, prefix, kind):
+        """layer.py (pixel.py) on a painted strip: its cut path, or None when refused. layer.py weighs its RULES on the
+        strip's kind and checkpoint (r400): what each did goes in recipe.json, under the strip's "rules"."""
         d = HERE
         tool = ["python3", f"{d}/pixel.py", f"{prefix}_ai.png", f"{prefix}_cut.png", "--mask", f"{prefix}_mask.png",
                 "--colours", "12"] if self.pixel else ["python3", f"{d}/layer.py", f"{prefix}_ai.png",
                                                        f"{prefix}_cut.png", "--mask", f"{prefix}_mask.png", "--grow",
-                                                       str(GROW[kind])]
+                                                       str(GROW[kind]), "--kind", kind, "--ckpt", self.model["ckpt"],
+                                                       "--rules-json", f"{prefix}_rules.json",
+                                                       *(x for r in self.a.rule for x in ("--rule", r))]
         code = run(tool, prefix + "_cut.log")
         if self.a.dry_run:
             return f"{prefix}_cut.png"
         with open(prefix + "_cut.log") as f:
             log(f.read().rstrip())
+        if not self.pixel and os.path.exists(f"{prefix}_rules.json"):
+            with open(f"{prefix}_rules.json") as f:
+                self.made.setdefault(os.path.basename(prefix), {})["rules"] = json.load(f)
         if code:
             return None
         if kind == "pines" and not self.pixel and roughness(f"{prefix}_cut.png") < TREES:

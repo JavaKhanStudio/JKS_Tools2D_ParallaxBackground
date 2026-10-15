@@ -129,5 +129,75 @@ class KeyTest(unittest.TestCase):
         self.assertLess(float(np.abs(behind[:, 120] - sky()[:, 120]).max()), 6, "the sky in the gap is its row's")
 
 
+def forest():
+    """(img, mask, misty, lit): two dark pines on a dark ground and, between them, a farther pine painted in mist inside
+    the mask, from 0.5 of the way to the mass at its tip to 0.8 at its foot (dreamshaper_8's, r364); the right pine's
+    left side lit, a px wide, as pale as the mist, against the sky (where it meets the mist it keys with it)."""
+    rows, cols = np.mgrid[:H, :W]
+    img = sky()
+    pale = lambda t: sky() + t[..., None] * (MASS - sky())  # noqa: E731
+    misty = (rows >= 44) & (rows < 96) & (np.abs(cols - 128) <= (rows - 44) * 0.45)
+    t = 0.5 + 0.3 * (rows - 44) / 52
+    img = np.where(misty[..., None], pale(t), img)
+    dark = (rows >= 96) | (np.abs(cols - 90) <= (rows - 20) * 0.35) | (np.abs(cols - 170) <= (rows - 20) * 0.35)
+    img[dark] = MASS
+    lit = dark & ~layer.spread(dark, -1) & (cols < 170) & (cols > 140) & (rows > 30) & (rows < 80)
+    img = np.where(lit[..., None], pale(np.full((H, W), 0.7)), img)
+    return img.astype(np.float32), dark | misty, misty & ~dark, lit
+
+
+def cut_ruled(img, m, kind="pines", ckpt="dreamshaper_8.safetensors", forced=None):
+    """cut() with RULES weighed on kind and ckpt: (alpha, the records)."""
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "mask.png")
+        Image.fromarray((m * 255).astype(np.uint8)).save(path)
+        a = argparse.Namespace(near=18, far=0, mask=path, grow=16, gap=0.6, keep_islands=False, edge=2, out="test",
+                               kind=kind, ckpt=ckpt, forced=forced or {})
+        records = []
+        alpha, _ = layer.key(img, np.median(img[:8].reshape(-1, 3), axis=0), a, records)
+    return alpha, records
+
+
+class MistyPinesTest(unittest.TestCase):
+    """r400: misty_pines, the first of layer.py's RULES: on dreamshaper_8's pines only."""
+
+    def test_dreamshaper_8_s_misty_pine_keys_out_its_lit_edge_and_the_dark_pines_stay(self):
+        img, m, misty, lit = forest()
+        alpha, (rec,) = cut_ruled(img, m)
+        self.assertTrue(rec["applied"], rec)
+        self.assertTrue(all(rec["when"].values()))
+        self.assertGreater(rec["moved"], 0)
+        top = misty & (np.mgrid[:H, :W][0] < 80)  # t under 0.7: under half opaque
+        self.assertLess(float(alpha[top].mean()), 0.5, "the misty pine keys out")
+        self.assertGreater(float(alpha[lit].min()), 0.9, "the lit edge stays")
+        self.assertGreater(float(alpha[layer.spread(m & ~misty, -8)].min()), 0.99, "the dark pines stay solid")
+
+    def test_another_model_s_or_another_kind_s_pale_pine_stays(self):
+        img, m, misty, _ = forest()
+        for kind, ckpt, failed in (("pines", "openjourney-v4.ckpt", "painted by dreamshaper_8"),
+                                   ("mountains", "dreamshaper_8.safetensors", "a pines layer")):
+            alpha, (rec,) = cut_ruled(img, m, kind, ckpt)
+            self.assertFalse(rec["applied"])
+            self.assertEqual(list(rec["when"])[-1], failed)
+            inside = misty & layer.spread(m, -8)
+            self.assertGreater(float(alpha[inside].min()), 0.99, f"{kind} by {ckpt}: the pale pine stays")
+
+    def test_forced_on_another_model_or_off_on_dreamshaper_8(self):
+        img, m, misty, _ = forest()
+        _, (rec,) = cut_ruled(img, m, ckpt="openjourney-v4.ckpt", forced={"misty_pines": True})
+        self.assertTrue(rec["applied"])
+        self.assertEqual(rec["forced"], "on")
+        alpha, (rec,) = cut_ruled(img, m, forced={"misty_pines": False})
+        self.assertFalse(rec["applied"])
+        self.assertGreater(float(alpha[misty & layer.spread(m, -8)].min()), 0.99)
+
+    def test_a_pines_strip_with_no_mist_is_left(self):
+        img, m, misty, _ = forest()
+        img[misty] = MASS
+        _, (rec,) = cut_ruled(img, m)
+        self.assertFalse(rec["applied"])
+        self.assertFalse(rec["when"]["wide pale pines open to the sky"])
+
+
 if __name__ == "__main__":
     unittest.main()

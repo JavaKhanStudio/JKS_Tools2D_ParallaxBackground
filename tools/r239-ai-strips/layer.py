@@ -16,6 +16,11 @@ Clear pixels nearer the mass's colour than the sky's are the mass SD painted pas
 pixels less than T of the way from the sky to the mass's colour, open to the clear sky, key along that line (0: off).
 --edge E: alpha still half clear more than E px from a solid pixel is SD's haze or a ghost behind the shape, not a
 soft edge: it goes clear or solid (0: off).
+RULES (tools/parallax_rules.py, r400): a fix right for one model or one kind of layer only, weighed per strip on what
+--kind and --ckpt say painted it; --rule NAME=on|off forces one, --rules-json PATH writes what each did. misty_pines:
+dreamshaper_8 paints farther pines in mist at a pines layer's foot, pale ghosts inside the mask that scroll at the
+front's speed (r364); on that model's pines they key along the sky-to-mass line. Another model's pale pines are
+crisp, a second row it meant (openjourney, novaCartoon), or not there (SDXL): left as painted.
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
@@ -26,11 +31,16 @@ layer, or --palette's), and cut alpha hard at 50%: every pixel is one palette co
 The PNG is the small one; the page draws it scaled N times with the Nearest filter.
 """
 import argparse
+import json
+import os
 import sys
 from collections import deque
 
 import numpy as np
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import parallax_rules
 
 
 def blur(a):
@@ -125,16 +135,21 @@ def islands(mask):
     return (label > 0) & (label != int(np.argmax(sizes)) + 1)
 
 
+def sky_to_mass(img, sky, alpha):
+    """Each pixel's place on the line from the sky (0, each pixel's own under --mask) to the mass's median colour (1)."""
+    mass = alpha > 0.95
+    axis = np.median(img[mass], axis=0) - sky
+    return ((img - sky) * axis).sum(-1) / np.maximum((axis * axis).sum(-1), 1.0)
+
+
 def ungap(img, sky, alpha, reach):
     """alpha with the feet of gaps keyed: a gap between trees SD painted deeper than the silhouette ends in sky or
     far haze, which the mask (or a key that ends at the layer's own distance) makes opaque, a pale spot in a dark
     treeline (r263). Each pixel's place t on the line from the sky (0) to the mass's median colour (1); the pixels
     under --gap (and not whiter than the sky, snow) that reach the clear sky through each other key t / --gap."""
-    mass = alpha > 0.95
-    if not mass.any():
+    if not (alpha > 0.95).any():
         return alpha
-    axis = np.median(img[mass], axis=0) - sky  # sky: one colour, or each pixel's
-    t = ((img - sky) * axis).sum(-1) / np.maximum((axis * axis).sum(-1), 1.0)
+    t = sky_to_mass(img, sky, alpha)
     label, _ = components((t > -0.15) & (t < reach))
     open_ = np.unique(label[alpha < 0.05])
     gap = np.isin(label, open_[open_ > 0])
@@ -150,6 +165,52 @@ def unglow(alpha, edge):
     out = alpha.copy()
     out[far] = np.clip((alpha[far] - 0.4) / 0.2, 0, 1)
     return out
+
+
+# misty_pines (r400): pines nearer the sky than MISTY_HI of the way to the mass, open to the clear sky through each
+# other, where they are wider than 2 * MISTY_CORE px, key along t from MISTY_LO (clear) to MISTY_HI; at least MISTY_MIN px of them
+# in a 1024 px strip, or the strip has none. dreamshaper_8's foot pines run from t 0.5 at their tips to 0.85; a dark
+# pine's lit edge reaches as pale but is 1-2 px wide.
+MISTY_CKPTS = ("dreamshaper_8.safetensors",)
+MISTY_LO, MISTY_HI, MISTY_CORE, MISTY_MIN = 0.6, 0.85, 2, 300
+
+
+def misty(img, sky, alpha):
+    """(region, t): the pale pines open to the sky inside the layer (misty_pines' measure) and sky_to_mass's t."""
+    if not (alpha > 0.95).any():
+        return np.zeros(alpha.shape, bool), np.zeros(alpha.shape)
+    t = sky_to_mass(img, sky, alpha)
+    clear = alpha < 0.5  # the key's half-clear sky round a pine is no pine of its own
+    pale = (t > -0.15) & (t < MISTY_HI) & ~clear
+    label, _ = components(pale | clear)
+    open_ = np.unique(label[clear])
+    region = np.isin(label, open_[open_ > 0]) & pale
+    # opened: a lit edge that joins a misty pine is still a px or two wide, and stays
+    return spread(spread(region, -MISTY_CORE), MISTY_CORE) & region, t
+
+
+def measure_misty(c):
+    c["misty"], c["t"] = misty(c["img"], c["sky"], c["alpha"])
+    k = c["img"].shape[1] / 1024
+    return c["misty"].sum() >= MISTY_MIN * k * k
+
+
+def clear_misty(c):
+    """misty_pines' act: c["alpha"] keyed along t over the region; returns the opaque px it took (alpha summed)."""
+    m = c["misty"]
+    before = c["alpha"]
+    c["alpha"] = np.where(m, np.minimum(before, np.clip((c["t"] - MISTY_LO) / (MISTY_HI - MISTY_LO), 0, 1)), before)
+    return round(float((before - c["alpha"]).sum()))
+
+
+RULES = [
+    parallax_rules.Rule(
+        "misty_pines", "pines dreamshaper_8 paints in mist at the forest's foot key out along the sky-to-mass line",
+        when=[("a pines layer", lambda c: c["kind"] == "pines"),
+              ("painted by dreamshaper_8", lambda c: os.path.basename(c["ckpt"] or "") in MISTY_CKPTS),
+              ("wide pale pines open to the sky", measure_misty)],
+        act=clear_misty),
+]
 
 
 def unspeck(alpha, cut):
@@ -184,12 +245,23 @@ def parse_args():
     ap.add_argument("--colours", type=int, default=12)
     ap.add_argument("--no-creatures", action="store_true", help="skip creature.py's check (exit 4)")
     ap.add_argument("--palette", help="--pixel: build the palette from this cut layer's opaque colours (one for all segments)")
-    return ap.parse_args()
+    ap.add_argument("--kind", help="the layer's kind (ai_page.py's: pines, mountains...), for RULES")
+    ap.add_argument("--ckpt", help="the checkpoint that painted it, for RULES")
+    ap.add_argument("--rule", action="append", default=[], metavar="NAME=on|off", help="force a rule: "
+                    + ", ".join(r.name for r in RULES))
+    ap.add_argument("--rules-json", help="write each rule's record (applied, conditions held, px moved) here")
+    a = ap.parse_args()
+    try:
+        a.forced = parallax_rules.parse_forced(a.rule, RULES)
+    except ValueError as e:
+        ap.error(str(e))
+    return a
 
 
-def key(img, sky, a):
-    """(alpha, sky): the layer's alpha, the colour key helped by --mask, its gaps keyed and its islands cut; and the
-    sky it was keyed against, each pixel's (local_sky's under --mask)."""
+def key(img, sky, a, records=None):
+    """(alpha, sky): the layer's alpha, the colour key helped by --mask, its gaps keyed, RULES weighed and its islands
+    cut; and the sky it was keyed against, each pixel's (local_sky's under --mask). Each rule's record is appended to
+    records."""
     m = None
     if a.mask:
         m = np.asarray(Image.open(a.mask).convert("L").resize(img.shape[1::-1])) > 127
@@ -206,6 +278,14 @@ def key(img, sky, a):
         alpha = ungap(img, sky, alpha, a.gap)
     if a.edge:
         alpha = unglow(alpha, a.edge)
+    ctx = {"kind": getattr(a, "kind", None), "ckpt": getattr(a, "ckpt", None), "img": img, "sky": sky, "alpha": alpha}
+    weighed = parallax_rules.weigh(RULES, ctx, getattr(a, "forced", None))
+    alpha = ctx["alpha"]
+    for r in weighed:
+        if r["applied"]:
+            print(f"{a.out}: rule {r['rule']}: {r['moved']} px", file=sys.stderr)
+    if records is not None:
+        records += weighed
     if not a.keep_islands:
         cut = islands(alpha > 0.5)
         if cut.any():
@@ -281,7 +361,11 @@ def main():
     a = parse_args()
     img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
     sky = np.median(img[:8].reshape(-1, 3), axis=0)
-    alpha, behind = key(img, sky, a)
+    records = []
+    alpha, behind = key(img, sky, a, records)
+    if a.rules_json:
+        with open(a.rules_json, "w") as f:
+            json.dump(records, f, indent=1)
     out = unmix(img, behind, alpha)
     if a.pixel > 1:
         out = pixelate(out, a)
