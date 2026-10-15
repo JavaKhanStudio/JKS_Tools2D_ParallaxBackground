@@ -126,6 +126,26 @@ def negative(neg, kind):
     return neg.replace(", buildings", "") if kind == "ruins" else neg
 
 
+# The things a kind of layer is for, as a theme names them (r437): another layer's prompt that says "palm trees" got
+# palms painted into its mountains and dunes on r365's textured init (DreamShaperXL Turbo's beach: dunes refused 5 of
+# 5). They are struck from the theme of every layer but their kind's, and put in its negative. Longest first.
+OBJECTS = {"palms": r"palm trees?|palms?", "pines": r"pine (?:forest|trees?)|pines?|conifers?",
+           "ruins": r"ruined (?:city|buildings)|ruins|broken skyscrapers?|skyscrapers?"}
+
+
+def theme_for(theme, kind, ks):
+    """The theme as layer kind's prompt says it on a page of kinds ks, and the words struck from it: the things
+    another kind of the page is for (OBJECTS), its setting and light kept."""
+    struck = []
+    for other in dict.fromkeys(ks):
+        if other != kind and other in OBJECTS:
+            rx = re.compile(rf"\b(?:{OBJECTS[other]})\b", re.IGNORECASE)
+            struck += [m.group(0) for m in rx.finditer(theme)]
+            theme = rx.sub("", theme)
+    parts = [re.sub(r"\s+", " ", x).strip() for x in theme.split(",")]
+    return ", ".join(x for x in parts if x), list(dict.fromkeys(struck))
+
+
 def kinds(n, front):
     """The silhouette of each depth, back to front."""
     back = ["mountains"] + ["mountains"] * ((n - 2) // 2) + ["hills"] * ((n - 1) // 2)
@@ -492,12 +512,14 @@ class Pipeline:
         """gen.py's img2img for depth k, its init, seed and out left to add."""
         a, d = self.a, HERE
         depth = "distant" if k == 0 else "foreground" if k == a.layers - 1 else "middle distance"
+        theme, struck = theme_for(a.theme, kind, self.ks)
+        others = "".join(", " + w for w in struck)
         if self.pixel:
-            return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG_XL, kind), "--prompt",
-                    (f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
+            return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG_XL, kind) + others,
+                    "--prompt", (f"pixel art, 2d game parallax background layer, {theme}, {depth} "
                      f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
-        return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG, kind), "--prompt",
-                f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
+        return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG, kind) + others, "--prompt",
+                f"2d game parallax background layer, {theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
 
     def paint(self, k, kind, seed, prefix):
         """sil.py, gen.py, then the cut: the cut layer's path, or None when it reaches its top row or holds a
@@ -623,10 +645,12 @@ class Pipeline:
         front, src = len(ks) - 1, os.path.join(strips, f"l{len(ks) - 1}")
         p = os.path.join(strips, f"l{front}v{v}")
         vs = a.seed * 1000 + 500 + v * 10 + t
-        vprompt = (f"2d game parallax background layer, {a.theme}, foreground {WORDS[ks[front]]}, "
+        theme, struck = theme_for(a.theme, ks[front], ks)
+        vprompt = (f"2d game parallax background layer, {theme}, foreground {WORDS[ks[front]]}, "
                    "painterly, plain pale sky")
+        vneg = negative(NEG, ks[front]) + "".join(", " + w for w in struck)
         denoise = self.model["denoise"]
-        self.made[os.path.basename(p)] = {"prompt": vprompt, "negative": negative(NEG, ks[front]), "denoise": denoise,
+        self.made[os.path.basename(p)] = {"prompt": vprompt, "negative": vneg, "denoise": denoise,
                                           "seed": vs, "edgesOf": seeds[front]}
         if a.keep and os.path.exists(f"{p}_ai.png"):
             got = self.cut(p, ks[front])
@@ -639,7 +663,7 @@ class Pipeline:
         code = run([PY, f"{d}/gen.py", "variants", *self.model_args(denoise=False), "--src", f"{src}_ai.png",
                     "--init", f"{p}_init.png", "--tile", "x", "--n", "1", "--edge", "96", "--denoise", str(denoise),
                     "--seed", str(vs), "--negative",
-                    negative(NEG, ks[front]), "--prompt", vprompt, "--out", f"{p}_ai.png"], p + "_gen.log")
+                    vneg, "--prompt", vprompt, "--out", f"{p}_ai.png"], p + "_gen.log")
         if code:
             sys.exit(f"gen.py variants failed: {p}_gen.log")
         if not a.dry_run:
