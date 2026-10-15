@@ -5,9 +5,10 @@
 #
 # Two copies of effects-lab.html?lab=lurker step together at 1/60 s, the figure always drawn in one and never in the
 # other (&figure=gone). Every step the lab calls covered, their canvases must be the same to the pixel: a switch there
-# is never seen. Some step it calls uncovered must differ, or the check sees nothing. Then the lab's own mode, "only
-# while covered", runs the same SECONDS (60 by default) and must make no switch while the figure is uncovered in the
-# view, while "every 2 s, anywhere" makes some. Writes OUT/report.json and OUT/worst-covered.png, OUT/uncovered.png.
+# is never seen. Some step it calls uncovered must differ, or the check sees nothing. Then the lab's first mode, "the
+# reader's sightings" (r370: ParallaxPageReader switches it), runs the same SECONDS (60 by default) and must make some
+# switches and none while the figure is uncovered in the view, by the lab's own reckoning, while "every 2 s, anywhere"
+# makes some there. Writes OUT/report.json and OUT/worst-covered.png, OUT/uncovered.png.
 # LAB_WAR serves another war than core/build/browserTest/war (a copy with a mutant cover: lab-mutate.sh).
 # headless: Playwright drives the system Chrome headless on SwiftShader, no window.
 set -eu

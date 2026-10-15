@@ -30,7 +30,10 @@ final class TilingCases extends ReaderFixtures
 				new BrowserCase("reader: aLurkerLayerDrawsAsAnImageLayer", () -> new TilingCases().aLurkerLayerDrawsAsAnImageLayer()));
 	}
 
-	/** Until the reader draws its sightings (docs/lurker-layers.md phase 3), a LURKER layer is an IMAGE layer, always there. */
+	/**
+	 * A LURKER layer whose figure is there draws as an IMAGE layer: odds of 1, there at its first sighting. Its sightings
+	 * are LurkerCases'.
+	 */
 	void aLurkerLayerDrawsAsAnImageLayer()
 	{
 		boolean[][] modes = { { true, false }, { false, true }, { true, true }, { false, false } };
@@ -53,6 +56,7 @@ final class TilingCases extends ReaderFixtures
 		ParallaxLayer layer = new ParallaxLayer(kind, new ArrayList<>(Arrays.asList(region(400, 800))), true, 40, 0.032f, 0.02f, 0.1f);
 		layer.setPadX(6);
 		layer.setDecalPercentY(10);
+		layer.setLurker(0, 1, null);
 		reader.addLayers(list(layer));
 		draws.clear();
 		reader.act(1 / 60f, 500, 30);

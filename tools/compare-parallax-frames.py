@@ -3,7 +3,9 @@
 
 Reads OUT_DIR/gdx/<scene>-t0/6/12.png (tools/parallax-lab-shots.sh) and OUT_DIR/<engine>/ the same names, writes
 OUT_DIR/compare.png (libGDX | engine | difference x4, per still) and OUT_DIR/report.txt, and exits 1 when a still's
-mean absolute difference per channel (0-255) is over THRESHOLD. engines/godot/tools/frame-check.sh (ENGINE godot) and
+mean absolute difference per channel (0-255) is over THRESHOLD, or, when round.json gives a "pixelsOff" (percent), when
+more of its pixels than that differ by over 32: what a small thing drawn wrong moves (r370's lurker, 0.07% of a still).
+engines/godot/tools/frame-check.sh (ENGINE godot) and
 engines/jme/tools/frame-check.sh (ENGINE jme) run it. Needs Pillow.
 """
 import json
@@ -15,7 +17,9 @@ from PIL import Image, ImageChops, ImageDraw, ImageStat
 round_dir, out, threshold, engine = sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4]
 label_of = {'godot': 'Godot', 'jme': 'jME'}.get(engine, engine)
 with open(os.path.join(round_dir, 'round.json')) as f:
-    scenes = json.load(f)['scenes']
+    round_json = json.load(f)
+scenes, pixels_off = round_json['scenes'], round_json.get('pixelsOff')
+worst_big = 0.0
 w, h, label = 426, 240, 22
 sheet = Image.new('RGB', (w * 3, (h + label) * len(scenes) * 3), 'black')
 draw = ImageDraw.Draw(sheet)
@@ -33,6 +37,7 @@ for s in scenes:
         mean = sum(ImageStat.Stat(diff).mean) / 3
         big = sum(diff.convert('L').histogram()[33:]) / (gdx.width * gdx.height) * 100
         worst = max(worst, mean)
+        worst_big = max(worst_big, big)
         lines.append(f"{name}  mean diff {mean:.2f} / 255   pixels off by >32: {big:.2f}%"
                      f"   {s.get('name', s.get('about', ''))}")
         y = row * (h + label)
@@ -44,8 +49,9 @@ for s in scenes:
             sheet.paste(im, (col * w + (w - im.width) // 2, y + label + (h - im.height) // 2))
         row += 1
 sheet.save(os.path.join(out, 'compare.png'))
-verdict = 'PASS' if worst <= threshold else 'FAIL'
-lines.append(f'{verdict}: worst mean diff {worst:.2f} (threshold {threshold:.1f})')
+verdict = 'PASS' if worst <= threshold and (pixels_off is None or worst_big <= pixels_off) else 'FAIL'
+lines.append(f'{verdict}: worst mean diff {worst:.2f} (threshold {threshold:.1f})'
+             + ('' if pixels_off is None else f', worst pixels off by >32 {worst_big:.3f}% (at most {pixels_off}%)'))
 with open(os.path.join(out, 'report.txt'), 'w') as f:
     f.write('\n'.join(lines) + '\n')
 print('\n'.join(lines))

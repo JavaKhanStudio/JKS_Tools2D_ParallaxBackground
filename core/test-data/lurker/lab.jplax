@@ -127,6 +127,7 @@
     "padY": 0.0,
     "padYFactor": 0.0,
     "kind": "LURKER",
+    "name": "hooded",
     "lurkerCover": [
      1.0,
      1.489613,

@@ -68,15 +68,15 @@ with sync_playwright() as p:
         failures.append(f'a covered step shows the figure: {worst[0]}/255 at step {worst[1]}')
     if uncovered_seen == 0:
         failures.append('no uncovered step showed the figure: the check sees nothing')
-    for mode, name in ((0, 'onlyWhileCovered'), (1, 'everyTwoSeconds')):
+    for mode, name in ((0, 'readerSightings'), (1, 'everyTwoSeconds')):
         page, errors = opened(browser, '', mode)
         line = page.evaluate(f'window.effectsLabAct({seconds}); document.getElementById("effects-readout").textContent')
         switches = int(line.split('; ')[1].split(' switches')[0])
         in_sight = int(line.split(' switches, ')[1].split(' of them')[0])
         report[name] = {'switches': switches, 'whileUncovered': in_sight, 'readout': line}
         errors_a += errors
-    if report['onlyWhileCovered']['whileUncovered'] or not report['onlyWhileCovered']['switches']:
-        failures.append(f"only while covered: {report['onlyWhileCovered']['readout']}")
+    if report['readerSightings']['whileUncovered'] or not report['readerSightings']['switches']:
+        failures.append(f"the reader's sightings: {report['readerSightings']['readout']}")
     if not report['everyTwoSeconds']['whileUncovered']:
         failures.append(f"every 2 s never switched in sight: {report['everyTwoSeconds']['readout']}")
     if errors_a or errors_b:

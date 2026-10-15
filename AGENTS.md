@@ -93,6 +93,13 @@ repair.
   `tools/r394-animated/mutate.sh` proves the round sees a wrong Godot copy. Its palms move too little to fail a wrong
   frame: the flags (a01) do. A SHADER layer's patches are drawn after all its tiles, its effect given the frame's
   region (`LayerEffects.beginPatch`; Godot's on a child canvas, jME's a second material: r397, a05).
+- A `LURKER` layer (format 15, docs/lurker-layers.md) appears or vanishes only while nothing of it is on screen: its
+  reader runs its sightings in `act()` (every step, against the last draw's view) and in `draw()`
+  (`ParallaxPageReader.sightLurkers`, `reveal(name)`), its draws from `SequenceCycle.next`, integers only; where the
+  layers in front cover it is baked once from the atlas (`src-jvm` `LurkerCover`, `tools/lurker-cover.sh`), never read
+  from a texture at run time. jME runs core's; Godot draws it always there until r371 (phase 4) copies it. Change the
+  rule and run `LurkerCases` and the jME frame check on `engines/rounds/lurker` (`pixelsOff`: the figure is too small for
+  the mean); `BREAK=lurker` must fail it, `tools/r370-lurker/mutate.sh` proves `LurkerCases` sees a wrong rule.
 - An `EMPTY` layer (`Enum_LayerKind`, format 5) has no image: the reader calls the game's `LayerHook` per tile in its
   place, and so do `plax_background.gd` (`set_layer_hook`) and jME. A new layer kind goes in `Enum_LayerKind` (append
   only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/rounds` (`effects` is EMPTY's).
@@ -174,7 +181,7 @@ repair.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,
-  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`), their builders in `ReaderFixtures`; a new subject's class goes in
+  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`, `LurkerCases`), their builders in `ReaderFixtures`; a new subject's class goes in
   `BrowserSuite.all()`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)

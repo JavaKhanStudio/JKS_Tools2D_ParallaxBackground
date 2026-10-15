@@ -34,7 +34,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * ({@link ParallaxLayer#drawFloor}), and every layer in front of it scrolls at the speed of its row under the layer's
  * foot ({@link #plant}). A page with a planet ({@link #setPlanetRadius}) is the side of a world turning round one centre
  * under the view: its IMAGE, SHADER and SEQUENCE layers are wrapped round it alike, each turning at its own speed, and
- * what stands up leans out from it ({@link PlanetBatch}).
+ * what stands up leans out from it ({@link PlanetBatch}). A LURKER layer's figure appears or vanishes only while
+ * nothing of it is on screen: gone at the sighting after one where it was seen, there by chance from its seed, or when
+ * the game says ({@link #reveal}; docs/lurker-layers.md).
  */
 public class ParallaxPageReader implements Disposable
 {
@@ -399,6 +401,8 @@ public class ParallaxPageReader implements Disposable
 		transferFrontSpeed = frontSpeedOf(transferLayers);
 		nearTower = nearTowerOf(layers);
 		transferNearTower = nearTowerOf(transferLayers);
+		// The lurkers against this view, which act() only knew from the last draw.
+		sightLurkers();
 		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();
 		boolean throughColor = transfertStyle.grades() && !transferLayers.isEmpty();
 		// A dissolve begins each layer with its own mask, a transfert through a colour or a fog creep with its own grade:
@@ -637,6 +641,8 @@ public class ParallaxPageReader implements Disposable
 	private void drawLayer(ArrayList<ParallaxLayer> page, int index, Batch batch, boolean incoming)
 	{
 		ParallaxLayer layer = page.get(index);
+		if (layer.kind == Enum_LayerKind.LURKER && !layer.isLurkerThere())
+			return;
 		float zoom = dolly ? dollyZoom(cameraZoom, incoming ? transferFrontSpeed : frontSpeed, layer) : cameraZoom;
 		Batch drawn = batch;
 		if (zoom != cameraZoom)
@@ -967,6 +973,163 @@ public class ParallaxPageReader implements Disposable
 		{
 			tintElapsed = Math.min(tintDuration, tintElapsed + delta);
 			tint.set(tintFrom).lerp(tintTo, tintElapsed / tintDuration);
+		}
+		// Every step, drawn or not: a sighting between two draws counts. Against the last draw's view.
+		sightLurkers();
+	}
+
+	/** Runs the sightings of every LURKER layer on screen, of both pages during a cross-fade. */
+	private void sightLurkers()
+	{
+		sightLurkers(layers, false);
+		if (transferLayers != layers)
+			sightLurkers(transferLayers, true);
+	}
+
+	private void sightLurkers(ArrayList<ParallaxLayer> page, boolean incoming)
+	{
+		for (int i = 0, n = page.size(); i < n; i++)
+		{
+			ParallaxLayer figure = page.get(i);
+			if (figure.kind != Enum_LayerKind.LURKER)
+				continue;
+			if (!figure.lurkerStarted)
+				startLurker(figure);
+			boolean inSight = lurkerInSight(page, i, incoming);
+			if (inSight && figure.lurkerThere)
+				figure.lurkerSeen = true;
+			else if (!inSight && figure.lurkerInSight)
+				hideLurker(figure);
+			figure.lurkerInSight = inSight;
+		}
+	}
+
+	/** A LURKER layer's first draw, from its seed (0: SequenceCycle's zero seed), as each later one: rule 2. */
+	private static void startLurker(ParallaxLayer figure)
+	{
+		figure.lurkerState = figure.getLurkerSeed() == 0 ? SequenceCycle.ZERO_SEED : figure.getLurkerSeed();
+		figure.lurkerState = SequenceCycle.next(figure.lurkerState);
+		figure.lurkerThere = (figure.lurkerState >>> 1) % figure.getLurkerOdds() == 0;
+		figure.lurkerSeen = figure.lurkerInSight = figure.lurkerForced = false;
+		figure.lurkerStarted = true;
+	}
+
+	/**
+	 * A sighting has ended: whether the figure is there at the next one. Forced by {@link #reveal}; else gone after it was
+	 * seen; else the state steps once and it is there by 1 chance in its odds. Integers only: every engine draws the same.
+	 */
+	private static void hideLurker(ParallaxLayer figure)
+	{
+		if (figure.lurkerForced)
+			figure.lurkerThere = true;
+		else if (figure.lurkerSeen)
+			figure.lurkerThere = false;
+		else
+		{
+			figure.lurkerState = SequenceCycle.next(figure.lurkerState);
+			figure.lurkerThere = (figure.lurkerState >>> 1) % figure.getLurkerOdds() == 0;
+		}
+		figure.lurkerForced = figure.lurkerSeen = false;
+	}
+
+	/**
+	 * Whether a copy of the LURKER layer {@code index} of {@code page} is in the view (its tile's box, in its own view when
+	 * dollied) and not wholly covered by one layer in front of it ({@link ParallaxLayer#getLurkerCover}). The cover counts
+	 * only where it was worked out for: a page repeating on X, the figure's own row, nothing turning or fading the layers in
+	 * front (no planet, panorama, dolly away from zoom 1, cross-fade nor tint below full opacity), and the layers' Y apart
+	 * as saved. Out of it, the figure is hidden only out of the view. Allocates nothing.
+	 */
+	private boolean lurkerInSight(ArrayList<ParallaxLayer> page, int index, boolean incoming)
+	{
+		ParallaxLayer figure = page.get(index);
+		float width = figure.getWidth(), height = figure.getHeight();
+		if (!(width > 0) || !(height > 0) || !(viewportWidth > 0))
+			return false;
+		float zoom = dolly ? dollyZoom(cameraZoom, frontSpeedOf(page), figure) : cameraZoom;
+		float vw = viewportWidth * zoom, vh = viewportHeight * zoom, vl = cameraX - vw / 2, vb = cameraY - vh / 2;
+		float al = dolly ? cameraX - viewportWidth / 2 : vl, ab = dolly ? cameraY - viewportHeight / 2 : vb;
+		float originX = al + figure.currentDistanceX, originY = ab + drawingHeight + figure.currentDistanceY;
+		float[] cover = figure.getLurkerCover();
+		boolean covers = repeatOnX && cover.length > 0 && !((incoming ? transferPlanetRadius : planetRadius) > 0)
+				&& nearTowerOf(page) == null && (!dolly || cameraZoom == 1) && transferLayers.isEmpty() && tint.a >= 1;
+
+		float stepX = figure.getTotalWidth(), stepY = figure.getTotalHeight();
+		boolean tileX = repeatOnX && stepX > 0, tileY = repeatOnY && stepY > 0;
+		int firstColumn = tileX ? -(int) Math.ceil((originX + width - vl) / stepX) : 0;
+		int firstRow = tileY ? -(int) Math.ceil((originY + height - vb) / stepY) : 0;
+		for (int row = firstRow; ; row++)
+		{
+			float y = originY + row * stepY;
+			if (row > firstRow && (!tileY || y >= vb + vh))
+				break;
+			if (y + height <= vb || y >= vb + vh)
+				continue;
+			for (int column = firstColumn; ; column++)
+			{
+				float x = originX + column * stepX;
+				if (column > firstColumn && (!tileX || x >= vl + vw))
+					break;
+				if (x + width <= vl || x >= vl + vw)
+					continue;
+				if (!(covers && row == 0 && lurkerCovered(page, index, x - al)))
+					return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Whether a layer in front covers the LURKER layer {@code index}'s copy whose tile corner is {@code x} from the anchor:
+	 * its offset {@code d} against that layer's tiles, modulo their period, in one of the cover's intervals.
+	 */
+	private static boolean lurkerCovered(ArrayList<ParallaxLayer> page, int index, float x)
+	{
+		ParallaxLayer figure = page.get(index);
+		float[] cover = figure.getLurkerCover();
+		for (int k = 0; k + 2 < cover.length; k += 3)
+		{
+			int in = index + (int) cover[k];
+			if (in <= index || in >= page.size())
+				continue;
+			ParallaxLayer near = page.get(in);
+			float period = near.getTotalWidth();
+			if (!(period > 0))
+				continue;
+			// Their Y apart as saved, which the sweep took them at.
+			float restApart = (figure.getDecalPercentY() * figure.getWorldHeight() - near.getDecalPercentY() * near.getWorldHeight()) / 100;
+			if (Math.abs(figure.currentDistanceY - near.currentDistanceY - restApart) > 1e-3f * figure.getHeight())
+				continue;
+			float d = ((x - near.currentDistanceX) % period + period) % period;
+			if (((d - cover[k + 1]) % period + period) % period <= cover[k + 2] - cover[k + 1])
+				return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Makes the next sighting of every LURKER layer named {@code name} show its figure, whatever its draws say: at once
+	 * when it is not in sight now, else from the end of this sighting. A game's sure first scare (docs/lurker-layers.md).
+	 */
+	public void reveal(String name)
+	{
+		reveal(layers, name);
+		if (transferLayers != layers)
+			reveal(transferLayers, name);
+	}
+
+	private static void reveal(ArrayList<ParallaxLayer> page, String name)
+	{
+		for (int i = 0, n = page.size(); i < n; i++)
+		{
+			ParallaxLayer figure = page.get(i);
+			if (figure.kind != Enum_LayerKind.LURKER || name == null || !name.equals(figure.name))
+				continue;
+			if (!figure.lurkerStarted)
+				startLurker(figure);
+			if (figure.lurkerInSight)
+				figure.lurkerForced = true;
+			else
+				figure.lurkerThere = true;
 		}
 	}
 

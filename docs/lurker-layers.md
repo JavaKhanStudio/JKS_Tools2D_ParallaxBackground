@@ -97,11 +97,22 @@ of them differing from the page without its figure by a single pixel value.
 
 ## Per frame (no allocation)
 
-`ParallaxPageReader` holds, per lurker layer, four ints and two booleans (state, forced, seen-this-sighting,
-there, in-sight). Each `act()`: compute `d` for each `lurkerCover` entry from the layers' scrolled distances, and
-whether the figure's box is in the view. In sight = in the view and in no cover interval. On in-sight to hidden: apply
-the rules above. The figure's tile draws as an IMAGE layer's when `there`, and not at all when not. `FrameAllocationTest`
-covers it.
+Each LURKER layer holds its sightings (`ParallaxLayer`'s package fields: the state, and started, there, seen, in sight,
+forced), run by its reader (r370). Each `act()`, every step whether drawn or not (the shots draw only their stills),
+against the view of the last `draw()`, and again in `draw()` against its own: compute `d` for each `lurkerCover` entry
+from the layers' scrolled distances, and whether a copy of the figure's tile box is in the view. In sight = a copy in
+the view and in no cover interval. On in-sight to hidden: apply the rules above. The figure's tile draws as an IMAGE
+layer's when `there`, and not at all when not. `FrameAllocationTest.aLurkerFrameAllocatesNothing` covers it.
+
+The cover counts only where it was worked out for; out of it the figure is hidden only out of the view, so it switches
+less, never in sight: a page repeating on X; the figure's own row (on a page repeating on Y, its other rows are not
+covered); nothing turning or fading the layers in front (no planet, no tower seen from close by, the dolly at zoom 1, no
+cross-fade, the tint at full opacity); and each layer in front at the Y apart from the figure it was saved with (a page
+scrolling on Y moves them apart). Before the first `draw()` nothing is in the view. The in-view test takes the tile's
+box, not the figure's pixels (the reader cannot read them): a sighting where only the tile's empty margin was in the
+view counts as one, seen if the figure was there.
+
+`reveal(name)` shows the figure at once when it is not in sight, else at the end of this sighting: never in sight.
 
 Godot's copy is a `plax_lurker.gd` (the same state, the same draws, 32-bit masked as `plax_page.gd`'s `draw_cycle`);
 jME runs core's.
@@ -112,8 +123,12 @@ jME runs core's.
    `KINDS` and `LAYER_DEFAULTS`, `buildFromPage`, `ParallaxLayer.clone`, `PlaxFormatTest`), README's file formats. Drawn
    as an IMAGE layer, always there.
 2. `LurkerCover` (src-jvm): the sweep, its tests, and a tool that bakes it into a `.jplax` for the rounds.
-3. The reader: sightings, draws, `reveal(name)`; `LurkerCases` in the browser suite (every repeat mode); a round
-   `engines/rounds/lurker` (Hiver's pines, as r363's demo) in the jME frame check, asserting the one rule each frame.
+3. The reader: sightings, draws, `reveal(name)`; `LurkerCases` in the browser suite (every repeat mode, the one rule
+   judged from where the bar in front was drawn); a round `engines/rounds/lurker` (Hiver's pines, as r363's demo,
+   `core/test-data/lurker/make_round.py`) in the jME frame check. Done (r370): the figure is 0.07% of a still, so the
+   round gives `pixelsOff` (`tools/compare-parallax-frames.py` fails a still with more than 0.02% of its pixels off by
+   over 32), and `BREAK=lurker` (jME reveals the figure every step: always there) must fail it.
+   `tools/r370-lurker/Sightings.java` runs a page's sightings on the shots' clock without GL.
 4. Godot: `plax_lurker.gd`, the same round in Godot's frame check, and a mutant that switches in sight failing it.
 5. The editor (its own board): the kind in the kind tab, seed and odds with the "how often" line and the seed's first
    draws, the depth-height hint, `lurkerCover` worked out on save, and the preview showing it vanish.

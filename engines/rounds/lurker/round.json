@@ -1,0 +1,21 @@
+{
+ "round": "lurker",
+ "about": "LURKER layers' sightings (format 15, r370; docs/lurker-layers.md): the figure appears or vanishes only while nothing of it is on screen, gone at the sighting after one where it was seen, else there by its seed's draws, 1 in lurkerOdds (3). r363's demo, Hiver's pines in front, the cover baked by LurkerCover (r369). jME runs core's ParallaxPageReader; Godot's copy is phase 4 (r371). Written by core/test-data/lurker/make_round.py.",
+ "pixelsOff": 0.02,
+ "scenes": [
+  {
+   "id": "l01",
+   "page": "engines/rounds/lurker/l01.jplax",
+   "atlasDir": "core/test-data/lurker",
+   "name": "seen-covered-gone",
+   "about": "seed 2: the figure seen between two pines (0 s), hidden whole behind a trunk (6 s), gone at the next gap (12 s): seen in a sighting, gone at the next"
+  },
+  {
+   "id": "l02",
+   "page": "engines/rounds/lurker/l02.jplax",
+   "atlasDir": "core/test-data/lurker",
+   "name": "gone-covered-there",
+   "about": "seed 1: the gap empty (0 s), the figure switched on behind a trunk (6 s, unseen), standing in the next gap (12 s): a sighting it was absent from steps the seed's draws"
+  }
+ ]
+}

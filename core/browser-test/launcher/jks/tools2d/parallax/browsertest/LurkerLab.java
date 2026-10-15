@@ -20,14 +20,16 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
 /**
  * The lurker lab (r369, Simon: "do we have a lab associated with this? I want to test it in action"): r363's demo, a
  * hooded figure behind Hiver's front pines (core/test-data/lurker/make_lab.py), its {@code lurkerCover} baked by
- * LurkerCover. The figure is switched, there or gone, only at the moments the cover says a nearer layer hides it whole;
- * or, to see what that rule prevents, every two seconds wherever it is. Two hearts scroll together, the page with the
- * figure and the page without it; the frame draws the one the switch says. The strip under it is the last 20 s: green
- * while the cover hides the figure, amber while it is in the view uncovered (in a gap, or behind soft edges or two layers
- * together, which the cover does not count), grey while it is out of the view; a white tick at each switch.
+ * LurkerCover. In its first mode the reader runs the figure's sightings (r370): gone at the gap after one it was seen
+ * in, there again by its seed's draws, switched only while the cover says a nearer layer hides it whole or it is out of
+ * the view. To see what that rule prevents, the second switches it every two seconds wherever it is: two hearts scroll
+ * together, the page with the figure (revealed every step, so always there) and the page without it, and the frame
+ * draws the one the timer says. The strip under it is the last 20 s: green while the cover hides the figure, amber while
+ * it is in the view uncovered (in a gap, or behind soft edges or two layers together, which the cover does not count),
+ * grey while it is out of the view; a white tick at each switch.
  * <p>
- * Where the figure stands against its cover is worked out here as tools/lurker-cover/LurkerBake's track does: phase 3
- * (r370) puts it in the reader, and this lab then calls the reader's. Opened with effects-lab.html?lab=lurker:
+ * The strip's state is worked out here, apart from the reader, as tools/lurker-cover/LurkerBake's track does: the
+ * readout's count of switches made in sight checks the reader's. Opened with effects-lab.html?lab=lurker:
  * tools/effects-lab.sh --lab lurker. {@code &clip=1}: nothing moves by itself, {@code window.effectsLabAct(seconds)}
  * steps it at 1/60 s. {@code &figure=gone}: the figure is never drawn, whatever the switch says: what
  * tools/r369-lurker-cover/lab-check.sh compares the lab's covered frames with.
@@ -44,7 +46,9 @@ public class LurkerLab extends ApplicationAdapter implements LabKit.Clip
 	/** What the strip keeps: 20 s at 60 frames a second. */
 	static final int STRIP = 1200;
 	static final int OUT = 0, UNCOVERED = 1, COVERED = 2, SWITCHED = 4;
-	static final String[] MODES = { "only while covered", "every 2 s, anywhere", "never: always there" };
+	static final String[] MODES = { "the reader's sightings", "every 2 s, anywhere", "never: always there" };
+	/** The figure's layer name in the lab's page, what the lab reveals it by. */
+	static final String NAME = "hooded";
 
 	private Parallax_Heart withFigure, without;
 	private List<ParallaxLayer> layers;
@@ -57,7 +61,7 @@ public class LurkerLab extends ApplicationAdapter implements LabKit.Clip
 	private Element readout;
 	private CanvasElement strip;
 	private final int[] samples = new int[STRIP];
-	private int next, state = OUT, switches, inSight;
+	private int next, state = OUT, switches, inSight, lastMode = -1;
 	private boolean there = true, clip, gone;
 	private float timer;
 
@@ -101,7 +105,7 @@ public class LurkerLab extends ApplicationAdapter implements LabKit.Clip
 		document.getElementById("effects-labels").getStyle().setProperty("gridTemplateColumns", "1fr");
 		LabControls.panelLabels(document, "effects-labels", "A hooded figure behind Hiver's pines, switched only while they hide it");
 		Element controls = document.getElementById("effects-controls");
-		mode = LabControls.choice(document, controls, "switchWhen", "switch the figure (only while covered: at the moments LurkerCover says a nearer layer hides it whole, never in sight; every 2 s, anywhere: what that rule prevents, the figure popping in a gap; never: always there)", MODES, 0);
+		mode = LabControls.choice(document, controls, "switchWhen", "switch the figure (the reader's sightings: gone at the gap after one it was seen in, back by its seed's draws, 1 in 3, switched only while LurkerCover says a nearer layer hides it whole or out of the view; every 2 s, anywhere: what that rule prevents, the figure popping in a gap; never: always there)", MODES, 0);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second; the film's was 60)", -160, 160, 5, SCROLL);
 		speed = LabControls.slider(document, controls, "figureSpeed", "figure's speed (ratio; the hills behind it are 0.024, the pines in front 0.038 and 0.041: the cover holds at any speed, it is worked out on the offset between the layers)", 0.01f, 0.036f, 0.001f, SPEED);
 		period = LabControls.slider(document, controls, "figurePeriod", "figure every (world units from one figure to the next; the view is 40 wide)", 30, 120, 1, PERIOD);
@@ -131,12 +135,18 @@ public class LurkerLab extends ApplicationAdapter implements LabKit.Clip
 	private void step(float delta)
 	{
 		LabKit.act(delta, withFigure, without);
-		int was = state;
 		state = state();
 		int picked = LabControls.read(mode);
 		boolean flip = false;
+		if (picked != 0)
+			// Its own sightings out of the way: the lab decides.
+			withFigure.parallaxReader.reveal(NAME);
 		if (picked == 0)
-			flip = state == COVERED && was != COVERED;
+		{
+			// The reader's first draw, or its draws taken back from the lab, is no switch.
+			flip = lastMode == 0 && figure.isLurkerThere() != there;
+			there = figure.isLurkerThere();
+		}
 		else if (picked == 1)
 		{
 			timer += delta;
@@ -150,11 +160,13 @@ public class LurkerLab extends ApplicationAdapter implements LabKit.Clip
 			there = true;
 		if (flip)
 		{
-			there = !there;
+			if (picked != 0)
+				there = !there;
 			switches++;
 			if (state == UNCOVERED)
 				inSight++;
 		}
+		lastMode = picked;
 		samples[next] = state | (flip ? SWITCHED : 0);
 		next = (next + 1) % STRIP;
 	}

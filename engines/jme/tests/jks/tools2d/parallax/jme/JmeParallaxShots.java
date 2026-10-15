@@ -35,7 +35,9 @@ import jks.tools2d.parallax.rounds.Round.Transfer;
  * <pre>
  *   java -cp ... jks.tools2d.parallax.jme.JmeParallaxShots &lt;round dir&gt; &lt;out dir&gt;   (from the repository root)
  * </pre>
- * {@code -Dparallax.jme.break=scroll} draws with a deliberately wrong scroll (x1.1), to prove the comparison sees one.
+ * {@code -Dparallax.jme.break=scroll} draws with a deliberately wrong scroll (x1.1), to prove the comparison sees one;
+ * {@code lurker} reveals every LURKER layer named "hooded" at every step (engines/rounds/lurker): its figure is then
+ * always there, as a reader that ignores its sightings draws it, which the lurker round must fail (r370).
  */
 public class JmeParallaxShots extends SimpleApplication
 {
@@ -46,6 +48,7 @@ public class JmeParallaxShots extends SimpleApplication
 	private final Path roundDir, outDir;
 	private List<Scene> scenes;
 	private final float speedFactor = "scroll".equals(System.getProperty("parallax.jme.break")) ? 1.1f : 1;
+	private final boolean breakLurker = "lurker".equals(System.getProperty("parallax.jme.break"));
 	private PlaxBackground bg;
 	/** The layer names the scene on screen hooked. */
 	private final List<String> hooked = new ArrayList<>();
@@ -160,6 +163,8 @@ public class JmeParallaxShots extends SimpleApplication
 				bg.tintTo(scene.tint, scene.tintSeconds);
 			}
 			bg.act(STEP * speedFactor);
+			if (breakLurker)
+				bg.getReader().reveal("hooded");
 		}
 		bg.setZoom(scene.zoomAt(at));
 		grab.grab(outDir.resolve(scene.id + "-t" + (int) at + ".png").toFile());

@@ -103,6 +103,13 @@ public class ParallaxLayer
 	 */
 	private int lurkerSeed, lurkerOdds = 3;
 	private float[] lurkerCover = new float[0];
+	/**
+	 * A LURKER layer's sightings, run by its reader ({@link ParallaxPageReader}, docs/lurker-layers.md "Sightings"): where
+	 * its draws are, whether they have started (from {@link #lurkerSeed}), whether the figure is there, was seen in this
+	 * sighting, is in sight, and is forced to show at the next one ({@link ParallaxPageReader#reveal}).
+	 */
+	int lurkerState;
+	boolean lurkerStarted, lurkerThere, lurkerSeen, lurkerInSight, lurkerForced;
 
 	/**
 	 * An IMAGE or SHADER layer's animated patch: see {@link Parallax_Model#animRegion}, {@link Parallax_Model#animX} and
@@ -518,6 +525,12 @@ public class ParallaxLayer
 		copy.lurkerOdds = lurkerOdds;
 		// Replaced, never changed: shared.
 		copy.lurkerCover = lurkerCover;
+		copy.lurkerState = lurkerState;
+		copy.lurkerStarted = lurkerStarted;
+		copy.lurkerThere = lurkerThere;
+		copy.lurkerSeen = lurkerSeen;
+		copy.lurkerInSight = lurkerInSight;
+		copy.lurkerForced = lurkerForced;
 		copy.animRegion = animRegion;
 		copy.animX = animX;
 		copy.animY = animY;
@@ -1219,6 +1232,17 @@ public class ParallaxLayer
 	public void setTowerCamera(float camera)
 	{towerCamera = camera;}
 
+	/**
+	 * Whether a LURKER layer's figure is drawn now: its reader decides it, only while nothing of it is on screen
+	 * ({@link ParallaxPageReader#reveal}). True for a layer no reader has run yet.
+	 */
+	public boolean isLurkerThere()
+	{return !lurkerStarted || lurkerThere;}
+
+	/** Whether a LURKER layer's figure is in sight: in the view and not wholly covered, as its reader last saw it. */
+	public boolean isLurkerInSight()
+	{return lurkerInSight;}
+
 	/** Where a LURKER layer's draws start ({@link Parallax_Model#lurkerSeed}). Kept on every kind. */
 	public int getLurkerSeed()
 	{return lurkerSeed;}
@@ -1231,9 +1255,14 @@ public class ParallaxLayer
 	public float[] getLurkerCover()
 	{return lurkerCover;}
 
-	/** Sets a LURKER layer's seed, its odds (1 at least) and its cover (null: none). The cover is kept, not copied. */
+	/**
+	 * Sets a LURKER layer's seed, its odds (1 at least) and its cover (null: none). The cover is kept, not copied. A new
+	 * seed or odds starts its draws again, at the next sighting the reader runs.
+	 */
 	public void setLurker(int seed, int odds, float[] cover)
 	{
+		if (seed != lurkerSeed || Math.max(1, odds) != lurkerOdds)
+			lurkerStarted = false;
 		lurkerSeed = seed;
 		lurkerOdds = Math.max(1, odds);
 		lurkerCover = cover == null ? new float[0] : cover;

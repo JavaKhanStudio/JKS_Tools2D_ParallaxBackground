@@ -26,6 +26,7 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.GdxNativesLoader;
 
 import jks.tools2d.parallax.pages.Enum_FloorMapping;
+import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.WholePage_Model;
@@ -113,6 +114,53 @@ class FrameAllocationTest
 				// The counter itself costs a few bytes; a per-frame allocation costs FRAMES times at least 16.
 				assertTrue(allocated < FRAMES * 16L, mode + ": " + allocated + " bytes allocated over " + FRAMES + " frames");
 			}
+	}
+
+	/**
+	 * LURKER layers' sightings (r370): figures behind bars that cover them, on a page repeating on X with no cross-fade, tint
+	 * or planet, so that each frame tries every cover interval, and the figures come and go.
+	 */
+	@Test
+	void aLurkerFrameAllocatesNothing()
+	{
+		com.sun.management.ThreadMXBean threads = (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
+		assumeTrue(threads.isThreadAllocatedMemorySupported(), "this JVM does not count allocations");
+		threads.setThreadAllocatedMemoryEnabled(true);
+
+		OrthographicCamera camera = new OrthographicCamera();
+		camera.setToOrtho(false, 40, 22.5f);
+		camera.update();
+		CountingBatch batch = new CountingBatch();
+		ParallaxPageReader reader = new ParallaxPageReader();
+		reader.setRepeatOnX(true);
+		reader.setRepeatOnY(true);
+		List<ParallaxLayer> layers = new ArrayList<>();
+		int lurkers = 0;
+		for (int i = 0; i < 100; i++)
+		{
+			boolean lurker = i % 2 == 0;
+			ParallaxLayer layer = new ParallaxLayer(lurker ? Enum_LayerKind.LURKER : Enum_LayerKind.IMAGE, new ArrayList<>(List.of(lurker ? narrowRegion() : region())),
+					true, 40, 0.02f + i * 0.0001f, 0, lurker ? 0.05f : 0.25f);
+			layer.setPadX(lurker ? 18 : 0);
+			if (lurker)
+			{
+				layer.setName("lurker" + i);
+				layer.setLurker(i, 1 + i % 3, new float[] { 1, 0, 2, 1, 4, 6 });
+				lurkers++;
+			}
+			layers.add(layer);
+		}
+		reader.addLayers(layers);
+		frames(reader, camera, batch, FRAMES, 300, 0);
+		long before = threads.getCurrentThreadAllocatedBytes();
+		frames(reader, camera, batch, FRAMES, 300, 0);
+		reader.reveal("lurker4");
+		long allocated = threads.getCurrentThreadAllocatedBytes() - before;
+		int gone = 0;
+		for (ParallaxLayer layer : layers)
+			gone += layer.getKind() == Enum_LayerKind.LURKER && !layer.isLurkerThere() ? 1 : 0;
+		assertTrue(gone > 0 && gone < lurkers, gone + " of " + lurkers + " figures gone: the draws ran");
+		assertTrue(allocated < FRAMES * 16L, allocated + " bytes allocated over " + FRAMES + " frames");
 	}
 
 	/** Scrolls only on the repeated axes: a layer scrolled out of an unrepeated view is not drawn. */

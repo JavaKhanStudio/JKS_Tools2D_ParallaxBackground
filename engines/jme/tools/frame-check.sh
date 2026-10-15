@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # frame-check.sh [ROUND_DIR...] — the jMonkeyEngine reader (engines/jme) against the libGDX runtime, frame by frame (r112).
 #
-#   engines/jme/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /effects, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet and /animated
+#   engines/jme/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /effects, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet, /animated and /lurker
 #   engines/jme/tools/frame-check.sh engines/rounds/round1
 #
 # The same rounds and stills as engines/godot/tools/frame-check.sh: libGDX's (tools/parallax-lab-shots.sh, 0, 6 and 12 s into
@@ -10,13 +10,14 @@
 # jme/, compare.png and report.txt. Fails when a still differs by more than THRESHOLD (mean absolute difference per
 # channel, 0-255; default 2). Needs cage, Xwayland, python3 with Pillow. ATELIER_NO_OFFSCREEN=1 draws both on
 # $DISPLAY instead. BREAK=scroll draws jME with a scroll 10 % too fast: it must FAIL (the threshold's negative control).
+# BREAK=lurker reveals the lurker round's figure every step, always there: engines/rounds/lurker must FAIL (r370).
 set -u
 cd "$(dirname "$0")/../../.." || exit 1
 ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/effects engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/effects engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated engines/rounds/lurker)
 ./gradlew -q :jme:shotsClasspath || exit 1
 CP="$(cat engines/jme/build/shots.classpath)"
 status=0

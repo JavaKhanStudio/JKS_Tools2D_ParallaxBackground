@@ -10,8 +10,9 @@
 #                where the camera stands (r350: close by, the courses arc and Hiver wraps round the tower)
 #   --lab planet the planet (PlanetLab, r277, r347: the page on a turning world) with r330's snow and hooked towers: radius,
 #                how the towers stand, snow anchor
-#   --lab lurker r369's cover (LurkerLab): r363's hooded figure behind Hiver's pines, switched only while LurkerCover says
-#                one of them hides it whole (or every 2 s anywhere, to compare); a strip of the last 20 s
+#   --lab lurker r369's cover (LurkerLab): r363's hooded figure behind Hiver's pines, switched by the reader's sightings
+#                (r370) only while LurkerCover says one of them hides it whole (or every 2 s anywhere, to compare); a strip
+#                of the last 20 s
 # The readout gives the frame time, and each panel's draw calls and CPU time.
 #   tools/effects-lab.sh --lab L                 the lab: a Chrome window, served until it closes
 #   tools/effects-lab.sh --lab L --shot F.png    one still, headless (6 s into the scroll)

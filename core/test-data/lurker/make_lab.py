@@ -30,6 +30,10 @@ def main():
     for name, units in (('empty', 0), ('lab', 1.8)):
         page = reveal.page_with_figure(fig.size, units)
         page['pageModel']['atlasName'] = 'HiverLurker.atlas'
+        for layer in page['pageModel']['pageList']:
+            if layer.get('kind') == 'LURKER':
+                # What the lab reveals it by (r370: ParallaxPageReader.reveal).
+                layer['name'] = 'hooded'
         with open(f'{HERE}/{name}.jplax', 'w') as f:
             json.dump(page, f, indent=1)
     subprocess.run(['tools/lurker-cover.sh', f'{HERE}/lab.jplax', HERE, '40', '22.5'], check=True)
