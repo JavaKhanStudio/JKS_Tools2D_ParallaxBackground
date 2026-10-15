@@ -135,6 +135,8 @@ jME runs core's.
 5. The editor (its own board): the kind in the kind tab, seed and odds with the "how often" line and the seed's first
    draws, the depth-height hint, `lurkerCover` worked out on save, and the preview showing it vanish.
 6. README: a "Lurker layers" section (the rule, the depth size, the skating), and AGENTS.md's runtime line.
+   Done (r372): README's "Lurker layers", its picture `docs/lurker-size.png` (r363's v01 against v02, the giant;
+   `tools/r372-lurker-size/make.py`), the three fields in its settings table.
 
 A page painted by `tools/ai-page.sh` gets one on request (`--lurker`, r366): the figure painted alone, standing on
 the layer behind it at that layer's speed, its height its depth's, `lurkerCover` baked by `tools/lurker-cover.sh`.
