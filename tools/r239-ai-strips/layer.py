@@ -14,6 +14,9 @@ warms toward the foot and has clouds, and against the top rows' colour it stayed
 Clear pixels nearer the mass's colour than the sky's are the mass SD painted past the mask, not sky: they are not read (r382).
 --gap T: the foot of a gap SD painted deeper than the shape is sky or far haze, which the mask made opaque (r263):
 pixels less than T of the way from the sky to the mass's colour, open to the clear sky, key along that line (0: off).
+--haze H: a far range SD painted pale round the shape (pale peaks between two near slopes, a haze plain at a mesa's
+foot), open to the sky, keyed by ungap and unglow in blobs, is kept whole at alpha H instead, its edges ramped to the
+mass and the sky (r401, Simon's answer: half clear, one even alpha) (0: off).
 --edge E: alpha still half clear more than E px from a solid pixel is SD's haze or a ghost behind the shape, not a
 soft edge: it goes clear or solid (0: off).
 RULES (tools/parallax_rules.py, r400): a fix right for one model or one kind of layer only, weighed per strip on what
@@ -167,6 +170,81 @@ def unglow(alpha, edge):
     return out
 
 
+# far_range (r401): a piece of the pixels between FAR_LO and FAR_HI of the way from the top rows' sky to the mass,
+# wider than 2 * FAR_OPEN px, its part under --gap within --grow of the mask wider than 2 * FAR_CORE px over FAR_MIN px
+# or more (a 1024 px strip's), beside the clear sky, and outlined on it: the median step of t across its outline on the
+# sky over FAR_STEP. A haze SD paints round the shape is thinner (r358); a sky warming down the strip has no outline.
+# Its alpha is --haze from FAR_FULL to --gap and rises to 1 at FAR_HI: a threshold across a range SD shaded toward the
+# mass's colour cut it in two (ds8-beach l0). It falls to 0 at t 0 over the pixels down to FAR_FAINT joined to it: a
+# haze plain fading into the sky, cut at a threshold or a distance, drew a line (ds8-postapo l0).
+FAR_LO, FAR_FULL, FAR_HI, FAR_OPEN, FAR_CORE, FAR_MIN, FAR_STEP, FAR_FAINT, FAR_REACH = 0.25, 0.4, 0.75, 3, 8, 150, 0.015, 0.05, 12
+
+
+def row_sky(t, m):
+    """t of each row's sky (column): its palest pixels off the mask (3rd percentile), carried down from the row above
+    where the mask leaves under half the row (what is left there is the range)."""
+    out, last = np.zeros((t.shape[0], 1)), 0.0
+    for y in range(t.shape[0]):
+        if (~m[y]).mean() >= 0.5:
+            last = float(np.percentile(t[y][~m[y]], 3))
+        out[y] = last
+    return out
+
+
+def far_range(img, top, alpha, m, grow, reach, haze):
+    """(region, alpha, sky): the pale far range painted round the shape: SD's farther peaks (oj4-postapo l0), the haze
+    plain at a mesa's foot (ds8-postapo l0), a farther pine in a V between two near ones (oj4-forest l3). Against each
+    pixel's own sky (local_sky's) its t runs from 0.1 to 0.5, where that sky took the range's own clear tops: ungap and
+    unglow keyed it in blobs, half solid, half sky. Against the top rows' sky it is one even t. Its faint edge is keyed
+    against its row's sky (row_sky): against the top rows', a sky warming beside it kept a glow (layer_test); against
+    local_sky's, a range at FAR_LO was half kept, half sky (ds8-beach l0). sky: the sky each pixel is un-mixed against."""
+    none = np.zeros(m.shape, bool), np.zeros(m.shape), None
+    inner = spread(m, -8)
+    if not inner.any():
+        return none
+    mass = np.median(img[inner], axis=0)
+    t = (img - top) @ (mass - top) / max(float((mass - top) @ (mass - top)), 1.0)
+    band = (t > FAR_LO) & (t < FAR_HI)
+    band &= spread(spread(band, -FAR_OPEN), FAR_OPEN)
+    label, sizes = components(band)
+    k = img.shape[1] / 1024
+    zone, pale = spread(m, grow), t < reach
+    step = np.max([np.abs(t - np.roll(t, s, ax)) for s, ax in ((1, 0), (-1, 0), (1, 1), (-1, 1))], axis=0)
+    keep = []
+    for n, size in enumerate(sizes, 1):
+        if size < FAR_MIN * k * k:
+            continue
+        piece = label == n
+        near = piece & zone & pale
+        core = near & spread(spread(near, -FAR_CORE), FAR_CORE)
+        rim = spread(piece, 1) & ~band & (t <= FAR_LO)  # its outline on the sky
+        open_ = (alpha[rim] < 0.05).any()  # beside the clear sky
+        if core.sum() >= FAR_MIN * k * k and open_ and np.median(step[rim]) > FAR_STEP:
+            keep.append(n)
+    if not keep:
+        return none
+    body = np.isin(label, keep)
+    # round it, against its row's sky: its rim, which the opening took, and the mass's edge on it (keyed against a sky
+    # the range made, they drew a light line round it over the layer behind, and holes at the mass's foot); and the
+    # pixels down to FAR_FAINT joined to it (cut at a threshold or a distance, a haze plain fading into the sky drew
+    # a line, ds8-postapo l0)
+    t0 = row_sky(t, m)
+    t = np.where(body, t, t - t0)
+    far = body | spread(body, 2 * FAR_OPEN) & (t > 0)
+    # within FAR_REACH px, fading out over it: further on it took the clouds over a city (ds8-postapo l2)
+    reach_px, fade, ring = round(FAR_REACH * k), np.zeros(t.shape), far
+    for _ in range(reach_px):
+        fade += ring
+        ring = spread(ring, 1)
+    label, _ = components(((t > FAR_FAINT) & (fade > 0)) | far)
+    on = np.unique(label[far])
+    far = np.isin(label, on[on > 0])
+    sky = np.where((far & ~body)[..., None], top + t0[..., None] * (mass - top), top)
+    a = haze * np.clip(t / FAR_FULL, 0, 1) + (1 - haze) * np.clip((t - reach) / (FAR_HI - reach), 0, 1)
+    a = np.where(body | (t > FAR_LO), a, a * fade / reach_px)
+    return far, a, sky
+
+
 # misty_pines (r400): pines nearer the sky than MISTY_HI of the way to the mass, open to the clear sky through each
 # other, where they are wider than 2 * MISTY_CORE px, key along t from MISTY_LO (clear) to MISTY_HI; at least MISTY_MIN px of them
 # in a 1024 px strip, or the strip has none. dreamshaper_8's foot pines run from t 0.5 at their tips to 0.85; a dark
@@ -239,6 +317,7 @@ def parse_args():
     ap.add_argument("--mask", help="sil.py's _mask.png: opaque inside it, keyed only within --grow px of it")
     ap.add_argument("--grow", type=int, default=12)
     ap.add_argument("--gap", type=float, default=0.6, help="key pale pixels open to the sky up to this far toward the mass (0: off)")
+    ap.add_argument("--haze", type=float, default=0.5, help="a pale far range round the shape: one alpha (0: off)")
     ap.add_argument("--edge", type=int, default=2, help="half-clear alpha past this many px of a solid pixel goes clear or solid (0: off)")
     ap.add_argument("--keep-islands", action="store_true", help="keep alpha islands apart from the main mass")
     ap.add_argument("--pixel", type=int, default=0)
@@ -258,11 +337,11 @@ def parse_args():
     return a
 
 
-def key(img, sky, a, records=None):
+def key(img, sky, a, records=None, regions=None):
     """(alpha, sky): the layer's alpha, the colour key helped by --mask, its gaps keyed, RULES weighed and its islands
     cut; and the sky it was keyed against, each pixel's (local_sky's under --mask). Each rule's record is appended to
-    records."""
-    m = None
+    records; regions["far"] is the far range (far_range's), for unmix."""
+    m, top = None, sky
     if a.mask:
         m = np.asarray(Image.open(a.mask).convert("L").resize(img.shape[1::-1])) > 127
         sky = local_sky(img, sky, ~spread(m, a.grow) & ~spread(masslike(img, sky, m), 2), a.grow + 8)
@@ -274,10 +353,19 @@ def key(img, sky, a, records=None):
     if m is not None:
         # SD moves an outline by a few px: opaque only 8 px inside the shape, or sky comes in with it.
         alpha = np.where(spread(m, -8), 1.0, np.where(spread(m, a.grow), alpha, 0.0))
+    ranged, haze = np.zeros(alpha.shape, bool), getattr(a, "haze", 0.5)
+    if m is not None and a.gap and haze:
+        ranged, range_alpha, range_sky = far_range(img, top, alpha, m, a.grow, a.gap, haze)
     if a.gap:
         alpha = ungap(img, sky, alpha, a.gap)
     if a.edge:
         alpha = unglow(alpha, a.edge)
+    if ranged.any():
+        alpha = np.where(ranged, range_alpha, alpha)
+        sky = np.where(ranged[..., None], range_sky, sky)  # un-mixed against the sky over it, not its own clear tops
+        print(f"{a.out}: far range: {int(ranged.sum())} px, alpha {haze} on the pale", file=sys.stderr)
+    if regions is not None:
+        regions["far"] = ranged
     ctx = {"kind": getattr(a, "kind", None), "ckpt": getattr(a, "ckpt", None), "img": img, "sky": sky, "alpha": alpha}
     weighed = parallax_rules.weigh(RULES, ctx, getattr(a, "forced", None))
     alpha = ctx["alpha"]
@@ -287,15 +375,17 @@ def key(img, sky, a, records=None):
     if records is not None:
         records += weighed
     if not a.keep_islands:
-        cut = islands(alpha > 0.5)
+        # a far range at --haze joins what stands in it to the mass (ds8-postapo l0's mesa, in its haze plain)
+        cut = islands((alpha > 0.5) | ranged)
         if cut.any():
             alpha = unspeck(alpha, cut)
             print(f"{a.out}: {int(cut.sum())} px of alpha islands cut", file=sys.stderr)
     return alpha, sky
 
 
-def unmix(img, sky, alpha):
-    """The RGBA layer."""
+def unmix(img, sky, alpha, own=None):
+    """The RGBA layer. The pixels of own keep their own colour, un-mixed: a far range half clear took the solid
+    colours spread into it near the mass and its own farther off, in bands (r401)."""
     # Un-mix the sky out of the edge pixels, so a light fringe does not ring the layer.
     a3 = np.maximum(alpha, 1e-3)[..., None]
     rgb = np.clip((img - sky * (1 - a3)) / a3, 0, 255)
@@ -309,6 +399,8 @@ def unmix(img, sky, alpha):
     # Past their reach (a pale ridge, alpha under 0.95 over more than ~6 px) the un-mixed colour stays:
     # fill / wsum there is 0 / 0, and was drawn black (r242's "bird").
     reached = (wsum > 1e-6)[..., None]
+    if own is not None:
+        reached &= ~own[..., None]
     rgb = np.where(solid[..., None] > 0, rgb, np.where(reached, fill / np.maximum(wsum, 1e-6)[..., None], rgb))
     rgba = np.dstack([rgb, alpha * 255]).astype(np.uint8)
     return Image.fromarray(rgba, "RGBA")
@@ -361,12 +453,12 @@ def main():
     a = parse_args()
     img = np.asarray(Image.open(a.src).convert("RGB")).astype(np.float32)
     sky = np.median(img[:8].reshape(-1, 3), axis=0)
-    records = []
-    alpha, behind = key(img, sky, a, records)
+    records, regions = [], {}
+    alpha, behind = key(img, sky, a, records, regions)
     if a.rules_json:
         with open(a.rules_json, "w") as f:
             json.dump(records, f, indent=1)
-    out = unmix(img, behind, alpha)
+    out = unmix(img, behind, alpha, regions.get("far"))
     if a.pixel > 1:
         out = pixelate(out, a)
     out.save(a.out)

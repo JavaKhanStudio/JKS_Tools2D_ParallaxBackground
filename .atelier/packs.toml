@@ -169,12 +169,16 @@ examples only), then area.py BEFORE AFTER PAGE... (opaque px lost, largest hole 
 pair.py (painted / before / after, --behind over the layers behind). seam.py checks a strip's loop seam;
 tools/parallax_lab.py lint PAGE the page's numbers. ../JKS_Tools2D_ParallaxAI is the parallax-ai board's own
 repository: read its rounds, never edit it from here.
+A pale far range SD paints round the shape (peaks between near slopes, a haze plain, a far pine in a V) is kept whole
+and half clear (Simon's answer, r401): layer.far_range finds it against the top rows' sky, never local_sky's, which
+takes its clear tops and keys it in blobs; layer.py --haze is its alpha.
 A fix right for one model or one kind of layer only goes in layer.RULES (tools/parallax_rules.py, r400: misty_pines,
 dreamshaper_8's pines only): conditions on --kind and --ckpt, which ai_page.py and both recut.sh pass, then a measure;
 each strip's record lands in recipe.json's "rules", --rule NAME=on|off forces one. tools/r400-ai-rules/probe.py says
 what each fix moves per model and kind; relay.sh re-lays a page with --keep (no GPU) for its before and after stills.
 Gates: a layer_test.py case for the fault (python3 tools/r239-ai-strips/layer_test.py, no GPU), failing when the fix is
-taken out (a rule's: tools/r400-ai-rules/mutate.sh); tools/r358-glow/mutate.sh still passing; tools/lint.sh (ruff, CI's pinned version); then the re-cut
+taken out (a rule's: tools/r400-ai-rules/mutate.sh); tools/r401-far-range/mutate.sh still passing (r401's, r382's and
+r358's mutants, each must fail a test); tools/lint.sh (ruff, CI's pinned version); then the re-cut
 corpus compared, and a page run's stills, looked at, before and after on the same --seed.
 Clouds are never in another layer's sky (r409, the skill's rule 9): --clouds paints them on a strip of their own,
 behind the back layer (sil.py's clouds, the theme kept out of the prompt: its palms grew in the clouds' sky);

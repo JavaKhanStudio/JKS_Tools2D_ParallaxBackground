@@ -120,6 +120,37 @@ class KeyTest(unittest.TestCase):
         self.assertGreater(float((alpha[crown] > 0.5).mean()), 0.95, "the crown is kept")
         self.assertGreater(float(alpha[join].min()), 0.5, "its join to the trunk too")
 
+    def test_a_pale_far_range_round_the_shape_is_half_clear_whole(self):
+        """r401: SD paints a pale far range between two near slopes, inside sil.py's mask and past it (R1 oj4-postapo
+        l0). local_sky read its tops past --grow as sky, ungap and unglow keyed it in blobs, half solid, half sky.
+        Simon's answer: half clear, one even alpha. A mesa standing in it stays, joined to the mass through it (ds8-postapo l0's was cut as an island)."""
+        rows, cols = np.mgrid[:H, :W]
+        near = (rows >= 100) | (rows - 30 >= np.abs(cols - 50) * 1.2) | (rows - 30 >= np.abs(cols - 210) * 1.2)
+        rng = (rows - 46 >= np.abs(cols - 130) * 0.6) & ~near  # its peak 54 px over the mask: well past --grow
+        mesa = (rows >= 60) & (rows < 88) & (np.abs(cols - 130) <= 9)  # standing in the range, off the ground
+        m = near | (rng & (rows >= 80)) | mesa  # sil.py's shape takes the range's foot, and the mesa
+        img = sky()
+        img[rng] = TOP + 0.5 * (MASS - TOP)
+        img[near | mesa] = MASS
+        alpha = cut(img, m, grow=8)
+        body = layer.spread(rng & ~mesa, -3)
+        self.assertLess(float(alpha[body].std()), 0.05, "one even alpha over the range")
+        self.assertLess(abs(float(alpha[body].mean()) - 0.5), 0.1, "half clear")
+        self.assertLess(float(alpha[ring(rng | m, 3, 16) & (rows < 100)].max()), 0.1, "no glow in the sky beside it")
+        self.assertGreater(float(alpha[layer.spread(mesa, -8)].min()), 0.99, "the mesa stays")
+        self.assertGreater(float(alpha[layer.spread(near, -8)].min()), 0.99, "the near slopes stay solid")
+
+    def test_a_sky_warming_down_to_a_low_ground_keys_clear(self):
+        """r401: a sky warming half way to the mass's colour at its foot is as far from the top rows' sky as a pale far
+        range, and as thick: it has no outline on the sky above it, and is no range."""
+        m = np.zeros((H, W), bool)
+        m[112:] = True
+        f = np.linspace(0, 1, H)[:, None, None] ** 2
+        img = np.broadcast_to(TOP + 0.5 * (MASS - TOP) * f, (H, W, 3)).astype(np.float32).copy()
+        img[m] = MASS
+        alpha = cut(img, m, grow=24)
+        self.assertLess(float(alpha[ring(m, 3, 24)].max()), 0.1, "the warm sky keys clear")
+
     def test_local_sky_is_the_clear_pixels_round_a_pixel(self):
         img = sky()
         clear = np.ones((H, W), bool)

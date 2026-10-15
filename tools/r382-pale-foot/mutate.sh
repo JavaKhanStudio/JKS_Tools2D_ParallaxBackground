@@ -6,7 +6,7 @@ set -u
 cd "$(dirname "$0")/../.." || exit 1
 S=tools/r239-ai-strips
 d=$(mktemp -d -p .git r382-mutant.XXXX)
-cp "$S"/layer.py "$S"/layer_test.py "$S"/creature.py "$d"/
+cp "$S"/layer.py "$S"/layer_test.py "$S"/creature.py tools/parallax_rules.py "$d"/
 python3 - "$d/layer.py" <<'PY'
 import sys
 p = sys.argv[1]
