@@ -27,6 +27,8 @@ OUT/strips (every strip, scratch), OUT/page (NAME.atlas, NAME.png, NAME.jplax, r
 --no-shots, OUT/shots (tools/parallax-lab-shots.sh: stills at 0, 6 and 12 s, contact.png). Exits 1 when lint
 finds a fault, 2 when a strip cannot be cut. Needs ComfyUI with its venv (COMFYUI_DIR, default ~/ComfyUI) holding
 dreamshaper_8 (painted) or sdXL_v10VAEFix + PixelArt_XL (pixel), and ~1.5 GB of free VRAM.
+A command held past --timeout (600 s; a strip takes 10-60) is killed and run once more, the same, then fails
+(r377: a Turbo strip on dpmpp_sde can hang after its first step).
 
 The model (r346): --ckpt and --lora replace the style's (any file in ComfyUI's models/checkpoints and models/loras),
 --lora none drops the pixel style's; --steps, --cfg, --sampler, --scheduler and --denoise go to every gen.py call. An
@@ -171,14 +173,34 @@ LURKER_SINK = 0.02  # of its height: its foot and the shadow SD paints under it 
 
 
 DRY_RUN = False  # --dry-run: print each command instead of running it
+# r377: an SDXL Turbo strip (dpmpp_sde) hung once for 34 min after its first step, GPU idle, CPU at 100 %, and the
+# same command rerun at once took 10 s. A strip takes 10-60 s: past TIMEOUT a command is killed and run once more,
+# the same (same seed: the strip stays the recipe's), its hung log kept as <log>.hung; then it fails.
+TIMEOUT = 600
+TIMED_OUT = 124  # run()'s code when both tries hung, timeout(1)'s
 
 
-def run(cmd, log):
+def run(cmd, log, timeout=None):
     if DRY_RUN:
         print(shlex.join(cmd), ">", log)
         return 0
+    timeout = TIMEOUT if timeout is None else timeout
+    for tries in (1, 2):
+        with open(log, "w") as f:
+            # its own session: a kill takes whatever it started with it
+            p = subprocess.Popen(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT, start_new_session=True)
+            try:
+                return p.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                os.killpg(p.pid, 9)
+                p.wait()
+                f.write(f"\nai_page: killed after {timeout} s (try {tries} of 2)\n")
+        os.replace(log, log + ".hung")
+        print(f"ai_page: {os.path.basename(cmd[1] if len(cmd) > 1 else cmd[0])} hung past {timeout} s "
+              f"({log}.hung){', running it again' if tries == 1 else ''}", file=sys.stderr)
     with open(log, "w") as f:
-        return subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT, check=False).returncode
+        f.write(f"ai_page: hung past {timeout} s twice, killed: {log}.hung holds the second try's log\n")
+    return TIMED_OUT
 
 
 def solid(path):
@@ -262,6 +284,8 @@ def parse_args():
     ap.add_argument("--lurker-every", type=int, default=1, help="it comes by once every N tiles of the layer under it")
     ap.add_argument("--dry-run", action="store_true", help="print every command, back to front, as if each strip took"
                     " on its first seed, and write nothing (r305: the proof that a change runs the same commands)")
+    ap.add_argument("--timeout", type=int, default=TIMEOUT,
+                    help="seconds a command (a strip: 10-60) may take before it is killed and run once more (r377)")
     a = ap.parse_args()
     if a.kinds:
         given = a.kinds.split(",")
@@ -594,9 +618,9 @@ class Pipeline:
 
 
 def main():
-    global DRY_RUN
+    global DRY_RUN, TIMEOUT
     a = parse_args()
-    DRY_RUN = a.dry_run
+    DRY_RUN, TIMEOUT = a.dry_run, a.timeout
     p = Pipeline(a)
     layers, seeds = p.paint_depths()
     if not p.pixel and a.variants:
