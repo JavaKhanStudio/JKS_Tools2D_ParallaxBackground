@@ -236,6 +236,38 @@ class FaintAlphaSeams(unittest.TestCase):
         self.assertLess(regions_tool.measure(img)['seam'], 25)
 
 
+class TipSeams(unittest.TestCase):
+    """(e) at a small join an outline carries across (r398): R1's ds8 forest put a pine's tip on its pines' edge, so
+    every join of the SEQUENCE stepped 21-22 against a limit of 20, beside a step of 17 one column in. The fixture is
+    those columns: l3_0's last 8 and l3v2's first 8 (tools/r398-seq-seams/tip-join.png)."""
+
+    def setUp(self):
+        from PIL import Image
+        img = Image.open(os.path.join(lab.ROOT, 'tools/r398-seq-seams/tip-join.png')).convert('RGBA')
+        self.left, self.right = img.crop((0, 0, 8, img.height)), img.crop((8, 0, 16, img.height))
+        self.p = lab.Placed(0, {}, [1.0], 0.0, lab.SCREEN_H, True, False)
+
+    def test_a_tip_on_the_edge_is_no_cut(self):
+        seam = lab._join_on_screen(self.left, self.right, self.p)
+        self.assertGreater(seam, lab.SEAM, 'the join steps past the floor: only what is beside it clears it')
+        self.assertFalse(lab._is_cut(seam, lab.SEAM, self.left, self.right, self.p), f'seam {seam}')
+
+    def test_the_same_join_between_flat_columns_is_a_cut(self):
+        """Column 6 of the left made its last, column 1 of the right its first: nothing beside the join steps."""
+        left, right = self.left.copy(), self.right.copy()
+        left.paste(self.left.crop((7, 0, 8, left.height)), (6, 0))
+        right.paste(self.right.crop((0, 0, 1, right.height)), (1, 0))
+        seam = lab._join_on_screen(left, right, self.p)
+        self.assertTrue(lab._is_cut(seam, lab.SEAM, left, right, self.p), f'seam {seam}')
+
+    def test_a_big_join_is_a_cut_whatever_is_beside_it(self):
+        """g03's flowers: a stem ends at the edge, 74 beside a step of 128."""
+        page = lab.load('engines/rounds/floor/g03.jplax')
+        faults = [f for f in lab.layout(page, lab.find_atlas_dir('engines/rounds/floor/g03.jplax', page))
+                  if f.startswith('(e) layer 4')]
+        self.assertEqual(1, len(faults), faults)
+
+
 class PixelArtCover(unittest.TestCase):
     """(b) on a pixel-art page (r281, r239's postapo-pixel): a 17-row layer whose art fills its bottom edge at 1.33,
     before a 35-row front from 0 whose bottom four rows (to 1.67) are solid and the fifth 0.89 opaque. The edge is

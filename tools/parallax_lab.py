@@ -270,7 +270,9 @@ def layout(page, atlas_dir):
           A SEQUENCE layer without padX is checked at every join its cycle can make: each segment's right edge against
           each segment's left edge (itself included), segments weighing above 0 only. A join is a cut only when it
           also steps more than the art does between most of its own neighbour columns (3 in 4, in the same rows):
-          hard alpha pixel art steps 27-75 from one column to the next everywhere, and loops as smoothly (r253).
+          hard alpha pixel art steps 27-75 from one column to the next everywhere, and loops as smoothly (r253). Nor is
+          a join under 2 * SEAM stepping no more than 1.5 times the art does one column in, on either side: an
+          outline carried across it (a tip on the edge, r398).
       (f) a layer tiled from a mipmapped atlas (its `filter:` a MipMap one) drawn 1/m of its region's size on this
           1280 px screen, whose region edges are copied fewer than m texels into the atlas padding (duplicatePadding):
           the mip levels it samples average in what lies past the copy, a line at every join (r268,
@@ -322,7 +324,7 @@ def _measure_layers(page, regions, regions_tool):
         if page.get('repeatOnX', True):
             seam = _seam_on_screen(img, p, regions_tool)
             limit = _seam_limit([img], p)
-            if seam > limit:
+            if _is_cut(seam, limit, img, img, p):
                 problems.append(f"(e) layer {i} ({l['regionName']}#{l['regionPosition']}) is tiled on X but its left"
                                 f" and right edges differ (seam {seam} > {_said(limit)}): a cut shows every repeat")
     if stripped and not original:
@@ -373,7 +375,7 @@ def _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, strippe
         return problems
     limits = {a: _seam_limit([img], p) for a, img in images}
     joins = [f'{a}>{b} {seam}' for a, left in images for b, right in images
-             for seam in [_join_on_screen(left, right, p)] if seam > max(limits[a], limits[b])]
+             for seam in [_join_on_screen(left, right, p)] if _is_cut(seam, max(limits[a], limits[b]), left, right, p)]
     if not joins:
         return problems
     limit = SEAM if all(v == SEAM for v in limits.values()) else f"{SEAM} and its segments' own step between columns"
@@ -519,6 +521,25 @@ def _seam_limit(images, p):
     pixel-art strip's own joins step past it 1 time in 2, and one of them rolled to the edge is no cut."""
     steps = sorted(s for img in images for rows in [_rows_on_screen(img, p)] if rows for s in _column_steps(rows))
     return max(SEAM, round(steps[int(0.75 * len(steps))])) if steps else SEAM
+
+
+def _is_cut(seam, limit, left, right, p):
+    """A join of left's right edge to right's left edge stepping past limit is a cut, unless it is a small one (under
+    2 * SEAM) that steps no more than half again what the art steps one column in, on either side: an outline that
+    climbs or falls there and carries on across the join (r398: a pine's tip on the forest's edge, 21 beside 17). A
+    cut steps from columns that do not (q01's ground, 141-255 beside 0-2), and a big one is a cut whatever is beside
+    it (g03's stem, ending at the edge: 56 beside 128)."""
+    if seam <= limit:
+        return False
+    if seam >= 2 * SEAM:
+        return True
+    return seam > 1.5 * max(_step_beside(left, left.width - 2, p), _step_beside(right, 0, p))
+
+
+def _step_beside(img, x, p):
+    """The step between columns x and x + 1 of img, in the rows on screen, as _column_steps takes it."""
+    rows = _rows_on_screen(img.crop((x, 0, x + 2, img.height)), p)
+    return max(_column_steps(rows) or [0]) if rows else 0
 
 
 def _said(limit):
