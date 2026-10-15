@@ -13,7 +13,8 @@ docs/depth-tricks.md §5. Passes:
      relative disparity: larger is nearer;
   3. bands: --layers clusters of that disparity (k-means in one dimension), far to near, small islands merged into
      what surrounds them; a thing a band's edge cuts (SAM 2.1 small's masks: Hugging Face
-     facebook/sam2.1-hiera-small, Apache-2.0, ~180 MB) given whole to the band at its foot, and so is a field a
+     facebook/sam2.1-hiera-small, Apache-2.0, ~180 MB) given whole to the band at its foot (one seen only in the depth's
+     ramp beside a nearer thing is hidden: to the band most of it is in, r386), and so is a field a
      band's edge cut straight across its grass, which SAM prompted with two points across that cut outlines to its
      shadow's edge, hedge or bank (r374: a field down a slope was cut in slabs); then a colour pass that
      pulls into a nearer band the thin parts of it the model judged far (a branch), its mirror handing back to the
@@ -227,6 +228,8 @@ def piece_at(m, points):
 
 
 FIELD_MOST = 0.25  # a prompted field may be a quarter of the painting: the near field often is
+HALO = 14  # px: how far depth's soft edge round a nearer thing reaches into what stands beside it (r386)
+HIDDEN = 0.25  # a foot seen on less than this share, out of that halo, is hidden
 
 
 def foot_of(L, m, n, most=0.03, least=0.05):
@@ -244,7 +247,13 @@ def foot_of(L, m, n, most=0.03, least=0.05):
         return -1
     ys = np.nonzero(m.any(axis=1))[0]
     foot = m & (np.arange(h)[:, None] >= ys[-1] - max(2, (ys[-1] - ys[0]) // 7))
-    return int(np.bincount(L[foot], minlength=n).argmax())
+    # Within HALO px of a band nearer than both, the depth ramps up to that nearer thing: a foot seen only there is
+    # hidden, and the thing goes whole to the band most of it is in. Judged by its halo, the pine beside noloop's big
+    # trunk went to the nearer band, and its tip lifted that layer's edge over the trunk: a slab, repainted (r386).
+    seen = foot & ~grow(L > on[1], HALO)
+    if seen.sum() < HIDDEN * foot.sum():
+        return int(np.bincount(L[m], minlength=n).argmax())
+    return int(np.bincount(L[seen], minlength=n).argmax())
 
 
 def objects(L, masks, n, most=0.03, least=0.05):

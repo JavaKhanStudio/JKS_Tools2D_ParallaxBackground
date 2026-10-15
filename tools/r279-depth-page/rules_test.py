@@ -1,4 +1,5 @@
-"""depth_page's rules (r378), and see_through's sky by hue (r380), on paintings made up here: no GPU, no files from a run.
+"""depth_page's rules (r378), see_through's sky by hue (r380) and foot_of's hidden feet (r386), on paintings made up
+here: no GPU, no files from a run.
 
     ~/ComfyUI/venv/bin/python tools/r279-depth-page/rules_test.py
 
@@ -179,6 +180,34 @@ class SeeThroughTest(unittest.TestCase):
         own = np.take_along_axis(own, L[None, ..., None].repeat(3, -1), 0)[0]
         seeds = dp.sky_hued(L, dn, centres, rgb, own, n, 41, 96)
         self.assertGreater(seeds[gap].mean(), 0.9)
+
+
+def pine_scene(foot, trunk=True, right=132):
+    """For foot_of (r386): sky (band 0) over a far field (band 1), a trunk (band 3) at x 100-109 when trunk, and a pine
+    mask over x 112 to right, rows 60-99, band 1 but its foot rows (94-99), band 2 over the columns of foot: depth's ramp
+    to the trunk beside it, or the pine standing on nearer ground."""
+    L = np.zeros((H, W), int)
+    L[40:] = 1
+    if trunk:
+        L[20:, 100:110] = 3
+    pine = np.zeros((H, W), bool)
+    pine[60:100, 112:right] = True
+    L[94:100, foot] = 2
+    return L, pine
+
+
+class FootTest(unittest.TestCase):
+    def test_a_foot_in_a_nearer_trunk_s_halo_is_hidden_the_pine_goes_to_the_band_most_of_it_is_in(self):
+        L, pine = pine_scene(slice(112, 124), right=124)  # its foot all within 14 px of the trunk
+        self.assertEqual(dp.foot_of(L, pine, 4), 1)
+
+    def test_a_foot_on_nearer_ground_with_no_nearer_thing_beside_it_still_takes_the_pine(self):
+        L, pine = pine_scene(slice(112, 132), trunk=False)
+        self.assertEqual(dp.foot_of(L, pine, 4), 2)
+
+    def test_a_foot_partly_in_the_halo_is_judged_on_the_part_seen(self):
+        L, pine = pine_scene(slice(112, 126))  # 14 columns of band 2, 6 of band 1; the halo reaches x 123
+        self.assertEqual(dp.foot_of(L, pine, 4), 1)
 
 
 if __name__ == "__main__":
