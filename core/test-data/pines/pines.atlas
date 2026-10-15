@@ -1,0 +1,120 @@
+pines-far.png
+size: 1024, 1154
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+l0
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l1
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l2
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+pines-front.png
+size: 1024, 769
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+l3_0
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l3_3
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+pines-on.png
+size: 1024, 769
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+l3_1
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l3_2
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+pines-off.png
+size: 1024, 769
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+l3_1_off
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l3_2_off
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+pines-marks.png
+size: 1024, 1539
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+m0
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+m1
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+m2
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+m3
+  rotate: false
+  xy: 0, 1155
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1

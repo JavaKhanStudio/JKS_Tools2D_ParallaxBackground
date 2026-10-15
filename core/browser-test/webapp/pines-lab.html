@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Pines lab (r421): keep misty_pines, or turn it off?</title>
+	<link rel="stylesheet" href="lab.css">
+	<!-- PinesLab (r421): R1's ds8-forest, its front pines cut with misty_pines on and off, side by side. -->
+	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+</head>
+<body class="lab">
+	<header class="lab-bar">
+		<h1>Pines lab <span class="lab-question">keep misty_pines, or turn it off?</span></h1>
+		<a class="lab-home" href="index.html">&larr; all labs</a>
+		<span id="pines-copy-state" class="lab-copy-state"></span>
+		<button id="pines-copy" class="lab-copy">Copy settings</button>
+	</header>
+	<div id="pines-lab" class="lab-stage lab-row">
+		<div id="embed-browsertests"></div>
+		<div id="pines-labels" class="lab-labels"></div>
+	</div>
+	<div id="pines-controls" class="lab-controls"></div>
+	<textarea id="pines-copy-json" class="lab-copy-json" hidden readonly></textarea>
+	<details class="lab-about">
+		<summary>What this lab shows</summary>
+		<p id="pines-about">R1's AI forest page painted by dreamshaper_8 (ds8-forest: "misty pine forest in the mountains
+	at dawn", seed 7), drawn twice by the real reader. Only its front pines differ between the two panels: the same
+	painting, cut by today's key (layer.py) with its <b>misty_pines</b> rule on, as it ships since r400, or off. The
+	rule keys out the pale, misty farther pines dreamshaper_8 paints at the forest's foot, behind the dark trunks:
+	<b>on</b>, they and their bluish specks are gone; <b>off</b>, they stay, a depth cue. On this page it changes two
+	of the front's four strips: <b>front strip</b> holds one of them still instead of the page's cycle, and
+	<b>marks</b> lays red over every pixel the rule changes. Copy settings gives the choices as JSON for the card.</p>
+	</details>
+	<script src="lab.js"></script>
+	<script>
+	labCopy('pines', function () {
+		function picked(key) { return document.querySelector('select[data-key=' + key + ']').selectedOptions[0].textContent; }
+		return {
+			lab: 'pines-lab', A: picked('pinesA'), B: picked('pinesB'), view: picked('view'), front: picked('front'),
+			marks: picked('marks')
+		};
+	});
+	</script>
+</body>
+</html>
