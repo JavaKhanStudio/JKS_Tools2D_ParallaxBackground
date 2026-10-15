@@ -13,7 +13,9 @@ import com.google.gwt.dom.client.Element;
 /**
  * Runs {@link BrowserSuite} and {@link WebGlCases} once the assets are loaded and writes one row per case into the page, then a summary line
  * {@code <pre id="summary">} that tools/browser-test.sh reads: "browser-tests: N passed, M failed". The canvas stays
- * green when every case passed, red otherwise. webapp/lab.css styles the rows (r232).
+ * green when every case passed, red otherwise. webapp/lab.css styles the rows (r232). On index.html (r418) the summary
+ * goes in {@code #suite} under the labs' tiles and the rows in its folded {@code #suite-rows}, unfolded on a FAIL; a
+ * page without them takes all three in its body.
  */
 public class BrowserTestApp extends ApplicationAdapter
 {
@@ -53,9 +55,14 @@ public class BrowserTestApp extends ApplicationAdapter
 		Element browser = document.createDivElement();
 		browser.setClassName("lab-muted");
 		browser.setInnerText(navigator());
-		document.getBody().appendChild(summary);
-		document.getBody().appendChild(browser);
-		document.getBody().appendChild(table);
+		Element suite = document.getElementById("suite"), rows = document.getElementById("suite-rows");
+		if (suite == null || rows == null)
+			suite = rows = document.getBody();
+		else if (!passed)
+			rows.setAttribute("open", "");
+		suite.insertBefore(summary, rows == suite ? null : rows);
+		suite.insertBefore(browser, rows == suite ? null : rows);
+		rows.appendChild(table);
 		document.setTitle((passed ? "PASS " : "FAIL ") + ok + "/" + (ok + failed) + " parallax browser tests");
 	}
 

@@ -6,17 +6,20 @@
  * then what the lab shows, folded. At 1580x800, the window tools/*-lab.sh opens, every slider is in view without a
  * scroll; under 720px the canvas shrinks to the phone's width and the sliders stack. tools/r232-lab-kit/shots.sh
  * renders both and fails when a lab breaks either.
+ * Read from a desk (r418, Simon: "super hard to see"): 16px names and values, values in bold white, a slate ground lighter
+ * than the old near-black, each panel's title on a dark chip so it reads over a pale picture.
  */
 :root {
 	color-scheme: dark;
-	--bg: #1b1d21;
-	--panel: #25282e;
-	--line: #3a3f48;
-	--text: #e8e9ec;
-	--muted: #a9afba;
-	--accent: #7cb3ff;
-	--pass: #7bd88f;
-	--fail: #ff8a80;
+	--bg: #2b3038;
+	--panel: #3a414c;
+	--line: #56606e;
+	--text: #f4f6f9;
+	--muted: #cdd3dc;
+	--accent: #8fc2ff;
+	--value: #ffffff;
+	--pass: #8be39d;
+	--fail: #ff9a90;
 }
 
 * { box-sizing: border-box; }
@@ -26,7 +29,7 @@ body.lab {
 	padding: 8px 12px 16px;
 	background: var(--bg);
 	color: var(--text);
-	font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+	font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 .lab-bar, .lab-stage, .lab-controls, .lab-copy-json, .lab-about { max-width: 1524px; }
@@ -40,8 +43,11 @@ body.lab {
 	min-height: 34px;
 	margin-bottom: 6px;
 }
-.lab-bar h1 { margin: 0; font-size: 17px; font-weight: 600; }
-.lab-bar .lab-question { color: var(--muted); font-weight: 400; }
+.lab-bar h1 { margin: 0; font-size: 20px; font-weight: 600; }
+/* Every lab's way back to the tiles (r418). */
+.lab-home { color: var(--accent); font-size: 16px; text-decoration: none; white-space: nowrap; }
+.lab-home:hover { text-decoration: underline; }
+.lab-bar .lab-question, .lab-suite .lab-question { color: var(--muted); font-weight: 400; }
 .lab-copy-state { color: var(--muted); }
 .lab-copy {
 	margin-left: auto;
@@ -50,7 +56,7 @@ body.lab {
 	border-radius: 6px;
 	background: var(--accent);
 	color: #0d1b2e;
-	font: 600 14px system-ui, sans-serif;
+	font: 600 16px system-ui, sans-serif;
 	cursor: pointer;
 }
 .lab-copy:hover { filter: brightness(1.1); }
@@ -72,11 +78,17 @@ body.lab {
 .lab-stage.lab-row .lab-labels { grid-template-rows: 1fr; }
 /* Three panels a row (the transfert lab, r251). */
 .lab-stage.lab-three .lab-labels { grid-template-columns: 764fr 764fr 760fr; }
+/* A dark chip as wide as its title, at the panel's top left: white over a pale snow page reads as well as over night. */
 .panel-label {
-	padding: 4px 8px;
-	font: 600 15px system-ui, sans-serif;
+	justify-self: start;
+	align-self: start;
+	max-width: calc(100% - 12px);
+	margin: 6px;
+	padding: 3px 9px;
+	border-radius: 5px;
+	background: rgba(16, 19, 24, 0.82);
+	font: 600 16px/1.3 system-ui, sans-serif;
 	color: #fff;
-	text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000;
 }
 
 /* The controls: as many columns as fit, a slider each. */
@@ -92,29 +104,31 @@ body.lab {
 .ctl {
 	display: grid;
 	/* A name (a set, a pair of pages) as the value takes its room from the name's column, never from beside it. */
-	grid-template-columns: minmax(5em, 10.5em) minmax(70px, 1fr) max-content;
+	grid-template-columns: minmax(5em, 10.5em) minmax(60px, 1fr) max-content;
 	align-items: center;
 	gap: 10px;
-	min-height: 30px;
+	min-height: 32px;
 	cursor: pointer;
 }
-.ctl-name { font-size: 14px; line-height: 1.2; }
-.ctl-value { min-width: 2.5em; font: 14px ui-monospace, "Cascadia Mono", monospace; color: var(--accent); text-align: right; white-space: nowrap; }
+.ctl-name { font-size: 16px; line-height: 1.2; }
+.ctl-value { min-width: 2.5em; font: 600 16px ui-monospace, "Cascadia Mono", monospace; color: var(--value); text-align: right; white-space: nowrap; }
 .ctl input[type=range] { width: 100%; margin: 0; accent-color: var(--accent); cursor: pointer; }
 .ctl:hover .ctl-name { color: #fff; }
 /* A choice: its select takes the slider's and the value's columns, the picked name in the value's colour. */
+/* Its name's column narrower than a slider's (r418): at 16px the longest pair of pages needs the room. */
+.ctl.ctl-choice { grid-template-columns: minmax(4em, 8em) minmax(60px, 1fr) max-content; }
 .ctl-choice select {
 	grid-column: 2 / -1;
 	width: 100%;
 	min-width: 0;
-	height: 26px;
+	height: 30px;
 	padding: 0 6px;
 	border: 1px solid var(--line);
 	border-radius: 5px;
-	background: #1f2227;
-	color: var(--accent);
+	background: #2b3038;
+	color: var(--value);
 	/* names, not numbers: the UI's font, narrower than the values' monospace */
-	font: 14px system-ui, -apple-system, "Segoe UI", sans-serif;
+	font: 15px system-ui, -apple-system, "Segoe UI", sans-serif;
 	cursor: pointer;
 }
 .ctl-choice select:hover { border-color: var(--accent); }
@@ -126,7 +140,7 @@ body.lab {
 	padding: 5px 0 1px;
 	border-top: 1px solid var(--line);
 	color: var(--muted);
-	font-size: 14px;
+	font-size: 15px;
 }
 
 .lab-copy-json {
@@ -136,9 +150,9 @@ body.lab {
 	margin-top: 8px;
 	border: 1px solid var(--line);
 	border-radius: 6px;
-	background: #111317;
+	background: #1f2329;
 	color: var(--text);
-	font: 13px ui-monospace, monospace;
+	font: 14px ui-monospace, monospace;
 }
 .lab-copy-json[hidden] { display: none; }
 
@@ -146,10 +160,10 @@ body.lab {
 .lab-about summary { color: var(--text); cursor: pointer; }
 .lab-about p { max-width: 78em; margin: 6px 0 0; line-height: 1.5; }
 
-/* The browser tests' page: the summary, the browser, one row per case. */
-#summary { margin: 8px 0 2px; font: 600 15px ui-monospace, monospace; }
-.lab-muted { color: var(--muted); margin-bottom: 8px; overflow-wrap: anywhere; }
-.lab-results { width: 100%; max-width: 1100px; border-collapse: collapse; font: 13px ui-monospace, monospace; }
+/* The browser tests: the summary, the browser, one row per case (on index.html, under the tiles and folded: r418). */
+#summary { margin: 8px 0 2px; font: 600 16px ui-monospace, monospace; }
+.lab-muted { color: var(--muted); margin-bottom: 8px; overflow-wrap: anywhere; font-size: 14px; }
+.lab-results { width: 100%; max-width: 1100px; border-collapse: collapse; font: 14px ui-monospace, monospace; }
 .lab-results td { padding: 3px 8px; border-bottom: 1px solid var(--line); vertical-align: top; word-break: break-word; }
 .lab-results td:first-child { white-space: nowrap; word-break: normal; }
 .lab-results tr.pass td:first-child { color: var(--pass); }
@@ -158,14 +172,45 @@ body.lab {
 
 @media (max-width: 719px) {
 	body.lab { padding: 6px 8px 12px; }
-	.panel-label { padding: 2px 4px; font-size: 11px; }
+	.panel-label { margin: 3px; padding: 1px 5px; font-size: 12px; }
 	/* A third of a phone is too narrow for a title's lines: one line each, cut, the panel under it in view. */
 	.lab-three .panel-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.lab-controls { padding: 4px 8px; }
 	.ctl { grid-template-columns: minmax(5em, 9em) minmax(70px, 1fr) max-content; min-height: 36px; }
 	.ctl-choice select { height: 32px; }
+	/* Two tiles a row on a phone (r418), not one screen each; body.lab: the tiles' own rules come after this block. */
+	body.lab .lab-tiles { grid-template-columns: 1fr 1fr; gap: 8px; }
+	body.lab .lab-tile { font-size: 14px; }
+	body.lab .lab-tile b { font-size: 16px; }
 }
 
-/* The browser tests' page names the labs (r407): tools/browser-test.sh --open is one click from each. */
-.lab-links { margin: 6px 0 10px; font-size: 14px; color: var(--muted); }
-.lab-links a { color: inherit; padding: 4px 2px; }
+/* index.html (r418): the labs as tiles, a still each, its name and what it judges; the browser suite under them. */
+.lab-tiles {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 232px), 1fr));
+	gap: 12px;
+	max-width: 1524px;
+	margin: 4px 0 20px;
+}
+.lab-tile {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 0 0 10px;
+	overflow: hidden;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--panel);
+	color: var(--muted);
+	font-size: 15px;
+	line-height: 1.35;
+	text-decoration: none;
+}
+.lab-tile img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--bg); }
+.lab-tile b { margin: 4px 10px 0; color: var(--text); font-size: 18px; }
+.lab-tile span { margin: 0 10px; }
+.lab-tile:hover, .lab-tile:focus-visible { border-color: var(--accent); outline: none; }
+.lab-tile:hover b { color: var(--accent); }
+.lab-suite { max-width: 1524px; padding: 10px 14px; border-radius: 10px; background: var(--panel); }
+.lab-suite h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+.lab-suite summary { cursor: pointer; color: var(--accent); }

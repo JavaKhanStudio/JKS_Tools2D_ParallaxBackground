@@ -207,7 +207,8 @@ repair.
   `LabControls.choice` (a select, its option's index as the value: r248), never a slider. A new lab uses them, and
   `tools/r232-lab-kit/shots.sh OUT` (add the lab to its `shots.py`) fails a lab whose sliders need a scroll in the
   1580x800 window, a text under 14px, a value or a choice's name out of its box, a slider over names, or a page wider
-  than a 390px phone.
+  than a 390px phone. A new lab also gets a tile on `index.html`, the labs page `tools/browser-test.sh --open` shows
+  (r418: the suite folded under the tiles), its still from `tools/r418-lab-tiles/tiles.sh` (add it to its `tiles.py`).
 
 ## Words
 

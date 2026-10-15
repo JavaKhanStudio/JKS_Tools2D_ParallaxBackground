@@ -3,15 +3,32 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>parallax browser tests</title>
+	<title>parallax labs and browser tests</title>
 	<link rel="stylesheet" href="lab.css">
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
-	<header class="lab-bar"><h1>Browser tests <span class="lab-question">the reader's cases, compiled to JavaScript, in WebGL</span></h1></header>
-	<p class="lab-links">Labs: <a href="anim-lab.html">animation</a> · <a href="fog-lab.html">fog</a> ·
-		<a href="haze-lab.html">haze</a> · <a href="transfert-lab.html">transfert</a> ·
-		<a href="effects-lab.html?lab=all">effects</a></p>
-	<div id="embed-browsertests"></div>
+	<!-- The labs as tiles (r418), each its still (tools/r418-lab-tiles/tiles.sh writes tiles/*.jpg), then the browser
+	suite folded to its summary line: BrowserTestApp writes into #suite and #suite-rows, and opens the rows on a FAIL.
+	A new HTML lab gets a tile here, and a line in tiles.py. -->
+	<header class="lab-bar"><h1>Parallax labs <span class="lab-question">the real reader in WebGL: pick one to judge</span></h1></header>
+	<nav class="lab-tiles">
+		<a class="lab-tile" href="anim-lab.html"><img src="tiles/anim.jpg" alt=""><b>Animation</b><span>Which shader animations ship: WAVE, SWELL, GLINT, BILLOW on a sea and clouds</span></a>
+		<a class="lab-tile" href="fog-lab.html"><img src="tiles/fog.jpg" alt=""><b>FOG mist</b><span>How tall the mist's patches should be, on four pages</span></a>
+		<a class="lab-tile" href="haze-lab.html"><img src="tiles/haze.jpg" alt=""><b>Depth haze</b><span>Whether the haze takes a game's towers and snow, and the page's tint</span></a>
+		<a class="lab-tile" href="transfert-lab.html"><img src="tiles/transfert.jpg" alt=""><b>Transfert</b><span>The cross-fade between two pages, five ways</span></a>
+		<a class="lab-tile" href="effects-lab.html?lab=all"><img src="tiles/effects-all.jpg" alt=""><b>Every effect</b><span>Fog, mist, ripple, snow and a game's towers together, beside none</span></a>
+		<a class="lab-tile" href="effects-lab.html?lab=fog"><img src="tiles/effects-fog.jpg" alt=""><b>Page fog</b><span>Each layer toward the fog's colour by its depth, with and without</span></a>
+		<a class="lab-tile" href="effects-lab.html?lab=snow"><img src="tiles/effects-snow.jpg" alt=""><b>Snow</b><span>A PARTICLES layer: density, flake size, wind, anchor</span></a>
+		<a class="lab-tile" href="effects-lab.html?lab=floor"><img src="tiles/effects-floor.jpg" alt=""><b>Floor</b><span>A ground drawn row by row at each row's depth, beside a flat one</span></a>
+		<a class="lab-tile" href="effects-lab.html?lab=tower"><img src="tiles/effects-tower.jpg" alt=""><b>Tower</b><span>A tower turning as the page scrolls: radius, shade, camera</span></a>
+		<a class="lab-tile" href="effects-lab.html?lab=planet"><img src="tiles/effects-planet.jpg" alt=""><b>Planet</b><span>A page wrapped round a planet</span></a>
+		<a class="lab-tile" href="effects-lab.html?lab=lurker"><img src="tiles/effects-lurker.jpg" alt=""><b>Lurker</b><span>A figure that appears or vanishes only while the pines hide it</span></a>
+	</nav>
+	<section id="suite" class="lab-suite">
+		<h2>Browser tests <span class="lab-question">the reader's cases, compiled to JavaScript, run here in WebGL</span></h2>
+		<div id="embed-browsertests"></div>
+		<details id="suite-rows"><summary>Every case, one row each</summary></details>
+	</section>
 </body>
 </html>

@@ -2,7 +2,8 @@
 # The browser suite (core/browser-test, r68): the core tests that translate to JavaScript, run in Chrome.
 #   tools/browser-test.sh               the gate: headless Chrome, prints the summary, exit 1 unless every case passed
 #   tools/browser-test.sh --shot F.png  the gate, and a screenshot of the results page
-#   tools/browser-test.sh --open        the lab: the results page in a Chrome window, served until the window closes
+#   tools/browser-test.sh --open        the labs page (r418: a tile per lab, the results folded under them) in a Chrome
+#                                       window, served until the window closes
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome (CHROME=, or google-chrome,
 # chromium, chromium-browser on the PATH) and python3, which serves the page.
 # on-screen: --open is the browser_tests lab, a window Simon asked for; the gate itself is headless Chrome.
