@@ -57,6 +57,7 @@ TOOLS = os.path.dirname(HERE)
 AI = os.path.join(TOOLS, "r239-ai-strips")
 sys.path.insert(0, TOOLS)
 sys.path.insert(0, AI)
+import gpu_lock  # noqa: E402
 import make_page  # noqa: E402
 import parallax_lab as lab  # noqa: E402
 import seam  # noqa: E402
@@ -806,15 +807,21 @@ def mend_loop(img, cut, a, recipe):
 def depth_bands(img, n, cut):
     """2. Depth, 3. bands: (dn, L, centres), the depth normalised to 0..1 and each pixel's band, far 0 to near n-1."""
     h, w = img.shape[:2]
-    d = depth_of(img)
+    # r391: each GPU step under the lock gen.py and anim.py take, its memory freed before it ends; gen.py (the loop,
+    # the repaints) takes it itself, outside these
+    with gpu_lock.held("depth_page depth"):
+        d = depth_of(img)
     lo, hi = np.percentile(d, (1, 99.5))
     dn = np.clip((d - lo) / (hi - lo), 0, 1)
     Image.fromarray((dn * 255).astype(np.uint8)).save(os.path.join(cut, "depth.png"))
     L, centres = bands(dn, n, min_area=w * h // 150)
-    masks = masks_of(img)
+    with gpu_lock.held("depth_page masks"):
+        masks = masks_of(img)
     L = objects(L, masks, n)
     outlines(img, masks).save(os.path.join(cut, "objects.png"))
-    fields = agreeing(L, fields_of(img, L, n), n)
+    with gpu_lock.held("depth_page fields"):
+        fields = fields_of(img, L, n)
+    fields = agreeing(L, fields, n)
     L = with_fields(L, fields, n)
     outlines(img, fields).save(os.path.join(cut, "fields.png"))
     L = by_colour(L, img, n)

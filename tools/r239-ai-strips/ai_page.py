@@ -28,7 +28,8 @@ OUT/strips (every strip, scratch), OUT/page (NAME.atlas, NAME.png, NAME.jplax, r
 finds a fault, 2 when a strip cannot be cut. Needs ComfyUI with its venv (COMFYUI_DIR, default ~/ComfyUI) holding
 dreamshaper_8 (painted) or sdXL_v10VAEFix + PixelArt_XL (pixel), and ~1.5 GB of free VRAM.
 A command held past --timeout (600 s; a strip takes 10-60) is killed and run once more, the same, then fails
-(r377: a Turbo strip on dpmpp_sde can hang after its first step).
+(r377: a Turbo strip on dpmpp_sde can hang after its first step). Time a command spends waiting for the GPU while
+another lane's run holds it (tools/gpu_lock.py, r391) is not counted.
 
 The model (r346): --ckpt and --lora replace the style's (any file in ComfyUI's models/checkpoints and models/loras),
 --lora none drops the pixel style's; --steps, --cfg, --sampler, --scheduler and --denoise go to every gen.py call. An
@@ -52,6 +53,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -60,6 +62,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, HERE)
+import gpu_lock  # noqa: E402
 import make_page  # noqa: E402
 import parallax_lab as lab  # noqa: E402
 
@@ -180,6 +183,17 @@ TIMEOUT = 600
 TIMED_OUT = 124  # run()'s code when both tries hung, timeout(1)'s
 
 
+def waiting_on_gpu(log):
+    """True while a command's log says it waits for the GPU (gpu_lock.py) and not yet that it took it. Both lines
+    come before comfy's import: the log's start holds them."""
+    try:
+        with open(log, errors="replace") as f:
+            head = f.read(1 << 16)
+    except OSError:
+        return False
+    return head.rfind(gpu_lock.WAITING) > head.rfind(gpu_lock.TAKEN)
+
+
 def run(cmd, log, timeout=None):
     if DRY_RUN:
         print(shlex.join(cmd), ">", log)
@@ -189,12 +203,19 @@ def run(cmd, log, timeout=None):
         with open(log, "w") as f:
             # its own session: a kill takes whatever it started with it
             p = subprocess.Popen(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT, start_new_session=True)
-            try:
-                return p.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                os.killpg(p.pid, 9)
-                p.wait()
-                f.write(f"\nai_page: killed after {timeout} s (try {tries} of 2)\n")
+            ran, last = 0.0, time.monotonic()
+            while ran < timeout:
+                try:
+                    return p.wait(timeout=min(1.0, timeout - ran))
+                except subprocess.TimeoutExpired:
+                    pass
+                now = time.monotonic()
+                if not waiting_on_gpu(log):  # r391: another lane's GPU step is not this command hanging
+                    ran += now - last
+                last = now
+            os.killpg(p.pid, 9)
+            p.wait()
+            f.write(f"\nai_page: killed after {timeout} s (try {tries} of 2)\n")
         os.replace(log, log + ".hung")
         print(f"ai_page: {os.path.basename(cmd[1] if len(cmd) > 1 else cmd[0])} hung past {timeout} s "
               f"({log}.hung){', running it again' if tries == 1 else ''}", file=sys.stderr)

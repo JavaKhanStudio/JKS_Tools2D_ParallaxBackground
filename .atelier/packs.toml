@@ -149,8 +149,10 @@ The parallax-pages skill's "Generating a page" says how to run ai-page.sh and wh
 Map: ai_page.py drives it all (strips, cut, atlas, .jplax, lint, stills), gen.py paints (ComfyUI's nodes IN-PROCESS,
 no server), sil.py the silhouette init, layer.py keys a strip against its sky, creature.py refuses figures.
 gen.py is shared: tools/r279-depth-page runs it in a subprocess for its repaints, so a gen.py change is #depth's too.
-ONE GPU, 8 GB, and two lanes (#ai, #depth) may run at once: nvidia-smi before a run, never stop another process to
-free it. An OOM that does not scale with size is kept activations: an in-process script runs under
+ONE GPU, 8 GB, and two lanes (#ai, #depth) may run at once: tools/gpu_lock.py (r391) makes gen.py, anim.py and
+depth_page's GPU steps take turns ("gpu_lock: waiting for the GPU (held by pid N ...)" in a log is a queue, not a hang;
+ai_page's --timeout skips it). A new script that loads a model takes it too, round model load to decode, its memory
+freed inside. Never stop another process to free the GPU. An OOM that does not scale with size is kept activations: an in-process script runs under
 torch.inference_mode() (gen.py does; r375 lost an hour to its absence in anim.py).
 A graded round may predate the fix it blames: r364 built a rule against ghosts R1's _cut.png showed, cut the evening
 before r358 cleared them on HEAD. ls -l the artefacts against the fix's commit date, re-cut on HEAD first.
@@ -170,8 +172,9 @@ The parallax-pages skill's "From one painting (r279)" says how to run it and wha
 docs/depth-tricks.md §5 why. Everything is tools/r279-depth-page/depth_page.py, run in the ComfyUI venv
 (tools/depth-page.sh): Depth Anything V2 Small, depth bands, SAM 2.1 small's masks, then gen.py inpaint in a
 subprocess for what each band hid. gen.py is #ai's file: change it and say so on the #ai lane's ticket.
-ONE GPU, 8 GB, and two lanes (#ai, #depth) may run at once: nvidia-smi before a run; a gen.py failure there
-reads "free VRAM?" and is another session's run, not your bug.
+ONE GPU, 8 GB, and two lanes (#ai, #depth) may run at once: depth_page's depth, masks and fields steps and gen.py
+take tools/gpu_lock.py's lock (r391) and wait their turn ("gpu_lock: waiting" in the log). A new GPU step goes under
+gpu_lock.held(), its model moved off the GPU before it ends; never round a gen() call (gen.py takes it: deadlock).
 Every rule here was tuned on a few paintings (valley, river, noloop): a new rule can bring back an old fault on
 another one (r386: r322's olive slab back on HEAD). Run the examples (tools/r279-depth-page/examples.sh) before
 and after, in a HEAD worktree for the before, and compare them all, not only the painting the ticket names.

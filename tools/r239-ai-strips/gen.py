@@ -35,6 +35,12 @@ import os
 import sys
 
 COMFY = os.environ.get("COMFYUI_DIR", os.path.expanduser("~/ComfyUI"))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import gpu_lock  # noqa: E402
+
+# r391: a run is one GPU step, comfy's imports too (they open a CUDA context): the GPU is taken before them and
+# dropped when the process exits, so another lane's run waits instead of running out of memory beside this one.
+GPU = None if {"-h", "--help"} & set(sys.argv) else gpu_lock.take("gen.py " + (sys.argv[1:2] or ["?"])[0])
 sys.path.insert(0, COMFY)
 sys.argv_saved, sys.argv = sys.argv, [sys.argv[0]]  # comfy parses argv on import
 
