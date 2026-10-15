@@ -636,6 +636,42 @@ def loose(L, n, near=3, rounds=2):
     return L
 
 
+def necks(L, dn, n, r=4, least=50):
+    """Each part of a layer hanging over its top edge on a neck under 2r px (a hedge line or field strip of the far
+    hills the depth put in the band, joined to its treeline by a few pixels: loose() keeps it, and it floats at the
+    layer's speed over the hills it belongs to), whose own pixels' depth is nearer the farther band's than its
+    band's: those pixels go to the farther band round it, as loose() hands back a piece. The parts are what an
+    opening by r px (4-connected) cuts off the mass, least px or more, at least as wide as tall (a pine tip, erased
+    by the opening, is taller), with nothing of the mass above them (a crown's clump hangs under its crown). On the
+    painting laid three times side by side, for the join (r379)."""
+    w = L.shape[1]
+    cross = ndimage.generate_binary_structure(2, 1)
+    D = np.tile(dn, 3)
+    for k in range(n - 1, 0, -1):
+        T = np.tile(L, 3)
+        med = [np.median(D[T == j]) if (T == j).any() else 0.0 for j in (k - 1, k)]
+        a = alpha_of(T, k)
+        lab, count = ndimage.label(ndimage.binary_opening(a, cross, iterations=r))
+        if not count:
+            continue
+        sizes = ndimage.sum(np.ones(lab.shape), lab, index=np.arange(1, count + 1))
+        mass = np.isin(lab, 1 + np.nonzero(sizes == sizes.max())[0])
+        under = np.cumsum(mass, axis=0) > 0  # the mass at or above this row, in this column
+        parts, count = ndimage.label(a & ~ndimage.binary_dilation(mass, cross, iterations=r))
+        for i, sl in enumerate(ndimage.find_objects(parts)):
+            box = tuple(slice(max(0, q.start - 3), q.stop + 3) for q in sl)
+            part, t = parts[box] == i + 1, T[box]
+            own = part & (t == k)
+            if (part.sum() < least or sl[1].stop - sl[1].start < sl[0].stop - sl[0].start or under[box][part].any()
+                    or not own.any() or np.median(D[box][own]) >= (med[0] + med[1]) / 2):
+                continue
+            ring = ndimage.binary_dilation(part, iterations=2) & ~part & (t < k)
+            if ring.any():
+                t[own] = np.bincount(t[ring], minlength=n).argmax()
+        L = T[:, w:2 * w]
+    return L
+
+
 def looped(fn, *arrays):
     """fn run on each array laid three times side by side, its middle copy kept: whatever fn does across the join
     (labels, a pyramid, distances) it does as the tiled layer shows it."""
@@ -785,6 +821,7 @@ def depth_bands(img, n, cut):
     L = see_through(L, dn, centres, img, n)
     L = strays(L, n, w * h // 150)
     L = loose(L, n)
+    L = loose(necks(L, dn, n), n)  # the stubs a neck leaves are loose pieces
     colour_bands(L, n).save(os.path.join(cut, "bands.png"))
     log("bands, far to near: " + ", ".join(f"{k}: disparity {centres[k]:.2f}, {(L == k).mean():.0%} of the pixels"
                                           for k in range(n)))
