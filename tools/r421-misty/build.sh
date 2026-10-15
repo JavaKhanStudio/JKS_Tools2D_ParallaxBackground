@@ -6,6 +6,9 @@
 # behind, cropped where on and off differ, at twice their size: OUT/page/r421-compare.html.
 #   tools/r421-misty/build.sh ../JKS_Tools2D_ParallaxAI/build/rounds/r1/ds8-forest build/r421
 set -eu
+usage() { sed -n '3,7p' "$0" | cut -c3-; }
+case " $* " in *" -h "*|*" --help "*) usage; exit 0 ;; esac
+[ $# -eq 2 ] || { usage >&2; exit 2; }
 cd "$(dirname "$0")/../.."
 P=${1%/} O=${2:?OUT}
 n=${P##*/}

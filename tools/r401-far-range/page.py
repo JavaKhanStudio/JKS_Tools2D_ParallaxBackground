@@ -49,6 +49,10 @@ def zoom(case, out, name):
 
 
 def main():
+    if {"-h", "--help"} & set(sys.argv[1:]):
+        return print(__doc__)
+    if len(sys.argv) < 3:
+        sys.exit(__doc__)
     out, cases = sys.argv[1], sys.argv[2:]
     os.makedirs(out, exist_ok=True)
     sections = []

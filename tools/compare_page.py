@@ -85,6 +85,10 @@ def media(src, cls=""):
 
 
 def main():
+    if {"-h", "--help"} & set(sys.argv[1:]):
+        return print(__doc__)
+    if len(sys.argv) != 3:
+        sys.exit(__doc__)
     spec_path, out = sys.argv[1:3]
     with open(spec_path) as f:
         spec = json.load(f)

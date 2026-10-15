@@ -5,6 +5,9 @@
 # the real reader, then compare_page.py writes OUT/page/r384-compare.html and its media (attach them all together).
 #   tools/r384-hills/compare.sh build/r365/after/forest-painted build/r384/forest build/r384/compare
 set -eu
+usage() { sed -n '3,6p' "$0" | cut -c3-; }
+case " $* " in *" -h "*|*" --help "*) usage; exit 0 ;; esac
+[ $# -eq 3 ] || { usage >&2; exit 2; }
 cd "$(dirname "$0")/../.."
 B=${1%/} A=${2%/} O=${3:?OUT}
 rm -rf "$O/after"
