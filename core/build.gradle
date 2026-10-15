@@ -164,6 +164,15 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
             filter { it.startsWith('../samples/') ? it.substring(it.lastIndexOf('/') + 1) : it }
         }
         project.copy { from '../engines/rounds/tower/w01.jplax'; into new File(assets, 'tower-lab'); rename { 'lab.jplax' } }
+        // The lurker lab's (r369, LurkerLab): r363's demo, core/test-data/lurker/make_lab.py's pages, its atlas (Hiver,
+        // then the figure).
+        project.copy { from 'test-data/lurker/figure.png'; into assets }
+        project.copy {
+            from 'test-data/lurker/HiverLurker.atlas'
+            into assets
+            filter { it.startsWith('../samples/') ? it.substring(it.lastIndexOf('/') + 1) : it }
+        }
+        project.copy { from 'test-data/lurker'; include '*.jplax'; into new File(assets, 'lurker-lab') }
     }
 }
 tasks.register('browserTestWar', JavaExec) {

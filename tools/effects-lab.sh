@@ -10,6 +10,8 @@
 #                where the camera stands (r350: close by, the courses arc and Hiver wraps round the tower)
 #   --lab planet the planet (PlanetLab, r277, r347: the page on a turning world) with r330's snow and hooked towers: radius,
 #                how the towers stand, snow anchor
+#   --lab lurker r369's cover (LurkerLab): r363's hooded figure behind Hiver's pines, switched only while LurkerCover says
+#                one of them hides it whole (or every 2 s anywhere, to compare); a strip of the last 20 s
 # The readout gives the frame time, and each panel's draw calls and CPU time.
 #   tools/effects-lab.sh --lab L                 the lab: a Chrome window, served until it closes
 #   tools/effects-lab.sh --lab L --shot F.png    one still, headless (6 s into the scroll)
@@ -33,7 +35,7 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-case "$LAB" in fog|snow|all|floor|tower|planet) ;; *) echo "--lab is fog, snow, all, floor, tower or planet, not: $LAB" >&2; exit 2 ;; esac
+case "$LAB" in fog|snow|all|floor|tower|planet|lurker) ;; *) echo "--lab is fog, snow, all, floor, tower, planet or lurker, not: $LAB" >&2; exit 2 ;; esac
 if [ $MODE = open ]; then . tools/agent-window-guard.sh; refuse_agent_window tools/effects-lab.sh; fi
 
 CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || command -v chromium-browser)}"

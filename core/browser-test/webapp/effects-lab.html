@@ -7,7 +7,7 @@
 	<link rel="stylesheet" href="lab.css">
 	<!-- EffectsLab (r224): ?lab=fog, ?lab=snow or ?lab=all, the feature on the left, the same page without it on the right;
 	     ?lab=floor: FloorLab (r275), one panel, the floor drawn row by row; ?lab=tower: TowerLab (r328), one panel;
-	     ?lab=planet: PlanetLab (r330, r347), one panel. -->
+	     ?lab=planet: PlanetLab (r330, r347), one panel; ?lab=lurker: LurkerLab (r369), one panel. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
@@ -46,6 +46,16 @@
 	towers (an EMPTY layer, drawn by a hook) among its layers. The reader turns each snowfall as one block, as the middle
 	of its box turns; the hook asks the reader where a foot goes and how far it leans, and draws there: each tower on
 	its own foot, its whole tile turned at once, or not at all. A radius of 0 is the flat page.
+	<b>lurker</b> (r369): a hooded figure in a layer of its own behind Hiver's front pines, seen through their gaps. It
+	may appear or vanish only while nothing of it is on screen: the cover, worked out once from the atlas, holds the
+	offsets between the figure and each pine layer where one layer's opaque pixels hide it whole. <i>Only while
+	covered</i> switches it there or gone each time it goes behind such a trunk: seen in one gap, gone in the next.
+	<i>Every 2 s, anywhere</i> switches it on a timer, wherever it is: the pop the cover prevents. The strip is the
+	last 20 s: green while a pine hides it whole, amber while it is in the view uncovered (which includes behind soft
+	edges, or two layers together: the cover does not count those, so it never switches there), grey out of the view;
+	white ticks are the switches. The readout counts the switches made while it was uncovered in the view: 0 in the
+	first mode. The figure's speed and how often it comes by change nothing to the cover: it is worked out on the
+	offset between the layers.
 	Each page is drawn by the real reader, compiled to JavaScript, as a browser game draws it. The cost line gives the
 	frame time and, per panel, its draw calls and the CPU time to submit them (the GPU's time is in the frame time).</p>
 	</details>
