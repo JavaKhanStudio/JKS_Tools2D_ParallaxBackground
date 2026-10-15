@@ -94,8 +94,11 @@ palms at `--free 1.0`).
   every term must be a whole number of turns over it: under WAVE's one wavelength the second wave (1 / 1.7 a
   wavelength) jumped each time the layer wrapped (r419). The animation lab draws SWELL under FOG's periods, 8 across and
   10 up, its second wave 5 turns in 8; its port gives SWELL those periods.
-- `GLINT`: sun glitter: short specks of light where three bent waves peak at once, only on the lit part of the water,
-  so the dark troughs never sparkle. Strength 0.8, wavelength 24 px.
+- `GLINT`: sun glitter. r375's specks (three bent waves peaking at once over every lit pixel) read as "a ton of white
+  dots" and "not using the shape of the water" (Simon on r375 and r407). The animation lab's (r408) lights the
+  painting's own crests instead: a pixel brighter than the water a crest reach (0.2 world units) above and below it,
+  in pieces about a glint long (20 px) that fade in and out in place, each at its own moment, inside a sun's column
+  fixed in the view. Every wave a whole number of turns over SWELL's periods (8 across, 10 up). Strength 0.5.
 - `BILLOW`: clouds churn in place: a slow warp of their pixels, only where the pixel reads as cloud (bright, grey or
   bluish, not a sunlit yellow field), read from the image's own colour at five points, so a painted back layer needs
   no mask. Amplitude 6 px, wavelength 120 px on the valley's sky.

@@ -28,8 +28,9 @@
 	JavaScript. None is in the library yet: pick here, then each one picked is written three times (libGDX, Godot, jME).
 	<b>The sea</b> is r365's AI beach page, its sea a SHADER layer drawn four ways. <b>WAVE</b> is what ships today: whole
 	rows slide sideways. <b>SWELL</b>: the water moved by two crossing travelling waves, sideways and up and down, so the
-	painted crests bend. <b>GLINT</b>: sun glitter, specks of light where three bent waves peak at once, only on the lit
-	part of the water. <b>SWELL + GLINT</b>: both in one shader, the swell's numbers the layer's, the glint's its own.
+	painted crests bend. <b>GLINT</b>: sun glitter on the painting's own crests (r408): where a pixel is brighter
+	than the water just above and below it, pieces of that line light up and fade in and out in place, each at its own
+	moment, inside a sun's column across the view (its place and width are sliders). <b>SWELL + GLINT</b>: both in one shader, the swell's numbers the layer's, the glint's its own.
 	<b>The clouds</b> are round1's calm page, its clouds on a layer of their own (as a generated page will have them,
 	r409), drawn still and under <b>BILLOW</b>, in the page and alone (the mountains in front left out): the clouds churn in place, a slow warp of their
 	pixels. Their drift (the page's at rest speed) can be slowed to judge the churn alone. The view picks four panels

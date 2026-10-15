@@ -31,8 +31,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * on a layer of their own (r409: a generated page will have them so), drawn still and under BILLOW, in the page and
  * alone (the layers in front left out; OneNight's clouds, tried first, sit above its view). Each effect is written in
  * world units over {@code along()}, as WAVE and FOG are, so it runs on across the tiles; its amplitude, wavelength and
- * speed are the layer's shader numbers, as a shipped effect's would be. GLINT's own numbers (strength, speck size,
- * density, speed) are the lab's {@code u_glint}: in SWELL + GLINT the layer's numbers are the swell's.
+ * speed are the layer's shader numbers, as a shipped effect's would be. GLINT's own numbers (strength, glint size,
+ * density, twinkle, how closely it keeps to the crests, the sun's place and width) are the lab's {@code u_glint}: in
+ * SWELL + GLINT the layer's numbers are the swell's.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.animLabAct(seconds)} steps every heart at 1/60 s.
  */
@@ -73,13 +74,17 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	private final AnimEffects[] effects = new AnimEffects[HEART_PAGES.length];
 	private SelectElement view;
 	private InputElement zoom, scroll, waveAmplitude, waveWavelength, waveSpeed, swellAmplitude, swellWavelength, swellSpeed, glintStrength,
-			glintSize, glintDensity, glintSpeed, billowAmplitude, billowWavelength, billowSpeed, drift;
+			glintSize, glintDensity, glintSpeed, glintCrest, sunX, sunWidth, billowAmplitude, billowWavelength, billowSpeed, drift;
 	private Element readout;
 	private final Element[] labels = new Element[4];
 	private boolean clip;
 	private SpriteBatch batch;
-	/** GLINT's numbers, the lab's own: strength, speck size (world units), density, speed (world units/s). */
-	final float[] glint = new float[4];
+	/**
+	 * GLINT's numbers, the lab's own: strength, density, twinkle (pulses a second), crest reach (world units), the sun's
+	 * x (0..1 of the view) and width, and its three waves' whole numbers of turns over the effect's periods, across and
+	 * up (r408).
+	 */
+	final float[] glint = new float[12];
 
 	@Override
 	public void create()
@@ -108,7 +113,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 				// second wave (5 turns in 8 wavelengths across, 6 and 9 in 10 up) jumped every time the layer wrapped. Its
 				// port gives SWELL these periods of its own.
 				model.kind = Enum_LayerKind.SHADER;
-				boolean swells = HEART_EFFECTS[i] == SWELL || HEART_EFFECTS[i] == BOTH;
+				boolean swells = HEART_EFFECTS[i] == SWELL || HEART_EFFECTS[i] == BOTH || HEART_EFFECTS[i] == GLINT;
 				model.shaderEffect = swells ? Enum_ShaderEffect.FOG : Enum_ShaderEffect.WAVE;
 			}
 			OrthographicCamera camera = new OrthographicCamera();
@@ -146,10 +151,13 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		swellAmplitude = LabControls.slider(document, controls, "swellAmplitude", "SWELL amplitude (world units)", 0, 0.5f, 0.01f, 0.12f);
 		swellWavelength = LabControls.slider(document, controls, "swellWavelength", "SWELL wavelength (world units)", 0.25f, 6, 0.05f, 1.25f);
 		swellSpeed = LabControls.slider(document, controls, "swellSpeed", "SWELL speed (world units/s)", 0, 2, 0.05f, 0.3f);
-		glintStrength = LabControls.slider(document, controls, "glintStrength", "GLINT strength (light added, 0..2)", 0, 2, 0.05f, 0.8f);
-		glintSize = LabControls.slider(document, controls, "glintSize", "GLINT size (speck spacing, world units)", 0.25f, 4, 0.05f, 0.95f);
-		glintDensity = LabControls.slider(document, controls, "glintDensity", "GLINT density (how near a peak sparkles, 0.05..1.5)", 0.05f, 1.5f, 0.05f, 0.55f);
-		glintSpeed = LabControls.slider(document, controls, "glintSpeed", "GLINT speed (world units/s)", 0, 2, 0.05f, 0.25f);
+		glintStrength = LabControls.slider(document, controls, "glintStrength", "GLINT strength (light added, 0..1.5)", 0, 1.5f, 0.05f, 0.5f);
+		glintSize = LabControls.slider(document, controls, "glintSize", "GLINT size (a glint's length, world units)", 0.2f, 3, 0.05f, 0.8f);
+		glintDensity = LabControls.slider(document, controls, "glintDensity", "GLINT density (how much of the crests is lit, 0.05..1.5)", 0.05f, 1.5f, 0.05f, 0.6f);
+		glintSpeed = LabControls.slider(document, controls, "glintSpeed", "GLINT twinkle (pulses a second: a glint fades in and out in place)", 0, 2, 0.05f, 0.3f);
+		glintCrest = LabControls.slider(document, controls, "glintCrest", "GLINT crest reach (world units: a crest is brighter than the water this far above and below; more, thicker lines)", 0.05f, 0.6f, 0.05f, 0.2f);
+		sunX = LabControls.slider(document, controls, "sunX", "sun's place (0..1 across the view: the glitter's column)", 0, 1, 0.05f, 0.5f);
+		sunWidth = LabControls.slider(document, controls, "sunWidth", "sun's width (of the view: 2 lights it all)", 0.05f, 2, 0.05f, 0.3f);
 		billowAmplitude = LabControls.slider(document, controls, "billowAmplitude", "BILLOW amplitude (world units)", 0, 1.5f, 0.02f, 0.3f);
 		billowWavelength = LabControls.slider(document, controls, "billowWavelength", "BILLOW wavelength (world units)", 1, 20, 0.25f, 6);
 		billowSpeed = LabControls.slider(document, controls, "billowSpeed", "BILLOW speed (world units/s)", 0, 2, 0.05f, 0.4f);
@@ -164,10 +172,24 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		float sc = LabControls.read(scroll), dr = LabControls.read(drift);
 		float wa = LabControls.read(waveAmplitude), ww = LabControls.read(waveWavelength), ws = LabControls.read(waveSpeed);
 		float sa = LabControls.read(swellAmplitude), sw = LabControls.read(swellWavelength), ss = LabControls.read(swellSpeed);
+		float gs = LabControls.read(glintSize);
 		glint[0] = LabControls.read(glintStrength);
-		glint[1] = LabControls.read(glintSize);
-		glint[2] = LabControls.read(glintDensity);
-		glint[3] = LabControls.read(glintSpeed);
+		glint[1] = LabControls.read(glintDensity);
+		glint[2] = LabControls.read(glintSpeed);
+		glint[3] = LabControls.read(glintCrest);
+		glint[4] = LabControls.read(sunX);
+		glint[5] = LabControls.read(sunWidth);
+		// Each wave a whole number of turns over the periods (8 wavelengths across, 10 up), so it runs on across the
+		// layer's wrap (r419). Along a crest, the pieces lit come about every 2.5 glint lengths, of uneven lengths (a second
+		// wave not a multiple of the first); up the water they shift every 0.9 world units, so the next crest's are
+		// elsewhere. The third wave sets when each piece pulses.
+		float across = 8 * sw / (2.5f * gs), up = 10 * sw / 0.9f;
+		float[] mx = { 1, 1.37f, 0.53f }, my = { 1, -0.71f, 1.3f };
+		for (int k = 0; k < 3; k++)
+		{
+			glint[6 + 2 * k] = Math.max(1, Math.round(mx[k] * across));
+			glint[7 + 2 * k] = Math.round(my[k] * up);
+		}
 		float ba = LabControls.read(billowAmplitude), bw = LabControls.read(billowWavelength), bs = LabControls.read(billowSpeed);
 		for (int i = 0; i < hearts.length; i++)
 		{
@@ -189,8 +211,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		float seaPx = sea.getDrawnRegion().getRegionWidth() / (sea.getWidth() * sea.getPackedWidthRatio());
 		float cloudPx = cloud.getDrawnRegion().getRegionWidth() / (cloud.getWidth() * cloud.getPackedWidthRatio());
 		readout.setInnerText("sea layer " + round(sea.getWidth()) + " x " + round(sea.getHeight()) + " world units, its image "
-				+ round(seaPx) + " px a unit: SWELL " + round(sa * seaPx) + " px, wavelength " + round(sw * seaPx) + " px; GLINT specks every "
-				+ round(glint[1] * seaPx) + " px; calm's clouds " + round(cloudPx) + " px a unit: BILLOW " + round(ba * cloudPx) + " px, wavelength "
+				+ round(seaPx) + " px a unit: SWELL " + round(sa * seaPx) + " px, wavelength " + round(sw * seaPx) + " px; GLINT glints "
+				+ round(gs * seaPx) + " px long; calm's clouds " + round(cloudPx) + " px a unit: BILLOW " + round(ba * cloudPx) + " px, wavelength "
 				+ round(bw * cloudPx) + " px. The world is " + round(WORLD_WIDTH) + " units wide.");
 	}
 
@@ -287,9 +309,12 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 				program.bind();
 			LabKit.setEffect(program, numbers(layer, phase), fogAmount, fogColor.r, fogColor.g, fogColor.b);
 			float[] g = lab.glint;
-			// GLINT's time in speck sizes: its speed over its size, by the reader's clock, as the layer's phase is.
-			float time = (float) (heart.parallaxReader.getEffectTime() * g[3] / g[1] % 1000.0);
-			program.setUniformf(program.fetchUniformLocation("u_glint", false), g[0], g[1], g[2], time);
+			// GLINT's time in pulses, by the reader's clock, wrapped at a whole number: every time term is whole turns.
+			float time = (float) (heart.parallaxReader.getEffectTime() * g[2] % 1000.0);
+			program.setUniformf(program.fetchUniformLocation("u_glint", false), g[0], g[1], time, g[3]);
+			program.setUniformf(program.fetchUniformLocation("u_sun", false), g[4], g[5]);
+			program.setUniformf(program.fetchUniformLocation("u_glintA", false), g[6], g[7], g[8], g[9]);
+			program.setUniformf(program.fetchUniformLocation("u_glintB", false), g[10], g[11]);
 			return true;
 		}
 
@@ -341,9 +366,12 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 * whole rows, this bends the painted crests. A, L, speed: the layer's numbers. Every term a whole number of turns
 	 * over FOG's periods, 8 wavelengths across and 10 up, the layer's effect in the lab (r419: at 1 / 1.7 turns a
 	 * wavelength across, the second wave jumped each time the layer wrapped).</li>
-	 * <li>GLINT (r375's glint): specks of light where three bent waves peak at once, on a grid squashed 5 to 1 (a speck
-	 * is a short dash along the water), added only where the water is already lit. u_glint: strength, speck size,
-	 * density (how near the peak of 3 a sum must come: higher, more specks), time in speck sizes.</li>
+	 * <li>GLINT (r408, after Simon on r375 and r407: "a ton of white dots", "not using the shape of the water"): the
+	 * painted crests themselves light up, a pixel brighter than the water u_glint.w above and below it, in pieces about a
+	 * glint long that fade in and out in place, each at its own moment, within a sun's column across the view. u_glint:
+	 * strength, density (how much of the crests is lit), time in pulses, crest reach; u_sun: its x in the view and
+	 * width; u_glintA, u_glintB: the three waves' turns over the periods, across and up (two pick the pieces, the third
+	 * when each pulses).</li>
 	 * <li>BILLOW (r375's billow): the clouds churn in place, their pixels pushed by a slow warp of wavelength L. On a
 	 * layer of its own every pixel is cloud: r375's colour mask, made for clouds painted into a back layer, is left
 	 * out (r409: clouds always get their own layer).</li>
@@ -368,6 +396,9 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "uniform vec3 u_across;\n"
 			+ "uniform vec3 u_up;\n"
 			+ "uniform vec4 u_glint;\n"
+			+ "uniform vec2 u_sun;\n"
+			+ "uniform vec4 u_glintA;\n"
+			+ "uniform vec2 u_glintB;\n"
 			+ "const float TAU = 6.2831853;\n"
 			+ "vec4 hazed(vec4 color)\n"
 			+ "{\n"
@@ -404,17 +435,22 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "	float dy = sin(TAU * (2.0 * p.x + p.y - t + 0.6)) + 0.5 * sin(TAU * (p.x - 2.0 * p.y - 2.0 * t));\n"
 			+ "	l += u_effect.x / 1.5 * vec2(dx, -dy);\n"
 			+ "#endif\n"
-			+ "	vec4 color = v_color * at(l);\n"
+			+ "	vec4 image = at(l);\n"
+			+ "	vec4 color = v_color * image;\n"
 			+ "#ifdef GLINT\n"
-			+ "	float u = a.x / u_glint.y;\n"
-			+ "	float py = a.y / (u_glint.y / 5.0);\n"
-			+ "	float g = u_glint.w;\n"
-			+ "	float bend = 0.8 * sin(TAU * (u / 14.0 + py / 7.0 - g));\n"
-			+ "	float n = sin(TAU * (u + 1.1 * py + bend - g)) + sin(TAU * (1.5 * u - 1.3 * py - 0.7 * bend + 2.0 * g + 0.4))\n"
-			+ "		+ sin(TAU * (2.0 * u + 0.9 * py + 1.3 * bend - 3.0 * g + 1.1));\n"
-			+ "	float spark = clamp((n - 3.0 + u_glint.z) / u_glint.z, 0.0, 1.0);\n"
-			+ "	float bright = clamp((dot(color.rgb, vec3(0.299, 0.587, 0.114)) - 0.45) / 0.25, 0.0, 1.0);\n"
-			+ "	color.rgb = min(color.rgb + u_glint.x * spark * spark * bright, 1.0);\n"
+			// The glint's shape is the painting's: a crest, brighter than the water u_glint.w above and below it.
+			+ "	const vec3 LUMA = vec3(0.299, 0.587, 0.114);\n"
+			+ "	vec4 above = at(l - vec2(0.0, u_glint.w)), below = at(l + vec2(0.0, u_glint.w));\n"
+			+ "	float ridge = dot(image.rgb, LUMA) - 0.5 * (dot(above.rgb, LUMA) + dot(below.rgb, LUMA));\n"
+			+ "	float crest = smoothstep(0.005, 0.035, ridge) * min(above.a, below.a) * image.a;\n"
+			+ "	float sunAt = (v_view.x - u_sun.x) / u_sun.y;\n"
+			+ "	vec2 q = vec2(a.x / (8.0 * L), a.y / (10.0 * L));\n"
+			// Which pieces of the crests are lit: two waves along them, of uneven turns, their sum -1.6..1.6.
+			+ "	float n = (cos(TAU * (u_glintA.x * q.x + u_glintA.y * q.y)) + 0.6 * cos(TAU * (u_glintA.z * q.x + u_glintA.w * q.y + 0.3))) / 1.6;\n"
+			// Each piece stays where it is and fades in and out at its own moment, set by the third wave.
+			+ "	float pulse = 0.5 + 0.5 * cos(TAU * (u_glint.z + 1.5 * sin(TAU * (u_glintB.x * q.x + u_glintB.y * q.y))));\n"
+			+ "	float glow = smoothstep(1.0 - u_glint.y, 1.0, n) * pulse * pulse * crest * exp(-sunAt * sunAt);\n"
+			+ "	color.rgb = min(color.rgb + u_glint.x * glow * vec3(1.0, 0.96, 0.85), 1.0);\n"
 			+ "#endif\n"
 			+ "	gl_FragColor = hazed(color);\n"
 			+ "}\n";
