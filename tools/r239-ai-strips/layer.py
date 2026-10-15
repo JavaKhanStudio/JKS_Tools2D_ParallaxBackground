@@ -11,6 +11,7 @@ a pale sky keys half clear): alpha is 1 inside the mask, and the colour key's on
 far from the shape (a horizon behind hills) goes too. Pines grow past their shape: give them a larger G (r246).
 Under --mask each pixel is keyed against the sky round it, the clear pixels past G px of the mask (r358): SD's sky
 warms toward the foot and has clouds, and against the top rows' colour it stayed half opaque round the shape, a glow.
+Clear pixels nearer the mass's colour than the sky's are the mass SD painted past the mask, not sky: they are not read (r382).
 --gap T: the foot of a gap SD painted deeper than the shape is sky or far haze, which the mask made opaque (r263):
 pixels less than T of the way from the sky to the mass's colour, open to the clear sky, key along that line (0: off).
 --edge E: alpha still half clear more than E px from a solid pixel is SD's haze or a ghost behind the shape, not a
@@ -105,6 +106,17 @@ def local_sky(img, sky, clear, r):
     return out
 
 
+def masslike(img, sky, m):
+    """The pixels past half way from the top rows' sky to the mass's median colour (8 px inside m). SD paints the mass
+    a few px past sil.py's mask (a dune's far sand, a ridge): read as sky by local_sky, they made the sky round the
+    shape the mass's own colour, and its pale foot or crest keyed out with it, notches ungap opened to the sky (r382)."""
+    inner = spread(m, -8)
+    if not inner.any():
+        return np.zeros(m.shape, bool)
+    axis = np.median(img[inner], axis=0) - sky
+    return (img - sky) @ axis / max(float(axis @ axis), 1.0) > 0.5
+
+
 def islands(mask):
     """Each 4-connected component of mask but the largest, as one mask; column 0 touches column w-1."""
     label, sizes = components(mask)
@@ -181,7 +193,7 @@ def key(img, sky, a):
     m = None
     if a.mask:
         m = np.asarray(Image.open(a.mask).convert("L").resize(img.shape[1::-1])) > 127
-        sky = local_sky(img, sky, ~spread(m, a.grow), a.grow + 8)
+        sky = local_sky(img, sky, ~spread(m, a.grow) & ~spread(masslike(img, sky, m), 2), a.grow + 8)
     d = np.linalg.norm(img - sky, axis=2)
     # The ramp ends near the layer's own distance from the sky: a fixed one marks a pixel half
     # sky, half hill as solid, a light line along the silhouette.

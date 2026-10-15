@@ -158,6 +158,12 @@ it (r244); an SDXL ControlNet is untried.
   translucent share of a layer fell from 8-31 % to 3-8 % (post-apo), 10-13 % to 3-4 % (forest pines), 23-51 % to
   14-19 % (beach palms, their fronds kept). `tools/r358-glow/recut.sh` re-cuts them without the GPU, `compose.py`
   draws before and after, `mutate.sh` proves `layer_test.py` sees either half taken out.
+- **Notches bitten out of a pale foot or crest** (r382, R1's dsxlt-beach dunes, the forest's ranges): SD paints the
+  mass a few px past sil.py's mask, and `local_sky` read those pixels as sky, so the sky round a dune's pale far sand
+  was the sand itself, and `--gap` keyed it out as a gap's foot. The clear pixels past half way from the top rows' sky
+  to the mass's colour (`masslike`, grown 2 px) are not read now. On R1's 98 strips the solid px lost against R1's
+  own cut fell from 31458 to 13295 (what is left is the haze and ghost ranges r364 wanted keyed);
+  `tools/r382-pale-foot/mutate.sh` proves `layer_test.py` sees it taken out.
 - **A join on a tree's flank** (r246): the strip loops, but its join fell where the outline steps steeply, above three
   quarters of the strip's own column steps, and a `SEQUENCE` repeats that join at every segment: lint (e) at 21 and 22
   against 20. `sil.py --quiet-join` turns the shape so the join falls on its flattest 16 px; variants turn by their

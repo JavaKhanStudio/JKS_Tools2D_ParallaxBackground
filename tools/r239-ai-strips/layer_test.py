@@ -18,6 +18,7 @@ import layer
 
 W, H = 256, 128
 TOP, FOOT, MASS = np.array([218, 227, 234]), np.array([179, 163, 149]), np.array([70, 55, 48])
+SAND = np.array([243, 199, 136])
 
 
 def sky():
@@ -82,6 +83,19 @@ class KeyTest(unittest.TestCase):
         img[frond] = MASS
         alpha = cut(img, m, grow=24)
         self.assertGreater(float(alpha[frond].min()), 0.9, "the frond is kept")
+
+    def test_a_pale_foot_painted_past_the_mask_stays_solid(self):
+        """r382: a dune's far sand, between two dunes, is paler than the mass, and SD paints it a few px past the mask.
+        local_sky read that sand as sky, the pale foot keyed as sky against it, and ungap bit notches out of it."""
+        m = np.zeros((H, W), bool)
+        m[90:] = True
+        img = sky()
+        img[m] = SAND
+        pale = np.zeros((H, W), bool)
+        pale[70:104, 90:170] = True  # over the mask's top, and 20 px past it: well past --grow
+        img[pale] = (TOP + 0.8 * (SAND - TOP)).round()  # dsxlt-beach l2's foot: 0.75..0.88 of the way to the sand
+        alpha = cut(img, m, grow=8)
+        self.assertGreater(float(alpha[layer.spread(m, -8)].min()), 0.95, "the pale foot stays solid")
 
     def test_local_sky_is_the_clear_pixels_round_a_pixel(self):
         img = sky()
