@@ -197,7 +197,8 @@ docs/depth-tricks.md §5 why. Everything is tools/r279-depth-page/depth_page.py,
 subprocess for what each band hid. gen.py is #ai's file: change it and say so on the #ai lane's ticket.
 ONE GPU, 8 GB, and two lanes (#ai, #depth) may run at once: depth_page's depth, masks and fields steps and gen.py
 take tools/gpu_lock.py's lock (r391) and wait their turn ("gpu_lock: waiting" in the log). A new GPU step goes under
-gpu_lock.held(), its model moved off the GPU before it ends; never round a gen() call (gen.py takes it: deadlock).
+gpu_lock.held() and runs in a child (depth_page.in_child, r396: the parent never opens CUDA, which torch never frees),
+its model moved off the GPU before it ends; never round a gen() call (gen.py takes it: deadlock).
 Every rule here was tuned on a few paintings (valley, river, noloop): a new rule can bring back an old fault on
 another one (r386: r322's olive slab back on HEAD). Run the examples (tools/r279-depth-page/examples.sh) before
 and after, in a HEAD worktree for the before, and compare them all, not only the painting the ticket names.

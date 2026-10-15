@@ -55,6 +55,7 @@ import re
 import shlex
 import subprocess
 import sys
+import tempfile
 
 import numpy as np
 from PIL import Image
@@ -95,7 +96,49 @@ def gen(args, logfile):
         sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {logfile}")
 
 
+def in_child(step, **arrays):
+    """GPU step step (STEPS) run by this file in a child process, on arrays, its result back: torch never frees the CUDA
+    context it opens short of its process ending, so run here, this one sat in nvidia-smi with 160-242 MiB through the
+    rest of the cut, its repaints and the other lane's gen.py (r396)."""
+    with tempfile.TemporaryDirectory(prefix="depth_page-") as tmp:
+        inp, out = os.path.join(tmp, "in.npz"), os.path.join(tmp, "out.npz")
+        np.savez(inp, **arrays)
+        code = subprocess.run([sys.executable, os.path.abspath(__file__), "--gpu-step", step, inp, out], cwd=ROOT,
+                              stdout=sys.stderr, check=False).returncode
+        if code:
+            sys.exit(f"depth_page: the {step} step failed (exit {code})")
+        with np.load(out) as got:
+            return got["out"]
+
+
 def depth_of(img):
+    return in_child("depth", img=img)
+
+
+def masks_of(img):
+    return list(in_child("masks", img=img))
+
+
+def fields_of(img, L, n):
+    return list(in_child("fields", img=img, L=L, n=np.int64(n)))
+
+
+def gpu_step(step, inp, out):
+    """The child's side of in_child: step on inp's arrays, the result in out (masks stacked, none: an empty stack)."""
+    with np.load(inp) as a:
+        img = a["img"]
+        if step == "depth":
+            got = _depth_of(img)
+        elif step == "masks":
+            got = _masks_of(img)
+        else:
+            got = _fields_of(img, a["L"], int(a["n"]))
+    if step != "depth":
+        got = np.array(got, bool).reshape((len(got),) + img.shape[:2])
+    np.savez(out, out=got)
+
+
+def _depth_of(img):
     """Relative disparity per pixel (larger = nearer), estimated on the painting padded along X with its own other
     end: the network sees across the join, and the depth loops as the painting does."""
     import torch
@@ -122,7 +165,7 @@ def depth_of(img):
     return out
 
 
-def masks_of(img):
+def _masks_of(img):
     """SAM 2.1 small's automatic masks, one per thing it outlines (a pine, a hill, a cloud), each whole across the join:
     run on the painting, then on it rolled by half its width, whose masks over the middle are the ones the join cut."""
     import torch
@@ -161,7 +204,7 @@ def slab_cuts(L, img, k, reach=24, apart=25):
     return out
 
 
-def fields_of(img, L, n, every=96, least=24, off=16, sure=0.4, most=0.25, stray=0.05):
+def _fields_of(img, L, n, every=96, least=24, off=16, sure=0.4, most=0.25, stray=0.05):
     """SAM 2.1 small prompted with two points across a slab cut (slab_cuts), off px above and below it, every every px
     along a run of least columns or more: the field the cut runs through, whole, to its painted edges (a hedge, a
     shadow's edge, the river bank), which the automatic masks never give (r374). Of its three masks, the best scored of
@@ -1284,6 +1327,8 @@ def write_page(name, layers, s, img, page_dir, a):
 
 
 def main():
+    if sys.argv[1:2] == ["--gpu-step"]:
+        return gpu_step(*sys.argv[2:5])
     a = parse_args()
     out = os.path.abspath(a.out)
     cut, page_dir = os.path.join(out, "cut"), os.path.join(out, "page")
