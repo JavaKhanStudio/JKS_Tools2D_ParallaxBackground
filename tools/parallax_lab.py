@@ -252,6 +252,7 @@ SCREEN_PX = 1280  # that world's width in pixels
 SOLID, SEAM = 0.99, 20
 EDGE_PROBE = 1e-3  # world units inside a layer's top or bottom edge where (a) and (b) ask what covers it
 COVERED = 0.9  # a layer edge behind nearer layers this opaque at its height does not show
+NOTCH_MARGIN = 2 * SCREEN_H / 720  # 2 screen px each side of a bottom edge, its filtering, that one nearer layer hides
 EDGE = SCREEN_H / 200  # an edge within half a percent of the screen's top or bottom is off it
 
 
@@ -269,6 +270,8 @@ def layout(page, atlas_dir):
       (a) a layer's art touches its top edge without filling it (cropped by the painter) and that edge is on screen,
           not behind a nearer layer's solid band: the art shows cut flat;
       (b) a layer's art reaches its bottom edge, that edge is on screen and no nearer layer's solid band covers it;
+          nor, a screen pixel or more of it at a time, their clear pixels (alpha < 128) at its height: a notch's tip
+          between two front trees, or gaps in several layers that scroll over each other (r399);
       (c) a band of the screen that no layer and no gradient covers (a white gradient is the editor's default: unset);
       (d) regions packed with their whitespace stripped and useOriginalSize off: they are stretched over the layer;
       (e) a layer tiled on X whose left and right edges differ (seam > 20) in the rows on screen: a cut every repeat.
@@ -300,8 +303,9 @@ def layout(page, atlas_dir):
 
 
 # A layer as layout() reads it: rows is the opaque share of each of its rows, bottom to top; bottom and height are in
-# world units; spans says it covers the screen's width; cut_top that its art touches its top edge cut flat.
-Placed = collections.namedtuple('Placed', 'index layer rows bottom height spans cut_top')
+# world units; spans says it covers the screen's width; cut_top that its art touches its top edge cut flat; clear the
+# share of each of its image's rows, bottom to top, that is clear (alpha < 128) (None: not measured).
+Placed = collections.namedtuple('Placed', 'index layer rows bottom height spans cut_top clear', defaults=(None,))
 
 
 def _measure_layers(page, regions, regions_tool):
@@ -374,7 +378,8 @@ def _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, strippe
     height = _place(page, i, l, _image(page, i, l, first, regions_tool, sheets, stripped)).height
     rows = [min(_resampled(p.rows, k, len(each[0].rows)) for p in each) for k in range(len(each[0].rows))]
     cut = any(p.cut_top and p.rows[-1] < SOLID for p in each)
-    p = each[0]._replace(rows=rows, height=height, cut_top=cut)
+    clear = [max(_resampled(p.clear, k, len(each[0].clear)) for p in each) for k in range(len(each[0].clear))]
+    p = each[0]._replace(rows=rows, height=height, cut_top=cut, clear=clear)
     placed.append(p)
     if not page.get('repeatOnX', True) or l['padX'] > 0:
         return problems
@@ -493,7 +498,16 @@ def _place(page, i, l, img):
     width = SCREEN_W * l['sizeRatio']
     bottom = l['decal_Y_Ratio'] * SCREEN_H / 100
     spans = page.get('repeatOnX', True) and l['padX'] <= 0 or width >= SCREEN_W
-    return Placed(i, l, rows, bottom, width * img.height / img.width, spans, cut_top)
+    return Placed(i, l, rows, bottom, width * img.height / img.width, spans, cut_top, _clear(img))
+
+
+def _clear(img):
+    """The share of each row of img, bottom to top, that is clear (alpha < 128: more of what is behind shows than of the
+    pixel). A notch's tip between two trees leaves a few pixels in rows 99% opaque (r381); antialiased art's soft
+    pixels (alpha 169-200 in Hiver's hills) are not clear, nor a mist's rows (180-192 in r6a s07's l1)."""
+    alpha = img.getchannel('A')
+    return [sum(alpha.crop((0, y, img.width, y + 1)).histogram()[:128]) / img.width
+            for y in range(img.height - 1, -1, -1)]
 
 
 def _rows_on_screen(img, p):
@@ -575,6 +589,25 @@ def _covered_by_nearer(placed, k, y):
     return clear <= 1 - COVERED
 
 
+def _edge_seen(placed, k):
+    """How many screen pixels of layer k's bottom edge show, on average, through the nearer spanning layers: across
+    the screen's width, the share each one leaves clear in its rows within NOTCH_MARGIN of the edge (its clearest row;
+    a SEQUENCE's clearest segment), multiplied as if they overlapped at random, since they scroll at other speeds. A
+    notch's tip shows the edge (r381: 4-7 px, R1 s03 and R6a s05); Hiver's hills' single clear pixels (0.4 px) do not
+    (r399). 0 when a nearer layer was not measured."""
+    edge, seen = placed[k].bottom, float(SCREEN_PX)
+    for p in placed[k + 1:]:
+        if not p.spans:
+            continue
+        if p.clear is None:
+            return 0.0
+        n = len(p.clear)
+        low, high = ((edge - NOTCH_MARGIN - p.bottom) / p.height * n, (edge + NOTCH_MARGIN - p.bottom) / p.height * n)
+        if low >= 0 and high <= n:
+            seen *= max(p.clear[int(low):max(int(low) + 1, math.ceil(high))])
+    return seen
+
+
 def _on_screen(y):
     return EDGE < y < SCREEN_H - EDGE
 
@@ -597,6 +630,11 @@ def _edge_faults(placed):
         if p.rows[0] > 0 and _on_screen(p.bottom) and not _covered_by_nearer(placed, k, p.bottom + EDGE_PROBE):
             problems.append(f'(b) layer {p.index} ({name}): its art reaches its bottom edge, on screen at'
                             f' {_pct(p.bottom)}% of its height, and no nearer layer covers that edge')
+        elif p.rows[0] > 0 and _on_screen(p.bottom) and (seen := _edge_seen(placed, k)) >= 1:
+            problems.append(f'(b) layer {p.index} ({name}): its bottom edge, on screen at {_pct(p.bottom)}% of its'
+                            f' height, shows through the clear pixels of the nearer layers at that height, about'
+                            f' {seen:.0f} screen px of it at a time: what is behind shows under it there, as at a'
+                            ' notch\'s tip between trees (r381)')
     return problems
 
 

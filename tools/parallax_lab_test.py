@@ -290,6 +290,63 @@ class TipSeams(unittest.TestCase):
         self.assertEqual(1, len(faults), faults)
 
 
+class NotchSeams(unittest.TestCase):
+    """(b) through a nearer layer's clear pixels at a farther layer's bottom edge (r399): R1 s03's pines left a notch's tip
+    a few pixels wide in rows 99% opaque, so the hills' bottom edge, sunk to those rows, showed the sky under it while
+    lint took the row as covering. A layer here is 100 rows over 10 world units; its clear lists each row's clear
+    share, bottom to top."""
+
+    def placed(self, front_clear, edge=3.0, more=()):
+        behind = lab.Placed(1, {'regionName': 'hills', 'regionPosition': 0}, [1.0] * 100, edge, 10.0, True, False,
+                            [0.0] * 100)
+        front = lab.Placed(2, {'regionName': 'pines', 'regionPosition': 0}, [1.0] * 100, 0.0, 10.0, True, False,
+                           front_clear)
+        return [behind, front, *more]
+
+    def faults(self, placed):
+        return [f for f in lab._edge_faults(placed) if f.startswith('(b) layer 1')]
+
+    def test_a_notch_at_the_edge_shows_it(self):
+        """5 clear pixels of 1024 in the rows at 3.0, the edge's height: 6 screen px."""
+        clear = [0.0] * 100
+        clear[28:33] = [5 / 1024] * 5
+        faults = self.faults(self.placed(clear))
+        self.assertEqual(1, len(faults), faults)
+        self.assertIn('about 6 screen px', faults[0])
+
+    def test_the_same_edge_sunk_into_solid_rows_is_hidden(self):
+        clear = [0.0] * 100
+        clear[28:33] = [5 / 1024] * 5
+        self.assertEqual([], self.faults(self.placed(clear, edge=1.5)))
+
+    def test_a_clear_pixel_under_a_screen_pixel_is_none(self):
+        """Hiver's hills: 1 clear pixel of 3645 in a row, 0.35 screen px."""
+        clear = [0.0] * 100
+        clear[28:33] = [1 / 3645] * 5
+        self.assertEqual([], self.faults(self.placed(clear)))
+
+    def test_two_layers_gaps_overlap_at_random(self):
+        """10 % clear in each of two nearer layers: 1 % of the screen's width, 13 px, shows the edge."""
+        gappy = [0.1] * 100
+        other = lab.Placed(3, {'regionName': 'grass', 'regionPosition': 0}, [1.0] * 100, 0.0, 10.0, True, False, gappy)
+        faults = self.faults(self.placed(gappy, more=[other]))
+        self.assertEqual(1, len(faults), faults)
+        self.assertIn('about 13 screen px', faults[0])
+
+    def test_a_layer_not_measured_says_nothing(self):
+        behind, front = self.placed([0.5] * 100)
+        self.assertEqual([], self.faults([behind, front._replace(clear=None)]))
+
+    def test_hivers_mountains_show_their_edge_in_c01(self):
+        """engines/rounds/conformance/c01: layer 0's bottom edge at 68 % shows flat through the gaps of the hills in
+        front of it (render: r399's c01-t6), where the old (b) took their opaque shares, multiplied, as covering."""
+        page = lab.load('engines/rounds/conformance/c01.jplax')
+        faults = [f for f in lab.layout(page, lab.find_atlas_dir('engines/rounds/conformance/c01.jplax', page))
+                  if f.startswith('(b) layer 0')]
+        self.assertEqual(1, len(faults), faults)
+        self.assertIn('shows through the clear pixels', faults[0])
+
+
 class PixelArtCover(unittest.TestCase):
     """(b) on a pixel-art page (r281, r239's postapo-pixel): a 17-row layer whose art fills its bottom edge at 1.33,
     before a 35-row front from 0 whose bottom four rows (to 1.67) are solid and the fifth 0.89 opaque. The edge is
