@@ -11,7 +11,7 @@ import tempfile
 import unittest
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import layer
@@ -96,6 +96,29 @@ class KeyTest(unittest.TestCase):
         img[pale] = (TOP + 0.8 * (SAND - TOP)).round()  # dsxlt-beach l2's foot: 0.75..0.88 of the way to the sand
         alpha = cut(img, m, grow=8)
         self.assertGreater(float(alpha[layer.spread(m, -8)].min()), 0.95, "the pale foot stays solid")
+
+    def test_a_crown_on_a_thin_trunk_with_a_pale_join_stays_whole(self):
+        """r383: a palm's crown, in sil.py's mask but too thin to be solid, joins its trunk through a few pale px SD
+        painted (the beach example's l3v1: grey 125 under a sky of 214). Its fronds run on past --grow, and local_sky
+        read them as sky: the sky round the join came out grey 130, the join keyed clear, and the crown was cut as an
+        island. r382's masslike keeps the fronds out of the sky."""
+        m = np.zeros((H, W), bool)
+        m[100:] = True
+        m[44:, 126:130] = True  # the trunk, 4 px wide
+        draw = Image.new("L", (W, H))
+        for x, y in ((68, 60), (188, 60), (78, 30), (178, 30), (98, 22), (158, 22)):  # fronds out to 60 px each way
+            ImageDraw.Draw(draw).line((128, 40, x, y), fill=255, width=3)
+        fronds = np.asarray(draw) > 127
+        m |= fronds & layer.spread(m, 16)  # sil.py's crown: the fronds near the trunk
+        img = sky()
+        img[m | fronds] = MASS
+        join = np.zeros((H, W), bool)
+        join[42:47, 125:131] = True
+        img[join] = (sky()[join] + MASS) / 2  # the pale join
+        alpha = cut(img, m, grow=24)
+        crown = fronds & layer.spread(m, 20) & ~join
+        self.assertGreater(float((alpha[crown] > 0.5).mean()), 0.95, "the crown is kept")
+        self.assertGreater(float(alpha[join].min()), 0.5, "its join to the trunk too")
 
     def test_local_sky_is_the_clear_pixels_round_a_pixel(self):
         img = sky()
