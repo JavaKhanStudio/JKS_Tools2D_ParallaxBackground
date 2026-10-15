@@ -44,6 +44,17 @@ checked the other way (lurker.py crop: one figure, whole). It stands on layer A,
 skate, on the flattest stretch of A's ground, and comes by once every --lurker-every tiles of A. Its height is its
 depth's (r363): --lurker-height (its height at the front layer's depth, 2.3 units: r363's v01) times A's speed over
 the front's. tools/lurker-cover.sh bakes where the layer in front covers it whole. Painted style only.
+
+An animated patch, only on request (r395, docs/animated-layers.md phase 3): --animate l3='palm fronds tossing in a
+strong wind' (repeatable; l0 the back layer) paints the cut layer moving with Wan 2.1 VACE (tools/r375-animated-layer:
+anim.py, ~5 min a layer, then loopcut.py, rekey.py, loopcheck.py), over its alpha (--animate-rows l3=90-250: only those
+rows of the strip, from its top), let go of the strip by --animate-free. Only when loopcheck.py passes is the patch
+shipped: the frames cropped to where they differ from the still, packed as <layer>_anim (index 0..n-1), and the
+layer's animRegion/animX/animY/animFps written; the still's alpha in that box is lowered to the frames' least, so a
+frond that sways away leaves no still frond under it. A FAIL ships the still layer and says so. The rate is the one
+within a frame a second of --animate-fps whose round stills (0, 6, 12 s) show three frames, each off a frame change.
+recipe.json keeps each one's prompt, seed, free, rate, box and loopcheck's numbers. Painted style, one-strip layers
+(the front with --variants is a SEQUENCE: --variants 0).
 """
 import argparse
 import json
@@ -62,6 +73,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, HERE)
+import animate  # noqa: E402
 import gpu_lock  # noqa: E402
 import make_page  # noqa: E402
 import parallax_lab as lab  # noqa: E402
@@ -314,6 +326,13 @@ def parse_args():
     ap.add_argument("--lurker-every", type=int, default=1, help="it comes by once every N tiles of the layer under it")
     ap.add_argument("--dry-run", action="store_true", help="print every command, back to front, as if each strip took"
                     " on its first seed, and write nothing (r305: the proof that a change runs the same commands)")
+    ap.add_argument("--animate", action="append", default=[], metavar="LAYER=MOTION",
+                    help="l3='palm fronds tossing in a strong wind': an animated patch on that layer (repeatable)")
+    ap.add_argument("--animate-rows", action="append", default=[], metavar="LAYER=TOP-BOTTOM",
+                    help="l3=90-250: only those rows of the layer's strip move (from its top); default all its alpha")
+    ap.add_argument("--animate-free", type=float, default=animate.FREE,
+                    help="anim.py --free: 0 holds the moving part to the strip (a gentle stir), 1 lets it go")
+    ap.add_argument("--animate-fps", type=float, default=animate.FPS, help="the patch's rate, give or take one")
     ap.add_argument("--timeout", type=int, default=TIMEOUT,
                     help="seconds a command (a strip: 10-60) may take before it is killed and run once more (r377)")
     a = ap.parse_args()
@@ -333,7 +352,32 @@ def parse_args():
         if len(between) != 2 or between[1] != between[0] + 1 or not 0 <= between[0] < a.layers - 1:
             ap.error(f"--lurker-between: A,A+1 with A from 0 to {a.layers - 2}")
         a.lurker_on = between[0]
+    a.motions, a.rows = animate_args(ap, a)
     return a
+
+
+def animate_args(ap, a):
+    """--animate and --animate-rows by layer: {k: motion}, {k: (top, bottom)}."""
+    def by_layer(flag, items):
+        out = {}
+        for item in items:
+            layer, sep, value = item.partition("=")
+            if not (sep and re.fullmatch(r"l\d", layer) and int(layer[1:]) < a.layers and value):
+                ap.error(f"{flag} {item}: LAYER=..., LAYER l0 to l{a.layers - 1}")
+            out[int(layer[1:])] = value
+        return out
+    motions = by_layer("--animate", a.animate)
+    rows = {}
+    for k, band in by_layer("--animate-rows", a.animate_rows).items():
+        if not re.fullmatch(r"\d+-\d+", band) or k not in motions:
+            ap.error(f"--animate-rows l{k}={band}: TOP-BOTTOM, on a layer --animate names")
+        rows[k] = tuple(int(r) for r in band.split("-"))
+    if motions and a.style == "pixel":
+        ap.error("--animate: painted style only")
+    if a.layers - 1 in motions and a.variants:
+        ap.error(f"--animate l{a.layers - 1}: the front is a SEQUENCE with --variants, which carries no patch:"
+                 " --variants 0")
+    return motions, rows
 
 
 class Pipeline:
@@ -354,6 +398,8 @@ class Pipeline:
         self.model = model_of(a)
         self.w, self.h = (1536, 576) if self.model["xl"] else (1024, 384)
         self.made = {}  # strip prefix -> how it was painted, for recipe.json
+        self.anims = {}  # --animate: depth -> how its patch was painted and checked, for recipe.json
+        self.patches = {}  # depth -> its shipped patch: the still to pack in the cut's place, frames, box, rate
 
     def model_args(self, denoise=True, size=None):
         """gen.py's model and sampler arguments, the size (the strips' unless given) and the denoise: only the ones
@@ -487,6 +533,42 @@ class Pipeline:
             return True
         return False
 
+    def animate_layers(self, layers):
+        """--animate: every named layer's patch painted, looped, re-keyed and checked; the ones loopcheck.py passes
+        made patches (animate.patch). A kept run (--keep) keeps a layer's loop when its loop.json is there."""
+        for k, motion in sorted(self.a.motions.items()):
+            self.animate_layer(k, motion, layers[k][0])
+
+    def animate_layer(self, k, motion, cut):
+        a = self.a
+        d, src = os.path.join(self.strips, f"l{k}_anim"), os.path.join(self.strips, f"l{k}_ai.png")
+        info = {"motion": motion, "prompt": f"{motion}, {a.theme}, static camera, painted illustration",
+                "seed": a.seed * 1000 + 800 + k, "free": a.animate_free,
+                "rows": list(a.rows[k]) if k in a.rows else None}
+        self.anims[k] = info
+        kept = a.keep and animate.verdict(d)
+        if not (a.dry_run or kept):
+            os.makedirs(d, exist_ok=True)
+            animate.moving_mask(cut, f"{d}/moving.png", a.rows.get(k))
+        for i, (cmd, step_log) in enumerate([] if kept else animate.commands(PY, d, src, cut, info["prompt"],
+                                                                                 info["seed"], a.animate_free)):
+            code = run(cmd, step_log, timeout=3 * TIMEOUT if i == 0 else None)  # Wan: ~5 min a 1024x384 strip
+            if code and not (i == 3 and code == 1):  # loopcheck.py exits 1 on a FAIL, which ships the still
+                sys.exit(f"--animate l{k}: {os.path.basename(cmd[1])} failed: {step_log}")
+        if a.dry_run:
+            return
+        info["loop"] = animate.verdict(d)
+        info["shipped"] = info["loop"]["verdict"] == "PASS"
+        if not info["shipped"]:
+            log(f"layer {k}: loopcheck {info['loop']['verdict']}: no animated patch, the still layer ships")
+            return
+        box, frames = animate.patch(d, cut, f"{d}/still.png")
+        info.update(region=f"l{k}_anim", frames=len(frames), fps=animate.fps_for_stills(len(frames), a.animate_fps),
+                    box=list(box))
+        self.patches[k] = {"still": f"{d}/still.png", "frames": frames, "box": box, "fps": info["fps"]}
+        log(f"layer {k}: animated patch, {len(frames)} frames at {info['fps']} fps, box {box}, motion "
+            f"{info['loop']['motion']}, time seam {info['loop']['time_seam']}")
+
     def lurker_command(self):
         """gen.py's img2img for the lurker's figure, its init, seed and out left to add: its own size, denoise and
         negative, the figure in the prompt."""
@@ -577,15 +659,20 @@ class Pipeline:
         lurker's figure, in a LURKER layer in front of the one it stands on."""
         a, ks, name, page_dir = self.a, self.ks, self.name, self.page_dir
         s = speeds(len(ks), a.front_speed)
-        files = [(f"l{k}" if len(paths) == 1 else f"l{k}_{i}", p) for k, paths in enumerate(layers)
-                 for i, p in enumerate(paths)] + ([("lurker", fig)] if fig else [])
-        make_page.pack(name, files, "Nearest,Nearest" if self.pixel else "Linear,Linear", out=page_dir)
+        files = [(f"l{k}" if len(paths) == 1 else f"l{k}_{i}", self.patches[k]["still"] if k in self.patches else p)
+                 for k, paths in enumerate(layers) for i, p in enumerate(paths)] + ([("lurker", fig)] if fig else [])
+        frames = [(f"l{k}_anim", patch["frames"]) for k, patch in sorted(self.patches.items())]
+        make_page.pack(name, files, "Nearest,Nearest" if self.pixel else "Linear,Linear", out=page_dir, frames=frames)
         bottoms = self.bottoms(layers)
         page_layers = []
         for k, paths in enumerate(layers):
             dy = round(100 * bottoms[k] / lab.SCREEN_H, 2)
             if len(paths) == 1:
                 page_layers.append(lab.layer(f"l{k}", speed=round(s[k], 5), dy=dy))
+                if k in self.patches:
+                    x0, _, _, y1 = self.patches[k]["box"]
+                    page_layers[-1].update(animRegion=f"l{k}_anim", animX=x0,
+                                           animY=Image.open(paths[0]).height - y1, animFps=self.patches[k]["fps"])
             else:
                 seq = lab.layer("", speed=round(s[k], 5), dy=dy)
                 seq.update(kind="SEQUENCE", name=f"l{k}", sequenceSeed=a.seed, sequenceLength=2 * len(paths),
@@ -638,6 +725,8 @@ class Pipeline:
             recipe["layers"].append({"kind": self.ks[k], "colour": self.cols[k], "speed": round(s[k], 5),
                                      "dy": page_layers[k]["decal_Y_Ratio"],
                                      "sequence": len(paths) > 1, "strips": strips_k})
+            if k in self.anims:
+                recipe["layers"][-1]["animate"] = self.anims[k]
         with open(os.path.join(self.out, "recipe.json"), "w") as f:
             json.dump(recipe, f, indent=1)
 
@@ -657,8 +746,10 @@ def main():
     if not p.pixel and a.variants:
         p.paint_variants(layers, seeds)
     fig = p.paint_lurker() if a.lurker else None
+    p.animate_layers(layers)
     if a.dry_run:
-        print(f"make_page.pack {p.name}", *(path for paths in layers for path in paths), *([fig] if fig else []))
+        print(f"make_page.pack {p.name}", *(path for paths in layers for path in paths), *([fig] if fig else []),
+              *(f"l{k}_anim:{p.strips}/l{k}_anim/patch" for k in sorted(a.motions)))
         if fig:
             print(shlex.join(p.cover_command()))
         print("(no shots)" if a.no_shots else shlex.join(p.shots_command()))
@@ -674,6 +765,9 @@ def main():
     print(f"{rel}/{p.name}.jplax")
     print(lab.describe(page))
     print("\n".join("  ! " + problem for problem in problems) or "  lint ok")
+    for k, info in sorted(p.anims.items()):
+        print(f"  l{k} animated: {info['frames']} frames at {info['fps']} fps" if info["shipped"] else
+              f"  ! l{k} NOT animated, the still layer ships: loopcheck {info['loop']['verdict']}")
     if not a.no_shots:
         subprocess.run(p.shots_command(), cwd=ROOT, check=False)
     return 1 if problems else 0

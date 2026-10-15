@@ -67,6 +67,12 @@ method, below, still to be picked one by one.
    teeth (the palms move under the check's threshold from one frame to the next). A `SHADER` layer's patch is sampled
    inside the layer's region by every effect (WAVE clamps it to the strip) and stays out of the round until r397.
 3. `#assets`: `ai-page.sh --animate l3='fronds swaying'`: the layer's patch painted, cut, re-keyed, checked, packed.
+   Done (r395): `tools/r239-ai-strips/animate.py` gives r375's tools the layer's moving mask (its alpha, or
+   `--animate-rows`) and makes what `loopcheck.py` passed a patch: the frames cropped to where they differ from the
+   still, packed under the strips as `<layer>_anim`, and the still's alpha in that box lowered to the frames' least,
+   since a patch drawn over the still cannot clear it (a frond swaying away would leave the still's frond showing).
+   The rate is the one within a frame a second of `--animate-fps` (16, Wan's) whose stills at 0, 6 and 12 s show three
+   different frames, each off a frame change.
 4. The editor (its own board) shows and plays the patch.
 
 ## Shader animations (proposed)

@@ -27,19 +27,33 @@ import parallax_lab as lab  # noqa: E402
 SKY = ("8fb4e0", "e1e8f0")
 
 
-def pack(name, files, filt, out=OUT):
-    """One atlas page, the strips stacked in a column, 1 px apart, written to out."""
-    imgs = [(region, Image.open(path).convert("RGBA")) for region, path in files]
-    w = max(i.width for _, i in imgs)
-    h = sum(i.height + 1 for _, i in imgs)
+def pack(name, files, filt, out=OUT, frames=()):
+    """One atlas page, the strips stacked in a column, 1 px apart, written to out. frames (r395): (region, [paths])
+    for each animated patch, its frames under the strips in rows, as many to a row as keeps the page squarest, each
+    region's frames numbered from 0 (atlas index) in play order."""
+    imgs = [(region, -1, Image.open(path).convert("RGBA")) for region, path in files]
+    w = max(i.width for _, _, i in imgs)
+    places, y = [], 0
+    for _, _, img in imgs:
+        places.append((0, y))
+        y += img.height + 1
+    for region, paths in frames:
+        cells = [Image.open(p).convert("RGBA") for p in paths]
+        fw, fh = cells[0].width + 1, cells[0].height + 1
+        cols = min(range(1, len(cells) + 1),
+                   key=lambda c: max(max(w, c * fw), y + -(-len(cells) // c) * fh))
+        w = max(w, cols * fw - 1)
+        for i, cell in enumerate(cells):
+            imgs.append((region, i, cell))
+            places.append(((i % cols) * fw, y + (i // cols) * fh))
+        y += -(-len(cells) // cols) * fh
+    h = y
     sheet = Image.new("RGBA", (w, h))
     lines = [f"{name}.png", f"size: {w}, {h}", "format: RGBA8888", f"filter: {filt}", "repeat: none"]
-    y = 0
-    for region, img in imgs:
-        sheet.paste(img, (0, y))
-        lines += [region, "  rotate: false", f"  xy: 0, {y}", f"  size: {img.width}, {img.height}",
-                  f"  orig: {img.width}, {img.height}", "  offset: 0, 0", "  index: -1"]
-        y += img.height + 1
+    for (region, index, img), (x, y) in zip(imgs, places, strict=True):
+        sheet.paste(img, (x, y))
+        lines += [region, "  rotate: false", f"  xy: {x}, {y}", f"  size: {img.width}, {img.height}",
+                  f"  orig: {img.width}, {img.height}", "  offset: 0, 0", f"  index: {index}"]
     sheet.save(os.path.join(out, f"{name}.png"), optimize=True)
     with open(os.path.join(out, f"{name}.atlas"), "w") as f:
         f.write("\n".join(lines) + "\n")

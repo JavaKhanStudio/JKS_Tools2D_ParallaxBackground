@@ -169,6 +169,12 @@ What is yours to choose, from the theme:
   (2.3 world units at the front's depth) times A's speed over the front's, small behind a far layer. Every other
   strip still forbids creatures. `tools/r366-lurker/film.sh OUT/page OUT` films it beside its twin without it and
   writes stills where it shows and where the front hides it.
+- **`--animate l3='palm tree fronds tossing in a strong sea wind'`**, only when asked for motion inside a layer
+  (r395, `docs/animated-layers.md`): Wan 2.1 VACE paints the cut layer moving (~5 min a layer; ~11 GB of models in
+  `~/ComfyUI`, `tools/r375-animated-layer/anim.py`), `--animate-rows l3=90-250` keeps the rest of the strip still
+  (the palms' trunks), and the loop is shipped as the layer's animated patch only when `loopcheck.py` passes: the
+  run prints `l3 animated` or `! l3 NOT animated`, and `recipe.json`'s layer says why. Painted style; the front only
+  with `--variants 0` (a SEQUENCE carries no patch). Water and clouds are shaders' (the same doc), not this.
 
 `tools/ai-film.sh OUT/page FILM 8 30` films the page: core's frames off screen, `FILM/a01.mp4` and a 640px `.gif`.
 Give it `OUT/film` and put OUT under `build/ai`: `tools/ai-gallery.sh` then shows the page, its film and how each
