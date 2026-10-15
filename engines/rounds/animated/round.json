@@ -1,6 +1,6 @@
 {
  "round": "animated",
- "about": "Animated patches (format 16, r393, r394; docs/animated-layers.md): a layer's frames drawn after each tile at floor(time x fps) mod their count. Godot draws its own (plax_anim.gd); jME runs core's ParallaxLayer.drawAnim. Written by core/test-data/animated/make_round.py.",
+ "about": "Animated patches (format 16, r393, r394; docs/animated-layers.md): a layer's frames drawn after each tile at floor(time x fps) mod their count; a SHADER layer's after all its tiles (r397). Godot draws its own (plax_anim.gd); jME runs core's ParallaxLayer.drawAnim. Written by core/test-data/animated/make_round.py.",
  "scenes": [
   {
    "id": "a01",
@@ -34,6 +34,13 @@
    "atlasDir": "core/test-data/animated",
    "name": "beach-palms-planet",
    "about": "a02 round a planet 400% of the world in radius: the patch bent with its tile, through PlanetBatch"
+  },
+  {
+   "id": "a05",
+   "page": "engines/rounds/animated/a05.jplax",
+   "atlasDir": "core/test-data/animated",
+   "name": "flags-wave",
+   "about": "a01 with its front hill a WAVE SHADER layer, both flags at 0.1572 fps (frames apart at its stills, about 48, 54 and 60 s on the clock): the patch through the effect given its frame's region (r397). Given the hill's, WAVE clamps the flag to the hill's edge"
   }
  ]
 }

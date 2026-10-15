@@ -788,17 +788,19 @@ public class ParallaxPageReader implements Disposable
 		else if (tower)
 			// Round its tower in the view's middle, tiled up as the page says; no mirrored copy.
 			towerRows(layer, drawn, originX, originY, packed);
-		else
-			tile(layer, drawn, originX, originY, repeatOnX, repeatOnY, false, null);
-
-		if (layer.isMirror && repeatOnX != repeatOnY && layer.kind != Enum_LayerKind.FLOOR && !tower)
+		else if (shaded && layer.kind == Enum_LayerKind.SHADER && layer.hasAnim())
 		{
-			// A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
-			if (repeatOnX)
-				tile(layer, drawn, originX, originY + layer.padY + layer.getHeight(), true, false, true, null);
-			else
-				tile(layer, drawn, originX + layer.padX + layer.getWidth(), originY, false, true, true, null);
+			// Its patches after all its tiles, through its effect given the frame's region in the layer's (r397): the
+			// effect keeps its samples inside the region it is given, and in the layer's the patch draws the strip.
+			layer.setDrawPart(ParallaxLayer.DRAW_IMAGE);
+			tileAndMirror(layer, drawn, originX, originY);
+			effects.beginPatch(batch, layer);
+			layer.setDrawPart(ParallaxLayer.DRAW_PATCH);
+			tileAndMirror(layer, drawn, originX, originY);
+			layer.setDrawPart(ParallaxLayer.DRAW_ALL);
 		}
+		else
+			tileAndMirror(layer, drawn, originX, originY);
 
 		planetReach = 0;
 		if (shaded)
@@ -806,6 +808,22 @@ public class ParallaxPageReader implements Disposable
 		else if (packed)
 			// The next layer is drawn with the tint at this alpha, which draw() sets only once outside a cross-fade.
 			batch.setColor(tint.r, tint.g, tint.b, packedAlpha);
+	}
+
+	/**
+	 * The layer tiled as the page repeats, and its mirrored copy stacked next to the tiled strip: above it when tiling on
+	 * X, to its right on Y.
+	 */
+	private void tileAndMirror(ParallaxLayer layer, Batch drawn, float originX, float originY)
+	{
+		tile(layer, drawn, originX, originY, repeatOnX, repeatOnY, false, null);
+		if (layer.isMirror && repeatOnX != repeatOnY)
+		{
+			if (repeatOnX)
+				tile(layer, drawn, originX, originY + layer.padY + layer.getHeight(), true, false, true, null);
+			else
+				tile(layer, drawn, originX + layer.padX + layer.getWidth(), originY, false, true, true, null);
+		}
 	}
 
 	/**

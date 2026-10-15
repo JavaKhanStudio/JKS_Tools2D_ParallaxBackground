@@ -252,6 +252,23 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	}
 
 	@Override
+	public boolean beginPatch(Batch batch, ParallaxLayer layer)
+	{
+		int index = layer.getKind() == Enum_LayerKind.SHADER ? layer.getShaderEffect().ordinal() : PLAIN_INDEX;
+		ShaderProgram program = programs[index];
+		if (program == null || batch.getShader() != program || layer.getAnimDrawnRegion() == null)
+			return false;
+		// The tiles go out with the layer's region, the patches with their frame's.
+		batch.flush();
+		if (!batch.isDrawing())
+			program.bind();
+		patchUniforms(layer, numbers);
+		program.setUniformf(region[index], numbers[0], numbers[1], numbers[2], numbers[3]);
+		program.setUniformf(size[index], numbers[4], numbers[5]);
+		return true;
+	}
+
+	@Override
 	public void setView(float width, float height, float floor)
 	{setView(width, height, 0, floor);}
 
@@ -398,6 +415,23 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		out[12] = viewHeight;
 		out[13] = floor + layer.getEffectStartY();
 		out[14] = layer.isFlipY() ? -1 : 1;
+		return out;
+	}
+
+	/**
+	 * {@link #uniforms(ParallaxLayer, float, float[])}'s {@code out[0..5]} for the layer's animated patch
+	 * ({@link LayerEffects#beginPatch}): its current frame's u, v, u2, v2, and its width and height as drawn. The rest are
+	 * the layer's.
+	 */
+	public static float[] patchUniforms(ParallaxLayer layer, float[] out)
+	{
+		TextureRegion frame = layer.getAnimDrawnRegion();
+		out[0] = frame.getU();
+		out[1] = frame.getV();
+		out[2] = frame.getU2();
+		out[3] = frame.getV2();
+		out[4] = layer.getAnimDrawnWidth();
+		out[5] = layer.getAnimDrawnHeight();
 		return out;
 	}
 

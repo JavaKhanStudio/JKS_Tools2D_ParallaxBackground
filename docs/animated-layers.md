@@ -18,7 +18,7 @@ cheaper one that can make it:
 
 A shader costs no atlas space and loops by construction, but it can only push the painted pixels around or light
 them. A patch shows whatever was painted, so it can move a frond, but each frame is a texture. A layer can have both:
-a `SHADER` layer with a patch draws the patch through its effect.
+a `SHADER` layer with a patch draws the patch through its effect, given the frame's region (r397, below).
 
 **Decided** (Simon, 2026-10-15, on r375): a **patch on the layer** (frames of its moving box, their place in the strip
 and a frame rate), not frames on a whole layer and not frames drawn by the game through a hook; and `ai-page.sh`
@@ -64,8 +64,12 @@ method, below, still to be picked one by one.
    `ParallaxLayer.clone`, README's "File formats". The libGDX reader draws the patch; `FrameAllocationTest` stays at 0.
 2. `#runtime`: Godot draws the patch; a reader round `engines/rounds/animated` (the r375 palms, frames at three
    times) in both frame checks, jME running core's. Done (r394): `plax_anim.gd`; the round's a01 is a flag of four colours, its
-   teeth (the palms move under the check's threshold from one frame to the next). A `SHADER` layer's patch is sampled
-   inside the layer's region by every effect (WAVE clamps it to the strip) and stays out of the round until r397.
+   teeth (the palms move under the check's threshold from one frame to the next).
+   r397: an effect keeps its samples inside the region it is given (WAVE's clamp), so a `SHADER` layer's patch drawn
+   with the layer's region showed the strip's edge. Its patches are now drawn after all its tiles, the effect given the
+   current frame's region and drawn size (`LayerEffects.beginPatch`, `GdxLayerEffects.patchUniforms`: libGDX one flush
+   a layer, jME a second material, Godot a child canvas with its own material, `plax_anim.gd`'s `apply`, since one
+   canvas has one set of uniforms). The round's a05 is a01 with its front hill a `WAVE` layer.
 3. `#assets`: `ai-page.sh --animate l3='fronds swaying'`: the layer's patch painted, cut, re-keyed, checked, packed.
    Done (r395): `tools/r239-ai-strips/animate.py` gives r375's tools the layer's moving mask (its alpha, or
    `--animate-rows`) and makes what `loopcheck.py` passed a patch: the frames cropped to where they differ from the

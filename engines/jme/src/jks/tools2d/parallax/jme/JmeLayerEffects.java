@@ -44,6 +44,14 @@ public class JmeLayerEffects implements LayerEffects
 		final Vector4f grade = new Vector4f();
 		final Vector3f across = new Vector3f();
 		final Vector3f up = new Vector3f();
+		float haze;
+		/**
+		 * The layer's animated patch's material (r397), made when first drawn: the same vectors but its frame's region
+		 * and size, so the batch's run of patches is not drawn with the layer's region.
+		 */
+		Material patch;
+		final Vector4f patchRegion = new Vector4f();
+		final Vector2f patchSize = new Vector2f();
 
 		Shaded(Material material, Enum_ShaderEffect kind)
 		{
@@ -104,7 +112,8 @@ public class JmeLayerEffects implements LayerEffects
 		s.material.setVector3("Across", s.across);
 		s.up.set(numbers[12], numbers[13], numbers[14]);
 		s.material.setVector3("Up", s.up);
-		s.material.setFloat("Haze", Math.max(0, Math.min(1, haze)));
+		s.haze = Math.max(0, Math.min(1, haze));
+		s.material.setFloat("Haze", s.haze);
 		s.fog.set(fogR, fogG, fogB);
 		s.material.setVector3("FogColor", s.fog);
 		s.dissolve.set(side, ramp, softness, drift);
@@ -114,6 +123,36 @@ public class JmeLayerEffects implements LayerEffects
 		s.grade.set(gradeR, gradeG, gradeB, Math.max(0, Math.min(1, gradeAmount)));
 		s.material.setVector4("Grade", s.grade);
 		((JmeBatch) batch).setEffect(s.material);
+		return true;
+	}
+
+	@Override
+	public boolean beginPatch(Batch batch, ParallaxLayer layer)
+	{
+		Shaded s = shaded.get(layer);
+		if (!(batch instanceof JmeBatch) || s == null || layer.getAnimDrawnRegion() == null)
+			return false;
+		if (s.patch == null)
+		{
+			s.patch = new Material(assets, MATERIAL);
+			s.patch.setBoolean("Fog", s.kind == Enum_ShaderEffect.FOG);
+			s.patch.setBoolean("Plain", s.kind == null);
+			JmeBatch.renderAsRuns(s.patch);
+		}
+		GdxLayerEffects.patchUniforms(layer, numbers);
+		s.patchRegion.set(numbers[0], numbers[1], numbers[2], numbers[3]);
+		s.patchSize.set(numbers[4], numbers[5]);
+		s.patch.setVector4("Region", s.patchRegion);
+		s.patch.setVector2("Size", s.patchSize);
+		s.patch.setVector3("Effect", s.effect);
+		s.patch.setVector3("Across", s.across);
+		s.patch.setVector3("Up", s.up);
+		s.patch.setFloat("Haze", s.haze);
+		s.patch.setVector3("FogColor", s.fog);
+		s.patch.setVector4("Dissolve", s.dissolve);
+		s.patch.setVector2("Cells", s.cells);
+		s.patch.setVector4("Grade", s.grade);
+		((JmeBatch) batch).setEffect(s.patch);
 		return true;
 	}
 

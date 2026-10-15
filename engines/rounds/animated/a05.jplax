@@ -1,0 +1,68 @@
+{
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "useOriginalSize": true,
+ "topHalf_top": {
+  "r": 0.55,
+  "g": 0.75,
+  "b": 0.95,
+  "a": 1
+ },
+ "topHalf_bottom": {
+  "r": 0.8,
+  "g": 0.9,
+  "b": 1,
+  "a": 1
+ },
+ "topHalfSize": 0.0,
+ "bottomHalf_top": {
+  "r": 0.8,
+  "g": 0.9,
+  "b": 1,
+  "a": 1
+ },
+ "bottomHalf_bottom": {
+  "r": 0.8,
+  "g": 0.9,
+  "b": 1,
+  "a": 1
+ },
+ "bottomHalfSize": 1.0,
+ "pageModel": {
+  "atlasName": "animated.atlas",
+  "pageList": [
+   {
+    "regionName": "hill",
+    "regionPosition": 0,
+    "sizeRatio": 0.4,
+    "parallaxScalingSpeedX": 0.02,
+    "padX": 1.0,
+    "kind": "IMAGE",
+    "animRegion": "flag",
+    "animX": 201,
+    "animY": 100,
+    "animFps": 0.1572,
+    "decal_Y_Ratio": 30.0,
+    "mirror": true
+   },
+   {
+    "regionName": "hill",
+    "regionPosition": 0,
+    "sizeRatio": 0.4,
+    "parallaxScalingSpeedX": 0.04,
+    "padX": 1.0,
+    "kind": "SHADER",
+    "animRegion": "flag",
+    "animX": 201,
+    "animY": 100,
+    "animFps": 0.1572,
+    "decal_X_Ratio": 30.0,
+    "flipX": true,
+    "shaderEffect": "WAVE",
+    "shaderAmplitude": 0.3,
+    "shaderWavelength": 2.0,
+    "shaderSpeed": 0.5
+   }
+  ]
+ }
+}

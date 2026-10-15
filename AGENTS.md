@@ -89,7 +89,8 @@ repair.
   clock between scenes: scene k's stills are at about 12k + 0, 6 and 12 s, which `core/test-data/animated/make_round.py`
   reckons to keep every still off a frame change. Change the patch and run both frame checks on `engines/rounds/animated`;
   `tools/r394-animated/mutate.sh` proves the round sees a wrong Godot copy. Its palms move too little to fail a wrong
-  frame: the flags (a01) do.
+  frame: the flags (a01) do. A SHADER layer's patches are drawn after all its tiles, its effect given the frame's
+  region (`LayerEffects.beginPatch`; Godot's on a child canvas, jME's a second material: r397, a05).
 - An `EMPTY` layer (`Enum_LayerKind`, format 5) has no image: the reader calls the game's `LayerHook` per tile in its
   place, and so do `plax_background.gd` (`set_layer_hook`) and jME. A new layer kind goes in `Enum_LayerKind` (append
   only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/rounds` (`effects` is EMPTY's).

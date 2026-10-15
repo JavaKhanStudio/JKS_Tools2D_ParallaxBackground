@@ -10,15 +10,17 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
+import jks.tools2d.parallax.GdxLayerEffects;
+import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 
 /**
- * ParallaxPageReader's cases on an animated patch (format 16, docs/animated-layers.md): after each tile of an IMAGE or
- * SHADER layer, its patch's frame of the reader's clock, at the tile's corner plus its place scaled to the drawn size.
- * Shared builders in {@link ReaderFixtures}.
+ * ParallaxPageReader's cases on an animated patch (format 16, docs/animated-layers.md): after each tile of an IMAGE
+ * layer, after all the tiles of a SHADER one (r397), its patch's frame of the reader's clock, at the tile's corner plus
+ * its place scaled to the drawn size. Shared builders in {@link ReaderFixtures}.
  */
 final class AnimatedPatchCases extends ReaderFixtures
 {
@@ -32,12 +34,14 @@ final class AnimatedPatchCases extends ReaderFixtures
 		return Arrays.asList(
 				new BrowserCase("reader: anAnimatedPatchIsDrawnAfterEachTileAtTheClocksFrame", () -> new AnimatedPatchCases().anAnimatedPatchIsDrawnAfterEachTileAtTheClocksFrame()),
 				new BrowserCase("reader: aFlippedTileMirrorsItsPatch", () -> new AnimatedPatchCases().aFlippedTileMirrorsItsPatch()),
-				new BrowserCase("reader: onlyImageAndShaderLayersDrawAPatch", () -> new AnimatedPatchCases().onlyImageAndShaderLayersDrawAPatch()));
+				new BrowserCase("reader: onlyImageAndShaderLayersDrawAPatch", () -> new AnimatedPatchCases().onlyImageAndShaderLayersDrawAPatch()),
+				new BrowserCase("reader: aShaderLayersPatchIsGivenItsFramesRegion", () -> new AnimatedPatchCases().aShaderLayersPatchIsGivenItsFramesRegion()));
 	}
 
 	/**
-	 * At 0.125 s, 10 frames a second, frame 1; at 0.325 s, frame 3 of 3: frame 0. Every tile is followed by its patch,
-	 * in all four repeat modes, an IMAGE and a SHADER layer alike.
+	 * At 0.125 s, 10 frames a second, frame 1; at 0.325 s, frame 3 of 3: frame 0. In all four repeat modes, an IMAGE
+	 * layer's every tile is followed by its patch; a SHADER layer's tiles come first, then {@link LayerEffects#beginPatch},
+	 * then their patches in the same order.
 	 */
 	void anAnimatedPatchIsDrawnAfterEachTileAtTheClocksFrame()
 	{
@@ -47,20 +51,24 @@ final class AnimatedPatchCases extends ReaderFixtures
 			{
 				String repeat = (shader ? "SHADER" : "IMAGE") + ", repeat X " + mode[0] + ", Y " + mode[1];
 				ParallaxPageReader reader = reader(mode[0], mode[1]);
-				reader.setLayerEffects(new RecordingEffects());
+				RecordingEffects effects = new RecordingEffects();
+				reader.setLayerEffects(effects);
 				ParallaxLayer layer = patched(shader);
 				reader.addLayers(list(layer));
 
 				draws.clear();
 				reader.act(0.125f, 0, 0);
 				reader.draw(camera, batch);
-				int tiles = checkPatches(layer, 1, repeat + ", at 0.125 s");
+				int tiles = checkPatches(layer, 1, shader, repeat + ", at 0.125 s");
 				isTrue(mode[0] || mode[1] ? tiles >= 2 : tiles == 1, repeat + ": " + tiles + " tiles");
+				equal(shader ? 1 : 0, effects.patches, repeat + ": a SHADER layer's patches begun once a frame");
+				if (shader)
+					equal(tiles, effects.patchFrom, repeat + ": after its tiles");
 
 				draws.clear();
 				reader.act(0.2f, 0, 0);
 				reader.draw(camera, batch);
-				equal(tiles, checkPatches(layer, 0, repeat + ", at 0.325 s"), repeat + ": the same tiles");
+				equal(tiles, checkPatches(layer, 0, shader, repeat + ", at 0.325 s"), repeat + ": the same tiles");
 			}
 	}
 
@@ -110,17 +118,18 @@ final class AnimatedPatchCases extends ReaderFixtures
 	}
 
 	/**
-	 * The draws are tile, patch, tile, patch...: each patch at its tile's corner plus its place, scaled, drawing
-	 * {@code frame}. Returns how many tiles.
+	 * The draws are tile, patch, tile, patch...; {@code apart}, a SHADER layer's, all the tiles then all the patches.
+	 * Each patch at its tile's corner plus its place, scaled, drawing {@code frame}. Returns how many tiles.
 	 */
-	private int checkPatches(ParallaxLayer layer, int frame, String when)
+	private int checkPatches(ParallaxLayer layer, int frame, boolean apart, String when)
 	{
 		float scaleX = layer.getRegionWidth() / IMAGE_WIDTH, scaleY = layer.getRegionHeight() / IMAGE_HEIGHT;
 		equal(0, draws.size() % 2, when + ": a patch per tile, " + draws.size() + " draws");
-		for (int i = 0; i < draws.size(); i += 2)
+		int tiles = draws.size() / 2;
+		for (int t = 0; t < tiles; t++)
 		{
-			float[] tile = draws.get(i), patch = draws.get(i + 1);
-			String draw = when + ", tile " + i / 2;
+			float[] tile = draws.get(apart ? t : 2 * t), patch = draws.get(apart ? tiles + t : 2 * t + 1);
+			String draw = when + ", tile " + t;
 			equal(layer.getRegionWidth(), tile[2], 1e-4f, draw + ": the tile first");
 			equal(tile[0] + AT_X * scaleX, patch[0], 1e-4f, draw + ": the patch's x");
 			equal(tile[1] + AT_Y * scaleY, patch[1], 1e-4f, draw + ": its y");
@@ -130,7 +139,26 @@ final class AnimatedPatchCases extends ReaderFixtures
 			isTrue(patch[8] > (float) (frame * FRAME_STEP) / PAGE && patch[9] < (float) (frame * FRAME_STEP + FRAME_WIDTH) / PAGE,
 					draw + ": frame " + frame + ", drew u " + patch[8] + " to " + patch[9]);
 		}
-		return draws.size() / 2;
+		return tiles;
+	}
+
+	/**
+	 * The numbers a SHADER layer's patch is drawn with are its current frame's: its u, v, u2, v2 (inset by half a texel)
+	 * and its drawn size; given the layer's, WAVE clamps the patch to the strip (r397).
+	 */
+	void aShaderLayersPatchIsGivenItsFramesRegion()
+	{
+		ParallaxLayer layer = patched(true);
+		layer.setAnimTime(0.125);
+		equal(1, layer.getAnimFrame(), "frame 1 at 0.125 s");
+		float[] numbers = GdxLayerEffects.patchUniforms(layer, new float[6]);
+		float half = 0.5f / PAGE;
+		equal((float) FRAME_STEP / PAGE + half, numbers[0], 1e-6f, "its u");
+		equal((float) (FRAME_STEP + FRAME_WIDTH) / PAGE - half, numbers[2], 1e-6f, "its u2");
+		equal(half, numbers[1], 1e-6f, "its v");
+		equal((float) FRAME_HEIGHT / PAGE - half, numbers[3], 1e-6f, "its v2");
+		equal(FRAME_WIDTH * layer.getRegionWidth() / IMAGE_WIDTH, numbers[4], 1e-4f, "its drawn width");
+		equal(FRAME_HEIGHT * layer.getRegionHeight() / IMAGE_HEIGHT, numbers[5], 1e-4f, "its drawn height");
 	}
 
 	/** A 12 x 6.75 layer (an IMAGE or a WAVE one) with a patch of three frames at 10 a second. */

@@ -120,6 +120,11 @@ public class ParallaxLayer
 	private float[] animWidth, animHeight, animTrimLeft, animTrimBottom, animPackedWidth, animPackedHeight;
 	/** The frame drawn, set by the reader from its clock before the layer's tiles ({@link #setAnimTime}). */
 	private int animFrame;
+	/**
+	 * What {@link #draw} and {@link #drawMirror} draw of a tile: {@link #DRAW_ALL}, or the reader's two passes over a
+	 * SHADER layer with a patch, {@link #DRAW_IMAGE} then {@link #DRAW_PATCH} (r397, {@link LayerEffects#beginPatch}).
+	 */
+	private int drawPart;
 	/** The layer's image in pixels, the size {@link #animX} and {@link #animY} are taken in. */
 	private float imageWidth = 1, imageHeight = 1;
 	/** The strip of the image a tower's piece draws, set before each piece's draw; made once, with the regions. */
@@ -345,6 +350,13 @@ public class ParallaxLayer
 			Arrays.fill(rowDistance, currentDistanceX);
 	}
 
+	/** {@link #setDrawPart}: the image and its patch; the image only; the patch only. */
+	public static final int DRAW_ALL = 0, DRAW_IMAGE = 1, DRAW_PATCH = 2;
+
+	/** What {@link #draw} and {@link #drawMirror} draw of a tile, set by the reader around a pass ({@link #DRAW_ALL} after). */
+	public void setDrawPart(int part)
+	{drawPart = part;}
+
 	/**
 	 * Draws the region at (x, y); an EMPTY layer draws nothing, its hook does (ParallaxPageReader). A SHADER layer's
 	 * effect is the batch's shader, which the reader sets around its tiles.
@@ -355,8 +367,10 @@ public class ParallaxLayer
 			drawCycle(batch, x, y, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, flipX, flipY);
 		else if (drawsImage())
 		{
-			drawRegion(batch, drawnRegions.get(0), x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, flipX, flipY);
-			drawAnim(batch, x, y, flipX, flipY);
+			if (drawPart != DRAW_PATCH)
+				drawRegion(batch, drawnRegions.get(0), x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, flipX, flipY);
+			if (drawPart != DRAW_IMAGE)
+				drawAnim(batch, x, y, flipX, flipY);
 		}
 	}
 
@@ -369,8 +383,10 @@ public class ParallaxLayer
 			drawCycle(batch, x, y, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, fx, fy);
 		else if (drawsImage())
 		{
-			drawRegion(batch, drawnRegions.get(0), x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, fx, fy);
-			drawAnim(batch, x, y, fx, fy);
+			if (drawPart != DRAW_PATCH)
+				drawRegion(batch, drawnRegions.get(0), x, y, getRegionWidth(), getRegionHeight(), trimLeft, trimBottom, packedWidthRatio, packedHeightRatio, fx, fy);
+			if (drawPart != DRAW_IMAGE)
+				drawAnim(batch, x, y, fx, fy);
 		}
 	}
 
@@ -380,7 +396,7 @@ public class ParallaxLayer
 	 */
 	private void drawAnim(Batch batch, float x, float y, boolean fx, boolean fy)
 	{
-		if (animFrames == null || (kind != Enum_LayerKind.IMAGE && kind != Enum_LayerKind.SHADER))
+		if (!hasAnim())
 			return;
 		float width = getRegionWidth(), height = getRegionHeight();
 		float scaleX = width / imageWidth, scaleY = height / imageHeight;
@@ -507,6 +523,7 @@ public class ParallaxLayer
 		copy.animY = animY;
 		copy.animFps = animFps;
 		copy.animFrame = animFrame;
+		copy.drawPart = drawPart;
 		// Replaced, never changed: shared.
 		copy.animFrames = animFrames;
 		copy.animTexRegions = animTexRegions;
@@ -1275,6 +1292,22 @@ public class ParallaxLayer
 	/** The frame {@link #setAnimTime} chose. */
 	public int getAnimFrame()
 	{return animFrame;}
+
+	/** Whether this layer draws a patch over its tiles: an IMAGE or SHADER layer with frames. */
+	public boolean hasAnim()
+	{return animFrames != null && (kind == Enum_LayerKind.IMAGE || kind == Enum_LayerKind.SHADER);}
+
+	/** The current frame as drawn (inset by half a texel); null without a patch. */
+	public TextureRegion getAnimDrawnRegion()
+	{return animFrames == null ? null : animFrames.get(animFrame);}
+
+	/** The current frame's packed image's width as drawn, in world units: the layer's u_size is its image's. */
+	public float getAnimDrawnWidth()
+	{return animFrames == null ? 0 : animWidth[animFrame] * getRegionWidth() / imageWidth * animPackedWidth[animFrame];}
+
+	/** The same, its height. */
+	public float getAnimDrawnHeight()
+	{return animFrames == null ? 0 : animHeight[animFrame] * getRegionHeight() / imageHeight * animPackedHeight[animFrame];}
 
 	/** Each frame's pixel size and trim, as {@link #setTexRegion} measures the layer's region. */
 	private void measureAnim()

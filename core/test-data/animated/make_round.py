@@ -4,7 +4,8 @@
 
 a01 is the round's teeth: r393's probe, a hill with a pole flying a flag whose four frames are four colours, at
 0.2083 frames a second (frames 0, 1, 2 at 0, 6, 12 s), on an IMAGE layer mirrored above itself (the copy's flag upside
-down) and on one flipped on X (not a SHADER layer: r397). a02-a04 are r365's beach (its l0-l2, and its palms l3 as one IMAGE strip) at half size, the
+down) and on one flipped on X. a05 is a01 with its front hill a WAVE SHADER layer (r397): the effect is given the
+flag's frame's region for the patch, else it clamps the flag's samples to the hill's edge. a02-a04 are r365's beach (its l0-l2, and its palms l3 as one IMAGE strip) at half size, the
 palm crowns carrying r375's 24 re-keyed frames (build/r375/demo/palms, 785x150 of the 1024x384 strip, at (108, 104)
 from its top-left) as an animated patch; a03 dollies it, a04 wraps it round a planet. The palms move little from one
 frame to the next (0.5 to 0.8 / 255 over the patch's box), under the frame check's threshold: a wrong frame fails on
@@ -61,6 +62,19 @@ def palm_fps(times):
 
 
 PALM_FPS, _margin = palm_fps([t for scene in still_times(4)[1:] for t in scene])
+
+
+def wave_flag_fps(times):
+    """a05's flag rate, 0.1 to 0.4 frames a second: three frames apart at its three stills, each as far from a frame
+    change as can be."""
+    def margin(fps):
+        if len({int(t * fps) % 4 for t in times}) < 3:
+            return -1
+        return min(min(t * fps % 1, 1 - t * fps % 1) for t in times)
+    return max((round(0.1 + i / 10000, 4) for i in range(3001)), key=margin)
+
+
+WAVE_FLAG_FPS = wave_flag_fps(still_times(5)[4])
 
 
 def half(im):
@@ -127,7 +141,7 @@ def beach(anim_x, anim_y, **extra):
     return page
 
 
-def flags():
+def flags(wave=False):
     sky, haze = {'r': 0.55, 'g': 0.75, 'b': 0.95, 'a': 1}, {'r': 0.8, 'g': 0.9, 'b': 1, 'a': 1}
 
     def hill(**kw):
@@ -136,9 +150,12 @@ def flags():
                      'padX': 1.0, 'kind': 'IMAGE', 'animRegion': 'flag', 'animX': 201, 'animY': 100,
                      'animFps': FLAG_FPS}, **kw)
 
-    back = hill(decal_Y_Ratio=30.0, mirror=True)
-    # An IMAGE layer, not a SHADER one: a SHADER layer's patch is sampled inside the layer's region (r397).
-    front = hill(decal_X_Ratio=30.0, flipX=True, parallaxScalingSpeedX=0.04)
+    fps = {'animFps': WAVE_FLAG_FPS} if wave else {}
+    back = hill(decal_Y_Ratio=30.0, mirror=True, **fps)
+    front = hill(decal_X_Ratio=30.0, flipX=True, parallaxScalingSpeedX=0.04, **fps)
+    if wave:
+        # Rows shifted by up to 0.3 units, the flag's edges rippling with the hill's.
+        front.update(kind='SHADER', shaderEffect='WAVE', shaderAmplitude=0.3, shaderWavelength=2.0, shaderSpeed=0.5)
     page = {'repeatOnX': True, 'repeatOnY': False, 'useOriginalSize': True}
     page.update(gradients(sky, haze))
     page['pageModel'] = {'atlasName': 'animated.atlas', 'pageList': [back, front]}
@@ -149,7 +166,8 @@ def main():
     HERE.mkdir(parents=True, exist_ok=True)
     OUT.mkdir(parents=True, exist_ok=True)
     anim_x, anim_y = sheet()
-    pages = {'a01': flags(), 'a02': beach(anim_x, anim_y), 'a04': beach(anim_x, anim_y, planetRadius=400)}
+    pages = {'a01': flags(), 'a02': beach(anim_x, anim_y), 'a04': beach(anim_x, anim_y, planetRadius=400),
+             'a05': flags(wave=True)}
     for sid, page in pages.items():
         (OUT / f'{sid}.jplax').write_text(json.dumps(page, indent=1) + '\n')
     about = f"r365 beach at half size, its palm crowns (l3) carrying r375's 24 frames as a patch at {PALM_FPS} fps"
@@ -162,19 +180,24 @@ def main():
          'about': 'a02 dollied in from zoom 1 to 0.7: the patch at its layer\'s own zoom, through DollyBatch'},
         {'id': 'a04', 'name': 'beach-palms-planet',
          'about': 'a02 round a planet 400% of the world in radius: the patch bent with its tile, through PlanetBatch'},
+        {'id': 'a05', 'name': 'flags-wave',
+         'about': f'a01 with its front hill a WAVE SHADER layer, both flags at {WAVE_FLAG_FPS} fps (frames apart at its '
+                  'stills, about 48, 54 and 60 s on the clock): the patch through the effect given its frame\'s '
+                  'region (r397). Given the hill\'s, WAVE clamps the flag to the hill\'s edge'},
     ]
     for s in scenes:
         s['page'] = str(OUT / f"{s.get('page', s['id'])}.jplax")
         s['atlasDir'] = str(HERE)
     out = {'round': 'animated',
            'about': 'Animated patches (format 16, r393, r394; docs/animated-layers.md): a layer\'s frames drawn after '
-                    'each tile at floor(time x fps) mod their count. Godot draws its own (plax_anim.gd); jME runs '
+                    'each tile at floor(time x fps) mod their count; a SHADER layer\'s after all its tiles (r397). Godot draws its own (plax_anim.gd); jME runs '
                     'core\'s ParallaxLayer.drawAnim. Written by core/test-data/animated/make_round.py.',
            'scenes': [{k: s[k] for k in ('id', 'page', 'atlasDir', 'name', 'about') if k in s} |
                       {k: v for k, v in s.items() if k in ('zoom', 'dolly')} for s in scenes]}
     (OUT / 'round.json').write_text(json.dumps(out, indent=1) + '\n')
     print(f'{OUT}/round.json: {len(scenes)} scenes; {HERE}/animated.png; palms at {PALM_FPS} fps, every still '
-          f'{_margin(PALM_FPS):.3f} of a frame or more from a change')
+          f'{_margin(PALM_FPS):.3f} of a frame or more from a change; a05\'s flags at {WAVE_FLAG_FPS} fps, frames '
+          f'{[int(t * WAVE_FLAG_FPS) % 4 for t in still_times(5)[4]]}')
 
 
 if __name__ == '__main__':

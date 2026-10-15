@@ -44,6 +44,16 @@ public interface LayerEffects
 	void end(Batch batch, ParallaxLayer layer);
 
 	/**
+	 * Between a begin that returned true and {@link #end}: what follows is the SHADER layer's animated patch, its current
+	 * frame ({@link ParallaxLayer#getAnimDrawnRegion}) in the place of the layer's region, at its drawn size
+	 * ({@link GdxLayerEffects#patchUniforms}). An effect keeps its samples inside the region it is given (WAVE's clamp):
+	 * given the layer's, it draws the patch from the strip (r397). The reader draws the patches after all the layer's
+	 * tiles. False when this engine cannot: the patches are drawn through the layer's numbers.
+	 */
+	default boolean beginPatch(Batch batch, ParallaxLayer layer)
+	{return false;}
+
+	/**
 	 * Puts back the shader {@link #end} left bound, if any. The reader calls it before drawing anything it did not begin
 	 * (a layer drawn plain, a hook, particles) and after its last layer. One whose end puts the batch back needs none.
 	 */

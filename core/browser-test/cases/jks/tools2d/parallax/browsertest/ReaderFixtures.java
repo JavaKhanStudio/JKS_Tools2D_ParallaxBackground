@@ -121,6 +121,8 @@ abstract class ReaderFixtures
 	{
 		final List<float[]> runs = new ArrayList<>();
 		boolean shades = true;
+		/** How many draws were made when the last {@link #beginPatch} came, and how many came: -1 and 0 before. */
+		int patchFrom = -1, patches;
 		private boolean open;
 
 		@Override
@@ -131,6 +133,15 @@ abstract class ReaderFixtures
 				return false;
 			open = true;
 			runs.add(new float[] { draws.size(), -1, phase, layer.getShaderAmplitude() });
+			return true;
+		}
+
+		@Override
+		public boolean beginPatch(Batch batch, ParallaxLayer layer)
+		{
+			isTrue(open, "a patch begun outside its layer");
+			patchFrom = draws.size();
+			patches++;
 			return true;
 		}
 

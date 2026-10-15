@@ -125,6 +125,9 @@ var _bottom_half_size := 0.5
 var _canvas := Node2D.new()
 # The layer canvas being drawn: _tile and _draw_region draw on it.
 var _target: CanvasItem
+## What _tile draws of a tile: 0 the image and its patch, 1 the image only, 2 the patch only
+## (ParallaxLayer.setDrawPart).
+var _part := 0
 var _world_height := 22.5
 # Set by _draw_page each frame: pixels per page unit, the screen height, the color the next layer is drawn with.
 var _ppu := 1.0
@@ -404,6 +407,13 @@ func _add_canvas(l: Dictionary) -> void:
 	l.canvas = Node2D.new()
 	if l.model.kind == "SHADER":
 		l.canvas.material = PlaxEffects.material(l.model.shaderEffect)
+		if not l.anim.is_empty():
+			# Its patches after its tiles, on a canvas of their own: their effect is given the frame's region, which
+			# one canvas's material cannot change between draws (ParallaxPageReader.drawImageLayer, r397).
+			l.anim_canvas = Node2D.new()
+			l.anim_canvas.material = PlaxEffects.material(l.model.shaderEffect)
+			l.anim_canvas.draw.connect(_draw_layer.bind(l, true))
+			l.canvas.add_child(l.anim_canvas)
 	if l.model.kind != "PARTICLES":
 		l.canvas.draw.connect(_draw_layer.bind(l))
 
@@ -447,6 +457,8 @@ func _redraw() -> void:
 	_canvas.queue_redraw()
 	for l in layers + transfer_layers:
 		l.canvas.queue_redraw()
+		if l.has("anim_canvas"):
+			l.anim_canvas.queue_redraw()
 
 
 ## A new zoom or dolly: the particles placed again, the layers drawn again.
@@ -742,6 +754,9 @@ func _unmask(page: Array[Dictionary]) -> void:
 		elif l.has("canvas") and l.canvas.material is ShaderMaterial:
 			PlaxEffects.set_dissolve(l.canvas.material, 0, 0, 0, 0, 0, 0)
 			PlaxEffects.set_grade(l.canvas.material, Color.BLACK, 0)
+			if l.has("anim_canvas"):
+				PlaxEffects.set_dissolve(l.anim_canvas.material, 0, 0, 0, 0, 0, 0)
+				PlaxEffects.set_grade(l.anim_canvas.material, Color.BLACK, 0)
 
 
 ## The tint at that opacity, and whether anything drawn with it would show (ParallaxPageReader.setBatchColor).
@@ -750,14 +765,15 @@ func _set_modulate(alpha: float) -> bool:
 	return _modulate.a > 0
 
 
-## A layer's canvas draws it; a layer at alpha 0 is not drawn.
-func _draw_layer(l: Dictionary) -> void:
+## A layer's canvas draws it; a layer at alpha 0 is not drawn. `patches`: its patches' canvas draws them (_add_canvas).
+func _draw_layer(l: Dictionary, patches := false) -> void:
+	_part = (2 if patches else 1) if l.has("anim_canvas") else 0
 	if page == null or not _set_modulate(_alpha_of(l)):
 		return
 	# Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
 	var z := _zoom_of(l)
 	_update_scale(z)
-	_target = l.canvas
+	_target = l.anim_canvas if patches else l.canvas
 	var m: Dictionary = l.model
 	var anchor := _anchor_of(z)
 	var x: float = l.distance_x + anchor.x
@@ -788,25 +804,27 @@ func _draw_layer(l: Dictionary) -> void:
 			_tile(l, x, y, _repeat_x, _repeat_y, false, view_w, view_h, hook)
 		return
 	if _masked(l):
-		if l.canvas.material == null:
-			l.canvas.material = PlaxEffects.material("PLAIN")
+		if _target.material == null:
+			_target.material = PlaxEffects.material("PLAIN")
 			l.dissolve_plain = true
 		var ramp := _style.slot_ramp(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size()))
-		PlaxEffects.set_dissolve(l.canvas.material, 2 if l.incoming else 1, ramp, _style.softness,
+		PlaxEffects.set_dissolve(_target.material, 2 if l.incoming else 1, ramp, _style.softness,
 				PlaxTransfertStyle.drift(_effect_time), _style.patches, _style.cells_up(view_w, view_h))
 	if _graded(l):
-		if l.canvas.material == null:
-			l.canvas.material = PlaxEffects.material("PLAIN")
+		if _target.material == null:
+			_target.material = PlaxEffects.material("PLAIN")
 			l.dissolve_plain = true
-		PlaxEffects.set_grade(l.canvas.material, _style.color,
+		PlaxEffects.set_grade(_target.material, _style.color,
 				_style.grade_at(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size())))
 	if m.kind == "SHADER":
-		PlaxEffects.apply(l.canvas.material, l, _effect_time, view_w, view_h, anchor.x, anchor.y)
-	if l.canvas.material:
-		l.canvas.material.set_shader_parameter("haze", l.haze)
-		l.canvas.material.set_shader_parameter("fog_color", l.fog_color)
+		PlaxEffects.apply(_target.material, l, _effect_time, view_w, view_h, anchor.x, anchor.y)
+	if _target.material:
+		_target.material.set_shader_parameter("haze", l.haze)
+		_target.material.set_shader_parameter("fog_color", l.fog_color)
 	# The animated patch's frame, on the clock the effects run on: drawn after each tile (PlaxAnim.draw).
 	PlaxAnim.set_time(l, _effect_time)
+	if patches:
+		PlaxAnim.apply(_target.material, l)
 	if m.kind == "FLOOR":
 		# Its rows across the whole view, whatever the page repeats; no mirrored copy.
 		PlaxFloor.draw(self, l, y, view_w, view_h)
@@ -895,8 +913,10 @@ func _tile(
 			if l.model.kind == "SEQUENCE":
 				PlaxSequence.draw(self, l, draw_x, draw_y, 0, view_w, fx, fy)
 			else:
-				_draw_region(l, draw_x, draw_y, l.width, l.height, fx, fy)
-				PlaxAnim.draw(self, l, draw_x, draw_y, fx, fy)
+				if _part != 2:
+					_draw_region(l, draw_x, draw_y, l.width, l.height, fx, fy)
+				if _part != 1:
+					PlaxAnim.draw(self, l, draw_x, draw_y, fx, fy)
 
 
 ## The packed image of `l` (a layer, or a sequence's segment) in a box at (x, y); a flip mirrors where it sits in the

@@ -55,3 +55,16 @@ static func draw(bg: PlaxBackground, l: Dictionary, x: float, y: float, fx: bool
 	var left := x + width - (ax + patch_w) if fx else x + ax
 	var bottom := y + height - (ay + patch_h) if fy else y + ay
 	bg._draw_region(frame, left, bottom, patch_w, patch_h, fx, fy)
+
+
+## GdxLayerEffects.patchUniforms: a SHADER layer's patch canvas's material `m` given the current frame's region and
+## drawn size in the place of the layer's (r397): the effect keeps its samples inside the region it is given.
+static func apply(m: ShaderMaterial, l: Dictionary) -> void:
+	var frame: Dictionary = l.anim[l.anim_frame]
+	var r: Dictionary = frame.region
+	var texture_size: Vector2 = r.texture.get_size()
+	var drawn := PlaxEffects.drawn_rect(r)
+	m.set_shader_parameter("region", Vector4(drawn.position.x / texture_size.x, drawn.position.y / texture_size.y,
+			drawn.end.x / texture_size.x, drawn.end.y / texture_size.y))
+	m.set_shader_parameter("size", Vector2(frame.image_w * l.width / l.image_w * frame.packed_w,
+			frame.image_h * l.height / l.image_h * frame.packed_h))
