@@ -46,13 +46,15 @@ jobs:
       - name: Check no script opens a window outside cage
         run: tools/offscreen-lint.sh && tools/offscreen-lint-test.sh
 
-      # The readers' dashboard says Failing, Stale, Healthy as its checks left them (parallax-readers:r17).
-      - name: Check the readers' dashboard verdicts
-        run: python3 tools/readers-health/health_test.py
-
       # ruff, shellcheck and gdlint at pinned versions: a rule cleaned once and gated by nothing came back (r314).
       - name: Set up uv
         uses: astral-sh/setup-uv@v10.3.0
+
+      # Every tracked tools/**/*_test.py, the readers' dashboard verdicts (parallax-readers:r17) among them: r404's test
+      # went out a push before its fix and nothing went red (r411). None needs a GPU nor ../JKS_Tools2D_ParallaxAI
+      # today; one that does is skipped by name in the script's SKIP, with its reason.
+      - name: Run the tools' Python tests
+        run: tools/python-tests.sh
 
       - name: Lint Python, shell and GDScript
         run: tools/lint.sh
