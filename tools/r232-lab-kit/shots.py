@@ -23,7 +23,8 @@ LABS = [
 ]
 SIZES = {"desktop": (1580, 710), "phone": (390, 844)}
 
-# What the page measures of itself: the lowest slider's bottom, the smallest control text, the page's width.
+# What the page measures of itself: the lowest slider's bottom, the smallest control text, the page's width, the panels'
+# choices (r428).
 MEASURE = """() => {
     const inputs = [...document.querySelectorAll('input[type=range], .ctl select')];
     const texts = [...document.querySelectorAll('input[type=range]')].flatMap(i => [...i.parentElement.children].filter(c => c !== i))
@@ -45,6 +46,17 @@ MEASURE = """() => {
         overrun: [...document.querySelectorAll('.ctl')].filter(c => [...c.children].some(k => k.scrollWidth > k.clientWidth + 1 || k.getBoundingClientRect().right > c.getBoundingClientRect().right + 1
                 || k.tagName === 'SELECT' && cut(k)))
             .map(c => c.querySelector('[data-key]').dataset.key),
+        // A choice on a panel's title (r428) whose picked name runs out of its chip, or out of the panel. On a phone a
+        // third of the screen cuts every title, a choice's name too (lab.css): there only its arrow must show.
+        chipOverrun: [...document.querySelectorAll('.panel-pick select')].filter(s => { const chip = s.closest('.panel-label');
+                const right = chip.getBoundingClientRect().right - parseFloat(getComputedStyle(chip).paddingRight);
+                const cut = innerWidth < 720 && s.closest('.lab-three');
+                const st = getComputedStyle(s); ctx.font = st.font;
+                const room = s.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight);
+                return !cut && ctx.measureText(s.selectedOptions[0].text).width > room + 1 || s.getBoundingClientRect().right > right + 1
+                    || chip.getBoundingClientRect().right > chip.parentElement.getBoundingClientRect().right + 1; })
+            .map(s => s.dataset.key),
+        chips: [...document.querySelectorAll('.panel-pick select')].map(s => s.dataset.key),
         brokenCells: [...document.querySelectorAll('.lab-results td:first-child')].filter(t => { const r = document.createRange(); r.selectNodeContents(t); return r.getClientRects().length > 1; }).length,
         scrollWidth: document.documentElement.scrollWidth,
         innerWidth: innerWidth,
@@ -79,6 +91,8 @@ with sync_playwright() as p:
                 failures.append(f"{name} {size}: control text at {m['smallestControlText']}px")
             if m["overrun"]:
                 failures.append(f"{name} {size}: a value runs out of its slider's box: {m['overrun']}")
+            if m["chipOverrun"]:
+                failures.append(f"{name} {size}: a panel's choice runs out of its title: {m['chipOverrun']}")
             if m["namedSliders"]:
                 failures.append(f"{name} {size}: sliders over names, not choices: {m['namedSliders']}")
             if m["brokenCells"]:

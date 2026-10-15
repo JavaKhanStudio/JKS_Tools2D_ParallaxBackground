@@ -90,6 +90,41 @@ body.lab {
 	font: 600 16px/1.3 system-ui, sans-serif;
 	color: #fff;
 }
+/*
+ * A choice of what the panels show is on their chip (r428): the picked name, a small down arrow after it, nothing else
+ * of a select's look until the pointer is on it. A choice of what every panel shows comes first in the first chip.
+ */
+.panel-pick { position: relative; display: inline-block; max-width: 100%; vertical-align: top; pointer-events: auto; }
+.panel-pick select {
+	appearance: none;
+	/* As wide as the picked name, not the longest option: the arrow right after it. */
+	field-sizing: content;
+	max-width: 100%;
+	margin: 0;
+	padding: 0 1.05em 0 0;
+	border: 0;
+	border-radius: 3px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+.panel-pick::after {
+	content: "\25BE";
+	position: absolute;
+	right: 1px;
+	top: 0;
+	color: var(--muted);
+	font-weight: 400;
+	pointer-events: none;
+}
+.panel-pick:hover select, .panel-pick select:focus-visible { background: rgba(255, 255, 255, 0.12); outline: none; }
+.panel-pick:hover::after { color: #fff; }
+.panel-pick option { background: var(--panel); color: var(--text); }
+/* The stage's choice: set apart from the first panel's own title by a thin line. */
+.panel-pick.stage-pick { margin-right: 8px; padding-right: 8px; border-right: 1px solid var(--line); }
+.panel-pick.stage-pick::after { right: 9px; }
 
 /* The controls: as many columns as fit, a slider each. */
 .lab-controls {
@@ -175,6 +210,8 @@ body.lab {
 	.panel-label { margin: 3px; padding: 1px 5px; font-size: 12px; }
 	/* A third of a phone is too narrow for a title's lines: one line each, cut, the panel under it in view. */
 	.lab-three .panel-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	/* A choice on it too (r428): its name cut, its arrow kept. */
+	.lab-three .panel-pick select { text-overflow: ellipsis; }
 	.lab-controls { padding: 4px 8px; }
 	.ctl { grid-template-columns: minmax(5em, 9em) minmax(70px, 1fr) max-content; min-height: 36px; }
 	.ctl-choice select { height: 32px; }

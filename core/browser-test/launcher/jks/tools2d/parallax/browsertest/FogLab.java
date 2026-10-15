@@ -170,6 +170,7 @@ public class FogLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		Document document = Document.get();
 		LabControls.panelLabels(document, "fog-labels", TITLES);
+		pick = LabControls.stageChoice(document, "fog-labels", "parallaxSet", "parallax set", SET_NAMES, 0);
 		Element controls = document.getElementById("fog-controls");
 		amplitude = LabControls.slider(document, controls, "mistAmplitude", "amplitude (thinning, 0..1)", 0, 1, 0.05f, a);
 		wavelength = LabControls.slider(document, controls, "mistWavelength", "wavelength (patch width, world units)", 0.5f, 20, 0.25f, w);
@@ -181,7 +182,6 @@ public class FogLab extends ApplicationAdapter implements LabKit.Clip
 		order = LabControls.slider(document, controls, "mistLayer", "mist's layer (0 = back, front = the set's last)", 0, last, 1, pageMistIndex);
 		fog = LabControls.slider(document, controls, "fogStrength", "page fog strength (1 - exp(-s (1/speed - 1/front)))", 0, 0.2f, 0.0025f, FOG);
 		fogColor = LabControls.choice(document, controls, "fogColor", "page fog colour", FOG_COLOR_NAMES, 0);
-		pick = LabControls.choice(document, controls, "parallaxSet", "parallax set", SET_NAMES, 0);
 		size = LabControls.slider(document, controls, "mistSize", "mist's size (x s01's: wider and taller)", 0.5f, 3, 0.05f, 1);
 		rise = LabControls.slider(document, controls, "mistRise", "mist up/down (world units from the set's place)", -12, 12, 0.25f, 0);
 		readout = LabControls.readout(document, controls, "fog-readout");

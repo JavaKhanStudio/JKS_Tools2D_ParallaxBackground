@@ -124,8 +124,8 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		Document document = Document.get();
 		LabControls.panelLabels(document, "shadow-labels", "A: as painted", "B: the pines cast on the hills");
+		view = LabControls.stageChoice(document, "shadow-labels", "view", "view (the whole page; or without the pines, to see the shadow's shape alone)", VIEWS, 0);
 		Element controls = document.getElementById("shadow-controls");
-		view = LabControls.choice(document, controls, "view", "view (the whole page; or without the pines, to see the shadow's shape alone)", VIEWS, 0);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second: the shadow moves with the pines)", -160, 160, 5, 20);
 		from1 = LabControls.slider(document, controls, "light1", "light 1 comes from (degrees around the view: 0 the right, 90 above, 180 the left, 270 below)", 0, 355, 5, 215);
 		second = LabControls.choice(document, controls, "light2On", "light 2 (a second light, its own shadow)", OFF_ON, 0);

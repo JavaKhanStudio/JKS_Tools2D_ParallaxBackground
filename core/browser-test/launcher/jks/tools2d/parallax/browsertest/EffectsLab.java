@@ -213,6 +213,8 @@ public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 		document.setTitle("Effects lab: " + lab.feature + " (r224)");
 		document.getElementById("effects-title").setInnerText("Effects lab: " + lab.feature);
 		LabControls.panelLabels(document, "effects-labels", "A: " + lab.left, "B: " + lab.right);
+		if (sets.length > 1)
+			pick = LabControls.stageChoice(document, "effects-labels", "parallaxSet", "parallax set", FOG_NAMES, 0);
 		Element controls = document.getElementById("effects-controls");
 		if (lab != Lab.SNOW)
 		{
@@ -242,8 +244,6 @@ public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 			ripple = LabControls.slider(document, controls, "treesWaveRipple", "trees' WAVE ripple (x the page's)", 0, 1, 0.05f, 1);
 		}
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);
-		if (sets.length > 1)
-			pick = LabControls.choice(document, controls, "parallaxSet", "parallax set", FOG_NAMES, 0);
 		readout = LabControls.readout(document, controls, "effects-readout");
 	}
 

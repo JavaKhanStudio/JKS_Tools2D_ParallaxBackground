@@ -144,8 +144,8 @@ public class FloorLab extends ApplicationAdapter implements LabKit.Clip
 		document.getElementById("effects-lab").getStyle().setProperty("maxWidth", FRAME_WIDTH + "px");
 		document.getElementById("effects-labels").getStyle().setProperty("gridTemplateColumns", "1fr");
 		LabControls.panelLabels(document, "effects-labels", "The ground row by row, each row at its depth");
+		set = LabControls.stageChoice(document, "effects-labels", "parallaxSet", "parallax set (Hiver on snow, or round1's PurpleFairy on a violet ground; picking one puts the row speeds back to its own)", SET_NAMES, 0);
 		Element controls = document.getElementById("effects-controls");
-		set = LabControls.choice(document, controls, "parallaxSet", "parallax set (Hiver on snow, or round1's PurpleFairy on a violet ground; picking one puts the row speeds back to its own)", SET_NAMES, 0);
 		top = LabControls.slider(document, controls, "topRowSpeed", "top row's speed (ratio; Hiver's mountain behind is 0.016, PurpleFairy's back trees 0.0224)", 0, 0.08f, 0.0002f, TOP);
 		bottom = LabControls.slider(document, controls, "bottomRowSpeed", "bottom row's speed (ratio; the layers in front take the speed of the row under their foot)", 0, 0.16f, 0.001f, BOTTOM);
 		rows = LabControls.slider(document, controls, "strips", "strips (the rows the ground is cut in)", 2, MAX_ROWS, 1, ROWS);

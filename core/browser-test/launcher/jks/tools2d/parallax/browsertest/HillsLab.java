@@ -49,7 +49,6 @@ public class HillsLab extends ApplicationAdapter implements LabKit.Clip
 	private SelectElement seed, view;
 	private InputElement scroll;
 	private Element readout;
-	private Element[] labels = new Element[2];
 	/** What each heart shows: its candidate, seed and view, -1 before the first. */
 	private final int[][] showing = { { -1, -1, -1 }, { -1, -1, -1 } };
 	private boolean clip;
@@ -87,16 +86,14 @@ public class HillsLab extends ApplicationAdapter implements LabKit.Clip
 		Document document = Document.get();
 		LabControls.panelLabels(document, "hills-labels", "A", "B");
 		Element titles = document.getElementById("hills-labels");
-		labels[0] = (Element) titles.getChild(0);
-		labels[1] = (Element) titles.getChild(1);
+		picks[0] = LabControls.panelChoice(document, (Element) titles.getChild(0), "A: ", "hillsA", "A's hills (the recipe that painted the left panel's hills layer)", shown, A);
+		picks[1] = LabControls.panelChoice(document, (Element) titles.getChild(1), "B: ", "hillsB", "B's hills (the recipe that painted the right panel's hills layer)", shown, B);
+		view = LabControls.stageChoice(document, "hills-labels", "view", "view (the whole page; without the pines in front; the hills alone on the sky)", VIEWS, 0);
 		Element controls = document.getElementById("hills-controls");
 		String[] seedNames = new String[seeds.length];
 		for (int i = 0; i < seeds.length; i++)
 			seedNames[i] = seeds[i] + (i == 0 ? " (the page's own)" : "");
-		picks[0] = LabControls.choice(document, controls, "hillsA", "A's hills (the recipe that painted the left panel's hills layer)", shown, A);
-		picks[1] = LabControls.choice(document, controls, "hillsB", "B's hills (the recipe that painted the right panel's hills layer)", shown, B);
 		seed = LabControls.choice(document, controls, "seed", "seed (the same seed in both panels: 7020 painted the page's hills)", seedNames, 0);
-		view = LabControls.choice(document, controls, "view", "view (the whole page; without the pines in front; the hills alone on the sky)", VIEWS, 0);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, SCROLL);
 		readout = LabControls.readout(document, controls, "hills-readout");
 	}
@@ -116,7 +113,6 @@ public class HillsLab extends ApplicationAdapter implements LabKit.Clip
 				showing[i][0] = c;
 				showing[i][1] = s;
 				showing[i][2] = v;
-				labels[i].setInnerText((i == 0 ? "A: " : "B: ") + shown[c]);
 			}
 			hearts[i].screenSpeedConstantX = sc;
 			JsonValue m = candidates.get(c).get("measures").get(s);

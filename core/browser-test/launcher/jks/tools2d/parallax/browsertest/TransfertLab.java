@@ -114,8 +114,8 @@ public class TransfertLab extends ApplicationAdapter
 	{
 		Document document = Document.get();
 		LabControls.panelLabels(document, "transfert-labels", TITLES);
+		pair = LabControls.stageChoice(document, "transfert-labels", "pagePair", "pages", pairNames(), PAIR);
 		Element controls = document.getElementById("transfert-controls");
-		pair = LabControls.choice(document, controls, "pagePair", "pages", pairNames(), PAIR);
 		seconds = LabControls.slider(document, controls, "seconds", "transfert length (s)", 0.5f, 8, 0.25f, SECONDS);
 		hold = LabControls.slider(document, controls, "hold", "hold between transferts (s)", 0.5f, 5, 0.25f, HOLD);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll", 0, 240, 5, SCROLL);

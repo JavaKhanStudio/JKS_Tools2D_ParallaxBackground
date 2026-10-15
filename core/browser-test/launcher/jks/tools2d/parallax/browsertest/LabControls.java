@@ -10,7 +10,8 @@ import com.google.gwt.dom.client.SelectElement;
  * The labs' controls (r232), one kit for every lab, styled by webapp/lab.css: a slider is its name beside it, the
  * value after it, several to a row. A name says what the slider moves; its explanation, the part in brackets, is the
  * slider's tooltip. A choice among names (a set, a colour, a pair of pages) is a {@link #choice} instead, a select in
- * the slider's and its value's room (r248). Each lab's "Copy settings" reads the {@code data-key} and
+ * the slider's and its value's room (r248); one that picks what the panels show is on their titles over the canvas
+ * instead ({@link #panelChoice}, {@link #stageChoice}, r428). Each lab's "Copy settings" reads the {@code data-key} and
  * {@code data-start} put on either, the index of the option for a choice.
  */
 final class LabControls
@@ -77,6 +78,52 @@ final class LabControls
 		label.setClassName("ctl-name");
 		int bracket = name.indexOf(" (");
 		label.setInnerText(bracket < 0 ? name : name.substring(0, bracket));
+		SelectElement select = select(document, key, options, value);
+		row.appendChild(label);
+		row.appendChild(select);
+		into.appendChild(row);
+		return select;
+	}
+
+	/**
+	 * A choice of what one panel shows, as that panel's title (r428): {@code prefix} (its letter, "A: ") then the
+	 * picked name with a small down arrow, in the chip {@link #panelLabels} made. {@code name} is its tooltip.
+	 */
+	static SelectElement panelChoice(Document document, Element panelLabel, String prefix, String key, String name, String[] options, int value)
+	{
+		panelLabel.setInnerText(prefix);
+		return pick(document, panelLabel, key, name, options, value);
+	}
+
+	/**
+	 * A choice of what every panel shows (a parallax set, a pair of pages, a view), first in the first panel's chip,
+	 * at the stage's top left (r428), before that panel's own title.
+	 */
+	static SelectElement stageChoice(Document document, String labelsId, String key, String name, String[] options, int value)
+	{
+		Element first = document.getElementById(labelsId).getFirstChildElement();
+		SelectElement select = pick(document, first, key, name, options, value);
+		Element wrap = select.getParentElement();
+		wrap.addClassName("stage-pick");
+		first.insertFirst(wrap);
+		return select;
+	}
+
+	/** The subtle select on a panel's chip: the name it shows and a down arrow (lab.css's .panel-pick). */
+	private static SelectElement pick(Document document, Element into, String key, String name, String[] options, int value)
+	{
+		Element wrap = document.createSpanElement();
+		wrap.setClassName("panel-pick");
+		wrap.setTitle(name);
+		SelectElement select = select(document, key, options, value);
+		wrap.appendChild(select);
+		into.appendChild(wrap);
+		return select;
+	}
+
+	/** A select whose option values are their indices, the {@code value}-th picked, for Copy settings to read. */
+	private static SelectElement select(Document document, String key, String[] options, int value)
+	{
 		SelectElement select = document.createSelectElement();
 		for (int i = 0; i < options.length; i++)
 		{
@@ -88,9 +135,6 @@ final class LabControls
 		select.setSelectedIndex(value);
 		select.setAttribute("data-key", key);
 		select.setAttribute("data-start", String.valueOf(value));
-		row.appendChild(label);
-		row.appendChild(select);
-		into.appendChild(row);
 		return select;
 	}
 

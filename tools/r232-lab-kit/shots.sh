@@ -5,7 +5,8 @@
 #   tools/r232-lab-kit/shots.sh OUT [--no-build]   OUT/<lab>-desktop.png, OUT/<lab>-phone.png, and the fit checks
 # Fails when a lab's last slider is below the desktop viewport, a control's text is under 14px, a value runs out of its
 # slider's box or a name out of its choice's, a slider picks among names (r248: that is a choice), a PASS cell breaks
-# over two lines, or a page is wider than the phone (the kit's layout rules: core/browser-test/webapp/lab.css).
+# over two lines, a choice on a panel's title (r428) is cut, or a page is wider than the phone (the kit's layout rules:
+# core/browser-test/webapp/lab.css).
 # headless: Playwright drives the system Chrome headless on SwiftShader, no window.
 set -u
 cd "$(dirname "$0")/../.." || exit 1

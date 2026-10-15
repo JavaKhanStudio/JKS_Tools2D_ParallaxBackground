@@ -210,7 +210,9 @@ repair.
 - The HTML labs (`core/browser-test/webapp/*-lab.html`, r232) share one kit: `lab.css`, `lab.js` (Copy settings),
   `LabKit` (r311: the clip's clock, the panels, `exportClip`'s `<name>Act` that `tools/*-lab.sh` call, a lab shader's
   uniforms) and `LabControls.slider`, whose name shows up to its first " (", the rest a tooltip; a pick among names is a
-  `LabControls.choice` (a select, its option's index as the value: r248), never a slider. A new lab uses them, and
+  `LabControls.choice` (a select, its option's index as the value: r248), never a slider; a pick of what the panels
+  show is on their titles over the canvas, `LabControls.panelChoice` (one panel's) or `stageChoice` (every panel's: a
+  set, a pair of pages, a view), a name and a small ▾ (r428, `tools/r428-lab-chips/chips.sh OUT` clicks each). A new lab uses them, and
   `tools/r232-lab-kit/shots.sh OUT` (add the lab to its `shots.py`) fails a lab whose sliders need a scroll in the
   1580x800 window, a text under 14px, a value or a choice's name out of its box, a slider over names, or a page wider
   than a 390px phone. A new lab also gets a tile on `index.html`, the labs page `tools/browser-test.sh --open` shows
