@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Hills lab (r384): how should the forest's hills be painted?</title>
+	<link rel="stylesheet" href="lab.css">
+	<!-- HillsLab (r384): r365's AI forest page, its hills layer painted by each candidate recipe, two side by side. -->
+	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+</head>
+<body class="lab">
+	<header class="lab-bar">
+		<h1>Hills lab <span class="lab-question">which way of painting the hills ships?</span></h1>
+		<a class="lab-home" href="index.html">&larr; all labs</a>
+		<span id="hills-copy-state" class="lab-copy-state"></span>
+		<button id="hills-copy" class="lab-copy">Copy settings</button>
+	</header>
+	<div id="hills-lab" class="lab-stage lab-row">
+		<div id="embed-browsertests"></div>
+		<div id="hills-labels" class="lab-labels"></div>
+	</div>
+	<div id="hills-controls" class="lab-controls"></div>
+	<textarea id="hills-copy-json" class="lab-copy-json" hidden readonly></textarea>
+	<details class="lab-about">
+		<summary>What this lab shows</summary>
+		<p id="hills-about">r365's AI forest page ("misty pine forest in the mountains at dawn", dreamshaper_8, seed 7),
+	drawn twice by the real reader. Only its hills layer differs between the two panels: each choice picks the recipe
+	that painted it, from the same silhouette (tools/r239-ai-strips/sil.py, seed as chosen), cut by today's key
+	(layer.py). <b>today</b>: img2img at 0.65, what ships: one flat green. <b>r384 patch</b>: 0.70 with "wooded hills"
+	words, the version found worse: its folds come with pale ranges painted behind the hills. The second round keeps
+	the model inside the hills: <b>inpaint</b> repaints only inside the silhouette (dreamshaper_8Inpainting), the sky
+	kept as it was, so nothing is painted behind; at 1.0 it paints trees and folds but draws its own outline (lower
+	"shape kept"), at 0.85 it keeps more of the shape; "round trees" asks for rounded trees and no conifers.
+	<b>outline-guided</b>: img2img at 0.90, held to the outline by a lineart ControlNet over the first half of the
+	steps. The readout gives each one's colour spread inside the hills (a flat colour is near 0) and how much of
+	today's shape it keeps. Copy settings gives the choices as JSON for the card.</p>
+	</details>
+	<script src="lab.js"></script>
+	<script>
+	labCopy('hills', function () {
+		function picked(key) { return document.querySelector('select[data-key=' + key + ']').selectedOptions[0].textContent; }
+		return {
+			lab: 'hills-lab', A: picked('hillsA'), B: picked('hillsB'), seed: picked('seed'), view: picked('view'),
+			readout: document.getElementById('hills-readout').textContent
+		};
+	});
+	</script>
+</body>
+</html>

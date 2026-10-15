@@ -1,0 +1,242 @@
+forest.png
+size: 1024, 769
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+l0
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l1
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+forest-pines.png
+size: 1024, 1539
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+l3_0
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l3_1
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l3_2
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+l3_3
+  rotate: false
+  xy: 0, 1155
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+hills-today.png
+size: 1024, 1154
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+h_today_7020
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_today_7021
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_today_7022
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+hills-o70n.png
+size: 1024, 1154
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+h_o70n_7020
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_o70n_7021
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_o70n_7022
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+hills-inp.png
+size: 1024, 1154
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+h_inp_7020
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_inp_7021
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_inp_7022
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+hills-inp85.png
+size: 1024, 1154
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+h_inp85_7020
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_inp85_7021
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_inp85_7022
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+hills-inpf.png
+size: 1024, 1154
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+h_inpf_7020
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_inpf_7021
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_inpf_7022
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+hills-inpf85.png
+size: 1024, 1154
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+h_inpf85_7020
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_inpf85_7021
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_inpf85_7022
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+
+hills-ctlh.png
+size: 1024, 1154
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+h_ctlh_7020
+  rotate: false
+  xy: 0, 0
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_ctlh_7021
+  rotate: false
+  xy: 0, 385
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1
+h_ctlh_7022
+  rotate: false
+  xy: 0, 770
+  size: 1024, 384
+  orig: 1024, 384
+  offset: 0, 0
+  index: -1

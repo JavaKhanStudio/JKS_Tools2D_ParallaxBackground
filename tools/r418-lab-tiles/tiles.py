@@ -11,6 +11,7 @@ base, chrome, out = sys.argv[1:]
 # tools/r232-lab-kit/shots.py, the suite left out.
 LABS = [
     ("anim", "anim-lab.html", "animLabReady", 2, 2),
+    ("hills", "hills-lab.html", "hillsLabReady", 2, 1),
     ("fog", "fog-lab.html", "fogLabReady", 2, 2),
     ("haze", "haze-lab.html", "hazeLabReady", 2, 2),
     ("transfert", "transfert-lab.html", "transfertLabReady", 3, 2),

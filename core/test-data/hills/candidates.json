@@ -1,0 +1,191 @@
+{
+ "seeds": [
+  7020,
+  7021,
+  7022
+ ],
+ "candidates": [
+  {
+   "name": "today",
+   "shown": "today (ships)",
+   "how": "img2img",
+   "denoise": 0.65,
+   "prompt": "2d game parallax background layer, misty pine forest in the mountains at dawn, middle distance rolling hills with small trees, painterly, plain pale sky",
+   "negative more": "",
+   "colour": "3e5b4b",
+   "measures": [
+    {
+     "seed": 7020,
+     "std": 1.0,
+     "iou": 1.0
+    },
+    {
+     "seed": 7021,
+     "std": 5.1,
+     "iou": 1.0
+    },
+    {
+     "seed": 7022,
+     "std": 0.4,
+     "iou": 1.0
+    }
+   ]
+  },
+  {
+   "name": "o70n",
+   "shown": "r384 patch",
+   "how": "",
+   "denoise": 0.7,
+   "prompt": "2d game parallax background layer, misty pine forest in the mountains at dawn, middle distance rolling wooded hills dotted with small round trees, folds and groves, painterly, plain pale sky",
+   "negative more": ", pine trees, conifers, fir trees",
+   "colour": "3e5b4b",
+   "measures": [
+    {
+     "seed": 7020,
+     "std": 9.7,
+     "iou": 0.979
+    },
+    {
+     "seed": 7021,
+     "std": 11.7,
+     "iou": 0.983
+    },
+    {
+     "seed": 7022,
+     "std": 5.2,
+     "iou": 0.994
+    }
+   ]
+  },
+  {
+   "name": "inp",
+   "shown": "inpaint 1.0",
+   "how": "inpaint",
+   "denoise": 1.0,
+   "prompt": "2d game parallax background layer, misty pine forest in the mountains at dawn, middle distance rolling hills with small trees, painterly, plain pale sky",
+   "negative more": ", distant mountains, misty mountain range, fog, haze",
+   "colour": "3e5b4b",
+   "measures": [
+    {
+     "seed": 7020,
+     "std": 69.5,
+     "iou": 0.792
+    },
+    {
+     "seed": 7021,
+     "std": 69.6,
+     "iou": 0.786
+    },
+    {
+     "seed": 7022,
+     "std": 78.0,
+     "iou": 0.674
+    }
+   ]
+  },
+  {
+   "name": "inp85",
+   "shown": "inpaint 0.85",
+   "how": "inpaint",
+   "denoise": 0.85,
+   "prompt": "2d game parallax background layer, misty pine forest in the mountains at dawn, middle distance rolling hills with small trees, painterly, plain pale sky",
+   "negative more": ", distant mountains, misty mountain range, fog, haze",
+   "colour": "3e5b4b",
+   "measures": [
+    {
+     "seed": 7020,
+     "std": 34.8,
+     "iou": 0.925
+    },
+    {
+     "seed": 7021,
+     "std": 58.3,
+     "iou": 0.858
+    },
+    {
+     "seed": 7022,
+     "std": 39.9,
+     "iou": 0.909
+    }
+   ]
+  },
+  {
+   "name": "inpf",
+   "shown": "inpaint 1.0, round",
+   "how": "inpaint",
+   "denoise": 1.0,
+   "prompt": "2d game parallax background layer, misty pine forest in the mountains at dawn, middle distance rolling hills with small round trees, folds and shadows, painterly, plain pale sky",
+   "negative more": ", distant mountains, misty mountain range, fog, haze, pine trees, conifers",
+   "colour": "3e5b4b",
+   "measures": [
+    {
+     "seed": 7020,
+     "std": 50.0,
+     "iou": 0.89
+    },
+    {
+     "seed": 7021,
+     "std": 67.5,
+     "iou": 0.79
+    },
+    {
+     "seed": 7022,
+     "std": 59.4,
+     "iou": 0.804
+    }
+   ]
+  },
+  {
+   "name": "inpf85",
+   "shown": "inpaint 0.85, round",
+   "how": "inpaint",
+   "denoise": 0.85,
+   "prompt": "2d game parallax background layer, misty pine forest in the mountains at dawn, middle distance rolling hills with small round trees, folds and shadows, painterly, plain pale sky",
+   "negative more": ", distant mountains, misty mountain range, fog, haze, pine trees, conifers",
+   "colour": "3e5b4b",
+   "measures": [
+    {
+     "seed": 7020,
+     "std": 16.1,
+     "iou": 0.973
+    },
+    {
+     "seed": 7021,
+     "std": 40.8,
+     "iou": 0.917
+    },
+    {
+     "seed": 7022,
+     "std": 22.0,
+     "iou": 0.962
+    }
+   ]
+  },
+  {
+   "name": "ctlh",
+   "shown": "outline-guided",
+   "how": "control-half",
+   "denoise": 0.9,
+   "prompt": "2d game parallax background layer, misty pine forest in the mountains at dawn, middle distance rolling hills with small round trees, folds and shadows, painterly, plain pale sky",
+   "negative more": ", pine trees, conifers, distant mountains",
+   "colour": "3e5b4b",
+   "measures": [
+    {
+     "seed": 7020,
+     "std": 7.3,
+     "iou": 0.991
+    },
+    {
+     "seed": 7021,
+     "std": 15.7,
+     "iou": 0.979
+    },
+    {
+     "seed": 7022,
+     "std": 0.3,
+     "iou": 0.993
+    }
+   ]
+  }
+ ]
+}

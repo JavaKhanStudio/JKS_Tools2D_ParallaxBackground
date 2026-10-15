@@ -113,7 +113,7 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     // the other sets it puts the mist into (r208) are round1's s02, s05 and s06, with their atlases.
     def fogSets = ['s02', 's05', 's06'].collect { file("../engines/rounds/round1/${it}.jplax") }
     def fogAtlases = ['samples/transfer/calm', 'samples/Demos/PurpleFairy', 'samples/Demos/OneNight']
-    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'anim/**', 'particles/**', 'floor/**', 'tower/**', 'lurker/**'; fogAtlases.each { include "${it}.*" } },
+    inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'anim/**', 'particles/**', 'floor/**', 'tower/**', 'lurker/**', 'hills/**'; fogAtlases.each { include "${it}.*" } },
             file('../engines/rounds/shaders/s01.jplax'), file('../engines/rounds/tower/w01.jplax'), fogSets)
     doLast {
         def assets = browserTestAssets.get().asFile
@@ -173,6 +173,10 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
             filter { it.startsWith('../samples/') ? it.substring(it.lastIndexOf('/') + 1) : it }
         }
         project.copy { from 'test-data/lurker'; include '*.jplax'; into new File(assets, 'lurker-lab') }
+        // The hills lab's (r384, HillsLab): r365's forest page, its backdrop and every candidate's hills strips
+        // (core/test-data/hills/make_lab.py), the candidates' list beside the page.
+        project.copy { from 'test-data/hills'; include '*.png', 'forest.atlas'; into assets }
+        project.copy { from 'test-data/hills'; include 'forest.jplax', 'candidates.json'; into new File(assets, 'hills-lab') }
     }
 }
 tasks.register('browserTestWar', JavaExec) {
