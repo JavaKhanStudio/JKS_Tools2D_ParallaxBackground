@@ -7,8 +7,8 @@ BEFORE and AFTER are ai-page.sh page folders painted on the same --seed (recipe.
 OUT/r384-compare.html and its media beside it, every file named r384-cmp-*, so they can be attached to the card
 together and the page's relative links still work. Three views, each one box showing BEFORE or AFTER:
 the page scrolling (FILM_* are tools/ai-film.sh OUTs: the real reader's frames), the page at 6 s (a film's frame 180 when FILM_* are given, else shots/a01-t6.png), and the hills layer
-alone over the layers behind it, tiled twice. Each box has a wipe (drag: before left, after right), Before/After
-buttons, and a flicker that swaps them every second.
+alone over the layers behind it, tiled twice. Each box has a wipe (drag: before left, after right) and Before/After
+buttons; no flicker, which Simon found hard to watch (r421).
 """
 import argparse
 import os
@@ -37,32 +37,25 @@ h1 {{ font-size: 24px; }} h2 {{ font-size: 20px; margin-top: 36px; }}
 negative, painted at denoise 0.70. Same seed (7), same model (dreamshaper_8). The AFTER page is the BEFORE page
 with only its hills strip replaced: the far mountains and the pines are the same pixels on both sides.</p>
 <p class="note">In each box: drag across it (BEFORE on the left of the yellow line, AFTER on the right), or press
-Before / After to see one whole, or Flicker to swap them every second.
+Before / After to see one whole.
 What to look for: folds and small round trees on the hills, and the pale misty ranges SD paints behind them
 (kept by the key, with clipped tops: the cost).</p>
 {sections}
 <script>
 document.querySelectorAll('.view').forEach(v => {{
   const box = v.querySelector('.box'), btn = v.querySelectorAll('button');
-  let timer = null;
   const set = p => box.style.setProperty('--cut', p + '%');
   const mark = i => btn.forEach((b, k) => b.classList.toggle('on', k === i));
-  const stop = () => {{ clearInterval(timer); timer = null; }};
   set(50);
   box.addEventListener('pointermove', e => {{
     if (e.buttons !== 1 && e.pointerType === 'mouse') return;
-    stop(); mark(-1);
+    mark(-1);
     const r = box.getBoundingClientRect();
     set(Math.max(0, Math.min(100, 100 * (e.clientX - r.left) / r.width)));
   }});
   box.addEventListener('pointerdown', e => box.dispatchEvent(new PointerEvent('pointermove', e)));
-  btn[0].onclick = () => {{ stop(); set(100); mark(0); }};
-  btn[1].onclick = () => {{ stop(); set(0); mark(1); }};
-  btn[2].onclick = () => {{
-    if (timer) {{ stop(); mark(-1); return; }}
-    let a = false; mark(2);
-    timer = setInterval(() => {{ a = !a; set(a ? 0 : 100); }}, 1000); set(100);
-  }};
+  btn[0].onclick = () => {{ set(100); mark(0); }};
+  btn[1].onclick = () => {{ set(0); mark(1); }};
   const vids = v.querySelectorAll('video');
   if (vids.length === 2) setInterval(() => {{
     if (Math.abs(vids[1].currentTime - vids[0].currentTime) > 0.05) vids[1].currentTime = vids[0].currentTime;
@@ -72,7 +65,7 @@ document.querySelectorAll('.view').forEach(v => {{
 """
 
 VIEW = """<div class="view"><h2>{title}</h2><p class="note">{about}</p>
-<div class="bar"><button>Before</button><button>After</button><button>Flicker</button></div>
+<div class="bar"><button>Before</button><button>After</button></div>
 <div class="box">{before}{after}<div class="line"></div>
 <span class="tag b">BEFORE</span><span class="tag a">AFTER</span></div></div>
 """
