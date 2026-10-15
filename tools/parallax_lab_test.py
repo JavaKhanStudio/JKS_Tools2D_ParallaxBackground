@@ -43,6 +43,28 @@ class ImagelessLayers(unittest.TestCase):
         self.assertEqual([], lab.lint(lab.load('tools/r186-empty-page/page.jplax'), 'core/test-data/samples'))
 
 
+class LeftOutFields(unittest.TestCase):
+    """A .jplax may leave a layer field at its default out (r404): engines/rounds/animated/a01's layer 0 has no
+    parallaxScalingSpeedY, decal_X_Ratio, flipX nor padY, its layer 1 no decal_Y_Ratio. They load as
+    Parallax_Model's."""
+
+    PATH = 'engines/rounds/animated/a01.jplax'
+
+    def test_a_left_out_field_loads_as_its_default(self):
+        back, front = lab.layers(lab.load(self.PATH))
+        self.assertEqual((0.0, 0.0, False, 0.0, 0.0), (back['parallaxScalingSpeedY'], back['decal_X_Ratio'],
+                                                       back['flipX'], back['padY'], front['decal_Y_Ratio']))
+
+    def test_a_field_written_is_kept(self):
+        self.assertEqual((30.0, 30.0), tuple(l[k] for l, k in zip(lab.layers(lab.load(self.PATH)),
+                                                              ('decal_Y_Ratio', 'decal_X_Ratio'))))
+
+    def test_lint_reads_the_page(self):
+        page = lab.load(self.PATH)
+        self.assertIn('decal   30.0,   0.0 flip', lab.describe(page))
+        lab.lint(page, lab.find_atlas_dir(self.PATH, page))
+
+
 class ShaderLayers(unittest.TestCase):
     """engines/rounds/shaders/s04.jplax holds a WAVE with no wavelength (layer 5) and a FOG at 1.7 (layer 6)."""
 
