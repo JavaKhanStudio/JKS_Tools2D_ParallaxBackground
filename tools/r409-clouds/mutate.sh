@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # headless: unit tests, no window
 # mutate.sh — r409's proof: each part of the clouds' own layer taken out, the test that holds it must fail (r416:
-# the range's thin pieces hanging over its top too).
+# the range's thin pieces hanging over its top too; r420: sky painted on the range's rim).
 #
 # Copies tools/*.py, tools/r279-depth-page and tools/r239-ai-strips into a scratch folder, breaks one line at a time
 # (depth_page.py against clouds_test.py, ai_page.py against cloud_strip_test.py) and runs the test in the ComfyUI venv: a
@@ -53,6 +53,8 @@ mutate "range-edge-nibbled" $DP $CT "        if rise[sl][piece].max() > neck and
 mutate "tip-taken" $DP $CT "        if rise[sl][piece].max() > neck and (S[sl][ring] > 0).mean() >= nearer:" \
 	"        if rise[sl][piece].max() > neck:"
 mutate "thin-read-as-sky" $DP $CT "    rise = range_top(np.where(thin, 1, S))[None]" "    rise = range_top(np.where(thin, -1, S))[None]"
+mutate "rim-shard-kept" $DP $CT "(edge & (to_sky < pale * to_rng))" "(edge & False)"
+mutate "rim-too-loose" $DP $CT "    pale=0.15):" "    pale=0.2):"
 mutate "heaps-cut" r239-ai-strips/ai_page.py r239-ai-strips/cloud_strip_test.py \
 	'    return ["--keep-islands", "--no-creatures"] if kind == "clouds" else []' \
 	'    return ["--no-creatures"] if kind == "clouds" else []'

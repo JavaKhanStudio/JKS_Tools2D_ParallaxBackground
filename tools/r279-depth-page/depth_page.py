@@ -1024,15 +1024,20 @@ def clouds_of(img, dn, L, masks, least=200, most=0.5, share=0.9, lift=CLOUD_LIFT
     return out & (L == 0)
 
 
-def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin=0.3, neck=2, nearer=0.3):
+def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin=0.3, neck=2, nearer=0.3, rim=8,
+              pale=0.15):
     """L with the sky, -1, apart from band 0, the far range: band 0's pixels at the sky's depth and its clouds. Within
     reach px of a nearer thing, a range pixel whose colour is within margin of its distance to the range round it (the
     mean over window px) from the sky round it goes to the sky: depth's halo round a crown judged the sky beside it
     nearer than the sky, and the range layer carried it as a pale chunk on the peak's flank. Only that near the sky's
     colour: a far range is hazy, and at 1, still at 0.5, its flank beside a trunk went to the sky, the range cut in a
-    wall there (valley). Then a piece of the range under area px goes to the sky unless the range is most of its rim
-    (the sky between a crown's leaves: kept, the range layer carried it as specks floating in the sky); a piece of the
-    sky under area px with the range most of its rim joins the range (a pale cliff). Then a thin piece of the range
+    wall there (valley). On the range's rim, within rim px of the sky and nothing nearer, a pixel within pale of
+    that distance goes to the sky too (r420: sky painted beside a peak's flank, judged a shade farther than the sky
+    is, rode on the range as a pale shard, noloop); its means are the ones above, the rim in the range's: at 0.2,
+    still with the rim out of them, valley's hazy far hills went to the sky in notches. Then a piece of the range
+    under area px goes to the sky unless the range is most of its rim (the sky between a crown's leaves: kept, the
+    range layer carried it as specks floating in the sky); a piece of the sky under area px with the range most of its
+    rim joins the range (a pale cliff). Then a thin piece of the range
     (gone when it is opened by neck px) rising more than neck px over its top edge goes to the sky when a nearer thing
     is on nearer of its rim (r416: a crown's gaps judged as far as the range; the range layer carried them, repainted,
     as lumps on the peak's flank that slid with it, valley); a peak's tip, the sky all round it, stays, and so does
@@ -1048,7 +1053,9 @@ def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin
         (sky_m, sky_c), (rng_m, rng_c) = band_means(T, rgb, 2, window)
         sky_m, rng_m = filled(sky_m, sky_c > 0, far), filled(rng_m, rng_c > 0, far)
         with np.errstate(invalid="ignore"):
-            S[zone & (np.linalg.norm(rgb - sky_m, axis=2) < margin * np.linalg.norm(rgb - rng_m, axis=2))] = -1
+            to_sky, to_rng = np.linalg.norm(rgb - sky_m, axis=2), np.linalg.norm(rgb - rng_m, axis=2)
+        edge = (S == 0) & ~zone & grow(S == -1, rim)
+        S[(zone & (to_sky < margin * to_rng)) | (edge & (to_sky < pale * to_rng))] = -1
     S = np.tile(S, 3)
     for k in (0, -1):
         comp, count = ndimage.label(S == k)

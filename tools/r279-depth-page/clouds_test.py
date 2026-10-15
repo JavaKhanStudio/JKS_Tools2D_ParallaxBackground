@@ -7,7 +7,8 @@ leaves that depth's halo judged nearer than the sky; a white cloud with a soft r
 ridge in the sky, darker than it; a bird, a dark speck in the sky, and a twig's end in an opening of the crown; a trunk hiding the peak's right flank, the sky beside it
 in depth's halo; a mist in the range that depth judged as far as the sky; a pine on the range's left flank, a gap in it as
 far as the range hanging over the range's top by a 1 px neck (r416), and a thin tip of the range with the sky all round
-it. SAM's masks: the cloud, the sky round it, the ridge.
+it; on the right flank, away from anything nearer, sky painted on the range's top a shade farther than the sky is (r420)
+and beside it a hazy strip 0.85 of the way to the sky's colour. SAM's masks: the cloud, the sky round it, the ridge.
 tools/r409-clouds/mutate.sh takes each fix out and proves a case here fails.
 """
 import argparse
@@ -51,9 +52,14 @@ def scene():
     hang = (rows >= 57) & (rows < 60) & (cols >= 113) & (cols < 120)  # its gap, judged as far as the range
     neck = (rows >= 60) & (rows < 63) & (cols == 116)
     tip = (rows >= 45) & (rows < 51) & (cols == 135)  # the range's top at x 135 is row 51
+    shard = rng & (rows < peak + 6) & (cols >= 233) & (cols < 238)  # 19 px from the trunk: no nearer thing in reach
+    haze = rng & (rows < peak + 4) & (cols >= 241) & (cols < 252)
     img[rng], dn[rng] = RANGE, 0.1
     img[pine], dn[pine], L[pine] = (40, 90, 40), 0.8, 2
     img[hang | neck | tip], dn[hang | neck | tip], L[hang | neck | tip] = RANGE, 0.1, 0
+    img[shard], dn[shard] = SKY, 0.02
+    img[haze] = (3 * np.array(RANGE) + 17 * np.array(SKY)) // 20  # depth haze, as valley's far hills: gone at 0.2
+    rng &= ~shard
     img[cloud] = CLOUD
     rim = dp.grow(cloud, 3) & ~cloud & ~rng  # its soft edge, half way to the sky, out of SAM's outline
     img[rim] = (np.array(CLOUD) + SKY) // 2
@@ -69,6 +75,7 @@ def scene():
     sky_mask = (L == 0) & ~rng & ~cloud & ~ridge
     return {"img": img, "dn": dn, "L": L, "rng": rng, "cloud": cloud, "ridge": ridge, "gap": gap, "bird": bird,
             "crown": crown, "trunk": trunk, "halo": halo, "pale": pale, "peak": peak, "hang": hang, "tip": tip,
+            "shard": shard, "haze": haze,
             "masks": [cloud, sky_mask, ridge]}
 
 
@@ -112,6 +119,11 @@ class CloudsTest(unittest.TestCase):
         _, S = self.split()
         self.assertTrue((S[self.s["hang"]] == -1).all())  # in the range, a lump riding on its flank (valley, r416)
         self.assertTrue((S[self.s["tip"]] == 0).all())
+
+    def test_sky_painted_on_the_range_s_top_goes_to_the_sky_a_hazy_flank_stays(self):
+        _, S = self.split()
+        self.assertTrue((S[self.s["shard"]] == -1).all())  # in the range, a pale shard sliding with it (noloop, r420)
+        self.assertTrue((S[self.s["haze"]] == 0).all())  # cut out, the range in notches (valley at 0.2)
 
     def test_the_sky_layer_has_no_cloud_and_no_bird_and_keeps_the_ridge(self):
         clouds, S = self.split()
