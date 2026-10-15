@@ -77,6 +77,9 @@ SAM = "facebook/sam2.1-hiera-small"
 NEG = ("text, watermark, frame, border, people, birds, flying bird, animals, tree in the sky, close-up, "
        "foreground object, blurry")
 WORDS = ["far distance", "middle distance", "near", "foreground"]  # the inpaint prompt's depth, back to front
+# r426: what no repaint draws: SD carried a track the layer kept on across the hole, from r387's field-coloured start,
+# a second track beside the painted one once the layers slid (valley, noloop).
+TRACKS = ", path, road, dirt track, trail, tyre tracks"
 
 
 def log(s):
@@ -976,7 +979,7 @@ def cut_layer(k, img, dn, L, centres, ground, cut, a):
         soft = ndimage.gaussian_filter(grow(hole, 2).astype(np.float32), 1.5, mode=("nearest", "wrap"))
         Image.fromarray((np.maximum(soft, hole) * 255).astype(np.uint8)).save(f"{cut_k}_mask.png")
         gen(["inpaint", "--ckpt", a.ckpt, "--src", f"{cut_k}_src.png", "--mask", f"{cut_k}_mask.png", "--tile", "x", "--denoise",
-             str(a.denoise), "--seed", str(a.seed * 100 + k), "--w", str(w), "--h", str(h), "--negative", NEG,
+             str(a.denoise), "--seed", str(a.seed * 100 + k), "--w", str(w), "--h", str(h), "--negative", NEG + TRACKS,
              "--prompt", f"{a.theme}, {word} scenery, painterly, seamless", "--out", done], f"{cut_k}_gen.log")
         log(f"layer {k}: {hole.mean():.0%} of the painting repainted")
     elif not hole.any():

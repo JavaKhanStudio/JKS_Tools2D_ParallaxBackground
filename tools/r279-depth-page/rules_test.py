@@ -1,5 +1,6 @@
 """depth_page's rules (r378), see_through's sky by hue (r380), foot_of's hidden feet (r386) and the moved fields kept
-whole and seeding the layers behind (r387), on paintings made up here: no GPU, no files from a run.
+whole and seeding the layers behind with no track drawn there (r387, r426), on paintings made up here: no GPU, no
+files from a run.
 
     ~/ComfyUI/venv/bin/python tools/r279-depth-page/rules_test.py
 
@@ -285,6 +286,30 @@ class KeptFieldsTest(unittest.TestCase):
             shutil.rmtree(cut)
         self.assertLess(np.abs(src[80, 100] - (140, 180, 140)).max(), 30)  # the field's light, not the forest's dark
         self.assertLess(np.abs(src[92, 100] - (140, 180, 140)).max(), 40)  # and no second track
+
+    def test_the_repaint_draws_no_track(self):
+        img = np.zeros((H, W, 3), np.uint8)
+        img[:60] = (20, 40, 20)
+        img[60:] = (140, 180, 140)
+        L = np.full((H, W), 2)
+        L[60:] = 3
+        cut = tempfile.mkdtemp(prefix="r426-")
+        asked = []
+        saved = dp.gen
+
+        def gen(argv, logfile):
+            asked.append(argv[argv.index("--negative") + 1])
+            shutil.copy(argv[argv.index("--src") + 1], argv[argv.index("--out") + 1])
+        dp.gen = gen
+        try:
+            a = types.SimpleNamespace(layers=4, grow=6, theme="green hills", forced={}, denoise=0.8, seed=1, ckpt="x",
+                                      keep=False)
+            dp.cut_layer(2, img, np.zeros((H, W)), L, [0.0, 0.3, 0.6, 0.9], L == 3, cut, a)
+        finally:
+            dp.gen = saved
+            shutil.rmtree(cut)
+        self.assertTrue(asked)
+        self.assertIn("dirt track", asked[0])  # r426: SD carried the layer's track on across a field's hole
 
 
 if __name__ == "__main__":

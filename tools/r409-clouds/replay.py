@@ -5,7 +5,7 @@
 
 CACHE.npz is tools/r380-twig-gaps/bands.py's (cache: the painting, its depth, SAM's masks, the prompted fields).
 The repaints are not run: each layer's hole keeps fill()'s start (OUT/cut/l<k>_src.png), so what moves between two
-runs is the cut, not a seed. --no-shots is passed; tools/parallax-lab-shots.sh OUT/page OUT/shots renders it.
+runs is the cut, not a seed; --repaint runs them (gen.py, on the GPU), to tune a repaint on a cached cut (r426). --no-shots is passed; tools/parallax-lab-shots.sh OUT/page OUT/shots renders it.
 --depth-page: another checkout's depth_page.py (a HEAD worktree's, for the before).
 """
 import argparse
@@ -28,6 +28,7 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--theme", required=True)
     ap.add_argument("--depth-page", default=bands.DEFAULT)
+    ap.add_argument("--repaint", action="store_true", help="run gen.py's repaints instead of keeping their start")
     ap.add_argument("rest", nargs="*", help="more depth_page arguments, after --")
     a = ap.parse_args()
     dp = bands.load(os.path.abspath(a.depth_page))
@@ -39,7 +40,8 @@ def main():
 
     def gen(args, logfile):  # the repaint's start stands for the repaint
         shutil.copy(args[args.index("--src") + 1], args[args.index("--out") + 1])
-    dp.gen = gen
+    if not a.repaint:
+        dp.gen = gen
     os.makedirs(a.out, exist_ok=True)
     painting = os.path.join(a.out, "painting.png")
     Image.fromarray(c["img"]).save(painting)

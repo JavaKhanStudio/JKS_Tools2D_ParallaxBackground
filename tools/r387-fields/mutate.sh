@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # headless: unit tests, no window
 # mutate.sh — r387's proof: each part of a moved field kept whole and seeding the layers behind taken out, a case in
-# tools/r279-depth-page/rules_test.py must fail.
+# tools/r279-depth-page/rules_test.py must fail (r426: and the repaint's negative naming tracks).
 #
 # Copies tools/*.py, tools/r279-depth-page and tools/r239-ai-strips into a scratch folder, breaks one line of depth_page.py at a time and
 # runs rules_test.py in the ComfyUI venv: a mutant the test passes is a fix nothing proves. Exits 1 when one survives.
@@ -39,4 +39,5 @@ mutate "notches-kept" "        out[shut & (out < k)] = k" "        pass"
 mutate "bays-closed" "def kept_fields(L, moved, fields, edge=6):" "def kept_fields(L, moved, fields, edge=30):"
 mutate "track-seeded" "def field_colours(img, field, sigma=8):" "def field_colours(img, field, sigma=0.3):"
 mutate "forest-seeded" "        src[field] = field_colours(img, ground & (L > k))[field]" "        pass"
+mutate "tracks-drawn" '"--negative", NEG + TRACKS,' '"--negative", NEG,'
 exit "$survived"
