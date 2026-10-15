@@ -6,9 +6,10 @@
 SPEC: {"name": "r401", "title": ..., "intro": ... (HTML), "sections": [{"title": ..., "about": ...,
 "items": [{"label": "today", "about": ..., "src": PATH}, ...], "left": 0, "right": 1}]}. A section with one item is
 shown as it is (a legend, a map). Each other section shows two of its items in one box: Left and Right buttons pick
-them, a yellow line splits them (drag it), Flicker swaps the two whole every second. Films (.mp4) play looped, muted,
-kept in step with the section's first. Every file is copied beside OUT_DIR/<name>-compare.html as <name>-cmp-*, so
-they can be attached to a card together and the page's relative links still work.
+them, a yellow line splits them (drag it), Flicker shows the two whole in turn every second, the shown one's name alone
+in the corner (r421: with both names up and the line jumping edge to edge it read as broken). Films (.mp4) play looped,
+muted, kept in step with the section's first by their speed, and get Pause, to flicker a still frame. Every file is
+copied beside OUT_DIR/<name>-compare.html as <name>-cmp-*, so they can be attached to a card together and the page's relative links still work.
 """
 import html
 import json
@@ -36,23 +37,29 @@ h1 { font-size: 24px; } h2 { font-size: 20px; margin-top: 40px; }
 SCRIPT = """
 document.querySelectorAll('.view').forEach(v => {
   const box = v.querySelector('.box'), items = [...box.querySelectorAll('.item')];
-  const names = JSON.parse(v.dataset.names);
-  let left = +v.dataset.left, right = +v.dataset.right, timer = null, cut = 50;
+  const names = JSON.parse(v.dataset.names), flick = v.querySelector('.flick'), pause = v.querySelector('.pause');
+  const tagL = v.querySelector('.tag.l'), tagR = v.querySelector('.tag.r'), line = v.querySelector('.line');
+  let left = +v.dataset.left, right = +v.dataset.right, timer = null, cut = 50, shown = -1;
   const draw = () => {
+    // Flickering: one version whole (the right one clipped to nothing or to all), its name alone, no line
     items.forEach((it, k) => { it.classList.toggle('left', k === left); it.classList.toggle('right', k === right); });
-    box.style.setProperty('--cut', cut + '%');
-    v.querySelector('.tag.l').textContent = names[left];
-    v.querySelector('.tag.r').textContent = names[right];
-    v.querySelectorAll('.pick-l button').forEach((b, k) => b.classList.toggle('on', k === left));
-    v.querySelectorAll('.pick-r button').forEach((b, k) => b.classList.toggle('on', k === right));
+    box.style.setProperty('--cut', (shown < 0 ? cut : shown === right ? 0 : 100) + '%');
+    line.style.display = shown < 0 ? '' : 'none';
+    tagL.textContent = shown < 0 ? names[left] : names[shown];
+    tagR.style.display = shown < 0 ? '' : 'none';
+    tagR.textContent = names[right];
+    v.querySelectorAll('.pick-l .pick').forEach((b, k) => b.classList.toggle('on', k === left));
+    v.querySelectorAll('.pick-r .pick').forEach((b, k) => b.classList.toggle('on', k === right));
+    flick.classList.toggle('on', timer !== null);
   };
-  const stop = () => { clearInterval(timer); timer = null; v.querySelector('.flick').classList.remove('on'); };
-  v.querySelectorAll('.pick-l button').forEach((b, k) => b.onclick = () => { stop(); left = k; draw(); });
-  v.querySelectorAll('.pick-r button').forEach((b, k) => b.onclick = () => { stop(); right = k; draw(); });
-  v.querySelector('.flick').onclick = e => {
-    if (timer) { stop(); cut = 50; draw(); return; }
-    e.target.classList.add('on'); let shown = false;
-    timer = setInterval(() => { shown = !shown; cut = shown ? 0 : 100; draw(); }, 1000); cut = 100; draw();
+  const stop = () => { clearInterval(timer); timer = null; shown = -1; };
+  v.querySelectorAll('.pick-l .pick').forEach((b, k) => b.onclick = () => { stop(); left = k; draw(); });
+  v.querySelectorAll('.pick-r .pick').forEach((b, k) => b.onclick = () => { stop(); right = k; draw(); });
+  flick.onclick = () => {
+    if (timer) { stop(); draw(); return; }
+    shown = left;
+    timer = setInterval(() => { shown = shown === left ? right : left; draw(); }, 1000);
+    draw();
   };
   const move = e => {
     const r = box.getBoundingClientRect();
@@ -61,9 +68,18 @@ document.querySelectorAll('.view').forEach(v => {
   box.addEventListener('pointerdown', move);
   box.addEventListener('pointermove', e => { if (e.buttons === 1 || e.pointerType !== 'mouse') move(e); });
   const vids = items.filter(it => it.tagName === 'VIDEO');
+  if (pause) pause.onclick = () => {
+    const run = vids[0].paused;
+    vids.forEach(w => { if (run) w.play(); else { w.pause(); w.currentTime = vids[0].currentTime; } });
+    pause.textContent = run ? 'Pause' : 'Play'; pause.classList.toggle('on', !run);
+  };
+  // The others follow the first by their speed, sought only when far off or across the loop: a seek is a stutter
   if (vids.length > 1) setInterval(() => vids.slice(1).forEach(w => {
-    if (Math.abs(w.currentTime - vids[0].currentTime) > 0.05) w.currentTime = vids[0].currentTime;
-  }), 500);
+    const d = vids[0].currentTime - w.currentTime;
+    if (vids[0].paused) return;
+    if (Math.abs(d) > 0.25) { w.currentTime = vids[0].currentTime; w.playbackRate = 1; }
+    else w.playbackRate = Math.abs(d) > 0.02 ? 1 + Math.max(-0.1, Math.min(0.1, d)) : 1;
+  }), 250);
   draw();
 });
 """
@@ -94,13 +110,14 @@ def main():
             body.append(f'<div class="box" style="cursor: default">{media(srcs[0])}</div>')
             continue
         labels = [it["label"] for it in sec["items"]]
-        buttons = "".join(f"<button>{html.escape(lb)}</button>" for lb in labels)
+        buttons = "".join(f"<button class='pick'>{html.escape(lb)}</button>" for lb in labels)
+        pause = "<button class='pause'>Pause</button>" if any(s.endswith(".mp4") for s in srcs) else ""
         legend = "".join(f"<li><b>{html.escape(it['label'])}</b>: {it.get('about', '')}</li>" for it in sec["items"])
         body.append(
             f"<div class='view' data-names='{html.escape(json.dumps(labels))}' data-left='{sec.get('left', 0)}' "
             f"data-right='{sec.get('right', 1)}'>"
             f"<div class='bar pick-l'><b>Left</b>{buttons}</div>"
-            f"<div class='bar pick-r'><b>Right</b>{buttons}<button class='flick'>Flicker</button></div>"
+            f"<div class='bar pick-r'><b>Right</b>{buttons}<button class='flick'>Flicker</button>{pause}</div>"
             f"<div class='box'>{''.join(media(s, 'item') for s in srcs)}<div class='line'></div>"
             f"<span class='tag l'></span><span class='tag r'></span></div><ul class='legend'>{legend}</ul></div>")
     page = os.path.join(out, f"{name}-compare.html")

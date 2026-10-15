@@ -55,7 +55,8 @@ about = {"on": "today: the misty farther pines at the forest's foot keyed out al
          "off": "those pines kept as dreamshaper_8 painted them, pale, a depth cue"}
 secs = [{"title": f"{n}: the page scrolling (10 s, loops)",
          "about": "The real reader's frames. The rule only touches two of the pines layer's four segments (l3v1, l3v2), "
-                  "so the difference comes and goes as they pass.",
+                  "so the difference comes and goes as they pass, and it is small: a few pale pines at the forest's foot, "
+                  "near the bottom. Press Pause, then Flicker, to see them on a still frame (the last 4 s show the most).",
          "items": [{"label": f"misty_pines {v}", "about": about[v], "src": f"{out}/film-{v}/a01.mp4"} for v in ("on", "off")]}]
 for s, px in json.load(open(f"{out}/strips.json")):
     secs.append({"title": f"{n} {s}: the pines strip over the layers behind, cropped where on and off differ, twice the size",
@@ -64,7 +65,8 @@ for s, px in json.load(open(f"{out}/strips.json")):
 spec = {"name": "r421", "title": "r421: the misty pines at the forest's foot: key them out (misty_pines on) or keep them?",
         "intro": "dreamshaper_8 paints farther pines in mist at the foot of the forest's pines layer. r400's rule "
                  "misty_pines keys them out; nobody chose it. Pick two versions under <b>Left</b> and <b>Right</b>, "
-                 "drag the yellow line, or press <b>Flicker</b> (the clearest: the same place, one then the other).",
+                 "drag the yellow line, or press <b>Flicker</b> (the clearest: the same place, one then the other, its name "
+                 "in the corner).",
         "sections": secs}
 json.dump(spec, open(f"{out}/spec.json", "w"), indent=1)
 subprocess.run([sys.executable, "tools/compare_page.py", f"{out}/spec.json", f"{out}/page"], check=True)
