@@ -2,7 +2,8 @@
 
     python3 tools/r239-ai-strips/sil.py KIND OUT_PREFIX [--w 1024] [--h 384] [--seed 1] [--colour 1f3a30]
 
-KIND: mountains | hills | pines | dunes | sea | ruins | palms (r239's examples: a beach, a post-apocalyptic city). Writes OUT_PREFIX_mask.png (white = the layer, antialiased) and
+KIND: mountains | hills | pines | dunes | sea | ruins | palms (r239's examples: a beach, a post-apocalyptic city) |
+clouds (r409: a page's clouds, painted on their own, never in another layer's sky). Writes OUT_PREFIX_mask.png (white = the layer, antialiased) and
 OUT_PREFIX_init.png (the shape in flat colours over a flat sky), the start image diffusion paints over.
 img2img at 0.65 keeps much of that colour: --colour (hex) sets the layer's for a theme (r246).
 --texture 1 (r365) textures the fill of a kind whose SPEC has a "texture" (mountains, hills, sea, dunes): img2img
@@ -13,7 +14,8 @@ steps past what a SEQUENCE's joins may show); a variant (--edges-of) turns by it
 Every curve is a sum of sines of whole frequencies over the width, and every tree sits at a
 position taken modulo the width, so column w-1 runs on into column 0. ruins are towers with broken tops on a rubble line, a height per column like the
 rest; palms overhang (a crown wider than its trunk, sky under it), so they are drawn over the dunes as shapes, each one
-again a width to the left and right so the ones across the join run on.
+again a width to the left and right so the ones across the join run on. clouds float: heaps of round puffs on a flat
+foot, drawn the same way, in a band clear of the strip's top and bottom rows, over a blue sky they stand out from.
 """
 import argparse
 
@@ -36,6 +38,9 @@ SPEC = {
             "sky": (210, 225, 240), "texture": {"aspect": 20, "light": 0.0, "amp": 3}},
     "palms": {"base": 0.05, "waves": [(2, 0.025), (5, 0.012)], "ridge": False, "palms": 9, "colour": (40, 50, 35),
               "sky": (210, 225, 240)},
+    # band: the feet's rows, fractions of h from the bottom; a heap is at most 0.3 h tall, so its top stays 0.1 h clear
+    "clouds": {"base": 0.0, "waves": [], "ridge": False, "clouds": 7, "band": (0.35, 0.6), "colour": (245, 245, 250),
+               "sky": (115, 155, 210), "texture": {"light": 1.2, "amp": 0.8}},
 }
 
 
@@ -80,6 +85,8 @@ def main():
         top = keep * (1 - r) + top * r
     yy = H - np.arange(H)[:, None]  # height of each row from the bottom
     mask = (yy <= top[None, :]).astype(np.float32)
+    if "clouds" in spec:  # nothing stands on the strip's foot: the heaps alone
+        mask = draw_clouds(spec, np.random.default_rng(a.seed), W, H)
     if "palms" in spec:
         turn = quiet(keep, ss) if a.quiet_join else 0  # top and keep were turned by it: the palms turn with them
         own = palms(spec, np.random.default_rng(a.seed), W, H, top)
@@ -184,6 +191,28 @@ def draw_palms(ps, W, H, turn):
                 th = 0.10 * spread * np.sin(np.pi * np.clip(u * 1.1, 0, 1)) + 1
                 g.polygon(list(zip(fx, fy - th)) + list(zip(fx, fy + th))[::-1], fill=255)
             g.ellipse([hx - 0.04 * spread, hy - 0.04 * spread, hx + 0.04 * spread, hy + 0.04 * spread], fill=255)
+    return np.asarray(img, np.float32) / 255
+
+
+def draw_clouds(spec, rng, W, H):
+    """spec["clouds"] heaps of overlapping puffs, each on a flat foot (a cumulus's), at random columns modulo W and
+    drawn again a width to the left and right, so one across the join runs on: the mask, 0..1."""
+    from PIL import ImageDraw
+    img = Image.new("L", (W, H), 0)
+    g = ImageDraw.Draw(img)
+    lo, hi = spec["band"]
+    for _ in range(spec["clouds"]):
+        cx, width = rng.uniform(0, W), rng.uniform(0.08, 0.2) * W
+        foot = H * (1 - rng.uniform(lo, hi))
+        tall = min(0.3 * H, width * rng.uniform(0.5, 0.9))
+        puffs = []
+        for _ in range(int(rng.integers(5, 10))):
+            px = rng.uniform(-0.5, 0.5) * width
+            r = rng.uniform(0.25, 0.5) * tall * (1 - abs(px) / width)  # the middle's puffs the largest
+            puffs.append((px, foot - r * rng.uniform(0.6, 1.4), r))
+        for shift in (-W, 0, W):
+            for px, py, r in puffs:
+                g.ellipse([cx + shift + px - r, py - r, cx + shift + px + r, min(foot, py + r)], fill=255)
     return np.asarray(img, np.float32) / 255
 
 

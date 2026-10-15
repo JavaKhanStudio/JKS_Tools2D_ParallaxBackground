@@ -48,6 +48,13 @@ skate, on the flattest stretch of A's ground, and comes by once every --lurker-e
 depth's (r363): --lurker-height (its height at the front layer's depth, 2.3 units: r363's v01) times A's speed over
 the front's. tools/lurker-cover.sh bakes where the layer in front covers it whole. Painted style only.
 
+Clouds, only on request (r409): --clouds paints them on a strip of their own (sil.py's clouds: heaps of puffs over a
+blue sky, img2img with the theme left out of its prompt, layer.py keeping every heap, no creature check: creature.py
+takes a cloud for one), never in another
+layer's sky (NEG_XL names them, the painted prompt asks a plain pale sky, and layer.py keys a strip's sky out). The
+layer goes behind the back one, its top on the screen's top, at the back layer's speed / 1.25, drifting at
+--cloud-rest (the skill's far clouds: 25-90): a BILLOW on it warps no mountain (r375). Painted style.
+
 An animated patch, only on request (r395, docs/animated-layers.md phase 3): --animate l3='palm fronds tossing in a
 strong wind' (repeatable; l0 the back layer) paints the cut layer moving with Wan 2.1 VACE (tools/r375-animated-layer:
 anim.py, ~5 min a layer, then loopcut.py, rekey.py, loopcheck.py), over its alpha (--animate-rows l3=90-250: only those
@@ -95,10 +102,26 @@ WORDS = {"mountains": "rocky mountain range", "hills": "rolling hills with small
          "ruins": "ruined city skyline, broken skyscrapers silhouette", "palms": "palm trees silhouette on a sandy shore"}
 GROW = {"mountains": 8, "hills": 8, "pines": 40, "dunes": 8, "sea": 4, "ruins": 16, "palms": 24}  # layer.py --grow, px
 DEFAULT_COLOURS = ["7a869e", "4f7a5a", "1f3a30"]  # sil.py's kinds, at full contrast: the fog gives the distance
+# --clouds (r409): not a depth (no --kinds word), a strip of their own behind the back layer.
+CLOUD_WORDS = "white fluffy cumulus clouds in an empty sky"
+# The theme stays out of the clouds' prompt: its things grow in their sky (r409: the beach's palms, a trunk under a
+# cloud that the key kept), and the land is named in their negative.
+CLOUD_NEG = "trees, palm trees, mountains, hills, ground, land, sea, horizon, "
+CLOUD_GROW = 24  # layer.py --grow: SD rounds the heaps past sil.py's puffs
+CLOUD_REST = 30.0  # speedXAtRest: the skill's far clouds drift at 25-90
+CLOUD_SLOWER = 1.25  # the back layer's speed over the clouds': lint wants the speeds rising toward the front
+
+
+def cut_args(kind):
+    """layer.py's arguments for a kind past the ones every strip takes: a cloud strip keeps every heap (an island
+    apart from the main mass is cut from any other) and skips creature.py, which takes a cloud for a creature."""
+    return ["--keep-islands", "--no-creatures"] if kind == "clouds" else []
 
 
 def negative(neg, kind):
-    """The negative prompt for a shape: a ruined skyline is buildings."""
+    """The negative prompt for a shape: a ruined skyline is buildings, a cloud strip clouds."""
+    if kind == "clouds":
+        return neg.replace("clouds, ", "")
     return neg.replace(", buildings", "") if kind == "ruins" else neg
 
 
@@ -323,6 +346,9 @@ def parse_args():
     ap.add_argument("--sampler", help="default gen.py's dpmpp_2m")
     ap.add_argument("--scheduler", help="default gen.py's karras")
     ap.add_argument("--denoise", type=float, help="img2img strength over sil.py's shape: default 0.65, pixel 0.7, a DiT 0.75")
+    ap.add_argument("--clouds", action="store_true", help="paint the clouds on a layer of their own, behind the back"
+                    " one (r409): a page's clouds are never in another layer")
+    ap.add_argument("--cloud-rest", type=float, default=CLOUD_REST, help="the clouds' speed at rest (25-90)")
     ap.add_argument("--lurker", help="paint one figure (e.g. 'a hooded figure') into a LURKER layer: only on request")
     ap.add_argument("--lurker-between", help="A,A+1: the two layers it goes between (back to front from 0), standing"
                     " on A at its speed; default the two front ones")
@@ -355,6 +381,8 @@ def parse_args():
         a.layers, a.front = len(given), given[-1]
     if not 2 <= a.layers <= 6:
         ap.error("--layers: 2 to 6")
+    if a.clouds and a.style == "pixel":
+        ap.error("--clouds: painted style only")
     if a.lurker_between and not a.lurker:
         ap.error("--lurker-between: with --lurker")
     if a.lurker:
@@ -470,9 +498,11 @@ class Pipeline:
         tool = ["python3", f"{d}/pixel.py", f"{prefix}_ai.png", f"{prefix}_cut.png", "--mask", f"{prefix}_mask.png",
                 "--colours", "12"] if self.pixel else ["python3", f"{d}/layer.py", f"{prefix}_ai.png",
                                                        f"{prefix}_cut.png", "--mask", f"{prefix}_mask.png", "--grow",
-                                                       str(GROW[kind]), "--kind", kind, "--ckpt", self.model["ckpt"],
+                                                       str(CLOUD_GROW if kind == "clouds" else GROW[kind]), "--kind",
+                                                       kind, "--ckpt", self.model["ckpt"],
                                                        "--rules-json", f"{prefix}_rules.json",
-                                                       *(x for r in self.a.rule for x in ("--rule", r))]
+                                                       *(x for r in self.a.rule for x in ("--rule", r)),
+                                                       *cut_args(kind)]
         code = run(tool, prefix + "_cut.log")
         if self.a.dry_run:
             return f"{prefix}_cut.png"
@@ -508,6 +538,45 @@ class Pipeline:
             seeds.append(int(Path(seed_file).read_text()) if os.path.exists(seed_file) else seed)
             log(f"layer {k}: {kind}, seed {seed}, colour {self.cols[k]}")
         return layers, seeds
+
+    def paint_clouds(self):
+        """--clouds: sil.py's heaps, gen.py, layer.py, on the next seed while refused (art on its top row): the cut's
+        path."""
+        a, d = self.a, HERE
+        p = os.path.join(self.strips, "clouds")
+        gen = [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", CLOUD_NEG + negative(NEG, "clouds"),
+               "--prompt", f"2d game parallax background layer, {CLOUD_WORDS}, painterly, plain blue sky"]
+        for t in range(a.tries):
+            seed = a.seed * 1000 + 700 + t
+            self.made["clouds"] = {"prompt": gen[gen.index("--prompt") + 1], "negative": gen[gen.index("--negative") + 1],
+                                   "denoise": float(gen[gen.index("--denoise") + 1]), "seed": seed}
+            if a.keep and t == 0 and os.path.exists(f"{p}_ai.png"):
+                self.made["clouds"]["seed"] = int(Path(f"{p}_seed.txt").read_text())
+            else:
+                if not a.dry_run:
+                    Path(f"{p}_seed.txt").write_text(str(seed))
+                if run(["python3", f"{d}/sil.py", "clouds", p, "--w", str(self.w), "--h", str(self.h), "--seed",
+                        str(seed), "--texture", str(TEXTURE)], p + "_sil.log"):
+                    sys.exit(f"sil.py failed: {p}_sil.log")
+                if run(gen + ["--init", f"{p}_init.png", "--tile", "x", "--seed", str(seed), "--out", f"{p}_ai.png"],
+                       p + "_gen.log"):
+                    sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {p}_gen.log")
+            got = self.cut(p, "clouds")
+            if got:
+                log(f"clouds: seed {self.made['clouds']['seed']}")
+                return got
+            log(f"clouds seed {seed}: refused, painting again")
+        sys.exit(f"clouds: {a.tries} strips refused (art on the top row); another --seed, or more --tries")
+
+    def clouds_layer(self, path, s):
+        """The clouds' layer: its top on the screen's top, at the back layer's speed / CLOUD_SLOWER, drifting."""
+        img = Image.open(path)
+        height = lab.SCREEN_W * img.height / img.width  # sizeRatio 1
+        layer = lab.layer("clouds", speed=round(s[0] / CLOUD_SLOWER, 5), rest=self.a.cloud_rest,
+                          dy=round(100 * (lab.SCREEN_H - height) / lab.SCREEN_H, 2))
+        self.made["clouds"].update(speed=layer["parallaxScalingSpeedX"], rest=self.a.cloud_rest,
+                                   dy=layer["decal_Y_Ratio"])
+        return layer
 
     def paint_variants(self, layers, seeds):
         """The front's variants: sil.py's shape for the middle, the front strip's ends (run.sh's pines), each added
@@ -673,13 +742,14 @@ class Pipeline:
             bottoms[k] = bottoms[k + 1] + 0.8 * band
         return bottoms
 
-    def write_page(self, layers, fig=None):
+    def write_page(self, layers, fig=None, clouds=None):
         """Packs the atlas and writes NAME.jplax and round.json: the page, its layers' speeds, and its scene; fig, the
-        lurker's figure, in a LURKER layer in front of the one it stands on."""
+        lurker's figure, in a LURKER layer in front of the one it stands on; clouds, their cut strip, behind them all."""
         a, ks, name, page_dir = self.a, self.ks, self.name, self.page_dir
         s = speeds(len(ks), a.front_speed)
         files = [(f"l{k}" if len(paths) == 1 else f"l{k}_{i}", self.patches[k]["still"] if k in self.patches else p)
-                 for k, paths in enumerate(layers) for i, p in enumerate(paths)] + ([("lurker", fig)] if fig else [])
+                 for k, paths in enumerate(layers) for i, p in enumerate(paths)] + ([("lurker", fig)] if fig else []) \
+            + ([("clouds", clouds)] if clouds else [])
         frames = [(f"l{k}_anim", patch["frames"]) for k, patch in sorted(self.patches.items())]
         make_page.pack(name, files, "Nearest,Nearest" if self.pixel else "Linear,Linear", out=page_dir, frames=frames)
         bottoms = self.bottoms(layers)
@@ -700,6 +770,8 @@ class Pipeline:
                 page_layers.append(seq)
         if fig:
             page_layers.insert(a.lurker_on + 1, self.lurker_layer(fig, layers, bottoms, s))
+        if clouds:
+            page_layers.insert(0, self.clouds_layer(clouds, s))
         horizon = sky_of(os.path.join(self.strips, "l0_ai.png"))
         sky = a.sky.split(",") if a.sky else (hexc(horizon * 0.72 + np.array([20, 40, 90]) * 0.28), hexc(horizon))
         page = lab.page_of(f"{name}.atlas", page_layers, sky=sky, ground=(sky[1], sky[1]), top_size=0.0,
@@ -713,7 +785,8 @@ class Pipeline:
         rel = os.path.relpath(page_dir, ROOT)
         scene = {"id": "a01", "page": f"{rel}/{name}.jplax", "atlasDir": rel, "name": name,
                  "about": f"r246 ai-page: '{a.theme}', {a.style}, {len(ks)} layers ({', '.join(ks)}), seed {a.seed}"
-                          + (f", lurker '{a.lurker}' between {a.lurker_on} and {a.lurker_on + 1}" if fig else "")}
+                          + (f", lurker '{a.lurker}' between {a.lurker_on} and {a.lurker_on + 1}" if fig else "")
+                          + (", clouds on a layer of their own" if clouds else "")}
         with open(os.path.join(page_dir, "round.json"), "w") as f:
             json.dump({"round": name, "about": scene["about"], "scenes": [scene]}, f, indent=1)
         return page, page_layers, s, sky, scene
@@ -732,7 +805,10 @@ class Pipeline:
                   "lint": problems, "layers": []}
         if "lurker" in self.made:
             recipe["lurker"] = dict(self.made["lurker"], figure=a.lurker, strip="lurker")
-        page_layers = [l for l in page_layers if l.get("kind") != "LURKER"]  # one a depth, as layers
+        if "clouds" in self.made:
+            recipe["clouds"] = dict(self.made["clouds"], strip="clouds")
+        # one a depth, as layers
+        page_layers = [l for l in page_layers if l.get("kind") != "LURKER" and l.get("regionName") != "clouds"]
         for k, paths in enumerate(layers):
             strips_k = []
             for path in paths:
@@ -765,15 +841,17 @@ def main():
     if not p.pixel and a.variants:
         p.paint_variants(layers, seeds)
     fig = p.paint_lurker() if a.lurker else None
+    clouds = p.paint_clouds() if a.clouds else None
     p.animate_layers(layers)
     if a.dry_run:
         print(f"make_page.pack {p.name}", *(path for paths in layers for path in paths), *([fig] if fig else []),
+              *([clouds] if clouds else []),
               *(f"l{k}_anim:{p.strips}/l{k}_anim/patch" for k in sorted(a.motions)))
         if fig:
             print(shlex.join(p.cover_command()))
         print("(no shots)" if a.no_shots else shlex.join(p.shots_command()))
         return 0
-    page, page_layers, s, sky, scene = p.write_page(layers, fig)
+    page, page_layers, s, sky, scene = p.write_page(layers, fig, clouds)
     rel = os.path.relpath(p.page_dir, ROOT)
     if fig and run(p.cover_command(), os.path.join(p.strips, "lurker_cover.log")):
         sys.exit(f"lurker-cover.sh failed: {p.strips}/lurker_cover.log")

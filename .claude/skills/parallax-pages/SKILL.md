@@ -103,6 +103,10 @@ nothing there. README.md's "Snow, rain and smoke" says how wide a `VIEW` effect'
    stripped): without it the region's art is stretched over the layer and its transparent part is lost.
 8. **Things that move by themselves** get `speedXAtRest`: far clouds 25-90, mist -10, near water -12 to -20.
    Starting offsets (`decal_X_Ratio`) may be staggered; round 1 found it makes no difference.
+9. **Clouds always get a layer of their own** (r409), never painted into the sky of a layer that holds anything else:
+   on a back layer holding sky, clouds and mountains, a cloud effect (BILLOW, r375) warped the mountains too, and the
+   clouds could not drift. Their layer goes behind the farthest range (a cloud's foot is often hidden by a peak),
+   slower than it, with a `speedXAtRest`; the sky behind them is a layer or the gradient, with no cloud left in it.
 
 `tools/parallax_lab.py` `fairy_from_art`, `hiver_from_art`, `calm_tree_from_art`, `night_from_art` and
 `calm_from_art` are worked examples of each kind, each explaining its choices.
@@ -152,6 +156,9 @@ for the whole screen; the depth fog so the back layer is `--fog` 0.6 of the way 
 strips; `pixel` is SDXL + PixelArt_XL at ~25 s, one PNG pixel per art pixel, drawn `Nearest`. About 2 min a page.
 `--ckpt`/`--lora` paint with another model from `~/ComfyUI/models` (r346, `docs/ai-parallax.md`), recorded in
 `recipe.json`; a `.gguf` is a DiT (`--ckpt z-image-turbo-Q5_K_M.gguf`, r356), looped by a unet wrapper.
+Every strip is painted with a plain sky, keyed out: no layer carries clouds. A page that wants them asks `--clouds`
+(r409, painted style): a strip of clouds alone (sil.py's heaps over a blue sky, every heap kept by the key), behind the
+back layer, its top on the screen's top, at the back layer's speed / 1.25, drifting at `--cloud-rest` (30).
 
 What is yours to choose, from the theme:
 - **`--colours`**, back to front (three are spread over any count). img2img keeps the shape's colour, so this is the
@@ -207,7 +214,11 @@ tools/depth-page.sh paint.png build/depth/valley --theme "green valley with a ri
 The painting should loop (`--tile x`, as above); one whose join shows has a band round it repainted. Paint it 16:9:
 every layer is the painting's full width at sizeRatio 1, so its height is the screen's. Speeds follow each band's
 median depth (front `--front-speed` 0.08, none under a twentieth of it); the back layer is opaque, the painted sky.
-`--theme` is the repaint's prompt: say what the painting shows.
+When SAM outlines clouds in that sky (r409: masks at the sky's depth, brighter than the sky round them), the back
+band comes apart in three, back to front: `sky` (opaque, the clouds and what stood in front filled from the clear sky
+round them, no repaint), `clouds` (SAM's outlines, their soft rim un-mixed from the sky, faded where a peak or a crown
+hid them, drifting at rest speed 30) and `l0`, the far range, cut as a nearer band is. A haze too faint for SAM stays
+in the sky. `--theme` is the repaint's prompt: say what the painting shows.
 
 Look at `OUT/cut/sheet.png` (the painting, its depth, its bands, each layer before and after the repaint), at
 `OUT/cut/objects.png` (SAM's masks: a thing it did not outline can still be cut by a band's edge),

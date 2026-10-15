@@ -172,6 +172,9 @@ what each fix moves per model and kind; relay.sh re-lays a page with --keep (no 
 Gates: a layer_test.py case for the fault (python3 tools/r239-ai-strips/layer_test.py, no GPU), failing when the fix is
 taken out (a rule's: tools/r400-ai-rules/mutate.sh); tools/r358-glow/mutate.sh still passing; tools/lint.sh (ruff, CI's pinned version); then the re-cut
 corpus compared, and a page run's stills, looked at, before and after on the same --seed.
+Clouds are never in another layer's sky (r409, the skill's rule 9): --clouds paints them on a strip of their own,
+behind the back layer (sil.py's clouds, the theme kept out of the prompt: its palms grew in the clouds' sky);
+cloud_strip_test.py, not layer_test.py, holds it (r358's and r400's mutants copy layer_test.py alone).
 """
 
 [tags.depth]
@@ -196,5 +199,8 @@ A fix right for one model or one kind of painting only goes in depth_page.RULES 
 named conditions asked in order, the cheap ones first, recorded per layer in recipe.json's "rules"; --rule NAME=on|off
 forces one. Its cases go in tools/r279-depth-page/rules_test.py (no GPU), each check failing one when removed.
 Look at OUT/cut/sheet.png, objects.png, fields.png AND the 6 and 12 s frames: a repaint shows only once layers slide.
-Gate: tools/lint.sh (ruff), rules_test.py, then the examples' stills, attached.
+When SAM finds clouds in the sky, the back band comes apart (r409): sky (filled, no repaint), clouds, and l0 the far
+range cut along range_top; the page has --layers + 2 layers, named sky, clouds, l0... Its cases: clouds_test.py,
+tools/r409-clouds/mutate.sh; replay.py cuts a cached painting (r380-twig-gaps/bands.py cache) with no GPU.
+Gate: tools/lint.sh (ruff), rules_test.py, clouds_test.py, then the examples' stills, attached.
 """

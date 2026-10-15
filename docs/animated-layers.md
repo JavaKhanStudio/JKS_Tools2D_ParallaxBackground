@@ -103,5 +103,7 @@ has one effect: water with both swell and glint is one effect that does both, or
 ## Not in it
 
 - Clouds cut out of a painted sky onto a layer of their own, to drift: keying painted clouds needs depth-page's
-  segmentation (r375 tried a colour key: bars and grey ghosts where the clouds were).
+  segmentation (r375 tried a colour key: bars and grey ghosts where the clouds were). Done since in the page makers
+  (r409, the parallax-pages skill's rule 9): `depth-page.sh` cuts SAM's cloud outlines onto a `clouds` layer over a
+  filled `sky`, and `ai-page.sh --clouds` paints them on a strip of their own. A `BILLOW` goes on that layer.
 - A patch on a planet page is bent with its tile; on a tower layer it is not drawn.

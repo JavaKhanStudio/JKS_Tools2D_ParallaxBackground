@@ -30,12 +30,17 @@ docs/depth-tricks.md §5. Passes:
      every one of them. Before it, RULES are weighed on each layer's hole (tools/parallax_rules.py, r378): a fix
      for one case, applied only where its conditions hold (sky_twigs: the twig tips Depth Anything V2 Small judged
      as far as the sky, kept in a tree page's back layer as birds, join its hole); --rule NAME=on|off forces one.
+  Clouds (r409): SAM's masks at the sky's depth, brighter than the sky round them, are the clouds. When there are
+  any, the back band comes apart: the sky (its pixels at the sky's depth, the clouds in it) and the far range, cut
+  as a nearer band is; the sky is filled where the clouds and every nearer thing stood (fill(), no repaint) and the
+  clouds go on a layer of their own between the two, faded where a peak hid them, drifting at rest speed. The page
+  then has --layers + 2 layers: sky, clouds, l0 ... (the parallax-pages skill's rule 9).
   Every step that looks across the painting (depth, islands, fill) sees it as the tiled layer shows it, its two
   ends joined: else a band's edge steps at the join, lint fault (e).
   5. the page: every layer the painting's full width at sizeRatio 1, bottom on the screen's bottom, cut 2 rows
      above its first row with art; speeds proportional to each band's median disparity, the front at --front-speed,
-     none under a twentieth of it. The back layer is opaque (the painted sky); the gradients take its top and bottom
-     colours.
+     none under a twentieth of it. The back layer is opaque (the painted sky, or the filled sky behind the clouds);
+     the gradients take the painting's top and bottom colours.
 
 Writes OUT/recipe.json (the command and each pass, each layer's rules weighed, for tools/ai-gallery.sh), OUT/cut (source.png, depth.png, objects.png (SAM's masks), fields.png (the prompted fields), bands.png, each layer before and after the repaint, sheet.png), OUT/page (NAME.atlas,
 NAME.png, NAME.jplax, round.json) and, unless --no-shots, OUT/shots (tools/parallax-lab-shots.sh, cage: stills at 0,
@@ -854,7 +859,8 @@ def mend_loop(img, cut, a, recipe):
 
 
 def depth_bands(img, n, cut):
-    """2. Depth, 3. bands: (dn, L, centres), the depth normalised to 0..1 and each pixel's band, far 0 to near n-1."""
+    """2. Depth, 3. bands: (dn, L, centres, masks), the depth normalised to 0..1, each pixel's band, far 0 to near
+    n-1, and SAM's masks (the clouds are read from them, r409)."""
     h, w = img.shape[:2]
     # r391: each GPU step under the lock gen.py and anim.py take, its memory freed before it ends; gen.py (the loop,
     # the repaints) takes it itself, outside these
@@ -881,21 +887,30 @@ def depth_bands(img, n, cut):
     colour_bands(L, n).save(os.path.join(cut, "bands.png"))
     log("bands, far to near: " + ", ".join(f"{k}: disparity {centres[k]:.2f}, {(L == k).mean():.0%} of the pixels"
                                           for k in range(n)))
-    return dn, L, centres
+    return dn, L, centres, masks
 
 
 def cut_layer(k, img, dn, L, centres, cut, a):
-    """4. Layer k and its hole, repainted: (layer, its recipe entry)."""
+    """4. Layer k and its hole, repainted: (layer, its recipe entry). With the sky apart (r409: L is -1 there), band
+    0 is cut as a nearer band is, its outline going on behind what hides it."""
     h, w = img.shape[:2]
     n = a.layers
-    alpha = np.ones((h, w), bool) if k == 0 else alpha_of(L, k)
+    apart = (L < 0).any()  # the sky apart (r409): band 0 is the far range, cut along range_top
+    back = k == 0 and not apart  # the opaque back layer, the painted sky
+    if back:
+        alpha = np.ones((h, w), bool)
+    elif k == 0:
+        alpha = (L == 0) | ((np.arange(h)[:, None] >= range_top(L)[None]) & (L > 0))
+    else:
+        alpha = alpha_of(L, k)
     # The hole: what nearer things hid, and what alpha_of took behind them that is no part of band k (r373).
     hole = alpha & (grow(L > k, a.grow) | (L < k)) if k < n - 1 else np.zeros_like(alpha)
     # The sky between a crown's branches is band k too, tinted by the leaves round it: left as a start for the
     # fill, the repaint grows a small tree there. Islands of the layer's own pixels inside the hole join it.
     if hole.any():
         hole |= looped(lambda m, o: islands(m, w * h // 150, o), alpha & ~hole, hole)
-    ctx = {"k": k, "n": n, "theme": a.theme, "depth_model": MODEL, "img": img, "dn": dn, "alpha": alpha, "hole": hole}
+    ctx = {"k": k, "n": n, "back": back, "theme": a.theme, "depth_model": MODEL, "img": img, "dn": dn, "alpha": alpha,
+           "hole": hole}
     rules = parallax_rules.weigh(RULES, ctx, a.forced)
     hole = ctx["hole"]
     for r in rules:
@@ -903,7 +918,7 @@ def cut_layer(k, img, dn, L, centres, cut, a):
             log(f"layer {k}: rule {r['rule']}: {r['moved']} px")
     cut_k = os.path.join(cut, f"l{k}")
     src = looped(fill, img, alpha & ~hole)
-    if hole.any() and k:  # the back layer is opaque, and nothing goes on behind its sky
+    if hole.any() and not back:  # the back layer is opaque, and nothing goes on behind its sky
         src = behind_start(src, img.astype(np.float32), alpha & ~hole, L, k)
     Image.fromarray(np.dstack([img, alpha * 255]).astype(np.uint8)).save(f"{cut_k}_raw.png")
     done = f"{cut_k}_painted.png"
@@ -921,13 +936,14 @@ def cut_layer(k, img, dn, L, centres, cut, a):
     rgb = np.asarray(Image.open(done).convert("RGB"))
     # A 1 px soft edge where the layer gives way to a farther band: the cut's own line would alias.
     soft_a = alpha.astype(np.float32)
-    if k:
+    if not back:
         soft_a = np.minimum(soft_a, ndimage.gaussian_filter(soft_a, 0.6, mode=("nearest", "wrap")) * 1.15)
     rgba = np.dstack([rgb, (np.clip(soft_a, 0, 1) * 255).round()]).astype(np.uint8)
     top = max(0, int(np.argmax(alpha.any(axis=1))) - 2)  # 2 clear rows: a pine's tip on the top row reads cut, (a)
     Image.fromarray(rgba[top:]).save(f"{cut_k}.png")
     med = float(np.median(dn[L == k])) if (L == k).any() else centres[k]
-    layer = {"path": f"{cut_k}.png", "disparity": med, "top": top, "hole": float(hole.mean())}
+    layer = {"name": f"l{k}", "path": f"{cut_k}.png", "disparity": med, "top": top, "hole": float(hole.mean()),
+             "raw": f"{cut_k}_raw.png"}
     entry = {"strip": f"l{k}", "disparity": round(med, 3), "top": top,
              "repainted": round(float(hole.mean()), 4), "seed": a.seed * 100 + k,
              "prompt": f"{a.theme}, {word} scenery, painterly, seamless" if hole.any() else None, "rules": rules}
@@ -978,13 +994,154 @@ def _twigs_to_hole(c):
 RULES = [
     parallax_rules.Rule(
         "sky_twigs", "a tree's twig tips the depth judged as far as the sky are repainted as sky, not kept as birds",
-        when=[("the back layer", lambda c: c["k"] == 0),
+        when=[("the back layer", lambda c: c.get("back", c["k"] == 0)),
               ("depth by Depth Anything V2 Small", lambda c: c["depth_model"] == MODEL),
               ("the theme names a tree", lambda c: re.search(r"\b(tree|pine|oak|forest|wood|jungle|palm)",
                                                             c["theme"], re.IGNORECASE) is not None),
               ("thin dark pieces against the sky touch the hole", _twigs_found)],
         act=_twigs_to_hole),
 ]
+
+
+CLOUD_LIFT = 6  # lum: a cloud's mask is this much brighter than the sky round it; the far ridge's is darker
+CLOUD_REST = 30  # speedXAtRest of the cloud layer: the skill's far clouds drift at 25-90
+
+
+def clouds_of(img, dn, L, masks, least=200, most=0.5, share=0.9, lift=CLOUD_LIFT):
+    """r409: the clouds, apart from the sky they float in: each SAM mask lying in the sky (share of its pixels in band
+    0 at the sky's depth), from least px to most of that sky (the sky's own mask is larger), brighter by lift than the
+    sky in a ring 2-6 px round it. SAM outlines a cloud whole: a colour key left bars, and grey ghosts where the clouds
+    were (r375). A haze too faint for SAM stays in the sky."""
+    sky = (L == 0) & (dn <= SKY)
+    lum = img.astype(np.float32).mean(axis=2)
+    out = np.zeros(L.shape, bool)
+    for m in masks:
+        if not least <= m.sum() <= most * sky.sum() or sky[m].mean() < share:
+            continue
+        ring = grow(m, 6) & ~grow(m, 2) & sky
+        if ring.sum() >= 20 and lum[m].mean() >= lum[ring].mean() + lift:
+            out |= m
+    return out & (L == 0)
+
+
+def sky_apart(L, dn, clouds, area, img=None, reach=16, window=41, far=96, margin=0.3):
+    """L with the sky, -1, apart from band 0, the far range: band 0's pixels at the sky's depth and its clouds. Within
+    reach px of a nearer thing, a range pixel whose colour is within margin of its distance to the range round it (the
+    mean over window px) from the sky round it goes to the sky: depth's halo round a crown judged the sky beside it
+    nearer than the sky, and the range layer carried it as a pale chunk on the peak's flank. Only that near the sky's
+    colour: a far range is hazy, and at 1, still at 0.5, its flank beside a trunk went to the sky, the range cut in a
+    wall there (valley). Then a piece of the range under area px goes to the sky unless the range is most of its rim
+    (the sky between a crown's leaves: kept, the range layer carried it as specks floating in the sky); a piece of the
+    sky under area px with the range most of its rim joins the range (a pale cliff). On the painting laid three times
+    side by side, for the join."""
+    w = L.shape[1]
+    S = np.where((L == 0) & ((dn <= SKY) | clouds), -1, L)
+    if img is not None:
+        zone = (S == 0) & grow(S > 0, reach)
+        T = np.where(S == -1, 0, np.where((S == 0) & ~zone, 1, 2))
+        rgb = img.astype(np.float32)
+        (sky_m, sky_c), (rng_m, rng_c) = band_means(T, rgb, 2, window)
+        sky_m, rng_m = filled(sky_m, sky_c > 0, far), filled(rng_m, rng_c > 0, far)
+        with np.errstate(invalid="ignore"):
+            S[zone & (np.linalg.norm(rgb - sky_m, axis=2) < margin * np.linalg.norm(rgb - rng_m, axis=2))] = -1
+    S = np.tile(S, 3)
+    for k in (0, -1):
+        comp, count = ndimage.label(S == k)
+        sizes = ndimage.sum(np.ones(S.shape), comp, index=np.arange(1, count + 1))
+        for i in np.nonzero(sizes < area)[0]:
+            isl = comp == i + 1
+            ring = ndimage.binary_dilation(isl, iterations=2) & ~isl
+            ranged = (S[ring] == 0).mean() > 0.5
+            if ranged != (k == 0):
+                S[isl] = -1 - k
+    S = S[:, w:2 * w]
+    # Under the range's top edge nothing is sky: a pale patch between far hills at the sky's depth, cut out, showed
+    # the filled sky as a blue hole in the hills (river).
+    S[(S == -1) & (np.arange(S.shape[0])[:, None] >= range_top(S)[None])] = 0
+    return S
+
+
+def range_top(S):
+    """Per column, the far range's first row (band 0 of S); over a run of columns where a nearer thing hides it, a
+    straight line between the run's two sides. A range's flank runs on behind a tree: topline's floor and mirror
+    (r322, r373: a clump of pines behind a trunk) cut it lower, and the sky showed in a wedge on the peak's flank."""
+    h, w = S.shape
+    has, first = shown(S, 0)
+    if not has.any():
+        return np.full(w, float(h))
+    out = first.astype(float)
+    for c, run in runs_of(has):
+        left, right = out[(c - 1) % w], out[(c + run) % w]
+        for i in range(run):
+            out[(c + i) % w] = left + (right - left) * (i + 1) / (run + 1)
+    return out
+
+
+def sky_layer(img, dn, S, clouds, cut, a, reach=6, dark=25, speck=400, window=31):
+    """r409: the sky behind the far range and its clouds, opaque: the clouds (grown by reach px, their soft rim) and
+    every nearer pixel (grown by --grow) filled from the clear sky round them by fill(), which keeps a sky's gradient.
+    No repaint: one paints a new cloud, a bird or a ridge into it. RULES are weighed on it as on the back layer
+    (sky_twigs: a twig's tip at the sky's depth is filled too); then every speck under speck px darker by dark than
+    the sky round it (the median of a window px wide, over the sky with its hole filled: beside a crown, a median
+    over the crown too was as dark as the twigs, which stayed as birds, noloop) is filled as well: a twig's end the
+    rule left, which fill() smeared into a dark blot, or a bird. A far ridge in the sky is larger and stays.
+    (layer, its recipe entry)."""
+    h, w = S.shape
+    alpha = np.ones((h, w), bool)
+    hole = grow(S >= 0, a.grow) | grow(clouds, reach)
+    ctx = {"k": 0, "n": a.layers, "back": True, "theme": a.theme, "depth_model": MODEL, "img": img, "dn": dn,
+           "alpha": alpha, "hole": hole}
+    rules = parallax_rules.weigh(RULES, ctx, a.forced)
+    hole = ctx["hole"]
+    for r in rules:
+        if r["applied"]:
+            log(f"sky: rule {r['rule']}: {r['moved']} px")
+    lum = img.astype(np.float32).mean(axis=2)
+    clear = looped(fill, img, ~hole).mean(axis=2)  # the sky alone, its hole filled
+    around = looped(lambda v: ndimage.median_filter(v, size=window), np.where(hole, clear, lum))
+    blot = looped(lambda m: ndimage.label(m)[0], ~hole & (lum < around - dark))
+    sizes = np.bincount(blot.ravel())
+    specks = (blot > 0) & (sizes[blot] < speck)
+    hole = hole | grow(specks, 2)
+    rgb = looped(fill, img, ~hole).round().clip(0, 255).astype(np.uint8)
+    Image.fromarray(img).save(os.path.join(cut, "sky_raw.png"))
+    Image.fromarray(rgb).save(os.path.join(cut, "sky.png"))
+    layer = {"name": "sky", "path": os.path.join(cut, "sky.png"), "disparity": 0.0, "top": 0, "hole": float(hole.mean()),
+             "raw": os.path.join(cut, "sky_raw.png")}
+    entry = {"strip": "sky", "disparity": 0.0, "top": 0, "repainted": 0, "filled": round(float(hole.mean()), 4),
+             "specks": int(specks.sum()), "seed": None, "prompt": None, "rules": rules}
+    return layer, entry
+
+
+def cloud_layer(img, sky, S, clouds, cut, reach=6, fade=10):
+    """r409: the clouds on a layer of their own, drawn over the sky layer (sky, its rgb) and behind the far range.
+    Inside SAM's outline (shrunk 2 px) the painting, opaque; out to reach px past it, over the sky only, each pixel's
+    share of cloud over the filled sky behind it: alpha the way from the sky's colour toward the clouds' contrast, the
+    colour un-mixed from the sky, so the soft rim is the painting's again over that sky. Faded out over fade px toward
+    every nearer thing that hid a part of a cloud (a peak, a crown): a cloud drifting off it shows no cut edge.
+    (layer, its recipe entry, its rows on the painting: first, last + 1)."""
+    h = S.shape[0]
+    f, bg = img.astype(np.float32), sky.astype(np.float32)
+    diff = np.linalg.norm(f - bg, axis=2)
+    core = ~grow(~clouds, 2)
+    contrast = max(20.0, 0.6 * float(np.median(diff[core]))) if core.any() else 40.0
+    alpha = np.where(core, 1.0, np.clip(diff / contrast, 0, 1)) * (grow(clouds, reach) & (S < 0))
+    near = looped(lambda m: ndimage.distance_transform_edt(~m), S >= 0)
+    t = np.clip(near / fade, 0, 1)
+    alpha *= t * t * (3 - 2 * t)
+    alpha[alpha < 0.02] = 0
+    rgb = np.where(alpha[..., None] > 0, bg + (f - bg) / np.maximum(alpha, 0.02)[..., None], 0)
+    rgba = np.dstack([rgb.clip(0, 255), alpha * 255]).round().astype(np.uint8)
+    rows = np.nonzero(alpha.any(axis=1))[0]
+    top, bottom = max(0, int(rows[0]) - 2), min(h, int(rows[-1]) + 3)
+    path = os.path.join(cut, "clouds.png")
+    Image.fromarray(rgba[top:bottom]).save(path)
+    Image.fromarray(np.dstack([img, clouds * 255]).astype(np.uint8)).save(os.path.join(cut, "clouds_raw.png"))
+    layer = {"name": "clouds", "path": path, "disparity": 0.0, "top": top, "bottom": bottom, "hole": 0.0,
+             "raw": os.path.join(cut, "clouds_raw.png"), "rest": CLOUD_REST}
+    entry = {"strip": "clouds", "disparity": 0.0, "top": top, "bottom": bottom, "repainted": 0, "seed": None,
+             "prompt": None, "clouds": round(float(clouds.mean()), 4), "faded": fade, "rest": CLOUD_REST, "rules": []}
+    return layer, entry
 
 
 def speeds_of(layers, front_speed):
@@ -1003,15 +1160,21 @@ def speeds_of(layers, front_speed):
 def write_page(name, layers, s, img, page_dir, a):
     """5. The page: the atlas, the .jplax and its round.json; (scene, its folder from ROOT, the sky's colours)."""
     n = len(layers)
-    make_page.pack(name, [(f"l{k}", ly["path"]) for k, ly in enumerate(layers)], "Linear,Linear", out=page_dir)
-    page_layers = [lab.layer(f"l{k}", speed=s[k], dy=0.0) for k in range(n)]
+    h, w = img.shape[:2]
+    make_page.pack(name, [(ly["name"], ly["path"]) for ly in layers], "Linear,Linear", out=page_dir)
+    # Every layer's bottom on the screen's bottom, but the clouds' (r409): cut at their last row, raised by the rows
+    # under it, and drifting at their rest speed.
+    page_layers = [lab.layer(ly["name"], speed=s[k], rest=ly.get("rest", 0.0),
+                             dy=round(100 * (h - ly.get("bottom", h)) * lab.SCREEN_W / w / lab.SCREEN_H, 3))
+                   for k, ly in enumerate(layers)]
     sky = (seam_colour(img[:4]), seam_colour(img[-4:]))
     page = lab.page_of(f"{name}.atlas", page_layers, sky=(sky[0], sky[0]), ground=(sky[1], sky[1]), top_size=0.5,
                        bottom_size=0.5)
     with open(os.path.join(page_dir, f"{name}.jplax"), "w") as f:
         json.dump(page, f, indent=1)
     rel = os.path.relpath(page_dir, ROOT)
-    about = (f"r279 depth-page: {os.path.basename(a.painting)} cut into {n} depth bands, speeds "
+    about = (f"r279 depth-page: {os.path.basename(a.painting)} cut into {a.layers} depth bands"
+             + (", the sky and its clouds apart (r409)" if n > a.layers else "") + ", speeds "
              + ", ".join(f"{v:g}" for v in s))
     scene = {"id": "d01", "page": f"{rel}/{name}.jplax", "atlasDir": rel, "name": name, "about": about}
     with open(os.path.join(page_dir, "round.json"), "w") as f:
@@ -1040,15 +1203,28 @@ def main():
               "negative": NEG, "fogStrength": 0, "layers": []}
 
     img = mend_loop(np.asarray(im), cut, a, recipe)
-    dn, L, centres = depth_bands(img, n, cut)
+    dn, L, centres, masks = depth_bands(img, n, cut)
     layers = []
+    # r409: clouds always on a layer of their own, behind the far range and over a sky with none: BILLOW on a back
+    # layer holding sky, clouds and range warped the mountains too, and painted clouds could not drift.
+    clouds = clouds_of(img, dn, L, masks)
+    if clouds.any():
+        L = sky_apart(L, dn, clouds, w * h // 150, img)
+        clouds &= L < 0
+        sky, entry = sky_layer(img, dn, L, clouds, cut, a)
+        layers.append(sky)
+        recipe["layers"].append(entry)
+        cloud, entry = cloud_layer(img, np.asarray(Image.open(sky["path"]).convert("RGB")), L, clouds, cut)
+        layers.append(cloud)
+        recipe["layers"].append(entry)
+        log(f"clouds: {clouds.mean():.1%} of the painting, on a layer of their own over the filled sky")
     for k in range(n):
         layer, entry = cut_layer(k, img, dn, L, centres, cut, a)
         layers.append(layer)
         recipe["layers"].append(entry)
     s = speeds_of(layers, a.front_speed)
     scene, rel, sky = write_page(name, layers, s, img, page_dir, a)
-    sheet(cut, layers, n)
+    sheet(cut, layers)
 
     problems = lab.lint(lab.load(scene["page"]), rel)
     for k, ly in enumerate(recipe["layers"]):
@@ -1058,7 +1234,7 @@ def main():
         json.dump(recipe, f, indent=1)
     print(f"{rel}/{name}.jplax")
     for k, ly in enumerate(layers):
-        print(f"  l{k}: disparity {ly['disparity']:.2f}, speed {s[k]:g}, from row {ly['top']}, "
+        print(f"  {ly['name']}: disparity {ly['disparity']:.2f}, speed {s[k]:g}, from row {ly['top']}, "
               f"{ly['hole']:.0%} repainted")
     print("\n".join("  ! " + p for p in problems) or "  lint ok")
     if not a.no_shots:
@@ -1071,7 +1247,7 @@ def seam_colour(rows):
     return "".join(f"{int(v):02x}" for v in np.median(rows.reshape(-1, 3), axis=0))
 
 
-def sheet(cut, layers, n):
+def sheet(cut, layers):
     """The painting, its depth, its bands, then each layer raw (the hole see-through) and repainted, on a checker."""
     paint = Image.open(os.path.join(cut, "painting.png"))
     w, h = paint.size
@@ -1080,11 +1256,11 @@ def sheet(cut, layers, n):
     bg = Image.fromarray(np.where(check[..., None], 200, 150).repeat(3, axis=2).astype(np.uint8))
     tiles = [paint, Image.open(os.path.join(cut, "depth.png")).convert("RGB"),
              Image.open(os.path.join(cut, "bands.png"))]
-    for k in range(n):
-        for f in (f"l{k}_raw.png", f"l{k}.png"):
-            im = Image.open(os.path.join(cut, f)).convert("RGBA")
+    for ly in layers:
+        for f in (ly["raw"], ly["path"]):
+            im = Image.open(f).convert("RGBA")
             full = Image.new("RGBA", (w, h))
-            full.paste(im, (0, h - im.height))
+            full.paste(im, (0, ly.get("bottom", h) - im.height if f == ly["path"] else h - im.height))
             t = bg.copy()
             t.paste(full.resize((tw, th)), (0, 0), full.resize((tw, th)))
             tiles.append(t)

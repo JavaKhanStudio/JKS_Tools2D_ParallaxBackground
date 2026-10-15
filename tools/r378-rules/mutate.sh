@@ -23,7 +23,7 @@ no cloud-gap check|if np.percentile(lum[piece], 10) > np.percentile(lum[ring], 1
 no width check|if width[piece].max() > half:|if False:
 no sky ring|if not ring.any() or (dn[ring] <= SKY).mean() < sky_share:|if not ring.any():
 not only by the hole|for i in np.unique(comp[d & grow(hole, 2)]):|for i in np.unique(comp[d]):
-any layer|("the back layer", lambda c: c["k"] == 0)|("the back layer", lambda c: True)
+any layer|("the back layer", lambda c: c.get("back", c["k"] == 0))|("the back layer", lambda c: True)
 any theme|re.search(r"\b(tree|pine|oak|forest|wood|jungle|palm)",|re.search(r"",
 MUT
 exit $bad
