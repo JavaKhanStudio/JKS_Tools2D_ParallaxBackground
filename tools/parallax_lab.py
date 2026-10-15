@@ -27,6 +27,11 @@ LAYER_FIELDS = ['regionName', 'regionPosition', 'flipX', 'flipY', 'parallaxScali
                 'padYFactor', 'mirror', 'kind', 'name', 'particlesLibgdx', 'particlesGodot', 'particlesAnchor',
                 'shaderEffect', 'shaderAmplitude', 'shaderWavelength', 'shaderSpeed', 'shaderHaze',
                 'sequenceSegments', 'sequenceSeed', 'sequenceLength']
+# What a layer field a .jplax leaves out reads as: Parallax_Model's field defaults (Godot's LAYER_DEFAULTS), for the
+# fields read as l[...] here. The rest are read with get() and their own default.
+LAYER_DEFAULTS = {'regionPosition': 0, 'flipX': False, 'flipY': False, 'parallaxScalingSpeedX': 0.0,
+                  'parallaxScalingSpeedY': 0.0, 'speedXAtRest': 0.0, 'sizeRatio': 1.0, 'decal_X_Ratio': 0.0,
+                  'decal_Y_Ratio': 0.0, 'padX': 0.0, 'padXFactor': 0.0, 'padY': 0.0, 'padYFactor': 0.0, 'mirror': False}
 PAGE_FIELDS = ['topHalf_top', 'topHalf_bottom', 'topHalfSize', 'bottomHalf_top', 'bottomHalf_bottom',
                'bottomHalfSize', 'repeatOnX', 'repeatOnY', 'useOriginalSize', 'fogStrength', 'fogColor']
 
@@ -43,7 +48,7 @@ def load(path):
     model = page['pageModel']
     layers = [l for i, l in enumerate(model['pageList']) if not inside or i >= len(inside) or inside[i]]
     out['pageModel'] = {'atlasName': model['atlasName'], 'outside': model.get('outside', False),
-                        'pageList': [{k: l[k] for k in LAYER_FIELDS if k in l} for l in layers]}
+                        'pageList': [{**LAYER_DEFAULTS, **{k: l[k] for k in LAYER_FIELDS if k in l}} for l in layers]}
     return out
 
 
