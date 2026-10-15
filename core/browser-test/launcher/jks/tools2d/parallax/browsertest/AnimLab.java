@@ -103,9 +103,13 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 					page.pageModel.pageList.remove(index + 1);
 			if (HEART_EFFECTS[i] != STILL)
 			{
-				// What a page would store: the layer a SHADER one, under WAVE until one of these ships.
+				// What a page would store: the layer a SHADER one, under WAVE until one of these ships. SWELL under FOG's
+				// periods (r419): along() runs on only within the effect's period, one wavelength under WAVE, where SWELL's
+				// second wave (5 turns in 8 wavelengths across, 6 and 9 in 10 up) jumped every time the layer wrapped. Its
+				// port gives SWELL these periods of its own.
 				model.kind = Enum_LayerKind.SHADER;
-				model.shaderEffect = Enum_ShaderEffect.WAVE;
+				boolean swells = HEART_EFFECTS[i] == SWELL || HEART_EFFECTS[i] == BOTH;
+				model.shaderEffect = swells ? Enum_ShaderEffect.FOG : Enum_ShaderEffect.WAVE;
 			}
 			OrthographicCamera camera = new OrthographicCamera();
 			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
@@ -334,7 +338,9 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 * across (the layer tiles), held at its top and bottom rows.
 	 * <ul>
 	 * <li>SWELL (r375's swell): the water moved by two crossing travelling waves, sideways and up and down: WAVE slides
-	 * whole rows, this bends the painted crests. A, L, speed: the layer's numbers.</li>
+	 * whole rows, this bends the painted crests. A, L, speed: the layer's numbers. Every term a whole number of turns
+	 * over FOG's periods, 8 wavelengths across and 10 up, the layer's effect in the lab (r419: at 1 / 1.7 turns a
+	 * wavelength across, the second wave jumped each time the layer wrapped).</li>
 	 * <li>GLINT (r375's glint): specks of light where three bent waves peak at once, on a grid squashed 5 to 1 (a speck
 	 * is a short dash along the water), added only where the water is already lit. u_glint: strength, speck size,
 	 * density (how near the peak of 3 a sum must come: higher, more specks), time in speck sizes.</li>
@@ -389,7 +395,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "	float t = u_effect.z / L;\n"
 			+ "#ifdef SWELL\n"
 			+ "	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);\n"
-			+ "	float p2 = TAU * (a.x / (1.7 * L) - 0.9 * a.y / L + 2.0 * t);\n"
+			+ "	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);\n"
 			+ "	l += u_effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));\n"
 			+ "#endif\n"
 			+ "#ifdef BILLOW\n"

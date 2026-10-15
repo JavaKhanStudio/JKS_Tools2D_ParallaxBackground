@@ -90,6 +90,10 @@ palms at `--free 1.0`).
 
 - `SWELL`: water moved by two crossing travelling waves, sideways and up and down. `WAVE` slides whole rows; this one
   bends the painted wave crests. Amplitude 3 px, wavelength 32 px on the beach sea.
+  In the reader, `along()` runs on only within the effect's period (`Enum_ShaderEffect.period()`, `periodY()`), so
+  every term must be a whole number of turns over it: under WAVE's one wavelength the second wave (1 / 1.7 a
+  wavelength) jumped each time the layer wrapped (r419). The animation lab draws SWELL under FOG's periods, 8 across and
+  10 up, its second wave 5 turns in 8; its port gives SWELL those periods.
 - `GLINT`: sun glitter: short specks of light where three bent waves peak at once, only on the lit part of the water,
   so the dark troughs never sparkle. Strength 0.8, wavelength 24 px.
 - `BILLOW`: clouds churn in place: a slow warp of their pixels, only where the pixel reads as cloud (bright, grey or
