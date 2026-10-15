@@ -5,8 +5,11 @@ page is for. No GPU.
 
 The three themes are examples.sh's, with their kinds.
 """
+import os
+import sys
 import unittest
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ai_page
 
 BEACH = "tropical beach, palm trees, warm sunny afternoon"
