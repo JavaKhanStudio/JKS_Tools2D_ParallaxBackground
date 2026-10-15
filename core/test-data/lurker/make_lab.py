@@ -11,6 +11,12 @@ import subprocess
 
 HERE = 'core/test-data/lurker'
 SAMPLES = 'core/test-data/samples'
+# r414: s03 hangs Hiver at 45-70% of the height, which left the lab's bottom 40% white; every layer (the figure too, so
+# the cover keeps its shape) goes down this many percent, the front pines on the view's bottom, and the gradients take
+# Hiver's sky (over the art's top) and its snow (in the pines' gaps) in place of white.
+DROP = 45.0
+SKY = {'r': 170 / 255, 'g': 168 / 255, 'b': 190 / 255, 'a': 1.0}
+SNOW = {'r': 225 / 255, 'g': 233 / 255, 'b': 222 / 255, 'a': 1.0}
 
 spec = importlib.util.spec_from_file_location('reveal', 'tools/r363-reveal/make.py')
 reveal = importlib.util.module_from_spec(spec)
@@ -30,7 +36,9 @@ def main():
     for name, units in (('empty', 0), ('lab', 1.8)):
         page = reveal.page_with_figure(fig.size, units)
         page['pageModel']['atlasName'] = 'HiverLurker.atlas'
+        page.update({'topHalf_top': SKY, 'topHalf_bottom': SKY, 'bottomHalf_top': SNOW, 'bottomHalf_bottom': SNOW})
         for layer in page['pageModel']['pageList']:
+            layer['decal_Y_Ratio'] = round(layer['decal_Y_Ratio'] - DROP, 6)
             if layer.get('kind') == 'LURKER':
                 # What the lab reveals it by (r370: ParallaxPageReader.reveal).
                 layer['name'] = 'hooded'
