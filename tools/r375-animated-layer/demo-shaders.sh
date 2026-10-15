@@ -3,8 +3,9 @@
 # AI palm (anim.py --free), each checked by loopcheck.py, compared and filmed.
 #
 # Needs build/r365/after/beach-painted (r365's run: tools/ai-page.sh), build/ai/depth/valley (tools/depth-page.sh on
-# build/r279/paint1.png: its back layer has the clouds) and, for the palms, demo.sh's ComfyUI with Wan 2.1 VACE and
-# OUT0 (build/r375, demo.sh's) for the first palms. OUT (build/r375b) gets sea-swell/, sea-glint/, sea-swell-glint/,
+# build/r279/paint1.png: its back layer has the clouds), demo.sh's ComfyUI with Wan 2.1 VACE for the palms, and
+# OUT0 (default build/r375: demo.sh's OUT) for its palms, sea and WAVE sea. OUT (build/r375b) gets sea-swell/,
+# sea-glint/, sea-swell-glint/,
 # clouds-billow/, palms-free0.6/, palms-free1.0/ (each with loop.json), sea-compare.mp4, clouds-billow.mp4,
 # palms-strength.mp4 and page-shaders.mp4 (film.py's mock: the sea swelling and glinting, the palms at free 1.0).
 # headless: frames and films written to files, no window.
@@ -28,6 +29,7 @@ cp "$OUT/clouds-billow/f000.png" "$OUT/still-valley/f000.png"
 
 for free in 0.6 1.0; do
     d="$OUT/palms-free$free"
+    [ -f "$d/loop.json" ] && continue  # 5 min of GPU each: delete the folder to paint it again
     "$PY" "$here/anim.py" "$d" --src "$S/l3_ai.png" --mask "$OUT0/crown_mask.png" --free "$free" \
         --prompt "palm tree fronds tossing and swaying in a strong sea wind, leaves blowing, static camera, painted illustration"
     python3 "$here/loopcut.py" "$d/raw" "$d" --mask "$d/mask.png"

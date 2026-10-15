@@ -29,6 +29,9 @@ def main():
     bg = tuple(int(a.bg[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
     w, h = (box[2] - box[0]) * a.scale // 2 * 2, (box[3] - box[1]) * a.scale
     rows = [(c.split("=", 1)[0], sorted(glob.glob(os.path.join(c.split("=", 1)[1], "f*.png")))) for c in a.clips]
+    for c, (_, files) in zip(a.clips, rows):
+        if not files:
+            ap.error(f"no f*.png in {c.split('=', 1)[1]}")
     with tempfile.TemporaryDirectory() as tmp:
         for i in range(a.frames):
             sheet = Image.new("RGB", (w, (h + 18) * len(rows)), (20, 20, 20))
