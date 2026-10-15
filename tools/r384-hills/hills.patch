@@ -1,0 +1,47 @@
+diff --git a/tools/r239-ai-strips/ai_page.py b/tools/r239-ai-strips/ai_page.py
+index 66e5996..1faf6c2 100755
+--- a/tools/r239-ai-strips/ai_page.py
++++ b/tools/r239-ai-strips/ai_page.py
+@@ -85,7 +85,7 @@ NEG = "text, watermark, frame, border, people, buildings, foreground grass, bird
+ # SDXL paints clouds and a sun whatever the prompt says (r243): its negative names them.
+ NEG_XL = "clouds, sun, moon, birds, animals, creatures, gradient, text, watermark, frame, border, people, buildings"
+ # run.sh's words for each shape: the pines' grow trees past the shape, "forest treeline" alone leaves its spikes.
+-WORDS = {"mountains": "rocky mountain range", "hills": "rolling hills with small trees",
++WORDS = {"mountains": "rocky mountain range", "hills": "rolling wooded hills dotted with small round trees, folds and groves",
+          "pines": "dark pine forest treeline silhouette", "dunes": "sand dunes", "sea": "calm sea, flat horizon",
+          "ruins": "ruined city skyline, broken skyscrapers silhouette", "palms": "palm trees silhouette on a sandy shore"}
+ GROW = {"mountains": 8, "hills": 8, "pines": 40, "dunes": 8, "sea": 4, "ruins": 16, "palms": 24}  # layer.py --grow, px
+@@ -93,7 +93,10 @@ DEFAULT_COLOURS = ["7a869e", "4f7a5a", "1f3a30"]  # sil.py's kinds, at full cont
+ 
+ 
+ def negative(neg, kind):
+-    """The negative prompt for a shape: a ruined skyline is buildings."""
++    """The negative prompt for a shape: a ruined skyline is buildings; hills are no pine forest, which a pine theme
++    paints over them at HILLS_DENOISE (r384)."""
++    if kind == "hills":
++        return neg + ", pine trees, conifers, fir trees"
+     return neg.replace(", buildings", "") if kind == "ruins" else neg
+ 
+ 
+@@ -174,6 +177,10 @@ TREES = 3.5  # roughness under which a pine strip has no trees in it
+ # sea, sand and far mountains came out plain bars (r365). 1: value noise, the shape embossed, the far kinds darker
+ # toward the foot, the sea's noise in streaks.
+ TEXTURE = 1.0
++# dreamshaper_8 at 0.65 paints the forest's hills one flat colour whatever the init's texture (std inside the shape
++# 0.4-5 over 4 seeds); 0.70 with WORDS' wooded hills and no conifers paints folds and round trees, std 5-12, alpha IoU
++# >= 0.978 against 0.65's (r384, tools/r384-hills/try.py). Only where measured: SD 1.5 painted, --denoise not given.
++HILLS_DENOISE = 0.70
+ 
+ 
+ # The lurker (r366): its init's size per model family (portrait: one standing figure), how far img2img may move
+@@ -427,7 +434,9 @@ class Pipeline:
+             return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG_XL, kind), "--prompt",
+                     (f"pixel art, 2d game parallax background layer, {a.theme}, {depth} "
+                      f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
+-        return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG, kind), "--prompt",
++        hills = kind == "hills" and a.denoise is None and not self.model["xl"]
++        args = self.model_args(denoise=not hills) + (["--denoise", str(HILLS_DENOISE)] if hills else [])
++        return [PY, f"{d}/gen.py", "img2img", *args, "--negative", negative(NEG, kind), "--prompt",
+                 f"2d game parallax background layer, {a.theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
+ 
+     def paint(self, k, kind, seed, prefix):
