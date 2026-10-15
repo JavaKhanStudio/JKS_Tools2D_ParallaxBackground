@@ -7,7 +7,7 @@
    "page": "engines/rounds/shaders/s01.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "wave-fog-repeat-X",
-   "about": "c01 (repeat X, trimmed regions): the near hills (a trimmed region) ripple, a mist band drifts through FOG between the two front layers"
+   "about": "c01 (repeat X, trimmed regions): the near hills (a trimmed region) ripple, a mist band drifts through FOG between the two front layers. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405)."
   },
   {
    "id": "s02",

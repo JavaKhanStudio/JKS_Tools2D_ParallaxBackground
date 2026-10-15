@@ -14,7 +14,7 @@
    "page": "engines/rounds/animated/a02.jplax",
    "atlasDir": "core/test-data/animated",
    "name": "beach-palms",
-   "about": "r365 beach at half size, its palm crowns (l3) carrying r375's 24 frames as a patch at 1.1484 fps"
+   "about": "r365 beach at half size, its palm crowns (l3) carrying r375's 24 frames as a patch at 1.1484 fps. Lint (b), known: the bottom edges of l0 (23%) and l2 (1%) show 4-5 px through the gaps, unseen in the stills; kept (r405)."
   },
   {
    "id": "a03",
@@ -33,7 +33,7 @@
    "page": "engines/rounds/animated/a04.jplax",
    "atlasDir": "core/test-data/animated",
    "name": "beach-palms-planet",
-   "about": "a02 round a planet 400% of the world in radius: the patch bent with its tile, through PlanetBatch"
+   "about": "a02 round a planet 400% of the world in radius: the patch bent with its tile, through PlanetBatch. Lint (b), known: the bottom edges of l0 (23%) and l2 (1%) show 4-5 px through the gaps, unseen in the stills; kept (r405)."
   },
   {
    "id": "a05",

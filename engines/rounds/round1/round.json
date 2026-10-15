@@ -18,7 +18,7 @@
    "page": "engines/rounds/round1/s02.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm-whitesky",
-   "about": "Calm-whitesky: sky gradient removed (white)",
+   "about": "Calm-whitesky: sky gradient removed (white). Lint (b), known: layer 0's cloud bottoms (Clouds#0 at 68%) show flat in the valleys, as in Simon's calm page; kept (r405).",
    "lint": []
   },
   {
@@ -52,7 +52,7 @@
    "page": "engines/rounds/round1/s06.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "OneNight-agent",
-   "about": "OneNight-agent: written from the rules alone (not from Simon's page)",
+   "about": "OneNight-agent: written from the rules alone (not from Simon's page). Lint (b), known: layer 1's bottom edge (rocks#0 at 24%) shows flat over the sky; round1 grades the page as written, kept (r405).",
    "lint": []
   },
   {
@@ -68,7 +68,7 @@
    "page": "engines/rounds/round1/s08.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm-flat",
-   "about": "Calm-flat: every layer at the same speed: no depth from motion",
+   "about": "Calm-flat: every layer at the same speed: no depth from motion. Lint (b), known: layer 0's cloud bottoms (Clouds#0 at 68%) show flat in the valleys, as in Simon's calm page; kept (r405).",
    "lint": [
     "speed span 1.0x (front/back): under ~3x the scene reads as one flat plane",
     "layers [1, 2, 3, 4, 5, 6, 7, 8] move at the speed of the one behind: they fuse into one plane"
@@ -79,7 +79,7 @@
    "page": "engines/rounds/round1/s09.jplax",
    "atlasDir": "core/test-data/samples/Demos",
    "name": "OneNight-small",
-   "about": "OneNight-small: every layer half as wide: repeats show",
+   "about": "OneNight-small: every layer half as wide: repeats show. Lint (b), known: the bottom edges of rocks#0 (32%) and ground#0 (37%) show flat over the sky; round1 grades the page as written, kept (r405).",
    "lint": [
     "speeds go DOWN toward the front at layer(s) [1]: layers are stored back to front, a front layer slower than the one behind it reads as behind it ([1] drift on their own: fine only if they do not overlap)",
     "layer 0 is 0.32 worlds wide and tiled: its repeat shows 3 times a screen",
@@ -94,7 +94,7 @@
    "page": "engines/rounds/round1/s10.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm",
-   "about": "Calm: original (control)",
+   "about": "Calm: original (control). Lint (b), known: layer 0's cloud bottoms (Clouds#0 at 68%) show flat in the valleys, as in Simon's calm page; kept (r405).",
    "lint": []
   },
   {
@@ -140,7 +140,7 @@
    "page": "engines/rounds/round1/s15.jplax",
    "atlasDir": "core/test-data/samples/transfer",
    "name": "Calm-compressed",
-   "about": "Calm-compressed: speed span cut to a third (5.6x -> 1.8x): shallow",
+   "about": "Calm-compressed: speed span cut to a third (5.6x -> 1.8x): shallow. Lint (b), known: layer 0's cloud bottoms (Clouds#0 at 68%) show flat in the valleys, as in Simon's calm page; kept (r405).",
    "lint": [
     "speed span 2.2x (front/back): under ~3x the scene reads as one flat plane"
    ]

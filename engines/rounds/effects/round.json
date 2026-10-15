@@ -7,7 +7,7 @@
    "page": "engines/rounds/effects/e01.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "empty-repeat-X",
-   "about": "c01 (Hiver, useOriginalSize, repeat X) with the slot between its fourth and fifth layers",
+   "about": "c01 (Hiver, useOriginalSize, repeat X) with the slot between its fourth and fifth layers. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405).",
    "hooks": {"slot": {"region": "parallax4", "position": 1}}
   },
   {
@@ -51,7 +51,7 @@
    "page": "engines/rounds/effects/e06.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "particles-skipped",
-   "about": "e01 with a PARTICLES layer, anchored to the view, between its two front layers: it loads in all three readers and moves nothing else",
+   "about": "e01 with a PARTICLES layer, anchored to the view, between its two front layers: it loads in all three readers and moves nothing else. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405).",
    "hooks": {"slot": {"region": "parallax4", "position": 1}}
   }
  ]

@@ -7,14 +7,14 @@
    "page": "engines/rounds/floor/g01.jplax",
    "atlasDir": "core/test-data/floor",
    "name": "floor-mode7",
-   "about": "Hiver's lab set on a MODE7 floor (stones from above, 16-unit tiles, a box 40% of the world high, 96 rows from 0.06 at the bottom to 0.016 at the top); the trees in front planted on it"
+   "about": "Hiver's lab set on a MODE7 floor (stones from above, 16-unit tiles, a box 40% of the world high, 96 rows from 0.06 at the bottom to 0.016 at the top); the trees in front planted on it. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405)."
   },
   {
    "id": "g02",
    "page": "engines/rounds/floor/g02.jplax",
    "atlasDir": "core/test-data/floor",
    "name": "floor-line-scroll",
-   "about": "the same set on a LINE_SCROLL floor: the stones painted in perspective, each row shifted at its speed"
+   "about": "the same set on a LINE_SCROLL floor: the stones painted in perspective, each row shifted at its speed. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405)."
   },
   {
    "id": "g03",
@@ -28,7 +28,7 @@
    "page": "engines/rounds/floor/g04.jplax",
    "atlasDir": "core/test-data/floor",
    "name": "floor-no-repeat-cross-fade",
-   "about": "g01 in 24 rows on a page repeating on neither axis (the floor still tiles across, the other layers are drawn once), cross-fading into g02 4 s in, over 4 s: both pages' layers planted on their own floor",
+   "about": "g01 in 24 rows on a page repeating on neither axis (the floor still tiles across, the other layers are drawn once), cross-fading into g02 4 s in, over 4 s: both pages' layers planted on their own floor. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405).",
    "transfer": {
     "at": 4,
     "seconds": 4,

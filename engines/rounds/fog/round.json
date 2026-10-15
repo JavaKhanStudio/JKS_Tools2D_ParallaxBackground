@@ -7,7 +7,7 @@
    "page": "engines/rounds/fog/f01.jplax",
    "atlasDir": "core/test-data/haze",
    "name": "fog-repeat-X",
-   "about": "c01 (repeat X): a page fog of 0.03 in the mist's white, the back layer 0.90, a WAVE and a FOG layer fogged by their speed too"
+   "about": "c01 (repeat X): a page fog of 0.03 in the mist's white, the back layer 0.90, a WAVE and a FOG layer fogged by their speed too. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405)."
   },
   {
    "id": "f02",

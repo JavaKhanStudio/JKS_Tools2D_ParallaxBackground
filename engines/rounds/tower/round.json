@@ -14,14 +14,14 @@
    "page": "engines/rounds/tower/w02.jplax",
    "atlasDir": "core/test-data/tower",
    "name": "tower-fogged-flipped-padded",
-   "about": "the tower flipped on X, a pad of 1 between its images (the set shows through the gaps), shaded 0.8, half a turn backward, under a page fog of 0.02: libGDX's page fog shader takes the darkness in the batch colour's blue"
+   "about": "the tower flipped on X, a pad of 1 between its images (the set shows through the gaps), shaded 0.8, half a turn backward, under a page fog of 0.02: libGDX's page fog shader takes the darkness in the batch colour's blue. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405)."
   },
   {
    "id": "w03",
    "page": "engines/rounds/tower/w03.jplax",
    "atlasDir": "core/test-data/tower",
    "name": "tower-trimmed-trees-repeat-y",
-   "about": "Hiver's far peaks (a region the atlas trimmed top and bottom) wrapped round a radius of 30% (24 wide), shaded 1 (black at its sides), flipped on Y, tiled up a page repeating on Y with a pad of 1, a quarter turn"
+   "about": "Hiver's far peaks (a region the atlas trimmed top and bottom) wrapped round a radius of 30% (24 wide), shaded 1 (black at its sides), flipped on Y, tiled up a page repeating on Y with a pad of 1, a quarter turn. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405)."
   },
   {
    "id": "w04",
@@ -52,14 +52,14 @@
    "page": "engines/rounds/tower/w06.jplax",
    "atlasDir": "core/test-data/tower",
    "name": "tower-near-fogged-flipped-padded",
-   "about": "w02 seen from 2 radii: the panoramas show through the pads, under the page fog; the trees (0.04), faster than the tower turning backward (0.035), stay flat"
+   "about": "w02 seen from 2 radii: the panoramas show through the pads, under the page fog; the trees (0.04), faster than the tower turning backward (0.035), stay flat. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405)."
   },
   {
    "id": "w07",
    "page": "engines/rounds/tower/w07.jplax",
    "atlasDir": "core/test-data/tower",
    "name": "tower-near-trimmed-repeat-y",
-   "about": "w03's ridge seen from 4 radii, tiled up a page repeating on Y: each row of the wall scaled about the view's middle, the set behind wrapped round"
+   "about": "w03's ridge seen from 4 radii, tiled up a page repeating on Y: each row of the wall scaled about the view's middle, the set behind wrapped round. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405)."
   },
   {
    "id": "w08",

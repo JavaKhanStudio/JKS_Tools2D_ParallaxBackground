@@ -7,7 +7,7 @@
    "page": "engines/rounds/sequence/q01.jplax",
    "atlasDir": "core/test-data/sequence",
    "name": "sequence-repeat-X",
-   "about": "c01 (repeat X, useOriginalSize): a padded 12-slot strip seeded negative between the hills, a weighted 16-slot ground of five in front, the bush packed stripped"
+   "about": "c01 (repeat X, useOriginalSize): a padded 12-slot strip seeded negative between the hills, a weighted 16-slot ground of five in front, the bush packed stripped. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405)."
   },
   {
    "id": "q02",

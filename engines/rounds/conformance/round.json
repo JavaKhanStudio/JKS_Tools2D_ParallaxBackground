@@ -6,7 +6,7 @@
    "page": "engines/rounds/conformance/c01.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "trimmed",
-   "about": "useOriginalSize on Hiver: regions packed with offsets (913 px left, 82 px bottom) keep their original size"
+   "about": "useOriginalSize on Hiver: regions packed with offsets (913 px left, 82 px bottom) keep their original size. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405)."
   },
   {
    "id": "c02",

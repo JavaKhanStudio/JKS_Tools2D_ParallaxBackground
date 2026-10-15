@@ -7,28 +7,28 @@
    "page": "engines/rounds/planet/p01.jplax",
    "atlasDir": "core/test-data/floor",
    "name": "planet-hiver-still-sky",
-   "about": "the floor lab's Hiver set round a planet 400% of the world in radius (160 units): every layer wrapped alike, each turning at its own speed; the sky band, still, wrapped but not turning"
+   "about": "the floor lab's Hiver set round a planet 400% of the world in radius (160 units): every layer wrapped alike, each turning at its own speed; the sky band, still, wrapped but not turning. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405)."
   },
   {
    "id": "p02",
    "page": "engines/rounds/planet/p02.jplax",
    "atlasDir": "core/test-data/floor",
    "name": "planet-hiver-fogged-mirrored-flipped",
-   "about": "the same set round a tighter planet (250%), every layer scrolling, the far peaks mirrored above themselves, the mountain flipped on X, under a page fog of 0.02"
+   "about": "the same set round a tighter planet (250%), every layer scrolling, the far peaks mirrored above themselves, the mountain flipped on X, under a page fog of 0.02. Lint (b), known: layer 0's bottom edge (parallax4#3 at 52%) shows through the gaps in front, unseen in the stills; kept (r405)."
   },
   {
    "id": "p03",
    "page": "engines/rounds/planet/p03.jplax",
    "atlasDir": "core/test-data/sequence",
    "name": "planet-sequence",
-   "about": "q01 (SEQUENCE strips between the hills) round a planet of 300%: each slot cut at the strips"
+   "about": "q01 (SEQUENCE strips between the hills) round a planet of 300%: each slot cut at the strips. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405)."
   },
   {
    "id": "p04",
    "page": "engines/rounds/planet/p04.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "planet-shaders",
-   "about": "s01 (a WAVE ripple, a FOG mist band, trimmed regions) round a planet of 300%: the effects drawn on the wrapped strips"
+   "about": "s01 (a WAVE ripple, a FOG mist band, trimmed regions) round a planet of 300%: the effects drawn on the wrapped strips. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405)."
   },
   {
    "id": "p05",
@@ -60,7 +60,7 @@
    "page": "engines/rounds/planet/p07.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "planet-from-flat",
-   "about": "c01 (Hiver, flat: planetRadius 0) cross-fading into p01 4 s in, over 4 s: the flat page fades out flat, the round one comes in wrapped",
+   "about": "c01 (Hiver, flat: planetRadius 0) cross-fading into p01 4 s in, over 4 s: the flat page fades out flat, the round one comes in wrapped. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405).",
    "transfer": {
     "at": 4,
     "seconds": 4,
@@ -73,7 +73,7 @@
    "page": "engines/rounds/planet/p08.jplax",
    "atlasDir": "core/test-data/samples",
    "name": "planet-hook",
-   "about": "e01 (Hiver with an EMPTY slot, 24 wide, drawn by a hook) round a planet of 250% (r347): the hook stands each tile on its foot, placed by planetPlaceAt and turned by planetAngleAt, the images around it wrapped in strips",
+   "about": "e01 (Hiver with an EMPTY slot, 24 wide, drawn by a hook) round a planet of 250% (r347): the hook stands each tile on its foot, placed by planetPlaceAt and turned by planetAngleAt, the images around it wrapped in strips. Lint (b), known: layer 0's bottom edge (parallax4#3 at 68%) shows flat through the hills' gaps, Hiver's own 2019 layout, kept (r405).",
    "hooks": {
     "slot": {
      "region": "parallax4",
