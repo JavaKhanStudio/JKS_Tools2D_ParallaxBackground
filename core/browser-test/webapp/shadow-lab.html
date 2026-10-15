@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Shadow lab (r425): should a layer cast its shadow on the layer behind?</title>
+	<link rel="stylesheet" href="lab.css">
+	<!-- ShadowLab (r425): r365's AI forest page, its pines casting their shadow on the hills behind them, from one light or two. -->
+	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+</head>
+<body class="lab">
+	<header class="lab-bar">
+		<h1>Shadow lab <span class="lab-question">should the trees cast shadows on the layer behind?</span></h1>
+		<a class="lab-home" href="index.html">&larr; all labs</a>
+		<span id="shadow-copy-state" class="lab-copy-state"></span>
+		<button id="shadow-copy" class="lab-copy">Copy settings</button>
+	</header>
+	<div id="shadow-lab" class="lab-stage lab-row">
+		<div id="embed-browsertests"></div>
+		<div id="shadow-labels" class="lab-labels"></div>
+	</div>
+	<div id="shadow-controls" class="lab-controls"></div>
+	<textarea id="shadow-copy-json" class="lab-copy-json" hidden readonly></textarea>
+	<details class="lab-about">
+		<summary>What this lab shows</summary>
+		<p id="shadow-about">r365's AI forest page (the hills lab's, its hills as they ship), drawn twice by the real
+	reader: <b>A</b> as painted, <b>B</b> with the pines casting their shadow on the hills just behind them, and on
+	nothing else: not on the sky, not on the layers further back. The shadow is the pines' own layer, moved away from
+	the light by the shadow's length, darkened and softened, so it scrolls with the pines as the camera moves. A second
+	light casts a second shadow; where both fall, it is darker. A lab, not an effect yet: what ships, if any of it,
+	waits for your tests. The view without the pines shows the shadow's shape alone. Copy settings gives every control
+	as JSON for the card.</p>
+	</details>
+	<script src="lab.js"></script>
+	<script>
+	labCopy('shadow', function () {
+		return {
+			lab: 'shadow-lab', view: document.querySelector('select[data-key=view]').selectedOptions[0].textContent,
+			readout: document.getElementById('shadow-readout').textContent
+		};
+	});
+	</script>
+</body>
+</html>

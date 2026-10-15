@@ -11,6 +11,7 @@ LABS = [
     ("transfert", "transfert-lab.html", "transfertLabReady"),
     ("anim", "anim-lab.html", "animLabReady"),
     ("hills", "hills-lab.html", "hillsLabReady"),
+    ("shadow", "shadow-lab.html", "shadowLabReady"),
     ("effects-fog", "effects-lab.html?lab=fog", "effectsLabReady"),
     ("effects-snow", "effects-lab.html?lab=snow", "effectsLabReady"),
     ("effects-all", "effects-lab.html?lab=all", "effectsLabReady"),
