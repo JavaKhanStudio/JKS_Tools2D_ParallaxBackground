@@ -158,8 +158,16 @@ A graded round may predate the fix it blames: r364 built a rule against ghosts R
 before r358 cleared them on HEAD. ls -l the artefacts against the fix's commit date, re-cut on HEAD first.
 A hung strip is not a slow one: ai_page kills a command past --timeout (600 s) and retries once (r377); a dpmpp_sde
 strip hangs after step 1 with the GPU idle (r388).
-Gates: python3 tools/r239-ai-strips/layer_test.py (no GPU) after any layer.py change; tools/lint.sh (ruff, CI's
-pinned version); then a page run and its stills, looked at, before and after on the same --seed.
+A key, layout or lint change bites a painting its ticket never named (r364, r382, r383, r398 each did): cut EVERY
+painted strip again before and after, the before in a HEAD worktree, no GPU: tools/r364-ghosts/recut.sh LAYERPY OUT
+over R1 (../JKS_Tools2D_ParallaxAI/build/rounds/r1/*/) and build/ai/examples/* (tools/r358-glow/recut.sh: the
+examples only), then area.py BEFORE AFTER PAGE... (opaque px lost, largest hole opened: look at the worst) and
+pair.py (painted / before / after, --behind over the layers behind). seam.py checks a strip's loop seam;
+tools/parallax_lab.py lint PAGE the page's numbers. ../JKS_Tools2D_ParallaxAI is the parallax-ai board's own
+repository: read its rounds, never edit it from here.
+Gates: a layer_test.py case for the fault (python3 tools/r239-ai-strips/layer_test.py, no GPU), failing when the fix is
+taken out; tools/r358-glow/mutate.sh still passing; tools/lint.sh (ruff, CI's pinned version); then the re-cut
+corpus compared, and a page run's stills, looked at, before and after on the same --seed.
 """
 
 [tags.depth]
