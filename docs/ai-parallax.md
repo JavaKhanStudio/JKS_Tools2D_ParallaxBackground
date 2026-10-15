@@ -193,6 +193,27 @@ it (r244); an SDXL ControlNet is untried.
 - Each layer is painted on its own: nothing makes their colours agree but `--colours`, which the init image carries.
   `ai-page.sh` paints them at full contrast and gives the distance with the page's depth fog (`fogStrength`, r217).
 
+## Animating a layer (r375, a lab: no layer kind plays it yet)
+
+`tools/r375-animated-layer/demo.sh` animates the r365 beach's palm crowns and sea with Wan 2.1 VACE 1.3B (~11 GB of
+models in `~/ComfyUI`, `anim.py`'s docstring), on the 8 GB GPU: 49 frames of a 1024x240 band in 4 to 5 minutes.
+
+- Partial by a mask: VACE gets the strip as every frame and a mask per frame, white where it may paint. Outside the
+  mask each frame is the strip's own pixels, and the model only sees the rows the mask reaches, which is also what
+  fits the GPU. The crowns' moving box is 30% of the strip, the sea's 20%.
+- Loop in time by a cut, not by holding the ends: a clip held to the strip at its first frame and its last latent
+  pops (time seam 3.05), because Wan's VAE draws a clip's first frame apart from the rest. `loopcut.py` takes the two
+  most alike frames at least 24 apart, past the first 5, and cross-fades 6 frames: time seam 1.04 to 1.07.
+- Loop in X by `--edge`: the end columns stay still, so every frame tiles as the strip did.
+- `loopcheck.py` is the check. It FAILs a jump at the wrap (time seam over 2: last frame to first, against the
+  median step between frames), a clip that barely moves, and a frame that stops tiling in X. The same frames uncut
+  fail it at 4.42.
+- Wan repaints what it moves in its own colours (crowns 61 to 23 in red): `anim.py` maps them back with one table
+  per channel for the whole clip. A frond that sways out of the still cut is clipped, and the sky it leaves shows
+  as a halo: `rekey.py` keys each frame's own alpha where it moves.
+- Water already moves for free: a `SHADER` layer's `WAVE` (`wave.py` draws it as frames to compare). The AI earns
+  its atlas space on what no shader does, leaves and fronds.
+
 ## Plan
 
 Tasks under r239, tagged `#assets`:
