@@ -1,0 +1,115 @@
+{
+ "topHalf_top": {
+  "r": 0.3098039,
+  "g": 0.5607843,
+  "b": 0.8156863,
+  "a": 1.0
+ },
+ "topHalf_bottom": {
+  "r": 0.8117647,
+  "g": 0.8941176,
+  "b": 0.9490196,
+  "a": 1.0
+ },
+ "topHalfSize": 0.0,
+ "bottomHalf_top": {
+  "r": 0.8117647,
+  "g": 0.8941176,
+  "b": 0.9490196,
+  "a": 1.0
+ },
+ "bottomHalf_bottom": {
+  "r": 0.8117647,
+  "g": 0.8941176,
+  "b": 0.9490196,
+  "a": 1.0
+ },
+ "bottomHalfSize": 1.0,
+ "repeatOnX": true,
+ "repeatOnY": false,
+ "fogStrength": 0.00814,
+ "fogColor": {
+  "r": 0.8117647,
+  "g": 0.8941176,
+  "b": 0.9490196,
+  "a": 1.0
+ },
+ "planetRadius": 400,
+ "pageModel": {
+  "atlasName": "animated.atlas",
+  "pageList": [
+   {
+    "regionName": "l0",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.008,
+    "parallaxScalingSpeedY": 0.0048,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 23.47,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "l1",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.02,
+    "parallaxScalingSpeedY": 0.012,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 11.81,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "l2",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.04,
+    "parallaxScalingSpeedY": 0.024,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 0.56,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false
+   },
+   {
+    "regionName": "l3",
+    "regionPosition": 0,
+    "flipX": false,
+    "flipY": false,
+    "parallaxScalingSpeedX": 0.08,
+    "parallaxScalingSpeedY": 0.048,
+    "speedXAtRest": 0.0,
+    "sizeRatio": 1.0,
+    "decal_X_Ratio": 0.0,
+    "decal_Y_Ratio": 0.0,
+    "padX": 0.0,
+    "padXFactor": 0.0,
+    "padY": 0.0,
+    "padYFactor": 0.0,
+    "mirror": false,
+    "animRegion": "palms",
+    "animX": 54,
+    "animY": 65,
+    "animFps": 1.1484
+   }
+  ]
+ }
+}

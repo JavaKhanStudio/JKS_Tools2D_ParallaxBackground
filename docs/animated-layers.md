@@ -63,7 +63,9 @@ method, below, still to be picked one by one.
    `currentVersion(kryo) >= 16`, `Utils_Page_Json`, `plax_page.gd`'s `LAYER_DEFAULTS`, `Utils_Page.buildFromPage`,
    `ParallaxLayer.clone`, README's "File formats". The libGDX reader draws the patch; `FrameAllocationTest` stays at 0.
 2. `#runtime`: Godot draws the patch; a reader round `engines/rounds/animated` (the r375 palms, frames at three
-   times) in both frame checks, jME running core's.
+   times) in both frame checks, jME running core's. Done (r394): `plax_anim.gd`; the round's a01 is a flag of four colours, its
+   teeth (the palms move under the check's threshold from one frame to the next). A `SHADER` layer's patch is sampled
+   inside the layer's region by every effect (WAVE clamps it to the strip) and stays out of the round until r397.
 3. `#assets`: `ai-page.sh --animate l3='fronds swaying'`: the layer's patch painted, cut, re-keyed, checked, packed.
 4. The editor (its own board) shows and plays the patch.
 

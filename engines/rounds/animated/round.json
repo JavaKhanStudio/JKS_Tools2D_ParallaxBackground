@@ -1,0 +1,39 @@
+{
+ "round": "animated",
+ "about": "Animated patches (format 16, r393, r394; docs/animated-layers.md): a layer's frames drawn after each tile at floor(time x fps) mod their count. Godot draws its own (plax_anim.gd); jME runs core's ParallaxLayer.drawAnim. Written by core/test-data/animated/make_round.py.",
+ "scenes": [
+  {
+   "id": "a01",
+   "page": "engines/rounds/animated/a01.jplax",
+   "atlasDir": "core/test-data/animated",
+   "name": "flags-mirrored-flipped",
+   "about": "r393's probe: a hill with a flag of four colours (frames 0, 1, 2 at 0, 6, 12 s), on an IMAGE layer mirrored above itself and on one flipped on X: the patch mirrored in its tile. The round's teeth: the palms move too little to fail a wrong frame"
+  },
+  {
+   "id": "a02",
+   "page": "engines/rounds/animated/a02.jplax",
+   "atlasDir": "core/test-data/animated",
+   "name": "beach-palms",
+   "about": "r365 beach at half size, its palm crowns (l3) carrying r375's 24 frames as a patch at 1.1484 fps"
+  },
+  {
+   "id": "a03",
+   "page": "engines/rounds/animated/a02.jplax",
+   "atlasDir": "core/test-data/animated",
+   "name": "beach-palms-dolly",
+   "about": "a02 dollied in from zoom 1 to 0.7: the patch at its layer's own zoom, through DollyBatch",
+   "zoom": [
+    1,
+    0.7
+   ],
+   "dolly": true
+  },
+  {
+   "id": "a04",
+   "page": "engines/rounds/animated/a04.jplax",
+   "atlasDir": "core/test-data/animated",
+   "name": "beach-palms-planet",
+   "about": "a02 round a planet 400% of the world in radius: the patch bent with its tile, through PlanetBatch"
+  }
+ ]
+}

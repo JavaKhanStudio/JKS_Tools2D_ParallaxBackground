@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # frame-check.sh [ROUND_DIR] — the Godot reader (engines/godot) against the libGDX runtime, frame by frame (r87).
 #
-#   engines/godot/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet
+#   engines/godot/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet, /animated
 #   engines/godot/tools/frame-check.sh engines/rounds/round1
 #
 # For each round: renders its scenes with libGDX (tools/parallax-lab-shots.sh, 0, 6 and 12 s into the lab's scroll)
@@ -23,7 +23,7 @@ ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/pixelart engines/rounds/effects engines/rounds/particles engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/pixelart engines/rounds/effects engines/rounds/particles engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated)
 GODOT="${GODOT:-godot}"
 status=0
 for ROUND in "${ROUNDS[@]}"; do

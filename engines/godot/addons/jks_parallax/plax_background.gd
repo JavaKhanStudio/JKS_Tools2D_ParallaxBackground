@@ -359,6 +359,8 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		if region.rotate:
 			push_warning("PlaxBackground: region '%s' is packed rotated, which is not supported: drawn as is" % model.regionName)
 		var l := _build_layer(model, region, from_page.use_original_size)
+		if not PlaxAnim.build(l, model, from_atlas, from_page.use_original_size):
+			continue
 		if model.kind == "FLOOR":
 			PlaxFloor.measure(l)
 		_reset_position(l)
@@ -803,6 +805,8 @@ func _draw_layer(l: Dictionary) -> void:
 	if l.canvas.material:
 		l.canvas.material.set_shader_parameter("haze", l.haze)
 		l.canvas.material.set_shader_parameter("fog_color", l.fog_color)
+	# The animated patch's frame, on the clock the effects run on: drawn after each tile (PlaxAnim.draw).
+	PlaxAnim.set_time(l, _effect_time)
 	if m.kind == "FLOOR":
 		# Its rows across the whole view, whatever the page repeats; no mirrored copy.
 		PlaxFloor.draw(self, l, y, view_w, view_h)
@@ -892,6 +896,7 @@ func _tile(
 				PlaxSequence.draw(self, l, draw_x, draw_y, 0, view_w, fx, fy)
 			else:
 				_draw_region(l, draw_x, draw_y, l.width, l.height, fx, fy)
+				PlaxAnim.draw(self, l, draw_x, draw_y, fx, fy)
 
 
 ## The packed image of `l` (a layer, or a sequence's segment) in a box at (x, y); a flip mirrors where it sits in the
