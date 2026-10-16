@@ -87,6 +87,8 @@ public final class Utils_Page
 		model.animY = page.getAnimY();
 		model.animFps = page.getAnimFps();
 		model.glintStrength = page.getGlintStrength();
+		model.mirrorHorizon = page.getMirrorHorizon();
+		model.mirrorDepth = page.getMirrorDepth();
 		return model;
 	}
 }

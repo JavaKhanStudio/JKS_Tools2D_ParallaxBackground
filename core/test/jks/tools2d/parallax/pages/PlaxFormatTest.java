@@ -117,7 +117,7 @@ class PlaxFormatTest
 			assertEquals(Enum_LayerKind.IMAGE, layer.kind, "files older than format 5 hold image layers");
 		original.pageModel.pageList.add(emptyLayer());
 		original.pageModel.pageList.add(particleLayer());
-		original.pageModel.pageList.add(glint(shaderLayer()));
+		original.pageModel.pageList.add(mirror(glint(shaderLayer())));
 		original.pageModel.pageList.add(sequenceLayer());
 		original.pageModel.pageList.add(floorLayer());
 		original.pageModel.pageList.add(lurkerLayer());
@@ -153,6 +153,8 @@ class PlaxFormatTest
 		assertEquals(0, fog.shaderHaze, "its depth haze is no longer stored since format 10");
 		assertEquals(0.25f, reread.getFogStrength(), "it is the page's fog's strength, stored since format 10");
 		assertEquals(0.45f, fog.glintStrength, "its glint is stored since format 17");
+		assertEquals(0.21875f, fog.mirrorHorizon, "its mirror's horizon is stored since format 18");
+		assertEquals(2.5f, fog.mirrorDepth, "and its depth");
 		assertEquals(new Color(0.2f, 0.3f, 0.5f, 1), reread.fogColor, "and the fog's colour");
 		Parallax_Model ground = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 3);
 		assertEquals(Enum_LayerKind.SEQUENCE, ground.kind, "SEQUENCE is a kind since format 8");
@@ -198,6 +200,52 @@ class PlaxFormatTest
 	{
 		layer.glintStrength = 0.45f;
 		return layer;
+	}
+
+	/** A MIRROR layer's water (format 18): its horizon at the beach sea's 84 of 384 rows, its depth 2.5 world units. */
+	static Parallax_Model mirror(Parallax_Model layer)
+	{
+		layer.mirrorHorizon = 0.21875f;
+		layer.mirrorDepth = 2.5f;
+		return layer;
+	}
+
+	/** MIRROR is stored by name, as every effect since format 7, its water's horizon and depth beside it. */
+	@Test
+	void aMirrorLayerKeepsItsEffectAndItsWater() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		Parallax_Model sea = mirror(glint(shaderLayer()));
+		sea.shaderEffect = Enum_ShaderEffect.MIRROR;
+		original.pageModel.pageList.add(sea);
+
+		WholePage_Model reread = read(write(original));
+		Parallax_Model water = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals(Enum_ShaderEffect.MIRROR, water.shaderEffect);
+		assertEquals(0.21875f, water.mirrorHorizon);
+		assertEquals(2.5f, water.mirrorDepth);
+		assertPageEquals(original, reread);
+	}
+
+	/** Format 17 has no mirror: written there, a layer reads its horizon at its image's top and the default depth. */
+	@Test
+	void format17FilesStillLoadWithoutAMirror() throws IOException
+	{
+		WholePage_Model original = read(Files.readAllBytes(ROOT.resolve("core/test-data/samples/hiver/Hiver.plax")));
+		original.pageModel.pageList.add(mirror(glint(shaderLayer())));
+
+		byte[] written = write(original, 17);
+		assertEquals(17, written[2], "format version");
+
+		WholePage_Model reread = read(written);
+		Parallax_Model fog = reread.pageModel.pageList.get(reread.pageModel.pageList.size() - 1);
+		assertEquals(0.45f, fog.glintStrength, "format 17 has the glint");
+		assertEquals(1, fog.mirrorHorizon, "and no mirror: its horizon at the image's top");
+		assertEquals(Parallax_Model.DEFAULT_MIRROR_DEPTH, fog.mirrorDepth, "the default depth");
+		Parallax_Model sent = original.pageModel.pageList.get(original.pageModel.pageList.size() - 1);
+		sent.mirrorHorizon = 1;
+		sent.mirrorDepth = Parallax_Model.DEFAULT_MIRROR_DEPTH;
+		assertPageEquals(original, reread);
 	}
 
 	/** Format 16 has no glint: written there, a layer reads none. */
@@ -775,6 +823,8 @@ class PlaxFormatTest
 			assertEquals(expected.animY, actual.animY, name);
 			assertEquals(expected.animFps, actual.animFps, name);
 			assertEquals(expected.glintStrength, actual.glintStrength, name);
+			assertEquals(expected.mirrorHorizon, actual.mirrorHorizon, name);
+			assertEquals(expected.mirrorDepth, actual.mirrorDepth, name);
 		}
 		assertEquals(expected.parallaxScalingSpeedX, actual.parallaxScalingSpeedX, name);
 		assertEquals(expected.parallaxScalingSpeedY, actual.parallaxScalingSpeedY, name);

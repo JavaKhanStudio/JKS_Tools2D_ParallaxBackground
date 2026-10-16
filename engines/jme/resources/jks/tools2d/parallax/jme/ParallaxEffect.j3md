@@ -14,6 +14,8 @@ MaterialDef ParallaxEffect {
         Boolean Fog
         // SWELL (r431).
         Boolean Swell
+        // MIRROR (r455): SWELL, the water a mirror of the page's sky.
+        Boolean Mirror
         // No effect: a layer drawn through the depth fog, a dissolve's mask or a grade only.
         Boolean Plain
         // The depth fog at the layer, 0 to 1: the color mixed toward FogColor.
@@ -38,6 +40,12 @@ MaterialDef ParallaxEffect {
         Vector4 GlintB : 0.0 0.0 1.0 1.0
         // SWELL: 1 on an axis the page repeats on (wrapped), 0 on one it does not (its edge rows held), r434.
         Vector2 Wrap : 1.0 0.0
+        // MIRROR (GdxLayerEffects.mirrorUniforms): strength, relief, shine, tint; the horizon's height in local() and the
+        // depth; the page's sky at the horizon and over the view.
+        Vector4 MirrorNumbers : 0.0 0.0 0.0 0.0
+        Vector2 MirrorAt : 1.0 1.0
+        Vector3 Sky : 1.0 1.0 1.0
+        Vector3 Zenith : 1.0 1.0 1.0
     }
 
     Technique {
@@ -51,6 +59,7 @@ MaterialDef ParallaxEffect {
         Defines {
             FOG : Fog
             SWELL : Swell
+            MIRROR : Mirror
             PLAIN : Plain
         }
     }

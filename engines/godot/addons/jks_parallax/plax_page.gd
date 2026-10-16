@@ -17,6 +17,7 @@ const LAYER_DEFAULTS := {
 	"lurkerSeed": 0, "lurkerOdds": 3, "lurkerCover": [],
 	"animRegion": "", "animX": 0, "animY": 0, "animFps": 12.0,
 	"glintStrength": 0.0,
+	"mirrorHorizon": 1.0, "mirrorDepth": 3.0,
 }
 ## The layer kinds this reader knows (Enum_LayerKind): a page naming another fails to load, as in libGDX. A PARTICLES
 ## layer's particlesGodot scene is instanced by PlaxBackground, a SHADER layer drawn through PlaxEffects, a SEQUENCE

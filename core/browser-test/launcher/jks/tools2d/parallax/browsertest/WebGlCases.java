@@ -62,6 +62,8 @@ final class WebGlCases
 				// both, its waves along the layer moving the image's own pixels (r431).
 				for (String uniform : effect == Enum_ShaderEffect.FOG ? new String[] { "u_effect", "u_across", "u_up" }
 						: effect == Enum_ShaderEffect.SWELL ? new String[] { "u_region", "u_size", "u_effect", "u_across", "u_up" }
+						// MIRROR: SWELL's, and the sky it mirrors from its horizon down (r455).
+						: effect == Enum_ShaderEffect.MIRROR ? new String[] { "u_region", "u_size", "u_effect", "u_across", "u_up", "u_mirror", "u_mirrorAt", "u_sky", "u_zenith" }
 						: new String[] { "u_region", "u_size", "u_effect" })
 					if (program.fetchUniformLocation(uniform, false) < 0)
 						failed.add(effect + " has no " + uniform);

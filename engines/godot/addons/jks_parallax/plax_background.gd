@@ -390,6 +390,9 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		l.haze = 0.0 if l.model.kind == "EMPTY" or l.model.kind == "PARTICLES" \
 				else PlaxEffects.fog_of(from_page.fog_strength, front, l.model)
 		l.fog_color = Vector3(from_page.fog_color.r, from_page.fog_color.g, from_page.fog_color.b)
+		# What a MIRROR layer mirrors: its page's top gradient (WholePage_Model.buildLayer).
+		l.sky = Vector3(from_page.top_half_bottom.r, from_page.top_half_bottom.g, from_page.top_half_bottom.b)
+		l.zenith = Vector3(from_page.top_half_top.r, from_page.top_half_top.g, from_page.top_half_top.b)
 		if l.haze > 0 and l.model.kind in ["IMAGE", "SEQUENCE", "FLOOR", "LURKER"]:
 			l.canvas.material = PlaxEffects.material("PLAIN")
 	return built

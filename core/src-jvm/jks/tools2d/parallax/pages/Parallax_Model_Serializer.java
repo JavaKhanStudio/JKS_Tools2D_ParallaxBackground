@@ -111,6 +111,12 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		if (WholePage_Model_Serializer.currentVersion(kryo) >= 17)
 			output.writeFloat(model.glintStrength);
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 18)
+		{
+			output.writeFloat(model.mirrorHorizon);
+			output.writeFloat(model.mirrorDepth);
+		}
 	}
 
 	@Override
@@ -225,6 +231,12 @@ public class Parallax_Model_Serializer extends Serializer<Parallax_Model>
 
 		if (WholePage_Model_Serializer.currentVersion(kryo) >= 17)
 			model.glintStrength = input.readFloat();
+
+		if (WholePage_Model_Serializer.currentVersion(kryo) >= 18)
+		{
+			model.mirrorHorizon = input.readFloat();
+			model.mirrorDepth = input.readFloat();
+		}
 
 		return model;
 	}

@@ -29,7 +29,10 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * <p>
  * The sea: r365's AI beach page (core/test-data/anim), its sea (l1) a SHADER layer drawn four ways: WAVE (what ships,
  * GdxLayerEffects' own), SWELL, GLINT, and SWELL then GLINT in one shader. SWELL ships since r431: it, and SWELL + GLINT,
- * are GdxLayerEffects' own SWELL program (r435), the lab's GLSL keeps its SWELL for MIRROR. Each effect is written in
+ * are GdxLayerEffects' own SWELL program (r435), the lab's GLSL keeps its SWELL for its other MIRROR views. MIRROR by
+ * the water's colour + GLINT ships since r455 (Enum_ShaderEffect.MIRROR): it, and the detail levels' 'high', draw
+ * through GdxLayerEffects' MIRROR program, with the sliders' MIRROR and GLINT numbers in its uniforms; the lab's GLSL
+ * keeps MIRROR as tuned and by the water's colour without GLINT, as a record. Each effect is written in
  * world units over {@code along()}, as WAVE and FOG are, so it runs on across the tiles; its amplitude, wavelength and
  * speed are the layer's shader numbers, as a shipped effect's would be. GLINT's own numbers (strength, glint size,
  * density, twinkle, how closely it keeps to the crests, the sun's place and width) are the lab's {@code u_glint}: in
@@ -121,7 +124,11 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			// What a page would store: the layer a SHADER one, under WAVE or, since r431, SWELL, whose periods (8
 			// wavelengths across, 10 up) the lab's GLINT and MIRROR are whole turns over too (r419).
 			model.kind = HEART_EFFECTS[i] == NONE ? Enum_LayerKind.IMAGE : Enum_LayerKind.SHADER;
-			model.shaderEffect = HEART_EFFECTS[i] != WAVE ? Enum_ShaderEffect.SWELL : Enum_ShaderEffect.WAVE;
+			model.shaderEffect = HEART_EFFECTS[i] == MIRROR_GLINT ? Enum_ShaderEffect.MIRROR
+					: HEART_EFFECTS[i] != WAVE ? Enum_ShaderEffect.SWELL : Enum_ShaderEffect.WAVE;
+			// The shipped MIRROR's water (r455): its horizon in the strip and its depth, as a page stores them.
+			model.mirrorHorizon = SEA_HORIZON;
+			model.mirrorDepth = MIRROR_DEPTH;
 			OrthographicCamera camera = new OrthographicCamera();
 			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
@@ -291,11 +298,12 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 * A heart's effects: its sea through the lab's GLSL for its panel's effect (WAVE: GdxLayerEffects' own source), every
 	 * other layer through GdxLayerEffects, as FogLab's are. SWELL, and SWELL + GLINT, draw through GdxLayerEffects'
 	 * own SWELL program, as a game does (r435): the latter with the lab's glint knobs in the shipped glint's uniforms,
-	 * where a game has its strength alone and GdxLayerEffects' GLINT_ numbers.
+	 * where a game has its strength alone and GdxLayerEffects' GLINT_ numbers. MIRROR + GLINT draws through its own
+	 * MIRROR program (r455), the lab's mirror knobs in u_mirror, where a game has GdxLayerEffects' MIRROR_ numbers.
 	 */
 	static final class AnimEffects extends LabKit.Effects
 	{
-		private static ShaderProgram wave, glint, mirror, mirrorOwn, mirrorGlint;
+		private static ShaderProgram wave, glint, mirror, mirrorOwn;
 
 		private final AnimLab lab;
 		private final int effect;
@@ -349,11 +357,11 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fogAmount, Color fogColor)
 		{
 			// Nothing: the sea an IMAGE layer, drawn as the page draws it.
-			byShipped = layer != target || effect == NONE || effect == SWELL || effect == BOTH;
+			byShipped = layer != target || effect == NONE || effect == SWELL || effect == BOTH || effect == MIRROR_GLINT;
 			if (byShipped)
 			{
 				boolean begun = shipped.begin(batch, layer, phase, fogAmount, fogColor);
-				if (!begun || layer != target || effect != BOTH)
+				if (!begun || layer != target || (effect != BOTH && effect != MIRROR_GLINT))
 					return begun;
 				// The lab's glint over the shipped one's: its strength, density, twinkle, crest reach, sun, and its waves'
 				// turns over the periods, which are SWELL's (8 wavelengths across, 10 up).
@@ -364,6 +372,9 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 				program.setUniformf(program.fetchUniformLocation("u_sun", false), g[4], g[5]);
 				program.setUniformf(program.fetchUniformLocation("u_glintA", false), g[6], g[7], g[8], g[9]);
 				program.setUniformf(program.fetchUniformLocation("u_glintB", false), g[10], g[11], layer.getShaderPeriod(), layer.getShaderPeriodY());
+				float[] m = lab.mirror;
+				if (effect == MIRROR_GLINT)
+					program.setUniformf(program.fetchUniformLocation("u_mirror", false), m[0], m[1], m[2], m[3]);
 				return true;
 			}
 			ShaderProgram program = program(effect);
@@ -414,9 +425,6 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 					return glint != null ? glint : (glint = compile("#define GLINT\n", "GLINT"));
 				case MIRROR_OWN:
 					return mirrorOwn != null ? mirrorOwn : (mirrorOwn = compile("#define SWELL\n#define MIRROR\n#define OWN\n", "SWELL + MIRROR by the water's colour"));
-				case MIRROR_GLINT:
-					return mirrorGlint != null ? mirrorGlint
-							: (mirrorGlint = compile("#define SWELL\n#define MIRROR\n#define OWN\n#define GLINT\n", "SWELL + MIRROR by the water's colour + GLINT"));
 				default:
 					return mirror != null ? mirror : (mirror = compile("#define SWELL\n#define MIRROR\n", "SWELL + MIRROR"));
 			}

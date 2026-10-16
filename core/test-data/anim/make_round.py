@@ -9,6 +9,9 @@ view's bottom-left corner): at the page's own size it is 80 of 720 rows, and the
 g04 (r469) is g01's sea drawn twice, the same, through WAVE: glinting behind, not glinting in front, over it. Both
 share libGDX's WAVE program, which sets no glint uniform for a layer that does not glint unless the program's last was
 not 0: a reader that leaves the back layer's glint on the front one lights the front's crests.
+g05 (r455) is the sea through MIRROR at Simon's r419 numbers (amplitude 0.12, wavelength 1.25, speed 0.35), its
+water's horizon at the strip's 84 of 384 rows: its glint's sun is MIRROR's own (a quarter of the view, 0.45 wide), not
+the shipped one every other effect keeps.
 Run from the repository root: python3 core/test-data/anim/make_round.py."""
 import json
 from pathlib import Path
@@ -26,4 +29,9 @@ beach = json.loads(Path('engines/rounds/glint/g01.jplax').read_text())
 sea = beach['pageModel']['pageList'][0]
 beach['pageModel']['pageList'] = [sea, dict(sea, glintStrength=0.0)]
 with open('engines/rounds/glint/g04.jplax', 'w') as f:
+    json.dump(beach, f, indent=1)
+
+beach = json.loads(Path('engines/rounds/glint/g03.jplax').read_text())
+beach['pageModel']['pageList'][0].update(shaderEffect='MIRROR', shaderSpeed=0.35, mirrorHorizon=84 / 384, mirrorDepth=3.0)
+with open('engines/rounds/glint/g05.jplax', 'w') as f:
     json.dump(beach, f, indent=1)

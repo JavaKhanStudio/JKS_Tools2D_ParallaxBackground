@@ -211,3 +211,34 @@ with open(f'{ROUND}/s11.jplax', 'w') as f:
                'repeatOnX': True, 'repeatOnY': True,
                'pageModel': {'atlasName': 'checker.atlas', 'outside': False, 'pageList': [swell]},
                'useOriginalSize': True}, f, indent=1)
+
+# s12, s13 (r455): r407's beach sea (core/test-data/anim) alone through MIRROR at Simon's r419 numbers (amplitude 0.12,
+# wavelength 1.25, speed 0.35, glint 0.5), its water's horizon at the strip's 84 of 384 rows and 3 world units deep,
+# mirroring the beach page's sky (its top gradient: the pale horizon, the blue over the view). The round zooms in on the
+# water as the glint round does. s12 repeats on X as the beach does; s13 is flipped on Y, not repeating: the horizon
+# is in the image, not the view, so the mirror turns with it; its water, now the strip's top 84 rows, is moved down
+# into the view (the strip is the world's width, 15 of 22.5 units tall: decal -49.4% puts the water's bottom where
+# s12's is). tools/r455-mirror/strength.sh holds them against SWELL.
+for out, flip_y, repeat_x, decal_y in [('s12', False, True, 2.7), ('s13', True, False, -49.4)]:
+    beach = json.loads(Path('core/test-data/anim/beach.jplax').read_text())
+    sea = next(layer for layer in beach['pageModel']['pageList'] if layer['regionName'] == 'l1')
+    sea.update(kind='SHADER', shaderEffect='MIRROR', shaderAmplitude=0.12, shaderWavelength=1.25, shaderSpeed=0.35,
+               glintStrength=0.5, mirrorHorizon=84 / 384, mirrorDepth=3.0, decal_Y_Ratio=decal_y, flipY=flip_y)
+    beach['pageModel']['pageList'] = [sea]
+    beach['repeatOnX'] = repeat_x
+    with open(f'{ROUND}/{out}.jplax', 'w') as f:
+        json.dump(beach, f, indent=1)
+
+# s14 (r455): the same sea through MIRROR under a sky no page would paint (its top gradient violet at the horizon, green
+# over the view), a stronger swell (0.3) and shallower water (1.5 units), no glint: the mirror's hue and its fine ripples
+# show. On s12's pale blue sky a reader that left the horizon's sky white, bent the water in colour instead of grey, or
+# left out the three fine ripples drew within the gate (tools/r455-mirror/mutate.sh). A facet bends the water by the
+# ratio of the two colours, so at a sunset's orange over navy (5 to 1) every bend clamped to white whatever the sky;
+# these two were picked by tools/r455-mirror/model.py, a numpy copy of the mirror on the strip, for the largest least
+# of those three mutants (3.5 / 255 on the water there).
+beach = json.loads(Path(f'{ROUND}/s12.jplax').read_text())
+beach['topHalf_bottom'] = {'r': 0.5, 'g': 0.1, 'b': 0.9, 'a': 1.0}
+beach['topHalf_top'] = {'r': 0.2, 'g': 0.9, 'b': 0.2, 'a': 1.0}
+beach['pageModel']['pageList'][0].update(shaderAmplitude=0.3, mirrorDepth=1.5, glintStrength=0.0)
+with open(f'{ROUND}/s14.jplax', 'w') as f:
+    json.dump(beach, f, indent=1)

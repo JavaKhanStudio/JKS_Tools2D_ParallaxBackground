@@ -357,6 +357,9 @@ public class WholePage_Model
 
 		layer.setUseOriginalSize(useOriginalSize);
 		layer.setUpEverything(parallax);
+		// A MIRROR layer mirrors this page's sky: its top gradient, the bottom colour at the horizon.
+		if (topHalf_bottom != null && topHalf_top != null)
+			layer.setMirrorSky(topHalf_bottom, topHalf_top);
 		if ((parallax.kind == Enum_LayerKind.IMAGE || parallax.kind == Enum_LayerKind.SHADER)
 				&& parallax.animRegion != null && !parallax.animRegion.isEmpty())
 			layer.setAnimFrames(findFrames(parallax.animRegion, atlas));

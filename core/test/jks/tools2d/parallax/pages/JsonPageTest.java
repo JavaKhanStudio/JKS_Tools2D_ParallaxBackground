@@ -112,5 +112,7 @@ class JsonPageTest
 		assertEquals(0, layer.animY);
 		assertEquals(Parallax_Model.DEFAULT_ANIM_FPS, layer.animFps);
 		assertEquals(0, layer.glintStrength);
+		assertEquals(1, layer.mirrorHorizon);
+		assertEquals(Parallax_Model.DEFAULT_MIRROR_DEPTH, layer.mirrorDepth);
 	}
 }

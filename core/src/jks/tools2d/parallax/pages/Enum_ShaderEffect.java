@@ -28,9 +28,18 @@ public enum Enum_ShaderEffect
 	 * turns over {@link #FOG_PERIOD} wavelengths across and {@link #FOG_PERIOD_Y} up, its periods too: at one wavelength,
 	 * its second wave jumped each time the layer wrapped (r419).
 	 */
-	SWELL;
+	SWELL,
+	/**
+	 * SWELL's water as a mirror of the page's sky (r455, the animation lab's "SWELL + MIRROR by the water's colour",
+	 * Simon on r419): the same swell, then each pixel's colour bent by how much more or less of the sky it mirrors than
+	 * flat water there would, by the swell's slope, three fine ripples and the painting's own relief. The sky is the
+	 * page's top gradient, its bottom colour at the water's horizon ({@link Parallax_Model#mirrorHorizon}) and its top
+	 * colour {@link Parallax_Model#mirrorDepth} world units under it. Its four numbers are Simon's (GdxLayerEffects'
+	 * MIRROR_*); amplitude, wavelength and speed are the swell's. Its periods are SWELL's.
+	 */
+	MIRROR;
 
-	/** How many wavelengths FOG's patches run before they repeat: its x frequencies are 7, 17 and 23 per 8. SWELL's too. */
+	/** How many wavelengths FOG's patches run before they repeat: its x frequencies are 7, 17 and 23 per 8. SWELL's and MIRROR's too. */
 	public static final int FOG_PERIOD = 8;
 
 	/** How many wavelengths FOG's patches run up before they repeat: its y terms come back every 2, 2 and 1.25 (r262). */
@@ -38,9 +47,9 @@ public enum Enum_ShaderEffect
 
 	/** How many wavelengths this effect runs before it repeats: its phase is wrapped there. */
 	public int period()
-	{return this == FOG || this == SWELL ? FOG_PERIOD : 1;}
+	{return this == FOG || this == SWELL || this == MIRROR ? FOG_PERIOD : 1;}
 
 	/** How many wavelengths this effect runs up before it repeats. */
 	public int periodY()
-	{return this == FOG || this == SWELL ? FOG_PERIOD_Y : 1;}
+	{return this == FOG || this == SWELL || this == MIRROR ? FOG_PERIOD_Y : 1;}
 }

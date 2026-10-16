@@ -19,6 +19,10 @@ uniform vec2 m_Sun;
 uniform vec4 m_GlintA;
 uniform vec4 m_GlintB;
 uniform vec2 m_Wrap;
+uniform vec4 m_MirrorNumbers;
+uniform vec2 m_MirrorAt;
+uniform vec3 m_Sky;
+uniform vec3 m_Zenith;
 
 varying vec2 texCoord;
 varying vec4 vertColor;
@@ -84,6 +88,23 @@ vec4 glinted(vec4 color, vec4 image, vec2 uv)
     return vec4(min(color.rgb + m_Glint.x * glow * vec3(1.0, 0.96, 0.85), 1.0), color.a);
 }
 
+// MIRROR's image read at l (world units in the image), wrapped on the axes the page repeats on, held on the others.
+vec2 wrapped(vec2 l)
+{
+    vec2 f = mix(clamp(l / m_Size, 0.0, 1.0), fract(l / m_Size), m_Wrap);
+    return vec2(mix(m_Region.x, m_Region.z, f.x), mix(m_Region.w, m_Region.y, f.y));
+}
+
+// What MIRROR's water mirrors at a height in the sky, 0 the horizon's, 1 the top's; past them the sun's haze, white,
+// and the deeper sky behind us, darker; shine sharpens the ramp into hard facets.
+vec3 mirrorOf(float sky)
+{
+    float hard = 0.5 - 0.4 * m_MirrorNumbers.z;
+    vec3 mirrored = mix(m_Sky, m_Zenith, smoothstep(0.5 - hard, 0.5 + hard, sky));
+    mirrored = mix(mirrored, vec3(1.0), m_MirrorNumbers.z * (1.0 - smoothstep(-0.3, 0.1, sky)));
+    return mirrored * (1.0 - 0.5 * m_MirrorNumbers.z * smoothstep(0.9, 1.4, sky));
+}
+
 void main()
 {
 #if defined(PLAIN)
@@ -113,6 +134,33 @@ void main()
     vec2 uv = vec2(mix(m_Region.x, m_Region.z, f.x), mix(m_Region.w, m_Region.y, f.y));
     vec4 image = texture2D(m_ColorMap, uv);
     gl_FragColor = hazed(glinted(vertColor * image, image, uv));
+#elif defined(MIRROR)
+    // MIRROR (r455): SWELL, then a facet, tilted by the swell's slope, three finer ripples and the painting's relief,
+    // bends the painting's own colour by how much more or less of the sky it mirrors than flat water there does.
+    vec2 a = along();
+    float L = m_Effect.y;
+    float t = m_Effect.z / L;
+    float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);
+    float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);
+    vec2 l = local() + m_Effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));
+    vec2 uv = wrapped(l);
+    vec4 image = texture2D(m_ColorMap, uv);
+    vec4 color = vertColor * image;
+    vec2 mq = vec2(a.x / (8.0 * L), a.y / (10.0 * L));
+    float tilt = TAU / L * m_Effect.x * (0.18 * cos(p1) - 0.18 * cos(p2))
+        + m_Effect.x * (0.9 * sin(TAU * (13.0 * mq.x + 41.0 * mq.y - 3.0 * t)) + 0.7 * sin(TAU * (-7.0 * mq.x + 57.0 * mq.y - 4.0 * t))
+        + 0.5 * sin(TAU * (21.0 * mq.x + 83.0 * mq.y - 5.0 * t + 0.5 * sin(TAU * (5.0 * mq.x - 9.0 * mq.y + t)))));
+    const vec3 GREY = vec3(0.299, 0.587, 0.114);
+    const float D = 0.05;
+    float relief = dot(texture2D(m_ColorMap, wrapped(l + vec2(0.0, D))).rgb - texture2D(m_ColorMap, wrapped(l - vec2(0.0, D))).rgb, GREY) / (2.0 * D);
+    float facet = tilt + 0.5 * m_MirrorNumbers.y * relief;
+    float level = (m_MirrorAt.x - local().y) / m_MirrorAt.y;
+    vec3 mirrored = mirrorOf(level + 1.2 * facet);
+    vec3 still = mirrorOf(level);
+    vec3 bend = mirrored / max(still, 0.05);
+    bend = mix(bend, vec3(dot(mirrored, GREY) / max(dot(still, GREY), 0.05)), m_MirrorNumbers.w);
+    color.rgb = mix(color.rgb, min(color.rgb * bend, 1.0), m_MirrorNumbers.x);
+    gl_FragColor = hazed(glinted(color, image, uv));
 #else
     // WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region; y is
     // along().y, running on up across the tiles (r273).

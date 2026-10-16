@@ -49,6 +49,10 @@ public class JmeLayerEffects implements LayerEffects
 		final Vector4f glintA = new Vector4f();
 		final Vector4f glintB = new Vector4f();
 		final Vector2f wrap = new Vector2f();
+		final Vector4f mirror = new Vector4f();
+		final Vector2f mirrorAt = new Vector2f();
+		final Vector3f sky = new Vector3f();
+		final Vector3f zenith = new Vector3f();
 		float haze;
 		/**
 		 * The layer's animated patch's material (r397), made when first drawn: the same vectors but its frame's region
@@ -68,7 +72,7 @@ public class JmeLayerEffects implements LayerEffects
 	private final AssetManager assets;
 	/** By layer, dropped with it: a page's layers go when the game stops showing it. */
 	private final Map<ParallaxLayer, Shaded> shaded = new WeakHashMap<>();
-	private final float[] numbers = new float[15], glints = new float[14];
+	private final float[] numbers = new float[15], glints = new float[14], mirrors = new float[12];
 	/** The view's size in world units, which FOG's noise is laid across, and where the layers' y 0 is ({@link #setView}). */
 	private float viewWidth, viewHeight, viewLeft, viewFloor;
 	/** SWELL's Wrap: 1 on an axis the page repeats on, 0 on one it does not ({@link #setRepeat}); unset, across only. */
@@ -104,6 +108,7 @@ public class JmeLayerEffects implements LayerEffects
 			Material material = new Material(assets, MATERIAL);
 			material.setBoolean("Fog", kind == Enum_ShaderEffect.FOG);
 			material.setBoolean("Swell", kind == Enum_ShaderEffect.SWELL);
+			material.setBoolean("Mirror", kind == Enum_ShaderEffect.MIRROR);
 			material.setBoolean("Plain", kind == null);
 			JmeBatch.renderAsRuns(material);
 			s = new Shaded(material, kind);
@@ -141,6 +146,18 @@ public class JmeLayerEffects implements LayerEffects
 		s.material.setVector4("GlintB", s.glintB);
 		s.wrap.set(wrapX, wrapY);
 		s.material.setVector2("Wrap", s.wrap);
+		if (kind == Enum_ShaderEffect.MIRROR)
+		{
+			GdxLayerEffects.mirrorUniforms(layer, mirrors);
+			s.mirror.set(mirrors[0], mirrors[1], mirrors[2], mirrors[3]);
+			s.mirrorAt.set(mirrors[4], mirrors[5]);
+			s.sky.set(mirrors[6], mirrors[7], mirrors[8]);
+			s.zenith.set(mirrors[9], mirrors[10], mirrors[11]);
+			s.material.setVector4("MirrorNumbers", s.mirror);
+			s.material.setVector2("MirrorAt", s.mirrorAt);
+			s.material.setVector3("Sky", s.sky);
+			s.material.setVector3("Zenith", s.zenith);
+		}
 		((JmeBatch) batch).setEffect(s.material);
 		return true;
 	}
@@ -156,6 +173,7 @@ public class JmeLayerEffects implements LayerEffects
 			s.patch = new Material(assets, MATERIAL);
 			s.patch.setBoolean("Fog", s.kind == Enum_ShaderEffect.FOG);
 			s.patch.setBoolean("Swell", s.kind == Enum_ShaderEffect.SWELL);
+			s.patch.setBoolean("Mirror", s.kind == Enum_ShaderEffect.MIRROR);
 			s.patch.setBoolean("Plain", s.kind == null);
 			JmeBatch.renderAsRuns(s.patch);
 		}
@@ -177,6 +195,13 @@ public class JmeLayerEffects implements LayerEffects
 		s.patch.setVector4("GlintA", s.glintA);
 		s.patch.setVector4("GlintB", s.glintB);
 		s.patch.setVector2("Wrap", s.wrap);
+		if (s.kind == Enum_ShaderEffect.MIRROR)
+		{
+			s.patch.setVector4("MirrorNumbers", s.mirror);
+			s.patch.setVector2("MirrorAt", s.mirrorAt);
+			s.patch.setVector3("Sky", s.sky);
+			s.patch.setVector3("Zenith", s.zenith);
+		}
 		((JmeBatch) batch).setEffect(s.patch);
 		return true;
 	}

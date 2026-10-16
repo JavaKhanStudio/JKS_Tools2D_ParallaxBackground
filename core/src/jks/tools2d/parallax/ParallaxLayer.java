@@ -131,6 +131,14 @@ public class ParallaxLayer
 	private double effectTime;
 	/** How strongly a SHADER layer's painted crests catch the sun: {@link Parallax_Model#glintStrength}. */
 	private float glintStrength;
+	/** Where a MIRROR layer's water meets the sky, and how deep it mirrors it: {@link Parallax_Model#mirrorHorizon}, {@link Parallax_Model#mirrorDepth}. */
+	private float mirrorHorizon = 1, mirrorDepth = Parallax_Model.DEFAULT_MIRROR_DEPTH;
+	/**
+	 * The sky a MIRROR layer mirrors, its page's top gradient ({@link #setMirrorSky}): its colour at the horizon (the
+	 * gradient's bottom) and over the view (its top). Not stored: its page's, set when the page builds the layer.
+	 * Replaced, never changed: a copy shares them.
+	 */
+	private Color mirrorSky = Color.WHITE, mirrorZenith = Color.WHITE;
 	/**
 	 * What {@link #draw} and {@link #drawMirror} draw of a tile: {@link #DRAW_ALL}, or the reader's two passes over a
 	 * SHADER layer with a patch, {@link #DRAW_IMAGE} then {@link #DRAW_PATCH} (r397, {@link LayerEffects#beginPatch}).
@@ -350,6 +358,8 @@ public class ParallaxLayer
 		setLurker(model.lurkerSeed, model.lurkerOdds, model.lurkerCover);
 		setAnim(model.animRegion, model.animX, model.animY, model.animFps);
 		glintStrength = model.glintStrength;
+		mirrorHorizon = model.mirrorHorizon;
+		mirrorDepth = model.mirrorDepth;
 	}
 
 	public void resetPosition()
@@ -543,6 +553,11 @@ public class ParallaxLayer
 		copy.animFrame = animFrame;
 		copy.effectTime = effectTime;
 		copy.glintStrength = glintStrength;
+		copy.mirrorHorizon = mirrorHorizon;
+		copy.mirrorDepth = mirrorDepth;
+		// Replaced, never changed: shared.
+		copy.mirrorSky = mirrorSky;
+		copy.mirrorZenith = mirrorZenith;
 		copy.drawPart = drawPart;
 		// Replaced, never changed: shared.
 		copy.animFrames = animFrames;
@@ -1380,6 +1395,35 @@ public class ParallaxLayer
 
 	public void setGlintStrength(float strength)
 	{glintStrength = strength;}
+
+	/** Where a MIRROR layer's water meets the sky, a fraction of its image's height from its bottom ({@link Parallax_Model#mirrorHorizon}). */
+	public float getMirrorHorizon()
+	{return mirrorHorizon;}
+
+	public void setMirrorHorizon(float horizon)
+	{mirrorHorizon = horizon;}
+
+	/** How deep under its horizon a MIRROR layer's flat water mirrors the top of the sky, in world units ({@link Parallax_Model#mirrorDepth}). */
+	public float getMirrorDepth()
+	{return mirrorDepth;}
+
+	public void setMirrorDepth(float depth)
+	{mirrorDepth = depth;}
+
+	/** The sky's colour a MIRROR layer's flat water mirrors at its horizon: its page's top gradient's bottom. Never change it: replace it ({@link #setMirrorSky}). */
+	public Color getMirrorSky()
+	{return mirrorSky;}
+
+	/** The sky's colour it mirrors {@link #getMirrorDepth} under its horizon: that gradient's top. */
+	public Color getMirrorZenith()
+	{return mirrorZenith;}
+
+	/** The sky a MIRROR layer mirrors, copied: its page's top gradient, at the horizon and over the view. */
+	public void setMirrorSky(Color horizon, Color zenith)
+	{
+		mirrorSky = new Color(horizon);
+		mirrorZenith = new Color(zenith);
+	}
 
 	/** The frame {@link #setAnimTime} chose. */
 	public int getAnimFrame()

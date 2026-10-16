@@ -160,6 +160,8 @@ public final class Utils_Page_Json
 		layer.animY = json.getInt("animY", layer.animY);
 		layer.animFps = readFloat(json, "animFps", layer.animFps);
 		layer.glintStrength = readFloat(json, "glintStrength", layer.glintStrength);
+		layer.mirrorHorizon = readFloat(json, "mirrorHorizon", layer.mirrorHorizon);
+		layer.mirrorDepth = readFloat(json, "mirrorDepth", layer.mirrorDepth);
 		return layer;
 	}
 

@@ -85,6 +85,30 @@
    "speedY": 30,
    "name": "swell-up-the-tiles",
    "about": "r434: the checker through SWELL, 10 of 40 units wide and 2.5 tall, tiling on X and Y and scrolled up so it wraps on Y (t6, t12): the image wrapped on both axes, so the squares stay bent across every tile edge on Y instead of a flat band of held rows at each"
+  },
+  {
+   "id": "s12",
+   "page": "engines/rounds/shaders/s12.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "name": "mirror-beach-sea",
+   "about": "r455: r407's beach sea alone through MIRROR at Simon's r419 numbers (SWELL 0.12, 1.25, 0.35; glint 0.5), its horizon at the strip's 84 of 384 rows (mirrorHorizon 0.21875) and 3 units deep, mirroring the beach page's top gradient (pale at the horizon, blue over the view): the facets bend the water's own colour brighter or darker as the swell tilts them, the glint in a sun's column at a quarter of the view. tools/r455-mirror/strength.sh: the mirror moves it past the gate against the same sea through SWELL"
+  },
+  {
+   "id": "s13",
+   "page": "engines/rounds/shaders/s13.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "name": "mirror-flipped-no-repeat",
+   "about": "r455: s12's sea flipped on Y and repeating on neither axis: the horizon is a row of the image, so the mirror turns with it, the swell's sides held"
+  },
+  {
+   "id": "s14",
+   "page": "engines/rounds/shaders/s14.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "name": "mirror-odd-sky",
+   "about": "r455: s12's sea through MIRROR under a sky no page would paint (its page's top gradient violet at the horizon, green over the view), a stronger swell (0.3) and shallower water (1.5 units), no glint: the mirror's hue, bent in grey, and its three fine ripples show (a sky white at the horizon, a bend in colour or no ripples fails here, not on s12)"
   }
  ]
 }

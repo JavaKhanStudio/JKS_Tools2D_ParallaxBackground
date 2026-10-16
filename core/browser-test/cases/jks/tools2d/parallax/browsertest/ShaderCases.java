@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
@@ -30,6 +31,7 @@ final class ShaderCases extends ReaderFixtures
 				new BrowserCase("reader: shaderPhaseFollowsTheReaderClockAndWraps", () -> new ShaderCases().shaderPhaseFollowsTheReaderClockAndWraps()),
 				new BrowserCase("reader: fogPhaseWrapsAtItsPeriod", () -> new ShaderCases().fogPhaseWrapsAtItsPeriod()),
 				new BrowserCase("reader: swellRepeatsOverFogsPeriods", () -> new ShaderCases().swellRepeatsOverFogsPeriods()),
+				new BrowserCase("reader: mirrorIsASwellThatMirrorsItsPagesSky", () -> new ShaderCases().mirrorIsASwellThatMirrorsItsPagesSky()),
 				new BrowserCase("reader: fogNoiseRunsOnAcrossTheTiles", () -> new ShaderCases().fogNoiseRunsOnAcrossTheTiles()),
 				new BrowserCase("reader: fogNoiseRunsOnUpTheTiles", () -> new ShaderCases().fogNoiseRunsOnUpTheTiles()),
 				new BrowserCase("reader: bothPagesOfACrossFadeShadeOnOneClock", () -> new ShaderCases().bothPagesOfACrossFadeShadeOnOneClock()),
@@ -143,6 +145,39 @@ final class ShaderCases extends ReaderFixtures
 		equal(3, numbers[8], 0, "phase");
 		isTrue(GdxLayerEffects.fragment(Enum_ShaderEffect.SWELL) != GdxLayerEffects.fragment(Enum_ShaderEffect.FOG)
 				&& GdxLayerEffects.fragment(Enum_ShaderEffect.SWELL) != GdxLayerEffects.fragment(Enum_ShaderEffect.WAVE), "a shader of its own");
+	}
+
+	/**
+	 * r455: MIRROR is SWELL's water mirroring its page's sky: SWELL's periods, a shader of its own, Simon's four numbers,
+	 * the horizon in local() (its fraction of the layer's height) and the depth, the sky's two colours the page's top
+	 * gradient; its glint's sun is Simon's, every other effect's GLINT_SUN_*.
+	 */
+	void mirrorIsASwellThatMirrorsItsPagesSky()
+	{
+		ParallaxLayer sea = ParallaxLayer.shader(region(1024, 384), 40, 0.5f, Enum_ShaderEffect.MIRROR, 0.12f, 1.25f, 0.35f);
+		equal(10, sea.getShaderPeriod(), 0, "8 wavelengths across");
+		equal(12.5f, sea.getShaderPeriodY(), 0, "10 wavelengths up");
+		isTrue(GdxLayerEffects.fragment(Enum_ShaderEffect.MIRROR) != GdxLayerEffects.fragment(Enum_ShaderEffect.SWELL), "a shader of its own");
+		sea.setMirrorHorizon(0.25f);
+		sea.setMirrorDepth(3);
+		sea.setMirrorSky(new Color(0.8f, 0.9f, 0.95f, 1), new Color(0.3f, 0.55f, 0.8f, 1));
+		float[] m = GdxLayerEffects.mirrorUniforms(sea, new float[12]);
+		equal(0.15f, m[0], 0, "Simon's strength");
+		equal(3, m[1], 0, "relief");
+		equal(1, m[2], 0, "shine");
+		equal(1, m[3], 0, "tint");
+		equal(0.25f * sea.getHeight(), m[4], 1e-5f, "the horizon a quarter of the layer up, in world units");
+		equal(3, m[5], 0, "the depth");
+		equal(0.9f, m[7], 0, "the horizon's sky");
+		equal(0.55f, m[10], 0, "and the top's");
+		sea.setMirrorDepth(0);
+		equal(0.01f, GdxLayerEffects.mirrorUniforms(sea, m)[5], 0, "no depth divides by none");
+		sea.setGlintStrength(0.5f);
+		float[] glint = GdxLayerEffects.glintUniforms(sea, new float[14]);
+		equal(GdxLayerEffects.MIRROR_SUN_X, glint[4], 0, "MIRROR's sun");
+		equal(GdxLayerEffects.MIRROR_SUN_WIDTH, glint[5], 0, "and its width");
+		sea.setShaderEffect(Enum_ShaderEffect.SWELL);
+		equal(GdxLayerEffects.GLINT_SUN_X, GdxLayerEffects.glintUniforms(sea, glint)[4], 0, "SWELL keeps the shipped sun");
 	}
 
 	/**

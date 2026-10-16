@@ -34,6 +34,14 @@
    "zoom": [0.2, 0.2],
    "name": "no-glint-after-glint",
    "about": "r469: g01's sea twice through WAVE, glinting behind and not glinting in front, over it: no crest is lit. libGDX's layers share one WAVE program, which sets u_glint for a layer that does not glint only when the program's last was not 0; leaving the back layer's glint on the front one lights the front's crests"
+  },
+  {
+   "id": "g05",
+   "page": "engines/rounds/glint/g05.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "name": "glint-after-mirror",
+   "about": "r455: the same sea through MIRROR at Simon's r419 numbers (SWELL 0.12, 1.25, 0.35), its horizon at the strip's 84 of 384 rows, mirroring the beach page's sky: its glint's sun is MIRROR's own, at a quarter of the view and 0.45 wide (Simon on r455: his numbers on MIRROR only), every other effect keeping the shipped 0.5 and 0.3"
   }
  ]
 }

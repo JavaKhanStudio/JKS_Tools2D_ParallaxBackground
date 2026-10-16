@@ -84,6 +84,8 @@ public class Parallax_Model
 	public static final float DEFAULT_TOWER_SHADE = 0.65f;
 	/** An animated patch's frame rate in a layer saved before format 16, or without one. */
 	public static final float DEFAULT_ANIM_FPS = 12;
+	/** {@link #mirrorDepth} when a page stores none: the beach sea's, about 3 world units of visible water (r419). */
+	public static final float DEFAULT_MIRROR_DEPTH = 3;
 	/**
 	 * The radius of the tower an IMAGE layer is wrapped round, in percent of the world width; 0, the default: none, the
 	 * layer is flat. Stored since format 12.
@@ -140,6 +142,18 @@ public class Parallax_Model
 	 * loops over the effect's period. Stored since format 17.
 	 */
 	public float glintStrength;
+
+	/**
+	 * Where a MIRROR layer's water meets the sky it mirrors, as a fraction of its image's height from its bottom: 1, the
+	 * default, its top edge; under 1, an image whose water fills only its bottom, clear above (the beach's sea: 84 of its
+	 * 384 rows, 0.21875). Stored since format 18.
+	 */
+	public float mirrorHorizon = 1;
+	/**
+	 * How far under that horizon, in world units, a MIRROR layer's flat water mirrors the top of the page's sky: the
+	 * water's depth as seen. Stored since format 18, {@link #DEFAULT_MIRROR_DEPTH} before.
+	 */
+	public float mirrorDepth = DEFAULT_MIRROR_DEPTH;
 
 	public boolean isFlipX()
 	{return flipX;}
@@ -363,6 +377,18 @@ public class Parallax_Model
 
 	public void setGlintStrength(float glintStrength)
 	{this.glintStrength = glintStrength;}
+
+	public float getMirrorHorizon()
+	{return mirrorHorizon;}
+
+	public void setMirrorHorizon(float mirrorHorizon)
+	{this.mirrorHorizon = mirrorHorizon;}
+
+	public float getMirrorDepth()
+	{return mirrorDepth;}
+
+	public void setMirrorDepth(float mirrorDepth)
+	{this.mirrorDepth = mirrorDepth;}
 
 	public String getCompleteRegionName()
 	{return regionName + regionPosition;}

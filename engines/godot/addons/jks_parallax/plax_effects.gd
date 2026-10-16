@@ -19,8 +19,9 @@ extends RefCounted
 ## r408), its numbers set by apply.
 
 ## The effects this reader draws: a page naming another fails to load, as in libGDX.
-const EFFECTS := ["WAVE", "FOG", "SWELL"]
-## Enum_ShaderEffect.FOG_PERIOD: how many wavelengths FOG's patches run before they repeat, SWELL's waves too.
+const EFFECTS := ["WAVE", "FOG", "SWELL", "MIRROR"]
+## Enum_ShaderEffect.FOG_PERIOD: how many wavelengths FOG's patches run before they repeat, SWELL's and MIRROR's
+## waves too.
 const FOG_PERIOD := 8
 ## Enum_ShaderEffect.FOG_PERIOD_Y: how many wavelengths they run up before they repeat (r262).
 const FOG_PERIOD_Y := 10
@@ -31,6 +32,11 @@ const GLINT_DENSITY := 0.6
 const GLINT_TWINKLE := 0.3
 const GLINT_SUN_X := 0.5
 const GLINT_SUN_WIDTH := 0.3
+## GdxLayerEffects.MIRROR_SUN_*: a MIRROR layer's glint's sun (r455).
+const MIRROR_SUN_X := 0.25
+const MIRROR_SUN_WIDTH := 0.45
+## GdxLayerEffects.MIRROR_*: MIRROR's strength, relief, shine and tint, which a page does not store (r455).
+const MIRROR_NUMBERS := Vector4(0.15, 3.0, 1.0, 1.0)
 const GLINT_ACROSS := [1.0, 1.37, 0.53]
 const GLINT_UP := [1.0, -0.71, 1.3]
 
@@ -136,6 +142,55 @@ void fragment() {
 }
 """
 
+## MIRROR (r455): SWELL, then the water a mirror of the page's sky (GdxLayerEffects.MIRROR): a facet, tilted by the
+## swell's slope, three finer ripples and the painting's relief, bends the painting's own colour by how much more
+## or less of the sky it mirrors than flat water there does. mirror: strength, relief, shine, tint; mirror_at: the
+## horizon's height in local() and the depth; sky, zenith: the page's top gradient, its bottom and top.
+const _MIRROR := _HEAD + """uniform vec2 wrap = vec2(1.0, 0.0);
+uniform vec4 mirror;
+uniform vec2 mirror_at = vec2(1.0, 1.0);
+uniform vec3 sky = vec3(1.0);
+uniform vec3 zenith = vec3(1.0);
+vec2 wrapped(vec2 l) {
+	vec2 f = mix(clamp(l / size, 0.0, 1.0), fract(l / size), wrap);
+	return vec2(mix(region.x, region.z, f.x), mix(region.w, region.y, f.y));
+}
+vec3 mirror_of(float s) {
+	float hard = 0.5 - 0.4 * mirror.z;
+	vec3 mirrored = mix(sky, zenith, smoothstep(0.5 - hard, 0.5 + hard, s));
+	mirrored = mix(mirrored, vec3(1.0), mirror.z * (1.0 - smoothstep(-0.3, 0.1, s)));
+	return mirrored * (1.0 - 0.5 * mirror.z * smoothstep(0.9, 1.4, s));
+}
+void fragment() {
+	vec2 a = along(SCREEN_UV);
+	float L = effect.y;
+	float t = effect.z / L;
+	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);
+	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);
+	vec2 l = local(UV) + effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));
+	vec2 uv = wrapped(l);
+	vec4 image = texture(TEXTURE, uv);
+	vec4 color = tint * image;
+	vec2 mq = vec2(a.x / (8.0 * L), a.y / (10.0 * L));
+	float tilt = TAU / L * effect.x * (0.18 * cos(p1) - 0.18 * cos(p2))
+		+ effect.x * (0.9 * sin(TAU * (13.0 * mq.x + 41.0 * mq.y - 3.0 * t))
+		+ 0.7 * sin(TAU * (-7.0 * mq.x + 57.0 * mq.y - 4.0 * t))
+		+ 0.5 * sin(TAU * (21.0 * mq.x + 83.0 * mq.y - 5.0 * t + 0.5 * sin(TAU * (5.0 * mq.x - 9.0 * mq.y + t)))));
+	const vec3 GREY = vec3(0.299, 0.587, 0.114);
+	const float D = 0.05;
+	float relief = dot(texture(TEXTURE, wrapped(l + vec2(0.0, D))).rgb
+		- texture(TEXTURE, wrapped(l - vec2(0.0, D))).rgb, GREY) / (2.0 * D);
+	float facet = tilt + 0.5 * mirror.y * relief;
+	float level = (mirror_at.x - local(UV).y) / mirror_at.y;
+	vec3 mirrored = mirror_of(level + 1.2 * facet);
+	vec3 still = mirror_of(level);
+	vec3 bend = mirrored / max(still, 0.05);
+	bend = mix(bend, vec3(dot(mirrored, GREY) / max(dot(still, GREY), 0.05)), mirror.w);
+	color.rgb = mix(color.rgb, min(color.rgb * bend, 1.0), mirror.x);
+	COLOR = hazed(glinted(TEXTURE, color, image, uv, SCREEN_UV), SCREEN_UV);
+}
+"""
+
 ## PLAIN: no effect, the depth fog only.
 const _PLAIN := _HEAD + """void fragment() {
 	COLOR = hazed(tint * texture(TEXTURE, UV), SCREEN_UV);
@@ -149,7 +204,7 @@ static var _shaders := {}
 static func material(effect_name: String) -> ShaderMaterial:
 	if not _shaders.has(effect_name):
 		var shader := Shader.new()
-		shader.code = {"FOG": _FOG, "SWELL": _SWELL, "PLAIN": _PLAIN}.get(effect_name, _WAVE)
+		shader.code = {"FOG": _FOG, "SWELL": _SWELL, "MIRROR": _MIRROR, "PLAIN": _PLAIN}.get(effect_name, _WAVE)
 		_shaders[effect_name] = shader
 	var m := ShaderMaterial.new()
 	m.shader = _shaders[effect_name]
@@ -184,13 +239,13 @@ static func glints(model: Dictionary) -> bool:
 
 ## ParallaxLayer.periodAcross: the wavelengths the effect runs across before it repeats, FOG's with it when glinting.
 static func _across(model: Dictionary) -> int:
-	var own := FOG_PERIOD if model.get("shaderEffect", "") in ["FOG", "SWELL"] else 1
+	var own := FOG_PERIOD if model.get("shaderEffect", "") in ["FOG", "SWELL", "MIRROR"] else 1
 	return _least_multiple(own, FOG_PERIOD) if glints(model) else own
 
 
 ## ParallaxLayer.periodUp: the same up.
 static func _up(model: Dictionary) -> int:
-	var own := FOG_PERIOD_Y if model.get("shaderEffect", "") in ["FOG", "SWELL"] else 1
+	var own := FOG_PERIOD_Y if model.get("shaderEffect", "") in ["FOG", "SWELL", "MIRROR"] else 1
 	return _least_multiple(own, FOG_PERIOD_Y) if glints(model) else own
 
 
@@ -265,6 +320,17 @@ static func apply(
 	m.set_shader_parameter("up", Vector3(view_h, floor_y + effect_start_y(l), -1.0 if model.flipY else 1.0))
 	m.set_shader_parameter("wrap", wrap)
 	_apply_glint(m, model, seconds)
+	if model.shaderEffect == "MIRROR":
+		_apply_mirror(m, l)
+
+
+## GdxLayerEffects.mirrorUniforms: MIRROR's numbers, the horizon's height in local() and the depth, the page's sky.
+static func _apply_mirror(m: ShaderMaterial, l: Dictionary) -> void:
+	m.set_shader_parameter("mirror", MIRROR_NUMBERS)
+	m.set_shader_parameter("mirror_at", Vector2((float(l.model.mirrorHorizon) - l.trim_bottom) * l.height,
+			maxf(0.01, float(l.model.mirrorDepth))))
+	m.set_shader_parameter("sky", l.sky)
+	m.set_shader_parameter("zenith", l.zenith)
 
 
 ## GdxLayerEffects.glintUniforms: the glint's numbers, its strength 0 for a layer that does not glint; each wave a whole
@@ -275,7 +341,9 @@ static func _apply_glint(m: ShaderMaterial, model: Dictionary, seconds: float) -
 	var period_up := period_y(model) if on else 1.0
 	m.set_shader_parameter("glint", Vector4(float(model.get("glintStrength", 0.0)) if on else 0.0, GLINT_DENSITY,
 			fmod(seconds * GLINT_TWINKLE, 1000.0), GLINT_CREST))
-	m.set_shader_parameter("sun", Vector2(GLINT_SUN_X, GLINT_SUN_WIDTH))
+	var mirrored: bool = model.get("shaderEffect", "") == "MIRROR"
+	m.set_shader_parameter("sun", Vector2(MIRROR_SUN_X if mirrored else GLINT_SUN_X,
+			MIRROR_SUN_WIDTH if mirrored else GLINT_SUN_WIDTH))
 	var across := period_x / (2.5 * GLINT_SIZE)
 	var up_turns := period_up / 0.9
 	var t: Array[float] = []

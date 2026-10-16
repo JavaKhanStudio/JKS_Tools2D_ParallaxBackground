@@ -46,13 +46,15 @@ import com.esotericsoftware.kryo.io.Output;
  * {@link Parallax_Model#DEFAULT_ANIM_FPS}.</li>
  * <li>version 17: the version 16 layout with each layer's glintStrength (a float) stored after animFps. Older files read
  * 0: no layer glints.</li>
+ * <li>version 18: the version 17 layout with each layer's mirrorHorizon and mirrorDepth (floats) stored after
+ * glintStrength. Older files read 1 and {@link Parallax_Model#DEFAULT_MIRROR_DEPTH}, and have no MIRROR layer.</li>
  * </ul>
  */
 public class WholePage_Model_Serializer extends Serializer<WholePage_Model>
 {
 	/** Never a valid first byte in version 1, where the first color's reference marker is always 0x01. */
 	static final byte VERSION_MARKER = (byte) 0xF2;
-	static final int CURRENT_VERSION = 17;
+	static final int CURRENT_VERSION = 18;
 	static final String VERSION_KEY = "plaxFormatVersion";
 
 	private final int writeVersion;

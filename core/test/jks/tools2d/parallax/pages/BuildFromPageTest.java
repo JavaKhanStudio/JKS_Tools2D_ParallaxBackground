@@ -84,7 +84,7 @@ class BuildFromPageTest
 		snow.particlesLibgdx = "particles/snow.p";
 		page.pageModel.pageList.add(snow);
 
-		Parallax_Model fog = PlaxFormatTest.glint(PlaxFormatTest.shaderLayer());
+		Parallax_Model fog = PlaxFormatTest.mirror(PlaxFormatTest.glint(PlaxFormatTest.shaderLayer()));
 		fog.regionName = "sky";
 		fog.regionPosition = 0;
 		PlaxFormatTest.animate(fog).animRegion = "fronds";
@@ -160,6 +160,8 @@ class BuildFromPageTest
 		assertEquals(-3, saved.pageModel.pageList.get(3).animY);
 		assertEquals(7.5f, saved.pageModel.pageList.get(3).animFps, "its frame rate");
 		assertEquals(0.45f, saved.pageModel.pageList.get(3).glintStrength, "its glint");
+		assertEquals(0.21875f, saved.pageModel.pageList.get(3).mirrorHorizon, "its mirror's horizon");
+		assertEquals(2.5f, saved.pageModel.pageList.get(3).mirrorDepth, "and depth");
 		assertEquals(Enum_LayerKind.SEQUENCE, saved.pageModel.pageList.get(4).kind);
 		assertEquals("snowflake", saved.pageModel.pageList.get(4).sequenceSegments.get(1).regionName);
 		assertEquals(Enum_LayerKind.FLOOR, saved.pageModel.pageList.get(5).kind);

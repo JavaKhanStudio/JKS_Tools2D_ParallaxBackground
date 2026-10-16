@@ -121,6 +121,11 @@ repair.
   (`ParallaxLayer.glints`, `periodAcross`/`periodUp`; Godot's `_across`/`_up`), so the glint loops across the wrap.
   Change it and run both frame checks on `engines/rounds/glint`, gated by `pixelsOff` (the glint is too sparse for
   the mean); `tools/r427-glint/strength.sh` proves the round sees it, `mutate.sh` a wrong Godot or jME copy.
+- A `MIRROR` layer (r455, format 18: `mirrorHorizon`, `mirrorDepth`) is SWELL, then the water a mirror of its page's
+  sky, the page's top gradient handed to each layer it builds (`ParallaxLayer.setMirrorSky`, Godot's `l.sky`/`l.zenith`),
+  its numbers in `GdxLayerEffects.mirrorUniforms`, its glint's sun `MIRROR_SUN_*` (every other effect keeps `GLINT_SUN_*`).
+  Change it and run both frame checks on `engines/rounds/shaders` (s12-s14) and `engines/rounds/glint` (g05);
+  `tools/r455-mirror/strength.sh` proves the round sees the mirror past SWELL, `mutate.sh` a wrong Godot or jME copy.
 - A page's depth fog (`fogStrength`, `fogColor`, format 10; format 9's `shaderHaze` is read as its strength) ends
   every one of those shaders in `hazed()`, toward the fog's colour (`u_fog`), and draws an IMAGE or SEQUENCE layer
   through a `PLAIN` one (jME's `Plain` define, Godot's `"PLAIN"` material); libGDX instead draws them all through one

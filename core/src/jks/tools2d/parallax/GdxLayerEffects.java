@@ -186,6 +186,65 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "}\n";
 
 	/**
+	 * MIRROR (r455, the animation lab's "SWELL + MIRROR by the water's colour", Simon on r419): SWELL, then the water a
+	 * mirror of the page's sky. Flat, a pixel mirrors the sky at the horizon (u_sky) and, u_mirrorAt.y world units under
+	 * it, the sky over the view (u_zenith); tilted, by the swell's slope up the water (its push's own sines,
+	 * differentiated), three finer ripples (whole turns over 8 wavelengths across and 10 up, and of t) and the painting's
+	 * relief (its brightness's slope, times u_mirror.y), it mirrors higher or lower. The painting keeps its colour: a
+	 * facet bends it by how much more or less light it mirrors than flat water there does, so dark and pale water move
+	 * alike (Simon: "accounting for every colour the same"). u_mirror: how much of the bend is drawn, relief, shine (the
+	 * mirrored sky's contrast: hard facets), tint (the bend in grey, the water's hue kept, or in the sky's colour);
+	 * u_mirrorAt.x: the horizon's height in local(). mirrorOf: what the water mirrors at a height in the sky, 0 the
+	 * horizon's, 1 the top's; past them the sun's haze, white, and the deeper sky behind us, darker. Then glinted() and
+	 * hazed(), as SWELL.
+	 */
+	static final String MIRROR = FRAGMENT_HEAD
+			+ "uniform vec2 u_wrap;\n"
+			+ "uniform vec4 u_mirror;\n"
+			+ "uniform vec2 u_mirrorAt;\n"
+			+ "uniform vec3 u_sky;\n"
+			+ "uniform vec3 u_zenith;\n"
+			+ "vec2 wrapped(vec2 l)\n"
+			+ "{\n"
+			+ "	vec2 f = mix(clamp(l / u_size, 0.0, 1.0), fract(l / u_size), u_wrap);\n"
+			+ "	return vec2(mix(u_region.x, u_region.z, f.x), mix(u_region.w, u_region.y, f.y));\n"
+			+ "}\n"
+			+ "vec3 mirrorOf(float sky)\n"
+			+ "{\n"
+			+ "	float hard = 0.5 - 0.4 * u_mirror.z;\n"
+			+ "	vec3 mirrored = mix(u_sky, u_zenith, smoothstep(0.5 - hard, 0.5 + hard, sky));\n"
+			+ "	mirrored = mix(mirrored, vec3(1.0), u_mirror.z * (1.0 - smoothstep(-0.3, 0.1, sky)));\n"
+			+ "	return mirrored * (1.0 - 0.5 * u_mirror.z * smoothstep(0.9, 1.4, sky));\n"
+			+ "}\n"
+			+ "void main()\n"
+			+ "{\n"
+			+ "	vec2 a = along();\n"
+			+ "	float L = u_effect.y;\n"
+			+ "	float t = u_effect.z / L;\n"
+			+ "	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);\n"
+			+ "	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);\n"
+			+ "	vec2 l = local() + u_effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));\n"
+			+ "	vec2 uv = wrapped(l);\n"
+			+ "	vec4 image = texture2D(u_texture, uv);\n"
+			+ "	vec4 color = v_color * image;\n"
+			+ "	vec2 mq = vec2(a.x / (8.0 * L), a.y / (10.0 * L));\n"
+			+ "	float tilt = TAU / L * u_effect.x * (0.18 * cos(p1) - 0.18 * cos(p2))\n"
+			+ "		+ u_effect.x * (0.9 * sin(TAU * (13.0 * mq.x + 41.0 * mq.y - 3.0 * t)) + 0.7 * sin(TAU * (-7.0 * mq.x + 57.0 * mq.y - 4.0 * t))\n"
+			+ "		+ 0.5 * sin(TAU * (21.0 * mq.x + 83.0 * mq.y - 5.0 * t + 0.5 * sin(TAU * (5.0 * mq.x - 9.0 * mq.y + t)))));\n"
+			+ "	const vec3 GREY = vec3(0.299, 0.587, 0.114);\n"
+			+ "	const float D = 0.05;\n"
+			+ "	float relief = dot(texture2D(u_texture, wrapped(l + vec2(0.0, D))).rgb - texture2D(u_texture, wrapped(l - vec2(0.0, D))).rgb, GREY) / (2.0 * D);\n"
+			+ "	float facet = tilt + 0.5 * u_mirror.y * relief;\n"
+			+ "	float level = (u_mirrorAt.x - local().y) / u_mirrorAt.y;\n"
+			+ "	vec3 mirrored = mirrorOf(level + 1.2 * facet);\n"
+			+ "	vec3 still = mirrorOf(level);\n"
+			+ "	vec3 bend = mirrored / max(still, 0.05);\n"
+			+ "	bend = mix(bend, vec3(dot(mirrored, GREY) / max(dot(still, GREY), 0.05)), u_mirror.w);\n"
+			+ "	color.rgb = mix(color.rgb, min(color.rgb * bend, 1.0), u_mirror.x);\n"
+			+ "	gl_FragColor = hazed(glinted(color, image, uv));\n"
+			+ "}\n";
+
+	/**
 	 * The page fog ({@link LayerEffects#beginPageFog}): the tint a uniform, the batch color's red the layer's fog, its
 	 * green which page's fog colour, its blue how much darker a tower's strip is drawn (0 for every other layer:
 	 * {@link ParallaxLayer#drawTower}), its alpha the layer's. Mixed as hazed() does, after the darkening.
@@ -215,6 +274,13 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	 */
 	public static final float GLINT_SIZE = 0.8f, GLINT_CREST = 0.2f, GLINT_DENSITY = 0.6f, GLINT_TWINKLE = 0.3f, GLINT_SUN_X = 0.5f,
 			GLINT_SUN_WIDTH = 0.3f;
+	/** A MIRROR layer's glint's sun (Simon on r455: his r419 numbers on MIRROR only, every other effect keeps GLINT_SUN_*). */
+	public static final float MIRROR_SUN_X = 0.25f, MIRROR_SUN_WIDTH = 0.45f;
+	/**
+	 * MIRROR's numbers, which a page does not store (Simon on r455: fixed at his r419 numbers, the animation lab's
+	 * MIRROR_TUNED): how much of the bend is drawn, relief, shine and tint.
+	 */
+	public static final float MIRROR_STRENGTH = 0.15f, MIRROR_RELIEF = 3, MIRROR_SHINE = 1, MIRROR_TINT = 1;
 	/** Each glint wave's turns per glint spacing across (2.5 glint lengths) and per 0.9 world units up: uneven, so the pieces lit differ crest to crest. */
 	private static final float[] GLINT_ACROSS = { 1, 1.37f, 0.53f }, GLINT_UP = { 1, -0.71f, 1.3f };
 
@@ -230,7 +296,8 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1], dissolve = new int[EFFECTS.length + 1],
 			cells = new int[EFFECTS.length + 1], grade = new int[EFFECTS.length + 1], across = new int[EFFECTS.length + 1], up = new int[EFFECTS.length + 1],
 			glint = new int[EFFECTS.length + 1], sun = new int[EFFECTS.length + 1], glintA = new int[EFFECTS.length + 1], glintB = new int[EFFECTS.length + 1],
-			wrap = new int[EFFECTS.length + 1];
+			wrap = new int[EFFECTS.length + 1], mirror = new int[EFFECTS.length + 1], mirrorAt = new int[EFFECTS.length + 1],
+			sky = new int[EFFECTS.length + 1], zenith = new int[EFFECTS.length + 1];
 	/** The view's size in world units, which FOG's noise is laid across, and where the layers' x and y 0 are ({@link #setView}). */
 	private float viewWidth, viewHeight, viewLeft, viewFloor;
 	/** SWELL's u_wrap: 1 on an axis the page repeats on, 0 on one it does not ({@link #setRepeat}); unset, across only. */
@@ -247,7 +314,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	private boolean pageFogFailed, inPageFog;
 	/** Its uniforms' locations: -1 for one the GPU's compiler dropped, which is then not set. */
 	private int pageFogTint, pageFogColor, pageFogIncoming;
-	private final float[] numbers = new float[15], glints = new float[14];
+	private final float[] numbers = new float[15], glints = new float[14], mirrors = new float[12];
 
 	/** The vertex shader of every effect: SpriteBatch's own. */
 	public static String vertex()
@@ -264,6 +331,8 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 				return FOG;
 			case SWELL:
 				return SWELL;
+			case MIRROR:
+				return MIRROR;
 			case WAVE:
 			default:
 				return WAVE;
@@ -330,6 +399,14 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			glintOff[index] = true;
 		}
 		program.setUniformf(wrap[index], wrapX, wrapY);
+		if (layer.getKind() == Enum_LayerKind.SHADER && layer.getShaderEffect() == Enum_ShaderEffect.MIRROR)
+		{
+			mirrorUniforms(layer, mirrors);
+			program.setUniformf(mirror[index], mirrors[0], mirrors[1], mirrors[2], mirrors[3]);
+			program.setUniformf(mirrorAt[index], mirrors[4], mirrors[5]);
+			program.setUniformf(sky[index], mirrors[6], mirrors[7], mirrors[8]);
+			program.setUniformf(zenith[index], mirrors[9], mirrors[10], mirrors[11]);
+		}
 		return true;
 	}
 
@@ -523,8 +600,9 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		out[1] = GLINT_DENSITY;
 		out[2] = (float) (layer.getEffectTime() * GLINT_TWINKLE % 1000.0);
 		out[3] = GLINT_CREST;
-		out[4] = GLINT_SUN_X;
-		out[5] = GLINT_SUN_WIDTH;
+		boolean mirror = layer.getShaderEffect() == Enum_ShaderEffect.MIRROR;
+		out[4] = mirror ? MIRROR_SUN_X : GLINT_SUN_X;
+		out[5] = mirror ? MIRROR_SUN_WIDTH : GLINT_SUN_WIDTH;
 		float across = periodX / (2.5f * GLINT_SIZE), up = periodY / 0.9f;
 		for (int k = 0; k < 3; k++)
 		{
@@ -533,6 +611,30 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		}
 		out[12] = periodX;
 		out[13] = periodY;
+		return out;
+	}
+
+	/**
+	 * A MIRROR layer's mirror (r455), the same in every engine, into {@code out[0..11]}: u_mirror, {@link #MIRROR_STRENGTH},
+	 * {@link #MIRROR_RELIEF}, {@link #MIRROR_SHINE}, {@link #MIRROR_TINT}; u_mirrorAt, the horizon's height in local()
+	 * (world units over the packed image's bottom: {@link ParallaxLayer#getMirrorHorizon} of the layer's height, less
+	 * its trim) and the depth, 0.01 at least; u_sky and u_zenith, its page's sky ({@link ParallaxLayer#getMirrorSky}).
+	 */
+	public static float[] mirrorUniforms(ParallaxLayer layer, float[] out)
+	{
+		out[0] = MIRROR_STRENGTH;
+		out[1] = MIRROR_RELIEF;
+		out[2] = MIRROR_SHINE;
+		out[3] = MIRROR_TINT;
+		out[4] = (layer.getMirrorHorizon() - layer.getTrimBottom()) * layer.getHeight();
+		out[5] = Math.max(0.01f, layer.getMirrorDepth());
+		Color sky = layer.getMirrorSky(), zenith = layer.getMirrorZenith();
+		out[6] = sky.r;
+		out[7] = sky.g;
+		out[8] = sky.b;
+		out[9] = zenith.r;
+		out[10] = zenith.g;
+		out[11] = zenith.b;
 		return out;
 	}
 
@@ -582,6 +684,10 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		glintA[index] = program.fetchUniformLocation("u_glintA", false);
 		glintB[index] = program.fetchUniformLocation("u_glintB", false);
 		wrap[index] = program.fetchUniformLocation("u_wrap", false);
+		mirror[index] = program.fetchUniformLocation("u_mirror", false);
+		mirrorAt[index] = program.fetchUniformLocation("u_mirrorAt", false);
+		sky[index] = program.fetchUniformLocation("u_sky", false);
+		zenith[index] = program.fetchUniformLocation("u_zenith", false);
 		programs[index] = program;
 		return program;
 	}

@@ -184,6 +184,32 @@ down, the rule before. The shaders round's s11 is the checker tiled on X and Y, 
 s11). Pads, mirrors and trimmed regions still meet a neighbour that is not the opposite edge; WAVE keeps its X clamp.
 Dev post: `docs/devlog/swell-edges.md`.
 
+Mirror, r455 (format 18, Simon on r419: "with glint, with this set of params", and on r455: its numbers fixed, its
+glint's sun his on MIRROR only, the water's horizon and depth stored): `MIRROR` appended to `Enum_ShaderEffect`, the
+animation lab's "SWELL + MIRROR by the water's colour" written three times (`GdxLayerEffects.MIRROR`, `plax_effects.gd`
+`_MIRROR`, `ParallaxEffect.frag` under a Mirror define). It is SWELL, then: a facet's tilt (the swell's slope up the
+water, its push's sines differentiated; three finer ripples, whole turns over 8 wavelengths across and 10 up; the
+painting's relief, its brightness's slope over 0.05 world units, times the relief) moves the height in the sky the
+pixel mirrors, from 0 at the water's horizon (`mirrorHorizon`, a fraction of the image's height) to 1 `mirrorDepth`
+world units under it; `mirrorOf` maps that height to the page's top gradient (its bottom colour at 0, its top at 1, the
+sun's haze white below, the deeper sky darker above), and the pixel's own colour is bent by mirrored over still, in
+grey (tint 1), mixed in at the strength. Strength, relief, shine and tint are `GdxLayerEffects.MIRROR_*` (0.15, 3, 1,
+1), its glint's sun `MIRROR_SUN_X`/`MIRROR_SUN_WIDTH` (0.25, 0.45; every other effect keeps 0.5, 0.3), both copied in
+`plax_effects.gd`; `GdxLayerEffects.mirrorUniforms` hands every engine the rest: the horizon in `local()` (its fraction
+of the layer's height less the region's trim) and the depth, and the sky, which the page sets on each layer it builds
+(`ParallaxLayer.setMirrorSky`; Godot's `l.sky`, `l.zenith`). MIRROR stays SWELL plus a term: a game's lower detail
+level draws the same layer through SWELL (r464). Rounds: the shaders round's s12 (the beach sea, repeating on X), s13
+(flipped on Y, no repeat) and s14 (an odd violet and green sky, a stronger swell, shallower water), and the glint
+round's g05 (MIRROR's sun, under `pixelsOff`). `tools/r455-mirror/strength.sh` holds them against the same scenes
+through SWELL (3.6 to 3.8/255 on s12 and s13): r180's strength.sh would pass a reader drawing MIRROR as SWELL. On s12's
+pale sky a wrong sky, a bend in colour or no fine ripples moved the stills by under 2/255: a facet bends the water by
+the ratio of the sky's two colours, which clamps or cancels on most skies, so s14's were picked by
+`tools/r455-mirror/model.py` (a numpy copy of the mirror) for the largest least of those. `tools/r455-mirror/mutate.sh`
+fails nine wrong copies (Godot through SWELL, its sky white, its horizon at the image's top, no relief, no ripples,
+tint 0, the shipped sun; jME never told MIRROR, its sky white). The animation lab's MIRROR + GLINT views draw through
+the shipped program since (`tools/r455-mirror/lab-mutate.sh`); its MIRROR as tuned and by the water's colour without
+GLINT stay the lab's GLSL, as a record.
+
 ## Saying what an engine cannot draw
 
 `core/src` gets a table, `EffectSupport`: for each kind and each effect, whether libGDX, the browser, Godot and jME
