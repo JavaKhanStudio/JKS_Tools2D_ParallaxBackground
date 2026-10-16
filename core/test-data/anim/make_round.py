@@ -6,6 +6,9 @@ glint comes after either; g03's through SWELL at the lab's numbers (r431), the g
 moved them. The wavelength is the lab's swell's (1.25), so the glint's waves are its turns. The water (the
 strip's bottom 84 of 384 rows) lies in the world's bottom fifth, and the round zooms in on it (zoom 0.2, about the
 view's bottom-left corner): at the page's own size it is 80 of 720 rows, and the glint moves a still by 0.02 / 255.
+g04 (r469) is g01's sea drawn twice, the same, through WAVE: glinting behind, not glinting in front, over it. Both
+share libGDX's WAVE program, which sets no glint uniform for a layer that does not glint unless the program's last was
+not 0: a reader that leaves the back layer's glint on the front one lights the front's crests.
 Run from the repository root: python3 core/test-data/anim/make_round.py."""
 import json
 from pathlib import Path
@@ -18,3 +21,9 @@ for out, effect, amplitude in [('g01', 'WAVE', 0.06), ('g02', 'FOG', 0.15), ('g0
     beach['pageModel']['pageList'] = [sea]
     with open(f'engines/rounds/glint/{out}.jplax', 'w') as f:
         json.dump(beach, f, indent=1)
+
+beach = json.loads(Path('engines/rounds/glint/g01.jplax').read_text())
+sea = beach['pageModel']['pageList'][0]
+beach['pageModel']['pageList'] = [sea, dict(sea, glintStrength=0.0)]
+with open('engines/rounds/glint/g04.jplax', 'w') as f:
+    json.dump(beach, f, indent=1)

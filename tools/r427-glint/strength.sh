@@ -18,7 +18,8 @@ r = json.load(open(os.path.join(round_dir, 'round.json')))
 glinting, plain = dict(r, scenes=[]), dict(r, scenes=[])
 for scene in r['scenes']:
     page = json.load(open(scene['page']))
-    if not any(layer.get('glintStrength', 0) > 0 for layer in page['pageModel']['pageList']):
+    # The front layer's glint is the one seen: g04 (r469) hides a glinting sea under one that does not glint.
+    if not page['pageModel']['pageList'][-1].get('glintStrength', 0) > 0:
         continue
     glinting['scenes'].append(scene)
     for layer in page['pageModel']['pageList']:

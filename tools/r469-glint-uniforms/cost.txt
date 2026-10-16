@@ -1,0 +1,29 @@
+# r469: the editor's :demo:stress in cage (RTX 5060), 2026-10-16, a loaded machine (load 8-19), three runs interleaved.
+# 65ba7e5: before r427; 03e689d: develop before r469; b145614: r469's GdxLayerEffects. Each git archive'd into the editor's
+# demo/build/r469/<commit> and run as: ./gradlew -q :demo:stress -PparallaxDir=<it> --args="--seconds 6 <case>"
+# sea40x0: --layers 1 --every 0 --sea 0 --seas 40 (40 full-screen WAVE layers, no glint); sea40x1: the same, glint 1;
+# wave200: --layers 200 --every 0 --shader WAVE (too noisy here to read).
+65ba7e5  sea40x0      frames 1498 avg 3.97 cpu 3.43 | NVIDIA GeForce RTX 5060 Laptop GPU
+65ba7e5  wave200      frames 392 avg 15.59 cpu 13.32 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  sea40x0      frames 1267 avg 4.70 cpu 3.38 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  wave200      frames 415 avg 14.39 cpu 13.47 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  sea40x0      frames 1491 avg 4.01 cpu 3.38 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  wave200      frames 382 avg 16.10 cpu 15.10 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  sea40x1      frames 931 avg 6.40 cpu 3.79 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  sea40x1      frames 1133 avg 5.28 cpu 3.68 | NVIDIA GeForce RTX 5060 Laptop GPU
+65ba7e5  sea40x0      frames 1738 avg 3.43 cpu 2.92 | NVIDIA GeForce RTX 5060 Laptop GPU
+65ba7e5  wave200      frames 406 avg 14.97 cpu 14.02 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  sea40x0      frames 1285 avg 4.64 cpu 3.98 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  wave200      frames 339 avg 19.14 cpu 15.79 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  sea40x0      frames 1561 avg 3.84 cpu 3.22 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  wave200      frames 404 avg 14.94 cpu 13.92 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  sea40x1      frames 1245 avg 4.81 cpu 3.90 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  sea40x1      frames 1060 avg 5.66 cpu 3.84 | NVIDIA GeForce RTX 5060 Laptop GPU
+65ba7e5  sea40x0      frames 1528 avg 3.92 cpu 3.19 | NVIDIA GeForce RTX 5060 Laptop GPU
+65ba7e5  wave200      frames 352 avg 17.21 cpu 15.98 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  sea40x0      frames 1227 avg 4.87 cpu 4.37 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  wave200      frames 291 avg 20.62 cpu 18.04 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  sea40x0      frames 1477 avg 4.07 cpu 3.49 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  wave200      frames 333 avg 18.17 cpu 17.14 | NVIDIA GeForce RTX 5060 Laptop GPU
+b145614  sea40x1      frames 1198 avg 4.99 cpu 3.89 | NVIDIA GeForce RTX 5060 Laptop GPU
+03e689d  sea40x1      frames 1059 avg 5.66 cpu 3.95 | NVIDIA GeForce RTX 5060 Laptop GPU

@@ -148,7 +148,11 @@ texture reads a pixel. Timed on the editor's `:demo:stress` in cage (RTX 5060, 1
 `tools/r94-glint-cost.sh`), before r427 and after: off, the branch costs nothing (a copy without glinted() times as
 the glinting one), but the four glint uniforms set per SHADER layer cost about 12 us of CPU a layer (40 full-screen WAVE
 layers 3.74 to 4.25 ms, 200 small WAVE or FOG layers +2.4 and +3.6 ms; a copy without the uniforms is back at 3.35 ms
-CPU against 3.28); on, a full-screen sea glinting costs nothing measurable alone (0.31 ms), about 12 us of GPU a
+CPU against 3.28). Since r469 libGDX sets them only for a glinting layer: one that does not glint sets u_glint to 0,
+and only when its program's (shared by every layer of its effect) was not 0 already (`GdxLayerEffects.glintOff`); the
+40 layers are back to 3.97 ms a frame against 65ba7e5's 3.77 and r427's 4.74, 3.36 ms CPU against 3.18 and 3.91
+(three runs each, interleaved, `tools/r469-glint-uniforms/cost.txt`), and the glint round's g04, a sea that does not
+glint over one that does, fails a reader leaving the glint on (`tools/r469-glint-uniforms/mutate.sh`). On, a full-screen sea glinting costs nothing measurable alone (0.31 ms), about 12 us of GPU a
 layer stacked forty deep (4.25 to 4.75 ms). The Intel GPU of a desktop window was not timed. The glint is sparse by design, so `engines/rounds/glint`
 (the beach sea zoomed in on) gates on pixels off (`pixelsOff` 0.05%): leaving it out moves 0.13 to 0.6% of a still
 by over 32 (`tools/r427-glint/strength.sh`), and `tools/r427-glint/mutate.sh` fails a Godot copy without it, with

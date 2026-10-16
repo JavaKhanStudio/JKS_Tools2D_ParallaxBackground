@@ -26,6 +26,14 @@
    "zoom": [0.2, 0.2],
    "name": "glint-after-swell",
    "about": "r431: the same sea through SWELL at the animation lab's numbers (amplitude 0.12, wavelength 1.25, speed 0.3), its look in the lab's SWELL + GLINT: the crests bent by two crossing travelling waves, the glint read where the swell moved them. The painted water is soft: plain, it is 1.35 / 255 off its swell on the mean, so pixelsOff gates it here; the shaders round's s09 and s10 gate SWELL by the mean"
+  },
+  {
+   "id": "g04",
+   "page": "engines/rounds/glint/g04.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "name": "no-glint-after-glint",
+   "about": "r469: g01's sea twice through WAVE, glinting behind and not glinting in front, over it: no crest is lit. libGDX's layers share one WAVE program, which sets u_glint for a layer that does not glint only when the program's last was not 0; leaving the back layer's glint on the front one lights the front's crests"
   }
  ]
 }
