@@ -29,6 +29,7 @@ it), a 16-channel latent. A transformer has no convolution to pad: with --tile x
 its prediction periodic at every step, and only the VAE is padded. No ControlNet with a DiT.
 """
 import argparse
+import gc
 import importlib.util
 import math
 import os
@@ -37,6 +38,9 @@ import sys
 COMFY = os.environ.get("COMFYUI_DIR", os.path.expanduser("~/ComfyUI"))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import gpu_lock  # noqa: E402
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ram  # noqa: E402
 
 # r391: a run is one GPU step, comfy's imports too (they open a CUDA context): the GPU is taken before them and
 # dropped when the process exits, so another lane's run waits instead of running out of memory beside this one.
@@ -143,12 +147,41 @@ def loop_wrapper(mode, patch=2):
     return wrap
 
 
-def load_dit(unet, clip_name, clip_type, vae_name, shift, tile=None, loop="blend"):
+# r450: a Z-Image strip's anonymous RSS peaks at 6.91 GB from gen.py's start (1536x576 img2img, the text encoder freed
+# before the transformer, tools/r450-dit-ram/peak.py), half a GB over it for a larger strip's decode.
+DIT_PEAK = int(7.4 * ram.GB)
+RAM_REFUSED = 3  # gen.py's exit code when a DiT would not fit in RAM: ai_page.py prints the log's last line
+
+
+def refuse_short_ram(peak):
+    """Exits RAM_REFUSED, saying how much is missing, when the run cannot take `peak` bytes of RAM before the kernel
+    (or its scope's MemoryMax) kills it halfway, as it did at 12.2 GB on 2026-10-16 (r450)."""
+    short = ram.shortfall(peak)
+    if short:
+        print(f"gen.py: not enough RAM for a DiT: it peaks at {peak / ram.GB:.1f} GB, "
+              f"{(peak - short) / ram.GB:.1f} GB can be taken (MemAvailable, or a cgroup's MemoryMax): "
+              f"free {short / ram.GB:.1f} GB", file=sys.stderr, flush=True)
+        sys.exit(RAM_REFUSED)
+
+
+def encode_dit(prompt, clip_name, clip_type):
+    """A DiT's prompt, encoded and its text encoder freed before the transformer loads (r450): the encoder takes
+    ~5 GB of RAM while it encodes, and kept beside the sampling it took the run to 12 GB, which the kernel killed."""
+    clip = nodes.CLIPLoader().load_clip(clip_name, clip_type)[0]
+    pos = encode(clip, prompt)
+    del clip
+    comfy.model_management.unload_all_models()
+    comfy.model_management.cleanup_models()
+    gc.collect()
+    comfy.model_management.soft_empty_cache()
+    return pos
+
+
+def load_dit(unet, vae_name, shift, tile=None, loop="blend"):
     from comfy_extras.nodes_model_advanced import ModelSamplingAuraFlow
 
     model = gguf_nodes().UnetLoaderGGUF().load_unet(unet)[0]
     model = ModelSamplingAuraFlow().patch_aura(model, shift)[0]
-    clip = nodes.CLIPLoader().load_clip(clip_name, clip_type)[0]
     vae = nodes.VAELoader().load_vae(vae_name)[0]
     if tile == "x":
         if loop != "none":
@@ -157,7 +190,7 @@ def load_dit(unet, clip_name, clip_type, vae_name, shift, tile=None, loop="blend
         n = tile_x(vae.first_stage_model)
         refuse_tiled_vae(vae)
         print(f"tile x: DiT looped by {loop}, {n} VAE convolutions padded circularly", flush=True)
-    return model, clip, vae
+    return model, vae
 
 
 def control_image(path, w, h, edge):
@@ -328,8 +361,9 @@ MODES = {"txt2img": txt2img, "img2img": img2img, "variants": variants, "inpaint"
 def main():
     a = parse_args()
     if is_dit(a.ckpt):
-        model, clip, vae = load_dit(a.ckpt, a.dit_clip, a.dit_clip_type, a.dit_vae, a.dit_shift, a.tile, a.dit_loop)
-        pos = encode(clip, a.prompt)
+        refuse_short_ram(DIT_PEAK)
+        pos = encode_dit(a.prompt, a.dit_clip, a.dit_clip_type)
+        model, vae = load_dit(a.ckpt, a.dit_vae, a.dit_shift, a.tile, a.dit_loop)
         neg = nodes.ConditioningZeroOut().zero_out(pos)[0]
     else:
         model, clip, vae = load(a.ckpt, a.lora, a.lora_strength, a.tile)

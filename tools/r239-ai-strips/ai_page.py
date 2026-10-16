@@ -35,7 +35,8 @@ The model (r346): --ckpt and --lora replace the style's (any file in ComfyUI's m
 --lora none drops the pixel style's; --steps, --cfg, --sampler, --scheduler and --denoise go to every gen.py call. An
 SDXL checkpoint (one whose name says XL, or --xl) paints at 1536x576, SD 1.5 at 1024x384. recipe.json keeps them all.
 A .gguf --ckpt is a DiT (r356: --ckpt z-image-turbo-Q5_K_M.gguf): gen.py's DiT loader and loop, 1536x576, its own
-sampling defaults (9 steps, cfg 1, res_multistep, simple) and --denoise 0.75 (r357); no LoRA.
+sampling defaults (9 steps, cfg 1, res_multistep, simple) and --denoise 0.75 (r357); no LoRA. It takes ~7.4 GB of
+RAM: gen.py refuses at once with less free (r450), and a gen.py the kernel killed is said so, not blamed on VRAM.
 A fix right for one model or one kind of layer only is one of layer.py's RULES (r400, tools/parallax_rules.py), weighed
 on each painted strip's kind and checkpoint: recipe.json keeps, per strip, each rule's record (applied or not, which
 conditions held, px moved). --rule NAME=on|off forces one on every strip (misty_pines: dreamshaper_8's misty foot pines).
@@ -73,6 +74,7 @@ import os
 import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -293,6 +295,7 @@ DRY_RUN = False  # --dry-run: print each command instead of running it
 # the same (same seed: the strip stays the recipe's), its hung log kept as <log>.hung; then it fails.
 TIMEOUT = 600
 TIMED_OUT = 124  # run()'s code when both tries hung, timeout(1)'s
+GEN_RAM_REFUSED = 3  # gen.py's RAM_REFUSED: a DiT that would not fit in RAM
 
 
 def waiting_on_gpu(log):
@@ -329,6 +332,20 @@ def dump_stacks(pgid, path, tries):
                                stderr=subprocess.STDOUT, timeout=60, check=False)
             except subprocess.TimeoutExpired:
                 out.write("py-spy dump took over 60 s\n")
+
+
+def gen_failed(code, log):
+    """Why gen.py stopped, for sys.exit: killed by a signal is the kernel's OOM killer far more often than not (r450:
+    a DiT at 12.2 GB of RAM, its log cut short with no traceback), its own refusal (RAM_REFUSED) is its log's last line,
+    anything else most likely the GPU's memory."""
+    if code < 0:
+        name = signal.Signals(-code).name if -code in signal.valid_signals() else f"signal {-code}"
+        return f"gen.py killed by {name} (out of memory? journalctl -k): {log}"
+    if code == GEN_RAM_REFUSED:
+        with open(log, errors="replace") as f:
+            said = [line.strip() for line in f if line.startswith("gen.py: ")]
+        return f"{said[-1] if said else 'gen.py: not enough RAM'}: {log}"
+    return f"gen.py failed (free VRAM? nvidia-smi): {log}"
 
 
 def run(cmd, log, timeout=None):
@@ -609,9 +626,10 @@ class Pipeline:
         if run(["python3", f"{d}/sil.py", kind, prefix, "--w", str(self.w), "--h", str(self.h), "--seed", str(seed),
                 "--colour", self.cols[k], "--quiet-join", "--texture", str(TEXTURE)], prefix + "_sil.log"):
             sys.exit(f"sil.py failed: {prefix}_sil.log")
-        if run(gen + self.source_args(gen, prefix) + ["--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
-               prefix + "_gen.log"):
-            sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {prefix}_gen.log")
+        code = run(gen + self.source_args(gen, prefix) + ["--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
+                   prefix + "_gen.log")
+        if code:
+            sys.exit(gen_failed(code, prefix + "_gen.log"))
         return self.cut(prefix, kind, gate)
 
     def cut(self, prefix, kind, gate=True):
@@ -700,9 +718,10 @@ class Pipeline:
                 if run(["python3", f"{d}/sil.py", "clouds", p, "--w", str(self.w), "--h", str(self.h), "--seed",
                         str(seed), "--texture", str(TEXTURE)], p + "_sil.log"):
                     sys.exit(f"sil.py failed: {p}_sil.log")
-                if run(gen + ["--init", f"{p}_init.png", "--tile", "x", "--seed", str(seed), "--out", f"{p}_ai.png"],
-                       p + "_gen.log"):
-                    sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {p}_gen.log")
+                code = run(gen + ["--init", f"{p}_init.png", "--tile", "x", "--seed", str(seed), "--out", f"{p}_ai.png"],
+                           p + "_gen.log")
+                if code:
+                    sys.exit(gen_failed(code, p + "_gen.log"))
             got = self.cut(p, "clouds")
             if got:
                 log(f"clouds: seed {self.made['clouds']['seed']}")
@@ -831,8 +850,9 @@ class Pipeline:
                 if run(["python3", f"{d}/lurker.py", "init", p, "--sky", sky, "--colour", self.cols[k], "--w", str(w),
                         "--h", str(h), "--seed", str(seed)], p + "_sil.log"):
                     sys.exit(f"lurker.py init failed: {p}_sil.log")
-                if run(gen + ["--init", f"{p}_init.png", "--seed", str(seed), "--out", f"{p}_ai.png"], p + "_gen.log"):
-                    sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {p}_gen.log")
+                code = run(gen + ["--init", f"{p}_init.png", "--seed", str(seed), "--out", f"{p}_ai.png"], p + "_gen.log")
+                if code:
+                    sys.exit(gen_failed(code, p + "_gen.log"))
             code = run(["python3", f"{d}/layer.py", f"{p}_ai.png", f"{p}_cut.png", "--mask", f"{p}_mask.png", "--grow",
                         str(48 * w // 512), "--no-creatures"], p + "_cut.log")
             code = code or run(["python3", f"{d}/lurker.py", "crop", f"{p}_cut.png", f"{p}_fig.png"], p + "_crop.log")
