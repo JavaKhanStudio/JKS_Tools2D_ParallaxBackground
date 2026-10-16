@@ -76,7 +76,15 @@
    "page": "engines/rounds/shaders/s10.jplax",
    "atlasDir": "core/test-data/shaders",
    "name": "swell-flipped-no-repeat",
-   "about": "r431: the same checker through SWELL, the world's width, repeating on neither axis and flipped on X: the waves run leftward from its right edge (along() turned), the image wrapped across within itself and held at its top and bottom rows"
+   "about": "r431: the same checker through SWELL, the world's width, repeating on neither axis and flipped on X: the waves run leftward from its right edge (along() turned), its sides and its top and bottom rows held: it repeats on neither axis (r434)"
+  },
+  {
+   "id": "s11",
+   "page": "engines/rounds/shaders/s11.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "speedY": 30,
+   "name": "swell-up-the-tiles",
+   "about": "r434: the checker through SWELL, 10 of 40 units wide and 2.5 tall, tiling on X and Y and scrolled up so it wraps on Y (t6, t12): the image wrapped on both axes, so the squares stay bent across every tile edge on Y instead of a flat band of held rows at each"
   }
  ]
 }

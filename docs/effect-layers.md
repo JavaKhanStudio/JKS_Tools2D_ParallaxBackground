@@ -162,8 +162,18 @@ X, 18 units wide so no tile edge falls on its period; s10 flipped and not repeat
 `tools/r180-shader-round/strength.sh`) and the glint round's g03
 draws the sea itself, swelled and glinting, under its `pixelsOff` gate. `tools/r431-swell/mutate.sh` fails a Godot copy
 drawn through WAVE, over one wavelength, with the second wave at 1/1.7 turns, sideways only or laid on each tile, and a
-jME material never told SWELL or with the second wave at 1/1.7. Holding the top and bottom rows seams a layer tiled on Y
-at each tile edge: r434 asks which edges SWELL should wrap.
+jME material never told SWELL or with the second wave at 1/1.7.
+
+Swell edges, r434 (no format change, Simon on the SWELL edges lab, `tools/effects-lab.sh --lab swell`: "wrap only on
+the axes the page repeats on, hold on the others"): r431's SWELL wrapped across and held its top and bottom rows
+whatever the page repeated on, a flat band at every tile edge on Y and the image's other side pulled in at a side that
+does not repeat. The reader now tells the effects which axes its page repeats on every frame
+(`LayerEffects.setRepeat`, beside `setView`), and SWELL picks per axis, `mix(clamp(f), fract(f), u_wrap)`: libGDX's
+`u_wrap`, jME's `m_Wrap`, Godot's `wrap` (`PlaxEffects.apply`'s last argument). Unset, it wraps across and holds up and
+down, the rule before. The shaders round's s11 is the checker tiled on X and Y, 10 by 2.5 units, scrolled up;
+`tools/r434-swell-wrap/mutate.sh` fails a Godot or jME copy with the old rule or never given the repeat (6.4/255 on
+s11). Pads, mirrors and trimmed regions still meet a neighbour that is not the opposite edge; WAVE keeps its X clamp.
+Dev post: `docs/devlog/swell-edges.md`.
 
 ## Saying what an engine cannot draw
 

@@ -659,6 +659,7 @@ public class ParallaxPageReader implements Disposable
 		anchorLeft = dolly ? cameraX - viewportWidth / 2 : viewLeft;
 		anchorBottom = dolly ? cameraY - viewportHeight / 2 : viewBottom;
 		getLayerEffects().setView(viewWidth, viewHeight, anchorLeft - viewLeft, drawingHeight + anchorBottom - viewBottom);
+		getLayerEffects().setRepeat(repeatOnX, repeatOnY);
 	}
 
 	/**

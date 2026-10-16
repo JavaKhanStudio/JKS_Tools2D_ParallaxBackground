@@ -241,7 +241,7 @@ More:
 - **Water and fog:** a `SHADER` layer is an image layer drawn through one of the effects the library ships: `WAVE`, a
   horizontal ripple (water, heat), `FOG`, drifting patches that thin the image's opacity (a plain white band is a
   fog over the layers behind it; on a layer repeating on X or Y its patches run on across the tiles, with no cut at a tile
-  edge), and `SWELL` (r431), a sea's painted crests bent by two crossing travelling waves. Each is written for libGDX (GLSL ES 1.0, so WebGL too: `GdxLayerEffects`), Godot
+  edge), and `SWELL` (r431), a sea's painted crests bent by two crossing travelling waves, its image wrapped on the axes the page repeats on and its edge rows held on the others (r434). Each is written for libGDX (GLSL ES 1.0, so WebGL too: `GdxLayerEffects`), Godot
   and jME, and the three draw the same frames (`engines/rounds/shaders`). The effect works on the layer's own
   image, not on what is behind it, and moves on the reader's clock: both pages of a cross-fade show it at the same
   place. Each `SHADER` layer flushes the batch before and after its tiles: on a still page, two `WAVE` and one `FOG`

@@ -36,6 +36,8 @@ MaterialDef ParallaxEffect {
         Vector2 Sun : 0.5 0.3
         Vector4 GlintA : 0.0 0.0 0.0 0.0
         Vector4 GlintB : 0.0 0.0 1.0 1.0
+        // SWELL: 1 on an axis the page repeats on (wrapped), 0 on one it does not (its edge rows held), r434.
+        Vector2 Wrap : 1.0 0.0
     }
 
     Technique {

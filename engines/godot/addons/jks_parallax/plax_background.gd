@@ -840,7 +840,8 @@ func _draw_layer(l: Dictionary, patches := false) -> void:
 		PlaxEffects.set_grade(_target.material, _style.color,
 				_style.grade_at(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size())))
 	if m.kind == "SHADER":
-		PlaxEffects.apply(_target.material, l, _effect_time, view_w, view_h, anchor.x, anchor.y)
+		PlaxEffects.apply(_target.material, l, _effect_time, view_w, view_h, anchor.x, anchor.y,
+				Vector2(1.0 if _repeat_x else 0.0, 1.0 if _repeat_y else 0.0))
 	if _target.material:
 		_target.material.set_shader_parameter("haze", l.haze)
 		_target.material.set_shader_parameter("fog_color", l.fog_color)

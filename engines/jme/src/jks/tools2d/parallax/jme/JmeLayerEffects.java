@@ -48,6 +48,7 @@ public class JmeLayerEffects implements LayerEffects
 		final Vector2f sun = new Vector2f();
 		final Vector4f glintA = new Vector4f();
 		final Vector4f glintB = new Vector4f();
+		final Vector2f wrap = new Vector2f();
 		float haze;
 		/**
 		 * The layer's animated patch's material (r397), made when first drawn: the same vectors but its frame's region
@@ -70,6 +71,8 @@ public class JmeLayerEffects implements LayerEffects
 	private final float[] numbers = new float[15], glints = new float[14];
 	/** The view's size in world units, which FOG's noise is laid across, and where the layers' y 0 is ({@link #setView}). */
 	private float viewWidth, viewHeight, viewLeft, viewFloor;
+	/** SWELL's Wrap: 1 on an axis the page repeats on, 0 on one it does not ({@link #setRepeat}); unset, across only. */
+	private float wrapX = 1, wrapY;
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}). */
 	private float side, ramp, softness, drift, cellsX, cellsY;
 	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
@@ -136,6 +139,8 @@ public class JmeLayerEffects implements LayerEffects
 		s.material.setVector2("Sun", s.sun);
 		s.material.setVector4("GlintA", s.glintA);
 		s.material.setVector4("GlintB", s.glintB);
+		s.wrap.set(wrapX, wrapY);
+		s.material.setVector2("Wrap", s.wrap);
 		((JmeBatch) batch).setEffect(s.material);
 		return true;
 	}
@@ -171,6 +176,7 @@ public class JmeLayerEffects implements LayerEffects
 		s.patch.setVector2("Sun", s.sun);
 		s.patch.setVector4("GlintA", s.glintA);
 		s.patch.setVector4("GlintB", s.glintB);
+		s.patch.setVector2("Wrap", s.wrap);
 		((JmeBatch) batch).setEffect(s.patch);
 		return true;
 	}
@@ -198,6 +204,13 @@ public class JmeLayerEffects implements LayerEffects
 		viewHeight = height;
 		viewLeft = left;
 		viewFloor = floor;
+	}
+
+	@Override
+	public void setRepeat(boolean x, boolean y)
+	{
+		wrapX = x ? 1 : 0;
+		wrapY = y ? 1 : 0;
 	}
 
 	@Override

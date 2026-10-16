@@ -18,6 +18,7 @@ uniform vec4 m_Glint;
 uniform vec2 m_Sun;
 uniform vec4 m_GlintA;
 uniform vec4 m_GlintB;
+uniform vec2 m_Wrap;
 
 varying vec2 texCoord;
 varying vec4 vertColor;
@@ -100,15 +101,15 @@ void main()
     gl_FragColor = hazed(glinted(color, image, texCoord));
 #elif defined(SWELL)
     // SWELL (r431): each pixel read from where two crossing travelling waves move it, up to amplitude sideways and half
-    // that up and down, the image wrapped across and held at its top and bottom rows; whole turns over 8 wavelengths
-    // across and 10 up.
+    // that up and down, the image wrapped on the axes its page repeats on (m_Wrap: 1 wraps, 0 holds the edge rows, r434)
+    // and held on the others; whole turns over 8 wavelengths across and 10 up.
     vec2 a = along();
     float L = m_Effect.y;
     float t = m_Effect.z / L;
     float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);
     float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);
     vec2 l = local() + m_Effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));
-    vec2 f = vec2(fract(l.x / m_Size.x), clamp(l.y / m_Size.y, 0.0, 1.0));
+    vec2 f = mix(clamp(l / m_Size, 0.0, 1.0), fract(l / m_Size), m_Wrap);
     vec2 uv = vec2(mix(m_Region.x, m_Region.z, f.x), mix(m_Region.w, m_Region.y, f.y));
     vec4 image = texture2D(m_ColorMap, uv);
     gl_FragColor = hazed(glinted(vertColor * image, image, uv));

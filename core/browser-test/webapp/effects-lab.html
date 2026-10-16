@@ -58,11 +58,12 @@
 	white ticks are the switches. The readout counts the switches made while it was uncovered in the view: 0 in the
 	first mode. The figure's speed and how often it comes by change nothing to the cover: it is worked out on the
 	offset between the layers.
-	<b>swell</b> (r434): SWELL (r431) reads each pixel from where its waves move it, the image wrapped across and held
-	at its top and bottom rows, whatever the page repeats on. <i>A</i> is SWELL as it ships; <i>B</i> wraps only on the
-	axes the page repeats on and holds on the others; <i>C</i> is red where A and B differ. On a page tiled on Y, A's held
-	rows are a flat band at every tile edge on Y (scroll up to see them cross the view; zoom on them); on one that does
-	not repeat on X, A pulls the image's other side in at each side. On the sea, which tiles on X only, A and B agree.
+	<b>swell</b> (r434): SWELL reads each pixel from where its waves move it. Until r434 it wrapped the image across and
+	held its top and bottom rows, whatever the page repeats on; Simon chose to wrap only on the axes the page repeats on
+	and hold on the others. <i>A</i> is SWELL as it ships, wrapping per axis; <i>B</i> is SWELL as it was before r434;
+	<i>C</i> is red where A and B differ. On a page tiled on Y, B's held rows are a flat band at every tile edge on Y
+	(scroll up to see them cross the view; zoom on them), where A stays wavy; on one that does not repeat on X, B pulls
+	the image's other side in at each side. On the sea, which tiles on X only, A and B agree.
 	Each page is drawn by the real reader, compiled to JavaScript, as a browser game draws it. The cost line gives the
 	frame time and, per panel, its draw calls and the CPU time to submit them (the GPU's time is in the frame time).</p>
 	</details>

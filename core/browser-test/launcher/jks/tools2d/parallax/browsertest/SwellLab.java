@@ -23,13 +23,14 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
- * The SWELL edges lab (r434, Simon on its question: "I see no difference, we need a lab"): SWELL (r431) reads each
+ * The SWELL edges lab (r434, Simon on its question: "I see no difference, we need a lab"): SWELL (r431) read each
  * pixel from where its waves move it, the image wrapped across and held at its top and bottom rows, whatever the page
- * repeats on. Three panels of one page, drawn by the real reader: A through SWELL as it ships, B through SWELL wrapping
- * only on the axes the page repeats on and holding on the others (the choice r434 asks), C red where A and B differ,
- * over the picture dimmed. The page is the shaders round's checker (core/test-data/shaders/checker.png, 32 px squares)
+ * repeated on; Simon chose to wrap only on the axes the page repeats on and hold on the others, as it ships since r434.
+ * Three panels of one page, drawn by the real reader: A through SWELL as it ships, B through SWELL as it was before
+ * r434, C red where A and B differ, over the picture dimmed. The page is the shaders round's checker (core/test-data/shaders/checker.png, 32 px squares)
  * tiled on X and Y, on Y only, on neither, on X only, or r365's beach sea as it ships (tiled on X: both rules agree).
- * B and C are lab GLSL: GdxLayerEffects' SWELL with its one wrap line replaced, so the lab follows the shipped effect.
+ * B and C are lab GLSL: GdxLayerEffects' SWELL with its one wrap line or its draw replaced, so the lab follows the
+ * shipped effect.
  * Opened with effects-lab.html?lab=swell: tools/effects-lab.sh --lab swell.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.effectsLabAct(seconds)} steps the hearts at 1/60 s.
@@ -55,22 +56,18 @@ public class SwellLab extends ApplicationAdapter implements LabKit.Clip
 	static final String SEA = "l1";
 
 	/** What a panel draws the SWELL layer through. */
-	static final int SHIPS = 0, PER_AXIS = 1, DIFFER = 2;
+	static final int SHIPS = 0, BEFORE = 1, DIFFER = 2;
 
-	/** GdxLayerEffects' SWELL wrap, which B and C replace: the source fails here loudly if it changes. */
-	static final String WRAP = "	vec2 f = vec2(fract(l.x / u_size.x), clamp(l.y / u_size.y, 0.0, 1.0));\n";
+	/** GdxLayerEffects' SWELL wrap and draw, which B and C replace: the source fails here loudly if they change. */
+	static final String WRAP = "	vec2 f = mix(clamp(l / u_size, 0.0, 1.0), fract(l / u_size), u_wrap);\n";
 	static final String DRAW = "	vec4 image = texture2D(u_texture, uv);\n	gl_FragColor = hazed(glinted(v_color * image, image, uv));\n";
-	/** B's: u_wrap 1 on an axis the page repeats on (fract), 0 on one it does not (held at the edge rows). */
-	static final String WRAPPED = "uniform vec2 u_wrap;\n"
-			+ "vec2 wrapped(vec2 f)\n"
-			+ "{\n"
-			+ "	return mix(clamp(f, 0.0, 1.0), fract(f), u_wrap);\n"
-			+ "}\n";
-	/** C's: B's pixel, red where A reads another one (any channel 0.05 off), the rest dimmed. */
+	/** B's: SWELL's wrap before r434, across whatever the page repeats on, held up and down. */
+	static final String BEFORE_WRAP = "	vec2 f = vec2(fract(l.x / u_size.x), clamp(l.y / u_size.y, 0.0, 1.0));\n";
+	/** C's: A's pixel, red where B reads another one (any channel 0.05 off), the rest dimmed. */
 	static final String DIFFERS = "	vec4 image = texture2D(u_texture, uv);\n"
 			+ "	vec2 f0 = vec2(fract(l.x / u_size.x), clamp(l.y / u_size.y, 0.0, 1.0));\n"
-			+ "	vec4 ships = texture2D(u_texture, vec2(mix(u_region.x, u_region.z, f0.x), mix(u_region.w, u_region.y, f0.y)));\n"
-			+ "	float d = step(0.05, max(max(abs(image.r - ships.r), abs(image.g - ships.g)), max(abs(image.b - ships.b), abs(image.a - ships.a))));\n"
+			+ "	vec4 before = texture2D(u_texture, vec2(mix(u_region.x, u_region.z, f0.x), mix(u_region.w, u_region.y, f0.y)));\n"
+			+ "	float d = step(0.05, max(max(abs(image.r - before.r), abs(image.g - before.g)), max(abs(image.b - before.b), abs(image.a - before.a))));\n"
 			+ "	gl_FragColor = vec4(mix(0.3 * image.rgb, vec3(1.0, 0.1, 0.1), d), max(image.a, d) * v_color.a);\n";
 
 	private final Parallax_Heart[] hearts = new Parallax_Heart[CASES.length];
@@ -128,7 +125,7 @@ public class SwellLab extends ApplicationAdapter implements LabKit.Clip
 		Element stage = document.getElementById("effects-lab");
 		stage.addClassName("lab-three");
 		stage.getStyle().setProperty("maxWidth", (3 * PANEL_WIDTH + 8) + "px");
-		LabControls.panelLabels(document, "effects-labels", "A: as it ships", "B: wraps per axis", "C: red where A and B differ");
+		LabControls.panelLabels(document, "effects-labels", "A: as it ships (wraps per axis)", "B: before r434 (across only)", "C: red where A and B differ");
 		view = LabControls.stageChoice(document, "effects-labels", "page", "the page: the checker tiled on X and Y, on Y only, on neither, on X only, or the beach sea as it ships", CASES, 0);
 		Element controls = document.getElementById("effects-controls");
 		amplitude = LabControls.slider(document, controls, "swellAmplitude", "SWELL amplitude (world units: the image moves up to this sideways, half of it up and down; the round's checker 0.3)", 0, 1, 0.01f, 0.3f);
@@ -158,9 +155,9 @@ public class SwellLab extends ApplicationAdapter implements LabKit.Clip
 		ParallaxLayer layer = swells[LabControls.read(view)];
 		float px = layer.getDrawnRegion().getRegionHeight() / (layer.getHeight() * layer.getPackedHeightRatio());
 		readout.setInnerText("SWELL layer " + two(layer.getWidth()) + " x " + two(layer.getHeight()) + " world units, its image " + two(px)
-				+ " px a unit: up to " + two(a * px) + " px sideways and " + two(a / 2 * px) + " px up and down. A holds its top and bottom rows: a band "
-				+ "up to that tall at every tile edge on Y. A wraps across: on a page that does not repeat on X, up to " + two(a * px)
-				+ " px of the image's other side come in at each side. B holds on an axis the page does not repeat on and wraps on one it does.");
+				+ " px a unit: up to " + two(a * px) + " px sideways and " + two(a / 2 * px) + " px up and down. B held its top and bottom rows: a band "
+				+ "up to that tall at every tile edge on Y. B wrapped across: on a page that does not repeat on X, up to " + two(a * px)
+				+ " px of the image's other side came in at each side. A holds on an axis the page does not repeat on and wraps on one it does.");
 	}
 
 	private static String two(float value)
@@ -192,7 +189,6 @@ public class SwellLab extends ApplicationAdapter implements LabKit.Clip
 			int bottom = Math.max(height - frameHeight, Math.min(height - PANEL_HEIGHT, Math.round(height - PANEL_HEIGHT / 2f - FOCUS_Y[i] * frameHeight)));
 			if (!LabKit.frame(x, height - PANEL_HEIGHT, PANEL_WIDTH, PANEL_HEIGHT, left, bottom, frameWidth, frameHeight))
 				continue;
-			effects[k].wrap(REPEAT_X[i], REPEAT_Y[i]);
 			hearts[i].parallaxReader.setLayerEffects(effects[k]);
 			hearts[i].render();
 		}
@@ -209,22 +205,24 @@ public class SwellLab extends ApplicationAdapter implements LabKit.Clip
 	 */
 	static final class SwellEffects implements LayerEffects
 	{
-		private static ShaderProgram perAxis, differ;
+		private static ShaderProgram before, differ;
 
 		private final int kind;
 		private final GdxLayerEffects shipped = new GdxLayerEffects();
 		private final float[] numbers = new float[15], glints = new float[14];
-		private float viewWidth, viewHeight, viewLeft, viewFloor, wrapX, wrapY;
+		private float viewWidth, viewHeight, viewLeft, viewFloor, wrapX = 1, wrapY;
 		private boolean byShipped;
 		private ShaderProgram previous;
 
 		SwellEffects(int kind)
 		{this.kind = kind;}
 
-		void wrap(boolean x, boolean y)
+		@Override
+		public void setRepeat(boolean x, boolean y)
 		{
 			wrapX = x ? 1 : 0;
 			wrapY = y ? 1 : 0;
+			shipped.setRepeat(x, y);
 		}
 
 		@Override
@@ -286,19 +284,18 @@ public class SwellLab extends ApplicationAdapter implements LabKit.Clip
 
 		static ShaderProgram program(int kind)
 		{
-			if (kind == PER_AXIS)
-				return perAxis != null ? perAxis : (perAxis = compile(source(false), "B"));
+			if (kind == BEFORE)
+				return before != null ? before : (before = compile(source(false), "B"));
 			return differ != null ? differ : (differ = compile(source(true), "C"));
 		}
 
-		/** GdxLayerEffects' SWELL, its wrap B's, and with {@code differs} its draw C's. */
+		/** GdxLayerEffects' SWELL with B's wrap, or with {@code differs} C's draw. */
 		static String source(boolean differs)
 		{
 			String swell = GdxLayerEffects.fragment(Enum_ShaderEffect.SWELL);
-			if (!swell.contains(WRAP) || !swell.contains(DRAW) || !swell.contains("void main()"))
+			if (!swell.contains(WRAP) || !swell.contains(DRAW))
 				throw new IllegalStateException("GdxLayerEffects' SWELL no longer has the wrap or the draw the lab replaces");
-			swell = swell.replace("void main()", WRAPPED + "void main()").replace(WRAP, "	vec2 f = wrapped(l / u_size);\n");
-			return differs ? swell.replace(DRAW, DIFFERS) : swell;
+			return differs ? swell.replace(DRAW, DIFFERS) : swell.replace(WRAP, BEFORE_WRAP);
 		}
 
 		private static ShaderProgram compile(String fragment, String name)

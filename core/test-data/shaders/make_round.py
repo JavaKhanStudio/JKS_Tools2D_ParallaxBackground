@@ -4,7 +4,8 @@
 conformance page (c01, c02, c03, c05) with a layer turned into a WAVE and a mist band drawn through FOG, s06.jplax,
 the mist alone tiling on X (r229), s07.jplax, an even slab (slab.png, slab.atlas) through FOG tiling on Y (r262),
 s08.jplax, vertical stripes (stripes.png, stripes.atlas) through WAVE tiling on Y (r273), and s09.jplax and s10.jplax, a
-checker (checker.png, checker.atlas) through SWELL tiling on X, then flipped on X and not repeating (r431).
+checker (checker.png, checker.atlas) through SWELL tiling on X, then flipped on X and not repeating (r431), and
+s11.jplax, the checker through SWELL tiling on X and Y, small and scrolled up (r434).
 Run from the repository root: python3 core/test-data/shaders/make_round.py (needs Pillow)."""
 import json
 import math
@@ -171,8 +172,7 @@ with open(f'{ROUND}/s08.jplax', 'w') as f:
 # (plain, 1.35 / 255 off its swell; the glint round's g03 draws it). s09 tiles on X, 18 units wide (no whole number of
 # SWELL's 10-unit period: at 20, waves laid on each tile drew the same), and the round's scroll wraps it there: SWELL's
 # waves are whole turns over 8 wavelengths across, so they run on across every tile edge and the wrap. s10 repeats on neither axis,
-# the whole world wide and flipped on X: the waves run leftward from its right edge. Not on Y: SWELL holds the image's
-# top and bottom rows, as the lab drew it for the sea, which seams a layer tiled on Y (r431).
+# the whole world wide and flipped on X: the waves run leftward from its right edge, its sides held, not wrapped (r434).
 checker = Image.new('RGBA', (SW, SH))
 checker.putdata([(255, 255, 255, 255) if (x // 32 + y // 32) % 2 == 0 else (0, 0, 0, 255) for y in range(SH) for x in range(SW)])
 checker.save(f'{HERE}/checker.png')
@@ -199,3 +199,15 @@ for out, repeat_x, flip_x, size in [('s09', True, False, 0.45), ('s10', False, T
                    'repeatOnX': repeat_x, 'repeatOnY': False,
                    'pageModel': {'atlasName': 'checker.atlas', 'outside': False, 'pageList': [swell]},
                    'useOriginalSize': True}, f, indent=1)
+
+# s11 (r434): the checker through SWELL tiling on X and Y, a quarter of the world wide (10 by 2.5 units: nine tile edges
+# up the view) and scrolled up (speedY), so it wraps on Y. SWELL wraps the image on the axes its page repeats on: before
+# r434 it held the image's top and bottom rows, a flat band at every tile edge on Y. tools/r434-swell-wrap's mutate.sh.
+swell = mist_layer(0.25, 0, 0, 0.03, 0.3, 1.25, 0.3, regionName='checker', name='checker')
+swell['shaderEffect'] = 'SWELL'
+with open(f'{ROUND}/s11.jplax', 'w') as f:
+    json.dump({'topHalf_top': dark, 'topHalf_bottom': dark, 'topHalfSize': 0.5,
+               'bottomHalf_top': dark, 'bottomHalf_bottom': dark, 'bottomHalfSize': 0.5,
+               'repeatOnX': True, 'repeatOnY': True,
+               'pageModel': {'atlasName': 'checker.atlas', 'outside': False, 'pageList': [swell]},
+               'useOriginalSize': True}, f, indent=1)

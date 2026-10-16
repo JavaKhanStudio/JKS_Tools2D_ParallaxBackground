@@ -165,11 +165,12 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 
 	/**
 	 * SWELL (r431, the animation lab's, r375, r419): each pixel read from where two crossing travelling waves move it,
-	 * up to amplitude sideways and half that up and down, the image wrapped across (the layer tiles) and held at its top
-	 * and bottom rows. t is the phase in wavelengths. Every term is whole turns over 8 wavelengths across (8 and 5) and 10
+	 * up to amplitude sideways and half that up and down, the image wrapped on the axes its page repeats on (u_wrap: 1
+	 * wraps, 0 holds the edge rows; {@link #setRepeat}, r434) and held on the others. t is the phase in wavelengths. Every term is whole turns over 8 wavelengths across (8 and 5) and 10
 	 * up (6 and 9), and the phase wraps at 8 (Enum_ShaderEffect.period): the swell runs on across the layer's wrap.
 	 */
 	static final String SWELL = FRAGMENT_HEAD
+			+ "uniform vec2 u_wrap;\n"
 			+ "void main()\n"
 			+ "{\n"
 			+ "	vec2 a = along();\n"
@@ -178,7 +179,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			+ "	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);\n"
 			+ "	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);\n"
 			+ "	vec2 l = local() + u_effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));\n"
-			+ "	vec2 f = vec2(fract(l.x / u_size.x), clamp(l.y / u_size.y, 0.0, 1.0));\n"
+			+ "	vec2 f = mix(clamp(l / u_size, 0.0, 1.0), fract(l / u_size), u_wrap);\n"
 			+ "	vec2 uv = vec2(mix(u_region.x, u_region.z, f.x), mix(u_region.w, u_region.y, f.y));\n"
 			+ "	vec4 image = texture2D(u_texture, uv);\n"
 			+ "	gl_FragColor = hazed(glinted(v_color * image, image, uv));\n"
@@ -226,9 +227,12 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	private final int[] region = new int[EFFECTS.length + 1], size = new int[EFFECTS.length + 1], effect = new int[EFFECTS.length + 1],
 			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1], dissolve = new int[EFFECTS.length + 1],
 			cells = new int[EFFECTS.length + 1], grade = new int[EFFECTS.length + 1], across = new int[EFFECTS.length + 1], up = new int[EFFECTS.length + 1],
-			glint = new int[EFFECTS.length + 1], sun = new int[EFFECTS.length + 1], glintA = new int[EFFECTS.length + 1], glintB = new int[EFFECTS.length + 1];
+			glint = new int[EFFECTS.length + 1], sun = new int[EFFECTS.length + 1], glintA = new int[EFFECTS.length + 1], glintB = new int[EFFECTS.length + 1],
+			wrap = new int[EFFECTS.length + 1];
 	/** The view's size in world units, which FOG's noise is laid across, and where the layers' x and y 0 are ({@link #setView}). */
 	private float viewWidth, viewHeight, viewLeft, viewFloor;
+	/** SWELL's u_wrap: 1 on an axis the page repeats on, 0 on one it does not ({@link #setRepeat}); unset, across only. */
+	private float wrapX = 1, wrapY;
 	/** The dissolve the next layers begun draw through ({@link #setDissolve}): side, ramp, softness, drift; cells. */
 	private float dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift, cellsX, cellsY;
 	/** The colour the next layers begun are mixed toward, and by how much ({@link #setGrade}). */
@@ -313,6 +317,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		program.setUniformf(sun[index], glints[4], glints[5]);
 		program.setUniformf(glintA[index], glints[6], glints[7], glints[8], glints[9]);
 		program.setUniformf(glintB[index], glints[10], glints[11], glints[12], glints[13]);
+		program.setUniformf(wrap[index], wrapX, wrapY);
 		return true;
 	}
 
@@ -344,6 +349,13 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		viewHeight = height;
 		viewLeft = left;
 		viewFloor = floor;
+	}
+
+	@Override
+	public void setRepeat(boolean x, boolean y)
+	{
+		wrapX = x ? 1 : 0;
+		wrapY = y ? 1 : 0;
 	}
 
 	@Override
@@ -557,6 +569,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		sun[index] = program.fetchUniformLocation("u_sun", false);
 		glintA[index] = program.fetchUniformLocation("u_glintA", false);
 		glintB[index] = program.fetchUniformLocation("u_glintB", false);
+		wrap[index] = program.fetchUniformLocation("u_wrap", false);
 		programs[index] = program;
 		return program;
 	}

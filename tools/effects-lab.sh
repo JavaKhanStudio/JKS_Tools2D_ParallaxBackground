@@ -14,7 +14,8 @@
 #                (r370) only while LurkerCover says one of them hides it whole (or every 2 s anywhere, to compare); a strip
 #                of the last 20 s
 #   --lab swell  r434's SWELL edges (SwellLab): the checker tiled on X and Y, Y, neither or X, or the beach sea, through
-#                SWELL as it ships, wrapping only on the axes the page repeats on, and red where the two differ
+#                SWELL as it ships (wrapping only on the axes the page repeats on), as it was before r434, and red
+#                where the two differ
 # The readout gives the frame time, and each panel's draw calls and CPU time.
 #   tools/effects-lab.sh --lab L                 the lab: a Chrome window, served until it closes
 #   tools/effects-lab.sh --lab L --shot F.png    one still, headless (6 s into the scroll)

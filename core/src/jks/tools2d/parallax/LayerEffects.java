@@ -94,6 +94,15 @@ public interface LayerEffects
 	default void setView(float width, float height, float left, float floor)
 	{setView(width, height, floor);}
 
+	/**
+	 * Which axes the page the layers begun next belong to repeats on: SWELL wraps the image on those and holds its edge
+	 * rows on the others (r434), so a layer tiled on Y meets its next tile with no flat band, and one that does not
+	 * repeat on X takes nothing from its other side. The reader calls it every frame before its layers; an engine's
+	 * effects that do not take it wrap across and hold up and down, SWELL's rule before r434.
+	 */
+	default void setRepeat(boolean x, boolean y)
+	{}
+
 	/** {@link #setDissolve} sides: no mask; the outgoing layer, kept where the mask is not; the incoming, where it is. */
 	int DISSOLVE_NONE = 0, DISSOLVE_OUTGOING = 1, DISSOLVE_INCOMING = 2;
 

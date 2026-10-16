@@ -119,16 +119,17 @@ const _FOG := _HEAD + """void fragment() {
 """
 
 ## SWELL (r431): each pixel read from where two crossing travelling waves move it, up to amplitude sideways and half
-## that up and down, the image wrapped across and held at its top and bottom rows; whole turns over FOG_PERIOD
-## wavelengths across and FOG_PERIOD_Y up.
-const _SWELL := _HEAD + """void fragment() {
+## that up and down, the image wrapped on the axes its page repeats on (wrap: 1 wraps, 0 holds the edge rows, r434)
+## and held on the others; whole turns over FOG_PERIOD wavelengths across and FOG_PERIOD_Y up.
+const _SWELL := _HEAD + """uniform vec2 wrap = vec2(1.0, 0.0);
+void fragment() {
 	vec2 a = along(SCREEN_UV);
 	float L = effect.y;
 	float t = effect.z / L;
 	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);
 	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);
 	vec2 l = local(UV) + effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));
-	vec2 f = vec2(fract(l.x / size.x), clamp(l.y / size.y, 0.0, 1.0));
+	vec2 f = mix(clamp(l / size, 0.0, 1.0), fract(l / size), wrap);
 	vec2 uv = vec2(mix(region.x, region.z, f.x), mix(region.w, region.y, f.y));
 	vec4 image = texture(TEXTURE, uv);
 	COLOR = hazed(glinted(TEXTURE, tint * image, image, uv, SCREEN_UV), SCREEN_UV);
@@ -241,9 +242,11 @@ static func drawn_rect(r: Dictionary) -> Rect2:
 
 
 ## GdxLayerEffects.uniforms: the numbers of a SHADER layer `l` of PlaxBackground, set on its material; `view_w` and
-## `view_h` the view's size in page units.
+## `view_h` the view's size in page units; `wrap` 1 on an axis the page repeats on, 0 on one it does not (SWELL's,
+## GdxLayerEffects.setRepeat, r434).
 static func apply(
-		m: ShaderMaterial, l: Dictionary, seconds: float, view_w: float, view_h: float, left := 0.0, floor_y := 0.0
+		m: ShaderMaterial, l: Dictionary, seconds: float, view_w: float, view_h: float, left := 0.0, floor_y := 0.0,
+		wrap := Vector2(1.0, 0.0)
 ) -> void:
 	var r: Dictionary = l.region
 	var texture_size: Vector2 = r.texture.get_size()
@@ -260,6 +263,7 @@ static func apply(
 			phase(model, seconds) if on else 0.0))
 	m.set_shader_parameter("across", Vector3(view_w, left + effect_start_x(l), -1.0 if model.flipX else 1.0))
 	m.set_shader_parameter("up", Vector3(view_h, floor_y + effect_start_y(l), -1.0 if model.flipY else 1.0))
+	m.set_shader_parameter("wrap", wrap)
 	_apply_glint(m, model, seconds)
 
 
