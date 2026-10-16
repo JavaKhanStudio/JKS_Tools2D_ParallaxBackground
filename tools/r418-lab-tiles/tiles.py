@@ -38,7 +38,7 @@ with sync_playwright() as p:
         page.add_style_tag(content=".lab-labels { display: none; }")  # the panels' titles: the tile names the lab
         page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
         # One panel: a four-panel lab's top left, a two-panel lab's left, a one-panel lab whole; or the one named.
-        shot = Image.open(io.BytesIO(page.locator(".lab-stage canvas").screenshot())).convert("RGB")
+        shot = Image.open(io.BytesIO(page.locator("#embed-browsertests canvas").screenshot())).convert("RGB")
         page.close()
         x = (which[0] if which else 0) * shot.width // cols
         panel = shot.crop((x, 0, x + shot.width // cols, shot.height // rows))

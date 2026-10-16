@@ -5,6 +5,13 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Shadow lab (r425): should a layer cast its shadow on the layer behind?</title>
 	<link rel="stylesheet" href="lab.css">
+	<style>
+	/* The sun dial (r425): the suns seen from above, over B's bottom right corner. */
+	/* Over the kit's .lab-stage canvas, which stretches the reader's canvas to the stage. */
+	.lab-stage canvas.sun-dial { position: absolute; right: 8px; bottom: 8px; width: 132px !important; height: 132px !important;
+		cursor: grab; touch-action: none; border-radius: 50%; }
+	@media (max-width: 719px) { .lab-stage canvas.sun-dial { width: 52px !important; height: 52px !important; right: 3px; bottom: 3px; } }
+	</style>
 	<!-- ShadowLab (r425): r365's AI forest page, its pines casting their shadow on the hills behind them, from one light or two. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
@@ -18,6 +25,7 @@
 	<div id="shadow-lab" class="lab-stage lab-row">
 		<div id="embed-browsertests"></div>
 		<div id="shadow-labels" class="lab-labels"></div>
+		<canvas id="shadow-dial" class="sun-dial" width="132" height="132" title="the suns, seen from above: you at the bottom, the picture at the top, overhead in the middle, the horizon at the rim. Drag a sun."></canvas>
 	</div>
 	<div id="shadow-controls" class="lab-controls"></div>
 	<textarea id="shadow-copy-json" class="lab-copy-json" hidden readonly></textarea>
@@ -25,13 +33,71 @@
 		<summary>What this lab shows</summary>
 		<p id="shadow-about">r365's AI forest page (the hills lab's, its hills as they ship), drawn twice by the real
 	reader: <b>A</b> as painted, <b>B</b> with the pines casting their shadow on the hills just behind them, and on
-	nothing else: not on the sky, not on the layers further back. The shadow is the pines' own layer, moved away from
-	the light by the shadow's length, darkened and softened, so it scrolls with the pines as the camera moves. A second
-	light casts a second shadow; where both fall, it is darker. A lab, not an effect yet: what ships, if any of it,
-	waits for your tests. The view without the pines shows the shadow's shape alone. Copy settings gives every control
-	as JSON for the card.</p>
+	nothing else: not on the sky, not on the layers further back. Each light is a <b>sun</b>: a side round you (behind
+	you, on your left or right, or ahead in the picture) and a height over the horizon, set by its sliders or by
+	dragging it on the dial over B's corner (seen from above: you at the bottom, the picture at the top, overhead in the
+	middle, the horizon at the rim; the line from the middle shows where its shadows point). Sunlight comes from above,
+	so a shadow lands below and away from the sun: on hills <b>distance</b> behind the pines, a low sun from behind
+	your left lays it long to the right, a high one drops it behind the trees. A sun ahead casts toward you, onto
+	nothing behind the pines. As the camera scrolls, the shadow <b>moves with</b> the pines (it stays under its tree) or
+	with the hills (as the world would: the trees, nearer, slide past it). Where two suns' shadows meet, it is darker. A
+	lab, not an effect yet: what ships, if any of it, waits for your tests. The view without the pines shows the
+	shadow's shape alone. Copy settings gives every control as JSON for the card.</p>
 	</details>
 	<script src="lab.js"></script>
+	<script>
+	// The sun dial: draws the suns from their sliders; a drag moves the nearer one and sets its sliders.
+	(function () {
+		var dial = document.getElementById('shadow-dial'), g = dial.getContext('2d'), R = 56, C = 66, held = null;
+		function input(key) { return document.querySelector('input[data-key=' + key + ']'); }
+		function on2() { var s = document.querySelector('select[data-key=sun2On]'); return s && s.selectedIndex === 1; }
+		function at(n) {
+			var a = +input('sun' + n + 'Side').value * Math.PI / 180, r = R * Math.cos(+input('sun' + n + 'Height').value * Math.PI / 180);
+			return { x: C + r * Math.sin(a), y: C + r * Math.cos(a), a: a };
+		}
+		function draw() {
+			g.clearRect(0, 0, 132, 132);
+			g.fillStyle = 'rgba(20,24,32,0.82)'; g.beginPath(); g.arc(C, C, 64, 0, 2 * Math.PI); g.fill();
+			// Ahead, in the picture: a sun there casts toward you, nothing on the hills.
+			g.fillStyle = 'rgba(255,255,255,0.08)'; g.beginPath(); g.arc(C, C, R, Math.PI, 2 * Math.PI); g.fill();
+			g.strokeStyle = 'rgba(255,255,255,0.45)'; g.lineWidth = 1;
+			g.beginPath(); g.arc(C, C, R, 0, 2 * Math.PI); g.stroke();
+			g.beginPath(); g.arc(C, C, R / 2, 0, 2 * Math.PI); g.stroke();
+			g.fillStyle = '#cfd6e2'; g.font = '11px sans-serif'; g.textAlign = 'center';
+			g.fillText('picture', C, 22); g.fillText('you', C, 120);
+			[1, 2].forEach(function (n) {
+				if (!input('sun' + n + 'Side') || (n === 2 && !on2())) return;
+				var p = at(n);
+				g.strokeStyle = n === 1 ? '#ffd34d' : '#ff9a4d'; g.lineWidth = 2;
+				g.beginPath(); g.moveTo(C, C); g.lineTo(C - 22 * Math.sin(p.a), C - 22 * Math.cos(p.a)); g.stroke();
+				g.fillStyle = g.strokeStyle; g.beginPath(); g.arc(p.x, p.y, 7, 0, 2 * Math.PI); g.fill();
+			});
+			requestAnimationFrame(draw);
+		}
+		function point(e) {
+			var b = dial.getBoundingClientRect(), k = 132 / b.width;
+			return { x: (e.clientX - b.left) * k - C, y: (e.clientY - b.top) * k - C };
+		}
+		function set(n, q) {
+			var r = Math.min(R, Math.hypot(q.x, q.y)), side = Math.round(Math.atan2(q.x, q.y) * 180 / Math.PI / 5) * 5;
+			var height = Math.round(Math.acos(r / R) * 180 / Math.PI);
+			input('sun' + n + 'Side').value = side;
+			input('sun' + n + 'Height').value = Math.max(5, Math.min(85, height));
+			input('sun' + n + 'Side').dispatchEvent(new Event('input', { bubbles: true }));
+		}
+		dial.addEventListener('pointerdown', function (e) {
+			var q = point(e), best = 1;
+			if (on2()) {
+				var p1 = at(1), p2 = at(2);
+				best = Math.hypot(q.x + C - p2.x, q.y + C - p2.y) < Math.hypot(q.x + C - p1.x, q.y + C - p1.y) ? 2 : 1;
+			}
+			held = best; dial.setPointerCapture(e.pointerId); set(held, q);
+		});
+		dial.addEventListener('pointermove', function (e) { if (held) set(held, point(e)); });
+		dial.addEventListener('pointerup', function () { held = null; });
+		var wait = setInterval(function () { if (input('sun1Side')) { clearInterval(wait); draw(); } }, 100);
+	})();
+	</script>
 	<script>
 	labCopy('shadow', function () {
 		return {

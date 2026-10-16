@@ -2,14 +2,16 @@
 # The shadow lab (r425): r365's AI forest page drawn twice by the real reader compiled with GWT, in WebGL: A as painted,
 # B with the pines casting their shadow on the hills just behind them, and on nothing else, from one light or two
 # (core/browser-test/launcher/.../ShadowLab.java). Controls: the view (the page, or without the pines), the camera's
-# scroll, each light's direction, the second light on or off, the shadow's length, softness and darkness.
+# scroll, each sun's side and height (sliders, or dragged on the dial over B), the second sun on or off, how far up
+# the screen the ground climbs into the picture, whether the shadow moves with the pines or the hills, its softness
+# and darkness.
 #   tools/shadow-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/shadow-lab.sh --shot F.png    one still, headless (6 s in)
-#   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/two.png (both lights)
+#   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/two.png (both suns)
 #   tools/shadow-lab.sh --clip F.mp4    a clip, headless: 8 s at 30 fps, stepped at game speed (window.shadowLabAct)
 #   tools/shadow-lab.sh --slider K=V    before --shot/--views/--clip: start control K (its data-key) at V, a choice at its option's index
-#   tools/shadow-lab.sh --copy F.png    checks "Copy settings", headless: moves two controls, clicks, fails unless the JSON
-#                                       names every control and the two moved; F is the page
+#   tools/shadow-lab.sh --copy F.png    checks "Copy settings", headless: drags sun 1 on the dial, turns sun 2 on, clicks,
+#                                       fails unless the JSON names every control and those moved; F is the page
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python
 # Playwright and ffmpeg.
 # on-screen: with no argument this is the shadow lab, a window Simon asked for; the rest is headless Chrome.
@@ -101,21 +103,24 @@ with sync_playwright() as p:
         page.evaluate("window.shadowLabAct(0.5)")
         shot(frames + "/alone.png")
         page.eval_on_selector("[data-key=view]", "e => { e.value = '0'; }")
-        page.eval_on_selector("[data-key=light2On]", "e => { e.value = '1'; }")
+        page.eval_on_selector("[data-key=sun2On]", "e => { e.value = '1'; }")
         page.evaluate("window.shadowLabAct(0.5)")
         shot(frames + "/two.png")
     elif mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        page.eval_on_selector("[data-key=light1]", "e => { e.value = '180'; }")
-        page.eval_on_selector("[data-key=light2On]", "e => { e.value = '1'; }")
+        # Sun 1 dragged on the dial: half its radius right of the middle is on your right, 60 degrees up.
+        box = page.locator("#shadow-dial").bounding_box()
+        page.mouse.click(box["x"] + box["width"] * (66 + 28) / 132, box["y"] + box["height"] * 66 / 132)
+        page.eval_on_selector("[data-key=sun2On]", "e => { e.value = '1'; }")
         page.evaluate("window.shadowLabAct(6)")
         page.click("#shadow-copy")
         page.wait_for_function("document.getElementById('shadow-copy-state').textContent !== ''")
         import json
         got = json.loads(page.input_value("#shadow-copy-json"))
-        keys = {"view", "cameraScroll", "light1", "light2On", "light2", "length", "softness", "darkness"}
-        moved = {"light1": {"started": 215, "now": 180}, "light2On": {"started": 0, "now": 1}}
-        if set(got["settings"]) != keys or got["changed"] != moved or "light 2 from" not in got["readout"]:
+        keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "rise", "follows", "softness",
+                "darkness"}
+        moved = {"sun1Side": {"started": -40, "now": 90}, "sun1Height": {"started": 20, "now": 60}, "sun2On": {"started": 0, "now": 1}}
+        if set(got["settings"]) != keys or got["changed"] != moved or "sun 2:" not in got["readout"]:
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#shadow-copy-state"), json.dumps(got["settings"])))
         shot(frames + "/still.png")
