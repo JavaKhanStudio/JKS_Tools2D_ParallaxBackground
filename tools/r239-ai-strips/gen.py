@@ -27,6 +27,14 @@ default, its transformer through ComfyUI-GGUF's UnetLoaderGGUF, --dit-clip (lumi
 at cfg 1 (res_multistep, simple) unless --steps and the rest say otherwise, the negative zeroed out (cfg 1 never reads
 it), a 16-channel latent. A transformer has no convolution to pad: with --tile x a unet wrapper (--dit-loop) makes
 its prediction periodic at every step, and only the VAE is padded. No ControlNet with a DiT.
+
+R3's tools (parallax-ai r5, r471): --ipadapter REF applies IP-Adapter plus SDXL (ip-adapter-plus_sdxl_vit-h with
+CLIP-ViT-H-14, ComfyUI_IPAdapter_plus imported as a package) fed REF, weight --ipa-weight, "style transfer", to the
+model after its LoRA and its circular padding (its own layers are attention: nothing to pad). --small WxH paints at WxH
+(the init, source, mask and hint resized to it), then upscales the decoded strip with RealESRGAN_x4plus to --w x --h:
+the strip wrapped along X by 32 px each side first, so the model sees across the join (parallax-ai's tools/r3/upscale.py:
+seam 1.2/255 against 2.5 inside the strip). inpaint keeps every pixel of --src outside the mask at its full size;
+variants keeps its edge columns from the full --src, and with --mask repaints only inside it too.
 """
 import argparse
 import gc
@@ -108,6 +116,49 @@ def load(ckpt, lora=None, lora_strength=0.8, tile=None):
         refuse_tiled_vae(vae)
         print(f"tile x: {n} convolutions padded circularly", flush=True)
     return model, clip, vae
+
+
+def ipa_nodes():
+    """ComfyUI_IPAdapter_plus's nodes, imported from COMFY/custom_nodes as a package, as gguf_nodes() does."""
+    path = os.path.join(COMFY, "custom_nodes", "ComfyUI_IPAdapter_plus")
+    spec = importlib.util.spec_from_file_location("comfyui_ipadapter_plus", os.path.join(path, "__init__.py"),
+                                                  submodule_search_locations=[path])
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["comfyui_ipadapter_plus"] = mod
+    spec.loader.exec_module(mod)
+    return sys.modules["comfyui_ipadapter_plus.IPAdapterPlus"]
+
+
+def apply_ipadapter(model, a):
+    """IP-Adapter plus fed the reference --ipadapter, after the checkpoint, LoRA and tile_x (parallax-ai tools/r3/gen_plus.py)."""
+    ipn = ipa_nodes()
+    ipa = ipn.IPAdapterModelLoader().load_ipadapter_model(a.ipa_model)[0]
+    cv = nodes.CLIPVisionLoader().load_clip(a.ipa_clip_vision)[0]
+    model = ipn.IPAdapterAdvanced().apply_ipadapter(model, ipa, weight=a.ipa_weight, weight_type=a.ipa_type,
+                                                    image=from_image(a.ipadapter), clip_vision=cv)[0]
+    print(f"ipadapter: {os.path.basename(a.ipadapter)} weight {a.ipa_weight} {a.ipa_type}", flush=True)
+    return model
+
+
+def upscale(img, w, h, model_name, wrap=32):
+    """A looping strip (PIL) upscaled by an ESRGAN model to w x h: wrapped along X by `wrap` px each side so the model
+    sees across the join, cropped back, then resized (Lanczos). parallax-ai's tools/r3/upscale.py."""
+    from comfy_extras import nodes_upscale_model as up
+
+    comfy.model_management.unload_all_models()
+    im = np.asarray(img.convert("RGB")).astype(np.float32) / 255.0
+    padded = np.concatenate([im[:, -wrap:], im, im[:, :wrap]], axis=1)
+    model = up.UpscaleModelLoader.execute(model_name)[0]
+    big = up.ImageUpscaleWithModel.execute(model, torch.from_numpy(padded)[None])[0][0].cpu().numpy()
+    s = big.shape[1] // padded.shape[1]
+    big = big[:, wrap * s:big.shape[1] - wrap * s]
+    print(f"upscale: {img.width}x{img.height} x{s} {model_name}, wrapped {wrap} px, to {w}x{h}", flush=True)
+    return Image.fromarray((big * 255).round().clip(0, 255).astype(np.uint8)).resize((w, h), Image.LANCZOS)
+
+
+def finish(img, a):
+    """The decoded strip at its full size: upscaled when painted --small."""
+    return upscale(img, a.full_w, a.full_h, a.upscale_model) if a.small else img
 
 
 def gguf_nodes():
@@ -264,7 +315,7 @@ def parse_args():
     ap.add_argument("--tile", choices=["x", "none"], default="none")
     ap.add_argument("--init", help="img2img: start image; variants: the new middle's start image")
     ap.add_argument("--src", help="variants: the looping strip whose edges are kept; inpaint: the image to repaint")
-    ap.add_argument("--mask", help="inpaint: white where to repaint")
+    ap.add_argument("--mask", help="inpaint: white where to repaint; variants: repaint only there too")
     ap.add_argument("--noise-mask", action="store_true", help="inpaint, inpainting model: sample inside the mask only "
                     "(r315: leaves a pale veil)")
     ap.add_argument("--n", type=int, default=3)
@@ -274,13 +325,26 @@ def parse_args():
     ap.add_argument("--control-strength", type=float, default=1.0)
     ap.add_argument("--control-end", type=float, default=1.0, help="fraction of the steps the hint guides")
     ap.add_argument("--control-edge", action="store_true", help="feed the hint's outline, not the image")
+    ap.add_argument("--ipadapter", help="IP-Adapter's reference image (SDXL): its style goes into the strip")
+    ap.add_argument("--ipa-weight", type=float, default=0.6)
+    ap.add_argument("--ipa-type", default="style transfer", help="IPAdapterAdvanced's weight_type")
+    ap.add_argument("--ipa-model", default="ip-adapter-plus_sdxl_vit-h.safetensors")
+    ap.add_argument("--ipa-clip-vision", default="CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors")
+    ap.add_argument("--small", help="WxH: paint at that size, then upscale to --w x --h with --upscale-model")
+    ap.add_argument("--upscale-model", default="RealESRGAN_x4plus.pth")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     for key, value in (DIT_SAMPLING if is_dit(a.ckpt) else SAMPLING).items():
         if getattr(a, key) is None:
             setattr(a, key, value)
-    if is_dit(a.ckpt) and (a.control or a.lora):
-        ap.error("--control and --lora: not with a DiT")
+    if is_dit(a.ckpt) and (a.control or a.lora or a.ipadapter):
+        ap.error("--control, --lora and --ipadapter: not with a DiT")
+    a.full_w, a.full_h = a.w, a.h
+    if a.small:
+        try:
+            a.w, a.h = (int(v) for v in a.small.lower().split("x"))
+        except ValueError:
+            ap.error("--small: WxH")
     return a
 
 
@@ -294,19 +358,28 @@ def txt2img(model, pos, neg, vae, a, common):
     else:
         latent = nodes.EmptyLatentImage().generate(a.w, a.h, 1)[0]
     out = sample(model, pos, neg, latent, a.seed, denoise=1.0, **common)
-    to_image(vae, out)[0].save(a.out)
+    finish(to_image(vae, out)[0], a).save(a.out)
 
 
 def img2img(model, pos, neg, vae, a, common):
     latent = to_latent(vae, from_image(a.init, a.w, a.h))
     out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
-    to_image(vae, out)[0].save(a.out)
+    finish(to_image(vae, out)[0], a).save(a.out)
+
+
+def mask_of(path, size=None):
+    im = Image.open(path).convert("L")
+    if size and im.size != size:
+        im = im.resize(size, Image.LANCZOS)
+    return np.asarray(im).astype(np.float32) / 255.0
 
 
 def inpaint(model, pos, neg, vae, a, common):
-    src = from_image(a.src)
-    m = np.asarray(Image.open(a.mask).convert("L")).astype(np.float32) / 255.0
-    mask = torch.from_numpy(m)[None]
+    full = from_image(a.src)
+    m = mask_of(a.mask)
+    # --small: sampled on the source and mask brought down to the small size; laid back at the source's full size
+    src = from_image(a.src, a.w, a.h) if a.small else full
+    mask = torch.from_numpy(mask_of(a.mask, (a.w, a.h)) if a.small else m)[None]
     blocks = getattr(model.model.diffusion_model, "input_blocks", None)  # a DiT has none
     if blocks is not None and blocks[0][0].in_channels == 9:
         # An inpainting model (dreamshaper_8Inpainting, r315) is fed the source with the hole greyed out beside
@@ -317,40 +390,66 @@ def inpaint(model, pos, neg, vae, a, common):
     else:
         latent = nodes.SetLatentNoiseMask().set_mask(to_latent(vae, src), mask)[0]
     out = sample(model, pos, neg, latent, a.seed, denoise=a.denoise, **common)
-    img = np.asarray(to_image(vae, out)[0]).astype(np.float32)
+    painted = to_image(vae, out)[0]
+    if a.small:
+        a.full_w, a.full_h = full.shape[2], full.shape[1]
+    img = np.asarray(finish(painted, a)).astype(np.float32)
     # The decoder shifts every pixel by a level or two: only the mask's own pixels are taken from it.
-    img = src[0].cpu().numpy() * 255 * (1 - m[..., None]) + img * m[..., None]
+    img = full[0].cpu().numpy() * 255 * (1 - m[..., None]) + img * m[..., None]
     Image.fromarray(img.round().clip(0, 255).astype(np.uint8)).save(a.out)
 
 
-def variants(model, pos, neg, vae, a, common):
-    src = from_image(a.src)
-    h, w = src.shape[1:3]
-    # 1 = repaint, past `edge` px from each end, with a 16 px ramp. A wider ramp leaves a band
-    # half source, half new, at every step: ghosts of trees. The sampler re-noises the kept
-    # edges at each step, so the model itself joins the new middle to them.
+def edge_ramp(w, edge):
+    """Per column, 1 = repaint, past `edge` px from each end, with a 16 px ramp; and each column's distance to the
+    nearer end."""
     x = np.arange(w, dtype=np.float32)
     d = np.minimum(x, w - 1 - x)
-    ramp = np.clip((d - a.edge) / 16, 0, 1)
+    return np.clip((d - edge) / 16, 0, 1), d
+
+
+def variants_start(src, a, w, h, ramp):
+    """What a variant is sampled from at w x h: the source, its middle the new silhouette (--init); and the repaint mask,
+    the ramp times --mask when given."""
     start = src
     if a.init:
         # A new silhouette for the middle (sil.py --edges-of): painted at img2img strength
         # it keeps the source's style, where a high denoise over the source drifts.
         r = torch.from_numpy(ramp)[None, None, :, None]
         start = src * (1 - r) + from_image(a.init, w, h) * r
-    latent = to_latent(vae, start)
-    mask = torch.from_numpy(np.tile(ramp, (h, 1)))[None]
+    mask = np.tile(ramp, (h, 1))
+    if a.mask:
+        mask = mask * mask_of(a.mask, (w, h))
+    return start, mask
+
+
+def variants(model, pos, neg, vae, a, common):
+    full = from_image(a.src)
+    h, w = full.shape[1:3]
+    # A wider ramp than 16 px leaves a band half source, half new, at every step: ghosts of trees. The sampler
+    # re-noises the kept edges at each step, so the model itself joins the new middle to them.
+    ramp, d = edge_ramp(w, a.edge)
+    start, m = variants_start(full, a, w, h, ramp)
+    if a.small:  # sampled at the small size, its kept edges scaled with it; laid back on the full source below
+        a.full_w, a.full_h = w, h
+        sramp, _ = edge_ramp(a.w, a.edge * a.w / w)
+        small, smask = variants_start(from_image(a.src, a.w, a.h), a, a.w, a.h, sramp)
+        latent, mask = to_latent(vae, small), torch.from_numpy(smask)[None]
+    else:
+        latent = to_latent(vae, start)
+        mask = torch.from_numpy(m)[None]
     latent = nodes.SetLatentNoiseMask().set_mask(latent, mask)[0]
     base, ext = os.path.splitext(a.out)
     for i in range(a.n):
         out = sample(model, pos, neg, latent, a.seed + i, denoise=a.denoise, **common)
-        img = np.asarray(to_image(vae, out)[0]).astype(np.float32)
+        img = np.asarray(finish(to_image(vae, out)[0], a)).astype(np.float32)
+        if a.mask:  # outside --mask, the start's own pixels: the init's sky
+            img = start[0].cpu().numpy() * 255 * (1 - m[..., None]) + img * m[..., None]
         # The decoder sees the new middle beside the kept edges and shifts them by a level or
         # two: lay the source's own outer 8 px back, blended over 16 px, so every variant
         # starts and ends on exactly the source's columns. Only there: across the repainted
         # ramp, a cross-fade would leave ghosts of the source's trees.
         r = np.clip((d - 8) / 16, 0, 1)[None, :, None]
-        img = src[0].cpu().numpy() * 255 * (1 - r) + img * r
+        img = full[0].cpu().numpy() * 255 * (1 - r) + img * r
         Image.fromarray(img.round().clip(0, 255).astype(np.uint8)).save(f"{base}_{i + 1}{ext}")
         print(f"{base}_{i + 1}{ext}", flush=True)
 
@@ -368,6 +467,8 @@ def main():
     else:
         model, clip, vae = load(a.ckpt, a.lora, a.lora_strength, a.tile)
         pos, neg = encode(clip, a.prompt), encode(clip, a.negative)
+    if a.ipadapter:
+        model = apply_ipadapter(model, a)
     if a.control:
         pos, neg = apply_control(pos, neg, a)
     common = {"steps": a.steps, "cfg": a.cfg, "sampler": a.sampler, "scheduler": a.scheduler}

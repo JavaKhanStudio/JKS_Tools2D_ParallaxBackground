@@ -25,6 +25,19 @@ strips loop at seam ratios 0.17-1.14 (`tools/r356-dit/check.sh`, ~75 s a strip).
 seeds in five; at 0.85 every strip paints misty ranges of its own behind the trees, which the cut keeps as
 half-transparent ghosts, 9-19 levels off `--colours`.
 
+**R3's tools (r471, parallax-ai r5):** four flags, each passed to every painted strip's `gen.py` call (the depths,
+the front's variants, the clouds; not a lurker's figure) and recorded under `recipe.json`'s `tools`; a run without them
+runs r305's commands (`tools/r471-r3-flags/dryrun.sh`, diffed against HEAD). `--paint inpaint` paints inside sil.py's
+mask only, at `--denoise` (parallax-ai's probe: 0.85): every pixel outside the shape stays the init's flat sky (0 levels
+moved; img2img leaks 42-80 % past the shape there), and a variant repaints only inside its own mask. `--control canny`
+guides each strip with the SDXL canny ControlNet (`controlnet-canny-sdxl-xinsir`) fed its mask's outline,
+`--control-strength` (0.4) for the first `--control-end` (0.6) of the steps. `--ipadapter REF` lends REF's style
+through IP-Adapter plus SDXL (`ip-adapter-plus_sdxl_vit-h`, CLIP-ViT-H-14, "style transfer", `--ipa-weight` 0.6),
+applied after the LoRA and the circular padding. `--small WxH` paints at WxH and upscales to the strip's size with
+RealESRGAN_x4plus, the strip wrapped 32 px along X first so the loop holds (seams 0.4-1.3/255 against 2.3 between
+neighbour columns, `tools/r471-r3-flags/smoke.sh`). canny and the IP-Adapter are SDXL models: an SDXL `--ckpt`. The
+values are R3's to grade; these are its probe's.
+
 **Examples (r239, 2026-10-10):** a forest, a beach and a post-apocalyptic city, each painted and pixel:
 `tools/r239-ai-strips/examples.sh OUT` paints the six pages and films them (`tools/ai-film.sh`). The beach and the
 city needed shapes of their own in `sil.py` (`dunes`, `sea`, `palms`, `ruins`, chosen with `--kinds`); a theme that

@@ -57,6 +57,14 @@ layer's sky (NEG_XL names them, the painted prompt asks a plain pale sky, and la
 layer goes behind the back one, its top on the screen's top, at the back layer's speed / 1.25, drifting at
 --cloud-rest (the skill's far clouds: 25-90): a BILLOW on it warps no mountain (r375). Painted style.
 
+R3's tools, only on request (r471, parallax-ai r5): each goes to every painted strip's gen.py call (the depths, the
+front's variants, the clouds; not the lurker's figure) and into recipe.json's "tools". --paint inpaint paints inside
+sil.py's mask (gen.py inpaint, the init as its source, at --denoise): every pixel outside the shape stays the init's
+flat sky, where img2img leaks past it. --control canny guides the strip with the SDXL canny ControlNet (xinsir) fed the
+mask's outline, at --control-strength for the first --control-end of the steps. --ipadapter REF lends REF's style
+(IP-Adapter plus SDXL, "style transfer", --ipa-weight). --small WxH paints at WxH and upscales to the strip's size with
+RealESRGAN, the strip wrapped along X so its loop holds. canny and the IP-Adapter are SDXL models: an SDXL --ckpt.
+
 An animated patch, only on request (r395, docs/animated-layers.md phase 3): --animate l3='palm fronds tossing in a
 strong wind' (repeatable; l0 the back layer) paints the cut layer moving with Wan 2.1 VACE (tools/r375-animated-layer:
 anim.py, ~5 min a layer, then loopcut.py, rekey.py, loopcheck.py), over its alpha (--animate-rows l3=90-250: only those
@@ -242,6 +250,7 @@ def canopy(path):
 
 # gen.py's defaults: a default run passes none of them (r305's commands), recipe.json records them all (r346).
 GEN_CKPT, GEN_LORA_STRENGTH = "dreamshaper_8.safetensors", 0.8
+CANNY_XL = "controlnet-canny-sdxl-xinsir.safetensors"  # --control canny (r471)
 GEN_SAMPLING = {"steps": 28, "cfg": 7.0, "sampler": "dpmpp_2m", "scheduler": "karras"}
 DIT_SAMPLING = {"steps": 9, "cfg": 1.0, "sampler": "res_multistep", "scheduler": "simple"}  # gen.py's for a .gguf
 # Z-Image keeps sil.py's shape at 0.65 (pines: 3 of 5 seeds grow no trees) and paints misty ranges of its own into a
@@ -487,6 +496,17 @@ def parse_args():
     ap.add_argument("--rule", action="append", default=[], metavar="NAME=on|off",
                     help="force one of layer.py's rules on every painted strip, whatever its conditions: "
                     + ", ".join(r.name for r in layer.RULES))
+    ap.add_argument("--paint", choices=["img2img", "inpaint"], default="img2img",
+                    help="inpaint: paint inside sil.py's mask only, the sky outside it kept (r471, at --denoise)")
+    ap.add_argument("--control", choices=["canny"], help="guide every strip with the SDXL canny ControlNet fed its"
+                    " mask's outline (r471)")
+    ap.add_argument("--control-strength", type=float, default=0.4)
+    ap.add_argument("--control-end", type=float, default=0.6, help="fraction of the steps the outline guides")
+    ap.add_argument("--ipadapter", metavar="REF", help="a reference image whose style IP-Adapter plus SDXL lends every"
+                    " strip (r471)")
+    ap.add_argument("--ipa-weight", type=float, default=0.6)
+    ap.add_argument("--small", metavar="WxH", help="paint every strip at WxH, then upscale it to the strip's size with"
+                    " RealESRGAN (r471)")
     ap.add_argument("--timeout", type=int, default=TIMEOUT,
                     help="seconds a command (a strip: 10-60) may take before it is killed and run once more (r377)")
     a = ap.parse_args()
@@ -513,7 +533,24 @@ def parse_args():
             ap.error(f"--lurker-between: A,A+1 with A from 0 to {a.layers - 2}")
         a.lurker_on = between[0]
     a.motions, a.rows = animate_args(ap, a)
+    tools_args(ap, a)
     return a
+
+
+def tools_args(ap, a):
+    """R3's flags (r471): checked, --small read as (w, h), --ipadapter made absolute (commands run from the root)."""
+    model = model_of(a)
+    if (a.control or a.ipadapter) and (not model["xl"] or model["ckpt"].endswith(".gguf")):
+        ap.error("--control canny and --ipadapter: SDXL models, for an SDXL --ckpt")
+    if a.ipadapter:
+        if not os.path.isfile(a.ipadapter) and not a.dry_run:
+            ap.error(f"--ipadapter {a.ipadapter}: no such file")
+        a.ipadapter = os.path.abspath(a.ipadapter)
+    if a.small:
+        m = re.fullmatch(r"(\d+)x(\d+)", a.small)
+        if not m or int(m[1]) % 8 or int(m[2]) % 8:
+            ap.error("--small: WxH, each a multiple of 8")
+        a.small = (int(m[1]), int(m[2]))
 
 
 def animate_args(ap, a):
@@ -580,6 +617,31 @@ class Pipeline:
             out += ["--denoise", str(m["denoise"])]
         return out
 
+    def tools_args(self, prefix):
+        """gen.py's arguments for R3's flags (r471) on the strip at prefix, none without them."""
+        a, out = self.a, []
+        if a.control:
+            out += ["--control", f"{prefix}_mask.png", "--control-edge", "--control-model", CANNY_XL,
+                    "--control-strength", str(a.control_strength), "--control-end", str(a.control_end)]
+        if a.ipadapter:
+            out += ["--ipadapter", a.ipadapter, "--ipa-weight", str(a.ipa_weight)]
+        if a.small:
+            out += ["--small", "x".join(map(str, a.small))]
+        return out
+
+    def tools_record(self):
+        """recipe.json's "tools": R3's flags this run took (r471), empty without them."""
+        a, out = self.a, {}
+        if a.paint != "img2img":
+            out["paint"] = a.paint
+        if a.control:
+            out["control"] = {"kind": a.control, "model": CANNY_XL, "strength": a.control_strength, "end": a.control_end}
+        if a.ipadapter:
+            out["ipadapter"] = {"ref": a.ipadapter, "weight": a.ipa_weight, "type": "style transfer"}
+        if a.small:
+            out["small"] = list(a.small)
+        return out
+
     def gen_command(self, k, kind):
         """gen.py's img2img for depth k, its init, seed and out left to add."""
         a, d = self.a, HERE
@@ -589,8 +651,9 @@ class Pipeline:
         # are still struck.
         theme, struck = theme_for(a.theme, kind, [x for x in self.ks if x != "pines"] if self.inpaints(kind) else self.ks)
         others = "".join(", " + w for w in struck)
+        mode = a.paint  # img2img, or inpaint inside sil.py's mask (r471)
         if self.pixel:
-            return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG_XL, kind) + others,
+            return [PY, f"{d}/gen.py", mode, *self.model_args(), "--negative", negative(NEG_XL, kind) + others,
                     "--prompt", (f"pixel art, 2d game parallax background layer, {theme}, {depth} "
                      f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
         if self.inpaints(kind):
@@ -598,7 +661,7 @@ class Pipeline:
             return [PY, f"{d}/gen.py", "inpaint", *self.model_args(denoise=False), "--ckpt", h["ckpt"], "--denoise",
                     str(h["denoise"]), "--negative", negative(NEG, kind) + h["negative"] + others, "--prompt",
                     f"2d game parallax background layer, {theme}, {depth} {h['words']}, painterly, plain pale sky"]
-        return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG, kind) + others, "--prompt",
+        return [PY, f"{d}/gen.py", mode, *self.model_args(), "--negative", negative(NEG, kind) + others, "--prompt",
                 f"2d game parallax background layer, {theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
 
     def inpaints(self, kind):
@@ -620,8 +683,10 @@ class Pipeline:
         self.made[os.path.basename(prefix)] = {"prompt": gen[gen.index("--prompt") + 1],
                                                "negative": gen[gen.index("--negative") + 1],
                                                "denoise": float(gen[gen.index("--denoise") + 1])}
-        if gen[2] == "inpaint":
+        if self.inpaints(kind):
             self.made[os.path.basename(prefix)]["inpaint"] = HILLS_INPAINT["ckpt"]
+        elif gen[2] == "inpaint":
+            self.made[os.path.basename(prefix)]["paint"] = "inpaint"
         if a.keep and os.path.exists(f"{prefix}_ai.png"):
             return self.cut(prefix, kind, gate)
         if not a.dry_run:
@@ -630,8 +695,8 @@ class Pipeline:
         if run(["python3", f"{d}/sil.py", kind, prefix, "--w", str(self.w), "--h", str(self.h), "--seed", str(seed),
                 "--colour", self.cols[k], "--quiet-join", "--texture", str(TEXTURE)], prefix + "_sil.log"):
             sys.exit(f"sil.py failed: {prefix}_sil.log")
-        code = run(gen + self.source_args(gen, prefix) + ["--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
-                   prefix + "_gen.log")
+        code = run(gen + self.source_args(gen, prefix) + self.tools_args(prefix)
+                   + ["--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"], prefix + "_gen.log")
         if code:
             sys.exit(gen_failed(code, prefix + "_gen.log"))
         return self.cut(prefix, kind, gate)
@@ -712,12 +777,14 @@ class Pipeline:
         path."""
         a, d = self.a, HERE
         p = os.path.join(self.strips, "clouds")
-        gen = [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", CLOUD_NEG + negative(NEG, "clouds"),
+        gen = [PY, f"{d}/gen.py", a.paint, *self.model_args(), "--negative", CLOUD_NEG + negative(NEG, "clouds"),
                "--prompt", f"2d game parallax background layer, {CLOUD_WORDS}, painterly, plain blue sky"]
         for t in range(a.tries):
             seed = a.seed * 1000 + 700 + t
             self.made["clouds"] = {"prompt": gen[gen.index("--prompt") + 1], "negative": gen[gen.index("--negative") + 1],
                                    "denoise": float(gen[gen.index("--denoise") + 1]), "seed": seed}
+            if a.paint == "inpaint":
+                self.made["clouds"]["paint"] = "inpaint"
             if a.keep and t == 0 and os.path.exists(f"{p}_ai.png"):
                 self.made["clouds"]["seed"] = int(Path(f"{p}_seed.txt").read_text())
             else:
@@ -726,8 +793,8 @@ class Pipeline:
                 if run(["python3", f"{d}/sil.py", "clouds", p, "--w", str(self.w), "--h", str(self.h), "--seed",
                         str(seed), "--texture", str(TEXTURE)], p + "_sil.log"):
                     sys.exit(f"sil.py failed: {p}_sil.log")
-                code = run(gen + ["--init", f"{p}_init.png", "--tile", "x", "--seed", str(seed), "--out", f"{p}_ai.png"],
-                           p + "_gen.log")
+                code = run(gen + self.source_args(gen, p) + self.tools_args(p)
+                           + ["--tile", "x", "--seed", str(seed), "--out", f"{p}_ai.png"], p + "_gen.log")
                 if code:
                     sys.exit(gen_failed(code, p + "_gen.log"))
             got = self.cut(p, "clouds")
@@ -770,6 +837,9 @@ class Pipeline:
         denoise = self.model["denoise"]
         self.made[os.path.basename(p)] = {"prompt": vprompt, "negative": vneg, "denoise": denoise,
                                           "seed": vs, "edgesOf": seeds[front]}
+        inside = ["--mask", f"{p}_mask.png"] if a.paint == "inpaint" else []  # r471: the middle painted inside its shape
+        if inside:
+            self.made[os.path.basename(p)]["paint"] = "inpaint"
         if a.keep and os.path.exists(f"{p}_ai.png"):
             got = self.cut(p, ks[front])
             if got:
@@ -780,7 +850,7 @@ class Pipeline:
              "--colour", self.cols[front], "--quiet-join", "--texture", str(TEXTURE)], p + "_sil.log")
         code = run([PY, f"{d}/gen.py", "variants", *self.model_args(denoise=False), "--src", f"{src}_ai.png",
                     "--init", f"{p}_init.png", "--tile", "x", "--n", "1", "--edge", "96", "--denoise", str(denoise),
-                    "--seed", str(vs), "--negative",
+                    "--seed", str(vs), *inside, *self.tools_args(p), "--negative",
                     vneg, "--prompt", vprompt, "--out", f"{p}_ai.png"], p + "_gen.log")
         if code:
             sys.exit(f"gen.py variants failed: {p}_gen.log")
@@ -986,6 +1056,8 @@ class Pipeline:
                   "sampling": {k: self.model[k] for k in ("steps", "cfg", "sampler", "scheduler", "denoise")}, "texture": TEXTURE,
                   "page": f"page/{name}.jplax", "fogStrength": page.get("fogStrength", 0), "sky": list(sky),
                   "lint": problems, "layers": []}
+        if self.tools_record():
+            recipe["tools"] = self.tools_record()
         if any(self.inpaints(kind) for kind in self.ks):
             recipe["hills_gate"] = {"theme": self.hills["name"], "status": self.hills["status"],
                                     "gate": self.hills["gate"]}

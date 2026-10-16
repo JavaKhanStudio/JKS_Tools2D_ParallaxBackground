@@ -163,6 +163,8 @@ seeds, ~4 min more), what it is worth there, and the flags that suit the theme. 
 `untested` entry is an estimate, not a measure. Never read themes.json whole.
 `--ckpt`/`--lora` paint with another model from `~/ComfyUI/models` (r346, `docs/ai-parallax.md`), recorded in
 `recipe.json`; a `.gguf` is a DiT (`--ckpt z-image-turbo-Q5_K_M.gguf`, r356), looped by a unet wrapper.
+R3's tools, only on request (r471, `docs/ai-parallax.md`): `--paint inpaint` (the sky outside sil.py's shape kept),
+`--control canny`, `--ipadapter REF` (both SDXL), `--small WxH` (painted small, RealESRGAN up), in `recipe.json`'s `tools`.
 Every strip is painted with a plain sky, keyed out: no layer carries clouds. A page that wants them asks `--clouds`
 (r409, painted style): a strip of clouds alone (sil.py's heaps over a blue sky, every heap kept by the key), behind the
 back layer, its top on the screen's top, at the back layer's speed / 1.25, drifting at `--cloud-rest` (30).
