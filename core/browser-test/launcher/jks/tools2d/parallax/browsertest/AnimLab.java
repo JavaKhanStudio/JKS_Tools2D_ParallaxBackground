@@ -28,7 +28,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * BILLOW has a lab of its own since r451, {@link CloudsLab}.
  * <p>
  * The sea: r365's AI beach page (core/test-data/anim), its sea (l1) a SHADER layer drawn four ways: WAVE (what ships,
- * GdxLayerEffects' own), SWELL, GLINT, and SWELL then GLINT in one shader. Each effect is written in
+ * GdxLayerEffects' own), SWELL, GLINT, and SWELL then GLINT in one shader. SWELL ships since r431: it, and SWELL + GLINT,
+ * are GdxLayerEffects' own SWELL program (r435), the lab's GLSL keeps its SWELL for MIRROR. Each effect is written in
  * world units over {@code along()}, as WAVE and FOG are, so it runs on across the tiles; its amplitude, wavelength and
  * speed are the layer's shader numbers, as a shipped effect's would be. GLINT's own numbers (strength, glint size,
  * density, twinkle, how closely it keeps to the crests, the sun's place and width) are the lab's {@code u_glint}: in
@@ -117,12 +118,10 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			if (index < 0)
 				throw new IllegalStateException(SEA_PAGE + " has no layer " + SEA);
 			Parallax_Model model = page.pageModel.pageList.get(index);
-			// What a page would store: the layer a SHADER one, under WAVE until one of these ships. SWELL under FOG's
-			// periods (r419): along() runs on only within the effect's period, one wavelength under WAVE, where SWELL's
-			// second wave (5 turns in 8 wavelengths across, 6 and 9 in 10 up) jumped every time the layer wrapped. Its
-			// port gives SWELL these periods of its own.
+			// What a page would store: the layer a SHADER one, under WAVE or, since r431, SWELL, whose periods (8
+			// wavelengths across, 10 up) the lab's GLINT and MIRROR are whole turns over too (r419).
 			model.kind = HEART_EFFECTS[i] == NONE ? Enum_LayerKind.IMAGE : Enum_LayerKind.SHADER;
-			model.shaderEffect = HEART_EFFECTS[i] != WAVE ? Enum_ShaderEffect.FOG : Enum_ShaderEffect.WAVE;
+			model.shaderEffect = HEART_EFFECTS[i] != WAVE ? Enum_ShaderEffect.SWELL : Enum_ShaderEffect.WAVE;
 			OrthographicCamera camera = new OrthographicCamera();
 			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
@@ -290,11 +289,13 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 
 	/**
 	 * A heart's effects: its sea through the lab's GLSL for its panel's effect (WAVE: GdxLayerEffects' own source), every
-	 * other layer through GdxLayerEffects, as FogLab's are.
+	 * other layer through GdxLayerEffects, as FogLab's are. SWELL, and SWELL + GLINT, draw through GdxLayerEffects'
+	 * own SWELL program, as a game does (r435): the latter with the lab's glint knobs in the shipped glint's uniforms,
+	 * where a game has its strength alone and GdxLayerEffects' GLINT_ numbers.
 	 */
 	static final class AnimEffects extends LabKit.Effects
 	{
-		private static ShaderProgram wave, swell, glint, both, mirror, mirrorOwn, mirrorGlint;
+		private static ShaderProgram wave, glint, mirror, mirrorOwn, mirrorGlint;
 
 		private final AnimLab lab;
 		private final int effect;
@@ -317,12 +318,37 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		{return begin(batch, layer, phase, 0, Color.WHITE);}
 
 		@Override
+		public void setView(float width, float height, float left, float floor)
+		{
+			super.setView(width, height, left, floor);
+			shipped.setView(width, height, left, floor);
+		}
+
+		@Override
+		public void setRepeat(boolean x, boolean y)
+		{shipped.setRepeat(x, y);}
+
+		@Override
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fogAmount, Color fogColor)
 		{
 			// Nothing: the sea an IMAGE layer, drawn as the page draws it.
-			byShipped = layer != target || effect == NONE;
+			byShipped = layer != target || effect == NONE || effect == SWELL || effect == BOTH;
 			if (byShipped)
-				return shipped.begin(batch, layer, phase, fogAmount, fogColor);
+			{
+				boolean begun = shipped.begin(batch, layer, phase, fogAmount, fogColor);
+				if (!begun || layer != target || effect != BOTH)
+					return begun;
+				// The lab's glint over the shipped one's: its strength, density, twinkle, crest reach, sun, and its waves'
+				// turns over the periods, which are SWELL's (8 wavelengths across, 10 up).
+				float[] g = lab.glint;
+				ShaderProgram program = batch.getShader();
+				float time = (float) (heart.parallaxReader.getEffectTime() * g[2] % 1000.0);
+				program.setUniformf(program.fetchUniformLocation("u_glint", false), g[0], g[1], time, g[3]);
+				program.setUniformf(program.fetchUniformLocation("u_sun", false), g[4], g[5]);
+				program.setUniformf(program.fetchUniformLocation("u_glintA", false), g[6], g[7], g[8], g[9]);
+				program.setUniformf(program.fetchUniformLocation("u_glintB", false), g[10], g[11], layer.getShaderPeriod(), layer.getShaderPeriodY());
+				return true;
+			}
 			ShaderProgram program = program(effect);
 			previous = batch.getShader();
 			batch.setShader(program);
@@ -367,12 +393,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			{
 				case WAVE:
 					return wave != null ? wave : (wave = FogLab.PatchHeightEffects.compile(GdxLayerEffects.fragment(Enum_ShaderEffect.WAVE), "WAVE"));
-				case SWELL:
-					return swell != null ? swell : (swell = compile("#define SWELL\n", "SWELL"));
 				case GLINT:
 					return glint != null ? glint : (glint = compile("#define GLINT\n", "GLINT"));
-				case BOTH:
-					return both != null ? both : (both = compile("#define SWELL\n#define GLINT\n", "SWELL + GLINT"));
 				case MIRROR_OWN:
 					return mirrorOwn != null ? mirrorOwn : (mirrorOwn = compile("#define SWELL\n#define MIRROR\n#define OWN\n", "SWELL + MIRROR by the water's colour"));
 				case MIRROR_GLINT:
