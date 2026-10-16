@@ -657,10 +657,13 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		batch.setTransformMatrix(toWorld.idt());
 		frame(i, e, vw, vh, d, accent);
 		ParallaxLayer layer = layers.get(i);
-		// Past five layers the distance alone, the rest in the readout.
-		String first = measured(distance[i]), more = (LabControls.read(units) == FRONTS ? "" : times(distance[i]) + " · ") + names[i] + " · speed "
+		// The distance large, the multiplier small under it (d21: visible, but subtle), then the name and speed; past five
+		// layers the name and speed only in the readout.
+		boolean fronts = LabControls.read(units) == FRONTS;
+		String first = measured(distance[i]), more = (fronts ? "" : times(distance[i]) + " · ") + names[i] + " · speed "
 				+ LabControls.text(Math.abs(layer.getParallaxSpeedRatioX()));
-		cardTag(k, vw, vh, d, layers.size() > 5 ? first : first + "\n" + more, "depth-card", e, accent, layers.size() - 1 - i);
+		String text = layers.size() <= 5 ? first + "\n" + more : fronts ? first : first + "\n" + times(distance[i]);
+		cardTag(k, vw, vh, d, text, "depth-card", e, accent, layers.size() - 1 - i);
 		return calls;
 	}
 
@@ -732,8 +735,9 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	}
 
 	/**
-	 * The scale's reference (r458): a person, {@link #PERSON} tall, standing on the ground beside the front card on the
-	 * eye's side, a flat cut-out turned to face the eye so it never shows edge on.
+	 * The scale's references (r458): a person, {@link #PERSON} tall, standing on the ground beside the front card on the
+	 * eye's side, a flat cut-out turned to face the eye so it never shows edge on, holding out a phone, {@link #PHONE}
+	 * long, at its true size (d21: small, a second reference for the phone lengths).
 	 */
 	private void person(float e, float vw, float d)
 	{
@@ -748,10 +752,17 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		shapes.rect(0.03f * h, 0, 0.1f * h, 0.47f * h);
 		shapes.rect(-0.15f * h, 0.44f * h, 0.3f * h, 0.38f * h);
 		shapes.rect(-0.22f * h, 0.47f * h, 0.07f * h, 0.33f * h);
-		shapes.rect(0.15f * h, 0.47f * h, 0.07f * h, 0.33f * h);
+		// The arm holding the phone: down to the elbow, then out.
+		shapes.rect(0.15f * h, 0.62f * h, 0.07f * h, 0.18f * h);
+		shapes.rect(0.15f * h, 0.6f * h, 0.16f * h, 0.06f * h);
 		shapes.circle(0, 0.91f * h, 0.085f * h, 20);
+		float ph = PHONE / metresPerUnit, pw = ph / 2, px = 0.29f * h, py = 0.6f * h;
+		shapes.setColor(0.08f, 0.09f, 0.12f, e);
+		shapes.rect(px, py, pw, ph);
+		shapes.setColor(0.5f, 0.85f, 1f, e);
+		shapes.rect(px + pw * 0.1f, py + ph * 0.06f, pw * 0.8f, ph * 0.88f);
 		shapes.end();
-		String size = metres(PERSON) + (LabControls.read(units) == PHONES ? " · " + Math.round(PERSON / PHONE) + " phones" : "");
+		String size = LabControls.read(units) == PHONES ? metres(PERSON) + " = " + Math.round(PERSON / PHONE) + " phones" : metres(PERSON) + " · its phone " + Math.round(PHONE * 100) + " cm";
 		tag(x, h * 1.05f, z, "a person · " + size, "depth-person", e, null, 150, "up");
 	}
 
