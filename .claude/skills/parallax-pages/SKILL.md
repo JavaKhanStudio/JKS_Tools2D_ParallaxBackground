@@ -156,10 +156,11 @@ for the whole screen; the depth fog so the back layer is `--fog` 0.6 of the way 
 strips; `pixel` is SDXL + PixelArt_XL at ~25 s, one PNG pixel per art pixel, drawn `Nearest`. About 2 min a page.
 Painted with the default model and no `--denoise`, the hills are inpainted inside their shape at 1.0 by
 `dreamshaper_8Inpainting` (r384, Simon's pick in hills-lab): img2img painted them one flat green. Their skyline is
-SD's own, near sil.py's. Round trees grow on about a sixth of the seeds: a hills strip without a forest over half
-its columns, or with a conifer's sharp skyline, is painted again on the next seed, up to 10, then the most
-wooded is kept (`ai_page.canopy`): a page's hills take about 4 min more (an inpaint is ~45 s with its model load).
-They keep the theme's pine words, which the other layers lose (their trees grew from them); conifers stay negative.
+SD's own, near sil.py's. They keep the theme's pine words, which the other layers lose; conifers stay negative.
+Before choosing flags, look the theme up: `python3 tools/r239-ai-strips/themes.py "THEME"` prints its entry of
+`themes.json` alone (r456): whether the canopy gate runs (a hills strip without round trees painted again, up to 10
+seeds, ~4 min more), what it is worth there, and the flags that suit the theme. Take its `recommend`; an
+`untested` entry is an estimate, not a measure. Never read themes.json whole.
 `--ckpt`/`--lora` paint with another model from `~/ComfyUI/models` (r346, `docs/ai-parallax.md`), recorded in
 `recipe.json`; a `.gguf` is a DiT (`--ckpt z-image-turbo-Q5_K_M.gguf`, r356), looped by a unet wrapper.
 Every strip is painted with a plain sky, keyed out: no layer carries clouds. A page that wants them asks `--clouds`

@@ -93,6 +93,7 @@ import layer  # noqa: E402
 import make_page  # noqa: E402
 import parallax_lab as lab  # noqa: E402
 import parallax_rules  # noqa: E402
+import themes  # noqa: E402
 
 ROOT = lab.ROOT
 PY = os.path.join(os.environ.get("COMFYUI_DIR", os.path.expanduser("~/ComfyUI")), "venv", "bin", "python")
@@ -116,7 +117,8 @@ HILLS_INPAINT = {"ckpt": "dreamshaper_8Inpainting.safetensors", "denoise": 1.0,
 # HILLS_INPAINT paints round crowns across the width on about a sixth of the seeds (r384: 5 of 7020-7049), flat
 # hills, cartoon conifers or one big tree on the rest: ai_page refuses those and paints the next seed, up to
 # HILLS_TRIES, then keeps the most wooded. canopy()'s cuts pass 4 of the 5 and one cartoon-conifer strip
-# (tools/r384-hills/features2.py, its labels by eye).
+# (tools/r384-hills/features2.py, its labels by eye). Only on a theme whose themes.json entry says gate (r456): off
+# the forest the gate passes rock, snowy peaks and buildings and refuses the best trees (r441).
 CANOPY_SPREAD, CANOPY_SHARP, HILLS_TRIES = 0.5, 2.0, 10
 GROW = {"mountains": 8, "hills": 8, "pines": 40, "dunes": 8, "sea": 4, "ruins": 16, "palms": 24}  # layer.py --grow, px
 DEFAULT_COLOURS = ["7a869e", "4f7a5a", "1f3a30"]  # sil.py's kinds, at full contrast: the fog gives the distance
@@ -554,6 +556,7 @@ class Pipeline:
         self.ks = a.kinds.split(",") if a.kinds else kinds(a.layers, a.front)
         self.cols = colours(a.colours.split(",") if a.colours else None, a.layers)
         self.model = model_of(a)
+        self.hills = themes.theme_entry(a.theme)  # themes.json: whether the hills' canopy gate runs (r456)
         self.w, self.h = (1536, 576) if self.model["xl"] else (1024, 384)
         self.made = {}  # strip prefix -> how it was painted, for recipe.json
         self.anims = {}  # --animate: depth -> how its patch was painted and checked, for recipe.json
@@ -658,7 +661,7 @@ class Pipeline:
         if kind == "pines" and not self.pixel and roughness(f"{prefix}_cut.png") < TREES:
             log(f"{prefix}: outline roughness {roughness(prefix + '_cut.png'):.1f} < {TREES}: no trees grew")
             return None
-        if self.inpaints(kind) and gate:
+        if self.inpaints(kind) and gate and self.hills["gate"]:
             self.canopy = spread, sharp = canopy(f"{prefix}_cut.png")
             if spread < CANOPY_SPREAD or sharp > CANOPY_SHARP:
                 log(f"{prefix}: forest over {spread:.2f} of the columns (< {CANOPY_SPREAD}?), skyline sharpness "
@@ -673,7 +676,11 @@ class Pipeline:
         layers, seeds = [], []
         for k, kind in enumerate(self.ks):
             prefix, best = os.path.join(self.strips, f"l{k}"), None
-            tries = max(a.tries, HILLS_TRIES) if self.inpaints(kind) else a.tries
+            gated = self.inpaints(kind) and self.hills["gate"]
+            tries = max(a.tries, HILLS_TRIES, self.hills["tries"]) if gated else a.tries
+            if self.inpaints(kind):
+                log(f"layer {k} ({kind}): theme entry {self.hills['name']} ({self.hills['status']}), canopy gate "
+                    f"{'on' if gated else 'off'}, up to {tries} seeds")
             for t in range(tries):
                 seed = a.seed * 1000 + k * 10 + t
                 self.canopy = None
@@ -979,6 +986,9 @@ class Pipeline:
                   "sampling": {k: self.model[k] for k in ("steps", "cfg", "sampler", "scheduler", "denoise")}, "texture": TEXTURE,
                   "page": f"page/{name}.jplax", "fogStrength": page.get("fogStrength", 0), "sky": list(sky),
                   "lint": problems, "layers": []}
+        if any(self.inpaints(kind) for kind in self.ks):
+            recipe["hills_gate"] = {"theme": self.hills["name"], "status": self.hills["status"],
+                                    "gate": self.hills["gate"]}
         if "lurker" in self.made:
             recipe["lurker"] = dict(self.made["lurker"], figure=a.lurker, strip="lurker")
         if "clouds" in self.made:
