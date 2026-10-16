@@ -13,7 +13,8 @@ import com.google.gwt.dom.client.Document;
  * {@link EffectsLab}), two panels side by side; with {@code ?lab=floor}, the floor lab (r275, {@link FloorLab}), one
  * panel showing the whole world; with {@code ?lab=tower}, the tower lab (r328, {@link TowerLab}), the same; with
  * {@code ?lab=planet}, the planet lab (r330, {@link PlanetLab}), the same; with {@code ?lab=lurker}, the lurker lab
- * (r369, {@link LurkerLab}), the same. anim-lab.html, with an {@code #anim-lab}: the animation lab (r407,
+ * (r369, {@link LurkerLab}), the same; with {@code ?lab=swell}, the SWELL edges lab (r434, {@link SwellLab}), three
+ * panels in a row. anim-lab.html, with an {@code #anim-lab}: the animation lab (r407,
  * {@link AnimLab}), four panels. hills-lab.html, with a {@code #hills-lab}: the hills lab (r384, {@link HillsLab}), two
  * panels side by side. pines-lab.html, with a {@code #pines-lab}: the pines lab (r421, {@link PinesLab}), two panels.
  * shadow-lab.html, with a {@code #shadow-lab}: the shadow lab (r425, {@link ShadowLab}), two panels
@@ -33,12 +34,16 @@ public class BrowserTestLauncher extends GwtApplication
 	private static boolean planet()
 	{return has("effects-lab") && "planet".equals(com.google.gwt.user.client.Window.Location.getParameter("lab"));}
 
+	private static boolean swell()
+	{return has("effects-lab") && "swell".equals(com.google.gwt.user.client.Window.Location.getParameter("lab"));}
+
 	private static boolean lurker()
 	{return has("effects-lab") && "lurker".equals(com.google.gwt.user.client.Window.Location.getParameter("lab"));}
 
 	@Override
 	public GwtApplicationConfiguration getConfig()
 	{return floor() || tower() || planet() || lurker() ? new GwtApplicationConfiguration(FloorLab.FRAME_WIDTH, FloorLab.FRAME_HEIGHT)
+			: swell() ? new GwtApplicationConfiguration(3 * SwellLab.PANEL_WIDTH + 8, SwellLab.PANEL_HEIGHT)
 			: has("effects-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, FogLab.PANEL_HEIGHT)
 			: has("hills-lab") ? new GwtApplicationConfiguration(2 * HillsLab.FRAME_WIDTH + 4, HillsLab.FRAME_HEIGHT)
 			: has("pines-lab") ? new GwtApplicationConfiguration(2 * PinesLab.FRAME_WIDTH + 4, PinesLab.FRAME_HEIGHT)
@@ -56,5 +61,5 @@ public class BrowserTestLauncher extends GwtApplication
 
 	@Override
 	public ApplicationListener createApplicationListener()
-	{return floor() ? new FloorLab() : tower() ? new TowerLab() : planet() ? new PlanetLab() : lurker() ? new LurkerLab() : has("effects-lab") ? new EffectsLab() : has("anim-lab") ? new AnimLab() : has("hills-lab") ? new HillsLab() : has("pines-lab") ? new PinesLab() : has("shadow-lab") ? new ShadowLab() : has("fog-lab") ? new FogLab() : has("haze-lab") ? new HazeLab() : has("transfert-lab") ? new TransfertLab() : new BrowserTestApp();}
+	{return floor() ? new FloorLab() : tower() ? new TowerLab() : planet() ? new PlanetLab() : lurker() ? new LurkerLab() : swell() ? new SwellLab() : has("effects-lab") ? new EffectsLab() : has("anim-lab") ? new AnimLab() : has("hills-lab") ? new HillsLab() : has("pines-lab") ? new PinesLab() : has("shadow-lab") ? new ShadowLab() : has("fog-lab") ? new FogLab() : has("haze-lab") ? new HazeLab() : has("transfert-lab") ? new TransfertLab() : new BrowserTestApp();}
 }

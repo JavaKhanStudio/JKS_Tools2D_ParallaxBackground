@@ -24,6 +24,7 @@ LABS = [
     ("effects-tower", "effects-lab.html?lab=tower", "effectsLabReady", 1, 1),
     ("effects-planet", "effects-lab.html?lab=planet", "effectsLabReady", 1, 1),
     ("effects-lurker", "effects-lab.html?lab=lurker", "effectsLabReady", 1, 1),
+    ("effects-swell", "effects-lab.html?lab=swell", "effectsLabReady", 3, 1, 2),
 ]
 W, H = 480, 270
 

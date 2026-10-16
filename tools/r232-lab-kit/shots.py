@@ -20,6 +20,7 @@ LABS = [
     ("effects-tower", "effects-lab.html?lab=tower", "effectsLabReady"),
     ("effects-planet", "effects-lab.html?lab=planet", "effectsLabReady"),
     ("effects-lurker", "effects-lab.html?lab=lurker", "effectsLabReady"),
+    ("effects-swell", "effects-lab.html?lab=swell", "effectsLabReady"),
     ("browser-tests", "index.html", None),
 ]
 SIZES = {"desktop": (1580, 710), "phone": (390, 844)}

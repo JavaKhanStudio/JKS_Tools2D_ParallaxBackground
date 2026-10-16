@@ -7,7 +7,7 @@
 	<link rel="stylesheet" href="lab.css">
 	<!-- EffectsLab (r224): ?lab=fog, ?lab=snow or ?lab=all, the feature on the left, the same page without it on the right;
 	     ?lab=floor: FloorLab (r275), one panel, the floor drawn row by row; ?lab=tower: TowerLab (r328), one panel;
-	     ?lab=planet: PlanetLab (r330, r347), one panel; ?lab=lurker: LurkerLab (r369), one panel. -->
+	     ?lab=planet: PlanetLab (r330, r347), one panel; ?lab=lurker: LurkerLab (r369), one panel; ?lab=swell: SwellLab (r434), three panels. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
@@ -58,6 +58,11 @@
 	white ticks are the switches. The readout counts the switches made while it was uncovered in the view: 0 in the
 	first mode. The figure's speed and how often it comes by change nothing to the cover: it is worked out on the
 	offset between the layers.
+	<b>swell</b> (r434): SWELL (r431) reads each pixel from where its waves move it, the image wrapped across and held
+	at its top and bottom rows, whatever the page repeats on. <i>A</i> is SWELL as it ships; <i>B</i> wraps only on the
+	axes the page repeats on and holds on the others; <i>C</i> is red where A and B differ. On a page tiled on Y, A's held
+	rows are a flat band at every tile edge on Y (scroll up to see them cross the view; zoom on them); on one that does
+	not repeat on X, A pulls the image's other side in at each side. On the sea, which tiles on X only, A and B agree.
 	Each page is drawn by the real reader, compiled to JavaScript, as a browser game draws it. The cost line gives the
 	frame time and, per panel, its draw calls and the CPU time to submit them (the GPU's time is in the frame time).</p>
 	</details>

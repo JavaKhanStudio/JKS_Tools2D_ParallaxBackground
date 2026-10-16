@@ -13,6 +13,8 @@
 #   --lab lurker r369's cover (LurkerLab): r363's hooded figure behind Hiver's pines, switched by the reader's sightings
 #                (r370) only while LurkerCover says one of them hides it whole (or every 2 s anywhere, to compare); a strip
 #                of the last 20 s
+#   --lab swell  r434's SWELL edges (SwellLab): the checker tiled on X and Y, Y, neither or X, or the beach sea, through
+#                SWELL as it ships, wrapping only on the axes the page repeats on, and red where the two differ
 # The readout gives the frame time, and each panel's draw calls and CPU time.
 #   tools/effects-lab.sh --lab L                 the lab: a Chrome window, served until it closes
 #   tools/effects-lab.sh --lab L --shot F.png    one still, headless (6 s into the scroll)
@@ -36,7 +38,7 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-case "$LAB" in fog|snow|all|floor|tower|planet|lurker) ;; *) echo "--lab is fog, snow, all, floor, tower, planet or lurker, not: $LAB" >&2; exit 2 ;; esac
+case "$LAB" in fog|snow|all|floor|tower|planet|lurker|swell) ;; *) echo "--lab is fog, snow, all, floor, tower, planet, lurker or swell, not: $LAB" >&2; exit 2 ;; esac
 if [ $MODE = open ]; then . tools/agent-window-guard.sh; refuse_agent_window tools/effects-lab.sh; fi
 
 CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || command -v chromium-browser)}"
@@ -92,17 +94,18 @@ with sync_playwright() as p:
         if not page.query_selector("[data-key=%s]" % key):
             sys.exit("no slider %s in the %s lab" % (key, lab))
         page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
-    keys = page.eval_on_selector_all("#effects-controls [data-key]", "es => es.map(e => e.dataset.key)")
+    keys = page.eval_on_selector_all("#effects-labels [data-key], #effects-controls [data-key]", "es => es.map(e => e.dataset.key)")
     if mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
         first = page.eval_on_selector("#effects-controls input[type=range][data-key]", "e => [e.dataset.key, Number(e.dataset.start), Number(e.max)]")
         page.eval_on_selector("[data-key=%s]" % first[0], "(e, v) => { e.value = v; }", str(first[2]))
-        page.eval_on_selector("[data-key=cameraScroll]", "e => { e.value = '80'; }")
+        scroll = page.eval_on_selector("[data-key=cameraScroll]", "e => Number(e.dataset.start)")
+        page.eval_on_selector("[data-key=cameraScroll]", "e => { e.value = '40'; }" if scroll == 80 else "e => { e.value = '80'; }")
         page.evaluate("window.effectsLabAct(6)")
         page.click("#effects-copy")
         page.wait_for_function("document.getElementById('effects-copy-state').textContent !== ''")
         got = json.loads(page.input_value("#effects-copy-json"))
-        moved = {first[0]: {"started": first[1], "now": first[2]}, "cameraScroll": {"started": 40, "now": 80}}
+        moved = {first[0]: {"started": first[1], "now": first[2]}, "cameraScroll": {"started": scroll, "now": 40 if scroll == 80 else 80}}
         if set(got["settings"]) != set(keys) or got["changed"] != moved or got["lab"] != "effects-lab " + lab:
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#effects-copy-state"), json.dumps(got["settings"])))

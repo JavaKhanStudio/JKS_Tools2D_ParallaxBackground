@@ -114,7 +114,7 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
     def fogSets = ['s02', 's05', 's06'].collect { file("../engines/rounds/round1/${it}.jplax") }
     def fogAtlases = ['samples/transfer/calm', 'samples/Demos/PurpleFairy', 'samples/Demos/OneNight']
     inputs.files(fileTree('test-data') { include 'shaders/**', 'samples/Hiver.png', 'haze/**', 'anim/**', 'particles/**', 'floor/**', 'tower/**', 'lurker/**', 'hills/**', 'pines/**'; fogAtlases.each { include "${it}.*" } },
-            file('../engines/rounds/shaders/s01.jplax'), file('../engines/rounds/tower/w01.jplax'), fogSets)
+            file('../engines/rounds/shaders/s01.jplax'), file('../engines/rounds/shaders/s09.jplax'), file('../engines/rounds/tower/w01.jplax'), fogSets)
     doLast {
         def assets = browserTestAssets.get().asFile
         project.copy { from 'test-data/shaders/mist.png', 'test-data/samples/Hiver.png'; into assets }
@@ -147,6 +147,9 @@ def browserTestFixtures = tasks.register('browserTestFixtures', JavaExec) {
         // clouds pages are the fog lab's sets, copied above.
         project.copy { from 'test-data/anim'; include 'beach.png', 'beach-sea.png', 'beach.atlas'; into assets }
         project.copy { from 'test-data/anim/beach.jplax'; into new File(assets, 'anim-lab') }
+        // The SWELL edges lab's (r434, SwellLab): the shaders round's checker and its s09 page, which the lab tiles four ways.
+        project.copy { from 'test-data/shaders/checker.png', 'test-data/shaders/checker.atlas'; into assets }
+        project.copy { from '../engines/rounds/shaders/s09.jplax'; into new File(assets, 'swell-lab'); rename { 'checker.jplax' } }
         // The floor lab's (r275, FloorLab): core/test-data/floor/make_lab.py's page, its atlas (Hiver, then the ground).
         // Its second set, PurpleFairy on a violet ground (PurpleFairy.png is copied above, with the fog lab's sets).
         project.copy { from 'test-data/floor'; include '*.png'; into assets }
