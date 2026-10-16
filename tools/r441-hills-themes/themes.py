@@ -29,6 +29,10 @@ THEMES = {
     "snow": "snowy mountains in winter at dusk",
     "autumn": "autumn countryside at dusk",
     "postapo": "post-apocalyptic ruined city at dusk",
+    # r457: themes.json's estimates, measured
+    "jungle": "dense tropical jungle at dawn",
+    "beach": "tropical beach, warm sunny afternoon",  # default kinds: hills behind the pines
+    "night": "moonlit hills at night",
 }
 
 

@@ -29,3 +29,16 @@ Sheets: `build/r441/<theme>.png` (each cut over the sky, the gate's numbers on i
 Simon's answer (r441): a gate per theme, tested and untested, with its value and an estimate. That table is
 `tools/r239-ai-strips/themes.json`: these five rows as measured, the untested themes (jungle, beach, night, any other)
 as labelled estimates, each with the flags that suit it. A new theme measured here is a new entry there.
+
+## r457: themes.json's three estimates, measured
+
+`python3 tools/r441-hills-themes/themes.py build/r457 --only jungle,beach,night` (same seeds, default kinds).
+"Better than the first seed" is by eye on the sheets (`build/r457/<theme>.png`, attached to r457).
+
+| theme | passed | kept | strips | the strips | gate's pick better than the first seed? | gate |
+|-------|--------|------|--------|------------|------------------------------------------|------|
+| jungle `dense tropical jungle at dawn` | 1/10 | 7024 | 5 | flat green hills on 7, round leaf crowns across the width on 7024, giant leaves on 7025 | yes: a canopy against bare hills | on |
+| beach `tropical beach, warm sunny afternoon` | 0/10 | 7024, best of none | 11 | green mounds over a sand or grass band, no tree | no: the same mounds | off |
+| night `moonlit hills at night` | 0/10 | 7025, best of none | 11 | dark ridges over green fields, black mounds on 2 | no: 7025 is bright green, the least night-like | off |
+
+The estimates held: the gate earns its tries on wooded themes only.
