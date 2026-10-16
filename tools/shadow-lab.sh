@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
-# The shadow lab (r425): r365's AI forest page drawn three times by the real reader compiled with GWT, in WebGL: A with
-# distance (each shadow's far end partly at the hills' speed, softer and lighter there, the hills casting on the far
-# range), B the pines casting their shadow on the hills just behind them, and on nothing else, from one light or two,
-# moving with the pines, C as painted (core/browser-test/launcher/.../ShadowLab.java).
-# Controls: the view (the page, or without the pines), the camera's scroll, each sun's side and height (sliders, or
-# dragged on the dial over C), the second sun on or off, how far up the screen the ground climbs into the picture, its
-# softness and darkness; A's distance section: with the hills, soft far, fade far, hills cast, range rise.
+# The shadow lab (r425): r365's AI forest page drawn twice by the real reader compiled with GWT, in WebGL, under a sun
+# in its sky: A with cast shadows (each layer casting toward you, on the layer just in front of it), B as painted
+# (core/browser-test/launcher/.../ShadowLab.java).
+# Controls: the view (the page, or without the pines), the camera's scroll, each sun's side and height (sliders, or the
+# sun dragged in the sky), the second sun on or off, the depth between two layers, how much a shadow moves with the
+# layer it falls on, its softness and darkness.
 #   tools/shadow-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/shadow-lab.sh --shot F.png    one still, headless (6 s in)
 #   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/two.png (both suns)
 #   tools/shadow-lab.sh --clip F.mp4    a clip, headless: 8 s at 30 fps, stepped at game speed (window.shadowLabAct)
+#   tools/shadow-lab.sh --sunset F.mp4  as --clip, sun 1 sinking from its height to 4 degrees under the horizon
 #   tools/shadow-lab.sh --slider K=V    before --shot/--views/--clip: start control K (its data-key) at V, a choice at its option's index
-#   tools/shadow-lab.sh --copy F.png    checks "Copy settings", headless: drags sun 1 on the dial, turns sun 2 on, clicks,
-#                                       fails unless the JSON names every control and those moved; F is the page
+#   tools/shadow-lab.sh --copy F.png    checks "Copy settings" and the drag, headless: drags sun 1 in A's sky (fails if the
+#                                       panel zooms instead), turns sun 2 on, clicks, fails unless the JSON names every
+#                                       control and those moved; F is the page
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python
 # Playwright and ffmpeg.
 # on-screen: with no argument this is the shadow lab, a window Simon asked for; the rest is headless Chrome.
@@ -23,6 +24,7 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 		--shot) MODE=shot; OUT="$(realpath -m "$2")"; shift ;;
 		--clip) MODE=clip; OUT="$(realpath -m "$2")"; shift ;;
+		--sunset) MODE=sunset; OUT="$(realpath -m "$2")"; shift ;;
 		--copy) MODE=copy; OUT="$(realpath -m "$2")"; shift ;;
 		--views) MODE=views; OUT="$(realpath -m "$2")"; shift ;;
 		--slider) SLIDERS="$SLIDERS $2"; shift ;;
@@ -109,24 +111,67 @@ with sync_playwright() as p:
         shot(frames + "/two.png")
     elif mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        # Sun 1 dragged on the dial: half its radius right of the middle is on your right, 60 degrees up.
-        box = page.locator("#shadow-dial").bounding_box()
-        page.mouse.click(box["x"] + box["width"] * (66 + 28) / 132, box["y"] + box["height"] * 66 / 132)
+        # Sun 1 dragged in the sky, from where ShadowLab.drawSun puts it: it moves, and no panel zooms or unzooms.
+        page.evaluate("window.shadowLabAct(1)")
+        page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+        def drag(dx, dy):
+            at = page.evaluate("window.shadowSunAt(1)")
+            page.mouse.move(at["x"], at["y"])
+            page.mouse.down()
+            for i in range(1, 11):
+                page.mouse.move(at["x"] + dx * i / 10, at["y"] + dy * i / 10)
+            page.mouse.up()
+            page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+        # Zoomed on B first: the drag moves the sun there and B stays zoomed; then back to all, the drag in A.
+        page.evaluate("window.labZoom(1)")
+        page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+        before = page.input_value("[data-key=sun1Side]")
+        drag(-80, 0)
+        if page.evaluate("window.labFocus") != 1 or page.input_value("[data-key=sun1Side]") == before:
+            sys.exit("dragging the sun in zoomed B: focus %s, side %s -> %s" % (page.evaluate("window.labFocus"), before,
+                                                                                  page.input_value("[data-key=sun1Side]")))
+        page.evaluate("window.labZoom(-1)")
+        page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+        drag(200, 60)
+        if page.evaluate("window.labFocus") != -1:
+            sys.exit("dragging the sun zoomed panel %s" % page.evaluate("window.labFocus"))
         page.eval_on_selector("[data-key=sun2On]", "e => { e.value = '1'; }")
         page.evaluate("window.shadowLabAct(6)")
         page.click("#shadow-copy")
         page.wait_for_function("document.getElementById('shadow-copy-state').textContent !== ''")
         import json
         got = json.loads(page.input_value("#shadow-copy-json"))
-        keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "rise", "softness",
-                "darkness", "withHills", "softFar", "fadeFar", "hillsCast", "rangeRise"}
-        moved = {"sun1Side": {"started": -40, "now": 90}, "sun1Height": {"started": 20, "now": 60}, "sun2On": {"started": 0, "now": 1}}
-        if set(got["settings"]) != keys or got["changed"] != moved or "sun 2:" not in got["readout"]:
+        keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "depth", "withReceiver",
+                "softness", "darkness"}
+        changed = got["changed"]
+        if (set(got["settings"]) != keys or set(changed) != {"sun1Side", "sun1Height", "sun2On"}
+                or changed["sun1Side"]["started"] != -20 or not changed["sun1Side"]["now"] > -20
+                or changed["sun1Height"]["started"] != 21 or not changed["sun1Height"]["now"] < 21
+                or changed["sun2On"] != {"started": 0, "now": 1} or "sun 2:" not in got["readout"]):
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#shadow-copy-state"), json.dumps(got["settings"])))
         shot(frames + "/still.png")
+        # On a phone: a tap on the sun zooms nothing (lab.js zooms on a tap the canvas cancelled), a tap beside it does.
+        phone = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+        phone.goto(url)
+        phone.wait_for_function("window.shadowLabReady === true", timeout=60000)
+        phone.evaluate("window.shadowLabAct(1)")
+        phone.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+        at = phone.evaluate("window.shadowSunAt(1)")
+        phone.touchscreen.tap(at["x"], at["y"])
+        phone.wait_for_timeout(300)
+        on_sun = phone.evaluate("window.labFocus")
+        phone.touchscreen.tap(at["x"], at["y"] + 60)
+        phone.wait_for_timeout(300)
+        beside = phone.evaluate("window.labFocus")
+        if on_sun != -1 or beside != 0:
+            sys.exit("a phone's tap: on the sun zoomed %s (want -1), beside it %s (want 0)" % (on_sun, beside))
+        print("phone: a tap on the sun zooms nothing, beside it zooms A")
     else:
+        start = float(page.input_value("[data-key=sun1Height]"))
         for i in range(240):
+            if mode == "sunset":
+                page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(start - (start + 4) * i / 239))
             page.evaluate("window.shadowLabAct(%r)" % (0 if i == 0 else 1 / 30))
             shot(frames + "/f%04d.png" % i)
     if errors:

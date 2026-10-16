@@ -5,14 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Shadow lab (r425): should a layer cast its shadow on the layer behind?</title>
 	<link rel="stylesheet" href="lab.css">
-	<style>
-	/* The sun dial (r425): the suns seen from above, over C's bottom right corner. */
-	/* Over the kit's .lab-stage canvas, which stretches the reader's canvas to the stage. */
-	.lab-stage canvas.sun-dial { position: absolute; right: 8px; bottom: 8px; width: 132px !important; height: 132px !important;
-		cursor: grab; touch-action: none; border-radius: 50%; }
-	@media (max-width: 719px) { .lab-stage canvas.sun-dial { width: 40px !important; height: 40px !important; right: 3px; bottom: 3px; } }
-	</style>
-	<!-- ShadowLab (r425): r365's AI forest page, its pines casting their shadow on the hills behind them, from one light or two. -->
+	<!-- ShadowLab (r425): r365's AI forest page under a sun in its sky, each layer casting its shadow on the one in front of it. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
@@ -22,82 +15,102 @@
 		<span id="shadow-copy-state" class="lab-copy-state"></span>
 		<button id="shadow-copy" class="lab-copy">Copy settings</button>
 	</header>
-	<div id="shadow-lab" class="lab-stage lab-row lab-three">
+	<div id="shadow-lab" class="lab-stage lab-row">
 		<div id="embed-browsertests"></div>
 		<div id="shadow-labels" class="lab-labels"></div>
-		<canvas id="shadow-dial" class="sun-dial" width="132" height="132" title="the suns, seen from above: you at the bottom, the picture at the top, overhead in the middle, the horizon at the rim. Drag a sun."></canvas>
 	</div>
 	<div id="shadow-controls" class="lab-controls"></div>
 	<textarea id="shadow-copy-json" class="lab-copy-json" hidden readonly></textarea>
 	<details class="lab-about">
 		<summary>What this lab shows</summary>
-		<p id="shadow-about">r365's AI forest page (the hills lab's, its hills as they ship), drawn three times by the
-	real reader, side by side: <b>A</b> with distance, <b>B</b> as before, <b>C</b> as painted. In B the pines cast
-	their shadow on the hills just behind them, and on nothing else: not on the sky, not on the layers further back. Each light is a <b>sun</b>: a side round you (behind
-	you, on your left or right, or ahead in the picture) and a height over the horizon, set by its sliders or by
-	dragging it on the dial over C's corner (seen from above: you at the bottom, the picture at the top, overhead in the
-	middle, the horizon at the rim; the line from the middle shows where its shadows point). Sunlight comes from above,
-	so a shadow lands below and away from the sun: a low sun from behind your left lays it long to the right, a high
-	one drops it behind the trees. A sun ahead casts toward you, onto nothing behind the pines. As the camera scrolls,
-	B's shadow <b>moves with the pines</b>. A's shadow lies on ground that runs away from its tree: its foot stays under
-	the tree, its far end moves partly <b>with the hills</b> (so the shadows fan out from the middle of the view, as
-	toward a vanishing point), and it is softer and lighter the farther it lies from its foot; the hills cast their own
-	shadow on the far range (<b>hills cast</b>, <b>range rise</b>). Where two suns' shadows meet, it is darker. A
-	lab, not an effect yet: what ships, if any of it, waits for your tests. The view without the pines shows the
-	shadow's shape alone.</p>
+		<p id="shadow-about">r365's AI forest page (the hills lab's, its hills as they ship), drawn twice by the real
+	reader, side by side under the same sun: <b>A</b> with cast shadows, <b>B</b> as painted. The <b>sun</b> is in the
+	sky you see, behind every layer: drag it there (in either panel), or set its side and height with the sliders; under
+	the horizon it is gone behind the mountains. A sun in front of you lays the shadows <b>toward you</b>, so each layer
+	casts on the layer just in front of it: the far peaks on the range, the range on the hills, the hills on the pines.
+	The pines, in front of everything, cast on nothing you see. A ridge's shadow is its whole mass, lowered by the
+	<b>depth</b> between the two layers times the tangent of the sun's height: what rises above it is lit, the rest is in
+	the shade. A low sun shades most of each layer, a high one little; once it has set, every layer is in the shade.
+	As the camera scrolls, a shadow moves with the layer it lies on (<b>with the layer it falls on</b> 1, as in the world).
+	A second sun casts its own shadows; where two meet, it is darker. A lab, not an effect yet: what ships, if any of
+	it, waits for your tests. The view without the pines shows the hills' shadows whole.</p>
 	</details>
 	<script src="lab.js"></script>
 	<script>
-	// The sun dial: draws the suns from their sliders; a drag moves the nearer one and sets its sliders.
+	// The suns are dragged in the sky (r425): a press on one, in either panel, moves it; the click it ends with does not
+	// zoom the panel. Where a sun is: ShadowLab.drawSun's, from window.shadowSky and the panels LabKit placed.
 	(function () {
-		var dial = document.getElementById('shadow-dial'), g = dial.getContext('2d'), R = 56, C = 66, held = null;
+		var stage = document.querySelector('.lab-stage'), held = 0, dragged = false;
 		function input(key) { return document.querySelector('input[data-key=' + key + ']'); }
 		function on2() { var s = document.querySelector('select[data-key=sun2On]'); return s && s.selectedIndex === 1; }
-		function at(n) {
-			var a = +input('sun' + n + 'Side').value * Math.PI / 180, r = R * Math.cos(+input('sun' + n + 'Height').value * Math.PI / 180);
-			return { x: C + r * Math.sin(a), y: C + r * Math.cos(a), a: a };
+		function canvas() { return stage.querySelector('#embed-browsertests canvas'); }
+		// Panel i's viewport in the canvas's pixels (GL's y up), as LabKit.frame placed it; null when another is zoomed.
+		function rect(i) {
+			var r = (window.labPanelRects || [])[i], f = window.labFocus, c = canvas();
+			if (!r || (f >= 0 && f !== i)) return null;
+			if (f < 0) return r;
+			var s = Math.min(c.width / r[2], c.height / r[3]), dx = c.width / 2 - (r[0] + r[2] / 2) * s, dy = c.height / 2 - (r[1] + r[3] / 2) * s;
+			return [r[0] * s + dx, r[1] * s + dy, r[2] * s, r[3] * s];
 		}
-		function draw() {
-			g.clearRect(0, 0, 132, 132);
-			g.fillStyle = 'rgba(20,24,32,0.82)'; g.beginPath(); g.arc(C, C, 64, 0, 2 * Math.PI); g.fill();
-			// Ahead, in the picture: a sun there casts toward you, nothing on the hills.
-			g.fillStyle = 'rgba(255,255,255,0.08)'; g.beginPath(); g.arc(C, C, R, Math.PI, 2 * Math.PI); g.fill();
-			g.strokeStyle = 'rgba(255,255,255,0.45)'; g.lineWidth = 1;
-			g.beginPath(); g.arc(C, C, R, 0, 2 * Math.PI); g.stroke();
-			g.beginPath(); g.arc(C, C, R / 2, 0, 2 * Math.PI); g.stroke();
-			g.fillStyle = '#cfd6e2'; g.font = '11px sans-serif'; g.textAlign = 'center';
-			g.fillText('picture', C, 22); g.fillText('you', C, 120);
-			[1, 2].forEach(function (n) {
-				if (!input('sun' + n + 'Side') || (n === 2 && !on2())) return;
-				var p = at(n);
-				g.strokeStyle = n === 1 ? '#ffd34d' : '#ff9a4d'; g.lineWidth = 2;
-				g.beginPath(); g.moveTo(C, C); g.lineTo(C - 22 * Math.sin(p.a), C - 22 * Math.cos(p.a)); g.stroke();
-				g.fillStyle = g.strokeStyle; g.beginPath(); g.arc(p.x, p.y, 7, 0, 2 * Math.PI); g.fill();
-			});
-			requestAnimationFrame(draw);
+		// A point of panel i's view (world units from its bottom left) on the page, and back.
+		function toPage(i, x, y) {
+			var r = rect(i), c = canvas(), b = c.getBoundingClientRect(), k = b.width / c.width, sky = window.shadowSky;
+			return { x: b.left + (r[0] + x / sky.width * r[2]) * k, y: b.top + (c.height - r[1] - y / sky.height * r[3]) * k };
 		}
-		function point(e) {
-			var b = dial.getBoundingClientRect(), k = 132 / b.width;
-			return { x: (e.clientX - b.left) * k - C, y: (e.clientY - b.top) * k - C };
+		function toView(i, px, py) {
+			var r = rect(i), c = canvas(), b = c.getBoundingClientRect(), k = c.width / b.width, sky = window.shadowSky;
+			return { x: ((px - b.left) * k - r[0]) / r[2] * sky.width, y: (c.height - (py - b.top) * k - r[1]) / r[3] * sky.height };
 		}
-		function set(n, q) {
-			var r = Math.min(R, Math.hypot(q.x, q.y)), side = Math.round(Math.atan2(q.x, q.y) * 180 / Math.PI / 5) * 5;
-			var height = Math.round(Math.acos(r / R) * 180 / Math.PI);
-			input('sun' + n + 'Side').value = side;
-			input('sun' + n + 'Height').value = Math.max(5, Math.min(85, height));
-			input('sun' + n + 'Side').dispatchEvent(new Event('input', { bubbles: true }));
+		function sun(n) {
+			var sky = window.shadowSky, a = +input('sun' + n + 'Side').value * Math.PI / 180, e = +input('sun' + n + 'Height').value * Math.PI / 180;
+			return { x: sky.width / 2 + sky.focal * Math.tan(a), y: sky.horizon + sky.focal * Math.tan(e) / Math.cos(a) };
 		}
-		dial.addEventListener('pointerdown', function (e) {
-			var q = point(e), best = 1;
-			if (on2()) {
-				var p1 = at(1), p2 = at(2);
-				best = Math.hypot(q.x + C - p2.x, q.y + C - p2.y) < Math.hypot(q.x + C - p1.x, q.y + C - p1.y) ? 2 : 1;
+		// The sun under the pointer, 1 or 2, in either panel; 0 when none is within 20 px.
+		function under(px, py) {
+			if (!window.shadowSky || !input('sun1Side')) return 0;
+			for (var i = 0; i < 2; i++) {
+				if (!rect(i)) continue;
+				for (var n = on2() ? 2 : 1; n >= 1; n--) {
+					var s = sun(n), p = toPage(i, s.x, s.y);
+					if (Math.hypot(p.x - px, p.y - py) < 20) return { n: n, panel: i };
+				}
 			}
-			held = best; dial.setPointerCapture(e.pointerId); set(held, q);
-		});
-		dial.addEventListener('pointermove', function (e) { if (held) set(held, point(e)); });
-		dial.addEventListener('pointerup', function () { held = null; });
-		var wait = setInterval(function () { if (input('sun1Side')) { clearInterval(wait); draw(); } }, 100);
+			return 0;
+		}
+		function set(key, value) {
+			var e = input(key), step = +e.step;
+			e.value = Math.max(+e.min, Math.min(+e.max, Math.round(value / step) * step));
+			e.dispatchEvent(new Event('input', { bubbles: true }));
+		}
+		function move(px, py) {
+			var sky = window.shadowSky, v = toView(held.panel, px, py), a = Math.atan((v.x - sky.width / 2) / sky.focal);
+			set('sun' + held.n + 'Side', a * 180 / Math.PI);
+			set('sun' + held.n + 'Height', Math.atan((v.y - sky.horizon) * Math.cos(a) / sky.focal) * 180 / Math.PI);
+		}
+		// Where sun n is on the page, in the first panel shown: tools/shadow-lab.sh --copy presses there.
+		window.shadowSunAt = function (n) {
+			for (var i = 0; i < 2; i++) if (rect(i)) { var s = sun(n); return toPage(i, s.x, s.y); }
+			return null;
+		};
+		stage.addEventListener('pointerdown', function (e) {
+			held = under(e.clientX, e.clientY);
+			dragged = false;
+			if (!held) return;
+			e.preventDefault(); e.stopPropagation();
+			stage.setPointerCapture(e.pointerId);
+		}, true);
+		stage.addEventListener('pointermove', function (e) {
+			if (held) { dragged = true; move(e.clientX, e.clientY); e.stopPropagation(); return; }
+			var c = canvas();
+			if (c) c.style.cursor = under(e.clientX, e.clientY) ? 'grab' : '';
+		}, true);
+		function release(e) { if (held) { held = 0; e.stopPropagation(); } }
+		stage.addEventListener('pointerup', release, true);
+		stage.addEventListener('pointercancel', release, true);
+		// The click a press on a sun ends with, and a phone's tap there: no zoom.
+		stage.addEventListener('click', function (e) { if (dragged || under(e.clientX, e.clientY)) { dragged = false; e.stopPropagation(); } }, true);
+		stage.addEventListener('touchend', function (e) { var t = e.changedTouches[0]; if (dragged || under(t.clientX, t.clientY)) e.stopPropagation(); }, true);
+		stage.addEventListener('touchmove', function (e) { if (held) e.preventDefault(); }, { capture: true, passive: false });
 	})();
 	</script>
 	<script>

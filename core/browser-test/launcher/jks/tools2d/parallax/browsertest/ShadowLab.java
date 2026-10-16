@@ -5,6 +5,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -24,36 +26,27 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
  * The shadow lab (r425, Simon on r392: "Should the trees cast shadows on the layer behind? Yes [...] considering where
- * the light source is (and are) [...] Prepare a lab for it"): a nearer layer casts its shadow on the layer just behind
- * it only, never on the sky nor further back, from one light or two. r365's AI forest page (the hills lab's, its hills
- * as they ship), drawn three times by the real reader, side by side: A with distance, B the pines (l3) casting on the
- * hills (l2) as before, the shadow moving with the pines, C as painted.
+ * the light source is (and are) [...] Prepare a lab for it"): r365's AI forest page (the hills lab's, its hills as they
+ * ship), drawn twice by the real reader, side by side: A with its layers' cast shadows, B as painted, under the same sun.
  * <p>
- * A (r425, Simon on B and on a shadow moving with the hills: "they should move partly with the hill"; "the main problem
- * currently is the lack of feeling of distance ... the forest is, as a cardboard cutout, in front of the mountain ...
- * the mountain doesn't cast shadows"): a shadow lies on ground that runs away from its tree, so the farther along it,
- * the farther away: its foot moves with the pines, its far end {@code withHills} of the way to the hills' speed (the
- * shadows fan out from the view's middle, as from a vanishing point, {@link #WARP_VERTEX}); it blurs wider and fades the
- * farther it lies from the foot (a penumbra grows with the distance from what casts it); and the hills cast theirs on
- * the far range (l1) the same way.
+ * The sun is in the sky you see (r425, Simon: "only seems to work when the sun is under the X axis... and it would not be
+ * visible in the sky"; the lab before cast from a sun behind the viewer, the only one whose shadows land on a layer
+ * further back): drawn behind every layer, so it sinks out of sight behind the mountains, and dragged there. A sun ahead
+ * lays the shadows toward you, so each layer casts on the layer just in front of it: the far peaks (l0) on the range
+ * (l1), the range on the hills (l2), the hills on the pines (l3); the pines, in front of all, on nothing you see. The
+ * one in front stands upright, {@code depth} world units nearer: a ray grazing the caster's ridge has dropped {@code
+ * depth} tan(height) / cos(side) by the time it reaches it, and moved {@code depth} tan(side) away from the sun's side
+ * ({@link #shadowOf}). So the shadow is the caster's whole mass, its ridge and everything under it, lowered and shifted
+ * that much: what of the receiver rises above it is lit, the rest is in the shade. A low sun lowers it little and
+ * shades most of the receiver; under the horizon it rises over the ridge and shades it all. As the camera scrolls, a
+ * shadow lies on its receiver and moves with it ({@code withReceiver} 1: the caster drawn wider about the view's
+ * middle by the receiver's speed over its own, as a ridge twice as far casts a shadow twice its apparent width).
  * <p>
- * B is drawn in passes, each by a heart holding the whole page with the layers it does not draw pushed far under the
- * view (so the page's front, and its fog, stay the page's): the sky and the layers up to the hills; the hills again,
- * into the stencil only, where they are opaque; the pines once per light, laid on the ground away from it, dark,
- * softened, where the stencil is set; the pines themselves on top. B's shadow is the pines' own layer, scrolled
- * with them; C's is at the hills' speed (a second heart), as the world would have it.
- * <p>
- * Each light is a sun (r425, Simon: "it acts as if there was a wall behind the trees and the sun was angled at 60
- * degrees"; the first lab moved the shadow by a free 2D angle, its default from below on the left, which no sun is):
- * a side, round the viewer (0 behind you, 90 on your right, 180 ahead in the picture), and a height over the horizon.
- * A shadow starts at the tree's foot and lies on the ground away from the sun, as long as the tree is tall over the
- * tangent of the sun's height ({@link #shear}): a point h over the pines' foot line goes sideways by h times the sun's
- * sideways run, and up the screen by h times its run into the picture, times {@code rise}, how far up the screen the
- * ground climbs for a unit it runs into the picture (low for flat ground seen low, more where the hills rise behind).
- * The moved silhouette the first lab drew (r425's b52a23a) was a shadow on a wall standing right behind the trees. A
- * sun behind you lays the shadows up into the picture, onto the hills, long when it is low; a sun ahead lays them
- * toward you, onto nothing behind the pines. A lab's passes, not an effect: what ships, if anything, waits for Simon's tests (no
- * Enum_ShaderEffect, no stored field). Opened with shadow-lab.html: tools/shadow-lab.sh.
+ * Each receiver's opaque part goes into the stencil, then the caster's shadow is drawn where it is set, darkened and
+ * blurred, the receiver's fog over it; each pass is a heart holding the whole page with the layers it does not draw
+ * pushed far under the view (so the page's front, and its fog, stay the page's). A lab's passes, not an effect: what
+ * ships, if anything, waits for Simon's tests (no Enum_ShaderEffect, no stored field). Opened with shadow-lab.html:
+ * tools/shadow-lab.sh.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.shadowLabAct(seconds)} steps every heart at 1/60 s.
  */
@@ -62,95 +55,103 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	static final String PAGE = "hills-lab/forest.jplax";
 	/** The hills as they ship (the hills lab's "today", the page's own seed): l2's region. */
 	static final String HILLS_REGION = "h_today_7020";
-	/** The receiver, the layer just behind the caster, and the caster: indices in the page's list. */
-	static final int HILLS = 2, PINES = 3;
+	/** The page's layers, back to front: the far peaks, the range, the hills, the pines. */
+	static final int LAYERS = 4, PINES = 3;
 	static final float WORLD_WIDTH = FogLab.WORLD_WIDTH, WORLD_HEIGHT = FogLab.WORLD_HEIGHT;
-	/** Three panels side by side, each the round's whole 16:9 frame. */
+	/** Two panels side by side, each the round's whole 16:9 frame. */
 	static final int FRAME_WIDTH = FogLab.FRAME_WIDTH, FRAME_HEIGHT = FogLab.FRAME_HEIGHT;
 	/**
-	 * The pines' atlas page, forest-pines.png: four strips of 384 px, one above the next with a 1 px gap. The shadow's
-	 * blur keeps its samples in the strip it is in, or a strip's opaque foot shades the next one's sky.
+	 * Every atlas page here holds strips of 384 px, one above the next with a 1 px gap. The shadow's blur keeps its
+	 * samples in the strip it is in, or a strip's opaque foot shades the next one's sky.
 	 */
-	static final float PINES_PAGE_HEIGHT = 1539, PINES_STRIP = 385;
+	static final float STRIP = 385;
 	/** Where a hidden layer goes: this far under the view, in percent of the world's height. */
 	static final float HIDDEN = -10000;
-	/** The range the hills cast on in A. */
-	static final int RANGE = 1;
+	/**
+	 * The sky the sun is placed in: the horizon at the far peaks' foot (world units over the view's bottom), and the
+	 * view 90 degrees across, so a degree is about as far as it is in the picture: tan(angle) times {@link #FOCAL}.
+	 */
+	static final float HORIZON = 8.75f, FOCAL = WORLD_WIDTH / 2;
+	/** How far up from a caster's bottom its mass is drawn from: inside every layer's opaque foot (4.4 units here). */
+	static final float FOOT = 2;
+	/** The sun's disc, world units across, its glow three times that. */
+	static final float SUN = 1.4f;
 	static final String[] VIEWS = { "the page", "without the pines" };
 	static final String[] OFF_ON = { "off", "on" };
 
-	/**
-	 * The page as painted (C); B's passes: the back, the stencil, the shadows, the front (the pines); A's: the back
-	 * without the hills, the range into the stencil, the hills' shadows, the hills, then as B (the stencil and the front
-	 * are B's, the pines' shadows their own heart).
-	 */
-	static final int PAINTED = 0, BACK = 1, MASK = 2, SHADOW = 3, FAR = 4, RANGE_MASK = 5, HILLS_SHADOW = 6, HILLS_ONLY = 7,
-			FRONT = 8;
-	private final Parallax_Heart[] hearts = new Parallax_Heart[9];
-	private OrthographicCamera camera;
+	/** The sky (the page's gradients alone); each layer alone, drawn; into the stencil; as a shadow. */
+	static final int SKY = 0, DRAWN = 1, MASK = DRAWN + LAYERS, CAST = MASK + LAYERS;
+	private final Parallax_Heart[] hearts = new Parallax_Heart[CAST + LAYERS];
+	private final WholePage_Model[] pages = new WholePage_Model[hearts.length];
+	private OrthographicCamera camera, wide;
 	private SpriteBatch batch;
-	/** The shadows' batch: cuts each draw in strips, so the warp's fan bends every strip (StripBatch). */
-	private StripBatch strips;
 	private ShaderProgram mask, shadow;
-	private SelectElement view, second, hillsCast;
-	private InputElement scroll, side1, height1, side2, height2, rise, softness, darkness, withHills, softFar, fadeFar, rangeRise;
-	/** The camera the shadows are tiled by: wider, so a shadow laid far sideways is all drawn. */
-	private OrthographicCamera wide, wideHills;
+	private Texture sun;
+	private SelectElement view, second;
+	private InputElement scroll, side1, height1, side2, height2, depth, withReceiver, softness, darkness;
 	/** How far a shadow may run sideways, world units: the wide camera's margin, at least. */
 	static final float REACH = 60;
 	private Element readout;
 	private boolean clip;
-	/** What the pines' layer in each heart is: what the shadow pass moves, what the view hides. */
-	private final ParallaxLayer[] pines = new ParallaxLayer[hearts.length];
-	private int showing = -1;
-	/** The page B's back draws: its fog, which the shadow on its hills takes. */
-	private WholePage_Model backPage;
 
 	@Override
 	public void create()
 	{
 		clip = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("clip"));
 		batch = new SpriteBatch();
-		strips = new StripBatch();
 		mask = compile(batch.getShader().getVertexShaderSource(), MASK_FRAGMENT, "mask");
-		shadow = compile(WARP_VERTEX, SHADOW_FRAGMENT, "shadow");
+		shadow = compile(SHIFT_VERTEX, SHADOW_FRAGMENT, "shadow");
+		sun = sunDisc();
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
 		for (int i = 0; i < hearts.length; i++)
 		{
 			WholePage_Model page = Utils_Page_Json.loadPage(PAGE);
-			page.pageModel.pageList.get(HILLS).regionName = HILLS_REGION;
-			for (int k = 0; k < page.pageModel.pageList.size(); k++)
-			{
-				boolean drawn = i == PAINTED ? true : i == BACK ? k != PINES : i == FAR ? k < HILLS : i == RANGE_MASK ? k == RANGE
-						: i == MASK || i == HILLS_SHADOW || i == HILLS_ONLY ? k == HILLS : k == PINES;
-				if (!drawn)
+			page.pageModel.pageList.get(2).regionName = HILLS_REGION;
+			int only = i == SKY ? -1 : (i - DRAWN) % LAYERS;
+			for (int k = 0; k < LAYERS; k++)
+				if (k != only)
 					hide(page.pageModel.pageList.get(k));
-			}
 			hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i].setPage(page);
-			if (i == BACK)
-				backPage = page;
-			pines[i] = hearts[i].parallaxReader.layers.get(PINES);
+			pages[i] = page;
 			// The stencil's and the shadows' layers draw through the lab's shader, the batch's: no effect of the reader's.
-			if (i == MASK || i == SHADOW || i == RANGE_MASK || i == HILLS_SHADOW)
+			if (i >= MASK)
 				hearts[i].parallaxReader.setLayerEffects(BATCH_SHADER);
 		}
-		wide = wideFor(pines[SHADOW]);
-		wideHills = wideFor(hearts[HILLS_SHADOW].parallaxReader.layers.get(HILLS));
+		float tile = hearts[CAST].parallaxReader.layers.get(0).getTotalWidth();
+		wide = new OrthographicCamera(WORLD_WIDTH + 2 * tile * (float) Math.ceil(REACH / tile), WORLD_HEIGHT);
 		buildControls();
+		publishSky(WORLD_WIDTH, WORLD_HEIGHT, HORIZON, FOCAL);
 		if (clip)
 			LabKit.exportClip("shadowLab", this);
 	}
 
-	/**
-	 * A camera wider than the view by whole tiles of {@code caster} on each side, at least {@link #REACH}: the reader
-	 * tiles a layer from its view's left edge, so its tiles land where the camera's own view puts them.
-	 */
-	private static OrthographicCamera wideFor(ParallaxLayer caster)
+	/** What shadow-lab.html's drag needs to find the suns and turn a move into degrees. */
+	private static native void publishSky(float width, float height, float horizon, float focal) /*-{
+		$wnd.shadowSky = { width: width, height: height, horizon: horizon, focal: focal };
+	}-*/;
+
+	/** A sun: a white-gold disc in a soft glow fading to nothing, {@link #SUN} across in a square three times that. */
+	private static Texture sunDisc()
 	{
-		float tile = caster.getTotalWidth();
-		return new OrthographicCamera(WORLD_WIDTH + 2 * tile * (float) Math.ceil(REACH / tile), WORLD_HEIGHT);
+		int size = 96;
+		Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+		pixmap.setBlending(Pixmap.Blending.None);
+		float disc = size / 6f;
+		for (int y = 0; y < size; y++)
+			for (int x = 0; x < size; x++)
+			{
+				float r = (float) Math.hypot(x + 0.5f - size / 2f, y + 0.5f - size / 2f);
+				float glow = Math.max(0, 1 - (r - disc) / (size / 2f - disc));
+				float a = r <= disc ? 1 : Math.min(1, Math.max(0, disc + 1 - r)) + 0.55f * glow * glow;
+				pixmap.setColor(1, r <= disc + 1 ? 0.97f : 0.9f, r <= disc + 1 ? 0.86f : 0.62f, Math.min(1, a));
+				pixmap.drawPixel(x, y);
+			}
+		Texture texture = new Texture(pixmap);
+		texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+		pixmap.dispose();
+		return texture;
 	}
 
 	/** Pushes a layer far under the view: the heart keeps it (its speed is the page's front), nothing of it shows. */
@@ -168,76 +169,57 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	private void buildControls()
 	{
 		Document document = Document.get();
-		LabControls.panelLabels(document, "shadow-labels", "A: with distance", "B: as before, moves with the pines", "C: as painted");
-		view = LabControls.stageChoice(document, "shadow-labels", "view", "view (the whole page; or without the pines, to see the shadow's shape alone)", VIEWS, 0);
+		LabControls.panelLabels(document, "shadow-labels", "A: shadows", "B: as painted");
+		view = LabControls.stageChoice(document, "shadow-labels", "view", "view (the whole page; or without the pines, to see the hills' shadows whole)", VIEWS, 0);
 		Element controls = document.getElementById("shadow-controls");
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, 20);
-		side1 = LabControls.slider(document, controls, "sun1Side", "sun 1 side (degrees round you: 0 behind you, -90 on your left, 90 on your right, 180 ahead in the picture; or drag it on the dial)", -180, 180, 5, -40);
-		height1 = LabControls.slider(document, controls, "sun1Height", "sun 1 height (degrees over the horizon: low, long shadows)", 5, 85, 1, 20);
-		second = LabControls.choice(document, controls, "sun2On", "sun 2 (a second light, its own shadow)", OFF_ON, 0);
-		side2 = LabControls.slider(document, controls, "sun2Side", "sun 2 side (degrees, as sun 1)", -180, 180, 5, 35);
-		height2 = LabControls.slider(document, controls, "sun2Height", "sun 2 height (degrees, as sun 1)", 5, 85, 1, 30);
-		rise = LabControls.slider(document, controls, "rise", "rise (how far up the screen the ground climbs for a unit it runs into the picture: low for flat ground seen low, more where the hills rise behind)", 0.05f, 1.5f, 0.05f, 0.5f);
-		softness = LabControls.slider(document, controls, "softness", "softness (the blur's radius, world units)", 0, 0.8f, 0.01f, 0.1f);
-		darkness = LabControls.slider(document, controls, "darkness", "darkness (0 no shadow, 1 black)", 0, 1, 0.05f, 0.5f);
-		Element distance = LabControls.section(document, controls, "distance (A only: the ground behind the trees runs away from them)");
-		withHills = LabControls.slider(document, distance, "withHills", "with the hills (how much of the hills' motion a tree's shadow takes at its far end: its foot stays under the tree; 0 as B)", 0, 1, 0.05f, 0.5f);
-		softFar = LabControls.slider(document, distance, "softFar", "soft far (the blur added at a shadow's far end, world units: sharp at the foot)", 0, 0.8f, 0.01f, 0.3f);
-		fadeFar = LabControls.slider(document, distance, "fadeFar", "fade far (how much lighter a shadow is at its far end)", 0, 1, 0.05f, 0.5f);
-		hillsCast = LabControls.choice(document, distance, "hillsCast", "hills cast (the hills' own shadow on the far range)", OFF_ON, 1);
-		rangeRise = LabControls.slider(document, distance, "rangeRise", "range rise (as rise, on the far range: steeper, so higher up the screen)", 0.05f, 1.5f, 0.05f, 0.8f);
+		side1 = LabControls.slider(document, controls, "sun1Side", "sun 1 side (degrees from straight ahead: under 0 left, over 0 right; or drag the sun in the sky)", -40, 40, 1, -20);
+		height1 = LabControls.slider(document, controls, "sun1Height", "sun 1 height (degrees over the horizon: low, the shadows climb; under 0, the sun has set and every layer is in the shade)", -8, 30, 0.5f, 21);
+		second = LabControls.choice(document, controls, "sun2On", "sun 2 (a second sun, its own shadows)", OFF_ON, 0);
+		side2 = LabControls.slider(document, controls, "sun2Side", "sun 2 side (degrees, as sun 1)", -40, 40, 1, 22);
+		height2 = LabControls.slider(document, controls, "sun2Height", "sun 2 height (degrees, as sun 1)", -8, 30, 0.5f, 20);
+		depth = LabControls.slider(document, controls, "depth", "depth (world units between a layer and the one in front: the farther, the lower its shadow lands)", 0, 40, 0.5f, 6);
+		withReceiver = LabControls.slider(document, controls, "withReceiver", "with the layer it falls on (1: a shadow moves with the layer it lies on, as in the world; 0: with the layer casting it)", 0, 1, 0.05f, 1);
+		softness = LabControls.slider(document, controls, "softness", "softness (the blur's radius, world units)", 0, 0.8f, 0.01f, 0.15f);
+		darkness = LabControls.slider(document, controls, "darkness", "darkness (0 no shadow, 1 black)", 0, 1, 0.05f, 0.45f);
 		readout = LabControls.readout(document, controls, "shadow-readout");
 	}
 
 	private void applyControls()
 	{
-		int v = LabControls.read(view);
-		if (v != showing)
-		{
-			// Without the pines: neither A's nor B's front draws them; B's shadow pass still does.
-			float y = v == 1 ? HIDDEN : 0;
-			pines[PAINTED].setDecalPercentY(y);
-			pines[FRONT].setDecalPercentY(y);
-			showing = v;
-		}
 		float sc = LabControls.read(scroll);
 		for (Parallax_Heart heart : hearts)
 			heart.screenSpeedConstantX = sc;
 		// Read even while off: a slider shows its value when read.
-		float s2 = LabControls.read(side2), h2 = LabControls.read(height2);
+		LabControls.read(view);
+		LabControls.read(withReceiver);
 		LabControls.read(softness);
 		LabControls.read(darkness);
-		LabControls.read(withHills);
-		LabControls.read(softFar);
-		LabControls.read(fadeFar);
-		LabControls.read(rangeRise);
-		LabControls.read(hillsCast);
-		float r = LabControls.read(rise);
-		float[] k = shear(LabControls.read(side1), LabControls.read(height1), r);
-		readout.setInnerText("the pines (l3) cast on the hills (l2) only, and in A the hills on the far range (l1). Sun 1: a tree's shadow " + describe(k)
-				+ (LabControls.read(second) == 1 ? "; sun 2: " + describe(shear(s2, h2, r)) : "")
-				+ ". The world is " + round(WORLD_WIDTH) + " units wide.");
+		float s2 = LabControls.read(side2), h2 = LabControls.read(height2), d = LabControls.read(depth);
+		readout.setInnerText("Each layer casts on the layer just in front of it: the far peaks (l0) on the range (l1), the range on the hills (l2), the hills on the pines (l3). Sun 1: "
+				+ describe(LabControls.read(side1), LabControls.read(height1), d)
+				+ (LabControls.read(second) == 1 ? "; sun 2: " + describe(s2, h2, d) : "") + ". The world is " + round(WORLD_WIDTH) + " units wide.");
 	}
 
 	/**
-	 * A sun's shadow on the ground, {x, y}: where the shadow of a point a unit over a tree's foot lands, from that foot,
-	 * in world units on screen. The sun at {@code side} degrees round the viewer (0 behind, 90 on the right), {@code
-	 * height} over the horizon: its rays run down a unit for every cot(height) along the ground, away from it, of which
-	 * -sin(side) sideways and cos(side) into the picture, up the screen by {@code rise}. A sun ahead (cos(side) under 0)
-	 * lays it toward the viewer: y under 0, nothing on the hills.
+	 * Where a sun at {@code side} degrees from straight ahead (over 0 on the right) and {@code height} over the horizon
+	 * lays a layer's shadow on the one {@code depth} units in front of it, {x, y}: the ray over the caster's ridge has
+	 * moved away from the sun's side by depth tan(side), and dropped depth tan(height) / cos(side), y under 0. A sun under
+	 * the horizon: y over 0, the shadow over the ridge.
 	 */
-	static float[] shear(float side, float height, float rise)
+	static float[] shadowOf(float side, float height, float depth)
 	{
-		double a = Math.toRadians(side), run = 1 / Math.tan(Math.toRadians(height));
-		return new float[] { (float) (-Math.sin(a) * run), (float) (Math.cos(a) * run * rise) };
+		double a = Math.toRadians(side);
+		return new float[] { (float) (-depth * Math.tan(a)), (float) (-depth * Math.tan(Math.toRadians(height)) / Math.cos(a)) };
 	}
 
-	private static String describe(float[] k)
+	private static String describe(float side, float height, float depth)
 	{
-		if (k[1] <= 0)
-			return "falls toward you, on nothing behind the pines";
-		return "runs " + round(Math.abs(k[0])) + " units " + (k[0] < 0 ? "left" : "right") + " and " + round(k[1])
-				+ " up the screen for every unit of the tree's height" + (k[1] > 1 ? " (above the treetops)" : " (under the treetops)");
+		if (height <= 0)
+			return "under the horizon: set, every layer in the shade";
+		float[] k = shadowOf(side, height, depth);
+		return round(Math.abs(side)) + " degrees " + (side < 0 ? "left" : "right") + ", " + round(height)
+				+ " up: a ridge's shadow lands " + round(-k[1]) + " units under it and " + round(Math.abs(k[0])) + " " + (k[0] < 0 ? "left" : "right");
 	}
 
 	private static float round(float value)
@@ -259,37 +241,56 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			LabKit.act(LabKit.liveDelta(), hearts);
 		}
 		int height = Gdx.graphics.getBackBufferHeight();
+		boolean pines = LabControls.read(view) == 0;
 		LabKit.beginPanels();
 		if (LabKit.panel(0, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
-			distant();
+		{
+			sky();
+			for (int k = 0; k < LAYERS; k++)
+				if (k != PINES || pines)
+				{
+					drawLayers(DRAWN + k);
+					cast(k);
+				}
+		}
 		if (LabKit.panel(FRAME_WIDTH + 4, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
 		{
-			hearts[BACK].render();
-			cast(MASK, SHADOW, HILLS, PINES, LabControls.read(rise), false);
-			drawLayers(FRONT, camera);
+			sky();
+			for (int k = 0; k < LAYERS; k++)
+				if (k != PINES || pines)
+					drawLayers(DRAWN + k);
 		}
-		if (LabKit.panel(2 * (FRAME_WIDTH + 4), height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
-			hearts[PAINTED].render();
 		LabKit.endPanels();
 	}
 
-	/** A: the back without the hills, the hills' shadows on the range, the hills, the pines' shadows on them, the pines. */
-	private void distant()
+	/** The page's gradients, then each sun over the horizon: behind every layer, so the mountains hide a low one. */
+	private void sky()
 	{
-		hearts[FAR].render();
-		if (LabControls.read(hillsCast) == 1)
-			cast(RANGE_MASK, HILLS_SHADOW, RANGE, HILLS, LabControls.read(rangeRise), true);
-		drawLayers(HILLS_ONLY, camera);
-		cast(MASK, SHADOW, HILLS, PINES, LabControls.read(rise), true);
-		drawLayers(FRONT, camera);
+		hearts[SKY].render();
+		camera.update();
+		batch.setProjectionMatrix(camera.combined);
+		batch.enableBlending();
+		batch.begin();
+		drawSun(LabControls.read(side1), LabControls.read(height1));
+		if (LabControls.read(second) == 1)
+			drawSun(LabControls.read(side2), LabControls.read(height2));
+		batch.end();
+	}
+
+	private void drawSun(float side, float height)
+	{
+		double a = Math.toRadians(side);
+		float x = camera.position.x + FOCAL * (float) Math.tan(a);
+		float y = camera.position.y - WORLD_HEIGHT / 2 + HORIZON + FOCAL * (float) (Math.tan(Math.toRadians(height)) / Math.cos(a));
+		float size = 3 * SUN;
+		batch.draw(sun, x - size / 2, y - size / 2, size, size);
 	}
 
 	/**
-	 * Heart {@code into}'s layer into the stencil, then heart {@code from}'s caster's shadow per light where it is set:
-	 * {@code receiver}'s fog over it, the ground climbing {@code rise} up the screen a unit into the picture; {@code far},
-	 * A's distance (the fan, the blur and the fade along it), or B's flat shadow.
+	 * Layer {@code receiver} into the stencil, where it is opaque; then, where it is set, the shadow the layer behind it
+	 * casts from each sun (the farthest layer: none, unless a sun has set).
 	 */
-	private void cast(int into, int from, int receiver, int caster, float rise, boolean far)
+	private void cast(int receiver)
 	{
 		Gdx.gl.glClearStencil(0);
 		Gdx.gl.glClear(GL20.GL_STENCIL_BUFFER_BIT);
@@ -298,69 +299,103 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_REPLACE);
 		Gdx.gl.glColorMask(false, false, false, false);
 		batch.setShader(mask);
-		drawLayers(into, camera);
+		drawLayers(MASK + receiver);
 		batch.setShader(null);
 		Gdx.gl.glColorMask(true, true, true, true);
-		Gdx.gl.glStencilFunc(GL20.GL_EQUAL, 1, 0xff);
-		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_KEEP);
-		shade(from, receiver, caster, shear(LabControls.read(side1), LabControls.read(height1), rise), far);
-		if (LabControls.read(second) == 1)
-			shade(from, receiver, caster, shear(LabControls.read(side2), LabControls.read(height2), rise), far);
+		float d = LabControls.read(depth), h1 = LabControls.read(height1), h2 = LabControls.read(height2);
+		shade(receiver, shadowOf(LabControls.read(side1), h1, d), 2, h1 <= 0);
+		// Both set: one shade, as dark as one sun's.
+		if (LabControls.read(second) == 1 && (h1 > 0 || h2 > 0))
+			shade(receiver, shadowOf(LabControls.read(side2), h2, d), 4, h2 <= 0);
+		Gdx.gl.glStencilMask(0xff);
 		Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
 	}
 
 	/**
-	 * One sun's shadow: heart {@code i}'s caster warped about its foot line by {@link #WARP_VERTEX}, a point h over it
-	 * moved by h times {@code k} ({@link #shear}), and, far, sideways by h over the caster's height times
-	 * {@code withHills} of what the receiver's slower speed leaves behind, from the view's middle; tiled across the
-	 * wide camera.
+	 * One sun's shadow on {@code receiver}: the layer behind it shifted by {@code k} ({@link #shadowOf}), wider about the
+	 * view's middle by {@code withReceiver} of the receiver's speed over its own, darkened and blurred, in the
+	 * receiver's fog; and under it, to the view's bottom, its mass: a ridge's shadow is all that is under it too. Each
+	 * pixel once a sun: the stencil's bit {@code drawn}, set where it is drawn, keeps the mass (laid over the caster's
+	 * foot, so no seam shows between them) and the wide camera's tiles off what it already shades. A sun under the
+	 * horizon ({@code set}) lights nothing: the whole receiver is in the shade (drawn again in its colour), the farthest
+	 * layer too.
 	 */
-	private void shade(int i, int receiver, int caster, float[] k, boolean far)
+	private void shade(int receiver, float[] k, int drawn, boolean set)
 	{
-		if (k[1] <= 0)
+		if (receiver == 0 && !set)
 			return;
-		ParallaxLayer from = hearts[i].parallaxReader.layers.get(caster), onto = hearts[BACK].parallaxReader.layers.get(receiver);
-		float foot = camera.position.y - WORLD_HEIGHT / 2 + from.getCurrentDistanceY(), tall = from.getHeight();
-		float fan = far ? LabControls.read(withHills) * (onto.getParallaxSpeedRatioX() / from.getParallaxSpeedRatioX() - 1) : 0;
-		strips.setShader(shadow);
+		Gdx.gl.glStencilFunc(GL20.GL_EQUAL, 1, 1 | drawn);
+		Gdx.gl.glStencilMask(drawn);
+		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_INVERT);
+		int caster = receiver - 1;
+		ParallaxLayer onto = hearts[DRAWN + receiver].parallaxReader.layers.get(receiver);
+		WholePage_Model page = pages[DRAWN + receiver];
+		float fog = ParallaxPageReader.fogOf(page.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[DRAWN + receiver].parallaxReader.layers), onto);
+		Color fogColor = page.fogColor;
+		float r = SHADOW_COLOR.r * (1 - fog) + fogColor.r * fog, g = SHADOW_COLOR.g * (1 - fog) + fogColor.g * fog,
+				b = SHADOW_COLOR.b * (1 - fog) + fogColor.b * fog, dark = LabControls.read(darkness);
+
+		batch.setShader(shadow);
 		shadow.bind();
-		shadow.setUniformf(shadow.fetchUniformLocation("u_warp", false), foot, k[0], k[1], fan);
-		shadow.setUniformf(shadow.fetchUniformLocation("u_middle", false), camera.position.x, tall);
-		TextureRegion region = from.getDrawnRegion();
-		float texels = region.getRegionWidth() / (from.getWidth() * from.getPackedWidthRatio());
-		float width = region.getTexture().getWidth(), height = region.getTexture().getHeight();
-		float soft = LabControls.read(softness) * texels, grow = far ? LabControls.read(softFar) * texels : 0;
-		shadow.setUniformf(shadow.fetchUniformLocation("u_soft", false), soft / width, soft / height, grow / width, grow / height);
-		// The pines' page holds four strips, one over the next: the blur stays in its own. Any other caster: its page.
-		shadow.setUniformf(shadow.fetchUniformLocation("u_strips", false), caster == PINES ? PINES_PAGE_HEIGHT / PINES_STRIP : 1, 0.5f / height);
-		// The shadow lies on the receiver: as far into the page's fog as it is.
-		float fog = ParallaxPageReader.fogOf(backPage.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[BACK].parallaxReader.layers), onto);
-		Color fogColor = backPage.fogColor;
-		shadow.setUniformf(shadow.fetchUniformLocation("u_shadow", false), SHADOW_COLOR.r * (1 - fog) + fogColor.r * fog,
-				SHADOW_COLOR.g * (1 - fog) + fogColor.g * fog, SHADOW_COLOR.b * (1 - fog) + fogColor.b * fog, LabControls.read(darkness));
-		shadow.setUniformf(shadow.fetchUniformLocation("u_fade", false), far ? LabControls.read(fadeFar) : 0);
+		shadow.setUniformf(shadow.fetchUniformLocation("u_shadow", false), r, g, b, dark);
 		camera.update();
-		OrthographicCamera tiled = caster == PINES ? wide : wideHills;
-		tiled.position.set(camera.position);
-		tiled.update();
-		strips.setProjectionMatrix(camera.combined);
-		strips.enableBlending();
-		strips.begin();
-		hearts[i].parallaxReader.draw(tiled, strips);
-		strips.end();
-		strips.setShader(null);
+		wide.position.set(camera.position);
+		wide.update();
+		batch.setProjectionMatrix(camera.combined);
+		batch.enableBlending();
+		if (set)
+		{
+			// The receiver itself in the shade's colour, through its own alpha: its soft edges stay soft (the stencil's
+			// would cut the hazy far peaks hard), on every pixel of it whatever the other sun did.
+			Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
+			shadow.setUniformf(shadow.fetchUniformLocation("u_shift", false), 0, 0, camera.position.x, 1);
+			draw(hearts[CAST + receiver], onto, 0, camera);
+			Gdx.gl.glEnable(GL20.GL_STENCIL_TEST);
+			batch.setShader(null);
+			return;
+		}
+		ParallaxLayer from = hearts[CAST + caster].parallaxReader.layers.get(caster);
+		float wider = 1 + LabControls.read(withReceiver) * (onto.getParallaxSpeedRatioX() / from.getParallaxSpeedRatioX() - 1);
+		shadow.setUniformf(shadow.fetchUniformLocation("u_shift", false), k[0], k[1], camera.position.x, wider);
+		draw(hearts[CAST + caster], from, LabControls.read(softness), wide);
+		// The mass under the caster's foot, from inside its opaque foot (FOOT): it goes on where the layer stops. Placed as
+		// the caster is: the shader shifts it with it.
+		float bottom = camera.position.y - WORLD_HEIGHT / 2;
+		float top = bottom + hearts[CAST + caster].parallaxReader.getDrawingHeight() + from.getCurrentDistanceY() + FOOT;
+		float under = bottom - 1 - Math.abs(k[1]);
+		shadow.setUniformf(shadow.fetchUniformLocation("u_soft", false), 0, 0);
+		batch.begin();
+		batch.setColor(1, 1, 1, 1);
+		batch.draw(sun, camera.position.x - wide.viewportWidth / 2, under, wide.viewportWidth, top - under, 0.5f, 0.5f, 0.5f, 0.5f);
+		batch.end();
+		batch.setShader(null);
 	}
 
-	/** Heart {@code i}'s layers alone, without its gradients, tiled across {@code view}, drawn through the camera. */
-	private void drawLayers(int i, OrthographicCamera view)
+	/**
+	 * {@code heart}'s layer {@code layer} through the shadow shader, blurred {@code softness} world units, tiled across
+	 * {@code view}: the wide camera for a shifted shadow, the camera's own for one in place (a SEQUENCE's picks run from
+	 * its view's left edge: tiled wider, the pines are other pines).
+	 */
+	private void draw(Parallax_Heart heart, ParallaxLayer layer, float softness, OrthographicCamera view)
+	{
+		TextureRegion region = layer.getDrawnRegion();
+		float texels = region.getRegionWidth() / (layer.getWidth() * layer.getPackedWidthRatio());
+		float width = region.getTexture().getWidth(), height = region.getTexture().getHeight();
+		shadow.setUniformf(shadow.fetchUniformLocation("u_soft", false), softness * texels / width, softness * texels / height);
+		shadow.setUniformf(shadow.fetchUniformLocation("u_strips", false), height / STRIP, 0.5f / height);
+		batch.begin();
+		heart.parallaxReader.draw(view, batch);
+		batch.end();
+	}
+
+	/** Heart {@code i}'s layers alone, without its gradients, tiled across the view. */
+	private void drawLayers(int i)
 	{
 		camera.update();
-		view.position.set(camera.position);
-		view.update();
 		batch.setProjectionMatrix(camera.combined);
 		batch.enableBlending();
 		batch.begin();
-		hearts[i].parallaxReader.draw(view, batch);
+		hearts[i].parallaxReader.draw(camera, batch);
 		batch.end();
 	}
 
@@ -368,9 +403,9 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	public void dispose()
 	{
 		batch.dispose();
-		strips.dispose();
 		mask.dispose();
 		shadow.dispose();
+		sun.dispose();
 	}
 
 	/** The shadow's colour out of the fog: a blue black, as the shade of a bright sky's light. */
@@ -399,7 +434,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			+ "varying vec2 v_texCoords;\n"
 			+ "uniform sampler2D u_texture;\n";
 
-	/** The hills into the stencil: only where they are opaque, so the sky behind them takes no shadow. */
+	/** A receiver into the stencil: only where it is opaque, so the sky behind it takes no shadow. */
 	static final String MASK_FRAGMENT = HEAD
 			+ "void main()\n"
 			+ "{\n"
@@ -409,59 +444,54 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			+ "}\n";
 
 	/**
-	 * The batch's vertex shader, its corners warped as a shadow on the ground (r425): u_warp: the caster's foot line (world
-	 * y), the sun's sideways and up runs a unit of height ({@link #shear}), and the fan: at a height of the caster's
-	 * (u_middle.y) over its foot, a point moves that much more slowly than the caster, in its distance from the view's
-	 * middle (u_middle.x), as its foot would at the receiver's speed. v_far: the height over the foot, in the caster's.
+	 * The batch's vertex shader, its corners where the caster's shadow lands ({@link #shadowOf}): u_shift.xy, the shift;
+	 * u_shift.w, how much wider about the view's middle (u_shift.z, world x) the shadow is than the caster.
 	 */
-	static final String WARP_VERTEX = "attribute vec4 a_position;\n"
+	static final String SHIFT_VERTEX = "attribute vec4 a_position;\n"
 			+ "attribute vec4 a_color;\n"
 			+ "attribute vec2 a_texCoord0;\n"
 			+ "uniform mat4 u_projTrans;\n"
-			+ "uniform vec4 u_warp;\n"
-			+ "uniform vec2 u_middle;\n"
+			+ "uniform vec4 u_shift;\n"
+
 			+ "varying vec4 v_color;\n"
 			+ "varying vec2 v_texCoords;\n"
-			+ "varying float v_far;\n"
 			+ "void main()\n"
 			+ "{\n"
 			+ "	v_color = a_color;\n"
 			+ "	v_color.a = v_color.a * (255.0 / 254.0);\n"
 			+ "	v_texCoords = a_texCoord0;\n"
-			+ "	float h = a_position.y - u_warp.x;\n"
-			+ "	v_far = clamp(h / u_middle.y, 0.0, 1.0);\n"
-			+ "	vec2 p = vec2(a_position.x + u_warp.y * h + u_warp.w * h / u_middle.y * (a_position.x - u_middle.x), u_warp.x + u_warp.z * h);\n"
+			+ "	vec2 p = vec2(u_shift.z + (a_position.x - u_shift.z) * u_shift.w + u_shift.x, a_position.y + u_shift.y);\n"
 			+ "	gl_Position = u_projTrans * vec4(p, 0.0, 1.0);\n"
 			+ "}\n";
 
 	/**
-	 * The caster as a shadow: its alpha, averaged over a disc of u_soft.xy, plus u_soft.zw at its far end (in the page's
-	 * texture), in u_shadow's colour at u_shadow.a, u_fade lighter at its far end. u_strips: the strips a page height
-	 * holds, and half a texel: the samples stay in their strip.
+	 * The caster as a shadow: its alpha, averaged over a disc of u_soft (in the page's texture), in u_shadow's colour at
+	 * u_shadow.a, discarded where it is all but clear. u_strips: the strips a page height holds, and half a texel: the samples stay in their strip.
 	 */
 	static final String SHADOW_FRAGMENT = HEAD
-			+ "varying float v_far;\n"
-			+ "uniform vec4 u_soft;\n"
+			+ "uniform vec2 u_soft;\n"
 			+ "uniform vec2 u_strips;\n"
 			+ "uniform vec4 u_shadow;\n"
-			+ "uniform float u_fade;\n"
 			+ "float at(vec2 uv, float top, float bottom)\n"
 			+ "{\n"
 			+ "	return texture2D(u_texture, vec2(uv.x, clamp(uv.y, top, bottom))).a;\n"
 			+ "}\n"
 			+ "void main()\n"
 			+ "{\n"
-			+ "	float strip = floor(v_texCoords.y * u_strips.x);\n"
+			+ "	float strip = floor(v_texCoords.y * u_strips.x + 0.001);\n"
 			+ "	float top = strip / u_strips.x + u_strips.y, bottom = (strip + 1.0) / u_strips.x - 3.0 * u_strips.y;\n"
 			+ "	float a = at(v_texCoords, top, bottom);\n"
-			+ "	vec2 soft = u_soft.xy + v_far * u_soft.zw;\n"
 			// Two rings of eight round the middle, the outer one at the radius.
 			+ "	for (int i = 0; i < 8; i++)\n"
 			+ "	{\n"
 			+ "		float angle = 0.7853982 * float(i);\n"
-			+ "		vec2 ring = vec2(cos(angle), sin(angle)) * soft;\n"
+			+ "		vec2 ring = vec2(cos(angle), sin(angle)) * u_soft;\n"
 			+ "		a += at(v_texCoords + ring, top, bottom) + at(v_texCoords + 0.5 * vec2(-ring.y, ring.x), top, bottom);\n"
 			+ "	}\n"
-			+ "	gl_FragColor = vec4(u_shadow.rgb, u_shadow.a * (1.0 - u_fade * v_far) * a / 17.0 * v_color.a);\n"
+			+ "	float alpha = u_shadow.a * a / 17.0 * v_color.a;\n"
+			// Nothing drawn sets no stencil: the mass under the caster still goes there.
+			+ "	if (alpha < 0.004)\n"
+			+ "		discard;\n"
+			+ "	gl_FragColor = vec4(u_shadow.rgb, alpha);\n"
 			+ "}\n";
 }

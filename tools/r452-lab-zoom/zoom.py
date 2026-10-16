@@ -44,8 +44,8 @@ FOCUSED = """() => { """ + TITLE + """ const f = document.querySelector('.lab-la
 
 
 def canvas_image(page):
-    """The canvas's picture, without the titles, the zoom's buttons and the shadow lab's dial over it."""
-    hide = ".lab-labels, .lab-labels *, .lab-zoom-nav, .lab-zoom-nav *, canvas.sun-dial { visibility: hidden !important; }"
+    """The canvas's picture, without the titles and the zoom's buttons over it."""
+    hide = ".lab-labels, .lab-labels *, .lab-zoom-nav, .lab-zoom-nav * { visibility: hidden !important; }"
     page.evaluate(f"() => {{ const s = document.createElement('style'); s.id = 'zoom-check'; s.textContent = {hide!r}; document.head.append(s); }}")
     shot = page.locator("#embed-browsertests canvas").screenshot()
     page.evaluate("() => document.getElementById('zoom-check').remove()")
