@@ -78,6 +78,12 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	static final float SUN = 1.4f;
 	static final String[] VIEWS = { "the page", "without the pines" };
 	static final String[] OFF_ON = { "off", "on" };
+	/**
+	 * A whole day (r425, Simon at 16:48: "a button to do a whole day"): sun 1 rises under the horizon at the view's left
+	 * edge, {@link #DAY_LOW} degrees, climbs to {@link #DAY_HIGH} over its middle and sets at its right edge, its height
+	 * a half sine over the day, its side straight across.
+	 */
+	static final float DAY_SIDE = 40, DAY_LOW = -6, DAY_HIGH = 30;
 
 	/** The sky (the page's gradients alone); each layer alone, drawn; into the stencil; as a shadow. */
 	static final int SKY = 0, DRAWN = 1, MASK = DRAWN + LAYERS, CAST = MASK + LAYERS;
@@ -88,7 +94,11 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	private ShaderProgram mask, shadow;
 	private Texture sun;
 	private SelectElement view, second;
-	private InputElement scroll, side1, height1, side2, height2, depth, withReceiver, softness, darkness;
+	private InputElement scroll, side1, height1, side2, height2, depth, withReceiver, softness, darkness, dayLength;
+	private Element dayButton;
+	/** While a day plays: how far through it, 0 sunrise to 1 sunset. */
+	private boolean day;
+	private float dayAt;
 	/** How far a shadow may run sideways, world units: the wide camera's margin, at least. */
 	static final float REACH = 60;
 	private Element readout;
@@ -173,16 +183,57 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		view = LabControls.stageChoice(document, "shadow-labels", "view", "view (the whole page; or without the pines, to see the hills' shadows whole)", VIEWS, 0);
 		Element controls = document.getElementById("shadow-controls");
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, 20);
-		side1 = LabControls.slider(document, controls, "sun1Side", "sun 1 side (degrees from straight ahead: under 0 left, over 0 right; or drag the sun in the sky)", -40, 40, 1, -20);
-		height1 = LabControls.slider(document, controls, "sun1Height", "sun 1 height (degrees over the horizon: low, the shadows climb; under 0, the sun has set and every layer is in the shade)", -8, 30, 0.5f, 21);
+		// The defaults are Simon's (r425, 16 Oct 16:48: "I think we can start around this").
+		side1 = LabControls.slider(document, controls, "sun1Side", "sun 1 side (degrees from straight ahead: under 0 left, over 0 right; or drag the sun in the sky)", -40, 40, 1, -40);
+		height1 = LabControls.slider(document, controls, "sun1Height", "sun 1 height (degrees over the horizon: low, the shadows climb; under 0, the sun has set and every layer is in the shade)", -8, 30, 0.5f, 22.5f);
 		second = LabControls.choice(document, controls, "sun2On", "sun 2 (a second sun, its own shadows)", OFF_ON, 0);
 		side2 = LabControls.slider(document, controls, "sun2Side", "sun 2 side (degrees, as sun 1)", -40, 40, 1, 22);
 		height2 = LabControls.slider(document, controls, "sun2Height", "sun 2 height (degrees, as sun 1)", -8, 30, 0.5f, 20);
-		depth = LabControls.slider(document, controls, "depth", "depth (world units between a layer and the one in front: the farther, the lower its shadow lands)", 0, 40, 0.5f, 6);
+		depth = LabControls.slider(document, controls, "depth", "depth (world units between a layer and the one in front: the farther, the lower its shadow lands)", 0, 40, 0.5f, 12);
 		withReceiver = LabControls.slider(document, controls, "withReceiver", "with the layer it falls on (1: a shadow moves with the layer it lies on, as in the world; 0: with the layer casting it)", 0, 1, 0.05f, 1);
-		softness = LabControls.slider(document, controls, "softness", "softness (the blur's radius, world units)", 0, 0.8f, 0.01f, 0.15f);
-		darkness = LabControls.slider(document, controls, "darkness", "darkness (0 no shadow, 1 black)", 0, 1, 0.05f, 0.45f);
+		softness = LabControls.slider(document, controls, "softness", "softness (the blur's radius, world units)", 0, 0.8f, 0.01f, 0.8f);
+		darkness = LabControls.slider(document, controls, "darkness", "darkness (0 no shadow, 1 black)", 0, 1, 0.05f, 0.2f);
+		dayLength = LabControls.slider(document, controls, "dayLength", "day length (seconds the button's day lasts, sunrise to sunset)", 5, 60, 1, 20);
+		dayButton = document.createButtonElement();
+		dayButton.setId("shadow-day");
+		dayButton.setClassName("lab-copy shadow-day");
+		controls.appendChild(dayButton);
+		onClick(dayButton, this);
+		showDay();
 		readout = LabControls.readout(document, controls, "shadow-readout");
+	}
+
+	private static native void onClick(Element element, ShadowLab lab) /*-{
+		element.addEventListener('click', $entry(function() {
+			lab.@jks.tools2d.parallax.browsertest.ShadowLab::toggleDay()();
+		}));
+	}-*/;
+
+	/** The day's button: a day from sunrise, or the one playing stopped where its sun is. */
+	void toggleDay()
+	{
+		day = !day;
+		if (day)
+			dayAt = 0;
+		showDay();
+	}
+
+	private void showDay()
+	{dayButton.setInnerText(day ? "\u25A0 stop the day" : "\u25B6 play a whole day");}
+
+	/** A playing day moved on by {@code seconds}: sun 1's sliders set where the day has it, so the drag and Copy see it. */
+	private void stepDay(float seconds)
+	{
+		if (!day)
+			return;
+		dayAt = Math.min(1, dayAt + seconds / LabControls.read(dayLength));
+		side1.setValue(LabControls.text(-DAY_SIDE + 2 * DAY_SIDE * dayAt));
+		height1.setValue(LabControls.text(DAY_LOW + (DAY_HIGH - DAY_LOW) * (float) Math.sin(Math.PI * dayAt)));
+		if (dayAt >= 1)
+		{
+			day = false;
+			showDay();
+		}
 	}
 
 	private void applyControls()
@@ -195,6 +246,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		LabControls.read(withReceiver);
 		LabControls.read(softness);
 		LabControls.read(darkness);
+		LabControls.read(dayLength);
 		float s2 = LabControls.read(side2), h2 = LabControls.read(height2), d = LabControls.read(depth);
 		readout.setInnerText("Each layer casts on the layer just in front of it: the far peaks (l0) on the range (l1), the range on the hills (l2), the hills on the pines (l3). Sun 1: "
 				+ describe(LabControls.read(side1), LabControls.read(height1), d)
@@ -228,6 +280,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	@Override
 	public void act(float seconds)
 	{
+		stepDay(seconds);
 		applyControls();
 		LabKit.clip(seconds, hearts);
 	}
@@ -237,8 +290,10 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		if (!clip)
 		{
+			float delta = LabKit.liveDelta();
+			stepDay(delta);
 			applyControls();
-			LabKit.act(LabKit.liveDelta(), hearts);
+			LabKit.act(delta, hearts);
 		}
 		int height = Gdx.graphics.getBackBufferHeight();
 		boolean pines = LabControls.read(view) == 0;

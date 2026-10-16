@@ -10,6 +10,7 @@
 #   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/two.png (both suns)
 #   tools/shadow-lab.sh --clip F.mp4    a clip, headless: 8 s at 30 fps, stepped at game speed (window.shadowLabAct)
 #   tools/shadow-lab.sh --sunset F.mp4  as --clip, sun 1 sinking from its height to 4 degrees under the horizon
+#   tools/shadow-lab.sh --day F.mp4     as --clip, the lab's "play a whole day" button pressed, the day 8 s long
 #   tools/shadow-lab.sh --slider K=V    before --shot/--views/--clip: start control K (its data-key) at V, a choice at its option's index
 #   tools/shadow-lab.sh --copy F.png    checks "Copy settings" and the drag, headless: drags sun 1 in A's sky (fails if the
 #                                       panel zooms instead), turns sun 2 on, clicks, fails unless the JSON names every
@@ -25,6 +26,7 @@ while [ $# -gt 0 ]; do
 		--shot) MODE=shot; OUT="$(realpath -m "$2")"; shift ;;
 		--clip) MODE=clip; OUT="$(realpath -m "$2")"; shift ;;
 		--sunset) MODE=sunset; OUT="$(realpath -m "$2")"; shift ;;
+		--day) MODE=day; OUT="$(realpath -m "$2")"; shift ;;
 		--copy) MODE=copy; OUT="$(realpath -m "$2")"; shift ;;
 		--views) MODE=views; OUT="$(realpath -m "$2")"; shift ;;
 		--slider) SLIDERS="$SLIDERS $2"; shift ;;
@@ -126,7 +128,7 @@ with sync_playwright() as p:
         page.evaluate("window.labZoom(1)")
         page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
         before = page.input_value("[data-key=sun1Side]")
-        drag(-80, 0)
+        drag(80, 0)
         if page.evaluate("window.labFocus") != 1 or page.input_value("[data-key=sun1Side]") == before:
             sys.exit("dragging the sun in zoomed B: focus %s, side %s -> %s" % (page.evaluate("window.labFocus"), before,
                                                                                   page.input_value("[data-key=sun1Side]")))
@@ -142,14 +144,23 @@ with sync_playwright() as p:
         import json
         got = json.loads(page.input_value("#shadow-copy-json"))
         keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "depth", "withReceiver",
-                "softness", "darkness"}
+                "softness", "darkness", "dayLength"}
         changed = got["changed"]
         if (set(got["settings"]) != keys or set(changed) != {"sun1Side", "sun1Height", "sun2On"}
-                or changed["sun1Side"]["started"] != -20 or not changed["sun1Side"]["now"] > -20
-                or changed["sun1Height"]["started"] != 21 or not changed["sun1Height"]["now"] < 21
+                or changed["sun1Side"]["started"] != -40 or not changed["sun1Side"]["now"] > -40
+                or changed["sun1Height"]["started"] != 22.5 or not changed["sun1Height"]["now"] < 22.5
                 or changed["sun2On"] != {"started": 0, "now": 1} or "sun 2:" not in got["readout"]):
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#shadow-copy-state"), json.dumps(got["settings"])))
+        # The day's button: at half a 20 s day, sun 1 is over the view's middle at its highest; at its end, set at the right.
+        page.click("#shadow-day")
+        page.evaluate("window.shadowLabAct(10)")
+        noon = (float(page.input_value("[data-key=sun1Side]")), float(page.input_value("[data-key=sun1Height]")))
+        page.evaluate("window.shadowLabAct(11)")
+        dusk = (float(page.input_value("[data-key=sun1Side]")), float(page.input_value("[data-key=sun1Height]")))
+        if abs(noon[0]) > 1 or noon[1] < 29 or dusk != (40, -6) or "play" not in page.text_content("#shadow-day"):
+            sys.exit("the day: noon %s (want 0, 30), dusk %s (want 40, -6), button %r" % (noon, dusk, page.text_content("#shadow-day")))
+        print("the day: noon %s, dusk %s" % (noon, dusk))
         shot(frames + "/still.png")
         # On a phone: a tap on the sun zooms nothing (lab.js zooms on a tap the canvas cancelled), a tap beside it does.
         phone = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
@@ -169,6 +180,9 @@ with sync_playwright() as p:
         print("phone: a tap on the sun zooms nothing, beside it zooms A")
     else:
         start = float(page.input_value("[data-key=sun1Height]"))
+        if mode == "day":
+            page.eval_on_selector("[data-key=dayLength]", "e => { e.value = '8'; }")
+            page.click("#shadow-day")
         for i in range(240):
             if mode == "sunset":
                 page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(start - (start + 4) * i / 239))

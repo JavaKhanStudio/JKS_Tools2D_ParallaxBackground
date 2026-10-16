@@ -7,6 +7,9 @@
 	<link rel="stylesheet" href="lab.css">
 	<!-- ShadowLab (r425): r365's AI forest page under a sun in its sky, each layer casting its shadow on the one in front of it. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+	<style>
+	.lab-copy.shadow-day { margin: 0; align-self: center; }
+	</style>
 </head>
 <body class="lab">
 	<header class="lab-bar">
@@ -32,7 +35,8 @@
 	<b>depth</b> between the two layers times the tangent of the sun's height: what rises above it is lit, the rest is in
 	the shade. A low sun shades most of each layer, a high one little; once it has set, every layer is in the shade.
 	As the camera scrolls, a shadow moves with the layer it lies on (<b>with the layer it falls on</b> 1, as in the world).
-	A second sun casts its own shadows; where two meet, it is darker. A lab, not an effect yet: what ships, if any of
+	<b>Play a whole day</b>: sun 1 rises at the view's left edge, climbs to 30 degrees over its middle and sets at its
+	right edge, in <b>day length</b> seconds; stop leaves it where it is. A second sun casts its own shadows; where two meet, it is darker. A lab, not an effect yet: what ships, if any of
 	it, waits for your tests. The view without the pines shows the hills' shadows whole.</p>
 	</details>
 	<script src="lab.js"></script>
