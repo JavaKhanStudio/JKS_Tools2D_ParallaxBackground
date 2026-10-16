@@ -31,8 +31,9 @@ city needed shapes of their own in `sil.py` (`dunes`, `sea`, `palms`, `ruins`, c
 names what another layer draws ("turquoise sea") gets it painted faintly into every layer's sky. `ai_page.theme_for`
 strikes those words (palms, pines, ruins, sea: `OBJECTS`, r437) from every other layer's prompt into its negative, and
 a page with a sea layer names "sea, ocean, water" in the others' negative even unsaid (`IMPLIED`, r442: "tropical
-beach" alone grew sea between the dunes). Under DreamShaperXL Turbo's cfg 2 a negative pulls little: the beach's
-dunes still paint sea slivers on 6 seeds of 10 (refused 4, against 5 before).
+beach" alone grew sea between the dunes). Under DreamShaperXL Turbo's cfg 2 a negative pulls little (sea still on 6
+dunes seeds of 10): the beach, coast or shore is a sea word too, struck with the word before it, which took the sea
+off all ten (r443, `tools/r443-dunes-sea`).
 
 **The gallery (r239, 2026-10-11):** `tools/ai-gallery.sh` (the board's `ai-gallery` lab: `--open`) builds
 `build/ai-gallery/index.html` from every page under `build/ai`: its film, each layer's shape, painting and cut with

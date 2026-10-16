@@ -145,10 +145,12 @@ def negative(neg, kind):
 # 5). They are struck from the theme of every layer but their kind's, and put in its negative. Longest first.
 OBJECTS = {"palms": r"palm trees?|palms?", "pines": r"pine (?:forest|trees?)|pines?|conifers?",
            "ruins": r"ruined (?:city|buildings)|ruins|broken skyscrapers?|skyscrapers?",
-           "sea": r"sea|oceans?|water"}
+           "sea": r"\w+ (?:beach(?:es)?|coast|shore)|beach(?:es)?|coast|shore|seas?|oceans?|water"}
 # What a kind's layer paints into the others' gaps even when the theme does not name it (r442): "tropical beach" alone
 # gets DreamShaperXL Turbo painting sea between the dunes (r438: creature.on_ridge refused 3 of 4 seeds). Put in the
-# negative of every layer but its kind's, on a page that has one.
+# negative of every layer but its kind's, on a page that has one. At DreamShaperXL Turbo's cfg 2 the negative pulls
+# little (sea on 6 dunes seeds of 10): the beach is a sea word, struck with the word before it ("tropical beach"), which
+# took it off all ten (r443, tools/r443-dunes-sea).
 IMPLIED = {"sea": ["sea", "ocean", "water"]}
 
 
