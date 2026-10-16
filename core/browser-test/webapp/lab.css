@@ -266,6 +266,10 @@ body.lab {
 .lab-suite { max-width: 1524px; padding: 10px 14px; border-radius: 10px; background: var(--panel); }
 .lab-suite h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
 .lab-suite summary { cursor: pointer; color: var(--accent); }
+/* The archive (d20): settled labs, folded between the tiles and the suite. */
+.lab-archive { margin-bottom: 20px; }
+.lab-archive > summary { font-size: 18px; font-weight: 600; }
+.lab-archive .lab-tiles { margin: 10px 0 4px; }
 
 /* A panel zoomed to the whole stage (r452, lab.js): its title alone at the top left, the stage's choice before it, the
    arrows and the way back at the top right (under the canvas, at its left, on a phone). */

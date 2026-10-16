@@ -10,14 +10,14 @@
 <body class="lab">
 	<!-- The labs as tiles (r418), each its still (tools/r418-lab-tiles/tiles.sh writes tiles/*.jpg), then the browser
 	suite folded to its summary line: BrowserTestApp writes into #suite and #suite-rows, and opens the rows on a FAIL.
-	A new HTML lab gets a tile here, and a line in tiles.py. -->
+	A new HTML lab gets a tile here, and a line in tiles.py. A lab whose question is settled but which is still opened
+	now and then moves to the archive, folded under the tiles (d20): it keeps its tile, its tiles.py and shots.py lines. -->
 	<header class="lab-bar"><h1>Parallax labs <span class="lab-question">the real reader in WebGL: pick one to judge</span></h1></header>
 	<nav class="lab-tiles">
 		<a class="lab-tile" href="depth-lab.html"><img src="tiles/depth.jpg" alt=""><b>Depth in 3D</b><span>How far each layer is, from its speed: the page turned sideways, ruled, and back to 2D</span></a>
 		<a class="lab-tile" href="anim-lab.html"><img src="tiles/anim.jpg" alt=""><b>Sea</b><span>Which water animations ship: WAVE, SWELL, GLINT, MIRROR</span></a>
 		<a class="lab-tile" href="clouds-lab.html"><img src="tiles/clouds.jpg" alt=""><b>Clouds</b><span>How the clouds should churn: BILLOW beside them still, in the page and alone</span></a>
 		<a class="lab-tile" href="hills-lab.html"><img src="tiles/hills.jpg" alt=""><b>AI hills</b><span>How the AI forest's hills layer is painted: seven recipes, two side by side</span></a>
-		<a class="lab-tile" href="pines-lab.html"><img src="tiles/pines.jpg" alt=""><b>AI misty pines</b><span>Keep or drop the pale misty pines at the AI forest's foot: misty_pines on and off</span></a>
 		<a class="lab-tile" href="shadow-lab.html"><img src="tiles/shadow.jpg" alt=""><b>Cast shadows</b><span>Whether the trees cast their shadow on the layer behind, from one light or two</span></a>
 		<a class="lab-tile" href="fog-lab.html"><img src="tiles/fog.jpg" alt=""><b>FOG mist</b><span>How tall the mist's patches should be, on four pages</span></a>
 		<a class="lab-tile" href="haze-lab.html"><img src="tiles/haze.jpg" alt=""><b>Depth haze</b><span>Whether the haze takes a game's towers and snow, and the page's tint</span></a>
@@ -31,6 +31,12 @@
 		<a class="lab-tile" href="effects-lab.html?lab=lurker"><img src="tiles/effects-lurker.jpg" alt=""><b>Lurker</b><span>A figure that appears or vanishes only while the pines hide it</span></a>
 		<a class="lab-tile" href="effects-lab.html?lab=swell"><img src="tiles/effects-swell.jpg" alt=""><b>SWELL edges</b><span>Which edges SWELL wraps and which it holds, on a checker tiled four ways</span></a>
 	</nav>
+	<details class="lab-suite lab-archive">
+		<summary>Archive <span class="lab-question">settled labs, kept to look at again</span></summary>
+		<nav class="lab-tiles">
+			<a class="lab-tile" href="pines-lab.html"><img src="tiles/pines.jpg" alt=""><b>AI misty pines</b><span>The pale misty pines at the AI forest's foot, misty_pines on and off: kept (r421)</span></a>
+		</nav>
+	</details>
 	<section id="suite" class="lab-suite">
 		<h2>Browser tests <span class="lab-question">the reader's cases, compiled to JavaScript, run here in WebGL</span></h2>
 		<div id="embed-browsertests"></div>
