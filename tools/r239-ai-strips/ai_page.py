@@ -701,9 +701,10 @@ class Pipeline:
             sys.exit(gen_failed(code, prefix + "_gen.log"))
         return self.cut(prefix, kind, gate)
 
-    def cut(self, prefix, kind, gate=True):
+    def cut(self, prefix, kind, gate=True, edges=None):
         """layer.py (pixel.py) on a painted strip: its cut path, or None when refused. layer.py weighs its RULES on the
-        strip's kind and checkpoint (r400): what each did goes in recipe.json, under the strip's "rules"."""
+        strip's kind and checkpoint (r400): what each did goes in recipe.json, under the strip's "rules". edges: a
+        front variant's front cut, laid back on its outer columns (layer.py --edges-of, r474)."""
         d = HERE
         tool = ["python3", f"{d}/pixel.py", f"{prefix}_ai.png", f"{prefix}_cut.png", "--mask", f"{prefix}_mask.png",
                 "--colours", "12"] if self.pixel else ["python3", f"{d}/layer.py", f"{prefix}_ai.png",
@@ -712,7 +713,8 @@ class Pipeline:
                                                        kind, "--ckpt", self.model["ckpt"],
                                                        "--rules-json", f"{prefix}_rules.json",
                                                        *(x for r in self.a.rule for x in ("--rule", r)),
-                                                       *cut_args(kind)]
+                                                       *cut_args(kind),
+                                                       *(["--edges-of", edges] if edges else [])]
         code = run(tool, prefix + "_cut.log")
         if self.a.dry_run:
             return f"{prefix}_cut.png"
@@ -841,7 +843,7 @@ class Pipeline:
         if inside:
             self.made[os.path.basename(p)]["paint"] = "inpaint"
         if a.keep and os.path.exists(f"{p}_ai.png"):
-            got = self.cut(p, ks[front])
+            got = self.cut(p, ks[front], edges=layers[front][0])
             if got:
                 layers[front].append(got)
             return True
@@ -856,7 +858,7 @@ class Pipeline:
             sys.exit(f"gen.py variants failed: {p}_gen.log")
         if not a.dry_run:
             os.replace(f"{p}_ai_1.png", f"{p}_ai.png")
-        got = self.cut(p, ks[front])
+        got = self.cut(p, ks[front], edges=layers[front][0])
         if got:
             layers[front].append(got)
             return True

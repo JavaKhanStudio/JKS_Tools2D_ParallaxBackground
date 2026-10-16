@@ -32,7 +32,7 @@ PY
 	rm -rf "$d"
 }
 mutant "no far range" '    if m is not None and a.gap and haze:=>    if False:'
-mutant "islands without it" 'cut = islands((alpha > 0.5) | ranged)=>cut = islands(alpha > 0.5)'
+mutant "islands without it" 'cut = islands((alpha > 0.5) | ranged, =>cut = islands((alpha > 0.5), '
 mutant "edge on the top rows' sky" '    t = np.where(body, t, t - t0)=>    t = t'
 mutant "no outline test" 'np.median(step[rim]) > FAR_STEP=>True'
 mutant "no thickness test" 'core.sum() >= FAR_MIN * k * k and=>near.sum() > 0 and'

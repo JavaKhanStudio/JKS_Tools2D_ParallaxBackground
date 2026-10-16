@@ -32,6 +32,11 @@ faint edge around them; connectivity is taken around the loop. --keep-islands ke
 meant to be scattered (clouds).
 A creature SD painted inside the mass or standing on it (a bird, an animal, a person: creature.py, r261, r349, r362) exits 4, after the PNG is written;
 --no-creatures skips the check.
+--edges-of CUT: a front variant (gen.py variants) starts and ends on exactly the front's painted columns, but this
+cut weighs the whole strip (islands, the far range, RULES) and keyed them to another alpha: a step at every join of
+the SEQUENCE, lint (e) (r474). The front's cut CUT is laid back on the outer EDGE_KEEP px, blended over EDGE_RAMP px
+(gen.py's 8 and 16), so every segment of the layer ends on the front's own pixels.
+Its alpha islands keep what the front's cut keeps solid on those columns: the same painting, cut whole.
 --pixel N: pixel art. Box-downscale by N, quantise to --colours colours (one palette for the
 layer, or --palette's), and cut alpha hard at 50%: every pixel is one palette colour, fully opaque or fully clear.
 The PNG is the small one; the page draws it scaled N times with the Nearest filter.
@@ -133,12 +138,14 @@ def masslike(img, sky, m):
     return (img - sky) @ axis / max(float(axis @ axis), 1.0) > 0.5
 
 
-def islands(mask):
-    """Each 4-connected component of mask but the largest, as one mask; column 0 touches column w-1."""
+def islands(mask, anchor=None):
+    """Each 4-connected component of mask but the largest, and but those touching anchor, as one mask; column 0
+    touches column w-1."""
     label, sizes = components(mask)
     if len(sizes) <= 1:
         return np.zeros(mask.shape, bool)
-    return (label > 0) & (label != int(np.argmax(sizes)) + 1)
+    keep = [int(np.argmax(sizes)) + 1] + ([] if anchor is None else list(np.unique(label[anchor & mask])))
+    return (label > 0) & ~np.isin(label, keep)
 
 
 def sky_to_mass(img, sky, alpha):
@@ -369,6 +376,7 @@ def parse_args():
     ap.add_argument("--haze", type=float, default=0.5, help="a pale far range round the shape: one alpha (0: off)")
     ap.add_argument("--edge", type=int, default=2, help="half-clear alpha past this many px of a solid pixel goes clear or solid (0: off)")
     ap.add_argument("--keep-islands", action="store_true", help="keep alpha islands apart from the main mass")
+    ap.add_argument("--edges-of", metavar="CUT", help="a front variant: the front's cut, laid back on its outer columns")
     ap.add_argument("--pixel", type=int, default=0)
     ap.add_argument("--colours", type=int, default=12)
     ap.add_argument("--no-creatures", action="store_true", help="skip creature.py's check (exit 4)")
@@ -426,11 +434,42 @@ def key(img, sky, a, records=None, regions=None):
         records += weighed
     if not a.keep_islands:
         # a far range at --haze joins what stands in it to the mass (ds8-postapo l0's mesa, in its haze plain)
-        cut = islands((alpha > 0.5) | ranged)
+        cut = islands((alpha > 0.5) | ranged, front_edges(a, alpha.shape))
         if cut.any():
             alpha = unspeck(alpha, cut)
             print(f"{a.out}: {int(cut.sum())} px of alpha islands cut", file=sys.stderr)
     return alpha, sky
+
+
+# edges_of (r474): gen.py variants lays the source's own outer 8 px back over 16 px; the cut does the same with its cut.
+EDGE_KEEP, EDGE_RAMP = 8, 16
+
+
+def front_edges(a, shape):
+    """--edges-of: the front cut's solid pixels on the columns laid back (EDGE_KEEP + EDGE_RAMP at each end), else None.
+    What stands there in the front stands in the variant too, its painting the same: kept whole when the variant's
+    middle makes it an island, or the lay-back fades a cut stub over the ramp (r474: beach-inpaint's trunk)."""
+    if not getattr(a, "edges_of", None):
+        return None
+    f = np.asarray(Image.open(a.edges_of).convert("RGBA"))[..., 3] > 127
+    if f.shape != shape:
+        sys.exit(f"--edges-of: {f.shape[::-1]} is not the cut's size {shape[::-1]}")
+    x = np.arange(shape[1])
+    return f & (np.minimum(x, shape[1] - 1 - x) < EDGE_KEEP + EDGE_RAMP)[None, :]
+
+
+def edges_of(out, front):
+    """The RGBA out with front's (the front strip's cut) outer EDGE_KEEP columns at each end laid back, blended into
+    out's own over EDGE_RAMP columns, premultiplied: a clear pixel's colour weighs nothing."""
+    o, f = (np.asarray(x.convert("RGBA")).astype(np.float64) for x in (out, front))
+    if o.shape != f.shape:
+        sys.exit(f"--edges-of: {front.size} is not the cut's size {out.size}")
+    x = np.arange(o.shape[1])
+    r = np.clip((np.minimum(x, o.shape[1] - 1 - x) - EDGE_KEEP + 1) / (EDGE_RAMP + 1), 0, 1)[None, :, None]
+    a = f[..., 3:] * (1 - r) + o[..., 3:] * r
+    pm = f[..., :3] * f[..., 3:] * (1 - r) + o[..., :3] * o[..., 3:] * r
+    rgb = np.where(a > 0, pm / np.maximum(a, 1e-6), f[..., :3] * (1 - r) + o[..., :3] * r)
+    return Image.fromarray(np.dstack([rgb, a]).round().clip(0, 255).astype(np.uint8), "RGBA")
 
 
 def unmix(img, sky, alpha, own=None):
@@ -509,6 +548,9 @@ def main():
         with open(a.rules_json, "w") as f:
             json.dump(records, f, indent=1)
     out = unmix(img, behind, alpha, regions.get("far"))
+    if a.edges_of:
+        out = edges_of(out, Image.open(a.edges_of))
+        alpha = np.asarray(out)[..., 3] / 255.0
     if a.pixel > 1:
         out = pixelate(out, a)
     out.save(a.out)

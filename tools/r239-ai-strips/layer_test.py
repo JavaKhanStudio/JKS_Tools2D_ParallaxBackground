@@ -6,6 +6,7 @@ A strip is a sky that warms toward its foot, a dark mass over the bottom with to
 """
 import argparse
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -282,6 +283,67 @@ class WideMassTest(unittest.TestCase):
         _, rec = cut_ruled(img, m, "mountains", "z-image-turbo-Q5_K_M.gguf", rule="wide_mass", grow=8)
         self.assertFalse(rec["applied"])
         self.assertFalse(rec["when"]["masslike px joined to the mask past --grow"])
+
+
+def variant_pair():
+    """A front strip and its variant, as gen.py variants paints them: the same pixels on their outer 32 columns, a
+    ledge across the loop there, its top soft; in the front's middle a mass smaller than the ledge, in the variant's a
+    tower larger and darker (the key's ramp ends at the strip's median distance from the sky: another soft top)."""
+    ledge = np.zeros((H, W), bool)
+    ledge[70:80, :32] = ledge[70:80, -32:] = True
+    small, tower = np.zeros((H, W), bool), np.zeros((H, W), bool)
+    small[100:110, 120:140] = True
+    tower[40:, 100:160] = True
+    pair = []
+    soft = np.roll(ledge, -2, 0) & ~ledge
+    for m, colour in ((ledge | small, MASS), (ledge | tower, MASS // 4)):
+        img = sky()
+        img[m] = MASS
+        img[m & ~ledge] = colour
+        img[soft] = (img[soft] + MASS) / 2
+        pair.append((img, m))
+    return pair
+
+
+def layer_py(d, name, img, m, *extra):
+    """layer.py's main on img and its mask m, as ai_page.py cuts a strip: the RGBA it wrote."""
+    src, mask, out = (os.path.join(d, f"{name}{x}") for x in ("_ai.png", "_mask.png", "_cut.png"))
+    Image.fromarray(img.round().astype(np.uint8)).save(src)
+    Image.fromarray((m * 255).astype(np.uint8)).save(mask)
+    subprocess.run([sys.executable, layer.__file__, src, out, "--mask", mask, "--grow", "16", "--no-creatures",
+                    *extra], check=True, capture_output=True)
+    return out, np.asarray(Image.open(out)).astype(int)
+
+
+class EdgesOfTest(unittest.TestCase):
+    """r474: a front variant's cut ends on its front's cut, or the SEQUENCE steps at every join (lint (e))."""
+
+    def test_a_variant_ends_on_its_front_s_cut(self):
+        (front, fm), (variant, vm) = variant_pair()
+        with tempfile.TemporaryDirectory() as d:
+            path, f = layer_py(d, "l3", front, fm)
+            _, plain = layer_py(d, "l3v1", variant, vm)
+            _, v = layer_py(d, "l3v1", variant, vm, "--edges-of", path)
+        keep = layer.EDGE_KEEP
+        self.assertGreater(int(np.abs(plain[:, :keep, 3] - f[:, :keep, 3]).max()), 200,
+                           "the whole-strip key cuts the variant's ledge as an island: no fixture otherwise")
+        np.testing.assert_array_equal(v[:, :keep], f[:, :keep], "starts on the front's cut")
+        np.testing.assert_array_equal(v[:, -keep:], f[:, -keep:], "ends on it")
+        self.assertGreater(int(v[72:78, np.r_[:32, W - 32:W], 3].min()), 200,
+                           "the ledge the front keeps is kept whole, not a stub faded over the ramp")
+        np.testing.assert_array_equal(v[:, 40:-40], plain[:, 40:-40], "its middle is its own cut")
+
+    def test_the_lay_back_weighs_a_clear_pixel_s_colour_nothing(self):
+        front = np.zeros((4, 64, 4), np.uint8)
+        front[...] = (200, 40, 30, 255)
+        out = np.zeros((4, 64, 4), np.uint8)
+        out[...] = (0, 255, 0, 0)
+        got = np.asarray(layer.edges_of(Image.fromarray(out, "RGBA"), Image.fromarray(front, "RGBA"))).astype(int)
+        np.testing.assert_array_equal(got[:, :layer.EDGE_KEEP], front[:, :layer.EDGE_KEEP])
+        ramp = got[0, layer.EDGE_KEEP:layer.EDGE_KEEP + layer.EDGE_RAMP]
+        self.assertTrue((np.diff(ramp[:, 3]) < 0).all(), "it fades out over the ramp")
+        self.assertLess(int(np.abs(ramp[:, :3] - front[0, 0, :3]).max()), 2, "in the front's colour")
+        self.assertEqual(int(got[0, 32, 3]), 0, "the middle its own")
 
 
 if __name__ == "__main__":
