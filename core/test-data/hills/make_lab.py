@@ -10,8 +10,10 @@ strip). HillsLab (core/browser-test) puts a candidate's region in place of the p
 transparent one more than a pixel from any other, set to 0, as core/test-data/anim/make_lab.py does, so each page is
 under the push check's 1 MB. candidates.json: each candidate's name, recipe and measures (colour std inside the mask
 shrunk by 8 px, alpha IoU against today's of the same seed), in the order the lab lists them. Never repaint them: a
-lab judged on these pixels is judged on these pixels. One exception, r466: forest.png's l1 (the range) had see-through
-pockets under its ridge, filled by tools/r466-range-holes/fill.py; run it again after this script.
+lab judged on these pixels is judged on these pixels. Two exceptions: forest.png's l1 (the range) had see-through
+pockets under its ridge, filled by tools/r466-range-holes/fill.py (r466), and its l0 (the far peaks) a free-standing twig
+and a sliver between two peaks, redrawn by tools/r467-far-peaks/cut.py, and pockets like l1's (r467). After this script:
+cut.py, then fill.py --region l0, then fill.py.
 """
 import json
 import os

@@ -1,6 +1,6 @@
 """Fills the holes under the range's ridge in the forest page's l1 (r466).
 
-    python3 tools/r466-range-holes/fill.py [--check] [--show OUT.png]
+    python3 tools/r466-range-holes/fill.py [--region l0|l1] [--check] [--show OUT.png]
 
 The range strip (core/test-data/hills/forest.png, region l1) was cut with pockets under its ridge: overhanging nubs
 beside the peaks and stepped, see-through cut-outs between them, the sky (and the shadow lab's setting sun) showing
@@ -8,7 +8,8 @@ through. Here every pixel of a column below that column's ridge (its first pixel
 under it, the ridge's own soft edge) is made opaque. Filled straight down, the nubs either side of a pocket would leave a
 slot with upright walls between them, so near a hole the ridge is first closed: a dip narrower than 2 DIP + 1 columns
 is raised to the lower of its two sides, sagging into a saddle (SAG of its width at its middle). A filled pixel's colour is what it had over what diffuses in from the opaque
-pixels around it. The ridge line stays the strip's only edge. Rewrites forest.png in place, l0 untouched.
+pixels around it, and so does a clear pixel's next to the new edge. The ridge line stays the strip's only edge. Rewrites forest.png in place, the other region untouched.
+--region: l1 (the default) or l0, the far peaks, whose pockets r467 filled the same way after tools/r467-far-peaks/cut.py.
 --check: exits 1 when a hole is left (nothing written). --show: the result on magenta, what changed in red.
 """
 import os
@@ -19,7 +20,8 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PNG = os.path.join(HERE, "..", "..", "core", "test-data", "hills", "forest.png")
-Y, W, H = 385, 1024, 384  # l1 in forest.atlas
+W, H = 1024, 384
+REGIONS = {"l0": 0, "l1": 385}  # each region's first row in forest.atlas
 DIP, NEAR, SAG = 12, 16, 0.2  # half the widest dip closed; how far from a hole; how deep a closed dip sags, per column
 
 
@@ -94,27 +96,43 @@ def fill(strip):
     out = strip.copy()
     out[..., :3] = np.where(under[..., None], strip[..., :3] * a + colour * (1 - a), strip[..., :3])
     out[..., 3] = np.where(under, 255, alpha)
-    return out
+    return bleed(out, colour)
+
+
+def bleed(strip, colour):
+    """A clear pixel beside a seen one, its colour 0, given the colour around it: the reader draws with Linear, and the
+    0 bleeds into the edge as a dark line (make_lab.py's clean keeps colour that close for the same reason)."""
+    seen = strip[..., 3] > 0
+    beside = np.zeros_like(seen)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            beside |= np.roll(seen, (dy, dx), (0, 1))
+    beside[0] = beside[-1] = False  # np.roll wraps the rows: the strip loops across, not up
+    blank = beside & ~seen & (strip[..., :3] == 0).all(axis=2)
+    strip[blank, :3] = colour[blank]
+    return strip
 
 
 def main(argv):
+    name = argv[argv.index("--region") + 1] if "--region" in argv else "l1"
+    y0 = REGIONS[name]
     page = np.array(Image.open(PNG).convert("RGBA"))
-    strip = page[Y:Y + H].astype(np.float64)
+    strip = page[y0:y0 + H].astype(np.float64)
     hole = holes(strip[..., 3])
     if "--check" in argv:
-        print(f"l1: {int(hole.sum())} pixels not opaque under the ridge")
+        print(f"{name}: {int(hole.sum())} pixels not opaque under the ridge")
         return 1 if hole.any() else 0
     out = page.copy()
-    out[Y:Y + H] = np.rint(fill(strip)).astype(np.uint8)
+    out[y0:y0 + H] = np.rint(fill(strip)).astype(np.uint8)
     if "--show" in argv:
         img = Image.new("RGBA", (W, H), (255, 0, 255, 255))
-        img.alpha_composite(Image.fromarray(out[Y:Y + H]))
+        img.alpha_composite(Image.fromarray(out[y0:y0 + H]))
         img = np.array(img)
-        img[(out[Y:Y + H] != page[Y:Y + H]).any(axis=2)] = (255, 0, 0, 255)
+        img[(out[y0:y0 + H] != page[y0:y0 + H]).any(axis=2)] = (255, 0, 0, 255)
         Image.fromarray(img).save(argv[argv.index("--show") + 1])
         return 0
     Image.fromarray(out).save(PNG, optimize=True)
-    print(f"l1: {int(hole.sum())} holes filled, {int((out != page).any(axis=2).sum())} pixels changed; {PNG}")
+    print(f"{name}: {int(hole.sum())} holes filled, {int((out != page).any(axis=2).sum())} pixels changed; {PNG}")
     return 0
 
 
