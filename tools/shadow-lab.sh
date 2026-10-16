@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# The shadow lab (r425): r365's AI forest page drawn three times by the real reader compiled with GWT, in WebGL: A as
-# painted, B with the pines casting their shadow on the hills just behind them, and on nothing else, from one light or
-# two, the shadow moving with the pines, C the same moving with the hills (core/browser-test/launcher/.../ShadowLab.java).
+# The shadow lab (r425): r365's AI forest page drawn three times by the real reader compiled with GWT, in WebGL: A with
+# distance (each shadow's far end partly at the hills' speed, softer and lighter there, the hills casting on the far
+# range), B the pines casting their shadow on the hills just behind them, and on nothing else, from one light or two,
+# moving with the pines, C as painted (core/browser-test/launcher/.../ShadowLab.java).
 # Controls: the view (the page, or without the pines), the camera's scroll, each sun's side and height (sliders, or
 # dragged on the dial over C), the second sun on or off, how far up the screen the ground climbs into the picture, its
-# softness and darkness.
+# softness and darkness; A's distance section: with the hills, soft far, fade far, hills cast, range rise.
 #   tools/shadow-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/shadow-lab.sh --shot F.png    one still, headless (6 s in)
 #   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/two.png (both suns)
@@ -118,7 +119,7 @@ with sync_playwright() as p:
         import json
         got = json.loads(page.input_value("#shadow-copy-json"))
         keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "rise", "softness",
-                "darkness"}
+                "darkness", "withHills", "softFar", "fadeFar", "hillsCast", "rangeRise"}
         moved = {"sun1Side": {"started": -40, "now": 90}, "sun1Height": {"started": 20, "now": 60}, "sun2On": {"started": 0, "now": 1}}
         if set(got["settings"]) != keys or got["changed"] != moved or "sun 2:" not in got["readout"]:
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
