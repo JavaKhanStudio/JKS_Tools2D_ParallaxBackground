@@ -378,7 +378,7 @@ def _measure_sequence(page, i, l, regions, regions_tool, sheets, placed, strippe
     height = _place(page, i, l, _image(page, i, l, first, regions_tool, sheets, stripped)).height
     rows = [min(_resampled(p.rows, k, len(each[0].rows)) for p in each) for k in range(len(each[0].rows))]
     cut = any(p.cut_top and p.rows[-1] < SOLID for p in each)
-    clear = [max(_resampled(p.clear, k, len(each[0].clear)) for p in each) for k in range(len(each[0].clear))]
+    clear = sequence_clear([p.clear for p in each])
     p = each[0]._replace(rows=rows, height=height, cut_top=cut, clear=clear)
     placed.append(p)
     if not page.get('repeatOnX', True) or l['padX'] > 0:
@@ -595,17 +595,27 @@ def _edge_seen(placed, k):
     a SEQUENCE's clearest segment), multiplied as if they overlapped at random, since they scroll at other speeds. A
     notch's tip shows the edge (r381: 4-7 px, R1 s03 and R6a s05); Hiver's hills' single clear pixels (0.4 px) do not
     (r399). 0 when a nearer layer was not measured."""
-    edge, seen = placed[k].bottom, float(SCREEN_PX)
-    for p in placed[k + 1:]:
-        if not p.spans:
-            continue
-        if p.clear is None:
-            return 0.0
-        n = len(p.clear)
-        low, high = ((edge - NOTCH_MARGIN - p.bottom) / p.height * n, (edge + NOTCH_MARGIN - p.bottom) / p.height * n)
+    nearer = [p for p in placed[k + 1:] if p.spans]
+    if any(p.clear is None for p in nearer):
+        return 0.0
+    return seen_through(placed[k].bottom, [(p.bottom, p.height, p.clear) for p in nearer])
+
+
+def seen_through(edge, nearer):
+    """_edge_seen's rule for a bottom edge at world height edge behind the nearer spanning layers, each (bottom, height,
+    clear), clear as Placed's: ai_page.py lays its layers out by it, so a page it builds passes (b) (r446)."""
+    seen = float(SCREEN_PX)
+    for bottom, height, clear in nearer:
+        n = len(clear)
+        low, high = ((edge - NOTCH_MARGIN - bottom) / height * n, (edge + NOTCH_MARGIN - bottom) / height * n)
         if low >= 0 and high <= n:
-            seen *= max(p.clear[int(low):max(int(low) + 1, math.ceil(high))])
+            seen *= max(clear[int(low):max(int(low) + 1, math.ceil(high))])
     return seen
+
+
+def sequence_clear(clears):
+    """A SEQUENCE's clear rows from its segments' (the first one's length): each row as clear as its clearest segment."""
+    return [max(_resampled(c, k, len(clears[0])) for c in clears) for k in range(len(clears[0]))]
 
 
 def _on_screen(y):

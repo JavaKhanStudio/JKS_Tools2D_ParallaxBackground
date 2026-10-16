@@ -876,14 +876,25 @@ class Pipeline:
     def bottoms(self, layers):
         """Each layer's bottom edge, world units up: the front at 0, each farther one under the fully opaque band of the
         one in front of it (every column of every SEQUENCE segment, opaque()), a fifth of it deep, so its bottom edge
-        never shows (skill step 3), nor the sky under it at a notch's tip (r381)."""
-        bottoms, hs = [0.0] * len(self.ks), []
+        never shows (skill step 3), nor the sky under it at a notch's tip (r381). Lower still, a row of the one in
+        front at a time, while lint (b) would see the edge through the nearer layers' clear pixels (lab.seen_through,
+        on the decals as written): a band a few rows deep leaves the lint's 2 px margin over its top (r446)."""
+        bottoms, hs, clears = [0.0] * len(self.ks), [], []
         for paths in layers:
             img = Image.open(paths[0])
             hs.append(lab.SCREEN_W * img.height / img.width)  # sizeRatio 1
+            clears.append(lab.sequence_clear([lab._clear(Image.open(p).convert("RGBA")) for p in paths]))
+
+        def written(y):  # a bottom as the page holds it, its decal rounded as write_page rounds it
+            return round(100 * y / lab.SCREEN_H, 2) * lab.SCREEN_H / 100
+
         for k in range(len(self.ks) - 2, -1, -1):
             band = min(opaque(p) for p in layers[k + 1]) * hs[k + 1]
             bottoms[k] = bottoms[k + 1] + 0.8 * band
+            nearer = [(written(bottoms[j]), hs[j], clears[j]) for j in range(k + 1, len(self.ks))]
+            row, floor = hs[k + 1] / len(clears[k + 1]), bottoms[k + 1] + lab.NOTCH_MARGIN
+            while bottoms[k] - row >= floor and lab.seen_through(written(bottoms[k]), nearer) >= 1:
+                bottoms[k] -= row
         return bottoms
 
     def write_page(self, layers, fig=None, clouds=None):
