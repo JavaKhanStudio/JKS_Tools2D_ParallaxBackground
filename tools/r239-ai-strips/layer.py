@@ -22,7 +22,8 @@ soft edge: it goes clear or solid (0: off).
 RULES (tools/parallax_rules.py, r400): a fix right for one model or one kind of layer only, weighed per strip on what
 --kind and --ckpt say painted it; --rule NAME=on|off forces one, --rules-json PATH writes what each did. misty_pines:
 dreamshaper_8 paints farther pines in mist at a pines layer's foot, pale ghosts inside the mask that scroll at the
-front's speed (r364); on that model's pines they key along the sky-to-mass line. Another model's pale pines are
+front's speed (r364); on that model's pines they key along the sky-to-mass line, with the half-clear rim the key
+left round them (r476: else a pale line stood where the mist was). Another model's pale pines are
 crisp, a second row it meant (openjourney, novaCartoon), or not there (SDXL): left as painted. Simon kept it on
 after seeing it on and off in pines-lab (r421). wide_mass (r454): Z-Image keeps sil.py's shape less than the UNets do;
 the mass it paints past the mask by more than --grow (pale hills in a valley of the mask, fronds, spires) is kept, not
@@ -288,9 +289,12 @@ def measure_misty(c):
 
 
 def clear_misty(c):
-    """misty_pines' act: c["alpha"] keyed along t over the region; returns the opaque px it took (alpha summed)."""
-    m = c["misty"]
+    """misty_pines' act: c["alpha"] keyed along t over the region and its half-clear rim, within MISTY_CORE px of it:
+    the key left the mist's soft top half clear, which misty takes for sky and leaves, a pale line across the gap
+    once the mist under it is cleared (r476: forest-inpaint l3, rows 331-332 between two pines). Returns the opaque px
+    it took (alpha summed)."""
     before = c["alpha"]
+    m = c["misty"] | spread(c["misty"], MISTY_CORE) & (before < 0.5)
     c["alpha"] = np.where(m, np.minimum(before, np.clip((c["t"] - MISTY_LO) / (MISTY_HI - MISTY_LO), 0, 1)), before)
     return round(float((before - c["alpha"]).sum()))
 

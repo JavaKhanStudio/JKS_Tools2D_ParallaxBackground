@@ -245,6 +245,21 @@ class MistyPinesTest(unittest.TestCase):
         self.assertFalse(rec["applied"])
         self.assertFalse(rec["when"]["wide pale pines open to the sky"])
 
+    def test_the_mist_s_half_clear_top_goes_with_it(self):
+        """r476: forest-inpaint's l3 (r471, --paint inpaint, seed 7), the 64 columns each side of its loop: the key
+        left the mist's soft top in the V between two pines half clear, rows 331-332, and the rule, taking it for sky,
+        cleared the mist under it alone: a pale line two rows thick across the gap, alpha 34-123 over clear rows."""
+        # beside tools/, or under the current directory's when a mutant runs a copy of this file (r400's mutate.sh)
+        here = next(d for d in (os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools")
+                    if os.path.isdir(os.path.join(d, "r476-misty-rim")))
+        img = np.asarray(Image.open(os.path.join(here, "r476-misty-rim/join-ai.png")).convert("RGB")).astype(np.float32)
+        m = np.asarray(Image.open(os.path.join(here, "r476-misty-rim/join-mask.png")).convert("L")) > 127
+        alpha, rec = cut_ruled(img, m, grow=40)
+        self.assertTrue(rec["applied"], rec)
+        gap = alpha[329:335, 54:73]
+        self.assertLess(float(gap.max()), 0.15, f"the gap's rows 329-334 are clear:\n{np.round(gap * 255).astype(int)}")
+        self.assertGreater(float(alpha[370:].min()), 0.99, "the pines' foot stays solid")
+
 
 def valley():
     """(img, m, hill): a mask with a deep valley, and a pale hill Z-Image painted in it, its top 24 px over the
