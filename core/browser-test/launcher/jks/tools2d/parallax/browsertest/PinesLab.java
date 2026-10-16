@@ -40,6 +40,12 @@ public class PinesLab extends ApplicationAdapter implements LabKit.Clip
 	static final float FOOT_ZOOM = 0.4f;
 	static final String[] MARKS = { "none", "red: what differs" };
 	static final float SCROLL = 60;
+	/**
+	 * Seconds of scroll at {@link #SCROLL} a page starts with (r453): the page's cycle opens on l3_0 and l3_3, which the
+	 * rule leaves alone, so the panels were the same picture for the first 9 s; l3_2, the strip it changes most, is on
+	 * screen from 18 to 31 s.
+	 */
+	static final float START = 19;
 
 	private final Parallax_Heart[] hearts = new Parallax_Heart[2];
 	private final OrthographicCamera[] cameras = new OrthographicCamera[2];
@@ -103,26 +109,34 @@ public class PinesLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		int v = LabControls.read(view), f = LabControls.read(front), m = LabControls.read(marks);
 		float sc = LabControls.read(scroll);
+		boolean reset = false;
 		for (int i = 0; i < hearts.length; i++)
 		{
 			int r = LabControls.read(picks[i]);
-			if (showing[i][0] != r || showing[i][1] != v || showing[i][2] != f || showing[i][3] != m)
-			{
-				hearts[i].setPage(page(r == 1, v, f, m == 1));
-				cameras[i].zoom = v == 2 ? FOOT_ZOOM : 1;
-				cameras[i].position.y = WORLD_HEIGHT * cameras[i].zoom / 2;
-				cameras[i].update();
-				showing[i][0] = r;
-				showing[i][1] = v;
-				showing[i][2] = f;
-				showing[i][3] = m;
-			}
-			hearts[i].screenSpeedConstantX = sc;
+			reset |= showing[i][0] != r || showing[i][1] != v || showing[i][2] != f || showing[i][3] != m;
 		}
+		// Both panels start again together, or a pick of A's alone puts A's front elsewhere than B's.
+		for (int i = 0; reset && i < hearts.length; i++)
+		{
+			int r = LabControls.read(picks[i]);
+			hearts[i].setPage(page(r == 1, v, f, m == 1));
+			cameras[i].zoom = v == 2 ? FOOT_ZOOM : 1;
+			cameras[i].position.y = WORLD_HEIGHT * cameras[i].zoom / 2;
+			cameras[i].update();
+			hearts[i].screenSpeedConstantX = SCROLL;
+			LabKit.clip(START, hearts[i]);
+			showing[i][0] = r;
+			showing[i][1] = v;
+			showing[i][2] = f;
+			showing[i][3] = m;
+		}
+		for (Parallax_Heart heart : hearts)
+			heart.screenSpeedConstantX = sc;
 		StringBuilder line = new StringBuilder("misty_pines changes ");
 		for (int i = 0; i < changed.length; i++)
 			line.append(i == 0 ? "" : ", ").append(changed[i]).append(" (").append(moved[i]).append(" px)");
-		line.append(" of the front's four strips; the other layers are the same pixels in both panels");
+		line.append(" of the front's four strips; the other layers are the same pixels in both panels. A page starts ")
+			.append((int) START).append(" s into its scroll, where l3_2 is on screen");
 		readout.setInnerText(line.toString());
 	}
 
