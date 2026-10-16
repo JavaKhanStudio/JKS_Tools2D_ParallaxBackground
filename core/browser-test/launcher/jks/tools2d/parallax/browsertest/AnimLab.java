@@ -328,6 +328,23 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		public void setRepeat(boolean x, boolean y)
 		{shipped.setRepeat(x, y);}
 
+		/**
+		 * Puts back what GdxLayerEffects left bound, as a game's does: without it (before r465) a layer the reader draws
+		 * plain, the beach's palms in front (no fog), drew through the program the layer behind it left, with that
+		 * layer's fog (about 0.1 of the fog's colour).
+		 */
+		@Override
+		public void release(Batch batch)
+		{shipped.release(batch);}
+
+		@Override
+		public boolean beginPageFog(Batch batch, Color tint, Color fog, Color incomingFog)
+		{return shipped.beginPageFog(batch, tint, fog, incomingFog);}
+
+		@Override
+		public void endPageFog(Batch batch)
+		{shipped.endPageFog(batch);}
+
 		@Override
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fogAmount, Color fogColor)
 		{
