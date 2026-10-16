@@ -103,6 +103,35 @@ with sync_playwright() as p:
             print("FAIL: tags cover each other:\n  " + "\n  ".join(crossed), file=sys.stderr)
             sys.exit(1)
         print("OK: no tag covers another or is cut, on every page, its cards both ways, turned five ways, and on a phone")
+    elif mode == "angles":
+        # r458: the default page from three angles (straight on from behind the camera, the side view the lab opens on,
+        # steep from above), then the same turned round a full grid of yaw and height, in each unit: no tag may cover
+        # another or be cut, and the view is never empty (r458: from behind the camera, low, it was).
+        crossed = []
+        page, errors = open_lab(browser)
+        page.evaluate("window.depthLabAct(4)")
+        for name, yaw, pitch in (("straight", 0, 8), ("side", 66, 14), ("steep", 30, 62)):
+            set_control(page, "yaw", yaw)
+            set_control(page, "pitch", pitch)
+            page.evaluate("window.depthLabAct(0.1)")
+            shot(page, f"{frames}/{name}.png")
+            crossed += [f"{name}: {o}" for o in overlaps(page)]
+        for unit in range(3):
+            set_control(page, "units", unit)
+            # Yaw within 10 of 0 at a height of 3 to 6 degrees was the empty band.
+            for yaw in (-85, -60, -30, -10, 0, 10, 30, 60, 85):
+                for pitch in (2, 4, 6, 10, 35, 80):
+                    set_control(page, "yaw", yaw)
+                    set_control(page, "pitch", pitch)
+                    page.evaluate("window.depthLabAct(0.05)")
+                    page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+                    crossed += [f"unit {unit}, yaw {yaw}, height {pitch}: {o}" for o in overlaps(page)]
+                    if not page.evaluate("[...document.querySelectorAll('#depth-tags .depth-card')].some(e => e.style.display !== 'none')"):
+                        crossed.append(f"unit {unit}, yaw {yaw}, height {pitch}: no card's tag shown (an empty view?)")
+        if crossed:
+            print("FAIL:\n  " + "\n  ".join(crossed), file=sys.stderr)
+            sys.exit(1)
+        print("OK: three angles shot; no tag covers another or is cut, and a card shows, at 54 angles in each of 3 units")
     elif mode == "seam":
         worst = []
         errors = []

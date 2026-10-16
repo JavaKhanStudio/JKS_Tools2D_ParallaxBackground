@@ -44,7 +44,7 @@ public class BrowserTestLauncher extends GwtApplication
 
 	@Override
 	public GwtApplicationConfiguration getConfig()
-	{return has("depth-lab") ? stencil(new GwtApplicationConfiguration(DepthLab.FRAME_WIDTH, DepthLab.FRAME_HEIGHT))
+	{return has("depth-lab") ? smooth(stencil(new GwtApplicationConfiguration(DepthLab.FRAME_WIDTH, DepthLab.FRAME_HEIGHT)))
 			: floor() || tower() || planet() || lurker() ? new GwtApplicationConfiguration(FloorLab.FRAME_WIDTH, FloorLab.FRAME_HEIGHT)
 			: swell() ? new GwtApplicationConfiguration(3 * SwellLab.PANEL_WIDTH + 8, SwellLab.PANEL_HEIGHT)
 			: has("effects-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, FogLab.PANEL_HEIGHT)
@@ -60,6 +60,13 @@ public class BrowserTestLauncher extends GwtApplication
 	private static GwtApplicationConfiguration stencil(GwtApplicationConfiguration config)
 	{
 		config.stencil = true;
+		return config;
+	}
+
+	/** {@code config} antialiased (WebGL's multisampling): the depth lab's lines and card edges at any angle (r458). */
+	private static GwtApplicationConfiguration smooth(GwtApplicationConfiguration config)
+	{
+		config.antialiasing = true;
 		return config;
 	}
 

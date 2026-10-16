@@ -21,19 +21,23 @@
 		background: rgba(10, 13, 22, 0.78);
 		border: 1px solid rgba(255, 255, 255, 0.25);
 	}
-	/* A card's tag over its top left corner: its distance large, its name and speed under it. */
-	.depth-card { transform: translate(0, calc(-100% - 6px)); border-left-width: 4px; white-space: pre; font-size: 12px; font-weight: 500; line-height: 1.25; }
+	/* A card's tag over the middle of its top edge, a leader line down to it (r458): its distance large, the rest under it. */
+	.depth-card { transform: translate(-50%, calc(-100% - 14px)); border-left-width: 4px; white-space: pre; font-size: 12px; font-weight: 500; line-height: 1.25; }
 	.depth-card::first-line { font-size: 17px; font-weight: 700; }
-	/* The sky's over its top right corner, out of the farthest layer's way. */
-	.depth-sky { transform: translate(-100%, calc(-100% - 6px)); }
-	.depth-rule { transform: translate(-115%, -50%); background: none; border: none; color: rgba(255, 255, 255, 0.8); font-weight: 500; }
+	/* A rule's number beyond its far end, a gap's beside its line: on whichever side the page is turned to (r458). */
+	.depth-rule { transform: translate(-115%, -50%); background: none; border: none; color: rgba(255, 255, 255, 0.8); font-weight: 500; text-shadow: 0 0 3px #000, 0 0 6px #000; }
+	.depth-rule.depth-right { transform: translate(15%, -50%); }
 	.depth-gap { transform: translate(12%, -50%); border-style: dashed; }
-	.depth-camera { transform: translate(-12%, -170%); color: #ffd877; border-color: rgba(255, 216, 119, 0.6); }
+	.depth-gap.depth-left { transform: translate(-112%, -50%); }
+	.depth-camera { transform: translate(-50%, calc(-100% - 14px)); color: #ffd877; border-color: rgba(255, 216, 119, 0.6); }
+	.depth-person { transform: translate(-50%, calc(-100% - 10px)); font-size: 12px; font-weight: 500; color: #e6ebff; }
+	.depth-leaders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 	/* A phone's stage is a third as wide: the tags too, or a deep page's would not fit (r449). */
 	@media (max-width: 720px) {
 		.depth-tag { font-size: 10px; padding: 1px 4px; }
 		.depth-card { font-size: 9px; border-left-width: 3px; }
 		.depth-card::first-line { font-size: 11px; }
+		.depth-person { font-size: 9px; }
 	}
 	#depth-lab canvas { cursor: grab; }
 	.lab-copy.depth-slide { margin: 0; align-self: center; }
@@ -60,9 +64,11 @@
 	layer, which is the unit here ("4.0&times;": four front distances) and which the <b>camera's view</b> slider sets in
 	world units. Each card is the real reader drawing that one layer, standing at its distance and scaled by it about
 	the camera's eye: from the eye, it covers exactly what it covers in the game, so at <b>2D / 3D</b> 0 the picture is
-	the game's frame, and the slide to 3D is the same camera walking out. The ground is ruled at each front distance
-	(true, or compressed for a deep page: the numbers stay true), each card's foot in its colour, the gap to the next
-	card written beside it; the yellow lines are the camera's view. Drag the canvas to turn round the page, the wheel to
+	the game's frame, and the slide to 3D is the same camera walking out. The ground is ruled in <b>units</b> of your
+	choice: metres (the <b>front's width in metres</b> slider says how wide the front layer's view is in the world, 40 m
+	by default; a person 1.8 m tall stands beside the front card for scale), a phone's length (15 cm), or front
+	distances; true, or compressed for a deep page (the numbers stay true). Each card's foot is in its colour, the gap to
+	the next card written beside it; the yellow lines are the camera's view. Drag the canvas to turn round the page, the wheel to
 	come closer, the button or the space bar to slide between 2D and 3D. The layers keep scrolling at their speeds.</p>
 	</details>
 	<script src="lab.js"></script>

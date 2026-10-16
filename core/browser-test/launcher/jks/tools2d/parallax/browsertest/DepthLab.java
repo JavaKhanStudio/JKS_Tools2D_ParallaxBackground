@@ -50,6 +50,15 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	static final String[] FILES = { "pines-lab/forest.jplax", "anim-lab/beach.jplax", "fog-lab/s05.jplax", "fog-lab/s06.jplax", "fog-lab/s01.jplax" };
 	static final String[] SIZES = { "as the camera sees them", "all the front's size" };
 	static final String[] AXES = { "true distances", "compressed (square root)", "compressed (log)" };
+	/** The units the ground, the tags and the readout speak (r458): metres first, a phone's length, or front distances. */
+	static final String[] UNITS = { "metres", "phone lengths", "front distances" };
+	static final int METRES = 0, PHONES = 1, FRONTS = 2;
+	/** A phone's length and a person's height, in metres: the scale's two references. */
+	static final float PHONE = 0.15f, PERSON = 1.8f;
+	/** How wide the front layer's view is, in metres, by default: a world unit is a metre on a 40-unit-wide view. */
+	static final float ACROSS = 40;
+	/** The thinnest a line is drawn, in pixels of the back buffer: narrower, it fades instead (r458). */
+	static final float LINE_MIN = 1.6f, LINE_MAX = 5;
 	/**
 	 * What the lab opens on: 3D, the cards all the front's size on a log axis (the most readable side view of a deep
 	 * page), seen from the right of the camera, a little above, the camera's view 60 degrees across.
@@ -69,8 +78,8 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	private SpriteBatch batch;
 	private ShapeRenderer shapes;
 	private OrthographicCamera flatCamera;
-	private SelectElement page, axis, sizes;
-	private InputElement view, yaw, pitch, closer, fov, scroll;
+	private SelectElement page, axis, sizes, units;
+	private InputElement view, yaw, pitch, closer, fov, scroll, across;
 	private Element readout, overlay, labels;
 	private boolean clip, flat;
 	private int shownPage = -1;
@@ -89,6 +98,9 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	private final Vector3 eye = new Vector3(), target = new Vector3(), up = new Vector3(0, 1, 0), home = new Vector3(), pivot = new Vector3(),
 			projected = new Vector3();
 	private float cameraDistance, eased;
+	/** Metres a world unit; the side of the page the eye is on (1 its right, -1 its left). */
+	private float metresPerUnit = 1, side = 1;
+	private final Matrix4 toScreen = new Matrix4();
 	private final List<Element> tags = new ArrayList<>();
 	private int tagsUsed;
 	private String costLine = "";
@@ -127,6 +139,10 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		yaw = LabControls.slider(document, controls, "yaw", "turn (degrees round the page; drag the canvas)", -85, 85, 1, YAW);
 		pitch = LabControls.slider(document, controls, "pitch", "height (degrees above the ground; drag the canvas)", 2, 80, 1, PITCH);
 		closer = LabControls.slider(document, controls, "closer", "closer (the 3D camera's distance, 1 frames the page; the wheel)", 0.3f, 2.5f, 0.01f, CLOSER);
+		units = LabControls.choice(document, controls, "units",
+				"units (of the ground's rules and the tags: metres, a phone's length, or front distances, the camera's distance to the front layer)", UNITS, METRES);
+		across = LabControls.slider(document, controls, "across",
+				"front's width in metres (how wide the front layer's view is in the world: sets the metres; a person, 1.8 m, stands beside the front)", 4, 200, 1, ACROSS);
 		fov = LabControls.slider(document, controls, "fov", "camera's view (degrees across the 2D frame: how far the camera stands from the front layer, the one number the speeds do not give; narrower is farther and deeper)", 20, 110, 1, FOV);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -40, 40, 1, SCROLL);
 		Element button = document.createButtonElement();
@@ -166,6 +182,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		LabControls.read(pitch);
 		LabControls.read(closer);
 		cameraDistance = ParallaxDepth.cameraDistance(WORLD_WIDTH, LabControls.read(fov));
+		metresPerUnit = LabControls.read(across) / WORLD_WIDTH;
 		measure();
 	}
 
@@ -202,11 +219,13 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		for (int i = n - 1; i >= 0; i--)
 		{
 			line.append(names[i]).append(' ').append(times(distance[i]));
+			if (LabControls.read(units) != FRONTS && distance[i] != Float.POSITIVE_INFINITY)
+				line.append(" (").append(measured(distance[i])).append(')');
 			if (i > 0)
 				line.append(", ");
 		}
 		readout.setInnerText("distances from the camera, in front distances (the front layer's, " + two(cameraDistance)
-				+ " world units at this view): " + line + "; " + costLine);
+				+ " world units, " + metres(cameraDistance * metresPerUnit) + " at this view and width): " + line + "; " + costLine);
 	}
 
 	/** Where a layer {@code d} front distances away stands on the axis chosen: true, or compressed (1 stays 1). */
@@ -229,6 +248,35 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 
 	private static String two(float value)
 	{return String.valueOf(Math.round(value * 100) / 100.0);}
+
+	/** A length of {@code m} metres: "0.8 m", "35 m", "1.2 km". */
+	private static String metres(float m)
+	{return m >= 1000 ? Math.round(m / 100) / 10.0 + " km" : m >= 10 ? Math.round(m) + " m" : Math.round(m * 10) / 10.0 + " m";}
+
+	/** How many of the chosen unit one front distance is: the camera's distance to the front, in metres or phones. */
+	private float perFront()
+	{
+		int unit = LabControls.read(units);
+		return unit == FRONTS ? 1 : cameraDistance * metresPerUnit / (unit == PHONES ? PHONE : 1);
+	}
+
+	/** {@code v} of the chosen unit, written: "35 m", "230 phones", "4.0×". */
+	private String unitText(float v)
+	{
+		switch (LabControls.read(units))
+		{
+		case PHONES:
+			return (v >= 1000 ? Math.round(v / 100) / 10.0 + "k" : v >= 10 ? String.valueOf(Math.round(v)) : String.valueOf(Math.round(v * 10) / 10.0)) + " phones";
+		case FRONTS:
+			return (Math.round(v * 10) / 10.0) + "×";
+		default:
+			return metres(v);
+		}
+	}
+
+	/** A distance of {@code d} front distances in the chosen unit, "∞" for a still layer. */
+	private String measured(float d)
+	{return d == Float.POSITIVE_INFINITY ? "∞ (still)" : unitText(d * perFront());}
 
 	@Override
 	public void act(float seconds)
@@ -320,6 +368,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		projection.setToProjection(-near * tanUp * a, near * tanUp * a, near * tanUp * (shift - 1), near * tanUp * (shift + 1), near, far);
 		look.setToLookAt(eye, target, up);
 		combined.set(projection).mul(look);
+		side = eye.x >= cx ? 1 : -1;
 
 		int calls = 0;
 		tagsUsed = 0;
@@ -339,6 +388,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 			else
 				calls += card(i, e, vw, vh, d);
 		}
+		person(e, vw, d);
 		camera(e, vw, vh, d);
 		hideTags();
 		spread(overlay, labels);
@@ -362,6 +412,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		{
 			from.set(forward).scl(-radius).add(pivot);
 			float left = Float.MAX_VALUE, rightmost = -Float.MAX_VALUE, low = Float.MAX_VALUE, high = -Float.MAX_VALUE;
+			boolean behind = false;
 			for (int i = -1; i < placed.length; i++)
 			{
 				if (i < 0 ? !sky : distance[i] == Float.POSITIVE_INFINITY)
@@ -374,7 +425,14 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 					else
 						corner.set((c & 1) == 0 ? cx - vw / 2 * s : cx + vw / 2 * s, (c & 2) == 0 ? 0 : vh * s, z);
 					corner.sub(from);
-					float along = Math.max(corner.dot(forward), d * 0.05f);
+					float along = corner.dot(forward);
+					// A corner behind the eye or at it has no place on the screen: stand back first (r458: from behind
+					// the camera, low, the pass panned to it and put the eye under the ground).
+					if (along < d * 0.05f)
+					{
+						behind = true;
+						continue;
+					}
 					float x = corner.dot(right) / along / tanAcross, y = corner.dot(above) / along / tanUp;
 					left = Math.min(left, x);
 					rightmost = Math.max(rightmost, x);
@@ -382,9 +440,16 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 					high = Math.max(high, y);
 				}
 			}
-			// Pan to the corners' middle at the pivot's distance, then come as close as the larger spread allows.
+			if (behind)
+			{
+				radius *= 2;
+				continue;
+			}
+			// Pan to the corners' middle at the pivot's distance, then come as close as the larger spread allows; never
+			// under the ground.
 			pivot.mulAdd(right, (left + rightmost) / 2 * tanAcross * radius).mulAdd(above, (low + high) / 2 * tanUp * radius);
 			float spread = Math.max((rightmost - left) / 2, (high - low) / 2) / 0.86f;
+			pivot.y = Math.max(0, pivot.y);
 			radius *= Math.max(0.25f, Math.min(4, spread));
 		}
 		return radius;
@@ -424,9 +489,9 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	}
 
 	/**
-	 * The ground: a dark floor under the cards, ruled across at each whole front distance (the numbers as tags at its
-	 * left), the camera's view opening on it from the eye, and each card's foot in its colour, the gap to the next card
-	 * written between them.
+	 * The ground: a dark floor under the cards, ruled across in the chosen unit (the numbers as tags on the side away
+	 * from the eye), the camera's view opening on it from the eye, and each card's foot in its colour, the gap to the
+	 * next card written between them on the eye's side.
 	 */
 	private void ground(float e, float vw, float d)
 	{
@@ -440,14 +505,45 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		beginShapes(ShapeType.Filled);
 		Color nearC = new Color(0.1f, 0.12f, 0.18f, 0.92f * e), farC = new Color(0.06f, 0.07f, 0.11f, 0.0f);
 		shapes.rect(cx - halfFar, -zNear, 2 * halfFar, zNear - zFar, nearC, nearC, farC, farC);
+		shapes.end();
+		beginLines();
 		// The view's edges on the ground: from the eye, wider as they go.
-		Color edge = new Color(1, 1, 1, 0.22f * e);
-		shapes.setColor(edge);
-		float spread = vw / 2 / d;
-		float thin = d * 0.006f;
-		shapes.rectLine(cx, -d, cx - spread * (d - zFar), -zFar, thin);
-		shapes.rectLine(cx, -d, cx + spread * (d - zFar), -zFar, thin);
-		// The rules: every whole front distance, the axis's ticks, a stronger line at the round ones.
+		float spread = vw / 2 / d, thin = d * 0.006f;
+		line(cx, 0, d, cx - spread * (d - zFar), 0, zFar, thin, 1, 1, 1, 0.22f * e);
+		line(cx, 0, d, cx + spread * (d - zFar), 0, zFar, thin, 1, 1, 1, 0.22f * e);
+		if (LabControls.read(units) == FRONTS)
+			frontRules(e, vw, d, far, thin);
+		else
+			unitRules(e, vw, d, far, thin);
+		// Each layer's foot, and the gap to the one in front of it.
+		for (int i = 0; i < layers.size(); i++)
+		{
+			float k = placed[i], z = -(k - 1) * d, half = vw / 2 * scaleOf(k);
+			Color accent = ACCENTS[i % ACCENTS.length];
+			line(cx - half, 0, z, cx + half, 0, z, thin * 3, accent.r, accent.g, accent.b, 0.9f * e);
+			if (i + 1 < layers.size() && distance[i] != Float.POSITIVE_INFINITY)
+			{
+				float k2 = placed[i + 1], z2 = -(k2 - 1) * d, x = cx + side * vw / 2 * Math.max(scaleOf(k), scaleOf(k2)) * 1.06f;
+				line(x, 0, z, x, 0, z2, thin * 1.6f, accent.r, accent.g, accent.b, 0.55f * e);
+				float gap = (distance[i] - distance[i + 1]) * perFront();
+				tag(x, 0, (z + z2) / 2, "+" + unitText(gap), side > 0 ? "depth-gap" : "depth-gap depth-left", e, accent, 200 + i, "down");
+			}
+		}
+		shapes.end();
+	}
+
+	/** A rule across the ground at {@code k} on the axis, numbered {@code text} on the side away from the eye, or not. */
+	private void rule(float e, float vw, float d, float k, float thin, boolean strong, String text, int rank)
+	{
+		float cx = vw / 2, z = -(k - 1) * d, half = vw / 2 * scaleOf(k) * (strong ? 1.04f : 1);
+		line(cx - half, 0, z, cx + half, 0, z, thin * (strong ? 2f : 1f), 1, 1, 1, (strong ? 0.45f : 0.16f) * e);
+		if (text != null)
+			tag(cx - side * half, 0, z, text, side > 0 ? "depth-rule" : "depth-rule depth-right", e, null, rank, "hide");
+	}
+
+	/** The rules in front distances: every whole one, a stronger line at the numbered ones. */
+	private void frontRules(float e, float vw, float d, float far, float thin)
+	{
 		float deepest = 1;
 		for (int i = 0; i < placed.length; i++)
 			if (distance[i] != Float.POSITIVE_INFINITY)
@@ -462,28 +558,43 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 			if (k > far)
 				break;
 			boolean numbered = t == 1 || t % every == 0;
-			float z = -(k - 1) * d, half = vw / 2 * scaleOf(k) * (numbered ? 1.04f : 1);
-			shapes.setColor(1, 1, 1, (numbered ? 0.45f : 0.16f) * e);
-			shapes.rectLine(cx - half, -z, cx + half, -z, thin * (numbered ? 2f : 1f) * (float) Math.sqrt(k));
-			if (numbered)
-				tag(cx - half, 0, z, t + "×", "depth-rule", e, null, 300 + t, "hide");
+			rule(e, vw, d, k, thin, numbered, numbered ? t + "×" : null, 300 + t);
 		}
-		// Each layer's foot, and the gap to the one in front of it.
-		for (int i = 0; i < layers.size(); i++)
+	}
+
+	/**
+	 * The rules in metres or phones (r458): round numbers, 1, 2 and 5 times a power of ten on the log axis, a round step
+	 * on the others, from just past the camera to the sky; a faint line halfway between two on the true axis.
+	 */
+	private void unitRules(float e, float vw, float d, float far, float thin)
+	{
+		float per = perFront(), low = distanceAt(0.12f) * per, high = distanceAt(far) * per;
+		int rank = 300;
+		if (LabControls.read(axis) == 2)
 		{
-			float k = placed[i], z = -(k - 1) * d, half = vw / 2 * scaleOf(k);
-			Color accent = ACCENTS[i % ACCENTS.length];
-			shapes.setColor(accent.r, accent.g, accent.b, 0.9f * e);
-			shapes.rectLine(cx - half, -z, cx + half, -z, thin * 3 * (float) Math.sqrt(k));
-			if (i + 1 < layers.size() && distance[i] != Float.POSITIVE_INFINITY)
-			{
-				float k2 = placed[i + 1], z2 = -(k2 - 1) * d, x = cx + vw / 2 * Math.max(scaleOf(k), scaleOf(k2)) * 1.06f;
-				shapes.setColor(accent.r, accent.g, accent.b, 0.55f * e);
-				shapes.rectLine(x, -z, x, -z2, thin * 1.6f * (float) Math.sqrt(k));
-				tag(x, 0, (z + z2) / 2, "+" + (Math.round((distance[i] - distance[i + 1]) * 10) / 10.0) + "×", "depth-gap", e, accent, 200 + i, "down");
-			}
+			for (double ten = Math.pow(10, Math.floor(Math.log(low) / Math.log(10))); ten <= high; ten *= 10)
+				for (int m : new int[] { 1, 2, 5 })
+				{
+					float v = (float) (m * ten);
+					if (v >= low && v <= high)
+						rule(e, vw, d, place(v / per), thin, true, unitText(v), rank++);
+				}
+			return;
 		}
-		shapes.end();
+		float step = nice(high / 7);
+		for (float v = step / 2; v <= high; v += step / 2)
+		{
+			boolean strong = Math.round(v / step * 2) % 2 == 0;
+			if (v >= low && (strong || LabControls.read(axis) == 0))
+				rule(e, vw, d, place(v / per), thin, strong, strong ? unitText(v) : null, rank++);
+		}
+	}
+
+	/** The round number at or above {@code x}: 1, 2 or 5 times a power of ten. */
+	private static float nice(float x)
+	{
+		double ten = Math.pow(10, Math.floor(Math.log(x) / Math.log(10))), f = x / ten;
+		return (float) ((f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * ten);
 	}
 
 	/** The true distance standing at {@code k} on the axis: {@link #place}'s inverse. */
@@ -514,7 +625,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 			heart.bottomSquare.draw(shapes);
 		shapes.end();
 		frame(-1, e, vw, vh, d, new Color(1, 1, 1, 1));
-		tag(vw / 2 * (1 + scaleOf(skyPlaced)), vh * scaleOf(skyPlaced), -(skyPlaced - 1) * d, "∞\nsky", "depth-card depth-sky", e, null, layers.size(), "up");
+		cardTag(skyPlaced, vw, vh, d, "∞\nsky", "depth-card depth-sky", e, null, layers.size());
 	}
 
 	/** Layer {@code i} on its card: the reader draws it alone through the card's matrix. */
@@ -546,26 +657,58 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		batch.setTransformMatrix(toWorld.idt());
 		frame(i, e, vw, vh, d, accent);
 		ParallaxLayer layer = layers.get(i);
-		tag(vw / 2 * (1 - scaleOf(k)), vh * scaleOf(k), -(k - 1) * d,
-				// Past five layers the tags would cover each other: the distance alone, the rest in the readout.
-				layers.size() > 5 ? times(distance[i]) : times(distance[i]) + "\n" + names[i] + " · speed "
-						+ LabControls.text(Math.abs(layer.getParallaxSpeedRatioX())), "depth-card", e, accent, layers.size() - 1 - i, "up");
+		// Past five layers the distance alone, the rest in the readout.
+		String first = measured(distance[i]), more = (LabControls.read(units) == FRONTS ? "" : times(distance[i]) + " · ") + names[i] + " · speed "
+				+ LabControls.text(Math.abs(layer.getParallaxSpeedRatioX()));
+		cardTag(k, vw, vh, d, layers.size() > 5 ? first : first + "\n" + more, "depth-card", e, accent, layers.size() - 1 - i);
 		return calls;
 	}
 
-	/** A card's outline, in its accent. */
+	/**
+	 * A card's tag (r458), over its top edge's corner on the side away from the eye: seen straight on, the nearer cards'
+	 * corners stand higher and wider than the farther ones', a stair; seen from the side, the far corners stand clear of
+	 * the cards in front. A corner off the screen (a near card seen from close) slides along the edge toward its middle
+	 * until it is on.
+	 */
+	private void cardTag(float k, float vw, float vh, float d, String text, String kind, float e, Color accent, int rank)
+	{
+		float s = scaleOf(k), y = vh * s, z = -(k - 1) * d;
+		for (int step = 0; step <= 8; step++)
+		{
+			float x = vw / 2 - side * vw / 2 * s * (1 - step / 8f);
+			projected.set(x, y, z).prj(combined);
+			if (step == 8 || Math.abs(projected.x) < 0.94f && Math.abs(projected.y) < 0.94f && ahead(x, y, z))
+			{
+				tag(x, y, z, text, kind, e, accent, rank, "up");
+				return;
+			}
+		}
+	}
+
+	/** Whether the world point (x, y, z) is in front of the eye. */
+	private boolean ahead(float x, float y, float z)
+	{return (x - eye.x) * (target.x - eye.x) + (y - eye.y) * (target.y - eye.y) + (z - eye.z) * (target.z - eye.z) > 0;}
+
+	/** A card's outline, in its accent: {@link #card}'s corners, each edge a {@link #line}. */
 	private void frame(int i, float e, float vw, float vh, float d, Color accent)
 	{
 		if (!(e > 0.01f))
 			return;
-		shapes.setProjectionMatrix(cardCombined.set(combined).mul(card));
-		beginShapes(ShapeType.Filled);
-		shapes.setColor(accent.r, accent.g, accent.b, 0.75f * e);
-		float t = 0.05f;
-		shapes.rect(0, 0, vw, t);
-		shapes.rect(0, vh - t, vw, t);
-		shapes.rect(0, 0, t, vh);
-		shapes.rect(vw - t, 0, t, vh);
+		float[] corners = new float[12];
+		for (int c = 0; c < 4; c++)
+		{
+			projected.set(c == 1 || c == 2 ? vw : 0, c >= 2 ? vh : 0, 0).mul(card);
+			corners[c * 3] = projected.x;
+			corners[c * 3 + 1] = projected.y;
+			corners[c * 3 + 2] = projected.z;
+		}
+		beginLines();
+		for (int c = 0; c < 4; c++)
+		{
+			int a = c * 3, b = (c + 1) % 4 * 3;
+			line(corners[a], corners[a + 1], corners[a + 2], corners[b], corners[b + 1], corners[b + 2], 0.06f * scaleOf(i < 0 ? skyPlaced : placed[i]),
+					accent.r, accent.g, accent.b, 0.75f * e);
+		}
 		shapes.end();
 	}
 
@@ -574,20 +717,95 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		if (!(e > 0.01f))
 			return;
-		shapes.setProjectionMatrix(combined);
-		beginShapes(ShapeType.Line);
-		shapes.setColor(1, 0.85f, 0.45f, 0.85f * e);
-		float cx = vw / 2;
-		shapes.line(cx, 0, d, 0, 0, 0);
-		shapes.line(cx, 0, d, vw, 0, 0);
-		shapes.line(cx, 0, d, 0, vh, 0);
-		shapes.line(cx, 0, d, vw, vh, 0);
+		float cx = vw / 2, thin = d * 0.004f;
+		beginLines();
+		for (int c = 0; c < 4; c++)
+			line(cx, 0, d, (c & 1) == 0 ? 0 : vw, (c & 2) == 0 ? 0 : vh, 0, thin, 1, 0.85f, 0.45f, 0.85f * e);
 		shapes.end();
+		shapes.setProjectionMatrix(combined);
 		beginShapes(ShapeType.Filled);
 		shapes.setColor(1, 0.85f, 0.45f, e);
 		shapes.box(cx - 0.6f, 0, d + 0.6f, 1.2f, 0.9f, 1.2f);
 		shapes.end();
-		tag(cx, 1.2f, d, "camera · " + two(cameraDistance) + " units from the front", "depth-camera", e, null, 100, "up");
+		tag(cx, 0.9f, d, "camera · " + (LabControls.read(units) == FRONTS ? two(cameraDistance) + " units" : unitText(perFront())) + " from the front",
+				"depth-camera", e, null, 100, "up");
+	}
+
+	/**
+	 * The scale's reference (r458): a person, {@link #PERSON} tall, standing on the ground beside the front card on the
+	 * eye's side, a flat cut-out turned to face the eye so it never shows edge on.
+	 */
+	private void person(float e, float vw, float d)
+	{
+		if (!(e > 0.01f) || LabControls.read(units) == FRONTS)
+			return;
+		float h = PERSON / metresPerUnit, x = vw / 2 + side * (vw / 2 + h * 0.6f), z = 0;
+		toWorld.setToTranslation(x, 0, z).rotateRad(0, 1, 0, (float) Math.atan2(eye.x - x, eye.z - z));
+		shapes.setProjectionMatrix(cardCombined.set(combined).mul(toWorld));
+		beginShapes(ShapeType.Filled);
+		shapes.setColor(0.92f, 0.94f, 1f, 0.95f * e);
+		shapes.rect(-0.13f * h, 0, 0.1f * h, 0.47f * h);
+		shapes.rect(0.03f * h, 0, 0.1f * h, 0.47f * h);
+		shapes.rect(-0.15f * h, 0.44f * h, 0.3f * h, 0.38f * h);
+		shapes.rect(-0.22f * h, 0.47f * h, 0.07f * h, 0.33f * h);
+		shapes.rect(0.15f * h, 0.47f * h, 0.07f * h, 0.33f * h);
+		shapes.circle(0, 0.91f * h, 0.085f * h, 20);
+		shapes.end();
+		String size = metres(PERSON) + (LabControls.read(units) == PHONES ? " · " + Math.round(PERSON / PHONE) + " phones" : "");
+		tag(x, h * 1.05f, z, "a person · " + size, "depth-person", e, null, 150, "up");
+	}
+
+	/** Shapes begun in the back buffer's pixels, for {@link #line}. */
+	private void beginLines()
+	{
+		shapes.setProjectionMatrix(toScreen.setToOrtho2D(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight()));
+		beginShapes(ShapeType.Filled);
+	}
+
+	/**
+	 * A line from (ax, ay, az) to (bx, by, bz) in the world (r458): cut where it passes behind the eye, then drawn on
+	 * the screen as a quad {@code width} world units wide at each end, between {@link #LINE_MIN} and {@link #LINE_MAX} pixels; one that
+	 * would be thinner fades instead, so a far rule seen edge on stays a line, not dashes. Between
+	 * {@link #beginLines()} and the shapes' end.
+	 */
+	private void line(float ax, float ay, float az, float bx, float by, float bz, float width, float r, float g, float b, float a)
+	{
+		float[] m = combined.val;
+		float acx = m[0] * ax + m[4] * ay + m[8] * az + m[12], acy = m[1] * ax + m[5] * ay + m[9] * az + m[13], acw = m[3] * ax + m[7] * ay + m[11] * az + m[15];
+		float bcx = m[0] * bx + m[4] * by + m[8] * bz + m[12], bcy = m[1] * bx + m[5] * by + m[9] * bz + m[13], bcw = m[3] * bx + m[7] * by + m[11] * bz + m[15];
+		float near = cameraDistance * 0.02f;
+		if (acw < near && bcw < near)
+			return;
+		if (acw < near || bcw < near)
+		{
+			float t = (near - acw) / (bcw - acw);
+			if (acw < near)
+			{
+				acx += (bcx - acx) * t;
+				acy += (bcy - acy) * t;
+				acw = near;
+			}
+			else
+			{
+				bcx = acx + (bcx - acx) * t;
+				bcy = acy + (bcy - acy) * t;
+				bcw = near;
+			}
+		}
+		float w = Gdx.graphics.getBackBufferWidth() / 2f, h = Gdx.graphics.getBackBufferHeight() / 2f, pixels = projection.val[0] * w;
+		float x1 = (acx / acw + 1) * w, y1 = (acy / acw + 1) * h, x2 = (bcx / bcw + 1) * w, y2 = (bcy / bcw + 1) * h;
+		float dx = x2 - x1, dy = y2 - y1, length = (float) Math.sqrt(dx * dx + dy * dy);
+		if (length < 0.01f)
+			return;
+		float w1 = width * pixels / acw, w2 = width * pixels / bcw;
+		// Thinner than the least width: drawn at it, fainter by what it lacks.
+		float faint = Math.min(1, (float) Math.sqrt(Math.max(w1, w2) / LINE_MIN));
+		w1 = Math.max(LINE_MIN, Math.min(LINE_MAX, w1)) / 2;
+		w2 = Math.max(LINE_MIN, Math.min(LINE_MAX, w2)) / 2;
+		float nx = -dy / length, ny = dx / length;
+		shapes.setColor(r, g, b, a * faint);
+		shapes.triangle(x1 + nx * w1, y1 + ny * w1, x1 - nx * w1, y1 - ny * w1, x2 + nx * w2, y2 + ny * w2);
+		shapes.triangle(x1 - nx * w1, y1 - ny * w1, x2 - nx * w2, y2 - ny * w2, x2 + nx * w2, y2 + ny * w2);
 	}
 
 	/** The shapes begun, blending: the batch turns blending off when it ends. */
@@ -637,65 +855,105 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	}
 
 	/**
-	 * No tag over another (r449): on a deep page the cards' corners crowd, and the sky's meets the back layer's. The tags
-	 * are taken by rank, the front card's first, each kept where {@link #tag} put it unless it covers one already laid or
-	 * the page's chip; then it goes up (the cards', the sky's, the camera's: a stair, each still in its card's colour) or
-	 * down (the gaps') past what it covers, the other way when its way leaves the stage, else it is hidden (a rule's
-	 * number at once): no tag is cut by the stage's edge either. One measure of every tag, then numbers only.
+	 * No tag over another (r449), readable whichever way the page is turned (r458). The tags are taken by rank, the
+	 * front card's first; each stays where {@link #tag} put it unless it covers one already laid or the page's chip, or
+	 * the stage cuts it. Then it takes the nearest free place, its way ("up" or "down") cheaper than the other and
+	 * sideways, within a few tag heights, else it is hidden; a rule's number ("hide") is hidden at once. A leader line
+	 * in its colour runs from what it labels to the tag, every tag but a rule's: the card's, the sky's, the camera's,
+	 * the person's at once, a gap's once moved. One measure of every tag, then numbers only.
 	 */
 	private static native void spread(Element overlay, Element labels) /*-{
-		var GAP = 3, laid = [], tags = [];
+		var GAP = 4, laid = [], tags = [];
+		var svgNs = 'http://www.w3.org/2000/svg';
+		var svg = overlay.querySelector('svg.depth-leaders');
+		if (!svg)
+		{
+			svg = $doc.createElementNS(svgNs, 'svg');
+			svg.setAttribute('class', 'depth-leaders');
+			overlay.insertBefore(svg, overlay.firstChild);
+		}
+		while (svg.firstChild)
+			svg.removeChild(svg.firstChild);
 		var chips = labels.children;
 		for (var c = 0; c < chips.length; c++)
 			laid.push(chips[c].getBoundingClientRect());
-		var kids = overlay.children;
+		var kids = overlay.querySelectorAll('.depth-tag');
 		for (var i = 0; i < kids.length; i++)
 		{
 			kids[i].style.marginTop = '';
+			kids[i].style.marginLeft = '';
 			if (kids[i].style.display !== 'none')
 				tags.push(kids[i]);
 		}
 		tags.sort(function (a, b) { return a.getAttribute('data-rank') - b.getAttribute('data-rank'); });
 		var boxes = tags.map(function (t) { return t.getBoundingClientRect(); });
 		var stage = overlay.getBoundingClientRect();
-		// How far b must move, going way, to cover nothing laid; null when it would leave the stage first.
-		function clear(b, way)
+		// The places a tag may take, nearest first: on an 8 px grid, up (its way) cheaper than sideways, down dearer.
+		var offsets = $wnd.depthTagOffsets;
+		if (!offsets)
 		{
-			var dy = 0;
-			for (var tries = 0; tries < 60; tries++)
+			offsets = [];
+			for (var x = -240; x <= 240; x += 8)
+				for (var y = -160; y <= 160; y += 8)
+					offsets.push([x, y, Math.sqrt(x * x + (y < 0 ? 0.6 * y * y : 2.2 * y * y))]);
+			offsets.sort(function (a, b) { return a[2] - b[2]; });
+			$wnd.depthTagOffsets = offsets;
+		}
+		function fits(b, dx, dy)
+		{
+			if (b.left + dx < stage.left || b.right + dx > stage.right || b.top + dy < stage.top || b.bottom + dy > stage.bottom)
+				return false;
+			for (var j = 0; j < laid.length; j++)
 			{
-				if (b.top + dy < stage.top || b.bottom + dy > stage.bottom)
-					return null;
-				var over = null;
-				for (var j = 0; j < laid.length && !over; j++)
-				{
-					var o = laid[j];
-					if (b.left < o.right + GAP && o.left < b.right + GAP && b.top + dy < o.bottom + GAP && o.top < b.bottom + dy + GAP)
-						over = o;
-				}
-				if (!over)
-					return dy;
-				if (way === 'hide')
-					return null;
-				dy = way === 'up' ? over.top - GAP - b.bottom : over.bottom + GAP - b.top;
+				var o = laid[j];
+				if (b.left + dx < o.right + GAP && o.left < b.right + dx + GAP && b.top + dy < o.bottom + GAP && o.top < b.bottom + dy + GAP)
+					return false;
 			}
-			return null;
+			return true;
 		}
 		for (var i = 0; i < tags.length; i++)
 		{
-			var b = boxes[i], move = tags[i].getAttribute('data-move');
-			// Out of room its way (a phone's short stage): the other way; then hidden, the readout still lists it.
-			var dy = clear(b, move);
-			if (dy === null && move !== 'hide')
-				dy = clear(b, move === 'up' ? 'down' : 'up');
-			if (dy === null || b.left < stage.left || b.right > stage.right)
+			var b = boxes[i], move = tags[i].getAttribute('data-move'), at = null;
+			if (fits(b, 0, 0))
+				at = [0, 0];
+			else if (move !== 'hide')
+				for (var c = 1; c < offsets.length && !at; c++)
+				{
+					var dy = move === 'down' ? -offsets[c][1] : offsets[c][1];
+					if (fits(b, offsets[c][0], dy))
+						at = [offsets[c][0], dy];
+				}
+			if (!at)
 			{
 				tags[i].style.display = 'none';
 				continue;
 			}
-			if (dy !== 0)
-				tags[i].style.marginTop = dy + 'px';
-			laid.push({ left: b.left, right: b.right, top: b.top + dy, bottom: b.bottom + dy });
+			tags[i].style.marginLeft = at[0] + 'px';
+			tags[i].style.marginTop = at[1] + 'px';
+			var box = { left: b.left + at[0], right: b.right + at[0], top: b.top + at[1], bottom: b.bottom + at[1] };
+			laid.push(box);
+			// The leader: from the point the tag labels to the nearest point of its box.
+			if (move === 'hide' || (move === 'down' && at[0] === 0 && at[1] === 0))
+				continue;
+			var ax = stage.width * parseFloat(tags[i].style.left) / 100, ay = stage.height * parseFloat(tags[i].style.top) / 100;
+			var tx = Math.max(box.left - stage.left, Math.min(box.right - stage.left, ax)), ty = Math.max(box.top - stage.top, Math.min(box.bottom - stage.top, ay));
+			var colour = tags[i].style.borderColor || 'rgba(255, 255, 255, 0.7)', opacity = tags[i].style.opacity;
+			var lead = $doc.createElementNS(svgNs, 'line');
+			lead.setAttribute('x1', ax);
+			lead.setAttribute('y1', ay);
+			lead.setAttribute('x2', tx);
+			lead.setAttribute('y2', ty);
+			lead.setAttribute('stroke', colour);
+			lead.setAttribute('stroke-width', '1.5');
+			lead.setAttribute('opacity', opacity);
+			svg.appendChild(lead);
+			var dot = $doc.createElementNS(svgNs, 'circle');
+			dot.setAttribute('cx', ax);
+			dot.setAttribute('cy', ay);
+			dot.setAttribute('r', '2.5');
+			dot.setAttribute('fill', colour);
+			dot.setAttribute('opacity', opacity);
+			svg.appendChild(dot);
 		}
 	}-*/;
 

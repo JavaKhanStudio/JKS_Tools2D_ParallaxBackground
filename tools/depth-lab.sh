@@ -7,6 +7,9 @@
 #   tools/depth-lab.sh --pages DIR     one still per page, headless: DIR/p0.png ..., p0-seen.png ... (the cards as the
 #                                      camera sees them), p0-phone.png ... (a 390px phone); fails when two tags cover
 #                                      each other or the stage cuts one, there and turned round the page (r449)
+#   tools/depth-lab.sh --angles DIR    three stills of the first page (r458): DIR/straight.png, side.png, steep.png; then
+#                                      turned to 54 angles in each unit: fails when a tag covers another or the stage
+#                                      cuts one, or no card's tag shows (an empty view)
 #   tools/depth-lab.sh --clip F.mp4    a clip, headless: the slide from 2D into 3D, a turn round the page and back,
 #                                      12 s at 30 fps, stepped at game speed (window.depthLabAct)
 #   tools/depth-lab.sh --seam DIR      the check that the 3D view at 0 is the game's frame: every page drawn by the
@@ -24,6 +27,7 @@ while [ $# -gt 0 ]; do
 		--shot) MODE=shot; OUT="$(realpath -m "$2")"; shift ;;
 		--clip) MODE=clip; OUT="$(realpath -m "$2")"; shift ;;
 		--pages) MODE=pages; OUT="$(realpath -m "$2")"; shift ;;
+		--angles) MODE=angles; OUT="$(realpath -m "$2")"; shift ;;
 		--seam) MODE=seam; OUT="$(realpath -m "$2")"; shift ;;
 		--slider) SLIDERS="$SLIDERS $2"; shift ;;
 		--big) BIG=1 ;;
@@ -69,7 +73,7 @@ fi
 FRAMES=$(mktemp -d)
 trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT
 python3 tools/r444-depth/drive.py "$URL" "$CHROME" "$FRAMES" "$MODE" "$BIG" "$SLIDERS" || exit 1
-if [ $MODE = pages ] || [ $MODE = seam ]; then
+if [ $MODE = pages ] || [ $MODE = seam ] || [ $MODE = angles ]; then
 	mkdir -p "$OUT" && cp "$FRAMES"/*.png "$OUT"/ && echo "stills: $OUT"
 elif [ $MODE = shot ]; then
 	cp "$FRAMES/still.png" "$OUT" && echo "still: $OUT"
