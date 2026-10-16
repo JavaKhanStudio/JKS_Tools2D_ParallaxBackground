@@ -6,11 +6,11 @@
 	<title>Shadow lab (r425): should a layer cast its shadow on the layer behind?</title>
 	<link rel="stylesheet" href="lab.css">
 	<style>
-	/* The sun dial (r425): the suns seen from above, over B's bottom right corner. */
+	/* The sun dial (r425): the suns seen from above, over C's bottom right corner. */
 	/* Over the kit's .lab-stage canvas, which stretches the reader's canvas to the stage. */
 	.lab-stage canvas.sun-dial { position: absolute; right: 8px; bottom: 8px; width: 132px !important; height: 132px !important;
 		cursor: grab; touch-action: none; border-radius: 50%; }
-	@media (max-width: 719px) { .lab-stage canvas.sun-dial { width: 52px !important; height: 52px !important; right: 3px; bottom: 3px; } }
+	@media (max-width: 719px) { .lab-stage canvas.sun-dial { width: 40px !important; height: 40px !important; right: 3px; bottom: 3px; } }
 	</style>
 	<!-- ShadowLab (r425): r365's AI forest page, its pines casting their shadow on the hills behind them, from one light or two. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
@@ -22,7 +22,7 @@
 		<span id="shadow-copy-state" class="lab-copy-state"></span>
 		<button id="shadow-copy" class="lab-copy">Copy settings</button>
 	</header>
-	<div id="shadow-lab" class="lab-stage lab-row">
+	<div id="shadow-lab" class="lab-stage lab-row lab-three">
 		<div id="embed-browsertests"></div>
 		<div id="shadow-labels" class="lab-labels"></div>
 		<canvas id="shadow-dial" class="sun-dial" width="132" height="132" title="the suns, seen from above: you at the bottom, the picture at the top, overhead in the middle, the horizon at the rim. Drag a sun."></canvas>
@@ -31,18 +31,18 @@
 	<textarea id="shadow-copy-json" class="lab-copy-json" hidden readonly></textarea>
 	<details class="lab-about">
 		<summary>What this lab shows</summary>
-		<p id="shadow-about">r365's AI forest page (the hills lab's, its hills as they ship), drawn twice by the real
-	reader: <b>A</b> as painted, <b>B</b> with the pines casting their shadow on the hills just behind them, and on
-	nothing else: not on the sky, not on the layers further back. Each light is a <b>sun</b>: a side round you (behind
+		<p id="shadow-about">r365's AI forest page (the hills lab's, its hills as they ship), drawn three times by the
+	real reader, side by side: <b>A</b> as painted, <b>B</b> and <b>C</b> with the pines casting their shadow on the
+	hills just behind them, and on nothing else: not on the sky, not on the layers further back. Each light is a <b>sun</b>: a side round you (behind
 	you, on your left or right, or ahead in the picture) and a height over the horizon, set by its sliders or by
-	dragging it on the dial over B's corner (seen from above: you at the bottom, the picture at the top, overhead in the
+	dragging it on the dial over C's corner (seen from above: you at the bottom, the picture at the top, overhead in the
 	middle, the horizon at the rim; the line from the middle shows where its shadows point). Sunlight comes from above,
 	so a shadow lands below and away from the sun: on hills <b>distance</b> behind the pines, a low sun from behind
 	your left lays it long to the right, a high one drops it behind the trees. A sun ahead casts toward you, onto
-	nothing behind the pines. As the camera scrolls, the shadow <b>moves with</b> the pines (it stays under its tree) or
-	with the hills (as the world would: the trees, nearer, slide past it). Where two suns' shadows meet, it is darker. A
+	nothing behind the pines. As the camera scrolls, B's shadow <b>moves with the pines</b> (it stays under its tree), C's
+	<b>with the hills</b> (as the world would: the trees, nearer, slide past it). Where two suns' shadows meet, it is darker. A
 	lab, not an effect yet: what ships, if any of it, waits for your tests. The view without the pines shows the
-	shadow's shape alone. Copy settings gives every control as JSON for the card.</p>
+	shadow's shape alone.</p>
 	</details>
 	<script src="lab.js"></script>
 	<script>

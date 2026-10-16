@@ -17,7 +17,7 @@ import com.google.gwt.dom.client.Document;
  * panels in a row. anim-lab.html, with an {@code #anim-lab}: the animation lab (r407,
  * {@link AnimLab}), four panels. hills-lab.html, with a {@code #hills-lab}: the hills lab (r384, {@link HillsLab}), two
  * panels side by side. pines-lab.html, with a {@code #pines-lab}: the pines lab (r421, {@link PinesLab}), two panels.
- * shadow-lab.html, with a {@code #shadow-lab}: the shadow lab (r425, {@link ShadowLab}), two panels
+ * shadow-lab.html, with a {@code #shadow-lab}: the shadow lab (r425, {@link ShadowLab}), three panels
  * side by side, with a stencil buffer.
  */
 public class BrowserTestLauncher extends GwtApplication
@@ -47,7 +47,7 @@ public class BrowserTestLauncher extends GwtApplication
 			: has("effects-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, FogLab.PANEL_HEIGHT)
 			: has("hills-lab") ? new GwtApplicationConfiguration(2 * HillsLab.FRAME_WIDTH + 4, HillsLab.FRAME_HEIGHT)
 			: has("pines-lab") ? new GwtApplicationConfiguration(2 * PinesLab.FRAME_WIDTH + 4, PinesLab.FRAME_HEIGHT)
-			: has("shadow-lab") ? stencil(new GwtApplicationConfiguration(2 * ShadowLab.FRAME_WIDTH + 4, ShadowLab.FRAME_HEIGHT))
+			: has("shadow-lab") ? stencil(new GwtApplicationConfiguration(3 * ShadowLab.FRAME_WIDTH + 8, ShadowLab.FRAME_HEIGHT))
 			: has("anim-lab") ? new GwtApplicationConfiguration(2 * AnimLab.PANEL_WIDTH + 4, 2 * AnimLab.PANEL_HEIGHT + 4)
 			: has("transfert-lab") ? new GwtApplicationConfiguration(TransfertLab.COLUMNS * (FogLab.FRAME_WIDTH + 4) - 4, 2 * FogLab.PANEL_HEIGHT + 4)
 			: has("fog-lab") || has("haze-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, 2 * FogLab.PANEL_HEIGHT + 4) : new GwtApplicationConfiguration(320, 24);}

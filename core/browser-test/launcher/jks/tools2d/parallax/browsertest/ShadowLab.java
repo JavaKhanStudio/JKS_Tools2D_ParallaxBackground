@@ -26,13 +26,15 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * The shadow lab (r425, Simon on r392: "Should the trees cast shadows on the layer behind? Yes [...] considering where
  * the light source is (and are) [...] Prepare a lab for it"): a nearer layer casts its shadow on the layer just behind
  * it only, never on the sky nor further back, from one light or two. r365's AI forest page (the hills lab's, its hills
- * as they ship), drawn twice by the real reader: A as painted, B with the pines (l3) casting on the hills (l2).
+ * as they ship), drawn three times by the real reader, side by side: A as painted, B with the pines (l3) casting on the
+ * hills (l2), the shadow moving with the pines, C the same shadow moving with the hills (r425, Simon: "show them side
+ * by side", not a choice between them).
  * <p>
  * B is drawn in passes, each by a heart holding the whole page with the layers it does not draw pushed far under the
  * view (so the page's front, and its fog, stay the page's): the sky and the layers up to the hills; the hills again,
  * into the stencil only, where they are opaque; the pines once per light, laid on the ground away from it, dark,
- * softened, where the stencil is set; the pines themselves on top. The shadow is the pines' own layer, scrolled
- * with them, or at the hills' speed (a second heart), as the world would have it.
+ * softened, where the stencil is set; the pines themselves on top. B's shadow is the pines' own layer, scrolled
+ * with them; C's is at the hills' speed (a second heart), as the world would have it.
  * <p>
  * Each light is a sun (r425, Simon: "it acts as if there was a wall behind the trees and the sun was angled at 60
  * degrees"; the first lab moved the shadow by a free 2D angle, its default from below on the left, which no sun is):
@@ -56,7 +58,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	/** The receiver, the layer just behind the caster, and the caster: indices in the page's list. */
 	static final int HILLS = 2, PINES = 3;
 	static final float WORLD_WIDTH = FogLab.WORLD_WIDTH, WORLD_HEIGHT = FogLab.WORLD_HEIGHT;
-	/** Two panels side by side, each the round's whole 16:9 frame. */
+	/** Three panels side by side, each the round's whole 16:9 frame. */
 	static final int FRAME_WIDTH = FogLab.FRAME_WIDTH, FRAME_HEIGHT = FogLab.FRAME_HEIGHT;
 	/**
 	 * The pines' atlas page, forest-pines.png: four strips of 384 px, one above the next with a 1 px gap. The shadow's
@@ -68,15 +70,13 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	static final String[] VIEWS = { "the page", "without the pines" };
 	static final String[] OFF_ON = { "off", "on" };
 
-	static final String[] FOLLOWS = { "the pines", "the hills" };
-
 	/** A: the page as painted. B's passes: the back, the stencil, the shadows (at the pines' speed or the hills'), the front. */
 	static final int PAINTED = 0, BACK = 1, MASK = 2, SHADOW = 3, SHADOW_ON_HILLS = 4, FRONT = 5;
 	private final Parallax_Heart[] hearts = new Parallax_Heart[6];
 	private OrthographicCamera camera;
 	private SpriteBatch batch;
 	private ShaderProgram mask, shadow;
-	private SelectElement view, second, follows;
+	private SelectElement view, second;
 	private InputElement scroll, side1, height1, side2, height2, rise, softness, darkness;
 	/** The shadow pass's shear, and the camera it tiles the pines by: wider, so a shadow laid far sideways is all drawn. */
 	private final Matrix4 sheared = new Matrix4(), straight = new Matrix4();
@@ -152,7 +152,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	private void buildControls()
 	{
 		Document document = Document.get();
-		LabControls.panelLabels(document, "shadow-labels", "A: as painted", "B: the pines cast on the hills");
+		LabControls.panelLabels(document, "shadow-labels", "A: as painted", "B: shadow moves with the pines", "C: shadow moves with the hills");
 		view = LabControls.stageChoice(document, "shadow-labels", "view", "view (the whole page; or without the pines, to see the shadow's shape alone)", VIEWS, 0);
 		Element controls = document.getElementById("shadow-controls");
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, 20);
@@ -162,7 +162,6 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		side2 = LabControls.slider(document, controls, "sun2Side", "sun 2 side (degrees, as sun 1)", -180, 180, 5, 35);
 		height2 = LabControls.slider(document, controls, "sun2Height", "sun 2 height (degrees, as sun 1)", 5, 85, 1, 30);
 		rise = LabControls.slider(document, controls, "rise", "rise (how far up the screen the ground climbs for a unit it runs into the picture: low for flat ground seen low, more where the hills rise behind)", 0.05f, 1.5f, 0.05f, 0.5f);
-		follows = LabControls.choice(document, controls, "follows", "shadow moves with (as the camera scrolls: the pines keep it under their trees; the hills, as the world would, so the trees slide off it)", FOLLOWS, 0);
 		softness = LabControls.slider(document, controls, "softness", "softness (the blur's radius, world units)", 0, 0.8f, 0.01f, 0.1f);
 		darkness = LabControls.slider(document, controls, "darkness", "darkness (0 no shadow, 1 black)", 0, 1, 0.05f, 0.5f);
 		readout = LabControls.readout(document, controls, "shadow-readout");
@@ -237,12 +236,17 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		LabKit.panel(0, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0);
 		hearts[PAINTED].render();
 		LabKit.panel(FRAME_WIDTH + 4, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0);
-		cast();
+		cast(SHADOW);
+		LabKit.panel(2 * (FRAME_WIDTH + 4), height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0);
+		cast(SHADOW_ON_HILLS);
 		LabKit.endPanels();
 	}
 
-	/** B: the back, the hills into the stencil, a shadow per light where it is set, the front. */
-	private void cast()
+	/**
+	 * B or C: the back, the hills into the stencil, a shadow per light where it is set (heart {@code shadows}'s pines: at
+	 * their own speed or the hills'), the front.
+	 */
+	private void cast(int shadows)
 	{
 		hearts[BACK].render();
 		Gdx.gl.glClearStencil(0);
@@ -255,9 +259,9 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		Gdx.gl.glColorMask(true, true, true, true);
 		Gdx.gl.glStencilFunc(GL20.GL_EQUAL, 1, 0xff);
 		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_KEEP);
-		shade(LabControls.read(side1), LabControls.read(height1));
+		shade(shadows, LabControls.read(side1), LabControls.read(height1));
 		if (LabControls.read(second) == 1)
-			shade(LabControls.read(side2), LabControls.read(height2));
+			shade(shadows, LabControls.read(side2), LabControls.read(height2));
 		Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
 		drawLayers(FRONT, camera);
 	}
@@ -266,12 +270,11 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	 * One sun's shadow: the shadow heart's pines sheared about their foot line, a point h over it moved by h times
 	 * {@link #shear}, through the batch's transform; tiled across the wide camera.
 	 */
-	private void shade(float side, float height)
+	private void shade(int i, float side, float height)
 	{
 		float[] k = shear(side, height, LabControls.read(rise));
 		if (k[1] <= 0)
 			return;
-		int i = LabControls.read(follows) == 1 ? SHADOW_ON_HILLS : SHADOW;
 		float foot = camera.position.y - WORLD_HEIGHT / 2 + pines[i].getCurrentDistanceY();
 		sheared.idt();
 		sheared.val[Matrix4.M01] = k[0];
