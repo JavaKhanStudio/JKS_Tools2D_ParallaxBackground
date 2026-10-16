@@ -25,3 +25,7 @@ What it says:
   colours the forest page refuses all ten and keeps 7021 by the fallback, after 11 strips (about 3.5 min).
 
 Sheets: `build/r441/<theme>.png` (each cut over the sky, the gate's numbers on it), attached to r441.
+
+Simon's answer (r441): a gate per theme, tested and untested, with its value and an estimate. That table is
+`tools/r239-ai-strips/themes.json`: these five rows as measured, the untested themes (jungle, beach, night, any other)
+as labelled estimates, each with the flags that suit it. A new theme measured here is a new entry there.
