@@ -37,7 +37,10 @@
 	last and first 8 degrees over the horizon (twilight) that shade fades into its cast shadows.
 	As the camera scrolls, a shadow moves with the layer it lies on (<b>with the layer it falls on</b> 1, as in the world).
 	<b>Play a whole day</b>: sun 1 rises at the view's left edge, climbs to 30 degrees over its middle and sets at its
-	right edge, in <b>day length</b> seconds; stop leaves it where it is. A second sun casts its own shadows; where two meet, it is darker. A lab, not an effect yet: what ships, if any of
+	right edge, in <b>day length</b> seconds; stop leaves it where it is. A <b>high sun</b> lifts the shade: the
+	shadows are as dark as <b>darkness</b> says under <b>shade lifts from</b>, and gone from <b>high sun</b> up.
+	<b>Sun behind you</b> takes the sun out of the sky, behind the camera: its shadows then go away from you, each layer
+	casting on the layer just behind it (the pines on the hills, the hills on the range, the range on the far peaks). A second sun casts its own shadows; where two meet, it is darker. A lab, not an effect yet: what ships, if any of
 	it, waits for your tests. The view without the pines shows the hills' shadows whole.</p>
 	</details>
 	<script src="lab.js"></script>
@@ -72,7 +75,7 @@
 		}
 		// The sun under the pointer, 1 or 2, in either panel; 0 when none is within 20 px.
 		function under(px, py) {
-			if (!window.shadowSky || !input('sun1Side')) return 0;
+			if (!window.shadowSky || window.shadowBehind || !input('sun1Side')) return 0;
 			for (var i = 0; i < 2; i++) {
 				if (!rect(i)) continue;
 				for (var n = on2() ? 2 : 1; n >= 1; n--) {
@@ -122,6 +125,7 @@
 	labCopy('shadow', function () {
 		return {
 			lab: 'shadow-lab', view: document.querySelector('select[data-key=view]').selectedOptions[0].textContent,
+			sun: window.shadowBehind ? 'behind you' : 'in the sky',
 			readout: document.getElementById('shadow-readout').textContent
 		};
 	});

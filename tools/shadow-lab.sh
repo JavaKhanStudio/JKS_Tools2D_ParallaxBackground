@@ -12,6 +12,7 @@
 #   tools/shadow-lab.sh --sunset F.mp4  as --clip, sun 1 sinking from its height to 4 degrees under the horizon
 #   tools/shadow-lab.sh --day F.mp4     as --clip, the lab's "play a whole day" button pressed, the day 8 s long
 #   tools/shadow-lab.sh --slider K=V    before --shot/--views/--clip: start control K (its data-key) at V, a choice at its option's index
+#   tools/shadow-lab.sh --behind        before --shot/--views/--clip: the "sun behind you" button pressed
 #   tools/shadow-lab.sh --copy F.png    checks "Copy settings" and the drag, headless: drags sun 1 in A's sky (fails if the
 #                                       panel zooms instead), turns sun 2 on, clicks, fails unless the JSON names every
 #                                       control and those moved; F is the page
@@ -30,6 +31,7 @@ while [ $# -gt 0 ]; do
 		--copy) MODE=copy; OUT="$(realpath -m "$2")"; shift ;;
 		--views) MODE=views; OUT="$(realpath -m "$2")"; shift ;;
 		--slider) SLIDERS="$SLIDERS $2"; shift ;;
+		--behind) SLIDERS="$SLIDERS behind" ;;
 		--no-build) BUILD=0 ;;
 		*) echo "unknown argument: $1" >&2; exit 2 ;;
 	esac
@@ -90,6 +92,9 @@ with sync_playwright() as p:
     except Exception:
         sys.exit("the lab never started: %s" % errors)
     for kv in sliders.split():
+        if kv == "behind":
+            page.click("#shadow-behind")
+            continue
         key, value = kv.split("=", 1)
         if page.query_selector("[data-key=%s]" % key) is None:
             sys.exit("no slider %s" % key)
@@ -144,7 +149,7 @@ with sync_playwright() as p:
         import json
         got = json.loads(page.input_value("#shadow-copy-json"))
         keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "depth", "withReceiver",
-                "softness", "darkness", "dayLength"}
+                "softness", "darkness", "liftFrom", "liftHigh", "groundRise", "dayLength"}
         changed = got["changed"]
         if (set(got["settings"]) != keys or set(changed) != {"sun1Side", "sun1Height", "sun2On"}
                 or changed["sun1Side"]["started"] != -40 or not changed["sun1Side"]["now"] > -40
@@ -178,6 +183,58 @@ with sync_playwright() as p:
         if on_sun != -1 or beside != 0:
             sys.exit("a phone's tap: on the sun zoomed %s (want -1), beside it %s (want 0)" % (on_sun, beside))
         print("phone: a tap on the sun zooms nothing, beside it zooms A")
+        # The sun behind you: Copy settings says so, and a drag where the sun was moves nothing.
+        page.eval_on_selector("[data-key=sun1Height]", "e => { e.value = '20'; }")
+        page.evaluate("window.shadowLabAct(0.5)")
+        at = page.evaluate("window.shadowSunAt(1)")
+        page.click("#shadow-behind")
+        page.evaluate("window.shadowLabAct(0.5)")
+        side = page.input_value("[data-key=sun1Side]")
+        page.mouse.move(at["x"], at["y"]); page.mouse.down(); page.mouse.move(at["x"] - 80, at["y"] - 30); page.mouse.up()
+        page.evaluate("window.labZoom(-1)")
+        page.click("#shadow-copy")
+        got = json.loads(page.input_value("#shadow-copy-json"))
+        if got.get("sun") != "behind you" or page.input_value("[data-key=sun1Side]") != side or "behind you" not in got["readout"]:
+            sys.exit("the sun behind you: sun %r, side %s -> %s, readout %r" % (got.get("sun"), side, page.input_value("[data-key=sun1Side]"), got["readout"]))
+        print("sun behind you: Copy says so, the drag moves nothing")
+        # A high sun lifts the shade: full under liftFrom (15), none from liftHigh (40) up, and A then draws as B.
+        def dark_at(height):
+            page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(height))
+            page.evaluate("window.shadowLabAct(0.5)")
+            text = page.text_content("#shadow-readout")
+            return int(text.split("% dark")[0].rsplit(" ", 1)[1])
+        def a_off_b():
+            # Panel A's mean difference from B (out of 255), under their titles, in the canvas's own pixels.
+            import io
+            import numpy as np
+            from PIL import Image
+            page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+            c = page.locator("#embed-browsertests canvas")
+            img = np.asarray(Image.open(io.BytesIO(c.screenshot())).convert("RGB"), dtype=float)
+            width, rects = page.evaluate("[document.querySelector('#embed-browsertests canvas').width, window.labPanelRects]")
+            k = img.shape[1] / width
+            def cut(r):
+                x, y, w, h = (round(v * k) for v in r)
+                top = img.shape[0] - y - h
+                return img[top + 40:top + h, x:x + w]
+            a, b = cut(rects[0]), cut(rects[1])
+            n = min(a.shape[1], b.shape[1])
+            return float(np.abs(a[:, :n] - b[:, :n]).mean())
+        lifted = (dark_at(10), dark_at(27.5), dark_at(45))
+        # Back in the sky, one sun at 20 degrees, at full darkness: A draws its shadows while the shade lifts from 30, and
+        # as B once the sun is high from 20 (a higher sun's shadows land under the view: they would prove nothing).
+        page.click("#shadow-behind")
+        for key, value in (("sun2On", 0), ("darkness", 1), ("liftFrom", 5), ("liftHigh", 30)):
+            page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", str(value))
+        shaded = (dark_at(20), a_off_b())
+        page.eval_on_selector("[data-key=liftHigh]", "e => { e.value = '20'; }")
+        gone = (dark_at(20), a_off_b())
+        if not (shaded[1] > 0.5 and gone[1] < 0.2):
+            sys.exit("the high sun's lift: A off B by %.2f lifting to 30 degrees, %.2f high from 20 (want over 0.5, under 0.2)" % (shaded[1], gone[1]))
+        print("A off B at 20 degrees: %.2f/255 (%d%% dark), %.2f once high (%d%%)" % (shaded[1], shaded[0], gone[1], gone[0]))
+        if lifted != (100, 50, 0):
+            sys.exit("the high sun's lift: %s%% dark at 10, 27.5 and 45 degrees (want 100, 50, 0)" % (lifted,))
+        print("a high sun lifts the shade: %s%% dark at 10, 27.5, 45 degrees" % (lifted,))
     else:
         start = float(page.input_value("[data-key=sun1Height]"))
         if mode == "day":

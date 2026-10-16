@@ -91,6 +91,12 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	 * the two, the one fades into the other, where the lab before swapped them in one frame.
 	 */
 	static final float TWILIGHT = 8;
+	/**
+	 * The sun behind you (r425, Simon at 19:52: "a button to test without the sun visible (as if it was behind the
+	 * camera). It should also affect the way the shadows are cast"): not drawn, and its shadows go away from you, so each
+	 * layer casts on the layer just behind it: the pines on the hills, the hills on the range, the range on the far peaks.
+	 */
+	private boolean behind;
 
 	/** The sky (the page's gradients alone); each layer alone, drawn; into the stencil; as a shadow. */
 	static final int SKY = 0, DRAWN = 1, MASK = DRAWN + LAYERS, CAST = MASK + LAYERS;
@@ -101,8 +107,8 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	private ShaderProgram mask, shadow;
 	private Texture sun;
 	private SelectElement view, second;
-	private InputElement scroll, side1, height1, side2, height2, depth, withReceiver, softness, darkness, dayLength;
-	private Element dayButton;
+	private InputElement scroll, side1, height1, side2, height2, depth, withReceiver, softness, darkness, liftFrom, liftHigh, groundRise, dayLength;
+	private Element dayButton, behindButton;
 	/** While a day plays: how far through it, 0 sunrise to 1 sunset. */
 	private boolean day;
 	private float dayAt;
@@ -198,28 +204,60 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, 20);
 		// The defaults are Simon's (r425, 16 Oct 16:48: "I think we can start around this").
 		side1 = LabControls.slider(document, controls, "sun1Side", "sun 1 side (degrees from straight ahead: under 0 left, over 0 right; or drag the sun in the sky)", -40, 40, 1, -40);
-		height1 = LabControls.slider(document, controls, "sun1Height", "sun 1 height (degrees over the horizon: low, the shadows climb; under 0, the sun has set and every layer is in the shade)", -8, 30, 0.5f, 22.5f);
+		height1 = LabControls.slider(document, controls, "sun1Height", "sun 1 height (degrees over the horizon: low, the shadows climb; under 0, the sun has set and every layer is in the shade; in the sky, over about 34 it is above the picture)", -8, 60, 0.5f, 22.5f);
 		second = LabControls.choice(document, controls, "sun2On", "sun 2 (a second sun, its own shadows)", OFF_ON, 0);
 		side2 = LabControls.slider(document, controls, "sun2Side", "sun 2 side (degrees, as sun 1)", -40, 40, 1, 22);
-		height2 = LabControls.slider(document, controls, "sun2Height", "sun 2 height (degrees, as sun 1)", -8, 30, 0.5f, 20);
+		height2 = LabControls.slider(document, controls, "sun2Height", "sun 2 height (degrees, as sun 1)", -8, 60, 0.5f, 20);
 		depth = LabControls.slider(document, controls, "depth", "depth (world units between a layer and the one in front: the farther, the lower its shadow lands)", 0, 40, 0.5f, 12);
 		withReceiver = LabControls.slider(document, controls, "withReceiver", "with the layer it falls on (1: a shadow moves with the layer it lies on, as in the world; 0: with the layer casting it)", 0, 1, 0.05f, 1);
 		softness = LabControls.slider(document, controls, "softness", "softness (the blur's radius, world units)", 0, 0.8f, 0.01f, 0.8f);
 		darkness = LabControls.slider(document, controls, "darkness", "darkness (0 no shadow, 1 black)", 0, 1, 0.05f, 0.2f);
+		// A high sun lifts the shade (r425, Simon at 19:52: "When the sun is considered high it should also remove overall
+		// darkness"): the cast shadows' darkness eases from its full under liftFrom to none from liftHigh up.
+		liftFrom = LabControls.slider(document, controls, "liftFrom", "shade lifts from (degrees: under this sun height the shadows are as dark as darkness says)", 0, 60, 0.5f, 15);
+		liftHigh = LabControls.slider(document, controls, "liftHigh", "high sun (degrees: from this sun height up, no shade is left)", 0, 90, 0.5f, 40);
+		groundRise = LabControls.slider(document, controls, "groundRise", "ground rise (sun behind you: how far up the picture the ground climbs per unit of depth; a shadow climbs onto the layer behind while the sun is lower than this)", 0, 1.5f, 0.05f, 0.5f);
 		dayLength = LabControls.slider(document, controls, "dayLength", "day length (seconds the button's day lasts, sunrise to sunset)", 5, 60, 1, 20);
 		dayButton = document.createButtonElement();
 		dayButton.setId("shadow-day");
 		dayButton.setClassName("lab-copy shadow-day");
 		controls.appendChild(dayButton);
-		onClick(dayButton, this);
+		onClick(dayButton, this, false);
 		showDay();
+		behindButton = document.createButtonElement();
+		behindButton.setId("shadow-behind");
+		behindButton.setClassName("lab-copy shadow-day");
+		controls.appendChild(behindButton);
+		onClick(behindButton, this, true);
+		showBehind();
 		readout = LabControls.readout(document, controls, "shadow-readout");
 	}
 
-	private static native void onClick(Element element, ShadowLab lab) /*-{
+	private static native void onClick(Element element, ShadowLab lab, boolean behind) /*-{
 		element.addEventListener('click', $entry(function() {
-			lab.@jks.tools2d.parallax.browsertest.ShadowLab::toggleDay()();
+			if (behind)
+				lab.@jks.tools2d.parallax.browsertest.ShadowLab::toggleBehind()();
+			else
+				lab.@jks.tools2d.parallax.browsertest.ShadowLab::toggleDay()();
 		}));
+	}-*/;
+
+	/** The sun behind you, or back in the sky. */
+	void toggleBehind()
+	{
+		behind = !behind;
+		showBehind();
+	}
+
+	/** The button says what a press does; window.shadowBehind tells the drag and Copy settings where the sun is. */
+	private void showBehind()
+	{
+		behindButton.setInnerText(behind ? "\u2600 sun back in the sky" : "\u2600 sun behind you");
+		publishBehind(behind);
+	}
+
+	private static native void publishBehind(boolean behind) /*-{
+		$wnd.shadowBehind = behind;
 	}-*/;
 
 	/** The day's button: a day from sunrise, or the one playing stopped where its sun is. */
@@ -267,35 +305,60 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		LabControls.read(softness);
 		LabControls.read(darkness);
 		LabControls.read(dayLength);
+		LabControls.read(liftFrom);
+		LabControls.read(liftHigh);
+		LabControls.read(groundRise);
 		float s2 = LabControls.read(side2), h2 = LabControls.read(height2), d = LabControls.read(depth);
-		readout.setInnerText("Each layer casts on the layer just in front of it: the far peaks (l0) on the range (l1), the range on the hills (l2), the hills on the pines (l3). Sun 1: "
+		readout.setInnerText((behind
+				? "The sun is behind you: each layer casts on the layer just behind it: the pines (l3) on the hills (l2), the hills on the range (l1), the range on the far peaks (l0). Sun 1: "
+				: "Each layer casts on the layer just in front of it: the far peaks (l0) on the range (l1), the range on the hills (l2), the hills on the pines (l3). Sun 1: ")
+				+ ""
 				+ describe(side1At, height1At, d)
 				+ (LabControls.read(second) == 1 ? "; sun 2: " + describe(s2, h2, d) : "") + ". The world is " + round(WORLD_WIDTH) + " units wide.");
 	}
 
 	/**
 	 * Where a sun at {@code side} degrees from straight ahead (over 0 on the right) and {@code height} over the horizon
-	 * lays a layer's shadow on the one {@code depth} units in front of it, {x, y}: the ray over the caster's ridge has
+	 * lays a layer's shadow on the one {@code depth} units in front of it (behind it: {@link #rise}), {x, y}: the ray over the caster's ridge has
 	 * moved away from the sun's side by depth tan(side), and dropped depth tan(height) / cos(side), y under 0. A sun under
 	 * the horizon: y over 0, the shadow over the ridge.
 	 */
-	static float[] shadowOf(float side, float height, float depth)
+	static float[] shadowOf(float side, float height, float depth, float rise)
 	{
 		double a = Math.toRadians(side);
-		return new float[] { (float) (-depth * Math.tan(a)), (float) (-depth * Math.tan(Math.toRadians(height)) / Math.cos(a)) };
+		return new float[] { (float) (-depth * Math.tan(a)), (float) (depth * (rise - Math.tan(Math.toRadians(height)) / Math.cos(a))) };
 	}
+
+	/**
+	 * A sun behind you lays a shadow on the ground away from you, and the ground climbs up the picture as it goes: the
+	 * layer behind stands {@code rise} per unit of depth higher (a sun ahead: 0, as Simon tuned it). So its shadow lands
+	 * over the caster's ridge, on the layer behind, where tan(height) / cos(side) is under the rise: a low sun's long
+	 * shadow climbs onto it, a high sun's short one stays hidden behind the caster.
+	 */
+	private float rise()
+	{return behind ? LabControls.read(groundRise) : 0;}
 
 	/** How far into the night a sun {@code height} degrees up has the page: 1 set, 0 from {@link #TWILIGHT} up. */
 	static float dusk(float height)
 	{return Math.max(0, Math.min(1, 1 - height / TWILIGHT));}
 
-	private static String describe(float side, float height, float depth)
+	/** How much of the cast shadows' darkness a sun {@code height} degrees up leaves: 1 under {@code from}, 0 from {@code high} up, eased between. */
+	static float lift(float height, float from, float high)
+	{
+		if (high <= from)
+			return height < high ? 1 : 0;
+		float t = Math.max(0, Math.min(1, (height - from) / (high - from)));
+		return 1 - t * t * (3 - 2 * t);
+	}
+
+	private String describe(float side, float height, float depth)
 	{
 		if (height <= 0)
 			return "under the horizon: set, every layer in the shade";
-		float[] k = shadowOf(side, height, depth);
+		float[] k = shadowOf(side, height, depth, rise());
 		return round(Math.abs(side)) + " degrees " + (side < 0 ? "left" : "right") + ", " + round(height)
-				+ " up: a ridge's shadow lands " + round(-k[1]) + " units under it and " + round(Math.abs(k[0])) + " " + (k[0] < 0 ? "left" : "right");
+				+ " up: a ridge's shadow lands " + round(Math.abs(k[1])) + (k[1] <= 0 ? " units under it and " : " units over it and ") + round(Math.abs(k[0])) + " " + (k[0] < 0 ? "left" : "right")
+				+ ", " + Math.round(100 * lift(height, LabControls.read(liftFrom), LabControls.read(liftHigh))) + "% dark";
 	}
 
 	private static float round(float value)
@@ -355,6 +418,8 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	 */
 	private void suns()
 	{
+		if (behind)
+			return;
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 		batch.enableBlending();
@@ -397,10 +462,11 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		float night = dusk(two ? Math.max(h1, h2) : h1);
 		if (night > 0)
 			shade(receiver, null, 0, night);
+		float from = LabControls.read(liftFrom), high = LabControls.read(liftHigh);
 		if (h1 > 0)
-			shade(receiver, shadowOf(side1At, h1, d), 2, 1 - dusk(h1));
+			shade(receiver, shadowOf(side1At, h1, d, rise()), 2, (1 - dusk(h1)) * lift(h1, from, high));
 		if (two && h2 > 0)
-			shade(receiver, shadowOf(LabControls.read(side2), h2, d), 4, 1 - dusk(h2));
+			shade(receiver, shadowOf(LabControls.read(side2), h2, d, rise()), 4, (1 - dusk(h2)) * lift(h2, from, high));
 		Gdx.gl.glStencilMask(0xff);
 		Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
 	}
@@ -417,12 +483,13 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	private void shade(int receiver, float[] k, int drawn, float weight)
 	{
 		boolean set = k == null;
-		if (receiver == 0 && !set || weight <= 0)
+		// The caster: the layer behind the receiver for a sun ahead, the one in front of it for a sun behind you.
+		int caster = behind ? receiver + 1 : receiver - 1;
+		if (!set && (caster < 0 || caster >= LAYERS || caster == PINES && LabControls.read(view) != 0) || weight <= 0)
 			return;
 		Gdx.gl.glStencilFunc(GL20.GL_EQUAL, 1, 1 | drawn);
 		Gdx.gl.glStencilMask(drawn);
 		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_INVERT);
-		int caster = receiver - 1;
 		ParallaxLayer onto = hearts[DRAWN + receiver].parallaxReader.layers.get(receiver);
 		WholePage_Model page = pages[DRAWN + receiver];
 		float fog = ParallaxPageReader.fogOf(page.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[DRAWN + receiver].parallaxReader.layers), onto);
