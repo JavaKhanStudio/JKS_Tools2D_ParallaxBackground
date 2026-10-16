@@ -3,14 +3,14 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Sea and sky lab (r407): SWELL, GLINT, BILLOW</title>
+	<title>Sea lab (r407): SWELL, GLINT, MIRROR</title>
 	<link rel="stylesheet" href="lab.css">
-	<!-- AnimLab (r407): r375's shader animations as lab GLSL, by the real reader: the beach sea four ways, a cloud layer. -->
+	<!-- AnimLab (r407): r375's shader animations as lab GLSL, by the real reader: the beach sea four ways. The clouds: clouds-lab.html (r451). -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
 	<header class="lab-bar">
-		<h1>Sea and sky lab <span class="lab-question">which shader animations ship?</span></h1>
+		<h1>Sea lab <span class="lab-question">which shader animations ship?</span></h1>
 		<a class="lab-home" href="index.html">&larr; all labs</a>
 		<span id="anim-copy-state" class="lab-copy-state"></span>
 		<button id="anim-copy" class="lab-copy">Copy settings</button>
@@ -23,7 +23,7 @@
 	<textarea id="anim-copy-json" class="lab-copy-json" hidden readonly></textarea>
 	<details class="lab-about">
 		<summary>What this lab shows</summary>
-		<p id="anim-about">The shader animations r375 proposed for water and clouds, written as they would ship (GLSL ES 1.0,
+		<p id="anim-about">The shader animations r375 proposed for water, written as they would ship (GLSL ES 1.0,
 	sines only, in world units across the layer, so they run on across its tiles), drawn by the real reader compiled to
 	JavaScript. None is in the library yet: pick here, then each one picked is written three times (libGDX, Godot, jME).
 	<b>The sea</b> is r365's AI beach page, its sea a SHADER layer drawn four ways. <b>WAVE</b> is what ships today: whole
@@ -41,9 +41,7 @@
 	<b>+ GLINT</b> adds GLINT's sun glitter, by GLINT's sliders (its strength at 0: none). The view 'sea: MIRROR or not'
 	sets SWELL, MIRROR as you tuned it (fixed at your numbers), and the two by the water's colour side by side. It
 	would ship as one effect on the sea, written three times, its sky the page's gradient.
-	<b>The clouds</b> are round1's calm page, its clouds on a layer of their own (as a generated page will have them,
-	r409), drawn still and under <b>BILLOW</b>, in the page and alone (the mountains in front left out): the clouds churn in place, a slow warp of their
-	pixels. Their drift (the page's at rest speed) can be slowed to judge the churn alone. The view picks four panels
+	The clouds' <b>BILLOW</b> has a lab of its own, <a href="clouds-lab.html">the clouds lab</a>. The view picks four panels
 	or one effect close; zoom enlarges the frame (the panels stay sharp: it is drawn at that size). Amplitudes and
 	wavelengths are in world units, the readout gives them in the image's pixels. Copy settings gives every slider as
 	JSON for the card.</p>

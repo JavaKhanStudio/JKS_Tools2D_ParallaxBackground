@@ -12,6 +12,7 @@ base, chrome, out = sys.argv[1:]
 LABS = [
     ("depth", "depth-lab.html", "depthLabReady", 1, 1),
     ("anim", "anim-lab.html", "animLabReady", 2, 2),
+    ("clouds", "clouds-lab.html", "cloudsLabReady", 2, 2),
     ("hills", "hills-lab.html", "hillsLabReady", 2, 1),
     ("pines", "pines-lab.html", "pinesLabReady", 2, 1, 1),
     ("shadow", "shadow-lab.html", "shadowLabReady", 3, 1, 1),

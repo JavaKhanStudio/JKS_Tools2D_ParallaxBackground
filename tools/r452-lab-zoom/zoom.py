@@ -13,6 +13,7 @@ LABS = [
     ("haze", "haze-lab.html", "hazeLabReady", "haze"),
     ("transfert", "transfert-lab.html", "transfertLabReady", "transfert"),
     ("anim", "anim-lab.html", "animLabReady", "anim"),
+    ("clouds", "clouds-lab.html", "cloudsLabReady", "clouds"),
     ("hills", "hills-lab.html", "hillsLabReady", "hills"),
     ("pines", "pines-lab.html", "pinesLabReady", "pines"),
     ("shadow", "shadow-lab.html", "shadowLabReady", "shadow"),

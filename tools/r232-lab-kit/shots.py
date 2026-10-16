@@ -10,6 +10,7 @@ LABS = [
     ("haze", "haze-lab.html", "hazeLabReady"),
     ("transfert", "transfert-lab.html", "transfertLabReady"),
     ("anim", "anim-lab.html", "animLabReady"),
+    ("clouds", "clouds-lab.html", "cloudsLabReady"),
     ("hills", "hills-lab.html", "hillsLabReady"),
     ("pines", "pines-lab.html", "pinesLabReady"),
     ("shadow", "shadow-lab.html", "shadowLabReady"),

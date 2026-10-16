@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Clouds lab (r451): BILLOW</title>
+	<link rel="stylesheet" href="lab.css">
+	<!-- CloudsLab (r451): r375's BILLOW as lab GLSL, by the real reader: round1 calm's clouds under BILLOW beside them still. -->
+	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+</head>
+<body class="lab">
+	<header class="lab-bar">
+		<h1>Clouds lab <span class="lab-question">how should the clouds churn?</span></h1>
+		<a class="lab-home" href="index.html">&larr; all labs</a>
+		<span id="clouds-copy-state" class="lab-copy-state"></span>
+		<button id="clouds-copy" class="lab-copy">Copy settings</button>
+	</header>
+	<div id="clouds-lab" class="lab-stage">
+		<div id="embed-browsertests"></div>
+		<div id="clouds-labels" class="lab-labels"></div>
+	</div>
+	<div id="clouds-controls" class="lab-controls"></div>
+	<textarea id="clouds-copy-json" class="lab-copy-json" hidden readonly></textarea>
+	<details class="lab-about">
+		<summary>What this lab shows</summary>
+		<p id="clouds-about">The cloud animation r375 proposed, <b>BILLOW</b>, written as it would ship (GLSL ES 1.0, sines
+	only, in world units across the layer, so it runs on across its tiles), drawn by the real reader compiled to
+	JavaScript. It is not in the library yet: tune it here, then it is written three times (libGDX, Godot, jME).
+	The clouds are round1's calm page, its clouds on a layer of their own (as a generated page will have them, r409).
+	<b>A</b> churns them under BILLOW, <b>B</b> leaves them still, in the page; <b>C</b> and <b>D</b> the same with the
+	mountains in front left out. BILLOW pushes each pixel of the clouds by a slow warp: amplitude is how far, wavelength
+	how wide its swirls, speed how fast they turn. Their drift (the page's at rest speed) can be slowed to judge the
+	churn alone. The view picks all four panels or two side by side; a click on a panel zooms it over the stage. Zoom
+	enlarges the frame (the panels stay sharp: it is drawn at that size). Amplitudes and wavelengths are in world units,
+	the readout gives them in the image's pixels. Copy settings gives every slider as JSON for the card.</p>
+	</details>
+	<script src="lab.js"></script>
+	<script>
+	labCopy('clouds', function () {
+		return {
+			lab: 'clouds-lab', view: document.querySelector('select[data-key=view]').selectedOptions[0].textContent,
+			readout: document.getElementById('clouds-readout').textContent
+		};
+	});
+	</script>
+</body>
+</html>
