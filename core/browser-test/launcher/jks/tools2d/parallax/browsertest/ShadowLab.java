@@ -31,7 +31,8 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * <p>
  * The sun is in the sky you see (r425, Simon: "only seems to work when the sun is under the X axis... and it would not be
  * visible in the sky"; the lab before cast from a sun behind the viewer, the only one whose shadows land on a layer
- * further back): drawn behind every layer, so it sinks out of sight behind the mountains, and dragged there. A sun ahead
+ * further back): drawn behind every layer but the haziest (see suns()), so it sinks out of sight behind the mountains,
+ * and dragged there. A sun ahead
  * lays the shadows toward you, so each layer casts on the layer just in front of it: the far peaks (l0) on the range
  * (l1), the range on the hills (l2), the hills on the pines (l3); the pines, in front of all, on nothing you see. The
  * one in front stands upright, {@code depth} world units nearer: a ray grazing the caster's ridge has dropped {@code
@@ -84,6 +85,12 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	 * a half sine over the day, its side straight across.
 	 */
 	static final float DAY_SIDE = 40, DAY_LOW = -6, DAY_HIGH = 30;
+	/**
+	 * Degrees over the horizon a sun takes to light the page (r425, Simon at 17:19: "the whole thing lights up as a
+	 * bugged shader when it appears"): under 0 every layer is in the shade, and over this its cast shadows alone; between
+	 * the two, the one fades into the other, where the lab before swapped them in one frame.
+	 */
+	static final float TWILIGHT = 8;
 
 	/** The sky (the page's gradients alone); each layer alone, drawn; into the stencil; as a shadow. */
 	static final int SKY = 0, DRAWN = 1, MASK = DRAWN + LAYERS, CAST = MASK + LAYERS;
@@ -99,6 +106,12 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	/** While a day plays: how far through it, 0 sunrise to 1 sunset. */
 	private boolean day;
 	private float dayAt;
+	/**
+	 * Sun 1 as drawn: the day's own, unrounded, while one plays, else its sliders. Read through the sliders, a day moved
+	 * it in their 1 and 0.5 degree steps, about 7 px at a time, standing still between (Simon at 17:19: "Why is it shaking
+	 * so much?").
+	 */
+	private float side1At, height1At;
 	/** How far a shadow may run sideways, world units: the wide camera's margin, at least. */
 	static final float REACH = 60;
 	private Element readout;
@@ -227,8 +240,10 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		if (!day)
 			return;
 		dayAt = Math.min(1, dayAt + seconds / LabControls.read(dayLength));
-		side1.setValue(LabControls.text(-DAY_SIDE + 2 * DAY_SIDE * dayAt));
-		height1.setValue(LabControls.text(DAY_LOW + (DAY_HIGH - DAY_LOW) * (float) Math.sin(Math.PI * dayAt)));
+		side1At = -DAY_SIDE + 2 * DAY_SIDE * dayAt;
+		height1At = DAY_LOW + (DAY_HIGH - DAY_LOW) * (float) Math.sin(Math.PI * dayAt);
+		side1.setValue(LabControls.text(side1At));
+		height1.setValue(LabControls.text(height1At));
 		if (dayAt >= 1)
 		{
 			day = false;
@@ -239,6 +254,11 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	private void applyControls()
 	{
 		float sc = LabControls.read(scroll);
+		if (!day)
+		{
+			side1At = LabControls.read(side1);
+			height1At = LabControls.read(height1);
+		}
 		for (Parallax_Heart heart : hearts)
 			heart.screenSpeedConstantX = sc;
 		// Read even while off: a slider shows its value when read.
@@ -249,7 +269,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		LabControls.read(dayLength);
 		float s2 = LabControls.read(side2), h2 = LabControls.read(height2), d = LabControls.read(depth);
 		readout.setInnerText("Each layer casts on the layer just in front of it: the far peaks (l0) on the range (l1), the range on the hills (l2), the hills on the pines (l3). Sun 1: "
-				+ describe(LabControls.read(side1), LabControls.read(height1), d)
+				+ describe(side1At, height1At, d)
 				+ (LabControls.read(second) == 1 ? "; sun 2: " + describe(s2, h2, d) : "") + ". The world is " + round(WORLD_WIDTH) + " units wide.");
 	}
 
@@ -264,6 +284,10 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		double a = Math.toRadians(side);
 		return new float[] { (float) (-depth * Math.tan(a)), (float) (-depth * Math.tan(Math.toRadians(height)) / Math.cos(a)) };
 	}
+
+	/** How far into the night a sun {@code height} degrees up has the page: 1 set, 0 from {@link #TWILIGHT} up. */
+	static float dusk(float height)
+	{return Math.max(0, Math.min(1, 1 - height / TWILIGHT));}
 
 	private static String describe(float side, float height, float depth)
 	{
@@ -300,33 +324,42 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		LabKit.beginPanels();
 		if (LabKit.panel(0, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
 		{
-			sky();
+			hearts[SKY].render();
 			for (int k = 0; k < LAYERS; k++)
 				if (k != PINES || pines)
 				{
 					drawLayers(DRAWN + k);
 					cast(k);
+					if (k == 0)
+						suns();
 				}
 		}
 		if (LabKit.panel(FRAME_WIDTH + 4, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
 		{
-			sky();
+			hearts[SKY].render();
 			for (int k = 0; k < LAYERS; k++)
 				if (k != PINES || pines)
+				{
 					drawLayers(DRAWN + k);
+					if (k == 0)
+						suns();
+				}
 		}
 		LabKit.endPanels();
 	}
 
-	/** The page's gradients, then each sun over the horizon: behind every layer, so the mountains hide a low one. */
-	private void sky()
+	/**
+	 * Each sun, over the farthest peaks (l0) and under the range (l1): the range hides a low one. Behind l0 too, the sun
+	 * showed bites and slivers in what reads as open sky (Simon at 17:19: "What the hell is that broken ass sun?"): l0's
+	 * peaks are hazed almost to the sky's colour, so what cut the disc could not be seen.
+	 */
+	private void suns()
 	{
-		hearts[SKY].render();
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 		batch.enableBlending();
 		batch.begin();
-		drawSun(LabControls.read(side1), LabControls.read(height1));
+		drawSun(side1At, height1At);
 		if (LabControls.read(second) == 1)
 			drawSun(LabControls.read(side2), LabControls.read(height2));
 		batch.end();
@@ -357,11 +390,17 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		drawLayers(MASK + receiver);
 		batch.setShader(null);
 		Gdx.gl.glColorMask(true, true, true, true);
-		float d = LabControls.read(depth), h1 = LabControls.read(height1), h2 = LabControls.read(height2);
-		shade(receiver, shadowOf(LabControls.read(side1), h1, d), 2, h1 <= 0);
-		// Both set: one shade, as dark as one sun's.
-		if (LabControls.read(second) == 1 && (h1 > 0 || h2 > 0))
-			shade(receiver, shadowOf(LabControls.read(side2), h2, d), 4, h2 <= 0);
+		float d = LabControls.read(depth), h1 = height1At, h2 = LabControls.read(height2);
+		boolean two = LabControls.read(second) == 1;
+		// Night: every layer in the shade, as dark as one sun's, while every sun on is set; it fades over TWILIGHT
+		// degrees as the higher sun rises, and that sun's cast shadows fade in.
+		float night = dusk(two ? Math.max(h1, h2) : h1);
+		if (night > 0)
+			shade(receiver, null, 0, night);
+		if (h1 > 0)
+			shade(receiver, shadowOf(side1At, h1, d), 2, 1 - dusk(h1));
+		if (two && h2 > 0)
+			shade(receiver, shadowOf(LabControls.read(side2), h2, d), 4, 1 - dusk(h2));
 		Gdx.gl.glStencilMask(0xff);
 		Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
 	}
@@ -371,13 +410,14 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	 * view's middle by {@code withReceiver} of the receiver's speed over its own, darkened and blurred, in the
 	 * receiver's fog; and under it, to the view's bottom, its mass: a ridge's shadow is all that is under it too. Each
 	 * pixel once a sun: the stencil's bit {@code drawn}, set where it is drawn, keeps the mass (laid over the caster's
-	 * foot, so no seam shows between them) and the wide camera's tiles off what it already shades. A sun under the
-	 * horizon ({@code set}) lights nothing: the whole receiver is in the shade (drawn again in its colour), the farthest
-	 * layer too.
+	 * foot, so no seam shows between them) and the wide camera's tiles off what it already shades. No {@code k}: the night,
+	 * the whole receiver in the shade (drawn again in its colour), the farthest layer too. Its darkness times
+	 * {@code weight}, the twilight's fade.
 	 */
-	private void shade(int receiver, float[] k, int drawn, boolean set)
+	private void shade(int receiver, float[] k, int drawn, float weight)
 	{
-		if (receiver == 0 && !set)
+		boolean set = k == null;
+		if (receiver == 0 && !set || weight <= 0)
 			return;
 		Gdx.gl.glStencilFunc(GL20.GL_EQUAL, 1, 1 | drawn);
 		Gdx.gl.glStencilMask(drawn);
@@ -388,7 +428,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		float fog = ParallaxPageReader.fogOf(page.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[DRAWN + receiver].parallaxReader.layers), onto);
 		Color fogColor = page.fogColor;
 		float r = SHADOW_COLOR.r * (1 - fog) + fogColor.r * fog, g = SHADOW_COLOR.g * (1 - fog) + fogColor.g * fog,
-				b = SHADOW_COLOR.b * (1 - fog) + fogColor.b * fog, dark = LabControls.read(darkness);
+				b = SHADOW_COLOR.b * (1 - fog) + fogColor.b * fog, dark = weight * LabControls.read(darkness);
 
 		batch.setShader(shadow);
 		shadow.bind();
