@@ -151,6 +151,20 @@ class KeyTest(unittest.TestCase):
         alpha = cut(img, m, grow=24)
         self.assertLess(float(alpha[ring(m, 3, 24)].max()), 0.1, "the warm sky keys clear")
 
+    def test_a_pale_mass_inside_the_mask_has_no_line_along_its_core(self):
+        """r454: a pale mountain (R6c zit-forest l0's, 0.65 of the way to the mass) painted a few px past the mask
+        keys 0.7; unglow made it solid more than 2 px from the mask's 8 px core, and left it 0.7 within them: a line
+        along the mask inside the peak, 20 px from its outline."""
+        rows = np.mgrid[:H, :W][0]
+        m = rows >= 52  # its 8 px core from row 60
+        pale = (rows >= 40) & (rows < 80)  # its outline 12 px past the mask's
+        img = sky()
+        img[pale] = TOP + 0.65 * (MASS - TOP)
+        img[rows >= 80] = MASS
+        alpha = cut(img, m)
+        self.assertGreater(float(alpha[(rows >= 42) & (rows < 80)].min()), 0.95, "the pale mass is solid to its core")
+        self.assertLess(float(alpha[rows < 38].max()), 0.05, "the sky over it clear")
+
     def test_local_sky_is_the_clear_pixels_round_a_pixel(self):
         img = sky()
         clear = np.ones((H, W), bool)
@@ -177,16 +191,17 @@ def forest():
     return img.astype(np.float32), dark | misty, misty & ~dark, lit
 
 
-def cut_ruled(img, m, kind="pines", ckpt="dreamshaper_8.safetensors", forced=None):
-    """cut() with RULES weighed on kind and ckpt: (alpha, the records)."""
+def cut_ruled(img, m, kind="pines", ckpt="dreamshaper_8.safetensors", forced=None, rule="misty_pines", grow=16):
+    """cut() with RULES weighed on kind and ckpt: (alpha, rule's record)."""
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "mask.png")
         Image.fromarray((m * 255).astype(np.uint8)).save(path)
-        a = argparse.Namespace(near=18, far=0, mask=path, grow=16, gap=0.6, keep_islands=False, edge=2, out="test",
+        a = argparse.Namespace(near=18, far=0, mask=path, grow=grow, gap=0.6, keep_islands=False, edge=2, out="test",
                                kind=kind, ckpt=ckpt, forced=forced or {})
         records = []
         alpha, _ = layer.key(img, np.median(img[:8].reshape(-1, 3), axis=0), a, records)
-    return alpha, records
+    (rec,) = [r for r in records if r["rule"] == rule]
+    return alpha, rec
 
 
 class MistyPinesTest(unittest.TestCase):
@@ -194,7 +209,7 @@ class MistyPinesTest(unittest.TestCase):
 
     def test_dreamshaper_8_s_misty_pine_keys_out_its_lit_edge_and_the_dark_pines_stay(self):
         img, m, misty, lit = forest()
-        alpha, (rec,) = cut_ruled(img, m)
+        alpha, rec = cut_ruled(img, m)
         self.assertTrue(rec["applied"], rec)
         self.assertTrue(all(rec["when"].values()))
         self.assertGreater(rec["moved"], 0)
@@ -207,7 +222,7 @@ class MistyPinesTest(unittest.TestCase):
         img, m, misty, _ = forest()
         for kind, ckpt, failed in (("pines", "openjourney-v4.ckpt", "painted by dreamshaper_8"),
                                    ("mountains", "dreamshaper_8.safetensors", "a pines layer")):
-            alpha, (rec,) = cut_ruled(img, m, kind, ckpt)
+            alpha, rec = cut_ruled(img, m, kind, ckpt)
             self.assertFalse(rec["applied"])
             self.assertEqual(list(rec["when"])[-1], failed)
             inside = misty & layer.spread(m, -8)
@@ -215,19 +230,58 @@ class MistyPinesTest(unittest.TestCase):
 
     def test_forced_on_another_model_or_off_on_dreamshaper_8(self):
         img, m, misty, _ = forest()
-        _, (rec,) = cut_ruled(img, m, ckpt="openjourney-v4.ckpt", forced={"misty_pines": True})
+        _, rec = cut_ruled(img, m, ckpt="openjourney-v4.ckpt", forced={"misty_pines": True})
         self.assertTrue(rec["applied"])
         self.assertEqual(rec["forced"], "on")
-        alpha, (rec,) = cut_ruled(img, m, forced={"misty_pines": False})
+        alpha, rec = cut_ruled(img, m, forced={"misty_pines": False})
         self.assertFalse(rec["applied"])
         self.assertGreater(float(alpha[misty & layer.spread(m, -8)].min()), 0.99)
 
     def test_a_pines_strip_with_no_mist_is_left(self):
         img, m, misty, _ = forest()
         img[misty] = MASS
-        _, (rec,) = cut_ruled(img, m)
+        _, rec = cut_ruled(img, m)
         self.assertFalse(rec["applied"])
         self.assertFalse(rec["when"]["wide pale pines open to the sky"])
+
+
+def valley():
+    """(img, m, hill): a mask with a deep valley, and a pale hill Z-Image painted in it, its top 24 px over the
+    mask's floor (R6c zit-forest l0), t 0.65 of the way to the mass: a crisp outline on the sky."""
+    rows, cols = np.mgrid[:H, :W]
+    m = (rows >= 100) | (rows - 30 >= np.abs(cols - 40) * 0.9) | (rows - 30 >= np.abs(cols - 216) * 0.9)
+    hill = (rows >= 76) & ~m & (np.abs(cols - 128) < 60)
+    img = sky()
+    img[hill] = TOP + 0.65 * (MASS - TOP)
+    img[m] = MASS
+    return img.astype(np.float32), m, hill
+
+
+class WideMassTest(unittest.TestCase):
+    """r454: wide_mass, Z-Image's mass painted past --grow."""
+
+    def test_z_image_s_hill_past_grow_is_kept_whole(self):
+        img, m, hill = valley()
+        alpha, rec = cut_ruled(img, m, "mountains", "z-image-turbo-Q5_K_M.gguf", rule="wide_mass", grow=8)
+        self.assertTrue(rec["applied"], rec)
+        self.assertGreater(rec["moved"], 0)
+        self.assertGreater(float(alpha[layer.spread(hill, -2)].min()), 0.95, "the hill is kept, no floor at --grow")
+        rows = np.mgrid[:H, :W][0]
+        self.assertLess(float(alpha[(rows < 72) & ~layer.spread(m, 2)].max()), 0.05, "the sky over it clear")
+
+    def test_another_model_s_hill_is_cut_at_grow(self):
+        img, m, hill = valley()
+        alpha, rec = cut_ruled(img, m, "mountains", "DreamShaperXL_Turbo_v2_1.safetensors", rule="wide_mass", grow=8)
+        self.assertFalse(rec["applied"])
+        self.assertEqual(list(rec["when"]), ["painted by Z-Image"])
+        self.assertLess(float(alpha[hill & ~layer.spread(m, 8)].max()), 0.05)
+
+    def test_a_z_image_strip_in_its_mask_is_left(self):
+        img, m, hill = valley()
+        img[hill] = sky()[hill]
+        _, rec = cut_ruled(img, m, "mountains", "z-image-turbo-Q5_K_M.gguf", rule="wide_mass", grow=8)
+        self.assertFalse(rec["applied"])
+        self.assertFalse(rec["when"]["masslike px joined to the mask past --grow"])
 
 
 if __name__ == "__main__":

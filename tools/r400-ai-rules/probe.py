@@ -25,7 +25,7 @@ import layer
 from ai_page import GEN_CKPT, GROW
 
 OFF = {"gap": {"gap": 0}, "edge": {"edge": 0}, "islands": {"keep_islands": True},
-       "misty_pines": {"forced": {"misty_pines": False}}}
+       "misty_pines": {"forced": {"misty_pines": False}}, "wide_mass": {"forced": {"wide_mass": False}}}
 
 
 def one(job):

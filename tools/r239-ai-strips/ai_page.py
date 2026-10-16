@@ -39,7 +39,8 @@ sampling defaults (9 steps, cfg 1, res_multistep, simple) and --denoise 0.75 (r3
 RAM: gen.py refuses at once with less free (r450), and a gen.py the kernel killed is said so, not blamed on VRAM.
 A fix right for one model or one kind of layer only is one of layer.py's RULES (r400, tools/parallax_rules.py), weighed
 on each painted strip's kind and checkpoint: recipe.json keeps, per strip, each rule's record (applied or not, which
-conditions held, px moved). --rule NAME=on|off forces one on every strip (misty_pines: dreamshaper_8's misty foot pines).
+conditions held, px moved). --rule NAME=on|off forces one on every strip (misty_pines: dreamshaper_8's misty foot pines;
+wide_mass: the mass Z-Image paints past sil.py's mask, r454).
 
 A lurker, only on request (r366): --lurker "a hooded figure" paints one figure, alone, and puts it in a LURKER layer
 (format 15, docs/lurker-layers.md) between layers A and A+1 (--lurker-between A,A+1, back to front from 0; default the

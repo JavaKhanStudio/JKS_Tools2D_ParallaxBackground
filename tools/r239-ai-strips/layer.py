@@ -24,7 +24,9 @@ RULES (tools/parallax_rules.py, r400): a fix right for one model or one kind of 
 dreamshaper_8 paints farther pines in mist at a pines layer's foot, pale ghosts inside the mask that scroll at the
 front's speed (r364); on that model's pines they key along the sky-to-mass line. Another model's pale pines are
 crisp, a second row it meant (openjourney, novaCartoon), or not there (SDXL): left as painted. Simon kept it on
-after seeing it on and off in pines-lab (r421).
+after seeing it on and off in pines-lab (r421). wide_mass (r454): Z-Image keeps sil.py's shape less than the UNets do;
+the mass it paints past the mask by more than --grow (pale hills in a valley of the mask, fronds, spires) is kept, not
+cut flat at --grow's reach.
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
@@ -168,6 +170,10 @@ def unglow(alpha, edge):
     far = ~spread(solid, edge) & (alpha < 0.95)
     out = alpha.copy()
     out[far] = np.clip((alpha[far] - 0.4) / 0.2, 0, 1)
+    # within edge px of the solid but more than 3 * edge px of anything under half: no soft edge, a pale mass keyed
+    # 0.7 round sil.py's 8 px core, which the ramp made solid further out, a line along the mask inside it (r454)
+    inside = ~far & (alpha < 0.95) & ~spread(out < 0.5, 3 * edge)
+    out[inside] = np.clip((alpha[inside] - 0.4) / 0.2, 0, 1)
     return out
 
 
@@ -282,6 +288,42 @@ def clear_misty(c):
     return round(float((before - c["alpha"]).sum()))
 
 
+# wide_mass (r454): Z-Image (a DiT, gen.py's) keeps sil.py's shape less than the UNets do: it paints the layer's mass
+# past the mask by more than --grow (pale hills in a valley of the mask, R6c zit-forest l0), and the key cut them flat
+# at --grow's reach, a straight floor and steps along the skyline. The masslike pixels joined to the mask through each
+# other, past --grow, at least WIDE_MIN px in a 1024 px strip, are kept solid, their outline keyed along t to WIDE_EDGE.
+WIDE_CKPTS = ("z-image",)
+WIDE_MIN, WIDE_EDGE = 150, 0.5
+
+
+def wide(img, top, m, grow, ranged):
+    """(past, whole): the mass painted past --grow, masslike pixels outside it joined to the mask through each other,
+    not the far range's (wide_mass' measure); and the masslike pieces it is part of, inside --grow too, where the key
+    against local_sky's sky (which the hill's colour reaches) left them half clear and unglow cleared them."""
+    zone, like = spread(m, grow), masslike(img, top, m) & ~ranged
+    label, _ = components(like | zone)
+    on = np.unique(label[m])
+    past = np.isin(label, on[on > 0]) & ~zone & like
+    label, _ = components(like)
+    on = np.unique(label[past])
+    return past, np.isin(label, on[on > 0])
+
+
+def measure_wide(c):
+    c["wide"], c["wide_whole"] = wide(c["img"], c["top"], c["m"], c["grow"], c["ranged"])
+    k = c["img"].shape[1] / 1024
+    return c["wide"].sum() >= WIDE_MIN * k * k
+
+
+def keep_wide(c):
+    """wide_mass' act: the wide mass solid, its outline on the sky keyed along t; returns the opaque px it added."""
+    w, before = c["wide_whole"], c["alpha"]
+    rim = spread(w, 2) & ~w & ~c["ranged"]
+    t = sky_to_mass(c["img"], c["sky"], before)
+    c["alpha"] = np.where(w, 1.0, np.where(rim, np.maximum(before, np.clip(t / WIDE_EDGE, 0, 1)), before))
+    return round(float((c["alpha"] - before).sum()))
+
+
 RULES = [
     parallax_rules.Rule(
         "misty_pines", "pines dreamshaper_8 paints in mist at the forest's foot key out along the sky-to-mass line",
@@ -289,6 +331,12 @@ RULES = [
               ("painted by dreamshaper_8", lambda c: os.path.basename(c["ckpt"] or "") in MISTY_CKPTS),
               ("wide pale pines open to the sky", measure_misty)],
         act=clear_misty),
+    parallax_rules.Rule(
+        "wide_mass", "the mass Z-Image paints past sil.py's mask by more than --grow stays, not cut flat at its reach",
+        when=[("painted by Z-Image", lambda c: os.path.basename(c["ckpt"] or "").startswith(WIDE_CKPTS)),
+              ("under --mask", lambda c: c["m"] is not None),
+              ("masslike px joined to the mask past --grow", measure_wide)],
+        act=keep_wide),
 ]
 
 
@@ -367,7 +415,8 @@ def key(img, sky, a, records=None, regions=None):
         print(f"{a.out}: far range: {int(ranged.sum())} px, alpha {haze} on the pale", file=sys.stderr)
     if regions is not None:
         regions["far"] = ranged
-    ctx = {"kind": getattr(a, "kind", None), "ckpt": getattr(a, "ckpt", None), "img": img, "sky": sky, "alpha": alpha}
+    ctx = {"kind": getattr(a, "kind", None), "ckpt": getattr(a, "ckpt", None), "img": img, "sky": sky, "alpha": alpha,
+           "top": top, "m": m, "grow": a.grow, "ranged": ranged}
     weighed = parallax_rules.weigh(RULES, ctx, getattr(a, "forced", None))
     alpha = ctx["alpha"]
     for r in weighed:

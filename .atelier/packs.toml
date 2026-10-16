@@ -173,7 +173,7 @@ A pale far range SD paints round the shape (peaks between near slopes, a haze pl
 and half clear (Simon's answer, r401): layer.far_range finds it against the top rows' sky, never local_sky's, which
 takes its clear tops and keys it in blobs; layer.py --haze is its alpha.
 A fix right for one model or one kind of layer only goes in layer.RULES (tools/parallax_rules.py, r400: misty_pines,
-dreamshaper_8's pines only): conditions on --kind and --ckpt, which ai_page.py and both recut.sh pass, then a measure;
+dreamshaper_8's pines only; r454: wide_mass, Z-Image's mass painted past --grow kept): conditions on --kind and --ckpt, which ai_page.py and both recut.sh pass, then a measure;
 each strip's record lands in recipe.json's "rules", --rule NAME=on|off forces one. tools/r400-ai-rules/probe.py says
 what each fix moves per model and kind; relay.sh re-lays a page with --keep (no GPU) for its before and after stills.
 Gates: a layer_test.py case for the fault (python3 tools/r239-ai-strips/layer_test.py, no GPU), failing when the fix is
