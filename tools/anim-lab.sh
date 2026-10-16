@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # The animation lab (r407, after r375): r375's shader animations as lab GLSL, drawn by the real reader compiled with
 # GWT, in WebGL: r365's beach sea under WAVE (what ships), SWELL, GLINT and SWELL + GLINT, and round1's calm clouds,
-# on a layer of their own, still and under BILLOW, in the page and alone; and the sea under SWELL with REFLECT, the
-# far range mirrored in it (r419), or with SHEEN, the sky mirrored in its slopes (r419), each alone or over SWELL
-# alone. Sliders: the view (four panels, two one over the other, or one close), zoom, the camera's scroll, the clouds'
+# on a layer of their own, still and under BILLOW, in the page and alone; and the sea under SWELL with MIRROR, the
+# whole water a mirror of the sky, like polished metal (r419, after REFLECT and SHEEN), alone or over SWELL alone.
+# Sliders: the view (four panels, two one over the other, or one close), zoom, the camera's scroll, the clouds'
 # drift, and each effect's numbers.
 #   tools/anim-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/anim-lab.sh --shot F.png    one still, headless (6 s in)
@@ -116,7 +116,7 @@ with sync_playwright() as p:
         got = json.loads(page.input_value("#anim-copy-json"))
         keys = {"view", "zoom", "cameraScroll", "cloudDrift", "waveAmplitude", "waveWavelength", "waveSpeed", "swellAmplitude", "swellWavelength",
                 "swellSpeed", "glintStrength", "glintSize", "glintDensity", "glintSpeed", "glintCrest", "sunX", "sunWidth", "billowAmplitude", "billowWavelength", "billowSpeed",
-                "reflectStrength", "reflectDepth", "reflectRipple", "reflectBand", "reflectShade", "reflectSquash", "sheenStrength", "sheenStreaks"}
+                "mirrorStrength", "mirrorRelief", "mirrorShine", "mirrorTint"}
         moved = {"swellAmplitude": {"started": 0.12, "now": 0.2}, "view": {"started": 0, "now": 5}}
         if set(got["settings"]) != keys or got["changed"] != moved:
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))

@@ -47,60 +47,46 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	static final int PANEL_WIDTH = FogLab.FRAME_WIDTH, PANEL_HEIGHT = 200;
 
 	/** What a panel draws its animated layer through. */
-	static final int STILL = 0, WAVE = 1, SWELL = 2, GLINT = 3, BOTH = 4, BILLOW = 5, REFLECT = 6, SHEEN = 7;
-	static final String[] EFFECT_NAMES = { "still", "WAVE (ships today)", "SWELL", "GLINT", "SWELL + GLINT", "BILLOW", "SWELL + REFLECT", "SWELL + SHEEN" };
+	static final int STILL = 0, WAVE = 1, SWELL = 2, GLINT = 3, BOTH = 4, BILLOW = 5, MIRROR = 6;
+	static final String[] EFFECT_NAMES = { "still", "WAVE (ships today)", "SWELL", "GLINT", "SWELL + GLINT", "BILLOW", "SWELL + MIRROR" };
 
 	/** The views the choice picks: four panels, two one over the other, or one, close. Each: its hearts (indices into {@link #hearts}). */
 	static final String[] VIEWS = { "sea, all four", "sea: both", "sea: SWELL", "sea: GLINT", "sea: WAVE", "clouds, all four", "clouds: BILLOW",
-			"sea: SWELL + REFLECT", "sea: REFLECT or not", "sea: SWELL + SHEEN", "sea: SHEEN or not" };
-	static final int[][] VIEW_HEARTS = { { 0, 1, 2, 3 }, { 3 }, { 1 }, { 2 }, { 0 }, { 4, 5, 6, 7 }, { 5 }, { 8 }, { 9, 8 }, { 10 }, { 9, 10 } };
-	/** Each heart: its page, its layer, its effect. 0-3 and 8-10 the sea, 4-7 the clouds. */
-	static final String[] HEART_PAGES = { SEA_PAGE, SEA_PAGE, SEA_PAGE, SEA_PAGE, CALM_PAGE, CALM_PAGE, CALM_PAGE, CALM_PAGE, SEA_PAGE, SEA_PAGE,
-			SEA_PAGE };
-	static final String[] HEART_LAYERS = { SEA, SEA, SEA, SEA, CLOUDS, CLOUDS, CLOUDS, CLOUDS, SEA, SEA, SEA };
+			"sea: SWELL + MIRROR", "sea: MIRROR or not" };
+	static final int[][] VIEW_HEARTS = { { 0, 1, 2, 3 }, { 3 }, { 1 }, { 2 }, { 0 }, { 4, 5, 6, 7 }, { 5 }, { 9 }, { 8, 9 } };
+	/** Each heart: its page, its layer, its effect. 0-3 and 8-9 the sea, 4-7 the clouds. */
+	static final String[] HEART_PAGES = { SEA_PAGE, SEA_PAGE, SEA_PAGE, SEA_PAGE, CALM_PAGE, CALM_PAGE, CALM_PAGE, CALM_PAGE, SEA_PAGE, SEA_PAGE };
+	static final String[] HEART_LAYERS = { SEA, SEA, SEA, SEA, CLOUDS, CLOUDS, CLOUDS, CLOUDS, SEA, SEA };
 	/** Whether a heart draws its page without the layers in front of the animated one: calm's clouds alone. */
-	static final boolean[] HEART_ALONE = { false, false, false, false, false, false, true, true, false, false, false };
-	static final int[] HEART_EFFECTS = { WAVE, SWELL, GLINT, BOTH, STILL, BILLOW, STILL, BILLOW, REFLECT, SWELL, SHEEN };
+	static final boolean[] HEART_ALONE = { false, false, false, false, false, false, true, true, false, false };
+	static final int[] HEART_EFFECTS = { WAVE, SWELL, GLINT, BOTH, STILL, BILLOW, STILL, BILLOW, SWELL, MIRROR };
 	static final String[] HEART_SETS = { "beach", "beach", "beach", "beach", "calm (round1 s02)", "calm (round1 s02)", "calm's clouds alone",
-			"calm's clouds alone", "beach", "beach", "beach" };
-	/**
-	 * REFLECT (r419, after Simon: "more feeling of reflexion"): the beach's far range, {@link #RANGE}, drawn again as a
-	 * layer right over the sea, flipped on Y, at the range's own speeds, so the mirrored range scrolls with the range.
-	 * Its mirror axis is the sea's top line: the sea strip's top {@link #SEA_HORIZON} of its height is water, the rest
-	 * clear (rows 300 to 383 of 384 in beach-sea.png).
-	 */
-	static final String RANGE = "l0";
+			"calm's clouds alone", "beach", "beach" };
+	/** The sea strip's water: its bottom {@link #SEA_HORIZON} of its height (rows 300 to 383 of 384 in beach-sea.png), the rest clear. */
 	static final float SEA_HORIZON = 84 / 384f;
-	/** The beach sea's mean colour (beach-sea.png's water), what REFLECT tints the mirrored range toward. */
-	static final float[] WATER = { 0.37f, 0.71f, 0.79f };
 	/**
-	 * SHEEN's sky (r419, after Simon on REFLECT: "feel bad, try something else"): the beach page's gradient, its sky at
-	 * the horizon (bottomHalf, also its fog) and over the view (topHalf_top), what the water mirrors near the horizon
-	 * and far under it.
+	 * MIRROR's sky (r419, after Simon on REFLECT and SHEEN: "something that affects the whole of the water ... a mirror
+	 * texture, a bit like metallic"): the beach page's gradient, its sky at the horizon (bottomHalf, also its fog) and
+	 * over the view (topHalf_top), the two ends of what the water mirrors.
 	 */
 	static final float[] SKY = { 0.81f, 0.89f, 0.95f }, ZENITH = { 0.31f, 0.56f, 0.82f };
-	/**
-	 * World units under the horizon where SHEEN's water mirrors least (the beach's visible sea is about 3 deep), and the
-	 * share of its finer ripples in its lines: constants, the lab's sliders fill the window.
-	 */
-	static final float SHEEN_DEPTH = 2.5f, SHEEN_RIPPLE = 0.4f;
+	/** World units under the horizon where MIRROR's flat water mirrors the sky over the view (the beach's visible sea is about 3 deep). */
+	static final float MIRROR_DEPTH = 3;
 	/**
 	 * Where each heart's frame is held, as a fraction of the frame's height from its bottom, at the panel's middle: the
-	 * beach's sea, calm's clouds; REFLECT's views lower, on the water under the horizon.
+	 * beach's sea, calm's clouds; MIRROR's views lower, on the water under the horizon.
 	 */
-	static final float[] HEART_FOCUS = { 0.3f, 0.3f, 0.3f, 0.3f, 0.82f, 0.82f, 0.82f, 0.82f, 0.24f, 0.24f, 0.24f };
+	static final float[] HEART_FOCUS = { 0.3f, 0.3f, 0.3f, 0.3f, 0.82f, 0.82f, 0.82f, 0.82f, 0.24f, 0.24f };
 
 	private final Parallax_Heart[] hearts = new Parallax_Heart[HEART_PAGES.length];
 	private final ParallaxLayer[] animated = new ParallaxLayer[HEART_PAGES.length];
-	/** REFLECT's mirrored range, in the hearts that draw one; null in the others. */
-	private final ParallaxLayer[] mirrored = new ParallaxLayer[HEART_PAGES.length];
 	/** Each clouds layer's own drift (its at rest speed), which the drift slider scales. */
 	private final float[] drifts = new float[HEART_PAGES.length];
 	private final AnimEffects[] effects = new AnimEffects[HEART_PAGES.length];
 	private SelectElement view;
 	private InputElement zoom, scroll, waveAmplitude, waveWavelength, waveSpeed, swellAmplitude, swellWavelength, swellSpeed, glintStrength,
-			glintSize, glintDensity, glintSpeed, glintCrest, sunX, sunWidth, billowAmplitude, billowWavelength, billowSpeed, drift, reflectStrength,
-			reflectDepth, reflectRipple, reflectBand, reflectShade, reflectSquash, sheenStrength, sheenStreaks;
+			glintSize, glintDensity, glintSpeed, glintCrest, sunX, sunWidth, billowAmplitude, billowWavelength, billowSpeed, drift, mirrorStrength,
+			mirrorRelief, mirrorShine, mirrorTint;
 	private Element readout;
 	private final Element[] labels = new Element[4];
 	private boolean clip;
@@ -111,10 +97,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 * up (r408).
 	 */
 	final float[] glint = new float[12];
-	/** REFLECT's numbers: where the range's foot is under the horizon (world units), how deep it fades, strength, band height, tint, squash. */
-	final float[] reflect = new float[6];
-	/** SHEEN's numbers: strength, streaks, depth, the horizon's height in the sea's tile; and its ripples' share. */
-	final float[] sheen = new float[5];
+	/** MIRROR's numbers: strength, relief, shine, tint; the horizon's height in the sea's tile, the depth. */
+	final float[] mirror = new float[6];
 
 	@Override
 	public void create()
@@ -144,34 +128,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 				// port gives SWELL these periods of its own.
 				model.kind = Enum_LayerKind.SHADER;
 				int e = HEART_EFFECTS[i];
-				boolean swells = e == SWELL || e == BOTH || e == GLINT || e == REFLECT || e == SHEEN;
+				boolean swells = e == SWELL || e == BOTH || e == GLINT || e == MIRROR;
 				model.shaderEffect = swells ? Enum_ShaderEffect.FOG : Enum_ShaderEffect.WAVE;
-			}
-			int rangeIndex = -1;
-			if (HEART_EFFECTS[i] == REFLECT)
-			{
-				// The range again, right over the sea: flipped, its foot hidden under the horizon as the range's is, so the
-				// mirror's axis is the sea's top line. Every bottom here is the layer's currentDistanceY: the lab's camera
-				// never moves up or down, which would move the range and the sea apart (the mirror then off its axis).
-				Parallax_Model range = null;
-				for (Parallax_Model m : page.pageModel.pageList)
-					if (RANGE.equals(m.regionName))
-						range = m;
-				float height = WORLD_WIDTH * 384 / 1024f, percent = WORLD_HEIGHT / 100;
-				float horizon = model.decal_Y_Ratio * percent + height * SEA_HORIZON, foot = horizon - range.decal_Y_Ratio * percent;
-				Parallax_Model mirror = new Parallax_Model();
-				mirror.regionName = RANGE;
-				mirror.flipY = true;
-				mirror.parallaxScalingSpeedX = range.parallaxScalingSpeedX;
-				mirror.parallaxScalingSpeedY = range.parallaxScalingSpeedY;
-				mirror.decal_X_Ratio = range.decal_X_Ratio;
-				// Flipped, the image's bottom row is at the box's top: local height foot goes on the horizon.
-				mirror.decal_Y_Ratio = (horizon + foot - height) / percent;
-				mirror.kind = Enum_LayerKind.SHADER;
-				mirror.shaderEffect = Enum_ShaderEffect.FOG;
-				rangeIndex = index + 1;
-				page.pageModel.pageList.add(rangeIndex, mirror);
-				reflect[0] = foot;
 			}
 			OrthographicCamera camera = new OrthographicCamera();
 			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
@@ -179,9 +137,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			hearts[i].setPage(page);
 			animated[i] = hearts[i].parallaxReader.layers.get(index);
 			drifts[i] = animated[i].getSpeedAtRest();
-			if (rangeIndex >= 0)
-				mirrored[i] = hearts[i].parallaxReader.layers.get(rangeIndex);
-			effects[i] = new AnimEffects(this, HEART_EFFECTS[i], animated[i], mirrored[i], hearts[i]);
+			effects[i] = new AnimEffects(this, HEART_EFFECTS[i], animated[i], hearts[i]);
 			hearts[i].parallaxReader.setLayerEffects(effects[i]);
 		}
 		buildControls();
@@ -220,14 +176,10 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		billowAmplitude = LabControls.slider(document, controls, "billowAmplitude", "BILLOW amplitude (world units)", 0, 1.5f, 0.02f, 0.3f);
 		billowWavelength = LabControls.slider(document, controls, "billowWavelength", "BILLOW wavelength (world units)", 1, 20, 0.25f, 6);
 		billowSpeed = LabControls.slider(document, controls, "billowSpeed", "BILLOW speed (world units/s)", 0, 2, 0.05f, 0.4f);
-		reflectStrength = LabControls.slider(document, controls, "reflectStrength", "REFLECT strength (the mirrored range's opacity at the horizon)", 0, 1, 0.05f, 0.85f);
-		reflectDepth = LabControls.slider(document, controls, "reflectDepth", "REFLECT depth (world units under the horizon where it has faded out)", 0.5f, 6, 0.1f, 4.5f);
-		reflectRipple = LabControls.slider(document, controls, "reflectRipple", "REFLECT ripple (sideways shift of its bands, world units, at the horizon; twice that at its depth)", 0, 0.4f, 0.01f, 0.05f);
-		reflectBand = LabControls.slider(document, controls, "reflectBand", "REFLECT bands (their height, world units: thinner, a more broken reflection)", 0.03f, 0.6f, 0.01f, 0.1f);
-		reflectShade = LabControls.slider(document, controls, "reflectShade", "REFLECT shade (how much darker than the water the range's mirror is: 0 the water's own colour)", 0, 0.9f, 0.05f, 0.5f);
-		reflectSquash = LabControls.slider(document, controls, "reflectSquash", "REFLECT squash (the range's height over the reflection's: 1 a true mirror, which on this thin sea shows only the range's foot; 5 puts the beach range's peaks 1 to 1.5 world units under the horizon)", 1, 8, 0.1f, 5);
-		sheenStrength = LabControls.slider(document, controls, "sheenStrength", "SHEEN strength (how much of the sky the water mirrors at the horizon)", 0, 1, 0.05f, 0.6f);
-		sheenStreaks = LabControls.slider(document, controls, "sheenStreaks", "SHEEN streaks (how much of each slope catches the sky: 0.1 thin lines, 1 the whole slope)", 0.05f, 1, 0.05f, 0.4f);
+		mirrorStrength = LabControls.slider(document, controls, "mirrorStrength", "MIRROR strength (how much of the water is the mirrored sky: 1 all of it)", 0, 1, 0.05f, 0.8f);
+		mirrorRelief = LabControls.slider(document, controls, "mirrorRelief", "MIRROR relief (how much the painted waves bend the mirror, beside the swell)", 0, 3, 0.1f, 1);
+		mirrorShine = LabControls.slider(document, controls, "mirrorShine", "MIRROR shine (contrast of the mirrored sky: 0 soft, 1 hard bright and dark facets, like polished metal)", 0, 1, 0.05f, 0.8f);
+		mirrorTint = LabControls.slider(document, controls, "mirrorTint", "MIRROR tint (how much the water's own colour tints the mirror, as a metal tints what it reflects: 0 a chrome mirror)", 0, 1, 0.05f, 0.4f);
 		readout = LabControls.readout(document, controls, "anim-readout");
 	}
 
@@ -258,28 +210,20 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			glint[7 + 2 * k] = Math.round(my[k] * up);
 		}
 		float ba = LabControls.read(billowAmplitude), bw = LabControls.read(billowWavelength), bs = LabControls.read(billowSpeed);
-		reflect[1] = LabControls.read(reflectDepth);
-		reflect[2] = LabControls.read(reflectStrength);
-		reflect[3] = LabControls.read(reflectBand);
-		reflect[4] = LabControls.read(reflectShade);
-		reflect[5] = LabControls.read(reflectSquash);
-		float rr = LabControls.read(reflectRipple);
-		sheen[0] = LabControls.read(sheenStrength);
-		sheen[1] = LabControls.read(sheenStreaks);
-		sheen[2] = SHEEN_DEPTH;
-		sheen[3] = animated[0].getHeight() * SEA_HORIZON;
-		sheen[4] = SHEEN_RIPPLE;
+		mirror[0] = LabControls.read(mirrorStrength);
+		mirror[1] = LabControls.read(mirrorRelief);
+		mirror[2] = LabControls.read(mirrorShine);
+		mirror[3] = LabControls.read(mirrorTint);
+		mirror[4] = animated[0].getHeight() * SEA_HORIZON;
+		mirror[5] = MIRROR_DEPTH;
 		for (int i = 0; i < hearts.length; i++)
 		{
 			ParallaxLayer layer = animated[i];
 			int effect = HEART_EFFECTS[i];
 			if (effect == WAVE)
 				shader(layer, wa, ww, ws);
-			else if (effect == SWELL || effect == BOTH || effect == GLINT || effect == REFLECT || effect == SHEEN)
+			else if (effect == SWELL || effect == BOTH || effect == GLINT || effect == MIRROR)
 				shader(layer, sa, sw, ss);
-			// Its ripple on the swell's wavelength and speed, so its time and its x run on the swell's whole turns.
-			if (mirrored[i] != null)
-				shader(mirrored[i], rr, sw, ss);
 			else if (effect == BILLOW)
 				shader(layer, ba, bw, bs);
 			layer.setSpeedAtRest(drifts[i] * dr);
@@ -362,22 +306,21 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 */
 	static final class AnimEffects extends LabKit.Effects
 	{
-		private static ShaderProgram wave, swell, glint, both, billow, reflect, sheen;
+		private static ShaderProgram wave, swell, glint, both, billow, mirror;
 
 		private final AnimLab lab;
 		private final int effect;
-		private final ParallaxLayer target, mirrored;
+		private final ParallaxLayer target;
 		private final Parallax_Heart heart;
 		private final GdxLayerEffects shipped = new GdxLayerEffects();
 		private boolean byShipped;
 		private ShaderProgram previous;
 
-		AnimEffects(AnimLab lab, int effect, ParallaxLayer target, ParallaxLayer mirrored, Parallax_Heart heart)
+		AnimEffects(AnimLab lab, int effect, ParallaxLayer target, Parallax_Heart heart)
 		{
 			this.lab = lab;
 			this.effect = effect;
 			this.target = target;
-			this.mirrored = mirrored;
 			this.heart = heart;
 		}
 
@@ -388,10 +331,10 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		@Override
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fogAmount, Color fogColor)
 		{
-			byShipped = (layer != target || effect == STILL) && (layer != mirrored || mirrored == null);
+			byShipped = layer != target || effect == STILL;
 			if (byShipped)
 				return shipped.begin(batch, layer, phase, fogAmount, fogColor);
-			ShaderProgram program = program(layer == mirrored ? -1 : effect == REFLECT ? SWELL : effect);
+			ShaderProgram program = program(effect);
 			previous = batch.getShader();
 			batch.setShader(program);
 			if (!batch.isDrawing())
@@ -409,13 +352,9 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			program.setUniformf(program.fetchUniformLocation("u_sun", false), g[4], g[5]);
 			program.setUniformf(program.fetchUniformLocation("u_glintA", false), g[6], g[7], g[8], g[9]);
 			program.setUniformf(program.fetchUniformLocation("u_glintB", false), g[10], g[11]);
-			float[] r = lab.reflect;
-			program.setUniformf(program.fetchUniformLocation("u_reflect", false), r[0], r[1], r[2], r[3]);
-			program.setUniformf(program.fetchUniformLocation("u_water", false), WATER[0], WATER[1], WATER[2], r[4]);
-			program.setUniformf(program.fetchUniformLocation("u_squash", false), r[5]);
-			float[] s = lab.sheen;
-			program.setUniformf(program.fetchUniformLocation("u_sheen", false), s[0], s[1], s[2], s[3]);
-			program.setUniformf(program.fetchUniformLocation("u_ripple", false), s[4]);
+			float[] m = lab.mirror;
+			program.setUniformf(program.fetchUniformLocation("u_mirror", false), m[0], m[1], m[2], m[3]);
+			program.setUniformf(program.fetchUniformLocation("u_mirrorAt", false), m[4], m[5]);
 			program.setUniformf(program.fetchUniformLocation("u_sky", false), SKY[0], SKY[1], SKY[2]);
 			program.setUniformf(program.fetchUniformLocation("u_zenith", false), ZENITH[0], ZENITH[1], ZENITH[2]);
 			return true;
@@ -447,10 +386,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 					return both != null ? both : (both = compile("#define SWELL\n#define GLINT\n", "SWELL + GLINT"));
 				case BILLOW:
 					return billow != null ? billow : (billow = compile("#define BILLOW\n", "BILLOW"));
-				case SHEEN:
-					return sheen != null ? sheen : (sheen = compile("#define SWELL\n#define SHEEN\n", "SWELL + SHEEN"));
 				default:
-					return reflect != null ? reflect : (reflect = compile("#define REFLECT\n", "REFLECT"));
+					return mirror != null ? mirror : (mirror = compile("#define SWELL\n#define MIRROR\n", "SWELL + MIRROR"));
 			}
 		}
 
@@ -482,20 +419,14 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 * <li>BILLOW (r375's billow): the clouds churn in place, their pixels pushed by a slow warp of wavelength L. On a
 	 * layer of its own every pixel is cloud: r375's colour mask, made for clouds painted into a back layer, is left
 	 * out (r409: clouds always get their own layer).</li>
-	 * <li>REFLECT (r419, after Simon: "more feeling of reflexion"): drawn on the beach's far range flipped over the sea
-	 * ({@link #RANGE}), not on the sea: below the horizon, the range squashed by u_squash (a true mirror of a range taller
-	 * than the sea is deep shows only its foot), drawn as a silhouette of the water's colour darkened by u_water.a, the
-	 * sea showing through where the range is clear but for a thin sheen of the haze's colour near the horizon, cut in
-	 * bands u_reflect.w high that slide sideways by the layer's amplitude and thin out, faded out
-	 * u_reflect.y under the horizon, at most u_reflect.z opaque. u_reflect.x: how far under the horizon the range's
-	 * foot is. Its x terms are whole turns over FOG's periods, its time terms whole multiples of t.</li>
-	 * <li>SHEEN (r419, after Simon on REFLECT: "feel bad, try something else"): no second layer, the swelling sea
-	 * itself mirrors the sky. Its slopes are lines across the water (19 turns up FOG's 10 wavelengths, bent sideways,
-	 * u_ripple of finer ones mixed in), broken into dashes; the tops of those facing the horizon catch its pale sky
-	 * (u_sky), those facing away, in the gaps between dashes, go a darker blue (u_zenith, the sky over the view). The
-	 * water mirrors u_sheen.x at the horizon (grazing), a fifth of that u_sheen.z world units under it (u_sheen.w: the
-	 * horizon's height in the tile); u_sheen.y: how much of each slope catches the sky. Every x term is whole turns
-	 * over FOG's periods, every time term whole multiples of t.</li>
+	 * <li>MIRROR (r419, after REFLECT and SHEEN, Simon: "something that affects the whole of the water ... a mirror
+	 * texture, a bit like metallic"): every pixel of the water is a mirror of the sky, as polished metal is of what is
+	 * round it. Flat, it mirrors the pale sky at the horizon (u_sky) and, u_mirrorAt.y world units under it, the bluer sky
+	 * over the view (u_zenith); tilted, by the swell's slopes and the painting's own relief (its brightness's slope,
+	 * times u_mirror.y), it mirrors higher or lower, so the facets go bright and dark as the swell moves. u_mirror: how
+	 * much of the water is the mirror, relief, shine (the mirrored sky's contrast: hard facets), tint (the water's colour
+	 * over the mirror, as a metal tints what it reflects); u_mirrorAt.x: the horizon's height in the tile. Its only x
+	 * terms are the swell's, whole turns over FOG's periods.</li>
 	 * </ul>
 	 */
 	static final String FRAGMENT = "#ifdef GL_ES\n"
@@ -520,11 +451,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "uniform vec2 u_sun;\n"
 			+ "uniform vec4 u_glintA;\n"
 			+ "uniform vec2 u_glintB;\n"
-			+ "uniform vec4 u_reflect;\n"
-			+ "uniform vec4 u_water;\n"
-			+ "uniform float u_squash;\n"
-			+ "uniform vec4 u_sheen;\n"
-			+ "uniform float u_ripple;\n"
+			+ "uniform vec4 u_mirror;\n"
+			+ "uniform vec2 u_mirrorAt;\n"
 			+ "uniform vec3 u_sky;\n"
 			+ "uniform vec3 u_zenith;\n"
 			+ "const float TAU = 6.2831853;\n"
@@ -557,17 +485,13 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);\n"
 			+ "	l += u_effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));\n"
 			+ "#endif\n"
-			+ "#ifdef SHEEN\n"
-			// Light lines across the water, as a sea's reflections lie: the water's slopes up it (19 turns over FOG's 10 L,
-			// bent sideways), finer ripples (u_ripple's share), broken into dashes. Whole turns over FOG's periods and of t.
-			+ "	vec2 rq = vec2(a.x / (8.0 * L), a.y / (10.0 * L));\n"
-			+ "	float band = sin(TAU * (19.0 * rq.y - 2.0 * t + 0.2 * sin(TAU * (4.0 * rq.x + 6.0 * rq.y - t))));\n"
-			+ "	float fine = sin(TAU * (43.0 * rq.y + 3.0 * rq.x - 3.0 * t));\n"
-			+ "	float slope = mix(band, fine, u_ripple);\n"
-			+ "	float dash = smoothstep(0.15, 0.85, 0.5 + 0.5 * sin(TAU * (9.0 * rq.x - 4.0 * rq.y + t)));\n"
-			+ "	float lit = smoothstep(1.0 - u_sheen.y, 1.0, slope) * dash, dim = smoothstep(1.0 - u_sheen.y, 1.0, -slope) * (1.0 - dash);\n"
-			+ "	float under = max(u_sheen.w - local().y, 0.0);\n"
-			+ "	float fresnel = u_sheen.x * mix(1.0, 0.2, smoothstep(0.0, u_sheen.z, under));\n"
+			+ "#ifdef MIRROR\n"
+			// How steeply the water faces us: the swell's slope up it (its push's own sines, differentiated), and finer
+			// ripples, wider than high as water seen low is, each a whole number of turns over FOG's periods and of t.
+			+ "	vec2 mq = vec2(a.x / (8.0 * L), a.y / (10.0 * L));\n"
+			+ "	float tilt = TAU / L * u_effect.x * (0.18 * cos(p1) - 0.18 * cos(p2))\n"
+			+ "		+ u_effect.x * (0.9 * sin(TAU * (13.0 * mq.x + 41.0 * mq.y - 3.0 * t)) + 0.7 * sin(TAU * (-7.0 * mq.x + 57.0 * mq.y - 4.0 * t))\n"
+			+ "		+ 0.5 * sin(TAU * (21.0 * mq.x + 83.0 * mq.y - 5.0 * t + 0.5 * sin(TAU * (5.0 * mq.x - 9.0 * mq.y + t)))));\n"
 			+ "#endif\n"
 			+ "#ifdef BILLOW\n"
 			+ "	vec2 p = a / L;\n"
@@ -575,27 +499,27 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "	float dy = sin(TAU * (2.0 * p.x + p.y - t + 0.6)) + 0.5 * sin(TAU * (p.x - 2.0 * p.y - 2.0 * t));\n"
 			+ "	l += u_effect.x / 1.5 * vec2(dx, -dy);\n"
 			+ "#endif\n"
-			+ "#ifdef REFLECT\n"
-			// e: how far under the horizon this pixel of the mirrored range is, the height over the horizon it mirrors.
-			+ "	float e = l.y - u_reflect.x;\n"
-			+ "	float deep = clamp(e / u_reflect.y, 0.0, 1.0);\n"
-			// Bands u_reflect.w high, each pushed sideways on its own beat, more the deeper (the water nearer, its waves
-			// seen steeper); across, the swell's whole turns over FOG's periods, so it runs on across the wrap.
-			+ "	float b = e / u_reflect.w;\n"
-			+ "	float qx = a.x / (8.0 * L);\n"
-			+ "	float shift = 0.65 * sin(TAU * (b * 0.37 - t)) + 0.35 * sin(TAU * (3.0 * qx + b * 0.91 + 2.0 * t));\n"
-			+ "	l.x += u_effect.x * (1.0 + deep) * shift;\n"
-			// Squashed: a true mirror (1) of a range taller than the sea is deep only shows its foot.
-			+ "	l.y = u_reflect.x + e * u_squash;\n"
-			// Some bands break: their reflection thins where the water's crest catches the sky instead.
-			+ "	float gap = 0.5 + 0.5 * sin(TAU * (5.0 * qx + b * 0.53 - t + 0.25 * sin(TAU * (2.0 * qx - b * 0.29))));\n"
-			+ "	float keep = u_reflect.z * (1.0 - deep * deep * (3.0 - 2.0 * deep)) * smoothstep(0.0, 0.08, e) * (1.0 - 0.6 * gap * deep - 0.25 * gap);\n"
-			+ "#endif\n"
 			+ "	vec4 image = at(l);\n"
 			+ "	vec4 color = v_color * image;\n"
-			+ "#ifdef SHEEN\n"
-			+ "	color.rgb = mix(color.rgb, v_color.rgb * u_sky, fresnel * lit);\n"
-			+ "	color.rgb = mix(color.rgb, color.rgb * u_zenith, 0.6 * fresnel * dim);\n"
+			+ "#ifdef MIRROR\n"
+			+ "	const vec3 GREY = vec3(0.299, 0.587, 0.114);\n"
+			// The painting's relief: its brightness's slope over a pixel or two, the painted crests' faces.
+			+ "	const float D = 0.05;\n"
+			+ "	float relief = dot(at(l + vec2(0.0, D)).rgb - at(l - vec2(0.0, D)).rgb, GREY) / (2.0 * D);\n"
+			+ "	float n = tilt + 0.5 * u_mirror.y * relief;\n"
+			// What this pixel mirrors, 0 the horizon's sky, 1 the sky over the view: lower in the water, higher; a facet
+			// tilted toward us, higher still. Past the horizon's sky, a facet mirrors the sun's haze, white; past the sky
+			// over the view, the deeper sky behind us, darker. Shine sharpens the ramp into hard facets, and opens those two
+			// ends, as polished metal's light and dark.
+			+ "	float sky = (u_mirrorAt.x - local().y) / u_mirrorAt.y + 1.2 * n;\n"
+			+ "	float hard = 0.5 - 0.4 * u_mirror.z;\n"
+			+ "	vec3 mirrored = mix(u_sky, u_zenith, smoothstep(0.5 - hard, 0.5 + hard, sky));\n"
+			+ "	mirrored = mix(mirrored, vec3(1.0), u_mirror.z * smoothstep(0.1, -0.3, sky));\n"
+			+ "	mirrored *= 1.0 - 0.5 * u_mirror.z * smoothstep(0.9, 1.4, sky);\n"
+			// As a metal: its own colour over what it mirrors, the painting's light and dark kept in it.
+			+ "	float grey = dot(color.rgb, GREY);\n"
+			+ "	vec3 metal = mirrored * mix(vec3(1.0), color.rgb / max(grey, 0.05), u_mirror.w) * (0.6 + 0.6 * grey / max(dot(v_color.rgb, GREY), 0.05));\n"
+			+ "	color.rgb = mix(color.rgb, min(metal, 1.0), u_mirror.x);\n"
 			+ "#endif\n"
 			+ "#ifdef GLINT\n"
 			// The glint's shape is the painting's: a crest, brighter than the water u_glint.w above and below it.
@@ -611,16 +535,6 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			+ "	float pulse = 0.5 + 0.5 * cos(TAU * (u_glint.z + 1.5 * sin(TAU * (u_glintB.x * q.x + u_glintB.y * q.y))));\n"
 			+ "	float glow = smoothstep(1.0 - u_glint.y, 1.0, n) * pulse * pulse * crest * exp(-sunAt * sunAt);\n"
 			+ "	color.rgb = min(color.rgb + u_glint.x * glow * vec3(1.0, 0.96, 0.85), 1.0);\n"
-			+ "#endif\n"
-			+ "#ifdef REFLECT\n"
-			// The range's mirror is a silhouette: the water's colour, darker by u_water.a, a fifth of the painting kept. The
-			// painted range is barely off the sky (10/255 on the beach page), so mirrored as painted it only paled the sea
-			// (Simon on r419: "I don't see the reflect"). Where the range is clear the sea shows through, but for a thin
-			// sheen of the haze's colour, the sky's light, near the horizon.
-			+ "	vec3 range = mix(u_water.rgb, color.rgb, 0.2) * (1.0 - u_water.a);\n"
-			+ "	float sheen = 0.3 * (1.0 - smoothstep(0.0, 0.4, deep));\n"
-			+ "	float cover = image.a + (1.0 - image.a) * sheen;\n"
-			+ "	color = vec4(mix(u_fog, range, image.a / max(cover, 0.001)), v_color.a * keep * cover);\n"
 			+ "#endif\n"
 			+ "	gl_FragColor = hazed(color);\n"
 			+ "}\n";

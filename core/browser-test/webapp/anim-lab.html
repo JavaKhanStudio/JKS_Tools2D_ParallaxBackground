@@ -31,16 +31,12 @@
 	painted crests bend. <b>GLINT</b>: sun glitter on the painting's own crests (r408): where a pixel is brighter
 	than the water just above and below it, pieces of that line light up and fade in and out in place, each at its own
 	moment, inside a sun's column across the view (its place and width are sliders). <b>SWELL + GLINT</b>: both in one shader, the swell's numbers the layer's, the glint's its own.
-	<b>SWELL + REFLECT</b> (r419): the feeling of a reflection, not a real one: the far range drawn again as a layer
-	over the swelling sea, flipped, at the range's own speed, its axis the sea's top line, broken into bands that slide
-	sideways and thin out, faded with depth, drawn as a silhouette darker than the water (shade) and squashed so the
-	range's peaks point down into the visible sea (squash). It would ship as one effect on a flipped IMAGE
-	layer.
-	<b>SWELL + SHEEN</b> (r419, after REFLECT): no second layer, the swelling sea itself mirrors the sky: broken
-	lines across the water catch the pale sky at the horizon, others go a darker blue, and they run with the swell;
-	strongest near the horizon, where water mirrors most (strength), fading to a fifth 2.5 world units under it. Streaks: how much
-	of each slope catches the sky. It would ship as one effect on the sea, written
-	three times, its sky the page's gradient.
+	<b>SWELL + MIRROR</b> (r419, after REFLECT and SHEEN): the whole of the water is a mirror of the sky, as polished
+	metal is of what is round it: flat, it mirrors the pale sky at the horizon, and the bluer sky over the view deeper
+	down; the swell's slopes and the painted waves' own relief tilt it, so its facets go bright and dark as the swell
+	moves. Strength: how much of the water is mirror. Relief: how much the painted waves bend it. Shine: hard facets,
+	like metal, or soft. Tint: how much the water's colour tints what it mirrors. It would ship as one effect on the sea,
+	written three times, its sky the page's gradient.
 	<b>The clouds</b> are round1's calm page, its clouds on a layer of their own (as a generated page will have them,
 	r409), drawn still and under <b>BILLOW</b>, in the page and alone (the mountains in front left out): the clouds churn in place, a slow warp of their
 	pixels. Their drift (the page's at rest speed) can be slowed to judge the churn alone. The view picks four panels
