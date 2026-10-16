@@ -18,7 +18,8 @@ import com.google.gwt.dom.client.Document;
  * {@link AnimLab}), four panels. hills-lab.html, with a {@code #hills-lab}: the hills lab (r384, {@link HillsLab}), two
  * panels side by side. pines-lab.html, with a {@code #pines-lab}: the pines lab (r421, {@link PinesLab}), two panels.
  * shadow-lab.html, with a {@code #shadow-lab}: the shadow lab (r425, {@link ShadowLab}), three panels
- * side by side, with a stencil buffer.
+ * side by side, with a stencil buffer. depth-lab.html, with a {@code #depth-lab}: the depth lab (r444, {@link DepthLab}),
+ * one 3D panel, with a stencil buffer.
  */
 public class BrowserTestLauncher extends GwtApplication
 {
@@ -42,7 +43,8 @@ public class BrowserTestLauncher extends GwtApplication
 
 	@Override
 	public GwtApplicationConfiguration getConfig()
-	{return floor() || tower() || planet() || lurker() ? new GwtApplicationConfiguration(FloorLab.FRAME_WIDTH, FloorLab.FRAME_HEIGHT)
+	{return has("depth-lab") ? stencil(new GwtApplicationConfiguration(DepthLab.FRAME_WIDTH, DepthLab.FRAME_HEIGHT))
+			: floor() || tower() || planet() || lurker() ? new GwtApplicationConfiguration(FloorLab.FRAME_WIDTH, FloorLab.FRAME_HEIGHT)
 			: swell() ? new GwtApplicationConfiguration(3 * SwellLab.PANEL_WIDTH + 8, SwellLab.PANEL_HEIGHT)
 			: has("effects-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, FogLab.PANEL_HEIGHT)
 			: has("hills-lab") ? new GwtApplicationConfiguration(2 * HillsLab.FRAME_WIDTH + 4, HillsLab.FRAME_HEIGHT)
@@ -61,5 +63,5 @@ public class BrowserTestLauncher extends GwtApplication
 
 	@Override
 	public ApplicationListener createApplicationListener()
-	{return floor() ? new FloorLab() : tower() ? new TowerLab() : planet() ? new PlanetLab() : lurker() ? new LurkerLab() : swell() ? new SwellLab() : has("effects-lab") ? new EffectsLab() : has("anim-lab") ? new AnimLab() : has("hills-lab") ? new HillsLab() : has("pines-lab") ? new PinesLab() : has("shadow-lab") ? new ShadowLab() : has("fog-lab") ? new FogLab() : has("haze-lab") ? new HazeLab() : has("transfert-lab") ? new TransfertLab() : new BrowserTestApp();}
+	{return has("depth-lab") ? new DepthLab() : floor() ? new FloorLab() : tower() ? new TowerLab() : planet() ? new PlanetLab() : lurker() ? new LurkerLab() : swell() ? new SwellLab() : has("effects-lab") ? new EffectsLab() : has("anim-lab") ? new AnimLab() : has("hills-lab") ? new HillsLab() : has("pines-lab") ? new PinesLab() : has("shadow-lab") ? new ShadowLab() : has("fog-lab") ? new FogLab() : has("haze-lab") ? new HazeLab() : has("transfert-lab") ? new TransfertLab() : new BrowserTestApp();}
 }

@@ -188,7 +188,7 @@ repair.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,
-  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`, `LurkerCases`), their builders in `ReaderFixtures`; a new subject's class goes in
+  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`, `LurkerCases`, `DepthCases`), their builders in `ReaderFixtures`; a new subject's class goes in
   `BrowserSuite.all()`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)

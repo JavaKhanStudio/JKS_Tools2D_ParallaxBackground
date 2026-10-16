@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Depth lab (r444): how far is each layer?</title>
+	<link rel="stylesheet" href="lab.css">
+	<!-- DepthLab (r444): a page turned sideways, each layer a card as far as its speed says, the ground ruled. -->
+	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
+	<style>
+	/* The tags DepthLab lays over the canvas: placed in percent of the stage, so they follow its size. */
+	#depth-tags { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+	.depth-tag {
+		position: absolute;
+		transform: translate(-50%, -50%);
+		white-space: nowrap;
+		padding: 2px 8px;
+		border-radius: 4px;
+		font: 600 14px/1.3 system-ui, sans-serif;
+		color: #fff;
+		background: rgba(10, 13, 22, 0.78);
+		border: 1px solid rgba(255, 255, 255, 0.25);
+	}
+	/* A card's tag over its top left corner: its distance large, its name and speed under it. */
+	.depth-card { transform: translate(0, calc(-100% - 6px)); border-left-width: 4px; white-space: pre; font-size: 12px; font-weight: 500; line-height: 1.25; }
+	.depth-card::first-line { font-size: 17px; font-weight: 700; }
+	/* The sky's over its top right corner, out of the farthest layer's way. */
+	.depth-sky { transform: translate(-100%, calc(-100% - 6px)); }
+	.depth-rule { transform: translate(-115%, -50%); background: none; border: none; color: rgba(255, 255, 255, 0.8); font-weight: 500; }
+	.depth-gap { transform: translate(12%, -50%); border-style: dashed; }
+	.depth-camera { transform: translate(-12%, -170%); color: #ffd877; border-color: rgba(255, 216, 119, 0.6); }
+	#depth-lab canvas { cursor: grab; }
+	.lab-copy.depth-slide { margin: 0; align-self: center; }
+	</style>
+</head>
+<body class="lab">
+	<header class="lab-bar">
+		<h1>Depth lab <span class="lab-question">how far is each layer? the page turned sideways</span></h1>
+		<a class="lab-home" href="index.html">&larr; all labs</a>
+		<span id="depth-copy-state" class="lab-copy-state"></span>
+		<button id="depth-copy" class="lab-copy">Copy settings</button>
+	</header>
+	<div id="depth-lab" class="lab-stage lab-row">
+		<div id="embed-browsertests"></div>
+		<div id="depth-tags"></div>
+		<div id="depth-labels" class="lab-labels"></div>
+	</div>
+	<div id="depth-controls" class="lab-controls"></div>
+	<textarea id="depth-copy-json" class="lab-copy-json" hidden readonly></textarea>
+	<details class="lab-about">
+		<summary>What this lab shows</summary>
+		<p id="depth-about">A parallax speed is one over a distance: a layer at a quarter of the front layer's speed is
+	four times as far from the camera. The speeds give every distance but one, the camera's distance to the front
+	layer, which is the unit here ("4.0&times;": four front distances) and which the <b>camera's view</b> slider sets in
+	world units. Each card is the real reader drawing that one layer, standing at its distance and scaled by it about
+	the camera's eye: from the eye, it covers exactly what it covers in the game, so at <b>2D / 3D</b> 0 the picture is
+	the game's frame, and the slide to 3D is the same camera walking out. The ground is ruled at each front distance
+	(true, or compressed for a deep page: the numbers stay true), each card's foot in its colour, the gap to the next
+	card written beside it; the yellow lines are the camera's view. Drag the canvas to turn round the page, the wheel to
+	come closer, the button or the space bar to slide between 2D and 3D. The layers keep scrolling at their speeds.</p>
+	</details>
+	<script src="lab.js"></script>
+	<script>
+	labCopy('depth', function () {
+		function picked(key) { return document.querySelector('select[data-key=' + key + ']').selectedOptions[0].textContent; }
+		return { lab: 'depth-lab', page: picked('page'), axis: picked('axis'), readout: document.getElementById('depth-readout').textContent };
+	});
+	</script>
+</body>
+</html>

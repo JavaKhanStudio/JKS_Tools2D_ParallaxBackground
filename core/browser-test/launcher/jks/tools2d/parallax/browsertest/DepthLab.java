@@ -1,0 +1,689 @@
+package jks.tools2d.parallax.browsertest;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
+import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector3;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.InputElement;
+import com.google.gwt.dom.client.SelectElement;
+
+import jks.tools2d.parallax.ParallaxDepth;
+import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.ParallaxPageReader;
+import jks.tools2d.parallax.heart.Parallax_Heart;
+import jks.tools2d.parallax.pages.Utils_Page_Json;
+
+/**
+ * The depth lab (r444): a page turned sideways, each layer a flat card standing as far from the camera as its speed
+ * says ({@link ParallaxDepth}), the ground ruled in front distances, the camera's view drawn from its eye. Each card is
+ * the real reader drawing that layer alone ({@link ParallaxPageReader#drawLayer(OrthographicCamera, com.badlogic.gdx.graphics.g2d.Batch, int)}),
+ * scaled by its distance about the camera's eye: seen from the eye, every card covers what it covers in the game, so the
+ * 3D view at 0 is the 2D frame, pixel for pixel, and the slide between the two is one camera moving. The eye is at the
+ * view's bottom edge, its lens shifted up: every card stands on one ground, seen edge on from the eye.
+ * <p>
+ * Drag the canvas to turn round the page (from 2D, it turns into 3D first), the wheel to come closer; the button or the
+ * space bar slides between 2D and 3D. {@code &clip=1}: nothing moves by itself, {@code window.depthLabAct(seconds)}
+ * steps the heart and the slide at 1/60 s. {@code &flat=1}: the heart's own render instead of the cards, for the check
+ * that the 3D view at 0 is the game's frame (tools/depth-lab.sh --seam). {@code &big=1}: the canvas shown at its full
+ * 1280 x 720, for a marketing capture.
+ */
+public class DepthLab extends ApplicationAdapter implements LabKit.Clip
+{
+	static final float WORLD_WIDTH = FogLab.WORLD_WIDTH, WORLD_HEIGHT = FogLab.WORLD_HEIGHT;
+	/** The canvas: 16:9, drawn at 960 wide over the sliders, its back buffer finer. */
+	static final int FRAME_WIDTH = 1280, FRAME_HEIGHT = 720, SHOWN_WIDTH = 960;
+	static final String[] PAGES = { "AI pines", "AI beach", "Purple fairy", "One night", "Hiver, misty" };
+	static final String[] FILES = { "pines-lab/forest.jplax", "anim-lab/beach.jplax", "fog-lab/s05.jplax", "fog-lab/s06.jplax", "fog-lab/s01.jplax" };
+	static final String[] SIZES = { "as the camera sees them", "all the front's size" };
+	static final String[] AXES = { "true distances", "compressed (square root)", "compressed (log)" };
+	/**
+	 * What the lab opens on: 3D, the cards all the front's size on a log axis (the most readable side view of a deep
+	 * page), seen from the right of the camera, a little above, the camera's view 60 degrees across.
+	 */
+	static final int SIZE = 1, AXIS = 2;
+	static final float VIEW = 1, YAW = 66, PITCH = 14, CLOSER = 1, FOV = 60, SCROLL = 6;
+	/** How long the slide between 2D and 3D takes, in seconds. */
+	static final float SLIDE = 1.6f;
+	/** Where the sky (the page's gradients and any still layer) stands: this much farther than the farthest layer. */
+	static final float SKY = 1.35f;
+	/** Each layer's accent, back to front: its card's frame, its foot on the ground and its tag. */
+	static final Color[] ACCENTS = { new Color(0.55f, 0.75f, 1f, 1), new Color(0.45f, 0.95f, 0.85f, 1), new Color(1f, 0.82f, 0.4f, 1),
+			new Color(1f, 0.55f, 0.7f, 1), new Color(0.75f, 0.6f, 1f, 1), new Color(0.6f, 1f, 0.5f, 1), new Color(1f, 0.65f, 0.4f, 1),
+			new Color(0.5f, 0.85f, 1f, 1) };
+
+	private Parallax_Heart heart;
+	private SpriteBatch batch;
+	private ShapeRenderer shapes;
+	private OrthographicCamera flatCamera;
+	private SelectElement page, axis, sizes;
+	private InputElement view, yaw, pitch, closer, fov, scroll;
+	private Element readout, overlay;
+	private boolean clip, flat;
+	private int shownPage = -1;
+	/** The slide: where it is (0 the 2D frame, 1 the 3D view) and where it goes; -1 when the slider holds it. */
+	private float slide = VIEW, goal = -1;
+
+	// Each layer of the page, back to front: how far it is (front distances), where it stands (the axis's), its name.
+	private final List<ParallaxLayer> layers = new ArrayList<>();
+	private float[] distance = new float[0], placed = new float[0];
+	private String[] names = new String[0];
+	private float skyPlaced, frontSpeed;
+
+	// The 3D camera.
+	private final Matrix4 projection = new Matrix4(), look = new Matrix4(), combined = new Matrix4(), card = new Matrix4(),
+			cardCombined = new Matrix4(), toWorld = new Matrix4();
+	private final Vector3 eye = new Vector3(), target = new Vector3(), up = new Vector3(0, 1, 0), home = new Vector3(), pivot = new Vector3(),
+			projected = new Vector3();
+	private float cameraDistance, eased;
+	private final List<Element> tags = new ArrayList<>();
+	private int tagsUsed;
+	private String costLine = "";
+	private float frameSeconds, frames;
+
+	@Override
+	public void create()
+	{
+		clip = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("clip"));
+		flat = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("flat"));
+		batch = new SpriteBatch();
+		shapes = new ShapeRenderer();
+		flatCamera = new OrthographicCamera();
+		flatCamera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
+		heart = new Parallax_Heart(flatCamera, batch, WORLD_WIDTH, WORLD_HEIGHT);
+		buildControls();
+		applyControls();
+		Gdx.input.setInputProcessor(new Orbit());
+		if (clip)
+			LabKit.exportClip("depthLab", this);
+	}
+
+	private void buildControls()
+	{
+		Document document = Document.get();
+		boolean big = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("big"));
+		document.getElementById("depth-lab").getStyle().setProperty("maxWidth", (big ? FRAME_WIDTH : SHOWN_WIDTH) + "px");
+		LabControls.panelLabels(document, "depth-labels", "");
+		page = LabControls.stageChoice(document, "depth-labels", "page", "page (the parallax turned sideways)", PAGES, 0);
+		axis = LabControls.choice(document, document.getElementById("depth-controls"), "axis",
+				"depth axis (how the ground is ruled: true distances, or compressed so a deep page fits; the cards' sizes and the rules' numbers stay true)", AXES, AXIS);
+		Element controls = document.getElementById("depth-controls");
+		sizes = LabControls.choice(document, controls, "sizes",
+				"cards (as the camera sees them: each scaled by its distance, so from the camera's eye the picture is the game's; or all the front's size, an exploded view, in 3D only)", SIZES, SIZE);
+		view = LabControls.slider(document, controls, "view", "2D / 3D (0: the game's frame; 1: the page turned sideways. The button and the space bar slide it)", 0, 1, 0.01f, VIEW);
+		yaw = LabControls.slider(document, controls, "yaw", "turn (degrees round the page; drag the canvas)", -85, 85, 1, YAW);
+		pitch = LabControls.slider(document, controls, "pitch", "height (degrees above the ground; drag the canvas)", 2, 80, 1, PITCH);
+		closer = LabControls.slider(document, controls, "closer", "closer (the 3D camera's distance, 1 frames the page; the wheel)", 0.3f, 2.5f, 0.01f, CLOSER);
+		fov = LabControls.slider(document, controls, "fov", "camera's view (degrees across the 2D frame: how far the camera stands from the front layer, the one number the speeds do not give; narrower is farther and deeper)", 20, 110, 1, FOV);
+		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -40, 40, 1, SCROLL);
+		Element button = document.createButtonElement();
+		button.setId("depth-slide");
+		button.setClassName("lab-copy depth-slide");
+		button.setInnerText("2D ⇄ 3D");
+		controls.appendChild(button);
+		onClick(button, this);
+		readout = LabControls.readout(document, controls, "depth-readout");
+		overlay = document.getElementById("depth-tags");
+	}
+
+	private static native void onClick(Element element, DepthLab lab) /*-{
+		element.addEventListener('click', $entry(function() {
+			lab.@jks.tools2d.parallax.browsertest.DepthLab::toggle()();
+		}));
+	}-*/;
+
+	/** Slides toward 2D from 3D, toward 3D from 2D or from between. */
+	void toggle()
+	{goal = slide >= 0.999f ? 0 : 1;}
+
+	/** The page as chosen, each layer's distance, and the readout. */
+	private void applyControls()
+	{
+		int chosen = LabControls.read(page);
+		if (chosen != shownPage)
+		{
+			heart.setPage(Utils_Page_Json.loadPage(FILES[chosen]));
+			shownPage = chosen;
+		}
+		heart.screenSpeedConstantX = LabControls.read(scroll);
+		if (goal < 0)
+			slide = LabControls.read(view);
+		LabControls.read(yaw);
+		LabControls.read(pitch);
+		LabControls.read(closer);
+		cameraDistance = ParallaxDepth.cameraDistance(WORLD_WIDTH, LabControls.read(fov));
+		measure();
+	}
+
+	/** Each layer's distance from its speed, and where the axis stands it. */
+	private void measure()
+	{
+		layers.clear();
+		layers.addAll(heart.parallaxReader.layers);
+		int n = layers.size();
+		if (distance.length != n)
+		{
+			distance = new float[n];
+			placed = new float[n];
+			names = new String[n];
+		}
+		frontSpeed = ParallaxPageReader.frontSpeedOf(layers);
+		float farthest = 1;
+		for (int i = 0; i < n; i++)
+		{
+			distance[i] = ParallaxDepth.distanceOf(frontSpeed, layers.get(i));
+			if (distance[i] != Float.POSITIVE_INFINITY)
+				farthest = Math.max(farthest, distance[i]);
+			String name = layers.get(i).getName();
+			TextureRegion region = layers.get(i).getRegion();
+			if ((name == null || name.isEmpty()) && region instanceof AtlasRegion)
+				name = ((AtlasRegion) region).name + (((AtlasRegion) region).index >= 0 ? "_" + ((AtlasRegion) region).index : "");
+			names[i] = name == null || name.isEmpty() ? "layer " + i : name;
+		}
+		float sky = farthest * SKY;
+		skyPlaced = place(sky);
+		for (int i = 0; i < n; i++)
+			placed[i] = distance[i] == Float.POSITIVE_INFINITY ? skyPlaced : place(distance[i]);
+		StringBuilder line = new StringBuilder();
+		for (int i = n - 1; i >= 0; i--)
+		{
+			line.append(names[i]).append(' ').append(times(distance[i]));
+			if (i > 0)
+				line.append(", ");
+		}
+		readout.setInnerText("distances from the camera, in front distances (the front layer's, " + two(cameraDistance)
+				+ " world units at this view): " + line + "; " + costLine);
+	}
+
+	/** Where a layer {@code d} front distances away stands on the axis chosen: true, or compressed (1 stays 1). */
+	private float place(float d)
+	{
+		switch (LabControls.read(axis))
+		{
+		case 1:
+			return (float) Math.sqrt(d);
+		case 2:
+			return 1 + (float) Math.log(d) * 1.4427f;
+		default:
+			return d;
+		}
+	}
+
+	/** "4.0×", or "∞" for a still layer. */
+	private static String times(float d)
+	{return d == Float.POSITIVE_INFINITY ? "∞ (still)" : (Math.round(d * 10) / 10.0) + "×";}
+
+	private static String two(float value)
+	{return String.valueOf(Math.round(value * 100) / 100.0);}
+
+	@Override
+	public void act(float seconds)
+	{
+		applyControls();
+		for (int n = LabKit.clipSteps(seconds); n > 0; n--)
+		{
+			heart.act(1 / 60f);
+			stepSlide(1 / 60f);
+		}
+		applyControls();
+	}
+
+	/** Moves the slide toward its goal; there, the slider holds it again. */
+	private void stepSlide(float delta)
+	{
+		if (goal < 0)
+			return;
+		float step = delta / SLIDE;
+		slide = goal > slide ? Math.min(goal, slide + step) : Math.max(goal, slide - step);
+		view.setValue(LabControls.text(Math.round(slide * 100) / 100f));
+		if (slide == goal)
+			goal = -1;
+	}
+
+	@Override
+	public void render()
+	{
+		if (!clip)
+		{
+			applyControls();
+			float delta = LabKit.liveDelta();
+			heart.act(delta);
+			stepSlide(delta);
+		}
+		LabKit.clear();
+		if (flat)
+		{
+			heart.render();
+			hideTags();
+			return;
+		}
+		eased = ease(slide);
+		int calls = draw3D(eased);
+		frames++;
+		frameSeconds += Gdx.graphics.getDeltaTime();
+		if (frameSeconds >= 1 || clip)
+		{
+			costLine = (clip ? "" : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ") + calls + " draw calls";
+			frames = frameSeconds = 0;
+		}
+	}
+
+	private static float ease(float t)
+	{return t * t * (3 - 2 * t);}
+
+	/** The camera between its 2D place ({@code e} 0) and the orbit ({@code e} 1), then everything it sees. */
+	private int draw3D(float e)
+	{
+		flatCamera.update();
+		float vw = WORLD_WIDTH, vh = WORLD_HEIGHT, cx = vw / 2, d = cameraDistance;
+		home.set(cx, 0, d);
+		// The orbit turns round the middle of the layers' cards and the camera, a third of their height up, far enough
+		// to frame them.
+		float deepest = 1, widest = 1;
+		for (int i = 0; i < placed.length; i++)
+			if (distance[i] != Float.POSITIVE_INFINITY)
+			{
+				deepest = Math.max(deepest, placed[i]);
+				widest = Math.max(widest, scaleOf(placed[i]));
+			}
+		float zBack = -(deepest - 1) * d;
+		pivot.set(cx, vh * widest * 0.35f, (zBack + d) / 2);
+		float tanUp = vh / 2 / d, a = vw / vh;
+		float yawTo = (float) Math.toRadians(LabControls.read(yaw)), pitchTo = (float) Math.toRadians(LabControls.read(pitch));
+		float frame = fit(yawTo, pitchTo, vw, vh, d, tanUp * a, tanUp) / LabControls.read(closer);
+		float r0 = home.dst(pivot);
+		float pitch0 = (float) Math.asin((home.y - pivot.y) / r0);
+		float yaw0 = (float) Math.atan2(home.x - pivot.x, home.z - pivot.z);
+		float yawR = yaw0 + (yawTo - yaw0) * e;
+		float pitchR = pitch0 + (pitchTo - pitch0) * e;
+		float radius = r0 + (frame - r0) * e;
+		eye.set(pivot.x + radius * (float) (Math.sin(yawR) * Math.cos(pitchR)), pivot.y + radius * (float) Math.sin(pitchR),
+				pivot.z + radius * (float) (Math.cos(yawR) * Math.cos(pitchR)));
+		// From 2D, straight ahead of the eye; in 3D, at the pivot.
+		target.set(home.x, home.y, home.z - r0).lerp(pivot, e);
+		// The lens: at 0 shifted up a whole half view (the eye at the frame's bottom), centred in 3D.
+		float shift = 1 - e, near = d * 0.02f, far = (skyPlaced + 4) * d * 40;
+		projection.setToProjection(-near * tanUp * a, near * tanUp * a, near * tanUp * (shift - 1), near * tanUp * (shift + 1), near, far);
+		look.setToLookAt(eye, target, up);
+		combined.set(projection).mul(look);
+
+		int calls = 0;
+		tagsUsed = 0;
+		studio(e);
+		ground(e, vw, d);
+
+		// Back to front as the eye sees them: the parallel cards farthest from it first.
+		int n = layers.size();
+		Integer[] order = new Integer[n + 1];
+		for (int i = 0; i <= n; i++)
+			order[i] = i - 1;
+		java.util.Arrays.sort(order, (p, q) -> Float.compare(Math.abs(eye.z - planeZ(q, d)), Math.abs(eye.z - planeZ(p, d))));
+		for (Integer i : order)
+		{
+			if (i < 0)
+				sky(e, vw, vh, d);
+			else
+				calls += card(i, e, vw, vh, d);
+		}
+		camera(e, vw, vh, d);
+		hideTags();
+		return calls;
+	}
+
+	/**
+	 * Frames the 3D view turned {@code yaw}, {@code pitch}: moves {@link #pivot} and returns the distance from it that
+	 * shows every layer's card (the sky's too when the cards are all the front's size) and the eye, centred. Each pass
+	 * looks at the corners from the camera it has, then pans to their middle and stands as far as their widest spread
+	 * needs.
+	 */
+	private float fit(float yaw, float pitch, float vw, float vh, float d, float tanAcross, float tanUp)
+	{
+		Vector3 forward = new Vector3((float) (-Math.sin(yaw) * Math.cos(pitch)), (float) -Math.sin(pitch), (float) (-Math.cos(yaw) * Math.cos(pitch)));
+		Vector3 right = new Vector3(forward).crs(up).nor(), above = new Vector3(right).crs(forward).nor();
+		Vector3 corner = new Vector3(), from = new Vector3();
+		float radius = d * 4, cx = vw / 2;
+		boolean sky = LabControls.read(sizes) == 1;
+		for (int pass = 0; pass < 4; pass++)
+		{
+			from.set(forward).scl(-radius).add(pivot);
+			float left = Float.MAX_VALUE, rightmost = -Float.MAX_VALUE, low = Float.MAX_VALUE, high = -Float.MAX_VALUE;
+			for (int i = -1; i < placed.length; i++)
+			{
+				if (i < 0 ? !sky : distance[i] == Float.POSITIVE_INFINITY)
+					continue;
+				float k = i < 0 ? skyPlaced : placed[i], s = scaleOf(k), z = -(k - 1) * d;
+				for (int c = 0; c < 5; c++)
+				{
+					if (c == 4)
+						corner.set(cx, 0, d);
+					else
+						corner.set((c & 1) == 0 ? cx - vw / 2 * s : cx + vw / 2 * s, (c & 2) == 0 ? 0 : vh * s, z);
+					corner.sub(from);
+					float along = Math.max(corner.dot(forward), d * 0.05f);
+					float x = corner.dot(right) / along / tanAcross, y = corner.dot(above) / along / tanUp;
+					left = Math.min(left, x);
+					rightmost = Math.max(rightmost, x);
+					low = Math.min(low, y);
+					high = Math.max(high, y);
+				}
+			}
+			// Pan to the corners' middle at the pivot's distance, then come as close as the larger spread allows.
+			pivot.mulAdd(right, (left + rightmost) / 2 * tanAcross * radius).mulAdd(above, (low + high) / 2 * tanUp * radius);
+			float spread = Math.max((rightmost - left) / 2, (high - low) / 2) / 0.86f;
+			radius *= Math.max(0.25f, Math.min(4, spread));
+		}
+		return radius;
+	}
+
+	/** The z of card {@code i}'s plane (-1: the sky's): the front at 0, the eye at {@code d}. */
+	private float planeZ(int i, float d)
+	{return -((i < 0 ? skyPlaced : placed[i]) - 1) * d;}
+
+	/**
+	 * {@code card} set to stand a plane {@code k} times the front's distance away, scaled by k about the eye's axis; with
+	 * the cards all the front's size, by less as the slide goes into 3D ({@link #scaleOf}).
+	 */
+	private void cardAt(float k, float vw, float d)
+	{
+		float s = scaleOf(k);
+		card.setToTranslationAndScaling(vw / 2 * (1 - s), 0, -(k - 1) * d, s, s, 1);
+	}
+
+	/** How much a card {@code k} front distances away is scaled: k, or, the cards all the front's size, toward 1 in 3D. */
+	private float scaleOf(float k)
+	{return LabControls.read(sizes) == 1 ? k + (1 - k) * eased : k;}
+
+	/** The studio behind the page in 3D: a dark gradient, unseen at 0 behind the sky's card. */
+	private void studio(float e)
+	{
+		if (!(e > 0))
+			return;
+		shapes.setProjectionMatrix(toWorld.setToOrtho2D(0, 0, 1, 1));
+		beginShapes(ShapeType.Filled);
+		// The page's own sky, darkened: its silhouettes read against it, and every page gets its own studio.
+		Color sky = heart.topSquare != null ? heart.topSquare.bottomColor : Color.GRAY;
+		Color top = new Color(sky).mul(0.42f), bottom = new Color(sky).mul(0.12f);
+		top.a = bottom.a = e;
+		shapes.rect(0, 0, 1, 1, bottom, bottom, top, top);
+		shapes.end();
+	}
+
+	/**
+	 * The ground: a dark floor under the cards, ruled across at each whole front distance (the numbers as tags at its
+	 * left), the camera's view opening on it from the eye, and each card's foot in its colour, the gap to the next card
+	 * written between them.
+	 */
+	private void ground(float e, float vw, float d)
+	{
+		if (!(e > 0.01f))
+			return;
+		float cx = vw / 2, far = skyPlaced, halfFar = vw / 2 * scaleOf(far) * 1.3f;
+		float zNear = d * 0.92f, zFar = -(far - 1) * d - d * 0.25f;
+		// The ground's plane, y 0: x stays, the drawing's y runs along -z.
+		toWorld.idt().rotate(1, 0, 0, -90);
+		shapes.setProjectionMatrix(cardCombined.set(combined).mul(toWorld));
+		beginShapes(ShapeType.Filled);
+		Color nearC = new Color(0.1f, 0.12f, 0.18f, 0.92f * e), farC = new Color(0.06f, 0.07f, 0.11f, 0.0f);
+		shapes.rect(cx - halfFar, -zNear, 2 * halfFar, zNear - zFar, nearC, nearC, farC, farC);
+		// The view's edges on the ground: from the eye, wider as they go.
+		Color edge = new Color(1, 1, 1, 0.22f * e);
+		shapes.setColor(edge);
+		float spread = vw / 2 / d;
+		float thin = d * 0.006f;
+		shapes.rectLine(cx, -d, cx - spread * (d - zFar), -zFar, thin);
+		shapes.rectLine(cx, -d, cx + spread * (d - zFar), -zFar, thin);
+		// The rules: every whole front distance, the axis's ticks, a stronger line at the round ones.
+		float deepest = 1;
+		for (int i = 0; i < placed.length; i++)
+			if (distance[i] != Float.POSITIVE_INFINITY)
+				deepest = Math.max(deepest, distance[i]);
+		int max = (int) Math.ceil(deepest);
+		int every = max <= 6 ? 1 : max <= 14 ? 2 : max <= 40 ? 5 : max <= 80 ? 10 : 20;
+		// Every whole distance a faint line (every few, past 40), every few a numbered one.
+		int minor = every <= 5 ? 1 : every / 5;
+		for (int t = 1; t <= max; t = t == 1 && minor > 1 ? minor : t + minor)
+		{
+			float k = place(t);
+			if (k > far)
+				break;
+			boolean numbered = t == 1 || t % every == 0;
+			float z = -(k - 1) * d, half = vw / 2 * scaleOf(k) * (numbered ? 1.04f : 1);
+			shapes.setColor(1, 1, 1, (numbered ? 0.45f : 0.16f) * e);
+			shapes.rectLine(cx - half, -z, cx + half, -z, thin * (numbered ? 2f : 1f) * (float) Math.sqrt(k));
+			if (numbered)
+				tag(cx - half, 0, z, t + "×", "depth-rule", e, null);
+		}
+		// Each layer's foot, and the gap to the one in front of it.
+		for (int i = 0; i < layers.size(); i++)
+		{
+			float k = placed[i], z = -(k - 1) * d, half = vw / 2 * scaleOf(k);
+			Color accent = ACCENTS[i % ACCENTS.length];
+			shapes.setColor(accent.r, accent.g, accent.b, 0.9f * e);
+			shapes.rectLine(cx - half, -z, cx + half, -z, thin * 3 * (float) Math.sqrt(k));
+			if (i + 1 < layers.size() && distance[i] != Float.POSITIVE_INFINITY)
+			{
+				float k2 = placed[i + 1], z2 = -(k2 - 1) * d, x = cx + vw / 2 * Math.max(scaleOf(k), scaleOf(k2)) * 1.06f;
+				shapes.setColor(accent.r, accent.g, accent.b, 0.55f * e);
+				shapes.rectLine(x, -z, x, -z2, thin * 1.6f * (float) Math.sqrt(k));
+				tag(x, 0, (z + z2) / 2, "+" + (Math.round((distance[i] - distance[i + 1]) * 10) / 10.0) + "×", "depth-gap", e, accent);
+			}
+		}
+		shapes.end();
+	}
+
+	/** The true distance standing at {@code k} on the axis: {@link #place}'s inverse. */
+	private float distanceAt(float k)
+	{
+		switch (LabControls.read(axis))
+		{
+		case 1:
+			return k * k;
+		case 2:
+			return (float) Math.exp((k - 1) / 1.4427f);
+		default:
+			return k;
+		}
+	}
+
+	/** The page's gradients on the sky's card: as the heart draws them in the 2D frame, from its eye. */
+	private void sky(float e, float vw, float vh, float d)
+	{
+		cardAt(skyPlaced, vw, d);
+		float w = Gdx.graphics.getWidth(), h = Gdx.graphics.getHeight();
+		toWorld.set(card).scale(vw / w, vh / h, 1);
+		shapes.setProjectionMatrix(cardCombined.set(combined).mul(toWorld));
+		beginShapes(ShapeType.Filled);
+		if (heart.topSquare != null)
+			heart.topSquare.draw(shapes);
+		if (heart.bottomSquare != null)
+			heart.bottomSquare.draw(shapes);
+		shapes.end();
+		frame(-1, e, vw, vh, d, new Color(1, 1, 1, 1));
+		tag(vw / 2 * (1 + scaleOf(skyPlaced)), vh * scaleOf(skyPlaced), -(skyPlaced - 1) * d, "∞\nsky", "depth-card depth-sky", e, null);
+	}
+
+	/** Layer {@code i} on its card: the reader draws it alone through the card's matrix. */
+	private int card(int i, float e, float vw, float vh, float d)
+	{
+		float k = placed[i];
+		cardAt(k, vw, d);
+		Color accent = ACCENTS[i % ACCENTS.length];
+		// The card's view into the stencil, a pane of glass the layer is painted on: its tiles past the view's edges are
+		// not drawn.
+		Gdx.gl.glClear(GL20.GL_STENCIL_BUFFER_BIT);
+		Gdx.gl.glEnable(GL20.GL_STENCIL_TEST);
+		Gdx.gl.glStencilFunc(GL20.GL_ALWAYS, 1, 0xff);
+		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_REPLACE);
+		shapes.setProjectionMatrix(cardCombined.set(combined).mul(card));
+		beginShapes(ShapeType.Filled);
+		shapes.setColor(accent.r * 0.5f + 0.5f, accent.g * 0.5f + 0.5f, accent.b * 0.5f + 0.5f, 0.1f * e);
+		shapes.rect(0, 0, vw, vh);
+		shapes.end();
+		Gdx.gl.glStencilFunc(GL20.GL_EQUAL, 1, 0xff);
+		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_KEEP);
+		batch.setProjectionMatrix(combined);
+		batch.setTransformMatrix(card);
+		batch.begin();
+		heart.parallaxReader.drawLayer(flatCamera, batch, i);
+		batch.end();
+		Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
+		int calls = batch.renderCalls;
+		batch.setTransformMatrix(toWorld.idt());
+		frame(i, e, vw, vh, d, accent);
+		ParallaxLayer layer = layers.get(i);
+		tag(vw / 2 * (1 - scaleOf(k)), vh * scaleOf(k), -(k - 1) * d,
+				// Past five layers the tags would cover each other: the distance alone, the rest in the readout.
+				layers.size() > 5 ? times(distance[i]) : times(distance[i]) + "\n" + names[i] + " · speed "
+						+ LabControls.text(Math.abs(layer.getParallaxSpeedRatioX())), "depth-card", e, accent);
+		return calls;
+	}
+
+	/** A card's outline, in its accent. */
+	private void frame(int i, float e, float vw, float vh, float d, Color accent)
+	{
+		if (!(e > 0.01f))
+			return;
+		shapes.setProjectionMatrix(cardCombined.set(combined).mul(card));
+		beginShapes(ShapeType.Filled);
+		shapes.setColor(accent.r, accent.g, accent.b, 0.75f * e);
+		float t = 0.05f;
+		shapes.rect(0, 0, vw, t);
+		shapes.rect(0, vh - t, vw, t);
+		shapes.rect(0, 0, t, vh);
+		shapes.rect(vw - t, 0, t, vh);
+		shapes.end();
+	}
+
+	/** The camera: its eye, and its view opening onto the front card's corners. */
+	private void camera(float e, float vw, float vh, float d)
+	{
+		if (!(e > 0.01f))
+			return;
+		shapes.setProjectionMatrix(combined);
+		beginShapes(ShapeType.Line);
+		shapes.setColor(1, 0.85f, 0.45f, 0.85f * e);
+		float cx = vw / 2;
+		shapes.line(cx, 0, d, 0, 0, 0);
+		shapes.line(cx, 0, d, vw, 0, 0);
+		shapes.line(cx, 0, d, 0, vh, 0);
+		shapes.line(cx, 0, d, vw, vh, 0);
+		shapes.end();
+		beginShapes(ShapeType.Filled);
+		shapes.setColor(1, 0.85f, 0.45f, e);
+		shapes.box(cx - 0.6f, 0, d + 0.6f, 1.2f, 0.9f, 1.2f);
+		shapes.end();
+		tag(cx, 1.2f, d, "camera · " + two(cameraDistance) + " units from the front", "depth-camera", e, null);
+	}
+
+	/** The shapes begun, blending: the batch turns blending off when it ends. */
+	private void beginShapes(ShapeType type)
+	{
+		Gdx.gl.glEnable(GL20.GL_BLEND);
+		Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		shapes.begin(type);
+	}
+
+	/** A tag over the canvas at the world point (x, y, z), {@code e} its opacity; hidden behind the eye. */
+	private void tag(float x, float y, float z, String text, String kind, float e, Color accent)
+	{
+		if (overlay == null || !(e > 0.02f))
+			return;
+		projected.set(x, y, z);
+		// Behind the eye: not shown.
+		Vector3 toPoint = new Vector3(x, y, z).sub(eye), ahead = new Vector3(target).sub(eye);
+		if (toPoint.dot(ahead) <= 0)
+			return;
+		projected.prj(combined);
+		if (Math.abs(projected.x) > 1.2f || Math.abs(projected.y) > 1.2f)
+			return;
+		Element tag;
+		if (tagsUsed < tags.size())
+			tag = tags.get(tagsUsed);
+		else
+		{
+			tag = Document.get().createDivElement();
+			overlay.appendChild(tag);
+			tags.add(tag);
+		}
+		tagsUsed++;
+		tag.setClassName("depth-tag " + kind);
+		tag.setInnerText(text);
+		tag.getStyle().setProperty("left", (projected.x + 1) * 50 + "%");
+		tag.getStyle().setProperty("top", (1 - projected.y) * 50 + "%");
+		tag.getStyle().setProperty("opacity", String.valueOf(Math.min(1, e * 1.4f)));
+		tag.getStyle().setProperty("borderColor", accent == null ? "" : "rgb(" + (int) (accent.r * 255) + "," + (int) (accent.g * 255) + "," + (int) (accent.b * 255) + ")");
+		tag.getStyle().setProperty("display", "");
+	}
+
+	private void hideTags()
+	{
+		for (int i = tagsUsed; i < tags.size(); i++)
+			tags.get(i).getStyle().setProperty("display", "none");
+	}
+
+	/** Drag: turn round the page; the wheel: closer or farther; space: the slide. */
+	private final class Orbit extends InputAdapter
+	{
+		private int lastX, lastY;
+
+		@Override
+		public boolean touchDown(int screenX, int screenY, int pointer, int button)
+		{
+			lastX = screenX;
+			lastY = screenY;
+			return true;
+		}
+
+		@Override
+		public boolean touchDragged(int screenX, int screenY, int pointer)
+		{
+			float dx = screenX - lastX, dy = screenY - lastY;
+			lastX = screenX;
+			lastY = screenY;
+			if (slide < 1 && goal != 1)
+				goal = 1;
+			set(yaw, LabControls.read(yaw) - dx * 0.25f, -85, 85);
+			set(pitch, LabControls.read(pitch) + dy * 0.2f, 2, 80);
+			return true;
+		}
+
+		@Override
+		public boolean scrolled(float amountX, float amountY)
+		{
+			set(closer, LabControls.read(closer) * (float) Math.pow(1.1, -amountY), 0.3f, 2.5f);
+			return true;
+		}
+
+		@Override
+		public boolean keyDown(int keycode)
+		{
+			if (keycode != com.badlogic.gdx.Input.Keys.SPACE)
+				return false;
+			toggle();
+			return true;
+		}
+
+		private void set(InputElement slider, float value, float min, float max)
+		{slider.setValue(LabControls.text(Math.max(min, Math.min(max, value))));}
+	}
+
+	@Override
+	public void dispose()
+	{
+		batch.dispose();
+		shapes.dispose();
+	}
+}

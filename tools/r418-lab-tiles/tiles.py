@@ -10,6 +10,7 @@ base, chrome, out = sys.argv[1:]
 # name (the tile's file), page, the lab's ready flag, its panels across and down, and which panel of the top row is the
 # tile when not the first: the same pages as tools/r232-lab-kit/shots.py, the suite left out.
 LABS = [
+    ("depth", "depth-lab.html", "depthLabReady", 1, 1),
     ("anim", "anim-lab.html", "animLabReady", 2, 2),
     ("hills", "hills-lab.html", "hillsLabReady", 2, 1),
     ("pines", "pines-lab.html", "pinesLabReady", 2, 1, 1),

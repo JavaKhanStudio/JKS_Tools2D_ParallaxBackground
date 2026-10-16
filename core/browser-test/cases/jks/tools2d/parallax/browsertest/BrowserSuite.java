@@ -31,6 +31,7 @@ public final class BrowserSuite
 		cases.addAll(PlanetCases.all());
 		cases.addAll(AnimatedPatchCases.all());
 		cases.addAll(LurkerCases.all());
+		cases.addAll(DepthCases.all());
 		cases.addAll(JsonCases.all(fixtures));
 		return cases;
 	}

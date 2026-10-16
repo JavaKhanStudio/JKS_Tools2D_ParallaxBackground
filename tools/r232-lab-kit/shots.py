@@ -13,6 +13,7 @@ LABS = [
     ("hills", "hills-lab.html", "hillsLabReady"),
     ("pines", "pines-lab.html", "pinesLabReady"),
     ("shadow", "shadow-lab.html", "shadowLabReady"),
+    ("depth", "depth-lab.html", "depthLabReady"),
     ("effects-fog", "effects-lab.html?lab=fog", "effectsLabReady"),
     ("effects-snow", "effects-lab.html?lab=snow", "effectsLabReady"),
     ("effects-all", "effects-lab.html?lab=all", "effectsLabReady"),

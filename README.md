@@ -290,6 +290,14 @@ More:
   moving in would see them (docs/depth-tricks.md). Nothing is stored in the page; Godot's `bg.zoom` and `bg.dolly`, and
   jME's `bg.setZoom(z)` with `bg.getReader().setDolly(true)`, draw the same (`engines/rounds/dolly`). A dollied
   layer is drawn through a batch that scales its quads into the camera's view: no flush, nothing allocated.
+- **How far each layer is (r444):** a speed ratio is one over a distance, so `ParallaxDepth.distanceOf(page, i)` gives
+  layer i's distance from the camera in front distances: the page's fastest speed ratio X over its own (the front at 1,
+  a layer at a quarter of its speed at 4, a still one infinitely far). The speeds give every distance but one, the
+  camera's to the front layer, which is a choice of the view (`ParallaxDepth.cameraDistance(viewWidth, degrees)`, from
+  a field of view) and is stored nowhere; `speedAt(front, distance)` goes the other way. The dolly, the panorama and the
+  page fog read the same distance. For a 3D view, `reader.drawLayer(camera, batch, i)` draws one layer alone as `draw`
+  draws it, the batch's transform set per layer: the depth lab (`tools/depth-lab.sh`) stands each layer on its card,
+  scaled by its distance about the camera's eye, so the 3D view slides out of the game's own frame.
 - **Use your own camera and batch:** `new Parallax_Heart(camera, batch, worldWidth, worldHeight)`, then `setPage(...)`.
   The layers are laid out from the bottom-left corner of the camera view, so moving the game camera doesn't drag the
   background away.
@@ -501,6 +509,7 @@ core/src/jks/tools2d/parallax/       translatable by GWT (Parallax.gwt.xml)
     heart/Gvars_Parallax          default world size, AssetManager
     ParallaxPageReader            scrolling, tiling, cross-fade and tint of the layers
     ParallaxLayer                 one layer: image, settings, scroll position
+    ParallaxDepth                 how far each layer is, from its speed (a 3D view's numbers; nothing per frame)
     ParallaxParticles             a PARTICLES layer's libGDX ParticleEffect, drawn per tile, tinted, allocation-free
     GdxLayerEffects               a SHADER layer's effects as libGDX batch shaders (LayerEffects: the engine's seam)
     EffectSupport                 which engine draws which layer kind and effect, and why not

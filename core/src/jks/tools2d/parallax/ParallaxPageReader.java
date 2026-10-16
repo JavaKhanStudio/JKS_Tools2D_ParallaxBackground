@@ -391,6 +391,46 @@ public class ParallaxPageReader implements Disposable
 
 	public void draw(OrthographicCamera worldCamera, Batch batch)
 	{
+		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();
+		boolean throughColor = transfertStyle.grades() && !transferLayers.isEmpty();
+		beginDraw(worldCamera, batch, dissolve || throughColor);
+
+		// A layer at alpha 0 still costs its pixels on the GPU, and during a transfer a flush when the pages' atlases differ.
+		if (transferLayers.isEmpty())
+		{
+			if (setBatchColor(batch, 1))
+				for (int i = 0, n = layers.size(); i < n; i++)
+					drawLayer(layers, i, batch, false);
+		}
+		else
+			drawTransfert(batch, dissolve, throughColor);
+
+		endPageFog(batch);
+		release(batch);
+		batch.setColor(Color.WHITE);
+	}
+
+	/**
+	 * Draws only the layer at {@code index} of the page, as {@link #draw} draws it without a transfert in progress: for a
+	 * 3D view that puts each layer on its own plane (r444, the editor's and the depth lab's), the batch's transform
+	 * matrix set per layer by the caller. A game draws the page with {@link #draw}.
+	 */
+	public void drawLayer(OrthographicCamera worldCamera, Batch batch, int index)
+	{
+		beginDraw(worldCamera, batch, false);
+		if (setBatchColor(batch, 1))
+			drawLayer(layers, index, batch, false);
+		endPageFog(batch);
+		release(batch);
+		batch.setColor(Color.WHITE);
+	}
+
+	/**
+	 * What every draw begins with: the camera's view, each page's front, its tower and its lurkers, and the page fog's
+	 * shared shader unless {@code ownShaders} (a dissolve or a transfert through a colour begins each layer with its own).
+	 */
+	private void beginDraw(OrthographicCamera worldCamera, Batch batch, boolean ownShaders)
+	{
 		viewportWidth = worldCamera.viewportWidth;
 		viewportHeight = worldCamera.viewportHeight;
 		cameraZoom = worldCamera.zoom;
@@ -403,61 +443,49 @@ public class ParallaxPageReader implements Disposable
 		transferNearTower = nearTowerOf(transferLayers);
 		// The lurkers against this view, which act() only knew from the last draw.
 		sightLurkers();
-		boolean dissolve = transfertStyle.getKind() == TransfertStyle.Kind.DISSOLVE && !transferLayers.isEmpty();
-		boolean throughColor = transfertStyle.grades() && !transferLayers.isEmpty();
 		// A dissolve begins each layer with its own mask, a transfert through a colour or a fog creep with its own grade:
 		// no page fog's shared shader then.
-		pageFogOn = pageFog = !dissolve && !throughColor && (fogStrength > 0 || (transferFogStrength > 0 && !transferLayers.isEmpty()))
+		pageFogOn = pageFog = !ownShaders && (fogStrength > 0 || (transferFogStrength > 0 && !transferLayers.isEmpty()))
 				&& getLayerEffects().beginPageFog(batch, tint, fogColor, transferFogColor);
+	}
 
-		// A layer at alpha 0 still costs its pixels on the GPU, and during a transfer a flush when the pages' atlases differ.
-		if (transferLayers.isEmpty())
-		{
-			if (setBatchColor(batch, 1))
-				for (int i = 0, n = layers.size(); i < n; i++)
-					drawLayer(layers, i, batch, false);
-		}
-		else
-		{
-			int total = Math.max(layers.size(), transferLayers.size());
-			int oldOffset = total - layers.size();
-			int newOffset = total - transferLayers.size();
-			boolean staggered = transfertStyle.getKind() != TransfertStyle.Kind.FADE;
+	/** Both pages of a transfert, slot by slot, back to front. */
+	private void drawTransfert(Batch batch, boolean dissolve, boolean throughColor)
+	{
+		int total = Math.max(layers.size(), transferLayers.size());
+		int oldOffset = total - layers.size();
+		int newOffset = total - transferLayers.size();
+		boolean staggered = transfertStyle.getKind() != TransfertStyle.Kind.FADE;
 
-			for (int slot = 0; slot < total; slot++)
+		for (int slot = 0; slot < total; slot++)
+		{
+			// Depth stagger and dissolve: each slot at its own point of the transfert, the back ones ahead.
+			float ramp = staggered ? transfertStyle.slotRamp(newLayerAlpha, slot, total) : newLayerAlpha;
+			if (dissolve)
 			{
-				// Depth stagger and dissolve: each slot at its own point of the transfert, the back ones ahead.
-				float ramp = staggered ? transfertStyle.slotRamp(newLayerAlpha, slot, total) : newLayerAlpha;
-				if (dissolve)
-				{
-					if (slot >= oldOffset)
-						drawDissolved(layers, slot - oldOffset, batch, false, ramp);
-					if (slot >= newOffset)
-						drawDissolved(transferLayers, slot - newOffset, batch, true, ramp);
-					continue;
-				}
-				if (throughColor)
-				{
-					// The outgoing layer until the slot is all colour (halfway through its window; a fog creep's, halfway through
-					// the transfert), the incoming one after.
-					boolean incoming = transfertStyle.showsIncoming(newLayerAlpha, slot, total);
-					float grade = transfertStyle.gradeAt(newLayerAlpha, slot, total);
-					if (!incoming && slot >= oldOffset)
-						drawGraded(layers, slot - oldOffset, batch, false, grade);
-					else if (incoming && slot >= newOffset)
-						drawGraded(transferLayers, slot - newOffset, batch, true, grade);
-					continue;
-				}
-				if (slot >= oldOffset && setBatchColor(batch, staggered ? 1 - ramp : oldLayerAlpha))
-					drawLayer(layers, slot - oldOffset, batch, false);
-				if (slot >= newOffset && setBatchColor(batch, ramp))
-					drawLayer(transferLayers, slot - newOffset, batch, true);
+				if (slot >= oldOffset)
+					drawDissolved(layers, slot - oldOffset, batch, false, ramp);
+				if (slot >= newOffset)
+					drawDissolved(transferLayers, slot - newOffset, batch, true, ramp);
+				continue;
 			}
+			if (throughColor)
+			{
+				// The outgoing layer until the slot is all colour (halfway through its window; a fog creep's, halfway through
+				// the transfert), the incoming one after.
+				boolean incoming = transfertStyle.showsIncoming(newLayerAlpha, slot, total);
+				float grade = transfertStyle.gradeAt(newLayerAlpha, slot, total);
+				if (!incoming && slot >= oldOffset)
+					drawGraded(layers, slot - oldOffset, batch, false, grade);
+				else if (incoming && slot >= newOffset)
+					drawGraded(transferLayers, slot - newOffset, batch, true, grade);
+				continue;
+			}
+			if (slot >= oldOffset && setBatchColor(batch, staggered ? 1 - ramp : oldLayerAlpha))
+				drawLayer(layers, slot - oldOffset, batch, false);
+			if (slot >= newOffset && setBatchColor(batch, ramp))
+				drawLayer(transferLayers, slot - newOffset, batch, true);
 		}
-
-		endPageFog(batch);
-		release(batch);
-		batch.setColor(Color.WHITE);
 	}
 
 	/**
