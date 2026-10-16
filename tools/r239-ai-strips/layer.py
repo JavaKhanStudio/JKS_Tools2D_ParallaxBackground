@@ -23,7 +23,8 @@ RULES (tools/parallax_rules.py, r400): a fix right for one model or one kind of 
 --kind and --ckpt say painted it; --rule NAME=on|off forces one, --rules-json PATH writes what each did. misty_pines:
 dreamshaper_8 paints farther pines in mist at a pines layer's foot, pale ghosts inside the mask that scroll at the
 front's speed (r364); on that model's pines they key along the sky-to-mass line. Another model's pale pines are
-crisp, a second row it meant (openjourney, novaCartoon), or not there (SDXL): left as painted.
+crisp, a second row it meant (openjourney, novaCartoon), or not there (SDXL): left as painted. Simon kept it on
+after seeing it on and off in pines-lab (r421).
 Alpha islands that do not touch the layer's main mass (a speck SD left in the sky) are cut, with the
 faint edge around them; connectivity is taken around the loop. --keep-islands keeps them, for a layer
 meant to be scattered (clouds).
