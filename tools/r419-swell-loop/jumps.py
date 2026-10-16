@@ -2,8 +2,8 @@
 and one with its amplitude 0: their difference is what SWELL alone moves, and a swell that runs on changes that about
 as much every frame. A phase that jumps (along() wrapping where a wave is not a whole number of turns) stands far above
 its neighbours. Prints the median frame change and the frames past RATIO times it; exits 1 on any.
-    tools/anim-lab.sh --slider view=2 --clip SWELL.mp4
-    tools/anim-lab.sh --slider view=2 --slider swellAmplitude=0 --clip FLAT.mp4
+    tools/anim-lab.sh --slider view=3 --clip SWELL.mp4
+    tools/anim-lab.sh --slider view=3 --slider swellAmplitude=0 --clip FLAT.mp4
     python3 tools/r419-swell-loop/jumps.py SWELL.mp4 FLAT.mp4 --top 292 --bottom 402
 """
 import argparse

@@ -46,15 +46,23 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	static final int PANEL_WIDTH = FogLab.FRAME_WIDTH, PANEL_HEIGHT = 200;
 
 	/** What a panel draws its animated layer through. */
-	static final int WAVE = 0, SWELL = 1, GLINT = 2, BOTH = 3, MIRROR = 4, MIRROR_OWN = 5, MIRROR_GLINT = 6;
+	static final int WAVE = 0, SWELL = 1, GLINT = 2, BOTH = 3, MIRROR = 4, MIRROR_OWN = 5, MIRROR_GLINT = 6, NONE = 7;
 	static final String[] EFFECT_NAMES = { "WAVE (ships today)", "SWELL", "GLINT", "SWELL + GLINT", "SWELL + MIRROR as you tuned it (fixed)",
-			"SWELL + MIRROR by the water's colour", "SWELL + MIRROR by the water's colour + GLINT" };
+			"SWELL + MIRROR by the water's colour", "SWELL + MIRROR by the water's colour + GLINT", "nothing" };
 
-	/** The views the choice picks: four panels, two one over the other, or one, close. Each: its hearts (indices into {@link #hearts}). */
-	static final String[] VIEWS = { "sea, all four", "sea: both", "sea: SWELL", "sea: GLINT", "sea: WAVE", "sea: SWELL + MIRROR", "sea: MIRROR or not" };
-	static final int[][] VIEW_HEARTS = { { 0, 1, 2, 3 }, { 3 }, { 1 }, { 2 }, { 0 }, { 7 }, { 4, 5, 6, 7 } };
+	/**
+	 * The views the choice picks: four panels, three, two one over the other, or one, close. Each: its hearts (indices
+	 * into {@link #hearts}). The first (r462, Simon: "should display what is getting exported, aka Nothing, Swell + mirror
+	 * + glint, and swell + glint ... (detail level) so someone using the parallax can hook up different quality level"):
+	 * the sea at each detail level a game may pick, at the sliders' numbers, which start at his (r419, 16 Oct 15:02).
+	 */
+	static final String[] VIEWS = { "detail levels", "sea, all four", "sea: both", "sea: SWELL", "sea: GLINT", "sea: WAVE", "sea: SWELL + MIRROR", "sea: MIRROR or not" };
+	static final int[][] VIEW_HEARTS = { { 8, 9, 10 }, { 0, 1, 2, 3 }, { 3 }, { 1 }, { 2 }, { 0 }, { 7 }, { 4, 5, 6, 7 } };
 	/** Each heart's effect, on the beach's sea. */
-	static final int[] HEART_EFFECTS = { WAVE, SWELL, GLINT, BOTH, SWELL, MIRROR, MIRROR_OWN, MIRROR_GLINT };
+	static final int[] HEART_EFFECTS = { WAVE, SWELL, GLINT, BOTH, SWELL, MIRROR, MIRROR_OWN, MIRROR_GLINT, MIRROR_GLINT, BOTH, NONE };
+	/** The detail levels' hearts, from {@link #FIRST_LEVEL}: their titles, the most a game draws first. */
+	static final int FIRST_LEVEL = 8;
+	static final String[] LEVEL_NAMES = { "high: SWELL + MIRROR + GLINT", "medium: SWELL + GLINT", "off: nothing" };
 	/** The sea strip's water: its bottom {@link #SEA_HORIZON} of its height (rows 300 to 383 of 384 in beach-sea.png), the rest clear. */
 	static final float SEA_HORIZON = 84 / 384f;
 	/**
@@ -71,7 +79,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	 * Where each heart's frame is held, as a fraction of the frame's height from its bottom, at the panel's middle: the
 	 * beach's sea; MIRROR's views lower, on the water under the horizon.
 	 */
-	static final float[] HEART_FOCUS = { 0.3f, 0.3f, 0.3f, 0.3f, 0.24f, 0.24f, 0.24f, 0.24f };
+	static final float[] HEART_FOCUS = { 0.3f, 0.3f, 0.3f, 0.3f, 0.24f, 0.24f, 0.24f, 0.24f, 0.24f, 0.24f, 0.24f };
 
 	private final Parallax_Heart[] hearts = new Parallax_Heart[HEART_EFFECTS.length];
 	private final ParallaxLayer[] animated = new ParallaxLayer[HEART_EFFECTS.length];
@@ -113,7 +121,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			// periods (r419): along() runs on only within the effect's period, one wavelength under WAVE, where SWELL's
 			// second wave (5 turns in 8 wavelengths across, 6 and 9 in 10 up) jumped every time the layer wrapped. Its
 			// port gives SWELL these periods of its own.
-			model.kind = Enum_LayerKind.SHADER;
+			model.kind = HEART_EFFECTS[i] == NONE ? Enum_LayerKind.IMAGE : Enum_LayerKind.SHADER;
 			model.shaderEffect = HEART_EFFECTS[i] != WAVE ? Enum_ShaderEffect.FOG : Enum_ShaderEffect.WAVE;
 			OrthographicCamera camera = new OrthographicCamera();
 			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
@@ -150,16 +158,16 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		waveSpeed = LabControls.slider(document, controls, "waveSpeed", "WAVE speed (world units/s)", 0, 2, 0.05f, 0.3f);
 		swellAmplitude = LabControls.slider(document, controls, "swellAmplitude", "SWELL amplitude (world units)", 0, 0.5f, 0.01f, 0.12f);
 		swellWavelength = LabControls.slider(document, controls, "swellWavelength", "SWELL wavelength (world units)", 0.25f, 6, 0.05f, 1.25f);
-		swellSpeed = LabControls.slider(document, controls, "swellSpeed", "SWELL speed (world units/s)", 0, 2, 0.05f, 0.3f);
+		swellSpeed = LabControls.slider(document, controls, "swellSpeed", "SWELL speed (world units/s)", 0, 2, 0.05f, 0.35f);
 		glintStrength = LabControls.slider(document, controls, "glintStrength", "GLINT strength (light added, 0..1.5)", 0, 1.5f, 0.05f, 0.5f);
 		glintSize = LabControls.slider(document, controls, "glintSize", "GLINT size (a glint's length, world units)", 0.2f, 3, 0.05f, 0.8f);
 		glintDensity = LabControls.slider(document, controls, "glintDensity", "GLINT density (how much of the crests is lit, 0.05..1.5)", 0.05f, 1.5f, 0.05f, 0.6f);
 		glintSpeed = LabControls.slider(document, controls, "glintSpeed", "GLINT twinkle (pulses a second: a glint fades in and out in place)", 0, 2, 0.05f, 0.3f);
 		glintCrest = LabControls.slider(document, controls, "glintCrest", "GLINT crest reach (world units: a crest is brighter than the water this far above and below; more, thicker lines)", 0.05f, 0.6f, 0.05f, 0.2f);
-		sunX = LabControls.slider(document, controls, "sunX", "sun's place (0..1 across the view: the glitter's column)", 0, 1, 0.05f, 0.5f);
-		sunWidth = LabControls.slider(document, controls, "sunWidth", "sun's width (of the view: 2 lights it all)", 0.05f, 2, 0.05f, 0.3f);
+		sunX = LabControls.slider(document, controls, "sunX", "sun's place (0..1 across the view: the glitter's column)", 0, 1, 0.05f, 0.25f);
+		sunWidth = LabControls.slider(document, controls, "sunWidth", "sun's width (of the view: 2 lights it all)", 0.05f, 2, 0.05f, 0.45f);
 		Element mirrors = LabControls.section(document, controls, "MIRROR (the whole sea a mirror of the sky, like polished metal: views 'sea: SWELL + MIRROR' and 'sea: MIRROR or not')");
-		mirrorStrength = LabControls.slider(document, mirrors, "mirrorStrength", "strength (how much of the water is the mirrored sky: 1 all of it)", 0, 1, 0.05f, 0.5f);
+		mirrorStrength = LabControls.slider(document, mirrors, "mirrorStrength", "strength (how much of the water is the mirrored sky: 1 all of it)", 0, 1, 0.05f, 0.15f);
 		mirrorRelief = LabControls.slider(document, mirrors, "mirrorRelief", "relief (how much the painted waves bend the mirror, beside the swell)", 0, 3, 0.1f, 3);
 		mirrorShine = LabControls.slider(document, mirrors, "mirrorShine", "shine (contrast of the mirrored sky: 0 soft, 1 hard bright and dark facets, like polished metal)", 0, 1, 0.05f, 1);
 		mirrorTint = LabControls.slider(document, mirrors, "mirrorTint", "tint (how much the water's own colour tints the mirror, as a metal tints what it reflects: 0 a chrome mirror)", 0, 1, 0.05f, 1);
@@ -214,7 +222,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		{
 			int h = shown.length == 2 ? (k % 2 == 0 ? k / 2 : -1) : k;
 			boolean titled = h >= 0 && h < shown.length;
-			labels[k].setInnerText(titled ? "beach: " + EFFECT_NAMES[HEART_EFFECTS[shown[h]]] : "");
+			labels[k].setInnerText(!titled ? "" : shown[h] >= FIRST_LEVEL ? LEVEL_NAMES[shown[h] - FIRST_LEVEL]
+					: "beach: " + EFFECT_NAMES[HEART_EFFECTS[shown[h]]]);
 			// A chip over no panel is hidden, not a dark dash; it keeps its cell in the grid.
 			labels[k].getParentElement().getStyle().setProperty("visibility", titled || k == 0 ? "visible" : "hidden");
 		}
@@ -310,7 +319,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		@Override
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fogAmount, Color fogColor)
 		{
-			byShipped = layer != target;
+			// Nothing: the sea an IMAGE layer, drawn as the page draws it.
+			byShipped = layer != target || effect == NONE;
 			if (byShipped)
 				return shipped.begin(batch, layer, phase, fogAmount, fogColor);
 			ShaderProgram program = program(effect);

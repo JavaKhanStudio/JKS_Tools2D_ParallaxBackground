@@ -18,6 +18,6 @@ if [ "${MUTATE:-0}" = 1 ]; then
 	sed -i 's/sin(TAU \* (13.0 \* mq.x + 41.0/sin(TAU * (13.5 * mq.x + 41.0/' "$LAB"
 	grep -q '13.5 \* mq.x' "$LAB" || { echo "the mutant no longer applies: update mirror.sh" >&2; exit 2; }
 fi
-tools/anim-lab.sh --slider view=5 --slider cameraScroll=120 --clip "$OUT/mirror.mp4" || exit 2
-tools/anim-lab.sh --no-build --slider view=5 --slider cameraScroll=120 --slider mirrorStrength=0 --clip "$OUT/flat.mp4" || exit 2
+tools/anim-lab.sh --slider view=6 --slider cameraScroll=120 --clip "$OUT/mirror.mp4" || exit 2
+tools/anim-lab.sh --no-build --slider view=6 --slider cameraScroll=120 --slider mirrorStrength=0 --clip "$OUT/flat.mp4" || exit 2
 python3 tools/r419-swell-loop/jumps.py "$OUT/mirror.mp4" "$OUT/flat.mp4" --top 200 --bottom 305 --ratio 1.4
