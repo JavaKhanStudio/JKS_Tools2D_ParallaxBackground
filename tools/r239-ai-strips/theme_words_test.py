@@ -20,10 +20,20 @@ POSTAPO = "post-apocalyptic ruined city, dusty orange haze, desolate"
 class ThemeWordsTest(unittest.TestCase):
     def test_the_beach_s_palms_stay_out_of_its_mountains_sea_and_dunes(self):
         ks = ["mountains", "sea", "dunes", "palms"]
-        for kind in ks[:3]:
-            self.assertEqual(ai_page.theme_for(BEACH, kind, ks),
-                             ("tropical beach, warm sunny afternoon", ["palm trees"]))
-        self.assertEqual(ai_page.theme_for(BEACH, "palms", ks), (BEACH, []))
+        self.assertEqual(ai_page.theme_for(BEACH, "sea", ks), ("tropical beach, warm sunny afternoon", ["palm trees"]))
+        for kind in ("mountains", "dunes"):
+            self.assertIn("palm trees", ai_page.theme_for(BEACH, kind, ks)[1])
+        self.assertEqual(ai_page.theme_for(BEACH, "palms", ks)[0], BEACH)
+
+    def test_a_sea_layer_keeps_the_sea_out_of_the_others_even_unnamed(self):
+        # r442: "tropical beach" alone painted sea between the dunes (r438); the sea layer keeps the whole theme.
+        ks = ["mountains", "sea", "dunes", "palms"]
+        for kind in ("mountains", "dunes", "palms"):
+            self.assertEqual(ai_page.theme_for(BEACH, kind, ks)[1][:3], ["sea", "ocean", "water"])
+        self.assertEqual(ai_page.theme_for("turquoise sea, white sand", "dunes", ks),
+                         ("turquoise, white sand", ["sea", "ocean", "water"]))
+        self.assertEqual(ai_page.theme_for("turquoise sea, white sand", "sea", ks), ("turquoise sea, white sand", []))
+        self.assertNotIn("sea", ai_page.theme_for(BEACH, "dunes", ["mountains", "dunes", "palms"])[1])
 
     def test_the_forest_s_pines_keep_their_words_the_ranges_lose_them(self):
         ks = ai_page.kinds(4, "pines")

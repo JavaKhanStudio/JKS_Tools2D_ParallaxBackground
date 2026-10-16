@@ -28,7 +28,11 @@ half-transparent ghosts, 9-19 levels off `--colours`.
 **Examples (r239, 2026-10-10):** a forest, a beach and a post-apocalyptic city, each painted and pixel:
 `tools/r239-ai-strips/examples.sh OUT` paints the six pages and films them (`tools/ai-film.sh`). The beach and the
 city needed shapes of their own in `sil.py` (`dunes`, `sea`, `palms`, `ruins`, chosen with `--kinds`); a theme that
-names what another layer draws ("turquoise sea") gets it painted faintly into every layer's sky.
+names what another layer draws ("turquoise sea") gets it painted faintly into every layer's sky. `ai_page.theme_for`
+strikes those words (palms, pines, ruins, sea: `OBJECTS`, r437) from every other layer's prompt into its negative, and
+a page with a sea layer names "sea, ocean, water" in the others' negative even unsaid (`IMPLIED`, r442: "tropical
+beach" alone grew sea between the dunes). Under DreamShaperXL Turbo's cfg 2 a negative pulls little: the beach's
+dunes still paint sea slivers on 6 seeds of 10 (refused 4, against 5 before).
 
 **The gallery (r239, 2026-10-11):** `tools/ai-gallery.sh` (the board's `ai-gallery` lab: `--open`) builds
 `build/ai-gallery/index.html` from every page under `build/ai`: its film, each layer's shape, painting and cut with

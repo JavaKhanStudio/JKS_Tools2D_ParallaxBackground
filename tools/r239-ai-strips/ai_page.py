@@ -144,20 +144,25 @@ def negative(neg, kind):
 # palms painted into its mountains and dunes on r365's textured init (DreamShaperXL Turbo's beach: dunes refused 5 of
 # 5). They are struck from the theme of every layer but their kind's, and put in its negative. Longest first.
 OBJECTS = {"palms": r"palm trees?|palms?", "pines": r"pine (?:forest|trees?)|pines?|conifers?",
-           "ruins": r"ruined (?:city|buildings)|ruins|broken skyscrapers?|skyscrapers?"}
+           "ruins": r"ruined (?:city|buildings)|ruins|broken skyscrapers?|skyscrapers?",
+           "sea": r"sea|oceans?|water"}
+# What a kind's layer paints into the others' gaps even when the theme does not name it (r442): "tropical beach" alone
+# gets DreamShaperXL Turbo painting sea between the dunes (r438: creature.on_ridge refused 3 of 4 seeds). Put in the
+# negative of every layer but its kind's, on a page that has one.
+IMPLIED = {"sea": ["sea", "ocean", "water"]}
 
 
 def theme_for(theme, kind, ks):
     """The theme as layer kind's prompt says it on a page of kinds ks, and the words struck from it: the things
-    another kind of the page is for (OBJECTS), its setting and light kept."""
+    another kind of the page is for (OBJECTS), its setting and light kept, and what such a kind implies (IMPLIED)."""
     struck = []
     for other in dict.fromkeys(ks):
         if other != kind and other in OBJECTS:
             rx = re.compile(rf"\b(?:{OBJECTS[other]})\b", re.IGNORECASE)
-            struck += [m.group(0) for m in rx.finditer(theme)]
+            struck += [m.group(0) for m in rx.finditer(theme)] + IMPLIED.get(other, [])
             theme = rx.sub("", theme)
     parts = [re.sub(r"\s+", " ", x).strip() for x in theme.split(",")]
-    return ", ".join(x for x in parts if x), list(dict.fromkeys(struck))
+    return ", ".join(x for x in parts if x), [w for i, w in enumerate(struck) if w.lower() not in (x.lower() for x in struck[:i])]
 
 
 def kinds(n, front):
