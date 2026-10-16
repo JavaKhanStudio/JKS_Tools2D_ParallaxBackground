@@ -144,7 +144,12 @@ sun 0.5 and 0.3 of the view) are `GdxLayerEffects.GLINT_*`, copied in `plax_effe
 hands every engine the numbers. The waves are whole turns over the effect's period, which a glinting layer takes as
 FOG's (8 wavelengths across, 10 up) whatever its effect (`ParallaxLayer.glints`), so the glint loops and runs on across
 the layer's wrap; WAVE's ripple is unchanged by the longer period. Off, it is a branch on a uniform; on, two more
-texture reads a pixel (not measured on `:demo:stress`). The glint is sparse by design, so `engines/rounds/glint`
+texture reads a pixel. Timed on the editor's `:demo:stress` in cage (RTX 5060, 1280x720; editor r94,
+`tools/r94-glint-cost.sh`), before r427 and after: off, the branch costs nothing (a copy without glinted() times as
+the glinting one), but the four glint uniforms set per SHADER layer cost about 12 us of CPU a layer (40 full-screen WAVE
+layers 3.74 to 4.25 ms, 200 small WAVE or FOG layers +2.4 and +3.6 ms; a copy without the uniforms is back at 3.35 ms
+CPU against 3.28); on, a full-screen sea glinting costs nothing measurable alone (0.31 ms), about 12 us of GPU a
+layer stacked forty deep (4.25 to 4.75 ms). The Intel GPU of a desktop window was not timed. The glint is sparse by design, so `engines/rounds/glint`
 (the beach sea zoomed in on) gates on pixels off (`pixelsOff` 0.05%): leaving it out moves 0.13 to 0.6% of a still
 by over 32 (`tools/r427-glint/strength.sh`), and `tools/r427-glint/mutate.sh` fails a Godot copy without it, with
 the sun off the middle, frozen, a one-sided crest or the effect's own period, and a jME material never handed it.
