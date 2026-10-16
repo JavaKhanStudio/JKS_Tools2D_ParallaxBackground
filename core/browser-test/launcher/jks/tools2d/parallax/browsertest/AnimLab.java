@@ -306,9 +306,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		int frameWidth = Math.round(w * z), frameHeight = Math.round(frameWidth * WORLD_HEIGHT / WORLD_WIDTH);
 		int bottom = Math.round(top - h / 2f - HEART_FOCUS[i] * frameHeight);
 		bottom = Math.max(top - frameHeight, Math.min(top - h, bottom));
-		Gdx.gl.glScissor(x, top - h, w, h);
-		Gdx.gl.glViewport(x - (frameWidth - w) / 2, bottom, frameWidth, frameHeight);
-		hearts[i].render();
+		if (LabKit.frame(x, top - h, w, h, x - (frameWidth - w) / 2, bottom, frameWidth, frameHeight))
+			hearts[i].render();
 	}
 
 	/**

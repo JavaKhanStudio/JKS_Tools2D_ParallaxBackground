@@ -160,8 +160,8 @@ public class HillsLab extends ApplicationAdapter implements LabKit.Clip
 		LabKit.beginPanels();
 		for (int i = 0; i < hearts.length; i++)
 		{
-			LabKit.panel(i * (FRAME_WIDTH + 4), height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0);
-			hearts[i].render();
+			if (LabKit.panel(i * (FRAME_WIDTH + 4), height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
+				hearts[i].render();
 		}
 		LabKit.endPanels();
 	}

@@ -233,12 +233,12 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		}
 		int height = Gdx.graphics.getBackBufferHeight();
 		LabKit.beginPanels();
-		LabKit.panel(0, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0);
-		hearts[PAINTED].render();
-		LabKit.panel(FRAME_WIDTH + 4, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0);
-		cast(SHADOW);
-		LabKit.panel(2 * (FRAME_WIDTH + 4), height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0);
-		cast(SHADOW_ON_HILLS);
+		if (LabKit.panel(0, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
+			hearts[PAINTED].render();
+		if (LabKit.panel(FRAME_WIDTH + 4, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
+			cast(SHADOW);
+		if (LabKit.panel(2 * (FRAME_WIDTH + 4), height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
+			cast(SHADOW_ON_HILLS);
 		LabKit.endPanels();
 	}
 

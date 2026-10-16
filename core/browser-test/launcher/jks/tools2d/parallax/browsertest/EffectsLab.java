@@ -365,7 +365,8 @@ public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 		for (int i = 0; i < 2; i++)
 		{
 			// A on the left, B on the right, a 4 px gap.
-			LabKit.panel(i * (FRAME_WIDTH + 4), height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, set.frameDrop);
+			if (!LabKit.panel(i * (FRAME_WIDTH + 4), height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, set.frameDrop))
+				continue;
 			double start = now();
 			set.hearts[i].render();
 			panelMillis[i] += (float) (now() - start);

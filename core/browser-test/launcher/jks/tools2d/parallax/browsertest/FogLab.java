@@ -291,8 +291,8 @@ public class FogLab extends ApplicationAdapter implements LabKit.Clip
 		for (int i = 0; i < hearts.length; i++)
 		{
 			// A, B on top; C, no FOG below; a 4 px gap.
-			LabKit.quarter(i, height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, set.frameDrop());
-			hearts[i].render();
+			if (LabKit.quarter(i, height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, set.frameDrop()))
+				hearts[i].render();
 		}
 		LabKit.endPanels();
 	}

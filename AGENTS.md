@@ -218,6 +218,14 @@ repair.
   1580x800 window, a text under 14px, a value or a choice's name out of its box, a slider over names, or a page wider
   than a 390px phone. A new lab also gets a tile on `index.html`, the labs page `tools/browser-test.sh --open` shows
   (r418: the suite folded under the tiles), its still from `tools/r418-lab-tiles/tiles.sh` (add it to its `tiles.py`).
+- A lab is built to be judged at a glance (Simon, r452): split what is compared into clear panels, each titled with
+  what it is; the one under judgement the largest and the first seen (A, top left), never a look-alike beside it
+  unnamed; and any panel can be looked at alone. That last is the kit's: a lab places every panel through
+  `LabKit.frame` (or `panel`/`quarter`), in the order of its titles, skipping the drawing when it returns false, and
+  lab.js zooms the clicked or tapped one over the whole stage, the board's picture viewer's way (arrows, a swipe,
+  Escape or "all" back). A panel's subject is framed in the panel itself (`AnimLab.HEART_FOCUS`): the zoom keeps that
+  framing. `tools/r452-lab-zoom/zoom.sh OUT` (add the lab to its `zoom.py`) clicks every panel, desktop and phone, and
+  fails a zoom showing another panel or coming back changed.
 
 ## Words
 

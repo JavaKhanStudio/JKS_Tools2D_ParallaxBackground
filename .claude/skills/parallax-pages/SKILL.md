@@ -249,6 +249,12 @@ land in `demo/lab/<round>/grades.json`. Put the page next to variants of it that
 (`tools/parallax_lab.py` has `flat`, `inverted`, `rescale_span`, `linear`, `shrunk`, `white_sky`, `aligned`…): what
 the grades separate is what the rule is worth.
 
+To let Simon compare variants in the browser (a lab under `core/browser-test`), build it to be judged at a glance:
+the variants in clear panels, each titled with what it is; the one under judgement the largest and the first seen
+(top left), framed on its subject; never two look-alikes side by side without names. The lab kit zooms any panel to
+the whole stage on a click or a tap (r452): place every panel through `LabKit.frame`/`panel`/`quarter` and it comes
+for free. AGENTS.md "Browser (GWT)" has the rest, and `tools/r452-lab-zoom/zoom.sh` the check.
+
 ## Using the page in a game
 
 Export: the editor reads a `.jplax` (open it, export `.plax`), or load the JSON directly with

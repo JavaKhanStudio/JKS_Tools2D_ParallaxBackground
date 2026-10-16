@@ -188,10 +188,10 @@ public class SwellLab extends ApplicationAdapter implements LabKit.Clip
 		for (int k = 0; k < effects.length; k++)
 		{
 			int x = k * (PANEL_WIDTH + 4);
-			Gdx.gl.glScissor(x, height - PANEL_HEIGHT, PANEL_WIDTH, PANEL_HEIGHT);
 			int left = Math.max(x + PANEL_WIDTH - frameWidth, Math.min(x, Math.round(x + PANEL_WIDTH / 2f - FOCUS_X[i] * frameWidth)));
 			int bottom = Math.max(height - frameHeight, Math.min(height - PANEL_HEIGHT, Math.round(height - PANEL_HEIGHT / 2f - FOCUS_Y[i] * frameHeight)));
-			Gdx.gl.glViewport(left, bottom, frameWidth, frameHeight);
+			if (!LabKit.frame(x, height - PANEL_HEIGHT, PANEL_WIDTH, PANEL_HEIGHT, left, bottom, frameWidth, frameHeight))
+				continue;
 			effects[k].wrap(REPEAT_X[i], REPEAT_Y[i]);
 			hearts[i].parallaxReader.setLayerEffects(effects[k]);
 			hearts[i].render();

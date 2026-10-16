@@ -3,7 +3,6 @@ package jks.tools2d.parallax.browsertest;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.google.gwt.dom.client.Document;
@@ -226,21 +225,16 @@ public class TransfertLab extends ApplicationAdapter
 			applyControls();
 			step(Math.min(Gdx.graphics.getDeltaTime(), 1 / 15f));
 		}
-		int width = Gdx.graphics.getBackBufferWidth(), height = Gdx.graphics.getBackBufferHeight();
-		Gdx.gl.glViewport(0, 0, width, height);
-		Gdx.gl.glClearColor(0, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
+		int height = Gdx.graphics.getBackBufferHeight();
+		LabKit.beginPanels();
 		for (int i = 0; i < hearts.length; i++)
 		{
 			// A, B, C on top; D, E below; a 4 px gap. round1's pages sit at the bottom of the world: no frame drop.
 			int x = (i % COLUMNS) * (FRAME_WIDTH + 4), top = i < COLUMNS ? height : height - PANEL_HEIGHT - 4;
-			Gdx.gl.glScissor(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT);
-			Gdx.gl.glViewport(x, top - PANEL_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
-			hearts[i].render();
+			if (LabKit.frame(x, top - PANEL_HEIGHT, FRAME_WIDTH, PANEL_HEIGHT, x, top - PANEL_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT))
+				hearts[i].render();
 		}
-		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
-		Gdx.gl.glViewport(0, 0, width, height);
+		LabKit.endPanels();
 	}
 
 	/** Panel {@code i}'s style: A the depth stagger, B a plain fade (its tint does the rest), C D and E theirs. */

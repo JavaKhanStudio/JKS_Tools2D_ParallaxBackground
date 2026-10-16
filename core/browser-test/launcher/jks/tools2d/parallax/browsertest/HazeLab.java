@@ -209,8 +209,8 @@ public class HazeLab extends ApplicationAdapter implements LabKit.Clip
 		for (int i = 0; i < hearts.length; i++)
 		{
 			// A, B on top; C, D below; a 4 px gap.
-			LabKit.quarter(i, height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, FRAME_DROP);
-			renderLab(hearts[i], effects[i], !same && HAZE_HOOKS[i], !same && TINT_WHITE[i]);
+			if (LabKit.quarter(i, height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, FRAME_DROP))
+				renderLab(hearts[i], effects[i], !same && HAZE_HOOKS[i], !same && TINT_WHITE[i]);
 		}
 		LabKit.endPanels();
 	}
