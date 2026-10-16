@@ -190,8 +190,9 @@ layer was painted (from `OUT/recipe.json`) beside the others, for Simon to explo
 
 Look at every frame (`OUT/shots/a01-t*.png`) for what lint cannot see: pines that stayed smooth spikes (the tool
 repaints a painted one under an outline roughness of 3.5; a borderline one passes), a horizon or clouds painted behind a layer, a
-creature (the prompt forbids them; `creature.py` refuses one inside a layer's mass, r261, one on its ridge, r349, and a
-figure in the mass's own colour with a head on a neck, r362: a headless one still gets through),
+creature (the prompt forbids them; `creature.py` refuses one inside a layer's mass, r261, but not the mass's own
+shading, r438, one on its ridge, r349, and a figure in the mass's own colour with a head on a neck, r362: a headless
+one still gets through),
 layers whose colours do not belong together, a light rim along a far ridge. Then the strips themselves:
 `OUT/strips/l<k>_ai.png` painted, `_cut.png` cut, `_cut.log` what the cut dropped. A strip refused 5 times (art on
 its top row, a creature, or no trees) stops the run: another `--seed`.

@@ -10,7 +10,10 @@ cd "$(dirname "$0")/../.." || exit 1
 REV="${1:-HEAD}"
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
-git archive "$REV" tools/r239-ai-strips | tar -x -C "$T" || exit 1
+# With tools/parallax_rules.py, which layer.py imports from its parent since r400: without it REV refused every strip
+# on an ImportError (r438).
+rules=$(git ls-tree --name-only "$REV" tools/parallax_rules.py)
+git archive "$REV" tools/r239-ai-strips ${rules:+"$rules"} | tar -x -C "$T" || exit 1
 one() { # DIR CUT: "<exit> <cut> <what it named>"
 	s="${2%_cut.png}_ai.png"
 	[ -f "$s" ] || return 0

@@ -11,7 +11,9 @@ both --far from the mean and --times the variation. A blob of them --min to --ma
     opaque (a creature standing on the silhouette is the ridge check's, below);
   - another blob has its colour (within 30), its shape (height/width within 3x) and its size (within 3x): texture
     repeats, snow on pines and trees on a slope stand out in crowds. A wide bird among upright trees of its colour is
-    still alone; a creature the colour, shape and size of the layer's own flecks is missed.
+    still alone; a creature the colour, shape and size of the layer's own flecks is missed;
+  - it is the mass's own shading (r438): its hue within 15 (chroma, 0..255) of the mass round it and its luminance
+    within 0.7 to 1/0.7 of it, as a dune's slip face is. A creature that pale in the land's own hue is missed.
 The ridge check (r349), on a painted strip whose sky is given: a figure standing ON the outline (novaCartoonXL paints
 people on hilltops) is keyed mostly clear and never inside the mass. Above the mass, within 2R px of it, a pixel is
 odd when it is --ridge-far from the line between the sky and the mass's colour below it (a box mean, 2R px each way):
@@ -57,7 +59,20 @@ def standing_out(rgb, solid, m, r, far, times):
     return solid & (d > far) & (d > times * vary)
 
 
-def find(rgb, alpha, lo=50, hi=3000, r=12, far=40, times=3.0, like=30, crowd=0):
+def shading(rgb, solid, blob, shade, hue):
+    """Whether blob is the mass's own shading: within shade..1/shade of the luminance of the mass round it, and its
+    hue (chroma, 0..255) within hue of it."""
+    ring = spread(blob, 6) & ~spread(blob, 2) & solid
+    if not ring.any():
+        return False
+    inside, round_it = rgb[blob].mean(axis=0), rgb[ring].mean(axis=0)
+    lum = np.array([0.299, 0.587, 0.114])
+    dark = (inside @ lum) / max(round_it @ lum, 1)
+    off = np.linalg.norm(inside / max(inside.sum(), 1) - round_it / max(round_it.sum(), 1)) * 255
+    return shade < dark < 1 / shade and off < hue
+
+
+def find(rgb, alpha, lo=50, hi=3000, r=12, far=40, times=3.0, like=30, crowd=0, shade=0.7, hue=15):
     """[(x, y, size)] of each creature-like blob in rgb (h, w, 3 floats) inside alpha's (h, w, 0..1) mass."""
     # Half keyed is mass too: a creature painted nearer the sky's colour than the land's keys part clear. Sky seen
     # through branches keys fully clear, and is no creature.
@@ -87,7 +102,13 @@ def find(rgb, alpha, lo=50, hi=3000, r=12, far=40, times=3.0, like=30, crowd=0):
         # is alone: a wide bird among upright trees of its colour too.
         like_it = sum(np.linalg.norm(c - colour) < like and 1 / 3 < t / tall < 3 and 1 / 3 < n / size < 3
                       for _, n, c, t, *_ in blobs) - 1
-        if like_it <= crowd:
+        if like_it > crowd:
+            continue
+        # A dune's slip face, a fold's shadow: the mass's own colour a little darker or lighter (r438). SD paints a
+        # creature far darker than the land it stands on, or in another colour.
+        blob = np.zeros(label.shape, bool)
+        blob[ys, xs % rgb.shape[1]] = True
+        if not shading(rgb, solid, blob, shade, hue):
             found.append((int(xs.mean()) % rgb.shape[1], int(ys.mean()), int(size)))
     return found
 

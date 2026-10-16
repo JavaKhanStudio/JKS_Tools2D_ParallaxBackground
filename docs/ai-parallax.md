@@ -198,6 +198,14 @@ it (r244); an SDXL ControlNet is untried.
   one, with sky over it, whose column widens again to shoulders, is refused. Of the 365 strips on disk, it adds R1's two figures and
   nothing else (`tools/r261-creature/disk.sh`: a commit's answers against the working tree's, over every strip in this
   checkout and parallax-ai's); the sweep checks them, two strips it must pass, and a figure planted on r239's ruins.
+  Since r438, `find` passes the mass's own shading: a blob within 0.7 to 1/0.7 of the luminance of the mass round it
+  and within 15 (chroma, 0..255) of its hue, as the slip face under a dune's crest is (DreamShaperXL Turbo's beach
+  dunes were refused 5 of 5 for theirs). SD paints a creature at a third of the land's luminance or in another
+  colour: the sweep plants a dark bird, a deer and a grey gull as bright as the sand on those dunes, and
+  `creature_test.py` (CI) holds the rule on a drawn dune. Over the 859 strips on disk it clears 8 refusals, all
+  shading (dunes, folds between hills, a tuft on a ridge), and adds none. A creature that pale in the land's own hue
+  is missed. The same dunes are still refused by `on_ridge` when SD paints the sea through a gap between them: blue,
+  off the line from the sky to the sand, and half kept by the key.
 - Each layer is painted on its own: nothing makes their colours agree but `--colours`, which the init image carries.
   `ai-page.sh` paints them at full contrast and gives the distance with the page's depth fog (`fogStrength`, r217).
 

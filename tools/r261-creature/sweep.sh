@@ -43,6 +43,10 @@ for f in "$B"/r242/run/*_layer.png "$B"/r246/*/strips/*_cut.png "$B"/ai/examples
 	# The painted strip gives the sky's colour; pixel art (one pixel per art cell) is only seen there.
 	check 0 "$f" "$src"
 done
+# r438: DreamShaperXL Turbo's beach (r437), its dunes' slip faces a crescent of shadow on each crest: none a creature.
+for f in "$B"/r437/beach/strips/l?_cut.png "$B"/r437/dunes/s*_cut.png; do
+	[ -f "$f" ] && check 0 "$f" "${f%_cut.png}_ai.png"
+done
 for k in hills mountains pines; do
 	[ -f "$B/r243/${k}_xl.png" ] && check 0 "$B/r243/${k}_xlcut.png" "$B/r243/${k}_xl.png"
 done
@@ -65,6 +69,12 @@ plant pines_deer "$B/r239/pinesw1.png" 640,350 deer "--colour 7a5a3a"
 S="$B/r246/snow/strips"
 plant snow0_bird "$S/l0_ai.png" 300,300 bird - --mask "$S/l0_mask.png" --grow 8
 plant snow3_bird "$S/l3_ai.png" 500,330 bird - --mask "$S/l3_mask.png" --grow 40
+# On those dunes (r438): a dark bird and deer (the shading rule's luminance bound) and a pale grey gull at the sand's
+# own luminance (its hue bound).
+D2="$B/r437/beach/strips"
+plant dunes_bird "$D2/l2_ai.png" 300,480 bird - --mask "$D2/l2_mask.png" --grow 8
+plant dunes_deer "$D2/l2_ai.png" 700,520 deer - --mask "$D2/l2_mask.png" --grow 8
+plant dunes_gull "$D2/l2_ai.png" 1200,470 bird "--colour c8c8c8" --mask "$D2/l2_mask.png" --grow 8
 # Standing on the ridge (r349): keyed mostly clear, never inside the mass. novaCartoonXL's people on its hills (r346),
 # and planted ones on r239's hills and r246's snowy mountains.
 N="$B/r346/nova/strips"
