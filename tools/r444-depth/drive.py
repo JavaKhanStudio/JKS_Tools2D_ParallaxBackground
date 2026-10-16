@@ -11,8 +11,8 @@ url, chrome, frames, mode, big, sliders = sys.argv[1:]
 PAGES = 5
 
 
-def open_lab(browser, query=""):
-    page = browser.new_page(viewport={"width": 1540, "height": 1100}, device_scale_factor=1)
+def open_lab(browser, query="", viewport=(1540, 1100)):
+    page = browser.new_page(viewport={"width": viewport[0], "height": viewport[1]}, device_scale_factor=1)
     errors = []
     page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and errors.append(m.text))
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -34,6 +34,26 @@ def set_control(page, key, value):
     page.eval_on_selector(f"[data-key={key}]", "(e, v) => { e.value = v; }", str(value))
 
 
+# Every shown tag's box and the page's chip, as the browser laid them out (r449).
+TAG_BOXES = """() => [...document.querySelectorAll('#depth-tags .depth-tag, #depth-labels > *')]
+    .filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0)
+    .map(e => { const r = e.getBoundingClientRect(); return [e.innerText.replace(/\\n/g, ' '), r.left, r.top, r.right, r.bottom]; })"""
+
+
+def overlaps(page):
+    """Each pair of tags (or a tag and the page's chip) that cover one another, and each tag the stage cuts, by name."""
+    boxes = page.evaluate(TAG_BOXES)
+    found = []
+    for i, (a, al, at, ar, ab) in enumerate(boxes):
+        for b, bl, bt, br, bb in boxes[i + 1:]:
+            if min(ar, br) - max(al, bl) > 0.5 and min(ab, bb) - max(at, bt) > 0.5:
+                found.append(f"{a!r} over {b!r}")
+    stage = page.evaluate("() => { const r = document.getElementById('depth-tags').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }")
+    found += [f"{a!r} cut by the stage's edge" for a, al, at, ar, ab in boxes
+              if min(al - stage[0], at - stage[1], stage[2] - ar, stage[3] - ab) < -0.5]
+    return found
+
+
 def shot(page, path, what="#depth-lab"):
     # two animation frames: the step lands in the next render
     page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
@@ -47,11 +67,42 @@ with sync_playwright() as p:
         page.evaluate("window.depthLabAct(4)")
         shot(page, frames + "/still.png")
     elif mode == "pages":
-        page, errors = open_lab(browser)
+        # Each page as the lab opens on it (p<i>.png) and with the cards as the camera sees them (p<i>-seen.png), at the
+        # slider's start unless --slider set it, then turned round the page: no two tags may cover each other (r449).
+        crossed = []
+        start = {kv.split("=", 1)[0] for kv in sliders.split()}
+        # A phone's first (p<i>-phone.png), its tags smaller, then the desktop's.
+        page, errors = open_lab(browser, viewport=(390, 844))
         for i in range(PAGES):
             set_control(page, "page", i)
             page.evaluate("window.depthLabAct(4)")
-            shot(page, f"{frames}/p{i}.png")
+            shot(page, f"{frames}/p{i}-phone.png")
+            crossed += [f"page {i} on a phone: {o}" for o in overlaps(page)]
+        page.close()
+        page, errors = open_lab(browser)
+        for i in range(PAGES):
+            set_control(page, "page", i)
+            for sizes, suffix in ((None, ""), (0, "-seen")):
+                if sizes is not None and "sizes" not in start:
+                    set_control(page, "sizes", sizes)
+                page.evaluate("window.depthLabAct(4)")
+                shot(page, f"{frames}/p{i}{suffix}.png")
+                crossed += [f"page {i}{suffix}: {o}" for o in overlaps(page)]
+                if "yaw" not in start and "view" not in start:
+                    for yaw, view in ((-60, 1), (-20, 1), (20, 1), (85, 1), (66, 0.5)):
+                        set_control(page, "yaw", yaw)
+                        set_control(page, "view", view)
+                        page.evaluate("window.depthLabAct(0.1)")
+                        page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+                        crossed += [f"page {i}{suffix} turned {yaw}, view {view}: {o}" for o in overlaps(page)]
+                    set_control(page, "yaw", 66)
+                    set_control(page, "view", 1)
+            if "sizes" not in start:
+                set_control(page, "sizes", 1)
+        if crossed:
+            print("FAIL: tags cover each other:\n  " + "\n  ".join(crossed), file=sys.stderr)
+            sys.exit(1)
+        print("OK: no tag covers another or is cut, on every page, its cards both ways, turned five ways, and on a phone")
     elif mode == "seam":
         worst = []
         errors = []

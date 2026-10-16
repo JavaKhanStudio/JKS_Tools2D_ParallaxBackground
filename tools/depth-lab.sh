@@ -4,7 +4,9 @@
 # a button to slide between the game's 2D frame and the 3D view.
 #   tools/depth-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/depth-lab.sh --shot F.png    one still of the canvas, headless (4 s in)
-#   tools/depth-lab.sh --pages DIR     one still per page, headless: DIR/p0.png ...
+#   tools/depth-lab.sh --pages DIR     one still per page, headless: DIR/p0.png ..., p0-seen.png ... (the cards as the
+#                                      camera sees them), p0-phone.png ... (a 390px phone); fails when two tags cover
+#                                      each other or the stage cuts one, there and turned round the page (r449)
 #   tools/depth-lab.sh --clip F.mp4    a clip, headless: the slide from 2D into 3D, a turn round the page and back,
 #                                      12 s at 30 fps, stepped at game speed (window.depthLabAct)
 #   tools/depth-lab.sh --seam DIR      the check that the 3D view at 0 is the game's frame: every page drawn by the

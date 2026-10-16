@@ -71,7 +71,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	private OrthographicCamera flatCamera;
 	private SelectElement page, axis, sizes;
 	private InputElement view, yaw, pitch, closer, fov, scroll;
-	private Element readout, overlay;
+	private Element readout, overlay, labels;
 	private boolean clip, flat;
 	private int shownPage = -1;
 	/** The slide: where it is (0 the 2D frame, 1 the 3D view) and where it goes; -1 when the slider holds it. */
@@ -137,6 +137,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		onClick(button, this);
 		readout = LabControls.readout(document, controls, "depth-readout");
 		overlay = document.getElementById("depth-tags");
+		labels = document.getElementById("depth-labels");
 	}
 
 	private static native void onClick(Element element, DepthLab lab) /*-{
@@ -340,6 +341,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		}
 		camera(e, vw, vh, d);
 		hideTags();
+		spread(overlay, labels);
 		return calls;
 	}
 
@@ -464,7 +466,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 			shapes.setColor(1, 1, 1, (numbered ? 0.45f : 0.16f) * e);
 			shapes.rectLine(cx - half, -z, cx + half, -z, thin * (numbered ? 2f : 1f) * (float) Math.sqrt(k));
 			if (numbered)
-				tag(cx - half, 0, z, t + "×", "depth-rule", e, null);
+				tag(cx - half, 0, z, t + "×", "depth-rule", e, null, 300 + t, "hide");
 		}
 		// Each layer's foot, and the gap to the one in front of it.
 		for (int i = 0; i < layers.size(); i++)
@@ -478,7 +480,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 				float k2 = placed[i + 1], z2 = -(k2 - 1) * d, x = cx + vw / 2 * Math.max(scaleOf(k), scaleOf(k2)) * 1.06f;
 				shapes.setColor(accent.r, accent.g, accent.b, 0.55f * e);
 				shapes.rectLine(x, -z, x, -z2, thin * 1.6f * (float) Math.sqrt(k));
-				tag(x, 0, (z + z2) / 2, "+" + (Math.round((distance[i] - distance[i + 1]) * 10) / 10.0) + "×", "depth-gap", e, accent);
+				tag(x, 0, (z + z2) / 2, "+" + (Math.round((distance[i] - distance[i + 1]) * 10) / 10.0) + "×", "depth-gap", e, accent, 200 + i, "down");
 			}
 		}
 		shapes.end();
@@ -512,7 +514,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 			heart.bottomSquare.draw(shapes);
 		shapes.end();
 		frame(-1, e, vw, vh, d, new Color(1, 1, 1, 1));
-		tag(vw / 2 * (1 + scaleOf(skyPlaced)), vh * scaleOf(skyPlaced), -(skyPlaced - 1) * d, "∞\nsky", "depth-card depth-sky", e, null);
+		tag(vw / 2 * (1 + scaleOf(skyPlaced)), vh * scaleOf(skyPlaced), -(skyPlaced - 1) * d, "∞\nsky", "depth-card depth-sky", e, null, layers.size(), "up");
 	}
 
 	/** Layer {@code i} on its card: the reader draws it alone through the card's matrix. */
@@ -547,7 +549,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		tag(vw / 2 * (1 - scaleOf(k)), vh * scaleOf(k), -(k - 1) * d,
 				// Past five layers the tags would cover each other: the distance alone, the rest in the readout.
 				layers.size() > 5 ? times(distance[i]) : times(distance[i]) + "\n" + names[i] + " · speed "
-						+ LabControls.text(Math.abs(layer.getParallaxSpeedRatioX())), "depth-card", e, accent);
+						+ LabControls.text(Math.abs(layer.getParallaxSpeedRatioX())), "depth-card", e, accent, layers.size() - 1 - i, "up");
 		return calls;
 	}
 
@@ -585,7 +587,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		shapes.setColor(1, 0.85f, 0.45f, e);
 		shapes.box(cx - 0.6f, 0, d + 0.6f, 1.2f, 0.9f, 1.2f);
 		shapes.end();
-		tag(cx, 1.2f, d, "camera · " + two(cameraDistance) + " units from the front", "depth-camera", e, null);
+		tag(cx, 1.2f, d, "camera · " + two(cameraDistance) + " units from the front", "depth-camera", e, null, 100, "up");
 	}
 
 	/** The shapes begun, blending: the batch turns blending off when it ends. */
@@ -596,8 +598,12 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		shapes.begin(type);
 	}
 
-	/** A tag over the canvas at the world point (x, y, z), {@code e} its opacity; hidden behind the eye. */
-	private void tag(float x, float y, float z, String text, String kind, float e, Color accent)
+	/**
+	 * A tag over the canvas at the world point (x, y, z), {@code e} its opacity; hidden behind the eye. {@link #spread}
+	 * lays the tags out by {@code rank}, the lowest first, and moves one that would cover another {@code move}: "up",
+	 * "down", or "hide".
+	 */
+	private void tag(float x, float y, float z, String text, String kind, float e, Color accent, int rank, String move)
 	{
 		if (overlay == null || !(e > 0.02f))
 			return;
@@ -626,7 +632,72 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		tag.getStyle().setProperty("opacity", String.valueOf(Math.min(1, e * 1.4f)));
 		tag.getStyle().setProperty("borderColor", accent == null ? "" : "rgb(" + (int) (accent.r * 255) + "," + (int) (accent.g * 255) + "," + (int) (accent.b * 255) + ")");
 		tag.getStyle().setProperty("display", "");
+		tag.setAttribute("data-rank", String.valueOf(rank));
+		tag.setAttribute("data-move", move);
 	}
+
+	/**
+	 * No tag over another (r449): on a deep page the cards' corners crowd, and the sky's meets the back layer's. The tags
+	 * are taken by rank, the front card's first, each kept where {@link #tag} put it unless it covers one already laid or
+	 * the page's chip; then it goes up (the cards', the sky's, the camera's: a stair, each still in its card's colour) or
+	 * down (the gaps') past what it covers, the other way when its way leaves the stage, else it is hidden (a rule's
+	 * number at once): no tag is cut by the stage's edge either. One measure of every tag, then numbers only.
+	 */
+	private static native void spread(Element overlay, Element labels) /*-{
+		var GAP = 3, laid = [], tags = [];
+		var chips = labels.children;
+		for (var c = 0; c < chips.length; c++)
+			laid.push(chips[c].getBoundingClientRect());
+		var kids = overlay.children;
+		for (var i = 0; i < kids.length; i++)
+		{
+			kids[i].style.marginTop = '';
+			if (kids[i].style.display !== 'none')
+				tags.push(kids[i]);
+		}
+		tags.sort(function (a, b) { return a.getAttribute('data-rank') - b.getAttribute('data-rank'); });
+		var boxes = tags.map(function (t) { return t.getBoundingClientRect(); });
+		var stage = overlay.getBoundingClientRect();
+		// How far b must move, going way, to cover nothing laid; null when it would leave the stage first.
+		function clear(b, way)
+		{
+			var dy = 0;
+			for (var tries = 0; tries < 60; tries++)
+			{
+				if (b.top + dy < stage.top || b.bottom + dy > stage.bottom)
+					return null;
+				var over = null;
+				for (var j = 0; j < laid.length && !over; j++)
+				{
+					var o = laid[j];
+					if (b.left < o.right + GAP && o.left < b.right + GAP && b.top + dy < o.bottom + GAP && o.top < b.bottom + dy + GAP)
+						over = o;
+				}
+				if (!over)
+					return dy;
+				if (way === 'hide')
+					return null;
+				dy = way === 'up' ? over.top - GAP - b.bottom : over.bottom + GAP - b.top;
+			}
+			return null;
+		}
+		for (var i = 0; i < tags.length; i++)
+		{
+			var b = boxes[i], move = tags[i].getAttribute('data-move');
+			// Out of room its way (a phone's short stage): the other way; then hidden, the readout still lists it.
+			var dy = clear(b, move);
+			if (dy === null && move !== 'hide')
+				dy = clear(b, move === 'up' ? 'down' : 'up');
+			if (dy === null || b.left < stage.left || b.right > stage.right)
+			{
+				tags[i].style.display = 'none';
+				continue;
+			}
+			if (dy !== 0)
+				tags[i].style.marginTop = dy + 'px';
+			laid.push({ left: b.left, right: b.right, top: b.top + dy, bottom: b.bottom + dy });
+		}
+	}-*/;
 
 	private void hideTags()
 	{

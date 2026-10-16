@@ -29,6 +29,12 @@
 	.depth-rule { transform: translate(-115%, -50%); background: none; border: none; color: rgba(255, 255, 255, 0.8); font-weight: 500; }
 	.depth-gap { transform: translate(12%, -50%); border-style: dashed; }
 	.depth-camera { transform: translate(-12%, -170%); color: #ffd877; border-color: rgba(255, 216, 119, 0.6); }
+	/* A phone's stage is a third as wide: the tags too, or a deep page's would not fit (r449). */
+	@media (max-width: 720px) {
+		.depth-tag { font-size: 10px; padding: 1px 4px; }
+		.depth-card { font-size: 9px; border-left-width: 3px; }
+		.depth-card::first-line { font-size: 11px; }
+	}
 	#depth-lab canvas { cursor: grab; }
 	.lab-copy.depth-slide { margin: 0; align-self: center; }
 	</style>
