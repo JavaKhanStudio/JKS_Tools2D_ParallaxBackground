@@ -149,6 +149,25 @@ final class LabControls
 		return value;
 	}
 
+	/**
+	 * A section of {@code controls} (r419): one effect's sliders under its name, across the whole row, framed apart from
+	 * the rest. {@code title} up to its first " (" is the heading, the whole its tooltip. Its sliders go into what this
+	 * returns; Copy settings finds them there as anywhere in the controls.
+	 */
+	static Element section(Document document, Element controls, String title)
+	{
+		Element section = document.createDivElement();
+		section.setClassName("lab-section");
+		Element heading = document.createDivElement();
+		heading.setClassName("lab-section-title");
+		heading.setTitle(title);
+		int bracket = title.indexOf(" (");
+		heading.setInnerText(bracket < 0 ? title : title.substring(0, bracket));
+		section.appendChild(heading);
+		controls.appendChild(section);
+		return section;
+	}
+
 	/** The line under the sliders the lab writes what it measures into, across the whole row. */
 	static Element readout(Document document, Element controls, String id)
 	{

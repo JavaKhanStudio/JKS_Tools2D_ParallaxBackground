@@ -19,6 +19,7 @@ LABS = [
     ("transfert", "transfert-lab.html", "transfertLabReady", "transfert", "pagePair", 2),
     ("effects-fog", "effects-lab.html?lab=fog", "effectsLabReady", "effects", "parallaxSet", 2),
     ("effects-floor", "effects-lab.html?lab=floor", "effectsLabReady", "effects", "parallaxSet", 1),
+    ("anim", "anim-lab.html", "animLabReady", "anim", "view", 8),
 ]
 
 failures = []

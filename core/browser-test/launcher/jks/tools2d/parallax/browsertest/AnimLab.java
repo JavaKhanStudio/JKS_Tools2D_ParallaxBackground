@@ -149,14 +149,17 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		Document document = Document.get();
 		Element labelGrid = document.getElementById("anim-labels");
+		// Each chip's title in a span of its own: the frame rewrites it, the view's choice before it in the first stays.
 		for (int i = 0; i < labels.length; i++)
 		{
-			labels[i] = document.createDivElement();
-			labels[i].setClassName("panel-label");
-			labelGrid.appendChild(labels[i]);
+			Element chip = document.createDivElement();
+			chip.setClassName("panel-label");
+			labels[i] = document.createSpanElement();
+			chip.appendChild(labels[i]);
+			labelGrid.appendChild(chip);
 		}
+		view = LabControls.stageChoice(document, "anim-labels", "view", "view (four panels, or one effect close)", VIEWS, 0);
 		Element controls = document.getElementById("anim-controls");
-		view = LabControls.choice(document, controls, "view", "view (four panels, or one effect close)", VIEWS, 0);
 		zoom = LabControls.slider(document, controls, "zoom", "zoom (x the page's frame)", 1, 4, 0.25f, 1.5f);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (world units/s)", 0, 120, 5, 20);
 		drift = LabControls.slider(document, controls, "cloudDrift", "clouds' drift (x their page's at rest speed)", 0, 1, 0.05f, 1);
@@ -176,10 +179,11 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		billowAmplitude = LabControls.slider(document, controls, "billowAmplitude", "BILLOW amplitude (world units)", 0, 1.5f, 0.02f, 0.3f);
 		billowWavelength = LabControls.slider(document, controls, "billowWavelength", "BILLOW wavelength (world units)", 1, 20, 0.25f, 6);
 		billowSpeed = LabControls.slider(document, controls, "billowSpeed", "BILLOW speed (world units/s)", 0, 2, 0.05f, 0.4f);
-		mirrorStrength = LabControls.slider(document, controls, "mirrorStrength", "MIRROR strength (how much of the water is the mirrored sky: 1 all of it)", 0, 1, 0.05f, 0.8f);
-		mirrorRelief = LabControls.slider(document, controls, "mirrorRelief", "MIRROR relief (how much the painted waves bend the mirror, beside the swell)", 0, 3, 0.1f, 1);
-		mirrorShine = LabControls.slider(document, controls, "mirrorShine", "MIRROR shine (contrast of the mirrored sky: 0 soft, 1 hard bright and dark facets, like polished metal)", 0, 1, 0.05f, 0.8f);
-		mirrorTint = LabControls.slider(document, controls, "mirrorTint", "MIRROR tint (how much the water's own colour tints the mirror, as a metal tints what it reflects: 0 a chrome mirror)", 0, 1, 0.05f, 0.4f);
+		Element mirrors = LabControls.section(document, controls, "MIRROR (the whole sea a mirror of the sky, like polished metal: views 'sea: SWELL + MIRROR' and 'sea: MIRROR or not')");
+		mirrorStrength = LabControls.slider(document, mirrors, "mirrorStrength", "strength (how much of the water is the mirrored sky: 1 all of it)", 0, 1, 0.05f, 0.8f);
+		mirrorRelief = LabControls.slider(document, mirrors, "mirrorRelief", "relief (how much the painted waves bend the mirror, beside the swell)", 0, 3, 0.1f, 1);
+		mirrorShine = LabControls.slider(document, mirrors, "mirrorShine", "shine (contrast of the mirrored sky: 0 soft, 1 hard bright and dark facets, like polished metal)", 0, 1, 0.05f, 0.8f);
+		mirrorTint = LabControls.slider(document, mirrors, "mirrorTint", "tint (how much the water's own colour tints the mirror, as a metal tints what it reflects: 0 a chrome mirror)", 0, 1, 0.05f, 0.4f);
 		readout = LabControls.readout(document, controls, "anim-readout");
 	}
 
@@ -234,7 +238,10 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		for (int k = 0; k < labels.length; k++)
 		{
 			int h = shown.length == 2 ? (k % 2 == 0 ? k / 2 : -1) : k;
-			labels[k].setInnerText(h >= 0 && h < shown.length ? HEART_SETS[shown[h]] + ": " + EFFECT_NAMES[HEART_EFFECTS[shown[h]]] : "");
+			boolean titled = h >= 0 && h < shown.length;
+			labels[k].setInnerText(titled ? HEART_SETS[shown[h]] + ": " + EFFECT_NAMES[HEART_EFFECTS[shown[h]]] : "");
+			// A chip over no panel is hidden, not a dark dash; it keeps its cell in the grid.
+			labels[k].getParentElement().getStyle().setProperty("visibility", titled || k == 0 ? "visible" : "hidden");
 		}
 		ParallaxLayer sea = animated[0], cloud = animated[4];
 		float seaPx = sea.getDrawnRegion().getRegionWidth() / (sea.getWidth() * sea.getPackedWidthRatio());
