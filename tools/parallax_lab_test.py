@@ -275,10 +275,13 @@ class TipSeams(unittest.TestCase):
         self.assertFalse(lab._is_cut(seam, lab.SEAM, self.left, self.right, self.p), f'seam {seam}')
 
     def test_the_same_join_between_flat_columns_is_a_cut(self):
-        """Column 6 of the left made its last, column 1 of the right its first: nothing beside the join steps."""
+        """Every column of the left made its last, every column of the right its first: nothing beside the join
+        steps."""
         left, right = self.left.copy(), self.right.copy()
-        left.paste(self.left.crop((7, 0, 8, left.height)), (6, 0))
-        right.paste(self.right.crop((0, 0, 1, right.height)), (1, 0))
+        for x in range(left.width - 1):
+            left.paste(self.left.crop((left.width - 1, 0, left.width, left.height)), (x, 0))
+        for x in range(1, right.width):
+            right.paste(self.right.crop((0, 0, 1, right.height)), (x, 0))
         seam = lab._join_on_screen(left, right, self.p)
         self.assertTrue(lab._is_cut(seam, lab.SEAM, left, right, self.p), f'seam {seam}')
 
@@ -288,6 +291,28 @@ class TipSeams(unittest.TestCase):
         faults = [f for f in lab.layout(page, lab.find_atlas_dir('engines/rounds/floor/g03.jplax', page))
                   if f.startswith('(e) layer 4')]
         self.assertEqual(1, len(faults), faults)
+
+
+class MistySeams(unittest.TestCase):
+    """(e) at a soft key's join (r475): forest-inpaint's misty pines (r471, --paint inpaint) fade into a mist at the
+    loop a few columns apart on each side, so the strip's own loop steps 30, beside 18 one column in but 27 five in, and
+    no film frame shows it. The fixture is l3_0's last 9 columns and its first 9 (tools/r475-loop-step/join.png
+    draws the join)."""
+
+    def setUp(self):
+        from PIL import Image
+        img = Image.open(os.path.join(lab.ROOT, 'tools/r475-loop-step/misty-join.png')).convert('RGBA')
+        half = img.width // 2
+        self.left, self.right = img.crop((0, 0, half, img.height)), img.crop((half, 0, img.width, img.height))
+        self.p = lab.Placed(0, {}, [1.0], 0.0, lab.SCREEN_H, True, False)
+
+    def test_a_fade_a_few_columns_uneven_is_no_cut(self):
+        seam = lab._join_on_screen(self.left, self.right, self.p)
+        self.assertGreater(seam, lab.SEAM, 'the join steps past the floor: only what is beside it clears it')
+        self.assertLess(seam, 1.5 * lab._step_beside(self.right, 0, self.p))
+        self.assertGreater(seam, 1.5 * max(lab._column_steps(self.right.crop((0, 0, 2, self.right.height)))),
+                           'one column in does not clear it: the window does')
+        self.assertFalse(lab._is_cut(seam, lab.SEAM, self.left, self.right, self.p), f'seam {seam}')
 
 
 class NotchSeams(unittest.TestCase):

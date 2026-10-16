@@ -250,6 +250,7 @@ def _atlas_regions(page, atlas_dir):
 SCREEN_W, SCREEN_H = 40.0, 22.5  # the lab's world at 1280x720, the camera's view before any scroll
 SCREEN_PX = 1280  # that world's width in pixels
 SOLID, SEAM = 0.99, 20
+BESIDE = 8  # columns each side of a join whose own steps can excuse a small one (_is_cut): about 10 px on screen
 EDGE_PROBE = 1e-3  # world units inside a layer's top or bottom edge where (a) and (b) ask what covers it
 COVERED = 0.9  # a layer edge behind nearer layers this opaque at its height does not show
 NOTCH_MARGIN = 2 * SCREEN_H / 720  # 2 screen px each side of a bottom edge, its filtering, that one nearer layer hides
@@ -279,8 +280,9 @@ def layout(page, atlas_dir):
           each segment's left edge (itself included), segments weighing above 0 only. A join is a cut only when it
           also steps more than the art does between most of its own neighbour columns (3 in 4, in the same rows):
           hard alpha pixel art steps 27-75 from one column to the next everywhere, and loops as smoothly (r253). Nor is
-          a join under 2 * SEAM stepping no more than 1.5 times the art does one column in, on either side: an
-          outline carried across it (a tip on the edge, r398).
+          a join under 2 * SEAM stepping no more than 1.5 times the art does between its columns within 8 of the
+          join, on either side: an outline carried across it (a tip on the edge, r398), a soft key fading a few
+          columns unevenly (misty pines, r475).
       (f) a layer tiled from a mipmapped atlas (its `filter:` a MipMap one) drawn 1/m of its region's size on this
           1280 px screen, whose region edges are copied fewer than m texels into the atlas padding (duplicatePadding):
           the mip levels it samples average in what lies past the copy, a line at every join (r268,
@@ -544,20 +546,24 @@ def _seam_limit(images, p):
 
 def _is_cut(seam, limit, left, right, p):
     """A join of left's right edge to right's left edge stepping past limit is a cut, unless it is a small one (under
-    2 * SEAM) that steps no more than half again what the art steps one column in, on either side: an outline that
-    climbs or falls there and carries on across the join (r398: a pine's tip on the forest's edge, 21 beside 17). A
-    cut steps from columns that do not (q01's ground, 141-255 beside 0-2), and a big one is a cut whatever is beside
-    it (g03's stem, ending at the edge: 56 beside 128)."""
+    2 * SEAM) that steps no more than half again what the art steps between its columns within BESIDE of the join, on
+    either side: an outline that climbs or falls there and carries on across the join (r398: a pine's tip on the
+    forest's edge, 21 beside 17), or a soft key that fades a few columns unevenly (r475: forest-inpaint's misty pines,
+    30 beside 18 one column in and 27 five in, unseen in a film). A cut steps from columns that do not (q01's ground,
+    141-255 beside 0-2), and a big one is a cut whatever is beside it (g03's stem, ending at the edge: 56 beside 128)."""
     if seam <= limit:
         return False
     if seam >= 2 * SEAM:
         return True
-    return seam > 1.5 * max(_step_beside(left, left.width - 2, p), _step_beside(right, 0, p))
+    return seam > 1.5 * max(_step_beside(left, left.width - 1 - BESIDE, p), _step_beside(right, 0, p))
+
 
 
 def _step_beside(img, x, p):
-    """The step between columns x and x + 1 of img, in the rows on screen, as _column_steps takes it."""
-    rows = _rows_on_screen(img.crop((x, 0, x + 2, img.height)), p)
+    """The largest step between neighbour columns of img's columns x to x + BESIDE, in the rows on screen, as
+    _column_steps takes them."""
+    x = max(0, x)
+    rows = _rows_on_screen(img.crop((x, 0, min(img.width, x + BESIDE + 1), img.height)), p)
     return max(_column_steps(rows) or [0]) if rows else 0
 
 

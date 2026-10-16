@@ -124,7 +124,9 @@ server, and leaves the install as it is.
   Lint passes the page: its (e) once flagged the pines (seam 58 > 20, a fixed limit below the strip's own inner
   column steps, 27 to 75) until r253 held a seam to the art's own steps. A painted pine's tip on the strip's edge
   (R1's ds8 forest: 21-22 against 20, beside a step of 17 one column in) passes since r398: a join under 40 that
-  steps no more than 1.5 times a column beside it is an outline carried across, not a cut.
+  steps no more than 1.5 times a column beside it is an outline carried across, not a cut. Since r475 the columns
+  beside are the 8 next to the join, not one: forest-inpaint's misty pines (r471) fade into the mist a few columns
+  apart, so their loop steps 30 beside 18 one column in and 27 five in, and no film frame shows it.
 - **Time**, 28 steps at 1536x576 on the RTX 5060 laptop (8 GB): with ollama holding about 4.1 GB, **79 s, 77 s and
   43 s** (mountains, hills, pines; the sampling alone is 63 s at 2.3 s an iteration). r239's 363 s, under
   the same ollama load, is not explained (not measured again). With the GPU free (r255, 119 MiB
