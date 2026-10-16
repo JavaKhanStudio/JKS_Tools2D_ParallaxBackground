@@ -224,6 +224,8 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 
 	private final ShaderProgram[] programs = new ShaderProgram[EFFECTS.length + 1];
 	private final boolean[] failed = new boolean[EFFECTS.length + 1];
+	/** Whether the program's u_glint was last set to 0, by a layer that does not glint: the next such layer sets none. */
+	private final boolean[] glintOff = new boolean[EFFECTS.length + 1];
 	private final int[] region = new int[EFFECTS.length + 1], size = new int[EFFECTS.length + 1], effect = new int[EFFECTS.length + 1],
 			haze = new int[EFFECTS.length + 1], fog = new int[EFFECTS.length + 1], dissolve = new int[EFFECTS.length + 1],
 			cells = new int[EFFECTS.length + 1], grade = new int[EFFECTS.length + 1], across = new int[EFFECTS.length + 1], up = new int[EFFECTS.length + 1],
@@ -312,11 +314,21 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		program.setUniformf(dissolve[index], dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift);
 		program.setUniformf(cells[index], cellsX, cellsY);
 		program.setUniformf(grade[index], gradeR, gradeG, gradeB, Math.max(0, Math.min(1, gradeAmount)));
-		glintUniforms(layer, glints);
-		program.setUniformf(glint[index], glints[0], glints[1], glints[2], glints[3]);
-		program.setUniformf(sun[index], glints[4], glints[5]);
-		program.setUniformf(glintA[index], glints[6], glints[7], glints[8], glints[9]);
-		program.setUniformf(glintB[index], glints[10], glints[11], glints[12], glints[13]);
+		if (layer.glints())
+		{
+			glintUniforms(layer, glints);
+			program.setUniformf(glint[index], glints[0], glints[1], glints[2], glints[3]);
+			program.setUniformf(sun[index], glints[4], glints[5]);
+			program.setUniformf(glintA[index], glints[6], glints[7], glints[8], glints[9]);
+			program.setUniformf(glintB[index], glints[10], glints[11], glints[12], glints[13]);
+			glintOff[index] = false;
+		}
+		else if (!glintOff[index])
+		{
+			// glinted() returns before reading the rest: four uniforms a layer cost ~12 us of CPU (r469).
+			program.setUniformf(glint[index], 0, 0, 0, 0);
+			glintOff[index] = true;
+		}
 		program.setUniformf(wrap[index], wrapX, wrapY);
 		return true;
 	}
@@ -585,6 +597,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			if (programs[i] != null)
 				programs[i].dispose();
 			programs[i] = null;
+			glintOff[i] = false;
 		}
 	}
 }
