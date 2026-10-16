@@ -134,6 +134,8 @@ jME runs core's.
    switching in sight, the seen rule left out, the step unmasked to 64 bits, the cover ignored) each fail it.
 5. The editor (its own board): the kind in the kind tab, seed and odds with the "how often" line and the seed's first
    draws, the depth-height hint, `lurkerCover` worked out on save, and the preview showing it vanish.
+   Done (parallax-editor r91): the cover baked with `LurkerCover` when the lurker panel shows and at every save
+   (`Utils_Lurker.bakeCovers`), equal to `tools/lurker-cover.sh`'s value for value on the lurker round.
 6. README: a "Lurker layers" section (the rule, the depth size, the skating), and AGENTS.md's runtime line.
    Done (r372): README's "Lurker layers", its picture `docs/lurker-size.png` (r363's v01 against v02, the giant;
    `tools/r372-lurker-size/make.py`), the three fields in its settings table.
