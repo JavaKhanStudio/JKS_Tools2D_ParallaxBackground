@@ -4,9 +4,9 @@ own clock, on the GPU, the day button pressed; a still every --every seconds, an
     python3 tools/r425-shadow-day/live_day.py WAR OUT_DIR [--gl swiftshader|gpu] [--day S] [--every S]
 
 WAR: core/build/browserTest/war (./gradlew :core:browserTestWar). Writes OUT_DIR/NNN.png (both panels) and prints, per
-still, the sun's centre in panel A (its disc's brightest pixels, where the whole disc shows), the sky's mean colour and
+still, the sun's centre in panel B (its disc's brightest pixels, where the whole disc shows; A's rays flood it), the sky's mean colour and
 A's shade. Fails (exit 1) on a WebGL warning or page error, or when the sun steps back, stands still between two stills
-while the day plays, or moves more than twice its median step at once (the shake); or when panel A's shade, its
+while the day plays, or moves more than twice its median step at once (the shake), or shows whole in under 21 stills; or when panel A's shade, its
 difference from B, changes by more than a quarter of its day's range between two stills (the flash at sunrise).
 Proved on two mutants of ShadowLab: the day's sun rounded to its sliders' steps (uneven steps), and TWILIGHT 0.001 (the
 shade moved 2.1 of its 6.5 in one still). Headless Chrome: no window opens.
@@ -75,7 +75,8 @@ for i in range(int(args.day / args.every)):
     a = a[:, : b.shape[1]]
     # How much A's layers are shaded: the panels' difference over their lower three quarters, the sun in both.
     shade.append((b[b.shape[0] // 4:] - a[a.shape[0] // 4:]).mean())
-    disc = (a[..., 0] > 225) & (a[..., 1] > 215) & (a[..., 2] < 225)
+    # The disc in B: A's glare (its rays, Simon at 20:26) floods it, B draws the same sun without.
+    disc = (b[..., 0] > 225) & (b[..., 1] > 215) & (b[..., 2] < 225)
     ys, xs = np.nonzero(disc)
     sky = a[: a.shape[0] // 2].mean(axis=(0, 1))
     sun = (round(xs.mean(), 1), round(ys.mean(), 1)) if len(xs) > 30 else None
@@ -86,7 +87,11 @@ whole = max(n for _, n in track) * 0.8
 xs = [s[0] for s, n in track if s and n >= whole]
 steps = np.diff(xs)
 bad = []
-if len(steps) > 4:
+if len(steps) < 20:
+    # A sun the tracker cannot find proves nothing about its steps.
+    bad = [f"only {len(xs)} stills show the whole disc"]
+    print("sun's steps across:", bad[0])
+else:
     median = np.median(steps)
     # The sun's path tilts on a tan near the view's edges: a step may grow, but not double, between two stills.
     bad = [k for k, d in enumerate(steps) if d <= 0 or d > 2 * median]

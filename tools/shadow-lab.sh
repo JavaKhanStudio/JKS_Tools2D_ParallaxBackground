@@ -4,7 +4,8 @@
 # (core/browser-test/launcher/.../ShadowLab.java).
 # Controls: the view (the page, or without the pines), the camera's scroll, each sun's side and height (sliders, or the
 # sun dragged in the sky), the second sun on or off, the depth between two layers, how much a shadow moves with the
-# layer it falls on, its softness and darkness.
+# layer it falls on, its softness and darkness, the rays past the ridges (strength, length), the sun behind you (its
+# shadows laid on the ground in perspective).
 #   tools/shadow-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/shadow-lab.sh --shot F.png    one still, headless (6 s in)
 #   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/two.png (both suns)
@@ -15,7 +16,10 @@
 #   tools/shadow-lab.sh --behind        before --shot/--views/--clip: the "sun behind you" button pressed
 #   tools/shadow-lab.sh --copy F.png    checks "Copy settings" and the drag, headless: drags sun 1 in A's sky (fails if the
 #                                       panel zooms instead), turns sun 2 on, clicks, fails unless the JSON names every
-#                                       control and those moved; F is the page
+#                                       control and those moved; then the day, the phone tap, the lift, the sun behind
+#                                       you (its shadows slant away from its side) and the rays (none round a disc the
+#                                       range hides, a glare round a clear one: tools/r425-shadow-light/mutate.sh); F is the page
+# SHADOW_DEBUG=DIR: --copy saves the crops its slant and rays checks measure in DIR.
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python
 # Playwright and ffmpeg.
 # on-screen: with no argument this is the shadow lab, a window Simon asked for; the rest is headless Chrome.
@@ -74,6 +78,7 @@ fi
 FRAMES=$(mktemp -d)
 trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT
 python3 - "$URL?clip=1" "$CHROME" "$FRAMES" "$MODE" "$SLIDERS" <<'PY' || exit 1
+import os
 import sys
 from playwright.sync_api import sync_playwright
 url, chrome, frames, mode, sliders = sys.argv[1:]
@@ -149,7 +154,7 @@ with sync_playwright() as p:
         import json
         got = json.loads(page.input_value("#shadow-copy-json"))
         keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "depth", "withReceiver",
-                "softness", "darkness", "liftFrom", "liftHigh", "groundRise", "dayLength"}
+                "softness", "darkness", "liftFrom", "liftHigh", "rays", "rayLength", "dayLength"}
         changed = got["changed"]
         if (set(got["settings"]) != keys or set(changed) != {"sun1Side", "sun1Height", "sun2On"}
                 or changed["sun1Side"]["started"] != -40 or not changed["sun1Side"]["now"] > -40
@@ -222,9 +227,10 @@ with sync_playwright() as p:
             return float(np.abs(a[:, :n] - b[:, :n]).mean())
         lifted = (dark_at(10), dark_at(27.5), dark_at(45))
         # Back in the sky, one sun at 20 degrees, at full darkness: A draws its shadows while the shade lifts from 30, and
-        # as B once the sun is high from 20 (a higher sun's shadows land under the view: they would prove nothing).
+        # as B once the sun is high from 20 (a higher sun's shadows land under the view: they would prove nothing). No
+        # rays: they are A's alone, whatever the shade.
         page.click("#shadow-behind")
-        for key, value in (("sun2On", 0), ("darkness", 1), ("liftFrom", 5), ("liftHigh", 30)):
+        for key, value in (("sun2On", 0), ("darkness", 1), ("liftFrom", 5), ("liftHigh", 30), ("rays", 0)):
             page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", str(value))
         shaded = (dark_at(20), a_off_b())
         page.eval_on_selector("[data-key=liftHigh]", "e => { e.value = '20'; }")
@@ -235,6 +241,78 @@ with sync_playwright() as p:
         if lifted != (100, 50, 0):
             sys.exit("the high sun's lift: %s%% dark at 10, 27.5 and 45 degrees (want 100, 50, 0)" % (lifted,))
         print("a high sun lifts the shade: %s%% dark at 10, 27.5, 45 degrees" % (lifted,))
+        def panels():
+            import io
+            import numpy as np
+            from PIL import Image
+            page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+            c = page.locator("#embed-browsertests canvas")
+            img = np.asarray(Image.open(io.BytesIO(c.screenshot())).convert("RGB"), dtype=float)
+            width, rects = page.evaluate("[document.querySelector('#embed-browsertests canvas').width, window.labPanelRects]")
+            k = img.shape[1] / width
+            def cut(r):
+                x, y, w, h = (round(v * k) for v in r)
+                top = img.shape[0] - y - h
+                return img[top + 40:top + h, x:x + w]
+            a, b = cut(rects[0]), cut(rects[1])
+            n = min(a.shape[1], b.shape[1])
+            return a[:, :n], b[:, :n]
+        def slant(side):
+            # The sun behind you, 10 degrees up: where A is darker than B, do the streaks climb to the right ("/", over 0)
+            # or to the left? The structure tensor's cross term over the darkening, normalised: -1 to 1.
+            import numpy as np
+            page.eval_on_selector("[data-key=sun1Side]", "(e, v) => { e.value = v; }", str(side))
+            dark_at(10)
+            a, b = panels()
+            d = np.clip(b - a, 0, None).mean(axis=2)
+            if os.environ.get("SHADOW_DEBUG"):
+                from PIL import Image
+                Image.fromarray(np.concatenate([a, b], axis=1).astype("uint8")).save(os.environ["SHADOW_DEBUG"] + "/slant%d.png" % side)
+            gy, gx = np.gradient(d)
+            return float((gx * gy).sum() / max(1e-9, np.sqrt((gx * gx).sum() * (gy * gy).sum()))), float(d.mean())
+        # The lift's check left the sun in the sky: behind you again.
+        page.click("#shadow-behind")
+        for key, value in (("darkness", 1), ("liftFrom", 30), ("liftHigh", 40)):
+            page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", str(value))
+        left, right = slant(-40), slant(40)
+        print("the sun behind you, 10 up: the shadows' slant %+.2f with the sun on the left, %+.2f on the right (A darker by %.2f, %.2f)" % (left[0], right[0], left[1], right[1]))
+        if not (left[0] > 0.1 and right[0] < -0.1):
+            sys.exit("the sun behind you: its shadows do not run away from its side")
+        # The rays: the sun in the sky, deep behind the range, against just clear of it: A with rays against without.
+        page.click("#shadow-behind")
+        def at(height):
+            page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(height))
+            page.evaluate("window.shadowLabAct(0.5)")
+        def rays_at(height):
+            # A with rays against without, round the disc (2 world units about it, in A's 40 x 22.5 view): sun 1 at
+            # 10 degrees left, where ShadowLab.drawSun puts it.
+            import math
+            import numpy as np
+            page.eval_on_selector("[data-key=sun1Side]", "e => { e.value = '-10'; }")
+            page.eval_on_selector("[data-key=rays]", "e => { e.value = '0.8'; }")
+            at(height)
+            lit = panels()[0]
+            page.eval_on_selector("[data-key=rays]", "e => { e.value = '0'; }")
+            at(height)
+            plain = panels()[0]
+            a = math.radians(-10)
+            x = 20 + 20 * math.tan(a)
+            y = 8.75 + 20 * math.tan(math.radians(height)) / math.cos(a)
+            full = lit.shape[0] + 40
+            col, row = round(x / 40 * lit.shape[1]), round((1 - y / 22.5) * full) - 40
+            r = round(2 / 40 * lit.shape[1])
+            if os.environ.get("SHADOW_DEBUG"):
+                from PIL import Image
+                d = np.abs(lit - plain) * 4
+                d[max(0, row - r):row + r, col - r:col + r] += 60
+                Image.fromarray(np.clip(np.concatenate([lit, d], axis=1), 0, 255).astype("uint8")).save(os.environ["SHADOW_DEBUG"] + "/rays%s.png" % height)
+            return float(np.abs(lit - plain)[max(0, row - r):row + r, col - r:col + r].mean())
+        # The camera still: the two shots are half a second apart.
+        page.eval_on_selector("[data-key=cameraScroll]", "e => { e.value = '0'; }")
+        hidden, clear = rays_at(-6), rays_at(12)
+        print("rays: round the disc, A brighter by %.2f/255 with the sun deep behind the range, %.2f just clear of it" % (hidden, clear))
+        if not (clear > 20 and hidden < 0.2 * clear):
+            sys.exit("the rays: %.2f hidden, %.2f clear round the disc (want clear over 20, hidden under a fifth of it)" % (hidden, clear))
     else:
         start = float(page.input_value("[data-key=sun1Height]"))
         if mode == "day":
