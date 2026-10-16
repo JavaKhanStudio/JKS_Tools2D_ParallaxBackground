@@ -79,7 +79,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
@@ -101,6 +101,20 @@ NEG_XL = "clouds, sun, moon, birds, animals, creatures, gradient, text, watermar
 WORDS = {"mountains": "rocky mountain range", "hills": "rolling hills with small trees",
          "pines": "dark pine forest treeline silhouette", "dunes": "sand dunes", "sea": "calm sea, flat horizon",
          "ruins": "ruined city skyline, broken skyscrapers silhouette", "palms": "palm trees silhouette on a sandy shore"}
+# dreamshaper_8's img2img paints the hills one flat green whatever the init carries (r384: colour std inside 0.4-5).
+# Inpainted inside sil.py's shape at full strength by its inpainting twin, the sky kept exactly, they get folds and
+# small round trees (std 50-68), under SD's own skyline (alpha IoU 0.79-0.89 against img2img's): Simon's pick in
+# hills-lab, "inpaint 1.0, round" (tools/r384-hills/try.py's inpf). Its negative keeps the conifers and the misty
+# ranges 0.70 painted behind out. Only for the default SD 1.5 painted with no --denoise: the other models' hills
+# were never tried.
+HILLS_INPAINT = {"ckpt": "dreamshaper_8Inpainting.safetensors", "denoise": 1.0,
+                 "words": "rolling hills with small round trees, folds and shadows",
+                 "negative": ", distant mountains, misty mountain range, fog, haze, pine trees, conifers"}
+# HILLS_INPAINT paints round crowns across the width on about a sixth of the seeds (r384: 5 of 7020-7049), flat
+# hills, cartoon conifers or one big tree on the rest: ai_page refuses those and paints the next seed, up to
+# HILLS_TRIES, then keeps the most wooded. canopy()'s cuts pass 4 of the 5 and one cartoon-conifer strip
+# (tools/r384-hills/features2.py, its labels by eye).
+CANOPY_SPREAD, CANOPY_SHARP, HILLS_TRIES = 0.5, 2.0, 10
 GROW = {"mountains": 8, "hills": 8, "pines": 40, "dunes": 8, "sea": 4, "ruins": 16, "palms": 24}  # layer.py --grow, px
 DEFAULT_COLOURS = ["7a869e", "4f7a5a", "1f3a30"]  # sil.py's kinds, at full contrast: the fog gives the distance
 # --clouds (r409): not a depth (no --kinds word), a strip of their own behind the back layer.
@@ -182,6 +196,36 @@ def roughness(path):
     a = np.asarray(Image.open(path).convert("RGBA"))[..., 3] > 127
     top = np.argmax(a, axis=0).astype(float)
     return float(np.abs(np.roll(top, 1) - 2 * top + np.roll(top, -1)).mean()) * a.shape[1] / 1024
+
+
+def box(x, n):
+    """The mean over an n x n box round each pixel, the edges repeated."""
+    x = np.pad(x, n // 2, mode="edge")
+    c = np.cumsum(np.cumsum(np.pad(x, ((1, 0), (1, 0))), 0), 1)
+    return (c[n:, n:] - c[:-n, n:] - c[n:, :-n] + c[:-n, :-n]) / (n * n)
+
+
+def canopy(path):
+    """What HILLS_INPAINT's gate reads in a cut hills strip (r384): the share of its columns textured like a forest
+    (a fifth of the column's inside, 8 px in from the alpha, with a luminance std over 9 px above 8% of the mean
+    there: a dark canopy's shading is faint in levels, 7042's), and the
+    sharpness of its skyline (roughness of the outline smoothed over 9 px: conifers' triangles keep it, round crowns
+    and folds lose it). Both read as in a 1024 px strip."""
+    rgba = np.asarray(Image.open(path).convert("RGBA")).astype(np.float64)
+    scale = rgba.shape[1] / 1024
+    a = rgba[..., 3] > 127
+    inside = np.asarray(Image.fromarray(a.astype(np.uint8) * 255).filter(
+        ImageFilter.MinFilter(2 * round(8 * scale) + 1))) > 127
+    lum = rgba[..., :3] @ [0.299, 0.587, 0.114]
+    n = 2 * round(4 * scale) + 1
+    mean = box(lum, n)
+    busy = np.sqrt(np.maximum(box(lum ** 2, n) - mean ** 2, 0)) > 0.08 * np.maximum(mean, 8)
+    cols = (busy & inside).sum(0) / np.maximum(inside.sum(0), 1)
+    top = np.argmax(a, axis=0).astype(np.float64)
+    smooth = np.convolve(np.concatenate([top[-(n // 2):], top, top[:n // 2]]), np.ones(n) / n, "valid")
+    q = n // 2
+    sharp = np.abs(np.roll(smooth, q) - 2 * smooth + np.roll(smooth, -q)).mean() / scale
+    return float((cols > 0.2).mean()), float(sharp)
 
 
 # gen.py's defaults: a default run passes none of them (r305's commands), recipe.json records them all (r346).
@@ -512,37 +556,58 @@ class Pipeline:
         """gen.py's img2img for depth k, its init, seed and out left to add."""
         a, d = self.a, HERE
         depth = "distant" if k == 0 else "foreground" if k == a.layers - 1 else "middle distance"
-        theme, struck = theme_for(a.theme, kind, self.ks)
+        # HILLS_INPAINT's hills keep the theme's pine words (r384, Simon's answer): its trees grew from "pine forest",
+        # and without it no seed of ten grew any (try.py's s437). Its negative keeps the conifers out; palms and ruins
+        # are still struck.
+        theme, struck = theme_for(a.theme, kind, [x for x in self.ks if x != "pines"] if self.inpaints(kind) else self.ks)
         others = "".join(", " + w for w in struck)
         if self.pixel:
             return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG_XL, kind) + others,
                     "--prompt", (f"pixel art, 2d game parallax background layer, {theme}, {depth} "
                      f"{WORDS[kind]}, empty plain flat pale sky, solid background colour")]
+        if self.inpaints(kind):
+            h = HILLS_INPAINT
+            return [PY, f"{d}/gen.py", "inpaint", *self.model_args(denoise=False), "--ckpt", h["ckpt"], "--denoise",
+                    str(h["denoise"]), "--negative", negative(NEG, kind) + h["negative"] + others, "--prompt",
+                    f"2d game parallax background layer, {theme}, {depth} {h['words']}, painterly, plain pale sky"]
         return [PY, f"{d}/gen.py", "img2img", *self.model_args(), "--negative", negative(NEG, kind) + others, "--prompt",
                 f"2d game parallax background layer, {theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
 
-    def paint(self, k, kind, seed, prefix):
-        """sil.py, gen.py, then the cut: the cut layer's path, or None when it reaches its top row or holds a
-        creature."""
+    def inpaints(self, kind):
+        """Whether depth's kind is painted by HILLS_INPAINT: hills, by the default SD 1.5, with no --denoise."""
+        return kind == "hills" and not self.pixel and self.model["ckpt"] == GEN_CKPT and self.a.denoise is None
+
+    @staticmethod
+    def source_args(gen, prefix):
+        """What gen.py starts from: sil.py's init, inpainted inside its mask or taken whole by img2img."""
+        if gen[2] == "inpaint":
+            return ["--src", f"{prefix}_init.png", "--mask", f"{prefix}_mask.png"]
+        return ["--init", f"{prefix}_init.png"]
+
+    def paint(self, k, kind, seed, prefix, gate=True):
+        """sil.py, gen.py, then the cut: the cut layer's path, or None when it reaches its top row, holds a
+        creature, or (gate) grew no trees."""
         a, d = self.a, HERE
         gen = self.gen_command(k, kind)
         self.made[os.path.basename(prefix)] = {"prompt": gen[gen.index("--prompt") + 1],
                                                "negative": gen[gen.index("--negative") + 1],
                                                "denoise": float(gen[gen.index("--denoise") + 1])}
+        if gen[2] == "inpaint":
+            self.made[os.path.basename(prefix)]["inpaint"] = HILLS_INPAINT["ckpt"]
         if a.keep and os.path.exists(f"{prefix}_ai.png"):
-            return self.cut(prefix, kind)
+            return self.cut(prefix, kind, gate)
         if not a.dry_run:
             with open(prefix + "_seed.txt", "w") as f:  # what a kept strip was painted with: its variants' ends
                 f.write(str(seed))
         if run(["python3", f"{d}/sil.py", kind, prefix, "--w", str(self.w), "--h", str(self.h), "--seed", str(seed),
                 "--colour", self.cols[k], "--quiet-join", "--texture", str(TEXTURE)], prefix + "_sil.log"):
             sys.exit(f"sil.py failed: {prefix}_sil.log")
-        if run(gen + ["--init", f"{prefix}_init.png", "--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
+        if run(gen + self.source_args(gen, prefix) + ["--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"],
                prefix + "_gen.log"):
             sys.exit(f"gen.py failed (free VRAM? nvidia-smi): {prefix}_gen.log")
-        return self.cut(prefix, kind)
+        return self.cut(prefix, kind, gate)
 
-    def cut(self, prefix, kind):
+    def cut(self, prefix, kind, gate=True):
         """layer.py (pixel.py) on a painted strip: its cut path, or None when refused. layer.py weighs its RULES on the
         strip's kind and checkpoint (r400): what each did goes in recipe.json, under the strip's "rules"."""
         d = HERE
@@ -567,6 +632,12 @@ class Pipeline:
         if kind == "pines" and not self.pixel and roughness(f"{prefix}_cut.png") < TREES:
             log(f"{prefix}: outline roughness {roughness(prefix + '_cut.png'):.1f} < {TREES}: no trees grew")
             return None
+        if self.inpaints(kind) and gate:
+            self.canopy = spread, sharp = canopy(f"{prefix}_cut.png")
+            if spread < CANOPY_SPREAD or sharp > CANOPY_SHARP:
+                log(f"{prefix}: forest over {spread:.2f} of the columns (< {CANOPY_SPREAD}?), skyline sharpness "
+                    f"{sharp:.2f} (> {CANOPY_SHARP}?): no round trees")
+                return None
         return f"{prefix}_cut.png"
 
     def paint_depths(self):
@@ -575,14 +646,27 @@ class Pipeline:
         a = self.a
         layers, seeds = [], []
         for k, kind in enumerate(self.ks):
-            for t in range(a.tries):
+            prefix, best = os.path.join(self.strips, f"l{k}"), None
+            tries = max(a.tries, HILLS_TRIES) if self.inpaints(kind) else a.tries
+            for t in range(tries):
                 seed = a.seed * 1000 + k * 10 + t
-                got = self.paint(k, kind, seed, os.path.join(self.strips, f"l{k}"))
+                self.canopy = None
+                got = self.paint(k, kind, seed, prefix)
                 if got:
                     break
+                if self.canopy:  # refused by the hills' gate: kept in mind, the conifers' last
+                    spread, sharp = self.canopy
+                    score = (spread if sharp <= CANOPY_SHARP else -sharp, seed)
+                    best = max(best, score) if best else score
                 log(f"layer {k} ({kind}) seed {seed}: refused, painting again")
             else:
-                sys.exit(f"layer {k} ({kind}): {a.tries} strips refused (art on the top row, a creature, or pines"
+                if best:  # the hills' gate refuses most seeds: the most wooded of them, rather than no page
+                    log(f"layer {k} ({kind}): no seed of {tries} grew round trees, painting seed {best[1]} again "
+                        f"(forest over {best[0]:.2f} of its columns)")
+                    seed = best[1]
+                    got = self.paint(k, kind, seed, prefix, gate=False)
+            if not got:
+                sys.exit(f"layer {k} ({kind}): {tries} strips refused (art on the top row, a creature, or pines"
                          " without trees); another --seed, or more --tries")
             layers.append([got])
             seed_file = os.path.join(self.strips, f"l{k}_seed.txt")

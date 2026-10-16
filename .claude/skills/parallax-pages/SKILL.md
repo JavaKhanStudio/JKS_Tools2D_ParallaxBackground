@@ -154,6 +154,12 @@ at most a tenth of the front's; each farther strip's bottom under the rows of th
 for the whole screen; the depth fog so the back layer is `--fog` 0.6 of the way to the sky), lints it, and renders
 `OUT/shots` (0, 6, 12 s). `--style painted` is SD 1.5 at ~12 s a strip, its front a `SEQUENCE` of `--variants` 3 more
 strips; `pixel` is SDXL + PixelArt_XL at ~25 s, one PNG pixel per art pixel, drawn `Nearest`. About 2 min a page.
+Painted with the default model and no `--denoise`, the hills are inpainted inside their shape at 1.0 by
+`dreamshaper_8Inpainting` (r384, Simon's pick in hills-lab): img2img painted them one flat green. Their skyline is
+SD's own, near sil.py's. Round trees grow on about a sixth of the seeds: a hills strip without a forest over half
+its columns, or with a conifer's sharp skyline, is painted again on the next seed, up to 10, then the most
+wooded is kept (`ai_page.canopy`): a page's hills take about 4 min more (an inpaint is ~45 s with its model load).
+They keep the theme's pine words, which the other layers lose (their trees grew from them); conifers stay negative.
 `--ckpt`/`--lora` paint with another model from `~/ComfyUI/models` (r346, `docs/ai-parallax.md`), recorded in
 `recipe.json`; a `.gguf` is a DiT (`--ckpt z-image-turbo-Q5_K_M.gguf`, r356), looped by a unet wrapper.
 Every strip is painted with a plain sky, keyed out: no layer carries clouds. A page that wants them asks `--clouds`
