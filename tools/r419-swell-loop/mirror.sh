@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# r419: does the animation lab's MIRROR jump? Two clips of the lab's "sea: SWELL + MIRROR" view at scroll 120 (under
-# FOG's periods along() wraps every 10 world units, which the sea only crosses in 8 s that fast), one with MIRROR at
-# strength 0, through jumps.py at 1.4x: MIRROR's own change is even, a ripple term that is not a whole number of turns
-# over the period jumps at the wrap (MUTATE=1: the first ripple's 13 turns across made 13.5).
+# r419: does the animation lab's MIRROR jump? Two clips of the lab's "sea: SWELL + MIRROR" view (by the water's
+# colour, + GLINT) at scroll 120 (under FOG's periods along() wraps every 10 world units, which the sea only crosses
+# in 8 s that fast), one with MIRROR at strength 0, through jumps.py at 1.4x: MIRROR's own change is even, a ripple
+# term that is not a whole number of turns over the period jumps at the wrap (MUTATE=1: the first ripple's 13 turns
+# across made 13.5).
 #   tools/r419-swell-loop/mirror.sh OUTDIR            exits 1 on a jump
 #   MUTATE=1 tools/r419-swell-loop/mirror.sh OUTDIR   must exit 1 (puts AnimLab.java back after)
 # headless: tools/anim-lab.sh --clip renders in headless Chrome.

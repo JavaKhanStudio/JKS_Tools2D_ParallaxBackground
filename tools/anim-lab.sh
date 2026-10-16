@@ -2,7 +2,8 @@
 # The animation lab (r407, after r375): r375's shader animations as lab GLSL, drawn by the real reader compiled with
 # GWT, in WebGL: r365's beach sea under WAVE (what ships), SWELL, GLINT and SWELL + GLINT, and round1's calm clouds,
 # on a layer of their own, still and under BILLOW, in the page and alone; and the sea under SWELL with MIRROR, the
-# whole water a mirror of the sky, like polished metal (r419, after REFLECT and SHEEN), alone or over SWELL alone.
+# whole water a mirror of the sky, like polished metal (r419, after REFLECT and SHEEN), as tuned and by the water's
+# colour, with GLINT or not, beside SWELL alone.
 # Sliders: the view (four panels, two one over the other, or one close), zoom, the camera's scroll, the clouds'
 # drift, and each effect's numbers.
 #   tools/anim-lab.sh                 the lab: a Chrome window, served until it closes
