@@ -1,11 +1,21 @@
 """zoom.sh's driver (r452): every panel of every lab of several, zoomed, stepped and put back, on a desktop and a phone."""
 import io
+import json
 import os
 import sys
 
 import numpy as np
 from PIL import Image
 from playwright.sync_api import sync_playwright
+from zoom_pics import (
+    PHONE_CLEARLY,
+    PHONE_REACH,
+    inset,
+    near,
+    thumb,
+    where_apart,
+    zoom_box,
+)
 
 base, chrome, out = sys.argv[1:]
 LABS = [
@@ -26,6 +36,8 @@ LABS = [
 if os.environ.get("ZOOM_LABS"):
     LABS = [lab for lab in LABS if lab[0] in os.environ["ZOOM_LABS"].split()]
 SIZES = {"desktop": (1580, 710), "phone": (390, 844)}
+# ZOOM_DUMP=DIR: every stage's and zoom's picture kept there, for margins.py.
+DUMP = os.environ.get("ZOOM_DUMP")
 FRAME = "new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))"
 # Each panel's title as lab.js finds it: the shown chip whose top left corner lies in the panel.
 TITLE = """const title = chip => [...chip.querySelectorAll('*:not(option)'), chip].flatMap(e => [...e.childNodes]).map(n => n.nodeType === 3
@@ -50,23 +62,12 @@ def canvas_image(page):
     shot = page.locator("#embed-browsertests canvas").screenshot()
     page.evaluate("() => document.getElementById('zoom-check').remove()")
     image = np.asarray(Image.open(io.BytesIO(shot)).convert("RGB"), dtype=float)
-    # Only the drawn rows: a phone's canvas is 99.1 CSS px tall, the screenshot's clip rounded up to 100, its last rows
-    # the page under it, which put a box in the lower half of the canvas 4 rows high (r483).
-    cw, ch = page.evaluate("[document.querySelector('#embed-browsertests canvas').width, document.querySelector('#embed-browsertests canvas').height]")
-    return image[:max(1, min(image.shape[0], round(image.shape[1] * ch / cw)))]
-
-
-def thumb(image, box, size=(48, 24)):
-    """The part of image in box (fractions of its size: left, top, right, bottom), size wide and tall, for a likeness."""
-    h, w = image.shape[:2]
-    part = image[int(box[1] * h):max(int(box[1] * h) + 1, int(box[3] * h)), int(box[0] * w):max(int(box[0] * w) + 1, int(box[2] * w))]
-    return np.asarray(Image.fromarray(part.astype(np.uint8)).resize(size, Image.BOX), dtype=float)
-
-
-def where_apart(a, b):
-    """The pixels where pictures a and b differ by 8/255 a channel or more; None when fewer than 40 do (panels alike)."""
-    mask = np.abs(a - b).mean(axis=2) >= 8
-    return mask if mask.sum() >= 40 else None
+    # Only the drawn rows: the canvas is drawn into its height rounded to whole CSS pixels (a phone's 99.1 into 99, 123.7
+    # into 124), the screenshot's clip rounded up (100, a page's row under it). Cut where the clip falls, a box low on
+    # the canvas lay rows off (r483, r486).
+    width, height = page.evaluate("(() => { const r = document.querySelector('#embed-browsertests canvas').getBoundingClientRect(); return [r.width, r.height]; })()")
+    rows = min(image.shape[0], round(round(height) * image.shape[1] / width))
+    return image[:rows]
 
 
 failures = []
@@ -96,6 +97,11 @@ with sync_playwright() as p:
                 continue
             page.locator(".lab-stage").screenshot(path=f"{out}/{name}-{size}-all.png")
             every = canvas_image(page)
+            if DUMP:
+                os.makedirs(DUMP, exist_ok=True)
+                np.save(f"{DUMP}/{name}-{size}-every.npy", every.astype(np.uint8))
+                with open(f"{DUMP}/{name}-{size}.json", "w") as f:
+                    json.dump({"rects": rects[:count], "home": home}, f)
             # Each panel's picture with every panel shown, and where it is zoomed: its shape, scaled about the middle.
             bw, bh = home
             boxes = [(x / bw, (bh - y - ph) / bh, (x + pw) / bw, (bh - y) / bh) for x, y, pw, ph in rects[:count]]
@@ -103,7 +109,8 @@ with sync_playwright() as p:
             # The same, at the panel's own pixels: panels a slider's values apart (hills, snow, the sea's
             # four effects) differ in a few places only, which the coarse likeness averages away.
             fine = (rects[0][2], rects[0][3])
-            shown_fine = [thumb(every, b, fine) for b in boxes]
+            shown_fine = [thumb(every, inset(b, *fine), fine) for b in boxes]
+            reach, clearly = (0, 1) if every.shape[1] == bw else (PHONE_REACH, PHONE_CLEARLY)
             for i, panel in enumerate(panels):
                 cx, cy = panel["centre"]
                 if phone:
@@ -120,10 +127,11 @@ with sync_playwright() as p:
                     continue
                 page.locator(".lab-stage").screenshot(path=f"{out}/{name}-{size}-p{i}.png")
                 zoomed = canvas_image(page)
+                if DUMP:
+                    np.save(f"{DUMP}/{name}-{size}-z{i}.npy", zoomed.astype(np.uint8))
                 zh, zw = zoomed.shape[:2]
                 pw, ph = rects[i][2], rects[i][3]
-                k = min(zw / pw, zh / ph)
-                box = ((zw - pw * k) / 2 / zw, (zh - ph * k) / 2 / zh, (zw + pw * k) / 2 / zw, (zh + ph * k) / 2 / zh)
+                box = zoom_box(zw, zh, pw, ph)
                 seen = thumb(zoomed, box)
                 off = [float(np.abs(seen - s).mean()) for s in shown]
                 grew = zw * box[2] - zw * box[0] > every.shape[1] * pw / bw * 1.3 if every.shape[1] else False
@@ -137,16 +145,15 @@ with sync_playwright() as p:
                     apart = float(np.abs(shown[i] - shown[j]).mean())
                     if j != i and apart >= 3 and off[j] < 0.6 * off[i]:
                         failures.append(f"{name} {size}: zoomed panel {i} looks like panel {j} ({off[j]:.1f}/255 off), not itself ({off[i]:.1f}/255)")
-                # Finer, on only the pixels where panel i and panel j differ: closer to j's there is j's picture. On a desktop
-                # only, the canvas 1:1: a phone's is scaled by its page, its panels a fraction of a pixel off, which reads
-                # as a difference wherever the panels differ (a right zoom was 2x closer to another panel there).
-                seen_fine = thumb(zoomed, box, fine)
-                for j in range(count if not phone else 0):
+                # Finer, on only the pixels where panel i and panel j differ: closer to j's there is j's picture. Inside
+                # each panel's edges, on a phone too.
+                seen_fine = thumb(zoomed, inset(box, *fine), fine)
+                for j in range(count):
                     mask = None if j == i else where_apart(shown_fine[i], shown_fine[j])
                     if mask is None:
                         continue
-                    own, other = (float(np.abs(seen_fine - s)[mask].mean()) for s in (shown_fine[i], shown_fine[j]))
-                    if other < own:
+                    own, other = (float(near(seen_fine, s, reach)[mask].mean()) for s in (shown_fine[i], shown_fine[j]))
+                    if other < own * clearly:
                         failures.append(f"{name} {size}: zoomed panel {i}, where it and panel {j} differ ({mask.sum()} px), looks like"
                                         f" panel {j} ({other:.1f}/255 off), not itself ({own:.1f}/255)")
                 if not grew:
