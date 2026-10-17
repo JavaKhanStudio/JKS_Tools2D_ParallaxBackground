@@ -49,7 +49,11 @@ def canvas_image(page):
     page.evaluate(f"() => {{ const s = document.createElement('style'); s.id = 'zoom-check'; s.textContent = {hide!r}; document.head.append(s); }}")
     shot = page.locator("#embed-browsertests canvas").screenshot()
     page.evaluate("() => document.getElementById('zoom-check').remove()")
-    return np.asarray(Image.open(io.BytesIO(shot)).convert("RGB"), dtype=float)
+    image = np.asarray(Image.open(io.BytesIO(shot)).convert("RGB"), dtype=float)
+    # Only the drawn rows: a phone's canvas is 99.1 CSS px tall, the screenshot's clip rounded up to 100, its last rows
+    # the page under it, which put a box in the lower half of the canvas 4 rows high (r483).
+    cw, ch = page.evaluate("[document.querySelector('#embed-browsertests canvas').width, document.querySelector('#embed-browsertests canvas').height]")
+    return image[:max(1, min(image.shape[0], round(image.shape[1] * ch / cw)))]
 
 
 def thumb(image, box, size=(48, 24)):

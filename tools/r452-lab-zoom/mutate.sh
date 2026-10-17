@@ -19,11 +19,12 @@ grep -E "looks like|off its own" "$LOG" | head -6
 echo "... $(grep -cE "looks like|off its own" "$LOG") such lines"
 # Every lab of zoom.py must see it on a desktop (pines too since r453: its clip opens where A and B differ); on a
 # phone, only the coarse likeness runs, which panels a slider's values apart
-# (anim, hills, pines, snow) pass.
+# (anim, hills, pines, snow) pass, and clouds' C and D, BILLOW and still, under 3/255 apart there (r483: before and
+# after the trim to the drawn rows).
 MISSED=""
 for lab in $(grep -oE '^    \("[a-z-]+"' tools/r452-lab-zoom/zoom.py | tr -d ' ("'); do
 	for size in desktop phone; do
-		case "$lab/$size" in anim/phone | hills/phone | pines/phone | effects-snow/phone) continue ;; esac
+		case "$lab/$size" in anim/phone | clouds/phone | hills/phone | pines/phone | effects-snow/phone) continue ;; esac
 		grep -qE "^$lab $size: .*(looks like|off its own)" "$LOG" || MISSED="$MISSED $lab/$size"
 	done
 done
