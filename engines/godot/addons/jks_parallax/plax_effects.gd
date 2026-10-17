@@ -306,21 +306,23 @@ static func apply(
 	var r: Dictionary = l.region
 	var texture_size: Vector2 = r.texture.get_size()
 	var model: Dictionary = l.model
+	# The effect its detail level draws (PlaxDetail): SWELL for a MIRROR without its reflection.
+	var effect: String = l.get("drawn_effect", model.shaderEffect)
 	var drawn := drawn_rect(r)
 	m.set_shader_parameter("region", Vector4(drawn.position.x / texture_size.x, drawn.position.y / texture_size.y,
 			drawn.end.x / texture_size.x, drawn.end.y / texture_size.y))
 	m.set_shader_parameter("size", Vector2(l.width * l.packed_w, l.height * l.packed_h))
 	var on: bool = model.shaderWavelength > 0
 	var amplitude: float = model.shaderAmplitude
-	if model.shaderEffect == "FOG":
+	if effect == "FOG":
 		amplitude = clampf(amplitude, 0, 1)
 	m.set_shader_parameter("effect", Vector3(amplitude if on else 0.0, model.shaderWavelength if on else 1.0,
 			phase(model, seconds) if on else 0.0))
 	m.set_shader_parameter("across", Vector3(view_w, left + effect_start_x(l), -1.0 if model.flipX else 1.0))
 	m.set_shader_parameter("up", Vector3(view_h, floor_y + effect_start_y(l), -1.0 if model.flipY else 1.0))
 	m.set_shader_parameter("wrap", wrap)
-	_apply_glint(m, model, seconds)
-	if model.shaderEffect == "MIRROR":
+	_apply_glint(m, l, seconds)
+	if effect == "MIRROR":
 		_apply_mirror(m, l)
 
 
@@ -333,15 +335,17 @@ static func _apply_mirror(m: ShaderMaterial, l: Dictionary) -> void:
 	m.set_shader_parameter("zenith", l.zenith)
 
 
-## GdxLayerEffects.glintUniforms: the glint's numbers, its strength 0 for a layer that does not glint; each wave a whole
-## number of turns over the effect's period.
-static func _apply_glint(m: ShaderMaterial, model: Dictionary, seconds: float) -> void:
-	var on := glints(model)
+## GdxLayerEffects.glintUniforms: the glint's numbers, its strength 0 for a layer that does not glint, or whose detail
+## level draws none (PlaxDetail: ParallaxLayer.drawsGlint); each wave a whole number of turns over the effect's period.
+static func _apply_glint(m: ShaderMaterial, l: Dictionary, seconds: float) -> void:
+	var model: Dictionary = l.model
+	var on: bool = glints(model) and l.get("drawn_glint", true)
 	var period_x := period(model) if on else 1.0
 	var period_up := period_y(model) if on else 1.0
 	m.set_shader_parameter("glint", Vector4(float(model.get("glintStrength", 0.0)) if on else 0.0, GLINT_DENSITY,
 			fmod(seconds * GLINT_TWINKLE, 1000.0), GLINT_CREST))
-	var mirrored: bool = model.get("shaderEffect", "") == "MIRROR"
+	# A MIRROR drawn through SWELL takes SWELL's sun (Simon on r464).
+	var mirrored: bool = l.get("drawn_effect", model.get("shaderEffect", "")) == "MIRROR"
 	m.set_shader_parameter("sun", Vector2(MIRROR_SUN_X if mirrored else GLINT_SUN_X,
 			MIRROR_SUN_WIDTH if mirrored else GLINT_SUN_WIDTH))
 	var across := period_x / (2.5 * GLINT_SIZE)

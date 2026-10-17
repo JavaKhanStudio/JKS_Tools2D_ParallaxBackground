@@ -63,7 +63,7 @@ func place() -> void:
 		var alpha := _bg._alpha_of(l)
 		var tint := _bg.tint
 		holder.modulate = Color(tint.r, tint.g, tint.b, tint.a * alpha)
-		holder.visible = holder.modulate.a > 0
+		holder.visible = holder.modulate.a > 0 and l.get("shown", true)
 		if l.scene == null:
 			continue
 		_bg._update_scale(_bg._zoom_of(l))

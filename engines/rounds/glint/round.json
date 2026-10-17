@@ -42,6 +42,25 @@
    "zoom": [0.2, 0.2],
    "name": "glint-after-mirror",
    "about": "r455: the same sea through MIRROR at Simon's r419 numbers (SWELL 0.12, 1.25, 0.35), its horizon at the strip's 84 of 384 rows, mirroring the beach page's sky: its glint's sun is MIRROR's own, at a quarter of the view and 0.45 wide (Simon on r455: his numbers on MIRROR only), every other effect keeping the shipped 0.5 and 0.3"
+  },
+  {
+   "page": "engines/rounds/glint/g05.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "id": "g06",
+   "name": "detail-medium-glint-in-swells-sun",
+   "detail": "MEDIUM",
+   "about": "r464: g05's sea at detail MEDIUM: drawn through SWELL, its glint kept, in SWELL's sun (GLINT_SUN_*, 0.5 and 0.3 wide: Simon on r464), not MIRROR's"
+  },
+  {
+   "page": "engines/rounds/glint/g05.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "id": "g07",
+   "name": "detail-medium-no-glint",
+   "detail": "MEDIUM",
+   "detailDefault": {"glint": "HIGH"},
+   "about": "r464: g05's sea at MEDIUM, every layer's glint from HIGH only (setLayerDefaultDetail): SWELL without its glint. A reader that ignores the rule draws g06"
   }
  ]
 }

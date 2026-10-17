@@ -12,6 +12,7 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
 import com.google.gwt.dom.client.SelectElement;
 
+import jks.tools2d.parallax.Enum_Detail;
 import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.heart.Parallax_Heart;
@@ -30,9 +31,10 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * The sea: the AI beach page (core/test-data/anim: r365's sea, r478's backdrop), its sea (l1) a SHADER layer drawn four ways: WAVE (what ships,
  * GdxLayerEffects' own), SWELL, GLINT, and SWELL then GLINT in one shader. SWELL ships since r431: it, and SWELL + GLINT,
  * are GdxLayerEffects' own SWELL program (r435), the lab's GLSL keeps its SWELL for its other MIRROR views. MIRROR by
- * the water's colour + GLINT ships since r455 (Enum_ShaderEffect.MIRROR): it, and the detail levels' 'high', draw
- * through GdxLayerEffects' MIRROR program, with the sliders' MIRROR and GLINT numbers in its uniforms; the lab's GLSL
- * keeps MIRROR as tuned and by the water's colour without GLINT, as a record. Each effect is written in
+ * the water's colour + GLINT ships since r455 (Enum_ShaderEffect.MIRROR): it draws through GdxLayerEffects' MIRROR
+ * program, with the sliders' MIRROR and GLINT numbers in its uniforms; the lab's GLSL keeps MIRROR as tuned and by the
+ * water's colour without GLINT, as a record. The detail levels (r464) are a shipped MIRROR sea, glinting at the slider's
+ * strength, drawn by hearts at Enum_Detail.HIGH, MEDIUM and OFF: what a game draws, GdxLayerEffects' numbers and all. Each effect is written in
  * world units over {@code along()}, as WAVE and FOG are, so it runs on across the tiles; its amplitude, wavelength and
  * speed are the layer's shader numbers, as a shipped effect's would be. GLINT's own numbers (strength, glint size,
  * density, twinkle, how closely it keeps to the crests, the sun's place and width) are the lab's {@code u_glint}: in
@@ -50,9 +52,9 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	static final int PANEL_WIDTH = FogLab.FRAME_WIDTH, PANEL_HEIGHT = 200;
 
 	/** What a panel draws its animated layer through. */
-	static final int WAVE = 0, SWELL = 1, GLINT = 2, BOTH = 3, MIRROR = 4, MIRROR_OWN = 5, MIRROR_GLINT = 6, NONE = 7;
+	static final int WAVE = 0, SWELL = 1, GLINT = 2, BOTH = 3, MIRROR = 4, MIRROR_OWN = 5, MIRROR_GLINT = 6, NONE = 7, DETAIL = 8;
 	static final String[] EFFECT_NAMES = { "WAVE (ships today)", "SWELL", "GLINT", "SWELL + GLINT", "SWELL + MIRROR as you tuned it (fixed)",
-			"SWELL + MIRROR by the water's colour", "SWELL + MIRROR by the water's colour + GLINT", "nothing" };
+			"SWELL + MIRROR by the water's colour", "SWELL + MIRROR by the water's colour + GLINT", "nothing", "the shipped MIRROR at a detail level" };
 
 	/**
 	 * The views the choice picks: four panels, three, two one over the other, or one, close. Each: its hearts (indices
@@ -63,10 +65,11 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 	static final String[] VIEWS = { "detail levels", "sea, all four", "sea: both", "sea: SWELL", "sea: GLINT", "sea: WAVE", "sea: SWELL + MIRROR", "sea: MIRROR or not" };
 	static final int[][] VIEW_HEARTS = { { 8, 9, 10 }, { 0, 1, 2, 3 }, { 3 }, { 1 }, { 2 }, { 0 }, { 7 }, { 4, 5, 6, 7 } };
 	/** Each heart's effect, on the beach's sea. */
-	static final int[] HEART_EFFECTS = { WAVE, SWELL, GLINT, BOTH, SWELL, MIRROR, MIRROR_OWN, MIRROR_GLINT, MIRROR_GLINT, BOTH, NONE };
-	/** The detail levels' hearts, from {@link #FIRST_LEVEL}: their titles, the most a game draws first. */
+	static final int[] HEART_EFFECTS = { WAVE, SWELL, GLINT, BOTH, SWELL, MIRROR, MIRROR_OWN, MIRROR_GLINT, DETAIL, DETAIL, DETAIL };
+	/** The detail levels' hearts, from {@link #FIRST_LEVEL}: their titles and levels, the most a game draws first. */
 	static final int FIRST_LEVEL = 8;
 	static final String[] LEVEL_NAMES = { "high: SWELL + MIRROR + GLINT", "medium: SWELL + GLINT", "off: nothing" };
+	static final Enum_Detail[] LEVELS = { Enum_Detail.HIGH, Enum_Detail.MEDIUM, Enum_Detail.OFF };
 	/** The sea strip's water: its bottom {@link #SEA_HORIZON} of its height (rows 300 to 383 of 384 in beach-sea.png), the rest clear. */
 	static final float SEA_HORIZON = 84 / 384f;
 	/**
@@ -124,7 +127,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			// What a page would store: the layer a SHADER one, under WAVE or, since r431, SWELL, whose periods (8
 			// wavelengths across, 10 up) the lab's GLINT and MIRROR are whole turns over too (r419).
 			model.kind = HEART_EFFECTS[i] == NONE ? Enum_LayerKind.IMAGE : Enum_LayerKind.SHADER;
-			model.shaderEffect = HEART_EFFECTS[i] == MIRROR_GLINT ? Enum_ShaderEffect.MIRROR
+			model.shaderEffect = HEART_EFFECTS[i] == MIRROR_GLINT || HEART_EFFECTS[i] == DETAIL ? Enum_ShaderEffect.MIRROR
 					: HEART_EFFECTS[i] != WAVE ? Enum_ShaderEffect.SWELL : Enum_ShaderEffect.WAVE;
 			// The shipped MIRROR's water (r455): its horizon in the strip and its depth, as a page stores them.
 			model.mirrorHorizon = SEA_HORIZON;
@@ -133,6 +136,9 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 			camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i] = new Parallax_Heart(camera, batch, WORLD_WIDTH, WORLD_HEIGHT);
 			hearts[i].setPage(page);
+			if (HEART_EFFECTS[i] == DETAIL)
+				// The level a game sets: the reader draws its MIRROR sea as that level says (r464).
+				hearts[i].setDetail(LEVELS[i - FIRST_LEVEL]);
 			animated[i] = hearts[i].parallaxReader.layers.get(index);
 			effects[i] = new AnimEffects(this, HEART_EFFECTS[i], animated[i], hearts[i]);
 			hearts[i].parallaxReader.setLayerEffects(effects[i]);
@@ -220,6 +226,9 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 				shader(layer, wa, ww, ws);
 			else
 				shader(layer, sa, sw, ss);
+			// A detail level's sea glints as a page stores it, its strength alone: the rest is GdxLayerEffects'.
+			if (effect == DETAIL)
+				layer.setGlintStrength(glint[0]);
 			hearts[i].screenSpeedConstantX = sc;
 		}
 		int[] shown = VIEW_HEARTS[v];
@@ -237,7 +246,8 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		float seaPx = sea.getDrawnRegion().getRegionWidth() / (sea.getWidth() * sea.getPackedWidthRatio());
 		readout.setInnerText("sea layer " + round(sea.getWidth()) + " x " + round(sea.getHeight()) + " world units, its image "
 				+ round(seaPx) + " px a unit: SWELL " + round(sa * seaPx) + " px, wavelength " + round(sw * seaPx) + " px; GLINT glints "
-				+ round(gs * seaPx) + " px long. The world is " + round(WORLD_WIDTH) + " units wide.");
+				+ round(gs * seaPx) + " px long. The world is " + round(WORLD_WIDTH) + " units wide."
+				+ (v == 0 ? " The detail levels draw what ships: of the sliders, only SWELL's and GLINT strength move them." : ""));
 	}
 
 	private static float round(float value)
@@ -357,7 +367,7 @@ public class AnimLab extends ApplicationAdapter implements LabKit.Clip
 		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fogAmount, Color fogColor)
 		{
 			// Nothing: the sea an IMAGE layer, drawn as the page draws it.
-			byShipped = layer != target || effect == NONE || effect == SWELL || effect == BOTH || effect == MIRROR_GLINT;
+			byShipped = layer != target || effect == NONE || effect == SWELL || effect == BOTH || effect == MIRROR_GLINT || effect == DETAIL;
 			if (byShipped)
 			{
 				boolean begun = shipped.begin(batch, layer, phase, fogAmount, fogColor);

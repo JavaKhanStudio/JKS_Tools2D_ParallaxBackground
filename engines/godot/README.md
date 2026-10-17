@@ -3,7 +3,8 @@
 `addons/jks_parallax` draws a page saved by the parallax editor (`.jplax`, `.plaxpj`, and its libGDX `.atlas`) in
 Godot 4, as the libGDX library in [`core/`](../../core) draws it. It is a GDScript port of core's
 `ParallaxPageReader`, line for line: scrolling, tiling, cross-fade, tint, the page fog, `EMPTY`, `PARTICLES`,
-`SHADER` (`plax_effects.gd`), `SEQUENCE`, `FLOOR`, `LURKER` (`plax_lurker.gd`), tower and dolly layers. It does not read `.plax` (Kryo is Java's).
+`SHADER` (`plax_effects.gd`), `SEQUENCE`, `FLOOR`, `LURKER` (`plax_lurker.gd`), tower and dolly layers, and the
+detail levels (`plax_detail.gd`). It does not read `.plax` (Kryo is Java's).
 What each part must copy from core, and which round proves it, is in [AGENTS.md, "Runtime"](../../AGENTS.md#runtime-core).
 
 ## How a game gets it

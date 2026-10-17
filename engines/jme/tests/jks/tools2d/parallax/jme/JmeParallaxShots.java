@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -18,6 +19,7 @@ import com.jme3.asset.plugins.FileLocator;
 import com.jme3.system.AppSettings;
 import com.jme3.system.lwjgl.LwjglWindow;
 
+import jks.tools2d.parallax.LayerDetail;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.rounds.Round;
 import jks.tools2d.parallax.rounds.Round.Hook;
@@ -52,6 +54,8 @@ public class JmeParallaxShots extends SimpleApplication
 	private PlaxBackground bg;
 	/** The layer names the scene on screen hooked. */
 	private final List<String> hooked = new ArrayList<>();
+	/** The layer names the scene on screen drew from levels of their own (r464). */
+	private final List<String> detailed = new ArrayList<>();
 
 	// Where the stepping is: scene, shot, time, and what of the scene has been played.
 	private int sceneIndex = -1, shotIndex;
@@ -208,6 +212,16 @@ public class JmeParallaxShots extends SimpleApplication
 		bg.speedConstantX = SPEED;
 		bg.speedConstantY = scene.speedY;
 		bg.getReader().setDolly(scene.dolly);
+		bg.getReader().setDetail(scene.detail);
+		bg.getReader().setLayerDefaultDetail(scene.detailDefault);
+		for (String name : detailed)
+			bg.getReader().setLayerDetail(name, null);
+		detailed.clear();
+		for (Map.Entry<String, LayerDetail> named : scene.layerDetails.entrySet())
+		{
+			bg.getReader().setLayerDetail(named.getKey(), named.getValue());
+			detailed.add(named.getKey());
+		}
 		shotIndex = 0;
 		time = 0;
 		transferred = 0;

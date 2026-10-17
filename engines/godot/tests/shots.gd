@@ -6,11 +6,16 @@ extends Node
 ## "FOG_CREEP", r252), its "speedY" scrolls it up too, and its "resize" resizes the window mid-scroll. Its "hooks" draw
 ## the page's EMPTY layers: each stretches the atlas region it names over every tile it is handed (r177). Its
 ## "sequenceSeed" draws the SEQUENCE layers from that game seed (r183). Its "zoom": [1, 0.5] zooms the camera straight
-## from the first at 0 s to the second at 12 s, set before each still, and its "dolly": true dollies it (r278).
+## from the first at 0 s to the second at 12 s, set before each still, and its "dolly": true dollies it (r278). Its
+## "detail": "MEDIUM" draws it at that PlaxDetail.Level, "detailDefault": {"mirror": "MEDIUM"} every layer from those
+## levels and "layerDetail": {"mist": {"shown": "MEDIUM"}} the layers of that name (r464).
 ##   godot --path engines/godot res://tests/shots.tscn -- <repo root> <round dir> <out dir>
 
 const SPEED := 60.0
 const SHOT_TIMES := [0, 6, 12]
+
+# The layer names the last scene drew from levels of their own.
+var _detailed: Array[String] = []
 
 
 func _ready() -> void:
@@ -34,6 +39,7 @@ func _ready() -> void:
 			bg.clear_sequence_seed()
 		bg.tint_to(Color.WHITE, 0)
 		bg.dolly = scene.get("dolly", false)
+		_set_details(bg, scene)
 		var zoom: Array = scene.get("zoom", [1.0, 1.0])
 		bg.speed_constant_x = SPEED
 		bg.speed_constant_y = scene.get("speedY", 0.0)
@@ -125,3 +131,24 @@ static func _style(style: Dictionary) -> PlaxTransfertStyle:
 
 static func _f32(value: float) -> float:
 	return PackedFloat32Array([value])[0]
+
+
+## The scene's detail level and rules (Round.java's "detail", "detailDefault", "layerDetail"); the last scene's go.
+func _set_details(bg: PlaxBackground, scene: Dictionary) -> void:
+	for layer_name in _detailed:
+		bg.set_layer_detail(layer_name, {})
+	_detailed.clear()
+	bg.set_layer_default_detail(_levels(scene.get("detailDefault", {})))
+	var named: Dictionary = scene.get("layerDetail", {})
+	for layer_name in named:
+		bg.set_layer_detail(layer_name, _levels(named[layer_name]))
+		_detailed.append(layer_name)
+	bg.detail = PlaxDetail.Level[scene.get("detail", "HIGH")]
+
+
+## {"shown": "HIGH", ...} as PlaxDetail's levels.
+func _levels(names: Dictionary) -> Dictionary:
+	var levels := {}
+	for key in names:
+		levels[key] = PlaxDetail.Level[names[key]]
+	return levels

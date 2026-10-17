@@ -210,6 +210,20 @@ tint 0, the shipped sun; jME never told MIRROR, its sky white). The animation la
 the shipped program since (`tools/r455-mirror/lab-mutate.sh`); its MIRROR as tuned and by the water's colour without
 GLINT stay the lab's GLSL, as a record.
 
+Detail levels, r464 (Simon on r462: "so someone using the parallax can hook up different quality level"; on r464: every
+layer, the game free to set each one's, its glint at `MEDIUM` in SWELL's sun): a game's `Enum_Detail` (`OFF`, `MEDIUM`,
+`HIGH`), set on the reader at run time and never stored, and per layer name a `LayerDetail`, the levels from which the
+layer is shown, its effect, its glint and a MIRROR's reflection are drawn (by default always, `MEDIUM`, `MEDIUM`,
+`HIGH`). The reader resolves them onto each layer before drawing it (`ParallaxLayer.setDetailDrawn`); an engine's
+effects read `getDrawnEffect` (SWELL for a MIRROR without its reflection, null for a layer drawn as its image, through
+the page fog's plain shader when fogged) and `drawsGlint`, while the periods stay the stored effect's, so the water does
+not jump when a player changes the level. Godot sets its canvases' materials and visibility when the level or a rule
+changes (`plax_detail.gd`). `DetailCases` records what each level begins; the shaders round's s15 (s14 at `MEDIUM`),
+s16 (the checker at `OFF`), s17 (every layer's reflection kept at `MEDIUM`) and s18 (s03 at `OFF`, its mist shown from
+`MEDIUM` only), and the glint round's g06 (g05 at `MEDIUM`: SWELL's sun) and g07 (its glint from `HIGH` only) are held
+against a reader ignoring the level or the rules by `tools/r464-detail/strength.sh`; `tools/r464-detail/mutate.sh`
+fails twelve wrong copies in Godot, jME and core.
+
 ## Saying what an engine cannot draw
 
 `core/src` gets a table, `EffectSupport`: for each kind and each effect, whether libGDX, the browser, Godot and jME

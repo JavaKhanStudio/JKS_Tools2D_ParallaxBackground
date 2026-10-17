@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -22,6 +23,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import org.lwjgl.glfw.GLFW;
 
+import jks.tools2d.parallax.LayerDetail;
 import jks.tools2d.parallax.heart.Gvars_Parallax;
 import jks.tools2d.parallax.heart.Parallax_Heart;
 import jks.tools2d.parallax.pages.Utils_Page_Json;
@@ -57,6 +59,8 @@ public class ParallaxShots extends ApplicationAdapter
 	private Parallax_Heart heart;
 	/** The layer names the scene on screen hooked. */
 	private final List<String> hooked = new ArrayList<>();
+	/** The layer names the scene on screen drew from levels of their own (r464). */
+	private final List<String> detailed = new ArrayList<>();
 
 	public ParallaxShots(Path roundDir, Path shotsDir)
 	{
@@ -136,6 +140,16 @@ public class ParallaxShots extends ApplicationAdapter
 		// A tint outlives setPage: the scene before may have left one.
 		heart.parallaxReader.addColorTransfert(Color.WHITE, 0);
 		heart.parallaxReader.setDolly(scene.dolly);
+		heart.parallaxReader.setDetail(scene.detail);
+		heart.parallaxReader.setLayerDefaultDetail(scene.detailDefault);
+		for (String name : detailed)
+			heart.parallaxReader.setLayerDetail(name, null);
+		detailed.clear();
+		for (Map.Entry<String, LayerDetail> named : scene.layerDetails.entrySet())
+		{
+			heart.parallaxReader.setLayerDetail(named.getKey(), named.getValue());
+			detailed.add(named.getKey());
+		}
 	}
 
 	/** Stills of every scene at a few moments of the same scroll. */

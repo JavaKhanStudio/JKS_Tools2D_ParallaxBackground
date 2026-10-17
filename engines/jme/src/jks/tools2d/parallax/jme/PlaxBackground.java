@@ -20,6 +20,8 @@ import com.jme3.scene.Node;
 import com.jme3.scene.Spatial.CullHint;
 
 import jks.tools2d.parallax.LayerHook;
+import jks.tools2d.parallax.Enum_Detail;
+import jks.tools2d.parallax.LayerDetail;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.TransfertStyle;
 import jks.tools2d.parallax.Utils_Parallax;
@@ -193,6 +195,18 @@ public class PlaxBackground extends BaseAppState
 	 */
 	public void setLayerHook(String name, LayerHook hook)
 	{reader.setLayerHook(name, hook);}
+
+	/**
+	 * How much of its pages this background draws, a player's choice of quality, as
+	 * {@link ParallaxPageReader#setDetail} (r464): HIGH as stored, MEDIUM without a MIRROR layer's reflection, OFF the
+	 * paintings alone. Never stored in a page.
+	 */
+	public void setDetail(Enum_Detail level)
+	{reader.setDetail(level);}
+
+	/** From which levels the layers named {@code name} are drawn, as {@link ParallaxPageReader#setLayerDetail}; null: as every other. */
+	public void setLayerDetail(String name, LayerDetail layerDetail)
+	{reader.setLayerDetail(name, layerDetail);}
 
 	/**
 	 * Draws every SEQUENCE layer's cycle from {@code seed} XOR the seed its page stores, as

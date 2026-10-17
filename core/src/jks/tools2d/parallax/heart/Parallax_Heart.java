@@ -7,7 +7,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.utils.Disposable;
 
+import jks.tools2d.parallax.Enum_Detail;
 import jks.tools2d.parallax.GwtIncompatible;
+import jks.tools2d.parallax.LayerDetail;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.Utils_Parallax;
 import jks.tools2d.parallax.TransfertStyle;
@@ -212,6 +214,24 @@ public class Parallax_Heart implements Disposable
 	/** Height of this heart's world, in world units. */
 	public float getWorldHeight()
 	{return parallaxReader.getWorldHeight();}
+
+	/**
+	 * How much of its pages this heart draws, a player's choice of quality (r464, {@link ParallaxPageReader#setDetail}):
+	 * {@link Enum_Detail#HIGH} as stored, MEDIUM without a MIRROR layer's reflection, OFF the paintings alone. Kept across
+	 * {@link #setPage} and the transferts. Never stored in a page.
+	 */
+	public void setDetail(Enum_Detail level)
+	{parallaxReader.setDetail(level);}
+
+	public Enum_Detail getDetail()
+	{return parallaxReader.getDetail();}
+
+	/**
+	 * From which levels the layers named {@code name} are drawn ({@link ParallaxPageReader#setLayerDetail}): a layer
+	 * shown at HIGH only, a sea that keeps its reflection at MEDIUM. null: as every other layer.
+	 */
+	public void setLayerDetail(String name, LayerDetail layerDetail)
+	{parallaxReader.setLayerDetail(name, layerDetail);}
 
 	public String getAtlasName()
 	{return currentPage == null ? null : currentPage.pageModel.getAtlasName();}

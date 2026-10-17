@@ -140,6 +140,12 @@ public class ParallaxLayer
 	 */
 	private Color mirrorSky = Color.WHITE, mirrorZenith = Color.WHITE;
 	/**
+	 * What the reader's detail level leaves of this layer's effect (r464, {@link LayerDetail}), set by the reader before
+	 * each draw; not stored: its effect drawn, its glint drawn, a MIRROR's reflection drawn. All true, as stored, until a
+	 * reader says otherwise ({@link #setDetailDrawn}).
+	 */
+	private boolean effectDrawn = true, glintDrawn = true, mirrorDrawn = true;
+	/**
 	 * What {@link #draw} and {@link #drawMirror} draw of a tile: {@link #DRAW_ALL}, or the reader's two passes over a
 	 * SHADER layer with a patch, {@link #DRAW_IMAGE} then {@link #DRAW_PATCH} (r397, {@link LayerEffects#beginPatch}).
 	 */
@@ -558,6 +564,9 @@ public class ParallaxLayer
 		// Replaced, never changed: shared.
 		copy.mirrorSky = mirrorSky;
 		copy.mirrorZenith = mirrorZenith;
+		copy.effectDrawn = effectDrawn;
+		copy.glintDrawn = glintDrawn;
+		copy.mirrorDrawn = mirrorDrawn;
 		copy.drawPart = drawPart;
 		// Replaced, never changed: shared.
 		copy.animFrames = animFrames;
@@ -1003,6 +1012,36 @@ public class ParallaxLayer
 	 */
 	public boolean glints()
 	{return kind == Enum_LayerKind.SHADER && glintStrength > 0 && shaderWavelength > 0;}
+
+	/**
+	 * The effect this layer is drawn through at the reader's detail level (r464): its own; SWELL for a MIRROR layer whose
+	 * reflection is not drawn; null for a layer drawn without one, any but a SHADER layer, or a SHADER layer below its
+	 * effect's level, drawn as its image. What an engine's {@link LayerEffects} draws: never {@link #getShaderEffect}.
+	 */
+	public Enum_ShaderEffect getDrawnEffect()
+	{
+		if (kind != Enum_LayerKind.SHADER || !effectDrawn)
+			return null;
+		return shaderEffect == Enum_ShaderEffect.MIRROR && !mirrorDrawn ? Enum_ShaderEffect.SWELL : shaderEffect;
+	}
+
+	/**
+	 * Whether its glint is drawn at the reader's detail level: it {@link #glints}, and its effect and glint are drawn.
+	 * Its periods stay a glinting layer's whatever the level, so the water does not jump when a game changes it.
+	 */
+	public boolean drawsGlint()
+	{return glints() && effectDrawn && glintDrawn;}
+
+	/**
+	 * What the reader's detail level draws of this layer's effect (r464): its effect, its glint, a MIRROR's reflection.
+	 * The reader sets it before each draw from the layer's {@link LayerDetail}.
+	 */
+	public void setDetailDrawn(boolean effect, boolean glint, boolean mirror)
+	{
+		effectDrawn = effect;
+		glintDrawn = glint;
+		mirrorDrawn = mirror;
+	}
 
 	/** How many wavelengths the effect runs across before it repeats: the effect's own, FOG's with it when glinting. */
 	private int periodAcross()

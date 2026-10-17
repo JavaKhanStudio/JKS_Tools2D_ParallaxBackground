@@ -57,7 +57,7 @@ extends CanvasLayer
 ##
 ## A page with a planet (PlaxPage.planet_radius, r277, r347) is the side of a world turning round one centre under the
 ## view: its IMAGE, SHADER and SEQUENCE layers are wrapped round it alike, each turning at its own speed, and what
-## stands up leans out from it (PlaxPlanet).
+## stands up leans out from it (PlaxPlanet). How much of a page is drawn: detail, set_layer_detail (PlaxDetail).
 ##
 ## Each layer is drawn by its own child of the gradients' canvas, in draw order, so that a particle node can sit between
 ## two of them. Not ported yet: atlas regions packed rotated.
@@ -84,6 +84,11 @@ extends CanvasLayer
 	set(value):
 		dolly = value
 		_rescale()
+## ParallaxPageReader.setDetail: how much of the page is drawn, HIGH as stored, each layer by its rule (PlaxDetail).
+@export var detail: PlaxDetail.Level = PlaxDetail.Level.HIGH:
+	set(value):
+		detail = value
+		PlaxDetail.apply_all(self)
 ## Scroll speed for the next frame only, then reset (e.g. from the player's movement).
 var speed_consumable_x := 0.0
 var speed_consumable_y := 0.0
@@ -149,6 +154,9 @@ var _panorama: Array = []
 var _eye_y := 0.0
 # What draws each EMPTY layer, by layer name.
 var _hooks := {}
+# From which levels each layer named is drawn (set_layer_detail), and every other layer (PlaxDetail.rule_of).
+var _details := {}
+var _default_detail := PlaxDetail.DEFAULT
 # Seconds acted: the SHADER layers' clock, shared by both pages of a cross-fade (ParallaxPageReader.effectTime).
 var _effect_time := 0.0
 # The game's seed for the SEQUENCE layers, when _has_sequence_seed (set_sequence_seed).
@@ -266,6 +274,22 @@ func set_layer_hook(layer_name: String, hook: Callable) -> void:
 	else:
 		_hooks.erase(layer_name)
 	_redraw()
+
+
+## ParallaxPageReader.setLayerDetail: the layers named `layer_name` drawn from the levels `rule` names over
+## PlaxDetail.DEFAULT ({"shown": ..., "effect": ..., "glint": ..., "mirror": ...}); empty: as every other layer.
+func set_layer_detail(layer_name: String, rule: Dictionary) -> void:
+	if rule.is_empty():
+		_details.erase(layer_name)
+	else:
+		_details[layer_name] = PlaxDetail.rule(rule)
+	PlaxDetail.apply_all(self)
+
+
+## ParallaxPageReader.setLayerDefaultDetail: every layer not named drawn from the levels `rule` names over the default.
+func set_layer_default_detail(rule: Dictionary) -> void:
+	_default_detail = PlaxDetail.rule(rule)
+	PlaxDetail.apply_all(self)
 
 
 ## ParallaxPageReader.reveal: the next sighting of every LURKER layer named `layer_name` shows its figure, at once when
@@ -395,6 +419,7 @@ func _build_layers(from_page: PlaxPage, from_atlas: PlaxAtlas) -> Array[Dictiona
 		l.zenith = Vector3(from_page.top_half_top.r, from_page.top_half_top.g, from_page.top_half_top.b)
 		if l.haze > 0 and l.model.kind in ["IMAGE", "SEQUENCE", "FLOOR", "LURKER"]:
 			l.canvas.material = PlaxEffects.material("PLAIN")
+		PlaxDetail.apply(l, detail, PlaxDetail.rule_of(self, l))
 	return built
 
 
@@ -787,7 +812,8 @@ func _set_modulate(alpha: float) -> bool:
 
 ## A layer's canvas draws it; a layer at alpha 0 is not drawn. `patches`: its patches' canvas draws them (_add_canvas).
 func _draw_layer(l: Dictionary, patches := false) -> void:
-	_part = (2 if patches else 1) if l.has("anim_canvas") else 0
+	# Drawn plain at its detail level, a SHADER layer's patches go with its tiles; hidden, its canvases (PlaxDetail).
+	_part = (2 if patches else 1) if l.has("anim_canvas") and l.get("drawn_effect", "") != "" else 0
 	if page != null and l.model.kind == "LURKER":
 		# The lurkers against this view; a figure not there is not drawn (PlaxLurker).
 		_lurker_zoom = zoom
@@ -842,7 +868,7 @@ func _draw_layer(l: Dictionary, patches := false) -> void:
 			l.dissolve_plain = true
 		PlaxEffects.set_grade(_target.material, _style.color,
 				_style.grade_at(_new_alpha, l.slot, maxi(layers.size(), transfer_layers.size())))
-	if m.kind == "SHADER":
+	if m.kind == "SHADER" and l.drawn_effect != "":
 		PlaxEffects.apply(_target.material, l, _effect_time, view_w, view_h, anchor.x, anchor.y,
 				Vector2(1.0 if _repeat_x else 0.0, 1.0 if _repeat_y else 0.0))
 	if _target.material:

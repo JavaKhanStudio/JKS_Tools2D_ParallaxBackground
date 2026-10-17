@@ -126,6 +126,15 @@ repair.
   its numbers in `GdxLayerEffects.mirrorUniforms`, its glint's sun `MIRROR_SUN_*` (every other effect keeps `GLINT_SUN_*`).
   Change it and run both frame checks on `engines/rounds/shaders` (s12-s14) and `engines/rounds/glint` (g05);
   `tools/r455-mirror/strength.sh` proves the round sees the mirror past SWELL, `mutate.sh` a wrong Godot or jME copy.
+- Detail levels (r464, never stored: no format bump): `ParallaxPageReader.setDetail(Enum_Detail)` (the heart's and
+  jME's `PlaxBackground.setDetail` forward to it) and per layer name a `LayerDetail` (`setLayerDetail`,
+  `setLayerDefaultDetail`): from which level a layer is shown, its effect, its glint, a MIRROR's reflection drawn. The
+  reader sets each layer's `setDetailDrawn` before drawing it; every engine's effects draw `ParallaxLayer.getDrawnEffect`
+  (SWELL for a MIRROR below its mirror's level, null drawn plain) and `drawsGlint`, never `getShaderEffect`/`glints`,
+  which keep the periods. Godot's copy is `plax_detail.gd` (`bg.detail`, `set_layer_detail`, the canvases' materials
+  and visibility). Change it and run both frame checks on `engines/rounds/shaders` (s15-s18) and `engines/rounds/glint`
+  (g06, g07) and `DetailCases`; `tools/r464-detail/strength.sh` proves the rounds see a reader ignoring the level or the
+  rules, `mutate.sh` a wrong Godot, jME or core copy.
 - A page's depth fog (`fogStrength`, `fogColor`, format 10; format 9's `shaderHaze` is read as its strength) ends
   every one of those shaders in `hazed()`, toward the fog's colour (`u_fog`), and draws an IMAGE or SEQUENCE layer
   through a `PLAIN` one (jME's `Plain` define, Godot's `"PLAIN"` material); libGDX instead draws them all through one
@@ -193,7 +202,7 @@ repair.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,
-  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`, `LurkerCases`, `DepthCases`), their builders in `ReaderFixtures`; a new subject's class goes in
+  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`, `LurkerCases`, `DepthCases`, `DetailCases`), their builders in `ReaderFixtures`; a new subject's class goes in
   `BrowserSuite.all()`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)

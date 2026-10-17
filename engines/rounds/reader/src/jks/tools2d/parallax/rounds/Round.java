@@ -6,7 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -14,6 +16,8 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 
+import jks.tools2d.parallax.Enum_Detail;
+import jks.tools2d.parallax.LayerDetail;
 import jks.tools2d.parallax.TransfertStyle;
 
 /**
@@ -37,7 +41,10 @@ import jks.tools2d.parallax.TransfertStyle;
  * still and saves every frame of those seconds, {@code <id>-f0000.png} on (r239: tools/ai-film.sh makes them a video;
  * libGDX only); {@code "zoom": [1, 0.5]} zooms the camera straight from the first at 0 s to the second at 12 s, set
  * before each still, and {@code "dolly": true} dollies it ({@code ParallaxPageReader.setDolly}, r278,
- * engines/rounds/dolly).
+ * engines/rounds/dolly). {@code "detail": "MEDIUM"} draws it at that {@link Enum_Detail}
+ * ({@code ParallaxPageReader.setDetail}, r464), {@code "detailDefault": {"mirror": "MEDIUM"}} every layer from those
+ * levels ({@code setLayerDefaultDetail}, keys shown, effect, glint and mirror) and {@code "layerDetail": {"mist":
+ * {"shown": "MEDIUM"}}} the layers of that name ({@code setLayerDetail}; engines/rounds/shaders, engines/rounds/glint).
  */
 public final class Round
 {
@@ -63,6 +70,10 @@ public final class Round
 		/** The camera's zoom at 0 s and at 12 s, and whether the reader dollies it. */
 		public float zoomFrom = 1, zoomTo = 1;
 		public boolean dolly;
+		/** The level the scene is drawn at, every layer's rule, and the named layers' own (r464). */
+		public Enum_Detail detail = Enum_Detail.HIGH;
+		public LayerDetail detailDefault = LayerDetail.DEFAULT;
+		public final Map<String, LayerDetail> layerDetails = new LinkedHashMap<>();
 
 		/** The scene's zoom {@code at} seconds in: straight from its first at 0 s to its second at 12 s. */
 		public float zoomAt(float at)
@@ -111,6 +122,12 @@ public final class Round
 				scene.zoomTo = zoom.getFloat(1);
 			}
 			scene.dolly = s.getBoolean("dolly", false);
+			scene.detail = Enum_Detail.valueOf(s.getString("detail", "HIGH"));
+			scene.detailDefault = layerDetail(s.get("detailDefault"));
+			JsonValue layerDetails = s.get("layerDetail");
+			if (layerDetails != null)
+				for (JsonValue d = layerDetails.child; d != null; d = d.next)
+					scene.layerDetails.put(d.name, layerDetail(d));
 			JsonValue film = s.get("film");
 			if (film != null)
 			{
@@ -178,6 +195,23 @@ public final class Round
 		if ("FOG_CREEP".equals(kind))
 			return TransfertStyle.fogCreep(Color.valueOf(style.getString("color", "ffffff")), style.getFloat("stagger", 0));
 		return TransfertStyle.FADE;
+	}
+
+	/** A {@code {"shown": "HIGH", "effect": ..., "glint": ..., "mirror": ...}} over {@link LayerDetail#DEFAULT}; none: it. */
+	static LayerDetail layerDetail(JsonValue levels)
+	{
+		LayerDetail detail = LayerDetail.DEFAULT;
+		if (levels == null)
+			return detail;
+		if (levels.has("shown"))
+			detail = detail.shownFrom(Enum_Detail.valueOf(levels.getString("shown")));
+		if (levels.has("effect"))
+			detail = detail.effectFrom(Enum_Detail.valueOf(levels.getString("effect")));
+		if (levels.has("glint"))
+			detail = detail.glintFrom(Enum_Detail.valueOf(levels.getString("glint")));
+		if (levels.has("mirror"))
+			detail = detail.mirrorFrom(Enum_Detail.valueOf(levels.getString("mirror")));
+		return detail;
 	}
 
 	/** The n-th region of that name, in atlas order, as a page names its layers' images: a hook's region. */

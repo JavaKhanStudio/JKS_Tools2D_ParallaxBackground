@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.Disposable;
 
-import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 
 /**
@@ -351,10 +350,11 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fog, Color fogColor)
 	{return begin(batch, layer, phase, fog, fogColor.r, fogColor.g, fogColor.b);}
 
-	/** A SHADER layer through its effect, any other through none; both mixed toward the fog's colour by {@code haze}. */
+	/** A SHADER layer through the effect its detail level draws ({@link ParallaxLayer#getDrawnEffect}), any other through none; both mixed toward the fog's colour by {@code haze}. */
 	private boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze, float fogR, float fogG, float fogB)
 	{
-		int index = layer.getKind() == Enum_LayerKind.SHADER ? layer.getShaderEffect().ordinal() : PLAIN_INDEX;
+		Enum_ShaderEffect drawn = layer.getDrawnEffect();
+		int index = drawn != null ? drawn.ordinal() : PLAIN_INDEX;
 		ShaderProgram program = program(index);
 		if (program == null)
 			return false;
@@ -383,7 +383,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		program.setUniformf(dissolve[index], dissolveSide, dissolveRamp, dissolveSoftness, dissolveDrift);
 		program.setUniformf(cells[index], cellsX, cellsY);
 		program.setUniformf(grade[index], gradeR, gradeG, gradeB, Math.max(0, Math.min(1, gradeAmount)));
-		if (layer.glints())
+		if (layer.drawsGlint())
 		{
 			glintUniforms(layer, glints);
 			program.setUniformf(glint[index], glints[0], glints[1], glints[2], glints[3]);
@@ -399,7 +399,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 			glintOff[index] = true;
 		}
 		program.setUniformf(wrap[index], wrapX, wrapY);
-		if (layer.getKind() == Enum_LayerKind.SHADER && layer.getShaderEffect() == Enum_ShaderEffect.MIRROR)
+		if (drawn == Enum_ShaderEffect.MIRROR)
 		{
 			mirrorUniforms(layer, mirrors);
 			program.setUniformf(mirror[index], mirrors[0], mirrors[1], mirrors[2], mirrors[3]);
@@ -413,7 +413,8 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	@Override
 	public boolean beginPatch(Batch batch, ParallaxLayer layer)
 	{
-		int index = layer.getKind() == Enum_LayerKind.SHADER ? layer.getShaderEffect().ordinal() : PLAIN_INDEX;
+		Enum_ShaderEffect drawn = layer.getDrawnEffect();
+		int index = drawn != null ? drawn.ordinal() : PLAIN_INDEX;
 		ShaderProgram program = programs[index];
 		if (program == null || batch.getShader() != program || layer.getAnimDrawnRegion() == null)
 			return false;
@@ -550,7 +551,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 		out[5] = layer.getHeight() * layer.getPackedHeightRatio();
 		boolean on = layer.getShaderWavelength() > 0;
 		float amplitude = layer.getShaderAmplitude();
-		if (layer.getShaderEffect() == Enum_ShaderEffect.FOG)
+		if (layer.getDrawnEffect() == Enum_ShaderEffect.FOG)
 			amplitude = Math.max(0, Math.min(1, amplitude));
 		out[6] = on ? amplitude : 0;
 		out[7] = on ? layer.getShaderWavelength() : 1;
@@ -586,7 +587,7 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 
 	/**
 	 * A SHADER layer's glint (r408), the same in every engine, into {@code out[0..13]}: u_glint, its strength (0: none, a
-	 * layer that does not {@link ParallaxLayer#glints}), {@link #GLINT_DENSITY}, its pulses on the reader's clock
+	 * layer that does not {@link ParallaxLayer#glints} or whose detail level draws none, {@link ParallaxLayer#drawsGlint}), {@link #GLINT_DENSITY}, its pulses on the reader's clock
 	 * ({@link #GLINT_TWINKLE} a second, wrapped at a whole number) and {@link #GLINT_CREST}; u_sun, the sun's column;
 	 * u_glintA, the two waves that pick which pieces of the crests are lit, their whole turns over the effect's period
 	 * across and up; u_glintB, the third's, that sets when each piece pulses, then the periods, in world units. Each wave is
@@ -594,13 +595,14 @@ public class GdxLayerEffects implements LayerEffects, Disposable
 	 */
 	public static float[] glintUniforms(ParallaxLayer layer, float[] out)
 	{
-		boolean on = layer.glints();
+		boolean on = layer.drawsGlint();
 		float periodX = on ? layer.getShaderPeriod() : 1, periodY = on ? layer.getShaderPeriodY() : 1;
 		out[0] = on ? layer.getGlintStrength() : 0;
 		out[1] = GLINT_DENSITY;
 		out[2] = (float) (layer.getEffectTime() * GLINT_TWINKLE % 1000.0);
 		out[3] = GLINT_CREST;
-		boolean mirror = layer.getShaderEffect() == Enum_ShaderEffect.MIRROR;
+		// A MIRROR drawn through SWELL at a lower detail level takes SWELL's sun (Simon on r464).
+		boolean mirror = layer.getDrawnEffect() == Enum_ShaderEffect.MIRROR;
 		out[4] = mirror ? MIRROR_SUN_X : GLINT_SUN_X;
 		out[5] = mirror ? MIRROR_SUN_WIDTH : GLINT_SUN_WIDTH;
 		float across = periodX / (2.5f * GLINT_SIZE), up = periodY / 0.9f;

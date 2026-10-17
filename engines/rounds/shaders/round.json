@@ -109,6 +109,43 @@
    "zoom": [0.2, 0.2],
    "name": "mirror-odd-sky",
    "about": "r455: s12's sea through MIRROR under a sky no page would paint (its page's top gradient violet at the horizon, green over the view), a stronger swell (0.3) and shallower water (1.5 units), no glint: the mirror's hue, bent in grey, and its three fine ripples show (a sky white at the horizon, a bend in colour or no ripples fails here, not on s12)"
+  },
+  {
+   "page": "engines/rounds/shaders/s14.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "id": "s15",
+   "name": "detail-medium-mirror",
+   "detail": "MEDIUM",
+   "about": "r464: s14's page at detail MEDIUM: its MIRROR layer drawn through SWELL, the reflection's hue and ripples gone (ParallaxPageReader.setDetail; Godot's PlaxDetail). A reader that ignores the level draws s14 here"
+  },
+  {
+   "page": "engines/rounds/shaders/s09.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "id": "s16",
+   "name": "detail-off-swell",
+   "detail": "OFF",
+   "about": "r464: s09's checker at detail OFF: the SHADER layer drawn as its painting, the squares straight. A reader that ignores the level bends them"
+  },
+  {
+   "page": "engines/rounds/shaders/s14.jplax",
+   "atlasDir": "core/test-data/anim",
+   "zoom": [0.2, 0.2],
+   "id": "s17",
+   "name": "detail-default-keeps-mirror",
+   "detail": "MEDIUM",
+   "detailDefault": {"mirror": "MEDIUM"},
+   "about": "r464: s14's page at MEDIUM, every layer's rule keeping MIRROR's reflection from MEDIUM (setLayerDefaultDetail): drawn as s14. A reader that ignores the rule draws s15"
+  },
+  {
+   "page": "engines/rounds/shaders/s03.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "speedY": 30,
+   "id": "s18",
+   "name": "detail-off-named-mist-hidden",
+   "detail": "OFF",
+   "layerDetail": {"mist": {"shown": "MEDIUM"}},
+   "about": "r464: s03's page at OFF, the layer named mist shown from MEDIUM only (setLayerDetail): no mist, its WAVE and other FOG layers drawn as paintings. A reader that ignores the name draws the mist"
   }
  ]
 }

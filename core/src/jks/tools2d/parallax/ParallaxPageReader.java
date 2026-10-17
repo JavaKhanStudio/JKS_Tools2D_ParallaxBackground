@@ -36,7 +36,9 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * under the view: its IMAGE, SHADER and SEQUENCE layers are wrapped round it alike, each turning at its own speed, and
  * what stands up leans out from it ({@link PlanetBatch}). A LURKER layer's figure appears or vanishes only while
  * nothing of it is on screen: gone at the sighting after one where it was seen, there by chance from its seed, or when
- * the game says ({@link #reveal}; docs/lurker-layers.md).
+ * the game says ({@link #reveal}; docs/lurker-layers.md). A game picks how much of the page is drawn
+ * ({@link #setDetail}, r464): at a lower {@link Enum_Detail} a SHADER layer is drawn without its reflection, its glint or
+ * its effect, and a layer the game names ({@link #setLayerDetail}) not at all.
  */
 public class ParallaxPageReader implements Disposable
 {
@@ -66,6 +68,11 @@ public class ParallaxPageReader implements Disposable
 	private final HashMap<String, LayerHook> hooks = new HashMap<>();
 	/** The batch color before a hook, put back after it. */
 	private final Color hookColor = new Color();
+
+	/** How much of the page is drawn ({@link #setDetail}), and from which levels each layer named is ({@link #setLayerDetail}). */
+	private Enum_Detail detail = Enum_Detail.HIGH;
+	private LayerDetail defaultDetail = LayerDetail.DEFAULT;
+	private final HashMap<String, LayerDetail> details = new HashMap<>();
 
 	/** Draws the SHADER layers: {@link GdxLayerEffects} unless the engine set its own, made when first needed. */
 	private LayerEffects effects;
@@ -672,6 +679,11 @@ public class ParallaxPageReader implements Disposable
 		ParallaxLayer layer = page.get(index);
 		if (layer.kind == Enum_LayerKind.LURKER && !layer.isLurkerThere())
 			return;
+		// What the detail level draws of it: nothing, or its effect, glint and reflection, which the effects read.
+		LayerDetail rule = getLayerDetail(layer.name);
+		if (!rule.shows(detail))
+			return;
+		layer.setDetailDrawn(detail.atLeast(rule.getEffectFrom()), detail.atLeast(rule.getGlintFrom()), detail.atLeast(rule.getMirrorFrom()));
 		float zoom = dolly ? dollyZoom(cameraZoom, incoming ? transferFrontSpeed : frontSpeed, layer) : cameraZoom;
 		Batch drawn = batch;
 		if (zoom != cameraZoom)
@@ -771,7 +783,9 @@ public class ParallaxPageReader implements Disposable
 		// The animated patch's frame, on the clock the effects run on: drawn after each tile (ParallaxLayer.draw). The
 		// glint pulses by it: set before the effect begins.
 		layer.setAnimTime(effectTime);
-		if (pageFog && layer.kind != Enum_LayerKind.SHADER)
+		// A SHADER layer its detail level draws without its effect is drawn as an image (r464).
+		boolean effect = layer.getDrawnEffect() != null;
+		if (pageFog && !effect)
 		{
 			// The page fog's shader, the layer's fog and page in the batch color: no flush from one layer to the next.
 			if (!pageFogOn)
@@ -785,7 +799,7 @@ public class ParallaxPageReader implements Disposable
 		}
 		else
 		{
-			shaded = (layer.kind == Enum_LayerKind.SHADER || fog > 0 || dissolving || grading)
+			shaded = (effect || fog > 0 || dissolving || grading)
 					&& getLayerEffects().begin(batch, layer, layer.getShaderPhase(effectTime), fog, incoming ? transferFogColor : fogColor);
 			if (!shaded)
 			{
@@ -824,7 +838,7 @@ public class ParallaxPageReader implements Disposable
 		else if (tower)
 			// Round its tower in the view's middle, tiled up as the page says; no mirrored copy.
 			towerRows(layer, drawn, originX, originY, packed);
-		else if (shaded && layer.kind == Enum_LayerKind.SHADER && layer.hasAnim())
+		else if (shaded && effect && layer.hasAnim())
 		{
 			// Its patches after all its tiles, through its effect given the frame's region in the layer's (r397): the
 			// effect keeps its samples inside the region it is given, and in the layer's the patch draws the strip.
@@ -1206,6 +1220,45 @@ public class ParallaxPageReader implements Disposable
 
 	public LayerHook getLayerHook(String name)
 	{return hooks.get(name);}
+
+	/**
+	 * How much of the page this reader draws, a player's choice of quality (r464; null: {@link Enum_Detail#HIGH}, the
+	 * default): each layer is drawn, drawn plain or not drawn as its {@link LayerDetail} says at that level, from the
+	 * next draw on, both pages of a cross-fade alike. Never stored in a page. Its layers scroll at every level, so one
+	 * shown again is where it would have been.
+	 */
+	public void setDetail(Enum_Detail level)
+	{detail = level == null ? Enum_Detail.HIGH : level;}
+
+	public Enum_Detail getDetail()
+	{return detail;}
+
+	/**
+	 * From which levels the layers named {@code name}, in this page and the pages it fades into, are drawn
+	 * ({@link #setDetail}); null: as every other layer ({@link #setLayerDefaultDetail}). For instance a flock shown at
+	 * HIGH only, {@code setLayerDetail("birds", LayerDetail.DEFAULT.shownFrom(Enum_Detail.HIGH))}.
+	 */
+	public void setLayerDetail(String name, LayerDetail layerDetail)
+	{
+		if (layerDetail == null)
+			details.remove(name);
+		else
+			details.put(name, layerDetail);
+	}
+
+	/** The {@link LayerDetail} a layer named so is drawn by: its own, or every layer's ({@link #getLayerDefaultDetail}). */
+	public LayerDetail getLayerDetail(String name)
+	{
+		LayerDetail own = name == null ? null : details.get(name);
+		return own == null ? defaultDetail : own;
+	}
+
+	/** From which levels every layer the game did not name is drawn; null: {@link LayerDetail#DEFAULT}. */
+	public void setLayerDefaultDetail(LayerDetail layerDetail)
+	{defaultDetail = layerDetail == null ? LayerDetail.DEFAULT : layerDetail;}
+
+	public LayerDetail getLayerDefaultDetail()
+	{return defaultDetail;}
 
 	/**
 	 * Draws every SEQUENCE layer's cycle, in this reader's pages and the pages it fades into, from the game's

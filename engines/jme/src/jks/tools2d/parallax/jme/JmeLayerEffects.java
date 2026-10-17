@@ -14,7 +14,6 @@ import com.jme3.math.Vector4f;
 import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
-import jks.tools2d.parallax.pages.Enum_LayerKind;
 import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 
 /**
@@ -101,7 +100,7 @@ public class JmeLayerEffects implements LayerEffects
 	{
 		if (!(batch instanceof JmeBatch))
 			return false;
-		Enum_ShaderEffect kind = layer.getKind() == Enum_LayerKind.SHADER ? layer.getShaderEffect() : null;
+		Enum_ShaderEffect kind = layer.getDrawnEffect();
 		Shaded s = shaded.get(layer);
 		if (s == null || s.kind != kind)
 		{

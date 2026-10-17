@@ -3,13 +3,12 @@ package jks.tools2d.parallax;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 
-import jks.tools2d.parallax.pages.Enum_LayerKind;
-
 /**
  * What draws a SHADER layer through its {@link jks.tools2d.parallax.pages.Enum_ShaderEffect}, for one engine:
  * {@link GdxLayerEffects} with libGDX's shaders (the default of a {@link ParallaxPageReader}), jME's JmeLayerEffects
  * with a material on JmeBatch's meshes. The reader calls {@link #begin} before the layer's tiles and {@link #end} after
- * them, every frame: allocate nothing.
+ * them, every frame: allocate nothing. A layer is drawn through {@link ParallaxLayer#getDrawnEffect} and its glint by
+ * {@link ParallaxLayer#drawsGlint}, what the reader's detail level leaves of them (r464), never its stored effect.
  */
 public interface LayerEffects
 {
@@ -22,10 +21,10 @@ public interface LayerEffects
 	/**
 	 * {@link #begin(Batch, ParallaxLayer, float)}, with the layer's color then mixed toward the mist's white
 	 * ({@link GdxLayerEffects#HAZE_R}, G, B) by {@code haze}, 0 to 1, its alpha kept. One that draws no haze draws the
-	 * SHADER layers' effects only.
+	 * SHADER layers' effects only, those its detail level draws ({@link ParallaxLayer#getDrawnEffect}).
 	 */
 	default boolean begin(Batch batch, ParallaxLayer layer, float phase, float haze)
-	{return layer.getKind() == Enum_LayerKind.SHADER && begin(batch, layer, phase);}
+	{return layer.getDrawnEffect() != null && begin(batch, layer, phase);}
 
 	/**
 	 * {@link #begin(Batch, ParallaxLayer, float)}, with the layer's color then mixed toward {@code fogColor} by

@@ -291,6 +291,17 @@ More:
   moving in would see them (docs/depth-tricks.md). Nothing is stored in the page; Godot's `bg.zoom` and `bg.dolly`, and
   jME's `bg.setZoom(z)` with `bg.getReader().setDolly(true)`, draw the same (`engines/rounds/dolly`). A dollied
   layer is drawn through a batch that scales its quads into the camera's view: no flush, nothing allocated.
+- **Detail levels, a player's quality setting (r464):** `heart.setDetail(Enum_Detail.MEDIUM)` (or
+  `parallaxReader.setDetail`) picks how much of the page is drawn, at run time, from the next frame on: `HIGH` (the
+  default) as the page stores it; `MEDIUM` without a `MIRROR` layer's reflection, the water drawn through `SWELL`, its
+  glint in `SWELL`'s sun; `OFF` the paintings alone, every `SHADER` layer drawn as its image (the page fog kept). Each
+  layer follows a `LayerDetail`, the levels from which it is shown, its effect, its glint and its reflection are
+  drawn; a game names its own for any layer: `heart.setLayerDetail("birds",
+  LayerDetail.DEFAULT.shownFrom(Enum_Detail.HIGH))` draws the flock at `HIGH` only, `LayerDetail.DEFAULT.mirrorFrom(
+  Enum_Detail.MEDIUM)` keeps a sea's reflection at `MEDIUM`, and `parallaxReader.setLayerDefaultDetail` changes every
+  other layer's. A hidden layer still scrolls. Nothing is stored in the page; Godot's `bg.detail =
+  PlaxDetail.Level.MEDIUM` and `bg.set_layer_detail("birds", {"shown": PlaxDetail.Level.HIGH})`, and jME's
+  `bg.setDetail`/`bg.setLayerDetail`, draw the same (`engines/rounds/shaders` s15-s18, `engines/rounds/glint` g06, g07).
 - **How far each layer is (r444):** a speed ratio is one over a distance, so `ParallaxDepth.distanceOf(page, i)` gives
   layer i's distance from the camera in front distances: the page's fastest speed ratio X over its own (the front at 1,
   a layer at a quarter of its speed at 4, a still one infinitely far). The speeds give every distance but one, the
@@ -366,6 +377,8 @@ bg.tint_to(Color(0.5, 0.55, 0.8), 3.0)                                          
 bg.set_layer_hook("birds", func(canvas, rect, modulate, layer): canvas.draw_texture_rect(bird, rect, false, modulate))
 bg.dolly = true                            # optional: a zoom scales each layer by its depth
 bg.zoom = 0.8                              # as a libGDX camera's zoom: below 1 zooms in
+bg.detail = PlaxDetail.Level.MEDIUM        # optional: a player's quality setting (OFF, MEDIUM, HIGH)
+bg.set_layer_detail("birds", {"shown": PlaxDetail.Level.HIGH})                       # a layer drawn at HIGH only
 ```
 
 An `EMPTY` layer's hook gets the canvas it draws on, the tile's box in screen pixels and the page's tint at the
@@ -424,6 +437,8 @@ bg.tintTo(new Color(0.5f, 0.55f, 0.8f, 1), 3);
 bg.setLayerHook("birds", (batch, layer, x, y, w, h) -> batch.draw(birdRegion, x, y, w, h));  // an EMPTY layer
 bg.getReader().setDolly(true);              // optional: a zoom scales each layer by its depth
 bg.setZoom(0.8f);                           // as a libGDX camera's zoom: below 1 zooms in
+bg.setDetail(Enum_Detail.MEDIUM);           // optional: a player's quality setting (OFF, MEDIUM, HIGH)
+bg.setLayerDetail("birds", LayerDetail.DEFAULT.shownFrom(Enum_Detail.HIGH));  // a layer drawn at HIGH only
 ```
 
 The scrolling, tiling, cross-fade and tint are this library's own `ParallaxPageReader`; jME only draws the quads, and
@@ -514,6 +529,7 @@ core/src/jks/tools2d/parallax/       translatable by GWT (Parallax.gwt.xml)
     ParallaxParticles             a PARTICLES layer's libGDX ParticleEffect, drawn per tile, tinted, allocation-free
     GdxLayerEffects               a SHADER layer's effects as libGDX batch shaders (LayerEffects: the engine's seam)
     EffectSupport                 which engine draws which layer kind and effect, and why not
+    Enum_Detail, LayerDetail      a game's detail level and each layer's levels (ParallaxPageReader.setDetail)
     pages/                        saved models (WholePage_Model, Page_Model, Parallax_Model), Utils_Page_Json (load JSON)
     side/SquareBackground         the gradient squares
 core/src-jvm/jks/tools2d/parallax/   same packages and jar, JVM only

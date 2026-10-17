@@ -45,6 +45,12 @@ A reader is three pieces, and the third is where the work is:
      `core/src/.../GdxLayerEffects.java`: the same numbers (`GdxLayerEffects.uniforms`), the same lines, the phase from
      the seconds `act` has stepped, shared by both pages of a cross-fade. An effect the reader does not know fails the
      load. `engines/rounds/shaders` is its round.
+   - A game sets a detail level (r464, `ParallaxPageReader.setDetail`, never stored): each layer is shown, its effect,
+     its glint and a `MIRROR`'s reflection drawn from the levels its `LayerDetail` names (by default shown always, the
+     effect and glint from `MEDIUM`, the reflection at `HIGH`); below its reflection's level a `MIRROR` is drawn
+     through `SWELL` in `SWELL`'s sun, below its effect's the layer is drawn as an `IMAGE` one (its fog kept), and a
+     layer not shown is not drawn but scrolls. Godot's copy is `plax_detail.gd`; the shaders round's s15-s18 and the
+     glint round's g06, g07 are its scenes.
    - The page is anchored to the screen, not to the game camera.
    - A cross-fade matches the two pages from their FRONT layer: each incoming layer takes the distance its outgoing
      counterpart has scrolled from its decal; an incoming page with more layers has back layers with no counterpart,
@@ -69,6 +75,8 @@ A reader is three pieces, and the third is where the work is:
   resized; the background draws them.
 - `plax_lurker.gd` (`PlaxLurker`): a `LURKER` layer's sightings (`ParallaxPageReader.sightLurkers`): whether its
   figure is drawn, switched only while nothing of it is on screen; `PlaxBackground.reveal_lurker(name)`.
+- `plax_detail.gd` (`PlaxDetail`): the detail levels (`ParallaxPageReader.setDetail`, r464): what `bg.detail` and
+  `bg.set_layer_detail(name, rule)` leave of each layer, its canvas shown or not and its material.
 - `plax_effects.gd` (`PlaxEffects`) and `plax_transfert_style.gd` (`PlaxTransfertStyle`): the `SHADER` layers' effects
   and the page fog, and how a cross-fade is drawn.
 
