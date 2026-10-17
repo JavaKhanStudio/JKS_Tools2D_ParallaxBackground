@@ -1,5 +1,5 @@
 {
-  "about": "The hills' canopy gate per theme (r441). A theme takes the first entry whose 'match' words it contains (whole words, any case), else 'default'. gate: whether ai_page.canopy refuses a hills strip and paints the next seed (up to tries); off = the first seed layer.py takes. status: tested = measured (seeds, where), untested = an estimate, its 'why' the reasoning. strips: hills strips painted for the layer (the gate's cost; ~18 s each warm, ~45 s with the inpaint model's load). recommend: ai_page flags that suit the theme (examples.sh's, where it has one). A new measure: tools/r441-hills-themes/themes.py OUT --only NAME, then edit the entry and its status.",
+  "about": "The hills' canopy gate per theme (r441). A theme takes the first entry whose 'match' words it contains (whole words, any case), else 'default'; a word inside a longer match of another entry does not count ('palm trees' is the beach's, not the forest's 'trees': r481). gate: whether ai_page.canopy refuses a hills strip and paints the next seed (up to tries); off = the first seed layer.py takes. status: tested = measured (seeds, where), untested = an estimate, its 'why' the reasoning. strips: hills strips painted for the layer (the gate's cost; ~18 s each warm, ~45 s with the inpaint model's load). recommend: ai_page flags that suit the theme (examples.sh's, where it has one). A new measure: tools/r441-hills-themes/themes.py OUT --only NAME, then edit the entry and its status.",
   "themes": [
     {"name": "forest", "match": ["forest", "woods", "wood", "woodland", "trees", "grove", "pine", "pines"],
      "gate": true, "tries": 10, "status": "tested",
@@ -38,7 +38,7 @@
      "looks": "flat green hills on 7, big round leaf crowns across the width on 7024, a few giant leaves on 7025",
      "why": "the gate's pick (7024, a jungle canopy) beats the first seed's bare hills",
      "recommend": "default kinds; deep green --colours"},
-    {"name": "beach", "match": ["beach", "coast", "shore", "island", "tropical"],
+    {"name": "beach", "match": ["beach", "coast", "shore", "island", "tropical", "palm trees", "palm tree", "palms"],
      "gate": false, "tries": 1, "status": "tested", "seeds": "7020-7029 (r457, 'tropical beach, warm sunny afternoon', default kinds)",
      "pass": 0.0, "strips": 11,
      "looks": "green mounds over a sand or grass band, no tree; the fallback (7024) no better than 7020",

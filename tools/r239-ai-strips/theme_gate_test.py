@@ -41,6 +41,17 @@ class ThemeGateTest(unittest.TestCase):
         self.assertEqual(themes.theme_entry("moonlit pine forest at night")["name"], "forest")
         self.assertEqual(themes.theme_entry("snowy pine valley at dawn")["name"], "forest")
 
+    def test_a_word_inside_another_entry_s_longer_match_does_not_count(self):
+        # r481: examples.sh's beach took the forest's entry by its "palm trees", and with it the canopy gate.
+        self.assertEqual(themes.theme_entry("tropical beach, palm trees, warm sunny afternoon")["name"], "beach")
+        self.assertEqual(themes.theme_entry("a tropical forest at dawn")["name"], "jungle")
+        self.assertEqual(themes.theme_entry("forest by the shore")["name"], "forest")
+        self.assertEqual(themes.theme_entry("night forest")["name"], "forest")
+
+    def test_examples_sh_s_themes_take_their_entries(self):
+        self.assertEqual(themes.theme_entry("misty pine forest in the mountains at dawn")["name"], "forest")
+        self.assertEqual(themes.theme_entry("post-apocalyptic ruined city, dusty orange haze, desolate")["name"], "ruins")
+
     def test_a_word_inside_another_does_not_match(self):
         self.assertEqual(themes.theme_entry("a waterfall over the driftwood")["name"], "default")
 

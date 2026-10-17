@@ -20,11 +20,19 @@ def load(path=TABLE):
 
 
 def theme_entry(theme, entries=None):
-    """The first entry one of whose match words (or phrases) is in the theme, whole, any case; else 'default'."""
+    """The first entry one of whose match words (or phrases) is in the theme, whole, any case; else 'default'.
+
+    A match inside a longer match of another entry does not count (r481): "palm trees" is the beach's, so its "trees"
+    is not the forest's, and "tropical forest" is the jungle's, not the forest's nor the beach's. Past that, the list's
+    order decides: "forest by the shore" stays the forest's, "night forest" too.
+    """
     entries = load() if entries is None else entries
-    for e in entries:
-        if any(re.search(rf"(?<![\w-]){re.escape(w)}(?![\w-])", theme, re.IGNORECASE) for w in e["match"]):
-            return e
+    hits = [(i, m.start(), m.end()) for i, e in enumerate(entries) for w in e["match"]
+            for m in re.finditer(rf"(?<![\w-]){re.escape(w)}(?![\w-])", theme, re.IGNORECASE)]
+    kept = [i for i, a, b in hits
+            if not any(j != i and c <= a and b <= d and d - c > b - a for j, c, d in hits)]
+    if kept:
+        return entries[min(kept)]
     return next(e for e in entries if e["name"] == "default")
 
 
