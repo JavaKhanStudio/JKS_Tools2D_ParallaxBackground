@@ -5,7 +5,7 @@
 # Controls: the view (the page, or without the pines), the camera's scroll, each sun's side and height (sliders, or the
 # sun dragged in the sky), the second sun on or off, the depth between two layers, how much a shadow moves with the
 # layer it falls on, its softness and darkness, the rays past the ridges (strength, length), the sun behind you (its
-# shadows laid on the ground in perspective).
+# shadows laid on the ground in perspective, and the relief: the flanks turned to it lit).
 #   tools/shadow-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/shadow-lab.sh --shot F.png    one still, headless (6 s in)
 #   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/two.png (both suns)
@@ -18,7 +18,8 @@
 #                                       panel zooms instead), turns sun 2 on, clicks, fails unless the JSON names every
 #                                       control and those moved; then the day, the phone tap, the lift, the sun behind
 #                                       you (its shadows slant away from its side) and the rays (none round a disc the
-#                                       range hides, a glare round a clear one: tools/r425-shadow-light/mutate.sh); F is the page
+#                                       peaks hide, a glare round a clear one), the sun behind the far peaks and the relief
+#                                       lighting the sun's side (tools/r425-shadow-light/mutate.sh); F is the page
 # SHADOW_DEBUG=DIR: --copy saves the crops its slant and rays checks measure in DIR.
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python
 # Playwright and ffmpeg.
@@ -154,7 +155,7 @@ with sync_playwright() as p:
         import json
         got = json.loads(page.input_value("#shadow-copy-json"))
         keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "depth", "withReceiver",
-                "softness", "darkness", "liftFrom", "liftHigh", "rays", "rayLength", "dayLength"}
+                "softness", "darkness", "liftFrom", "liftHigh", "rays", "rayLength", "dayLength", "relief", "reliefWidth"}
         changed = got["changed"]
         if (set(got["settings"]) != keys or set(changed) != {"sun1Side", "sun1Height", "sun2On"}
                 or changed["sun1Side"]["started"] != -40 or not changed["sun1Side"]["now"] > -40
@@ -272,13 +273,13 @@ with sync_playwright() as p:
             return float((gx * gy).sum() / max(1e-9, np.sqrt((gx * gx).sum() * (gy * gy).sum()))), float(d.mean())
         # The lift's check left the sun in the sky: behind you again.
         page.click("#shadow-behind")
-        for key, value in (("darkness", 1), ("liftFrom", 30), ("liftHigh", 40)):
+        for key, value in (("darkness", 1), ("liftFrom", 30), ("liftHigh", 40), ("relief", 0)):
             page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", str(value))
         left, right = slant(-40), slant(40)
         print("the sun behind you, 10 up: the shadows' slant %+.2f with the sun on the left, %+.2f on the right (A darker by %.2f, %.2f)" % (left[0], right[0], left[1], right[1]))
         if not (left[0] > 0.1 and right[0] < -0.1):
             sys.exit("the sun behind you: its shadows do not run away from its side")
-        # The rays: the sun in the sky, deep behind the range, against just clear of it: A with rays against without.
+        # The rays: the sun in the sky, deep behind the peaks, against clear of them: A with rays against without.
         page.click("#shadow-behind")
         def at(height):
             page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(height))
@@ -309,10 +310,54 @@ with sync_playwright() as p:
             return float(np.abs(lit - plain)[max(0, row - r):row + r, col - r:col + r].mean())
         # The camera still: the two shots are half a second apart.
         page.eval_on_selector("[data-key=cameraScroll]", "e => { e.value = '0'; }")
-        hidden, clear = rays_at(-6), rays_at(12)
-        print("rays: round the disc, A brighter by %.2f/255 with the sun deep behind the range, %.2f just clear of it" % (hidden, clear))
+        hidden, clear = rays_at(-6), rays_at(18)
+        print("rays: round the disc, A brighter by %.2f/255 with the sun deep behind the peaks, %.2f clear of them" % (hidden, clear))
         if not (clear > 20 and hidden < 0.2 * clear):
             sys.exit("the rays: %.2f hidden, %.2f clear round the disc (want clear over 20, hidden under a fifth of it)" % (hidden, clear))
+        # The sun behind every layer (Simon at 23:35: "you did not show the sun behind the last layer but the one before
+        # that"): 8 degrees up, the disc is under every valley of the far peaks, so wherever it is across the view, B
+        # round it is as with the sun out of the picture (60 up). Drawn over the far peaks, it shows where the range is
+        # low, by tens of /255.
+        def b_round(side, height):
+            import math
+            page.eval_on_selector("[data-key=sun1Side]", "(e, v) => { e.value = v; }", str(side))
+            at(height)
+            b = panels()[1]
+            a = math.radians(side)
+            x = 20 + 20 * math.tan(a)
+            y = 8.75 + 20 * math.tan(math.radians(8)) / math.cos(a)
+            col, row = round(x / 40 * b.shape[1]), round((1 - y / 22.5) * (b.shape[0] + 40)) - 40
+            r = round(0.7 / 40 * b.shape[1])
+            return b[row - r:row + r, col - r:col + r]
+        import numpy as np
+        shows = max((float(np.abs(b_round(side, 8) - b_round(side, 60)).mean()), side) for side in range(-30, 31, 3))
+        print("the sun behind the far peaks, 8 up: B round it off the empty sky by at most %.2f/255 (at %d degrees)" % shows)
+        if shows[0] > 2:
+            sys.exit("the sun behind the far peaks: it shows over them by %.2f/255 at %d degrees (want under 2)" % shows)
+        # The relief (Simon at 23:35: "Sun behind is still very bad"): the sun behind you, 10 degrees up, no cast
+        # shadow (darkness 0), so A off B is the relief alone. It must light the flanks on the sun's side: where B
+        # darkens to the right (a darker layer's left edge, gx under 0) A is lighter, and the other way round, with the
+        # sun on the left; the opposite with it on the right.
+        page.click("#shadow-behind")
+        for key, value in (("darkness", 0), ("relief", 0.6), ("reliefWidth", 2.5)):
+            page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", str(value))
+        def relief(side):
+            page.eval_on_selector("[data-key=sun1Side]", "(e, v) => { e.value = v; }", str(side))
+            at(10)
+            a, b = panels()
+            d = (a - b).mean(axis=2)
+            lum = b.mean(axis=2)
+            # B's brightness over 9 px, so a flank's band in A meets the edge it leans from.
+            k = np.ones(9) / 9
+            lum = np.apply_along_axis(lambda r: np.convolve(r, k, "same"), 1, np.apply_along_axis(lambda c: np.convolve(c, k, "same"), 0, lum))
+            gx = np.gradient(lum, axis=1)
+            return float(np.abs(d).mean()), float((d * gx).sum() / max(1e-9, (np.abs(d) * np.abs(gx)).sum()))
+        left, right = relief(-40), relief(40)
+        print("the relief, the sun behind you 10 up: A off B by %.2f/255, its lean %+.2f with the sun on the left; %.2f, %+.2f on the right" % (left[0], left[1], right[0], right[1]))
+        if not (left[0] > 1 and right[0] > 1):
+            sys.exit("the relief: A off B by %.2f and %.2f (want over 1)" % (left[0], right[0]))
+        if not (left[1] < -0.1 and right[1] > 0.1):
+            sys.exit("the relief: it lights the flanks away from the sun (lean %+.2f left, %+.2f right)" % (left[1], right[1]))
     else:
         start = float(page.input_value("[data-key=sun1Height]"))
         if mode == "day":

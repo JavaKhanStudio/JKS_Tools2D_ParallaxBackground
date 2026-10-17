@@ -32,7 +32,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * <p>
  * The sun is in the sky you see (r425, Simon: "only seems to work when the sun is under the X axis... and it would not be
  * visible in the sky"; the lab before cast from a sun behind the viewer, the only one whose shadows land on a layer
- * further back): drawn behind every layer but the haziest (see suns()), so it sinks out of sight behind the mountains,
+ * further back): drawn behind every layer (see suns()), so it sinks out of sight behind the mountains,
  * and dragged there. A sun ahead
  * lays the shadows toward you, so each layer casts on the layer just in front of it: the far peaks (l0) on the range
  * (l1), the range on the hills (l2), the hills on the pines (l3); the pines, in front of all, on nothing you see. The
@@ -109,15 +109,15 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	private final WholePage_Model[] pages = new WholePage_Model[hearts.length];
 	private OrthographicCamera camera, wide;
 	private SpriteBatch batch;
-	private ShaderProgram mask, shadow, occlude, rays;
+	private ShaderProgram mask, shadow, occlude, rays, relief;
 	/**
-	 * The light the sun sends past the layers in front of it, A's view at half size: the suns, then the range, the hills
+	 * The light the sun sends past the layers in front of it, A's view at half size: the suns, then the far peaks, the range, the hills
 	 * and the pines in black over them ({@link #light}); {@link #RAYS_FRAGMENT} blurs it toward the sun.
 	 */
 	private FrameBuffer light;
 	private Texture sun;
 	private SelectElement view, second;
-	private InputElement scroll, side1, height1, side2, height2, depth, withReceiver, softness, darkness, liftFrom, liftHigh, rayStrength, rayLength, dayLength;
+	private InputElement scroll, side1, height1, side2, height2, depth, withReceiver, softness, darkness, liftFrom, liftHigh, rayStrength, rayLength, dayLength, reliefStrength, reliefWidth;
 	private Element dayButton, behindButton;
 	/** While a day plays: how far through it, 0 sunrise to 1 sunset. */
 	private boolean day;
@@ -142,6 +142,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		shadow = compile(SHIFT_VERTEX, SHADOW_FRAGMENT, "shadow");
 		occlude = compile(batch.getShader().getVertexShaderSource(), OCCLUDE_FRAGMENT, "occluder");
 		rays = compile(batch.getShader().getVertexShaderSource(), RAYS_FRAGMENT, "rays");
+		relief = compile(batch.getShader().getVertexShaderSource(), RELIEF_FRAGMENT, "relief");
 		light = new FrameBuffer(Pixmap.Format.RGBA8888, FRAME_WIDTH / 2, FRAME_HEIGHT / 2, false);
 		light.getColorBufferTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 		sun = sunDisc();
@@ -233,6 +234,10 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		// The sun coming out from behind the range, and going back (r425, Simon at 20:26: "it should have some effect").
 		rayStrength = LabControls.slider(document, controls, "rays", "rays (the light the sun sends past the ridges in front of it, in A: rays round a ridge it is behind, a glare when it is clear; 0 none)", 0, 2, 0.05f, 0.8f);
 		rayLength = LabControls.slider(document, controls, "rayLength", "ray length (how far across the view the rays reach from the sun)", 0.1f, 1, 0.05f, 0.7f);
+		// The sun behind you lights each layer's own faces (r425, Simon at 23:35: "Sun behind is still very bad"): its cast
+		// shadows fall behind what casts them, out of sight; what shows where it is, is which flanks it lights.
+		reliefStrength = LabControls.slider(document, controls, "relief", "relief (with the sun behind you: each layer's flanks facing the sun lit, the others in the shade; 0 none)", 0, 1, 0.05f, 0.6f);
+		reliefWidth = LabControls.slider(document, controls, "reliefWidth", "relief width (world units in from a layer's edge its flanks reach: small, a rim; large, whole peaks)", 0.1f, 4, 0.05f, 2.5f);
 		dayLength = LabControls.slider(document, controls, "dayLength", "day length (seconds the button's day lasts, sunrise to sunset)", 5, 60, 1, 20);
 		dayButton = document.createButtonElement();
 		dayButton.setId("shadow-day");
@@ -325,9 +330,11 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		LabControls.read(liftHigh);
 		LabControls.read(rayStrength);
 		LabControls.read(rayLength);
+		LabControls.read(reliefStrength);
+		LabControls.read(reliefWidth);
 		float s2 = LabControls.read(side2), h2 = LabControls.read(height2), d = LabControls.read(depth);
 		readout.setInnerText((behind
-				? "The sun is behind you: the shadows lie on the ground away from you, on every layer behind the one casting them. Sun 1: "
+				? "The sun is behind you: the shadows lie on the ground away from you, on every layer behind the one casting them, and each layer's flanks turned toward it are lit, the others in the shade. Sun 1: "
 				: "Each layer casts on the layer just in front of it: the far peaks (l0) on the range (l1), the range on the hills (l2), the hills on the pines (l3). Sun 1: ")
 				+ ""
 				+ describe(side1At, height1At, d)
@@ -427,13 +434,13 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		if (LabKit.panel(0, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
 		{
 			hearts[SKY].render();
+			suns();
 			for (int k = 0; k < LAYERS; k++)
 				if (k != PINES || pines)
 				{
 					drawLayers(DRAWN + k);
+					relief(k);
 					cast(k);
-					if (k == 0)
-						suns();
 				}
 			if (lit)
 				rays();
@@ -441,21 +448,18 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		if (LabKit.panel(FRAME_WIDTH + 4, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
 		{
 			hearts[SKY].render();
+			suns();
 			for (int k = 0; k < LAYERS; k++)
 				if (k != PINES || pines)
-				{
 					drawLayers(DRAWN + k);
-					if (k == 0)
-						suns();
-				}
 		}
 		LabKit.endPanels();
 	}
 
 	/**
-	 * Each sun, over the farthest peaks (l0) and under the range (l1): the range hides a low one. Behind l0 too, the sun
-	 * showed bites and slivers in what reads as open sky (Simon at 17:19: "What the hell is that broken ass sun?"): l0's
-	 * peaks are hazed almost to the sky's colour, so what cut the disc could not be seen.
+	 * Each sun, over the sky and behind every layer: the farthest peaks (l0) hide a low one first (Simon at 23:35: "you
+	 * did not show the sun behind the last layer but the one before that"; bac21de had put it over l0, whose peaks are
+	 * hazed almost to the sky's colour, for the bites they cut in it).
 	 */
 	private void suns()
 	{
@@ -472,7 +476,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	}
 
 	/**
-	 * Into {@link #light}: the suns in their colour on black, then every layer in front of them (the range, the hills, the
+	 * Into {@link #light}: the suns in their colour on black, then every layer in front of them (the far peaks, the range, the hills, the
 	 * pines when shown) in black over them, through its alpha: what light reaches the eye from the suns, at half size.
 	 */
 	private void light(boolean pines)
@@ -492,7 +496,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		// The stencil's hearts: they draw through the batch's shader, this one (the drawn ones through the page fog's).
 		batch.setShader(occlude);
-		for (int k = 1; k < LAYERS; k++)
+		for (int k = 0; k < LAYERS; k++)
 			if (k != PINES || pines)
 				drawLayers(MASK + k);
 		batch.setShader(null);
@@ -548,6 +552,34 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		float y = camera.position.y - WORLD_HEIGHT / 2 + HORIZON + FOCAL * (float) (Math.tan(Math.toRadians(height)) / Math.cos(a));
 		float size = 3 * SUN;
 		batch.draw(sun, x - size / 2, y - size / 2, size, size);
+	}
+
+	/**
+	 * With the sun behind you, layer {@code k}'s own faces in its light: a flank turned toward it lit, warm, one turned
+	 * away in the shade, each in the layer's fog. The flanks are read from the layer's ridge line ({@link
+	 * #RELIEF_FRAGMENT}): a face leans as the ridge over it climbs, so a peak's flank on the sun's side is lit, the other
+	 * in the shade, down to its foot.
+	 */
+	private void relief(int k)
+	{
+		float strength = LabControls.read(reliefStrength), h = height1At;
+		if (!behind || strength <= 0 || h <= 0)
+			return;
+		double a = Math.toRadians(side1At), up = Math.toRadians(h);
+		ParallaxLayer layer = hearts[CAST + k].parallaxReader.layers.get(k);
+		WholePage_Model page = pages[DRAWN + k];
+		float fog = ParallaxPageReader.fogOf(page.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[DRAWN + k].parallaxReader.layers), hearts[DRAWN + k].parallaxReader.layers.get(k));
+		Color f = page.fogColor;
+		camera.update();
+		batch.setProjectionMatrix(camera.combined);
+		batch.enableBlending();
+		batch.setShader(relief);
+		relief.bind();
+		relief.setUniformf(relief.fetchUniformLocation("u_sun", false), (float) (Math.sin(a) * Math.cos(up)), (float) Math.sin(up), (float) (Math.cos(a) * Math.cos(up)));
+		relief.setUniformf(relief.fetchUniformLocation("u_shade", false), SHADOW_COLOR.r * (1 - fog) + f.r * fog, SHADOW_COLOR.g * (1 - fog) + f.g * fog, SHADOW_COLOR.b * (1 - fog) + f.b * fog, strength * (1 - dusk(h)));
+		relief.setUniformf(relief.fetchUniformLocation("u_lit", false), SUNLIT.r * (1 - fog) + f.r * fog, SUNLIT.g * (1 - fog) + f.g * fog, SUNLIT.b * (1 - fog) + f.b * fog, 1);
+		draw(relief, hearts[CAST + k], layer, LabControls.read(reliefWidth), camera);
+		batch.setShader(null);
 	}
 
 	/**
@@ -676,12 +708,16 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	 * its view's left edge: tiled wider, the pines are other pines).
 	 */
 	private void draw(Parallax_Heart heart, ParallaxLayer layer, float softness, OrthographicCamera view)
+	{draw(shadow, heart, layer, softness, view);}
+
+	/** As {@link #draw(Parallax_Heart, ParallaxLayer, float, OrthographicCamera)}, through {@code program}. */
+	private void draw(ShaderProgram program, Parallax_Heart heart, ParallaxLayer layer, float softness, OrthographicCamera view)
 	{
 		TextureRegion region = layer.getDrawnRegion();
 		float texels = region.getRegionWidth() / (layer.getWidth() * layer.getPackedWidthRatio());
 		float width = region.getTexture().getWidth(), height = region.getTexture().getHeight();
-		shadow.setUniformf(shadow.fetchUniformLocation("u_soft", false), softness * texels / width, softness * texels / height);
-		shadow.setUniformf(shadow.fetchUniformLocation("u_strips", false), height / STRIP, 0.5f / height);
+		program.setUniformf(program.fetchUniformLocation("u_soft", false), softness * texels / width, softness * texels / height);
+		program.setUniformf(program.fetchUniformLocation("u_strips", false), height / STRIP, 0.5f / height);
 		batch.begin();
 		heart.parallaxReader.draw(view, batch);
 		batch.end();
@@ -706,12 +742,16 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		shadow.dispose();
 		occlude.dispose();
 		rays.dispose();
+		relief.dispose();
 		light.dispose();
 		sun.dispose();
 	}
 
 	/** The shadow's colour out of the fog: a blue black, as the shade of a bright sky's light. */
 	static final Color SHADOW_COLOR = new Color(0.04f, 0.06f, 0.12f, 1);
+
+	/** A face in the sun's light: a warm white. */
+	static final Color SUNLIT = new Color(1, 0.92f, 0.76f, 1);
 
 	/** The stencil's and the shadows' effects: none, so their layers draw through the batch's shader, the lab's. */
 	static final LayerEffects BATCH_SHADER = new LayerEffects()
@@ -772,6 +812,48 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			+ "		weight *= 0.985;\n"
 			+ "	}\n"
 			+ "	gl_FragColor = vec4(sum / 48.0 * u_rays.x * vec3(1.0, 0.88, 0.66), 1.0);\n"
+			+ "}\n";
+
+	/**
+	 * A layer's faces in the sun's light, over it, as a hill shade: the layer is a mass under its ridge line, and a face
+	 * leans the way that line climbs over it. Above the pixel and u_soft.x to each side (the page's texture), the ridge
+	 * is found by walking up its column until the layer is clear (kept in the strip, as the shadow's); its slope is how
+	 * much higher it stands on one side than the other. The face leans against it, and up a little; u_sun the way to
+	 * the sun (z toward you). A face turned to it more than one facing you is lit, toward u_lit, one turned less in
+	 * u_shade, both by up to u_shade.a, fading over u_soft.y (the ridge's own height in v) under the ridge.
+	 */
+	static final String RELIEF_FRAGMENT = HEAD
+			+ "uniform vec2 u_soft;\n"
+			+ "uniform vec2 u_strips;\n"
+			+ "uniform vec3 u_sun;\n"
+			+ "uniform vec4 u_shade;\n"
+			+ "uniform vec4 u_lit;\n"
+			+ "float at(vec2 uv, float top, float bottom)\n"
+			+ "{\n"
+			+ "	return texture2D(u_texture, vec2(uv.x, clamp(uv.y, top, bottom))).a;\n"
+			+ "}\n"
+			+ "void main()\n"
+			+ "{\n"
+			+ "	float strip = floor(v_texCoords.y * u_strips.x + 0.001);\n"
+			+ "	float top = strip / u_strips.x + u_strips.y, bottom = (strip + 1.0) / u_strips.x - 3.0 * u_strips.y;\n"
+			+ "	float here = at(v_texCoords, top, bottom) * v_color.a;\n"
+			+ "	if (here < 0.004)\n"
+			+ "		discard;\n"
+			// Four rings of twelve, out to u_soft: the way into the mass, the farther rings weighing as much as the near.
+			+ "	vec2 into = vec2(0.0);\n"
+			+ "	for (int r = 1; r <= 4; r++)\n"
+			+ "		for (int i = 0; i < 12; i++)\n"
+			+ "		{\n"
+			+ "			float angle = 0.5235988 * (float(i) + 0.5 * float(r));\n"
+			+ "			vec2 ring = vec2(cos(angle), sin(angle));\n"
+			+ "			into += ring * at(v_texCoords + ring * u_soft * float(r) / 4.0, top, bottom);\n"
+			+ "		}\n"
+			// Across a straight edge the 48 add up to about 48 / pi: 1 there, less deeper in. A texture's v runs down.
+			+ "	vec2 away = -vec2(into.x, -into.y) / 15.3;\n"
+			+ "	vec3 face = normalize(vec3(1.5 * away, 1.0)), facing = vec3(0.0, 0.0, 1.0);\n"
+			+ "	float turn = dot(face, u_sun) - dot(facing, u_sun);\n"
+			+ "	float amount = clamp(1.5 * abs(turn), 0.0, 1.0) * u_shade.a * here;\n"
+			+ "	gl_FragColor = turn > 0.0 ? vec4(u_lit.rgb, 0.6 * amount) : vec4(u_shade.rgb, amount);\n"
 			+ "}\n";
 
 	/**
