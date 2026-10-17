@@ -8,8 +8,11 @@ still, the sun's centre in panel B (its disc's brightest pixels, where the whole
 A's shade. Fails (exit 1) on a WebGL warning or page error, or when the sun steps back, stands still between two stills
 while the day plays, or moves more than twice its median step at once (the shake), or shows whole in under 21 stills; or when panel A's shade, its
 difference from B, changes by more than a quarter of its day's range between two stills (the flash at sunrise).
-Proved on two mutants of ShadowLab: the day's sun rounded to its sliders' steps (uneven steps), and TWILIGHT 0.001 (the
-shade moved 2.1 of its 6.5 in one still). Headless Chrome: no window opens.
+Since Simon's 11:08 (r425) the button plays 24 hours, night too, and A darkens with the light: the noon height is set
+to 30, so the sun stays in the picture all day.
+Proved on mutants of ShadowLab: the day's sun rounded to its sliders' steps (uneven steps); TWILIGHT 0.001 (the shade
+moved 2.1 of its 6.5 in one still); and, on the 24 hours, the light switched at the horizon (bright 1 over it, 0.1
+under). Headless Chrome: no window opens.
 """
 import argparse
 import functools
@@ -27,7 +30,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("war")
 ap.add_argument("out")
 ap.add_argument("--gl", default="gpu", choices=["swiftshader", "gpu"])
-ap.add_argument("--day", type=float, default=20)
+ap.add_argument("--day", type=float, default=40)
 ap.add_argument("--every", type=float, default=0.25)
 args = ap.parse_args()
 os.makedirs(args.out, exist_ok=True)
@@ -58,6 +61,8 @@ with sync_playwright() as p:
     print("WebGL:", page.evaluate("""() => { const g = document.createElement('canvas').getContext('webgl');
         const d = g.getExtension('WEBGL_debug_renderer_info'); return d ? g.getParameter(d.UNMASKED_RENDERER_WEBGL) : '?'; }"""))
     page.eval_on_selector("[data-key=dayLength]", "(e, v) => { e.value = v; e.dispatchEvent(new Event('input')); }", str(args.day))
+    page.eval_on_selector("[data-key=noonHeight]", "e => { e.value = '30'; e.dispatchEvent(new Event('input')); }")
+    page.wait_for_timeout(300)
     page.click("#shadow-day")
     box = page.eval_on_selector("canvas", "e => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; }")
     for i in range(int(args.day / args.every)):
@@ -82,9 +87,11 @@ for i in range(int(args.day / args.every)):
     sun = (round(xs.mean(), 1), round(ys.mean(), 1)) if len(xs) > 30 else None
     track.append((sun, len(xs)))
     print(f"{i:03d}", "sun", sun, len(xs), "px", "sky", np.round(sky, 1), f"shade {shade[-1]:.2f}")
-# Only the stills that show the whole disc: a half-hidden one's centre is off its disc's.
+# Only the stills that show the whole disc: a half-hidden one's centre is off its disc's. And only the sun's: the day
+# starts at 8 and the sun sets at 18, after 10 of its 24 hours; the full moon, up after, is a disc too.
 whole = max(n for _, n in track) * 0.8
-xs = [s[0] for s, n in track if s and n >= whole]
+days = len(track) * 10 // 24
+xs = [s[0] for s, n in track[:days] if s and n >= whole]
 steps = np.diff(xs)
 bad = []
 if len(steps) < 20:

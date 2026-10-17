@@ -1,25 +1,29 @@
 #!/usr/bin/env bash
-# The shadow lab (r425): r365's AI forest page drawn twice by the real reader compiled with GWT, in WebGL, under a sun
-# in its sky: A with cast shadows (each layer casting toward you, on the layer just in front of it), B as painted
+# The shadow lab (r425): r365's AI forest page drawn twice by the real reader compiled with GWT, in WebGL: A under the
+# hour's light (docs/daylight.md: the measured day, the sun and the moon) with cast shadows, B as painted
 # (core/browser-test/launcher/.../ShadowLab.java).
-# Controls: the view (the page, or without the pines), the camera's scroll, each sun's side and height (sliders, or the
-# sun dragged in the sky), the second sun on or off, the depth between two layers, how much a shadow moves with the
-# layer it falls on, its softness and darkness, the rays past the ridges (strength, length), the sun behind you (its
-# shadows laid on the ground in perspective, and the relief: the flanks turned to it lit).
+# Controls: the hour, the sun's noon height, the moon's age, the day's length (and the 24 hours button), the sun's side
+# and height (set by the hour, or the sun dragged in the sky), the light (darkest night, dusk curve, full light from,
+# warmth, night blue), the camera's scroll, the cast shadows (darkness, depth, softness, how much a shadow moves with
+# the layer it falls on), the rays past the ridges, the sun behind you (its shadows laid on the ground in perspective,
+# and the relief: the flanks turned to it lit).
 #   tools/shadow-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/shadow-lab.sh --shot F.png    one still, headless (6 s in)
-#   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/two.png (both suns)
+#   tools/shadow-lab.sh --views DIR     headless stills: DIR/page.png, DIR/alone.png (without the pines), DIR/night.png (20:00, the full moon up)
 #   tools/shadow-lab.sh --clip F.mp4    a clip, headless: 8 s at 30 fps, stepped at game speed (window.shadowLabAct)
-#   tools/shadow-lab.sh --sunset F.mp4  as --clip, sun 1 sinking from its height to 4 degrees under the horizon
-#   tools/shadow-lab.sh --day F.mp4     as --clip, the lab's "play a whole day" button pressed, the day 8 s long
+#   tools/shadow-lab.sh --sunset F.mp4  as --clip, the sun sinking from its height to 4 degrees under the horizon
+#   tools/shadow-lab.sh --day F.mp4     as --clip, the lab's "play 24 hours" button pressed, the day 8 s long
+#                                       (DAY_SECONDS=S: S seconds, the clip as long)
 #   tools/shadow-lab.sh --slider K=V    before --shot/--views/--clip: start control K (its data-key) at V, a choice at its option's index
 #   tools/shadow-lab.sh --behind        before --shot/--views/--clip: the "sun behind you" button pressed
-#   tools/shadow-lab.sh --copy F.png    checks "Copy settings" and the drag, headless: drags sun 1 in A's sky (fails if the
-#                                       panel zooms instead), turns sun 2 on, clicks, fails unless the JSON names every
-#                                       control and those moved; then the day, the phone tap, the lift, the sun behind
-#                                       you (its shadows slant away from its side) and the rays (none round a disc the
-#                                       peaks hide, a glare round a clear one), the sun behind the far peaks and the relief
-#                                       lighting the sun's side (tools/r425-shadow-light/mutate.sh); F is the page
+#   tools/shadow-lab.sh --copy F.png    checks "Copy settings" and the drag, headless: drags the sun in A's sky (fails if
+#                                       the panel zooms instead), clicks, fails unless the JSON names every control and
+#                                       those moved; then the 24 hours, the phone tap, the sun behind you in Copy, the
+#                                       light (its brightness by the hour, not even; on A; blue at night, warm in the
+#                                       golden hour), the moon's phase, the shadows by the direct share, the sun behind
+#                                       you's shadows slanting away from it, the rays (none round a disc the peaks hide, a
+#                                       glare round a clear one), the sun behind the far peaks and the relief lighting
+#                                       the sun's side (tools/r425-shadow-light/mutate.sh); F is the page
 # SHADOW_DEBUG=DIR: --copy saves the crops its slant and rays checks measure in DIR.
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python
 # Playwright and ffmpeg.
@@ -119,9 +123,9 @@ with sync_playwright() as p:
         page.evaluate("window.shadowLabAct(0.5)")
         shot(frames + "/alone.png")
         page.eval_on_selector("[data-key=view]", "e => { e.value = '0'; }")
-        page.eval_on_selector("[data-key=sun2On]", "e => { e.value = '1'; }")
+        page.eval_on_selector("[data-key=hour]", "e => { e.value = '20'; }")
         page.evaluate("window.shadowLabAct(0.5)")
-        shot(frames + "/two.png")
+        shot(frames + "/night.png")
     elif mode == "copy":
         page.context.grant_permissions(["clipboard-read", "clipboard-write"])
         # Sun 1 dragged in the sky, from where ShadowLab.drawSun puts it: it moves, and no panel zooms or unzooms.
@@ -148,30 +152,35 @@ with sync_playwright() as p:
         drag(200, 60)
         if page.evaluate("window.labFocus") != -1:
             sys.exit("dragging the sun zoomed panel %s" % page.evaluate("window.labFocus"))
-        page.eval_on_selector("[data-key=sun2On]", "e => { e.value = '1'; }")
         page.evaluate("window.shadowLabAct(6)")
         page.click("#shadow-copy")
         page.wait_for_function("document.getElementById('shadow-copy-state').textContent !== ''")
         import json
         got = json.loads(page.input_value("#shadow-copy-json"))
-        keys = {"view", "cameraScroll", "sun1Side", "sun1Height", "sun2On", "sun2Side", "sun2Height", "depth", "withReceiver",
-                "softness", "darkness", "liftFrom", "liftHigh", "rays", "rayLength", "dayLength", "relief", "reliefWidth"}
+        keys = {"view", "hour", "noonHeight", "moonAge", "dayLength", "sun1Side", "sun1Height", "nightDark", "curve", "fullFrom",
+                "warmth", "nightBlue", "cameraScroll", "darkness", "depth", "softness", "withReceiver", "rays", "rayLength",
+                "relief", "reliefWidth"}
         changed = got["changed"]
-        if (set(got["settings"]) != keys or set(changed) != {"sun1Side", "sun1Height", "sun2On"}
-                or changed["sun1Side"]["started"] != -40 or not changed["sun1Side"]["now"] > -40
+        if (set(got["settings"]) != keys or set(changed) != {"sun1Side", "sun1Height"}
+                or changed["sun1Side"]["started"] != -35 or not changed["sun1Side"]["now"] > -35
                 or changed["sun1Height"]["started"] != 22.5 or not changed["sun1Height"]["now"] < 22.5
-                or changed["sun2On"] != {"started": 0, "now": 1} or "sun 2:" not in got["readout"]):
+                or "moon" not in got["readout"]):
             sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
         print("Copy settings: %s; %s" % (page.text_content("#shadow-copy-state"), json.dumps(got["settings"])))
-        # The day's button: at half a 20 s day, sun 1 is over the view's middle at its highest; at its end, set at the right.
+        # The day's button: 24 hours from 8 in a 40 s day, the sun back on its path. A quarter in (10 s, 14:00) it is
+        # 20 degrees right, 39 up (45 sin 120); at the end, 8:00 again, the moon a day older, the button back to play.
         page.click("#shadow-day")
         page.evaluate("window.shadowLabAct(10)")
-        noon = (float(page.input_value("[data-key=sun1Side]")), float(page.input_value("[data-key=sun1Height]")))
-        page.evaluate("window.shadowLabAct(11)")
-        dusk = (float(page.input_value("[data-key=sun1Side]")), float(page.input_value("[data-key=sun1Height]")))
-        if abs(noon[0]) > 1 or noon[1] < 29 or dusk != (40, -6) or "play" not in page.text_content("#shadow-day"):
-            sys.exit("the day: noon %s (want 0, 30), dusk %s (want 40, -6), button %r" % (noon, dusk, page.text_content("#shadow-day")))
-        print("the day: noon %s, dusk %s" % (noon, dusk))
+        def reading():
+            return tuple(float(page.input_value("[data-key=%s]" % k)) for k in ("hour", "sun1Side", "sun1Height", "moonAge"))
+        two = reading()
+        page.evaluate("window.shadowLabAct(31)")
+        end = reading()
+        if (abs(two[0] - 14) > 0.1 or abs(two[1] - 20) > 1 or abs(two[2] - 39) > 0.5 or abs(end[0] - 8) > 0.1
+                or abs(end[3] - 15.8) > 0.15 or "play" not in page.text_content("#shadow-day")):
+            sys.exit("the day: at 10 s %s (want hour 14, side 20, height 39), at its end %s (want hour 8, moon 15.8), button %r"
+                     % (two, end, page.text_content("#shadow-day")))
+        print("the day: at 10 s hour, side, height, moon %s; at its end %s" % (two, end))
         shot(frames + "/still.png")
         # On a phone: a tap on the sun zooms nothing (lab.js zooms on a tap the canvas cancelled), a tap beside it does.
         phone = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
@@ -203,45 +212,6 @@ with sync_playwright() as p:
         if got.get("sun") != "behind you" or page.input_value("[data-key=sun1Side]") != side or "behind you" not in got["readout"]:
             sys.exit("the sun behind you: sun %r, side %s -> %s, readout %r" % (got.get("sun"), side, page.input_value("[data-key=sun1Side]"), got["readout"]))
         print("sun behind you: Copy says so, the drag moves nothing")
-        # A high sun lifts the shade: full under liftFrom (15), none from liftHigh (40) up, and A then draws as B.
-        def dark_at(height):
-            page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(height))
-            page.evaluate("window.shadowLabAct(0.5)")
-            text = page.text_content("#shadow-readout")
-            return int(text.split("% dark")[0].rsplit(" ", 1)[1])
-        def a_off_b():
-            # Panel A's mean difference from B (out of 255), under their titles, in the canvas's own pixels.
-            import io
-            import numpy as np
-            from PIL import Image
-            page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
-            c = page.locator("#embed-browsertests canvas")
-            img = np.asarray(Image.open(io.BytesIO(c.screenshot())).convert("RGB"), dtype=float)
-            width, rects = page.evaluate("[document.querySelector('#embed-browsertests canvas').width, window.labPanelRects]")
-            k = img.shape[1] / width
-            def cut(r):
-                x, y, w, h = (round(v * k) for v in r)
-                top = img.shape[0] - y - h
-                return img[top + 40:top + h, x:x + w]
-            a, b = cut(rects[0]), cut(rects[1])
-            n = min(a.shape[1], b.shape[1])
-            return float(np.abs(a[:, :n] - b[:, :n]).mean())
-        lifted = (dark_at(10), dark_at(27.5), dark_at(45))
-        # Back in the sky, one sun at 20 degrees, at full darkness: A draws its shadows while the shade lifts from 30, and
-        # as B once the sun is high from 20 (a higher sun's shadows land under the view: they would prove nothing). No
-        # rays: they are A's alone, whatever the shade.
-        page.click("#shadow-behind")
-        for key, value in (("sun2On", 0), ("darkness", 1), ("liftFrom", 5), ("liftHigh", 30), ("rays", 0)):
-            page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", str(value))
-        shaded = (dark_at(20), a_off_b())
-        page.eval_on_selector("[data-key=liftHigh]", "e => { e.value = '20'; }")
-        gone = (dark_at(20), a_off_b())
-        if not (shaded[1] > 0.5 and gone[1] < 0.2):
-            sys.exit("the high sun's lift: A off B by %.2f lifting to 30 degrees, %.2f high from 20 (want over 0.5, under 0.2)" % (shaded[1], gone[1]))
-        print("A off B at 20 degrees: %.2f/255 (%d%% dark), %.2f once high (%d%%)" % (shaded[1], shaded[0], gone[1], gone[0]))
-        if lifted != (100, 50, 0):
-            sys.exit("the high sun's lift: %s%% dark at 10, 27.5 and 45 degrees (want 100, 50, 0)" % (lifted,))
-        print("a high sun lifts the shade: %s%% dark at 10, 27.5, 45 degrees" % (lifted,))
         def panels():
             import io
             import numpy as np
@@ -258,12 +228,111 @@ with sync_playwright() as p:
             a, b = cut(rects[0]), cut(rects[1])
             n = min(a.shape[1], b.shape[1])
             return a[:, :n], b[:, :n]
+        def put(**values):
+            for key, value in values.items():
+                page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", str(value))
+            page.evaluate("window.shadowLabAct(0.5)")
+        def readout_number(after):
+            text = page.text_content("#shadow-readout")
+            return float(text.split(after)[0].rsplit(" ", 1)[1])
+        def at(height):
+            page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(height))
+            page.evaluate("window.shadowLabAct(0.5)")
+        # The check before left the sun behind you: back in the sky.
+        page.click("#shadow-behind")
+        # The light (Simon at 11:08: "higher when there is no sun, way lower when the sun is at the zenith, can climb back
+        # up while it's going down. It should not do so in a linear fashion"). The camera still, the sun on its path.
+        page.eval_on_selector("[data-key=cameraScroll]", "e => { e.value = '0'; }")
+        def bright(hour, age=14.8):
+            put(hour=hour, moonAge=age)
+            return readout_number("% bright")
+        # Sun heights 0, 5, 10, 20 (45 up at noon): 6:00, 6:25, 6:51, 7:47.
+        rise = [bright(h) for h in (6, 6 + 25 / 60, 6 + 51 / 60, 7 + 47 / 60)]
+        noon, dusk, night_full, night_new = bright(12), bright(18 + 32 / 60), bright(0), bright(0, 0)
+        steps = [rise[i + 1] - rise[i] for i in range(3)]
+        print("brightness %%: the sun 0, 5, 10, 20 up %s; noon %g; 6 under %g; midnight, full moon %g, new moon %g" % (rise, noon, dusk, night_full, night_new))
+        if not (noon == 100 and noon >= rise[3] > rise[2] > rise[1] > rise[0] > dusk > night_full > night_new and night_new <= 15):
+            sys.exit("the light: brightness out of order (noon 100, the sun rising, dusk, a full moon's night, a new moon's at most 15)")
+        if not (steps[0] > 1.5 * steps[2]):
+            sys.exit("the light: as even as the sun's height (steps %s): Simon asked for no linear fashion" % steps)
+        # In pixels: A as bright as B at noon (its shadows under the view), far darker at a moonless midnight.
+        def mean_ab():
+            a, b = panels()
+            return float(a.mean()), float(b.mean())
+        put(hour=12, moonAge=14.8)
+        at_noon = mean_ab()
+        put(hour=0, moonAge=0)
+        at_night = mean_ab()
+        print("A against B, mean of 255: noon %.1f / %.1f, a moonless midnight %.1f / %.1f" % (at_noon + at_night))
+        if not (abs(at_noon[0] - at_noon[1]) < 6 and at_night[0] < 0.4 * at_night[1]):
+            sys.exit("the light is not on A: noon %.1f / %.1f, midnight %.1f / %.1f" % (at_noon + at_night))
+        # Its colour: at a moonless midnight A's blue over red is above B's (night blue); with the sun behind you 3 degrees
+        # up (the golden hour on the faces turned to it), below.
+        def blue_over_red():
+            a, b = panels()
+            return float(a[..., 2].mean() / max(1, a[..., 0].mean())), float(b[..., 2].mean() / max(1, b[..., 0].mean()))
+        night_blue = blue_over_red()
+        # Night eyes (Purkinje): 'night blue' moves A at a moonless midnight, not at noon.
+        def night_eyes(hour):
+            put(hour=hour, moonAge=0, nightBlue=0.8)
+            a8 = panels()[0]
+            put(nightBlue=0)
+            a0 = panels()[0]
+            put(nightBlue=0.8)
+            return float(np.abs(a8 - a0).mean())
+        import numpy as np
+        eyes_night, eyes_noon = night_eyes(0), night_eyes(12)
+        print("night blue 0.8 against 0, A: %.2f/255 at a moonless midnight, %.2f at noon" % (eyes_night, eyes_noon))
+        if not (eyes_night > 0.5 and eyes_noon < 0.05):
+            sys.exit("night blue is not on A at night: %.2f at midnight, %.2f at noon (want over 0.5, under 0.05)" % (eyes_night, eyes_noon))
+        put(hour=0, moonAge=0)
+        page.click("#shadow-behind")
+        put(hour=6 + 15 / 60, moonAge=14.8, darkness=0, relief=0, rays=0)
+        golden = blue_over_red()
+        page.click("#shadow-behind")
+        print("blue / red, A against B: a moonless night %.2f / %.2f; the golden hour, the sun behind you %.2f / %.2f" % (night_blue + golden))
+        if not (night_blue[0] > 1.15 * night_blue[1]):
+            sys.exit("the light: the night is not blue")
+        if not (golden[0] < 0.92 * golden[1]):
+            sys.exit("the light: the golden hour is not warm")
+        # The moon's phase: put where the sun is at 8 (35 left, 22.5 up) by an hour 24 age / 29.53 after 8, at night for
+        # these ages. Full (20:00), B round it is bright on both halves; at its last quarter (1:58), lit on the left (the
+        # sun, behind it on the path, is to its left), dark on the right.
+        def moon_halves(age):
+            import math
+            put(hour=(8 + 24 * age / 29.53) % 24, moonAge=age)
+            b = panels()[1]
+            a = math.radians(-34.64)
+            x = 20 + 20 * math.tan(a)
+            y = 8.75 + 20 * math.tan(math.radians(22.5)) / math.cos(a)
+            col, row = round(x / 40 * b.shape[1]), round((1 - y / 22.5) * (b.shape[0] + 40)) - 40
+            r = round(0.5 / 40 * b.shape[1])
+            return float(b[row - r:row + r, col - r:col].mean()), float(b[row - r:row + r, col:col + r].mean())
+        full, last = moon_halves(14.77), moon_halves(22.15)
+        print("the moon, B round it, left / right half: full %.1f / %.1f, last quarter %.1f / %.1f" % (full + last))
+        if not (min(full) > 150 and last[0] > last[1] + 30):
+            sys.exit("the moon's phase: full %s, last quarter %s (want both halves of the full over 150, the quarter's left over its right by 30: B's painted day sky shows through its dark part)" % (full, last))
+        # Cast shadows by the direct share: darkness 1 against 0 moves A at 20 degrees up, all but nothing at half a degree
+        # (the sky's light, all of it, then).
+        def shadows_at(hour):
+            put(hour=hour, moonAge=14.8, rays=0, darkness=1)
+            a1 = panels()[0]
+            put(darkness=0)
+            a0 = panels()[0]
+            return float(np.abs(a1 - a0).mean())
+        import numpy as np
+        high, low = shadows_at(7 + 47 / 60), shadows_at(6 + 2.5 / 60)
+        print("cast shadows, darkness 1 against 0: %.2f/255 at 20 degrees, %.2f at half a degree" % (high, low))
+        if not (high > 1 and low < 0.25 * high):
+            sys.exit("the shadows by the direct share: %.2f at 20 degrees, %.2f at half a degree (want over 1, under a quarter)" % (high, low))
+        # The checks below judge the shadows and the relief alone: white light, full from 2 degrees up.
+        put(warmth=0, fullFrom=2, nightBlue=0, hour=8, rays=0.8)
         def slant(side):
             # The sun behind you, 10 degrees up: where A is darker than B, do the streaks climb to the right ("/", over 0)
             # or to the left? The structure tensor's cross term over the darkening, normalised: -1 to 1.
             import numpy as np
             page.eval_on_selector("[data-key=sun1Side]", "(e, v) => { e.value = v; }", str(side))
-            dark_at(10)
+            at(10)
             a, b = panels()
             d = np.clip(b - a, 0, None).mean(axis=2)
             if os.environ.get("SHADOW_DEBUG"):
@@ -271,9 +340,8 @@ with sync_playwright() as p:
                 Image.fromarray(np.concatenate([a, b], axis=1).astype("uint8")).save(os.environ["SHADOW_DEBUG"] + "/slant%d.png" % side)
             gy, gx = np.gradient(d)
             return float((gx * gy).sum() / max(1e-9, np.sqrt((gx * gx).sum() * (gy * gy).sum()))), float(d.mean())
-        # The lift's check left the sun in the sky: behind you again.
         page.click("#shadow-behind")
-        for key, value in (("darkness", 1), ("liftFrom", 30), ("liftHigh", 40), ("relief", 0)):
+        for key, value in (("darkness", 1), ("relief", 0)):
             page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", str(value))
         left, right = slant(-40), slant(40)
         print("the sun behind you, 10 up: the shadows' slant %+.2f with the sun on the left, %+.2f on the right (A darker by %.2f, %.2f)" % (left[0], right[0], left[1], right[1]))
@@ -281,9 +349,6 @@ with sync_playwright() as p:
             sys.exit("the sun behind you: its shadows do not run away from its side")
         # The rays: the sun in the sky, deep behind the peaks, against clear of them: A with rays against without.
         page.click("#shadow-behind")
-        def at(height):
-            page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(height))
-            page.evaluate("window.shadowLabAct(0.5)")
         def rays_at(height):
             # A with rays against without, round the disc (2 world units about it, in A's 40 x 22.5 view): sun 1 at
             # 10 degrees left, where ShadowLab.drawSun puts it.
@@ -360,12 +425,15 @@ with sync_playwright() as p:
             sys.exit("the relief: it lights the flanks away from the sun (lean %+.2f left, %+.2f right)" % (left[1], right[1]))
     else:
         start = float(page.input_value("[data-key=sun1Height]"))
+        frames_count = 240
         if mode == "day":
-            page.eval_on_selector("[data-key=dayLength]", "e => { e.value = '8'; }")
+            length = float(os.environ.get("DAY_SECONDS", "8"))
+            frames_count = round(30 * length)
+            page.eval_on_selector("[data-key=dayLength]", "(e, v) => { e.value = v; }", str(length))
             page.click("#shadow-day")
-        for i in range(240):
+        for i in range(frames_count):
             if mode == "sunset":
-                page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(start - (start + 4) * i / 239))
+                page.eval_on_selector("[data-key=sun1Height]", "(e, v) => { e.value = v; }", str(start - (start + 4) * i / (frames_count - 1)))
             page.evaluate("window.shadowLabAct(%r)" % (0 if i == 0 else 1 / 30))
             shot(frames + "/f%04d.png" % i)
     if errors:
@@ -373,7 +441,7 @@ with sync_playwright() as p:
     browser.close()
 PY
 if [ $MODE = views ]; then
-	mkdir -p "$OUT" && cp "$FRAMES"/page.png "$FRAMES"/alone.png "$FRAMES"/two.png "$OUT"/ && echo "stills: $OUT/{page,alone,two}.png"
+	mkdir -p "$OUT" && cp "$FRAMES"/page.png "$FRAMES"/alone.png "$FRAMES"/night.png "$OUT"/ && echo "stills: $OUT/{page,alone,night}.png"
 elif [ $MODE = shot ] || [ $MODE = copy ]; then
 	cp "$FRAMES/still.png" "$OUT" && echo "still: $OUT"
 else

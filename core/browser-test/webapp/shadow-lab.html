@@ -27,28 +27,22 @@
 	<details class="lab-about">
 		<summary>What this lab shows</summary>
 		<p id="shadow-about">r365's AI forest page (the hills lab's, its hills as they ship), drawn twice by the real
-	reader, side by side under the same sun: <b>A</b> with cast shadows, <b>B</b> as painted. The <b>sun</b> is in the
-	sky you see, behind every layer, the farthest, haziest peaks too: drag it there (in either panel), or set its side
-	and height with the sliders; low, it is gone behind the mountains. A sun in front of you lays the shadows <b>toward you</b>, so each layer
-	casts on the layer just in front of it: the far peaks on the range, the range on the hills, the hills on the pines.
-	The pines, in front of everything, cast on nothing you see. A ridge's shadow is its whole mass, lowered by the
-	<b>depth</b> between the two layers times the tangent of the sun's height: what rises above it is lit, the rest is in
-	the shade. A low sun shades most of each layer, a high one little; once it has set, every layer is in the shade, and in its
-	last and first 8 degrees over the horizon (twilight) that shade fades into its cast shadows.
-	As the camera scrolls, a shadow moves with the layer it lies on (<b>with the layer it falls on</b> 1, as in the world).
-	<b>Play a whole day</b>: sun 1 rises at the view's left edge, climbs to 30 degrees over its middle and sets at its
-	right edge, in <b>day length</b> seconds; stop leaves it where it is. A <b>high sun</b> lifts the shade: the
-	shadows are as dark as <b>darkness</b> says under <b>shade lifts from</b>, and gone from <b>high sun</b> up.
-	<b>Rays</b>: the sun's light past the ridges in front of it is added to A. While it is behind a ridge, the sky over the
-	ridge brightens and rays fan out from its edges; once clear, it shines as a glare; deep behind the mountains, nothing.
-	<b>Ray length</b> sets how far across the view they reach.
-	<b>Sun behind you</b> takes the sun out of the sky, behind the camera: its shadows then lie on the ground away from you,
-	in perspective, from each layer's foot toward the point of the horizon straight away from the sun (the readout says
-	where). A layer takes the shadows of every layer in front of it. A low sun lays long streaks across the hills between
-	the pines; a high one, short shadows hidden behind what casts them. Mostly they are out of sight: what shows where
-	such a sun is, is the <b>relief</b>, each layer's flanks turned toward it lit and the others in the shade, read from
-	the layer's outline <b>relief width</b> in from its edge. A second sun casts its own shadows; where two meet, it is darker. A lab, not an effect yet: what ships, if any of
-	it, waits for your tests. The view without the pines shows the hills' shadows whole.</p>
+	reader, side by side: <b>A</b> under the hour's light, with cast shadows; <b>B</b> as painted. The <b>hour</b>
+	moves the sun and the moon: the sun rises at 6 at the view's left, is <b>noon height</b> up at 12 and sets at 18 at
+	its right; the moon follows the same path, later by its <b>moon age</b> (full: it rises as the sun sets). <b>Play 24
+	hours</b> runs a whole day and night in <b>day length</b> seconds, and the moon ages a day. The light comes from the
+	measured clear-sky day (docs/daylight.md): about 100,000 lux under a high sun, 600 at sunrise, 3 at the end of dusk,
+	0.27 under a full moon, a thousandth on a moonless night. The world's brightness follows those lux on a log scale,
+	raised to the <b>dusk curve</b>, from <b>darkest night</b> to full from <b>full light from</b> degrees up. Its colour is
+	the sun's (red-gold low down), the sky's (blue) and the moon's, each by its share; at night, as eyes see in the dark,
+	grey blue (<b>night blue</b>). <b>Warmth</b> scales how much of that colour shows. A cast shadow lacks its body's direct
+	light and keeps the sky's: at noon it is about 90% of the light, at sunrise almost none (<b>darkness</b> 1 is as
+	measured). You can drag the sun in the sky (in either panel) to take it off its path; the hour puts it back. A sun in
+	front of you lays the shadows <b>toward you</b>, so each layer casts on the layer just in front of it, lowered by the
+	<b>depth</b> between them times the tangent of its height. As the camera scrolls, a shadow moves with the layer it lies
+	on. <b>Rays</b>: the sun's light past the ridges in front of it, in A. <b>Sun behind you</b> takes the sun and the moon out
+	of the sky, behind the camera: their shadows lie on the ground away from you, and the <b>relief</b> lights each layer's
+	flanks turned toward them. A lab, not an effect yet. The view without the pines shows the hills' shadows whole.</p>
 	</details>
 	<script src="lab.js"></script>
 	<script>
@@ -57,7 +51,6 @@
 	(function () {
 		var stage = document.querySelector('.lab-stage'), held = 0, dragged = false;
 		function input(key) { return document.querySelector('input[data-key=' + key + ']'); }
-		function on2() { var s = document.querySelector('select[data-key=sun2On]'); return s && s.selectedIndex === 1; }
 		function canvas() { return stage.querySelector('#embed-browsertests canvas'); }
 		// Panel i's viewport in the canvas's pixels (GL's y up), as LabKit.frame placed it; null when another is zoomed.
 		function rect(i) {
@@ -80,15 +73,13 @@
 			var sky = window.shadowSky, a = +input('sun' + n + 'Side').value * Math.PI / 180, e = +input('sun' + n + 'Height').value * Math.PI / 180;
 			return { x: sky.width / 2 + sky.focal * Math.tan(a), y: sky.horizon + sky.focal * Math.tan(e) / Math.cos(a) };
 		}
-		// The sun under the pointer, 1 or 2, in either panel; 0 when none is within 20 px.
+		// The sun under the pointer, in either panel; 0 when it is not within 20 px.
 		function under(px, py) {
 			if (!window.shadowSky || window.shadowBehind || !input('sun1Side')) return 0;
 			for (var i = 0; i < 2; i++) {
 				if (!rect(i)) continue;
-				for (var n = on2() ? 2 : 1; n >= 1; n--) {
-					var s = sun(n), p = toPage(i, s.x, s.y);
-					if (Math.hypot(p.x - px, p.y - py) < 20) return { n: n, panel: i };
-				}
+				var s = sun(1), p = toPage(i, s.x, s.y);
+				if (Math.hypot(p.x - px, p.y - py) < 20) return { n: 1, panel: i };
 			}
 			return 0;
 		}

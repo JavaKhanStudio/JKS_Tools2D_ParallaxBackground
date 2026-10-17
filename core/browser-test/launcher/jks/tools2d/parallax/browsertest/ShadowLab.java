@@ -40,12 +40,18 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * depth} tan(height) / cos(side) by the time it reaches it, and moved {@code depth} tan(side) away from the sun's side
  * ({@link #shadowOf}). So the shadow is the caster's whole mass, its ridge and everything under it, lowered and shifted
  * that much: what of the receiver rises above it is lit, the rest is in the shade. A low sun lowers it little and
- * shades most of the receiver; under the horizon it rises over the ridge and shades it all. As the camera scrolls, a
+ * shades most of the receiver. As the camera scrolls, a
  * shadow lies on its receiver and moves with it ({@code withReceiver} 1: the caster drawn wider about the view's
  * middle by the receiver's speed over its own, as a ridge twice as far casts a shadow twice its apparent width).
  * <p>
- * Each receiver's opaque part goes into the stencil, then the caster's shadow is drawn where it is set, darkened and
- * blurred, the receiver's fog over it; each pass is a heart holding the whole page with the layers it does not draw
+ * The light is an hour's (r425, Simon at 11:08: "higher when there is no sun, way lower when the sun is at the zenith
+ * [...] not in a linear fashion [...] color [...] one sun and one moon cycle"): the sun and the moon on their paths,
+ * the light's lux, colour and direct share from the measured clear-sky day ({@link Light}, docs/daylight.md). In A, every
+ * layer is tinted by it and the sky and the fog lit by it; each cast shadow keeps what is left without its body's
+ * direct light.
+ * <p>
+ * Each receiver's opaque part goes into the stencil, then the caster's shadow is drawn where it is set, as a product,
+ * blurred, the receiver's fog kept; each pass is a heart holding the whole page with the layers it does not draw
  * pushed far under the view (so the page's front, and its fog, stay the page's). A lab's passes, not an effect: what
  * ships, if anything, waits for Simon's tests (no Enum_ShaderEffect, no stored field). Opened with shadow-lab.html:
  * tools/shadow-lab.sh.
@@ -81,25 +87,20 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	/** The sky's glow round a sun in {@link #light}, world units across. */
 	static final float GLOW = 16;
 	static final String[] VIEWS = { "the page", "without the pines" };
-	static final String[] OFF_ON = { "off", "on" };
 	/**
-	 * A whole day (r425, Simon at 16:48: "a button to do a whole day"): sun 1 rises under the horizon at the view's left
-	 * edge, {@link #DAY_LOW} degrees, climbs to {@link #DAY_HIGH} over its middle and sets at its right edge, its height
-	 * a half sine over the day, its side straight across.
+	 * A day of 24 hours (r425, Simon at 16:48: "a button to do a whole day"; at 11:08: "We will need one sun and one moon
+	 * cycle, and both produce light that affects the world"): the sun rises at the view's left edge at 6, is
+	 * {@code noonHeight} up over its middle at 12 and sets at its right edge at 18, its height {@code noonHeight}
+	 * sin(angle), its side {@code -DAY_SIDE} cos(angle), the angle 0 at 6; under the ground at night, as low at midnight.
+	 * The moon goes the same way, its angle behind the sun's by its age over {@link #MONTH}: full, it rises at 18.
 	 */
-	static final float DAY_SIDE = 40, DAY_LOW = -6, DAY_HIGH = 30;
-	/**
-	 * Degrees over the horizon a sun takes to light the page (r425, Simon at 17:19: "the whole thing lights up as a
-	 * bugged shader when it appears"): under 0 every layer is in the shade, and over this its cast shadows alone; between
-	 * the two, the one fades into the other, where the lab before swapped them in one frame.
-	 */
-	static final float TWILIGHT = 8;
+	static final float DAY_SIDE = 40, MONTH = 29.53f;
 	/**
 	 * The sun behind you (r425, Simon at 19:52: "a button to test without the sun visible (as if it was behind the
 	 * camera). It should also affect the way the shadows are cast"): not drawn, and its shadows go away from you, laid on
 	 * the ground in perspective ({@link #groundOf}): each layer takes the shadows of every layer in front of it. Simon at
 	 * 20:26 ("Sun back does not feel as if it works"): the lab before cast upright copies of each ridge, shifted 10 units
-	 * sideways, on the layer just behind; they read as streaks, pointing nowhere.
+	 * sideways, on the layer just behind; they read as streaks, pointing nowhere. The moon too, when on.
 	 */
 	private boolean behind;
 
@@ -107,6 +108,8 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	static final int SKY = 0, DRAWN = 1, MASK = DRAWN + LAYERS, CAST = MASK + LAYERS;
 	private final Parallax_Heart[] hearts = new Parallax_Heart[CAST + LAYERS];
 	private final WholePage_Model[] pages = new WholePage_Model[hearts.length];
+	/** The page's own sky and fog, as painted: the light is laid over them each frame (A) and taken off (B). */
+	private final Color skyTop = new Color(), skyBottom = new Color(), fog = new Color();
 	private OrthographicCamera camera, wide;
 	private SpriteBatch batch;
 	private ShaderProgram mask, shadow, occlude, rays, relief;
@@ -115,19 +118,27 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	 * and the pines in black over them ({@link #light}); {@link #RAYS_FRAGMENT} blurs it toward the sun.
 	 */
 	private FrameBuffer light;
-	private Texture sun;
-	private SelectElement view, second;
-	private InputElement scroll, side1, height1, side2, height2, depth, withReceiver, softness, darkness, liftFrom, liftHigh, rayStrength, rayLength, dayLength, reliefStrength, reliefWidth;
+	private Texture sun, moon, haze;
+	/** The phase {@link #moon} was drawn for, in 64ths of a month; -1 none yet. */
+	private int moonDrawn = -1;
+	private SelectElement view;
+	private InputElement scroll, hour, noonHeight, moonAge, side1, height1, depth, withReceiver, softness, darkness, nightDark, curve, fullFrom, warmth, nightBlue, rayStrength, rayLength, dayLength, reliefStrength, reliefWidth;
 	private Element dayButton, behindButton;
-	/** While a day plays: how far through it, 0 sunrise to 1 sunset. */
+	/** While a day plays: the hours left of it. */
 	private boolean day;
-	private float dayAt;
+	private float dayLeft;
 	/**
-	 * Sun 1 as drawn: the day's own, unrounded, while one plays, else its sliders. Read through the sliders, a day moved
-	 * it in their 1 and 0.5 degree steps, about 7 px at a time, standing still between (Simon at 17:19: "Why is it shaking
-	 * so much?").
+	 * The clock as drawn: the day's own, unrounded, while one plays, else its sliders; sun 1 likewise, and the hour's
+	 * own place for it until its sliders or a drag move it off its path. Read through the sliders, a day moved it in
+	 * their 1 and 0.5 degree steps, about 7 px at a time, standing still between (Simon at 17:19: "Why is it shaking so
+	 * much?").
 	 */
-	private float side1At, height1At;
+	private float hourAt, ageAt, side1At, height1At;
+	/** Sun 1 where the hour puts it (true), or where its sliders or a drag put it. */
+	private boolean onPath = true;
+	/** The sliders' text when the lab last wrote or read them: a change is someone's. */
+	private String hourSeen, noonSeen, ageSeen, sideSeen, heightSeen;
+	private final Light lit = new Light();
 	/** How far a shadow may run sideways, world units: the wide camera's margin, at least. */
 	static final float REACH = 60;
 	private Element readout;
@@ -146,6 +157,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		light = new FrameBuffer(Pixmap.Format.RGBA8888, FRAME_WIDTH / 2, FRAME_HEIGHT / 2, false);
 		light.getColorBufferTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 		sun = sunDisc();
+		haze = hazeTexture();
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
 		for (int i = 0; i < hearts.length; i++)
@@ -163,6 +175,9 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			if (i >= MASK)
 				hearts[i].parallaxReader.setLayerEffects(BATCH_SHADER);
 		}
+		skyTop.set(hearts[SKY].topSquare.topColor);
+		skyBottom.set(hearts[SKY].topSquare.bottomColor);
+		fog.set(hearts[DRAWN].parallaxReader.getFogColor());
 		float tile = hearts[CAST].parallaxReader.layers.get(0).getTotalWidth();
 		wide = new OrthographicCamera(WORLD_WIDTH + 2 * tile * (float) Math.ceil(REACH / tile), WORLD_HEIGHT);
 		buildControls();
@@ -198,6 +213,64 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		return texture;
 	}
 
+	/** A soft round glow, no disc: 1 in the middle to nothing at the edge, as (1 - r)^2. */
+	private static Texture hazeTexture()
+	{
+		int size = 64;
+		Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+		pixmap.setBlending(Pixmap.Blending.None);
+		for (int y = 0; y < size; y++)
+			for (int x = 0; x < size; x++)
+			{
+				float r = Math.min(1, (float) Math.hypot(x + 0.5f - size / 2f, y + 0.5f - size / 2f) / (size / 2f));
+				pixmap.setColor(1, 1, 1, (1 - r) * (1 - r));
+				pixmap.drawPixel(x, y);
+			}
+		Texture texture = new Texture(pixmap);
+		texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+		pixmap.dispose();
+		return texture;
+	}
+
+	/**
+	 * The moon {@code age} days old, as the sun's disc ({@link #SUN} across in a square three times that): its lit part
+	 * a pale grey-white, the rest a faint earthshine, the terminator an ellipse; lit on the right while it waxes (the sun
+	 * is to its right, further along the same path), on the left while it wanes. A faint glow round it, as its light's
+	 * own in the air.
+	 */
+	private static Texture moonDisc(float age)
+	{
+		int size = 96;
+		Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+		pixmap.setBlending(Pixmap.Blending.None);
+		float disc = size / 6f;
+		double phase = 2 * Math.PI * age / MONTH;
+		// The terminator: x = k sqrt(1 - y^2) in the disc's radii, k from 1 (new) through 0 (half) to -1 (full).
+		float k = (float) Math.cos(phase);
+		boolean waxing = age < MONTH / 2;
+		float full = (1 - k) / 2;
+		for (int y = 0; y < size; y++)
+			for (int x = 0; x < size; x++)
+			{
+				float dx = (x + 0.5f - size / 2f) / disc, dy = (y + 0.5f - size / 2f) / disc;
+				float r = (float) Math.hypot(dx, dy);
+				float edge = Math.min(1, Math.max(0, (1 - r) * disc + 0.5f));
+				float side = waxing ? dx : -dx, line = k * (float) Math.sqrt(Math.max(0, 1 - dy * dy));
+				float on = Math.min(1, Math.max(0, (side - line) * disc + 0.5f));
+				// Grey seas: a few broad patches, darker.
+				float sea = 0.9f - 0.12f * (float) Math.max(0, Math.cos(3.1 * dx + 1.3) * Math.cos(2.7 * dy - 0.4));
+				float glow = r > 1 ? Math.max(0, 1 - (r - 1) / 2f) : 0;
+				float lum = on * sea + (1 - on) * 0.07f;
+				float a = Math.max(edge * Math.max(on, 0.28f), 0.22f * full * glow * glow);
+				pixmap.setColor(r <= 1 ? lum : 0.85f, r <= 1 ? lum : 0.88f, r <= 1 ? lum * 0.97f + 0.02f : 0.95f, Math.min(1, a));
+				pixmap.drawPixel(x, y);
+			}
+		Texture texture = new Texture(pixmap);
+		texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+		pixmap.dispose();
+		return texture;
+	}
+
 	/** Pushes a layer far under the view: the heart keeps it (its speed is the page's front), nothing of it shows. */
 	private static void hide(Parallax_Model layer)
 	{layer.decal_Y_Ratio = HIDDEN;}
@@ -213,45 +286,62 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	private void buildControls()
 	{
 		Document document = Document.get();
-		LabControls.panelLabels(document, "shadow-labels", "A: shadows", "B: as painted");
+		LabControls.panelLabels(document, "shadow-labels", "A: shadows and light", "B: as painted");
 		view = LabControls.stageChoice(document, "shadow-labels", "view", "view (the whole page; or without the pines, to see the hills' shadows whole)", VIEWS, 0);
 		Element controls = document.getElementById("shadow-controls");
-		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, 20);
-		// The defaults are Simon's (r425, 16 Oct 16:48: "I think we can start around this").
-		side1 = LabControls.slider(document, controls, "sun1Side", "sun 1 side (degrees from straight ahead: under 0 left, over 0 right; or drag the sun in the sky)", -40, 40, 1, -40);
-		height1 = LabControls.slider(document, controls, "sun1Height", "sun 1 height (degrees over the horizon: low, the shadows climb; under 0, the sun has set and every layer is in the shade; in the sky, over about 34 it is above the picture)", -8, 60, 0.5f, 22.5f);
-		second = LabControls.choice(document, controls, "sun2On", "sun 2 (a second sun, its own shadows)", OFF_ON, 0);
-		side2 = LabControls.slider(document, controls, "sun2Side", "sun 2 side (degrees, as sun 1)", -40, 40, 1, 22);
-		height2 = LabControls.slider(document, controls, "sun2Height", "sun 2 height (degrees, as sun 1)", -8, 60, 0.5f, 20);
-		depth = LabControls.slider(document, controls, "depth", "depth (world units between a layer and the one in front: the farther, the lower its shadow lands)", 0, 40, 0.5f, 12);
-		withReceiver = LabControls.slider(document, controls, "withReceiver", "with the layer it falls on (1: a shadow moves with the layer it lies on, as in the world; 0: with the layer casting it)", 0, 1, 0.05f, 1);
-		softness = LabControls.slider(document, controls, "softness", "softness (the blur's radius, world units)", 0, 0.8f, 0.01f, 0.8f);
-		darkness = LabControls.slider(document, controls, "darkness", "darkness (0 no shadow, 1 black)", 0, 1, 0.05f, 0.2f);
-		// A high sun lifts the shade (r425, Simon at 19:52: "When the sun is considered high it should also remove overall
-		// darkness"): the cast shadows' darkness eases from its full under liftFrom to none from liftHigh up.
-		liftFrom = LabControls.slider(document, controls, "liftFrom", "shade lifts from (degrees: under this sun height the shadows are as dark as darkness says)", 0, 60, 0.5f, 15);
-		liftHigh = LabControls.slider(document, controls, "liftHigh", "high sun (degrees: from this sun height up, no shade is left)", 0, 90, 0.5f, 40);
+		// One grid, its rows in groups (a section's heading would push the last slider under a 710 px window): the
+		// clock and the sun's place in the first two, the light in the next two, the shadows after. The sun and the moon
+		// move with the hour; a drag in the sky takes the sun off its path.
+		Element time = controls;
+		hour = LabControls.slider(document, time, "hour", "hour (0 to 24: the sun rises at 6 at the view's left, is highest at 12, sets at 18 at its right)", 0, 24, 0.05f, 8);
+		noonHeight = LabControls.slider(document, time, "noonHeight", "noon height (degrees the sun is up at 12; over about 34 it is above the picture)", 10, 80, 1, 45);
+		moonAge = LabControls.slider(document, time, "moonAge", "moon age (days since a new moon: 7.4 first quarter, 14.8 full, 22.1 last quarter; a half moon gives a tenth of a full one's light)", 0, 29.5f, 0.1f, 14.8f);
+		dayLength = LabControls.slider(document, time, "dayLength", "day length (seconds the button's 24 hours last; the moon ages a day)", 10, 120, 1, 40);
+		side1 = LabControls.slider(document, time, "sun1Side", "sun side (degrees from straight ahead: under 0 left, over 0 right; set by the hour, or drag the sun in the sky)", -40, 40, 1, -35);
+		height1 = LabControls.slider(document, time, "sun1Height", "sun height (degrees over the horizon; set by the hour, or drag the sun in the sky)", -60, 80, 0.5f, 22.5f);
+		dayButton = button(document, time, "shadow-day", false);
+		behindButton = button(document, time, "shadow-behind", true);
+		showDay();
+		showBehind();
+		// The light, from the measured day (docs/daylight.md, Simon at 11:08: "higher when there is no sun, way lower
+		// when the sun is at the zenith [...] not in a linear fashion").
+		Element world = controls;
+		nightDark = LabControls.slider(document, world, "nightDark", "darkest night (how dark a moonless night is: 1 black)", 0, 1, 0.01f, 0.9f);
+		curve = LabControls.slider(document, world, "curve", "dusk curve (brightness follows the light's lux on a log scale, raised to this: 1 even, higher keeps dusk darker longer)", 0.5f, 4, 0.05f, 1.3f);
+		fullFrom = LabControls.slider(document, world, "fullFrom", "full light from (sun height, degrees, from which the world is as painted)", 2, 60, 0.5f, 20);
+		warmth = LabControls.slider(document, world, "warmth", "warmth (how much of the measured colour of the light: 0 white light at every hour)", 0, 1.5f, 0.05f, 1);
+		nightBlue = LabControls.slider(document, world, "nightBlue", "night blue (eyes in the dark see blue and grey: 0 none, 1 as measured)", 0, 1, 0.05f, 0.8f);
+		scroll = LabControls.slider(document, world, "cameraScroll", "camera scroll (units a second)", -160, 160, 5, 20);
+		// A shadow lacks the sun's or the moon's direct light and keeps the sky's.
+		Element shadows = controls;
+		darkness = LabControls.slider(document, shadows, "darkness", "darkness (1: a shadow lacks all the direct light, as in the world; the sky's share is measured: about 10% at noon, all of it at sunset)", 0, 1, 0.05f, 0.6f);
+		depth = LabControls.slider(document, shadows, "depth", "depth (world units between a layer and the one in front: the farther, the lower its shadow lands)", 0, 40, 0.5f, 12);
+		softness = LabControls.slider(document, shadows, "softness", "softness (the blur's radius, world units)", 0, 0.8f, 0.01f, 0.8f);
+		withReceiver = LabControls.slider(document, shadows, "withReceiver", "with the layer under (how the shadow moves as the camera scrolls; 1: a shadow moves with the layer it lies on, as in the world; 0: with the layer casting it)", 0, 1, 0.05f, 1);
 		// The sun coming out from behind the range, and going back (r425, Simon at 20:26: "it should have some effect").
-		rayStrength = LabControls.slider(document, controls, "rays", "rays (the light the sun sends past the ridges in front of it, in A: rays round a ridge it is behind, a glare when it is clear; 0 none)", 0, 2, 0.05f, 0.8f);
-		rayLength = LabControls.slider(document, controls, "rayLength", "ray length (how far across the view the rays reach from the sun)", 0.1f, 1, 0.05f, 0.7f);
+		rayStrength = LabControls.slider(document, shadows, "rays", "rays (the light the sun sends past the ridges in front of it, in A: rays round a ridge it is behind, a glare when it is clear; 0 none)", 0, 2, 0.05f, 0.8f);
+		rayLength = LabControls.slider(document, shadows, "rayLength", "ray length (how far across the view the rays reach from the sun)", 0.1f, 1, 0.05f, 0.7f);
 		// The sun behind you lights each layer's own faces (r425, Simon at 23:35: "Sun behind is still very bad"): its cast
 		// shadows fall behind what casts them, out of sight; what shows where it is, is which flanks it lights.
-		reliefStrength = LabControls.slider(document, controls, "relief", "relief (with the sun behind you: each layer's flanks facing the sun lit, the others in the shade; 0 none)", 0, 1, 0.05f, 0.6f);
-		reliefWidth = LabControls.slider(document, controls, "reliefWidth", "relief width (world units in from a layer's edge its flanks reach: small, a rim; large, whole peaks)", 0.1f, 4, 0.05f, 2.5f);
-		dayLength = LabControls.slider(document, controls, "dayLength", "day length (seconds the button's day lasts, sunrise to sunset)", 5, 60, 1, 20);
-		dayButton = document.createButtonElement();
-		dayButton.setId("shadow-day");
-		dayButton.setClassName("lab-copy shadow-day");
-		controls.appendChild(dayButton);
-		onClick(dayButton, this, false);
-		showDay();
-		behindButton = document.createButtonElement();
-		behindButton.setId("shadow-behind");
-		behindButton.setClassName("lab-copy shadow-day");
-		controls.appendChild(behindButton);
-		onClick(behindButton, this, true);
-		showBehind();
+		reliefStrength = LabControls.slider(document, shadows, "relief", "relief (with the sun behind you: each layer's flanks facing the sun lit, the others in the shade; 0 none)", 0, 1, 0.05f, 0.6f);
+		reliefWidth = LabControls.slider(document, shadows, "reliefWidth", "relief width (world units in from a layer's edge its flanks reach: small, a rim; large, whole peaks)", 0.1f, 4, 0.05f, 2.5f);
 		readout = LabControls.readout(document, controls, "shadow-readout");
+		hourAt = LabControls.read(hour);
+		ageAt = LabControls.read(moonAge);
+		hourSeen = hour.getValue();
+		noonSeen = noonHeight.getValue();
+		ageSeen = moonAge.getValue();
+		place();
+	}
+
+	private Element button(Document document, Element into, String id, boolean behind)
+	{
+		Element button = document.createButtonElement();
+		button.setId(id);
+		button.setClassName("lab-copy shadow-day");
+		into.appendChild(button);
+		onClick(button, this, behind);
+		return button;
 	}
 
 	private static native void onClick(Element element, ShadowLab lab, boolean behind) /*-{
@@ -263,7 +353,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		}));
 	}-*/;
 
-	/** The sun behind you, or back in the sky. */
+	/** The sun and the moon behind you, or back in the sky. */
 	void toggleBehind()
 	{
 		behind = !behind;
@@ -273,7 +363,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	/** The button says what a press does; window.shadowBehind tells the drag and Copy settings where the sun is. */
 	private void showBehind()
 	{
-		behindButton.setInnerText(behind ? "\u2600 sun back in the sky" : "\u2600 sun behind you");
+		behindButton.setInnerText(behind ? "☀ sun back in the sky" : "☀ sun behind you");
 		publishBehind(behind);
 	}
 
@@ -281,71 +371,136 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		$wnd.shadowBehind = behind;
 	}-*/;
 
-	/** The day's button: a day from sunrise, or the one playing stopped where its sun is. */
+	/** The day's button: 24 hours from the hour shown, or the one playing stopped where it is. */
 	void toggleDay()
 	{
 		day = !day;
 		if (day)
-			dayAt = 0;
+		{
+			dayLeft = 24;
+			onPath = true;
+		}
 		showDay();
 	}
 
 	private void showDay()
-	{dayButton.setInnerText(day ? "\u25A0 stop the day" : "\u25B6 play a whole day");}
+	{dayButton.setInnerText(day ? "■ stop the day" : "▶ play 24 hours");}
 
-	/** A playing day moved on by {@code seconds}: sun 1's sliders set where the day has it, so the drag and Copy see it. */
+	/** A playing day moved on by {@code seconds}: the hour and the moon's age, their sliders set to show them. */
 	private void stepDay(float seconds)
 	{
 		if (!day)
 			return;
-		dayAt = Math.min(1, dayAt + seconds / LabControls.read(dayLength));
-		side1At = -DAY_SIDE + 2 * DAY_SIDE * dayAt;
-		height1At = DAY_LOW + (DAY_HIGH - DAY_LOW) * (float) Math.sin(Math.PI * dayAt);
-		side1.setValue(LabControls.text(side1At));
-		height1.setValue(LabControls.text(height1At));
-		if (dayAt >= 1)
+		// An hour or an age someone set while it plays: the day goes on from there.
+		if (!hour.getValue().equals(hourSeen) || !moonAge.getValue().equals(ageSeen))
+		{
+			hourAt = LabControls.read(hour);
+			ageAt = LabControls.read(moonAge);
+			hourSeen = hour.getValue();
+			ageSeen = moonAge.getValue();
+		}
+		float hours = Math.min(dayLeft, 24 * seconds / LabControls.read(dayLength));
+		dayLeft -= hours;
+		hourAt = (hourAt + hours) % 24;
+		ageAt = (ageAt + hours / 24) % MONTH;
+		hour.setValue(LabControls.text(hourAt));
+		moonAge.setValue(LabControls.text(ageAt));
+		hourSeen = hour.getValue();
+		ageSeen = moonAge.getValue();
+		if (dayLeft <= 0)
 		{
 			day = false;
 			showDay();
 		}
 	}
 
-	private void applyControls()
+	/** Where the clock puts sun 1, unless it was taken off its path; the sliders show it. */
+	private void place()
 	{
-		float sc = LabControls.read(scroll);
-		if (!day)
+		if (!hour.getValue().equals(hourSeen) || !noonHeight.getValue().equals(noonSeen) || !moonAge.getValue().equals(ageSeen))
+		{
+			// Someone moved the clock: the sun back on its path, at the slider's hour.
+			hourAt = LabControls.read(hour);
+			ageAt = LabControls.read(moonAge);
+			hourSeen = hour.getValue();
+			noonSeen = noonHeight.getValue();
+			ageSeen = moonAge.getValue();
+			onPath = true;
+		}
+		else if (!side1.getValue().equals(sideSeen) || !height1.getValue().equals(heightSeen))
+			onPath = false;
+		if (onPath)
+		{
+			float noon = LabControls.read(noonHeight);
+			side1At = sideAt(hourAt, 0);
+			height1At = heightAt(hourAt, 0, noon);
+			side1.setValue(LabControls.text(side1At));
+			height1.setValue(LabControls.text(height1At));
+		}
+		else
 		{
 			side1At = LabControls.read(side1);
 			height1At = LabControls.read(height1);
 		}
+		sideSeen = side1.getValue();
+		heightSeen = height1.getValue();
+	}
+
+	/** The angle round a body's path at {@code hour}, {@code behind} hours late: 0 rising, pi/2 highest, pi setting. */
+	static double pathAngle(float hour, float behind)
+	{return 2 * Math.PI * (hour - 6 - behind) / 24;}
+
+	/** A body's side at {@code hour}, {@code behind} hours late: {@code -DAY_SIDE} rising to {@code DAY_SIDE} setting. */
+	static float sideAt(float hour, float behind)
+	{return (float) (-DAY_SIDE * Math.cos(pathAngle(hour, behind)));}
+
+	/** A body's height at {@code hour}, {@code behind} hours late, {@code noon} up at its highest. */
+	static float heightAt(float hour, float behind, float noon)
+	{return (float) (noon * Math.sin(pathAngle(hour, behind)));}
+
+	/** The hours the moon is late on the sun, {@code age} days old: a full moon rises as the sun sets. */
+	static float moonLate(float age)
+	{return 24 * age / MONTH;}
+
+	private void applyControls()
+	{
+		float sc = LabControls.read(scroll);
+		place();
 		for (Parallax_Heart heart : hearts)
 			heart.screenSpeedConstantX = sc;
 		// Read even while off: a slider shows its value when read.
 		LabControls.read(view);
 		LabControls.read(withReceiver);
 		LabControls.read(softness);
-		LabControls.read(darkness);
 		LabControls.read(dayLength);
-		LabControls.read(liftFrom);
-		LabControls.read(liftHigh);
 		LabControls.read(rayStrength);
 		LabControls.read(rayLength);
 		LabControls.read(reliefStrength);
 		LabControls.read(reliefWidth);
-		float s2 = LabControls.read(side2), h2 = LabControls.read(height2), d = LabControls.read(depth);
-		readout.setInnerText((behind
-				? "The sun is behind you: the shadows lie on the ground away from you, on every layer behind the one casting them, and each layer's flanks turned toward it are lit, the others in the shade. Sun 1: "
-				: "Each layer casts on the layer just in front of it: the far peaks (l0) on the range (l1), the range on the hills (l2), the hills on the pines (l3). Sun 1: ")
-				+ ""
-				+ describe(side1At, height1At, d)
-				+ (LabControls.read(second) == 1 ? "; sun 2: " + describe(s2, h2, d) : "") + ". The world is " + round(WORLD_WIDTH) + " units wide.");
+		float noon = LabControls.read(noonHeight);
+		float moonSide = sideAt(hourAt, moonLate(ageAt)), moonHeight = heightAt(hourAt, moonLate(ageAt), noon);
+		lit.set(height1At, moonHeight, ageAt, LabControls.read(nightDark), LabControls.read(curve), LabControls.read(fullFrom),
+				LabControls.read(warmth), LabControls.read(nightBlue), LabControls.read(darkness), behind);
+		lit.sunSide = side1At;
+		lit.moonSide = moonSide;
+		float d = LabControls.read(depth);
+		readout.setInnerText(clock(hourAt) + ", moon " + Light.phaseName(ageAt) + ", " + (moonHeight > 0 ? round(moonHeight) + "\u00b0 up" : "down")
+				+ ". Sun " + describe(side1At, height1At, d) + ". " + Light.luxText(lit.lux) + " lux: the world "
+				+ Math.round(100 * lit.bright) + "% bright, a sun shadow " + Math.round(100 * lit.sunCut) + "% darker, a moon shadow "
+				+ Math.round(100 * lit.moonCut) + "%.");
+	}
+
+	private static String clock(float hour)
+	{
+		int minutes = Math.round(hour * 60) % (24 * 60);
+		int m = minutes % 60;
+		return (minutes / 60) + ":" + (m < 10 ? "0" : "") + m;
 	}
 
 	/**
 	 * Where a sun at {@code side} degrees from straight ahead (over 0 on the right) and {@code height} over the horizon
 	 * lays a layer's shadow on the one {@code depth} units in front of it, {x, y}: the ray over the caster's ridge has
-	 * moved away from the sun's side by depth tan(side), and dropped depth tan(height) / cos(side), y under 0. A sun under
-	 * the horizon: y over 0, the shadow over the ridge.
+	 * moved away from the sun's side by depth tan(side), and dropped depth tan(height) / cos(side), y under 0.
 	 */
 	static float[] shadowOf(float side, float height, float depth)
 	{
@@ -371,37 +526,22 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		return new float[] { (float) (-Math.sin(a) * Math.cos(h) / ly), (float) (Math.cos(a) * Math.cos(h) / (ly * FOCAL)) };
 	}
 
-	/** How far into the night a sun {@code height} degrees up has the page: 1 set, 0 from {@link #TWILIGHT} up. */
-	static float dusk(float height)
-	{return Math.max(0, Math.min(1, 1 - height / TWILIGHT));}
-
-	/** How much of the cast shadows' darkness a sun {@code height} degrees up leaves: 1 under {@code from}, 0 from {@code high} up, eased between. */
-	static float lift(float height, float from, float high)
-	{
-		if (high <= from)
-			return height < high ? 1 : 0;
-		float t = Math.max(0, Math.min(1, (height - from) / (high - from)));
-		return 1 - t * t * (3 - 2 * t);
-	}
-
 	private String describe(float side, float height, float depth)
 	{
 		if (height <= 0)
-			return "under the horizon: set, every layer in the shade";
+			return "under the horizon";
 		if (behind)
 		{
 			// The top of a pine 13 units over its foot at the view's bottom.
 			float[] g = groundOf(side, height);
 			float w = 1 + g[1] * 13;
-			return round(Math.abs(side)) + " degrees " + (side < 0 ? "left" : "right") + " behind you, " + round(height)
-					+ " up: the shadows run toward the horizon " + round(Math.abs(FOCAL * (float) Math.tan(Math.toRadians(side)))) + " units " + (side < 0 ? "right" : "left")
-					+ " of the middle; a pine 13 units tall lays one " + round(Math.abs(13 * g[0] / w)) + " across and " + round(HORIZON - HORIZON / w) + " up the picture, "
-					+ Math.round(100 * lift(height, LabControls.read(liftFrom), LabControls.read(liftHigh))) + "% dark";
+			return round(Math.abs(side)) + "\u00b0 " + (side < 0 ? "left" : "right") + " behind you, " + round(height)
+					+ "\u00b0 up: shadows toward the horizon " + round(Math.abs(FOCAL * (float) Math.tan(Math.toRadians(side)))) + " " + (side < 0 ? "right" : "left")
+					+ "; a 13 tall pine's " + round(Math.abs(13 * g[0] / w)) + " across, " + round(HORIZON - HORIZON / w) + " up";
 		}
 		float[] k = shadowOf(side, height, depth);
-		return round(Math.abs(side)) + " degrees " + (side < 0 ? "left" : "right") + ", " + round(height)
-				+ " up: a ridge's shadow lands " + round(Math.abs(k[1])) + (k[1] <= 0 ? " units under it and " : " units over it and ") + round(Math.abs(k[0])) + " " + (k[0] < 0 ? "left" : "right")
-				+ ", " + Math.round(100 * lift(height, LabControls.read(liftFrom), LabControls.read(liftHigh))) + "% dark";
+		return round(Math.abs(side)) + "\u00b0 " + (side < 0 ? "left" : "right") + ", " + round(height)
+				+ "\u00b0 up: a ridge's shadow " + round(Math.abs(k[1])) + " under it, " + round(Math.abs(k[0])) + " " + (k[0] < 0 ? "left" : "right");
 	}
 
 	private static float round(float value)
@@ -427,13 +567,15 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		}
 		int height = Gdx.graphics.getBackBufferHeight();
 		boolean pines = LabControls.read(view) == 0;
-		boolean lit = !behind && LabControls.read(rayStrength) > 0;
-		if (lit)
+		boolean glare = !behind && LabControls.read(rayStrength) > 0;
+		if (glare)
 			light(pines);
 		LabKit.beginPanels();
 		if (LabKit.panel(0, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
 		{
+			lightUp(true);
 			hearts[SKY].render();
+			glow();
 			suns();
 			for (int k = 0; k < LAYERS; k++)
 				if (k != PINES || pines)
@@ -442,8 +584,9 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 					relief(k);
 					cast(k);
 				}
-			if (lit)
+			if (glare)
 				rays();
+			lightUp(false);
 		}
 		if (LabKit.panel(FRAME_WIDTH + 4, height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
 		{
@@ -457,9 +600,64 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	}
 
 	/**
-	 * Each sun, over the sky and behind every layer: the farthest peaks (l0) hide a low one first (Simon at 23:35: "you
-	 * did not show the sun behind the last layer but the one before that"; bac21de had put it over l0, whose peaks are
-	 * hazed almost to the sky's colour, for the bites they cut in it).
+	 * The hour's light on the page (A), or off it (B): every layer's tint the light's colour at its brightness, the sky's
+	 * two colours and the page fog the painted ones times the sky's light ({@link Light}).
+	 */
+	private void lightUp(boolean on)
+	{
+		for (int k = 0; k < LAYERS; k++)
+		{
+			ParallaxPageReader reader = hearts[DRAWN + k].parallaxReader;
+			reader.addColorTransfert(on ? tint.set(lit.tint[0], lit.tint[1], lit.tint[2], 1) : Color.WHITE, 0);
+			reader.getFogColor().set(fog);
+			if (on)
+				reader.getFogColor().mul(lit.haze[0], lit.haze[1], lit.haze[2], 1);
+		}
+		hearts[SKY].topSquare.topColor.set(skyTop);
+		hearts[SKY].topSquare.bottomColor.set(skyBottom);
+		if (on)
+		{
+			hearts[SKY].topSquare.topColor.mul(lit.zenith[0], lit.zenith[1], lit.zenith[2], 1);
+			hearts[SKY].topSquare.bottomColor.mul(lit.horizon[0], lit.horizon[1], lit.horizon[2], 1);
+		}
+	}
+
+	private final Color tint = new Color();
+
+	/**
+	 * A low sun's glow over the sky, behind every layer (docs/daylight.md: the air near the horizon lit red-gold round
+	 * the sun at sunrise and sunset): a band along the horizon, and a halo round the sun brighter still. Behind you,
+	 * the band alone, pink, a little higher: the Belt of Venus over the Earth's shadow, opposite a setting sun.
+	 */
+	private void glow()
+	{
+		if (lit.glow < 0.01f)
+			return;
+		camera.update();
+		batch.setProjectionMatrix(camera.combined);
+		batch.enableBlending();
+		batch.begin();
+		float bottom = camera.position.y - WORLD_HEIGHT / 2, x = camera.position.x;
+		// Up to the far peaks' tops (about 8 units over the horizon) and past them.
+		batch.setColor(lit.glowColor[0], lit.glowColor[1], lit.glowColor[2], 0.9f * lit.glow);
+		float middle = bottom + HORIZON + (behind ? 6 : 4);
+		batch.draw(haze, x - 1.5f * WORLD_WIDTH, middle - 10, 3 * WORLD_WIDTH, 20);
+		if (!behind)
+		{
+			double a = Math.toRadians(side1At);
+			float sx = x + FOCAL * (float) Math.tan(a), sy = bottom + HORIZON + FOCAL * (float) (Math.tan(Math.toRadians(Math.max(height1At, -4))) / Math.cos(a));
+			batch.setColor(lit.glowColor[0], lit.glowColor[1], lit.glowColor[2], lit.glow);
+			batch.draw(haze, sx - 16, sy - 9, 32, 18);
+		}
+		batch.setColor(Color.WHITE);
+		batch.end();
+	}
+
+	/**
+	 * The sun and the moon, over the sky and behind every layer: the farthest peaks (l0) hide a low one first (Simon at
+	 * 23:35: "you did not show the sun behind the last layer but the one before that"; bac21de had put it over l0, whose
+	 * peaks are hazed almost to the sky's colour, for the bites they cut in it). The sun in its colour (red low down),
+	 * the moon paler by day.
 	 */
 	private void suns()
 	{
@@ -469,15 +667,36 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		batch.setProjectionMatrix(camera.combined);
 		batch.enableBlending();
 		batch.begin();
-		drawSun(side1At, height1At);
-		if (LabControls.read(second) == 1)
-			drawSun(LabControls.read(side2), LabControls.read(height2));
+		float noon = LabControls.read(noonHeight), late = moonLate(ageAt);
+		drawMoon(sideAt(hourAt, late), heightAt(hourAt, late, noon));
+		batch.setColor(lit.sunDisc[0], lit.sunDisc[1], lit.sunDisc[2], 1);
+		drawBody(sun, side1At, height1At);
+		batch.setColor(Color.WHITE);
 		batch.end();
 	}
 
+	/** The moon at its phase, drawn anew when its age has moved a 64th of a month. */
+	private void drawMoon(float side, float height)
+	{
+		int phase = Math.round(ageAt / MONTH * 64) % 64;
+		if (phase != moonDrawn)
+		{
+			if (moon != null)
+			{
+				batch.flush();
+				moon.dispose();
+			}
+			moon = moonDisc(phase * MONTH / 64);
+			moonDrawn = phase;
+		}
+		batch.setColor(lit.moonDisc[0], lit.moonDisc[1], lit.moonDisc[2], lit.moonDisc[3]);
+		drawBody(moon, side, height);
+	}
+
 	/**
-	 * Into {@link #light}: the suns in their colour on black, then every layer in front of them (the far peaks, the range, the hills, the
-	 * pines when shown) in black over them, through its alpha: what light reaches the eye from the suns, at half size.
+	 * Into {@link #light}: the sun in its colour on black, then every layer in front of it (the far peaks, the range, the
+	 * hills, the pines when shown) in black over it, through its alpha: what light reaches the eye from the sun, at half
+	 * size.
 	 */
 	private void light(boolean pines)
 	{
@@ -490,8 +709,6 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		batch.begin();
 		lightSun(side1At, height1At);
-		if (LabControls.read(second) == 1)
-			lightSun(LabControls.read(side2), LabControls.read(height2));
 		batch.end();
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		// The stencil's hearts: they draw through the batch's shader, this one (the drawn ones through the page fog's).
@@ -504,17 +721,15 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	}
 
 	/**
-	 * Over A, added to it: {@link #light} blurred toward sun 1 (the higher sun when two are on), so what of the suns
-	 * shows streams out from it, darker where a ridge is between: rays round a ridge the sun is just behind, a glare round
-	 * it when it is clear, nothing once it is deep behind the range.
+	 * Over A, added to it: {@link #light} blurred toward the sun, so what of it shows streams out from it, darker where a
+	 * ridge is between: rays round a ridge the sun is just behind, a glare round it when it is clear, nothing once it is
+	 * deep behind the range. In the sun's colour.
 	 */
 	private void rays()
 	{
-		boolean two = LabControls.read(second) == 1 && LabControls.read(height2) > height1At;
-		float side = two ? LabControls.read(side2) : side1At, high = two ? LabControls.read(height2) : height1At;
-		double a = Math.toRadians(side);
+		double a = Math.toRadians(side1At);
 		float x = WORLD_WIDTH / 2 + FOCAL * (float) Math.tan(a);
-		float y = HORIZON + FOCAL * (float) (Math.tan(Math.toRadians(high)) / Math.cos(a));
+		float y = HORIZON + FOCAL * (float) (Math.tan(Math.toRadians(height1At)) / Math.cos(a));
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 		batch.setShader(rays);
@@ -523,6 +738,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		batch.begin();
 		rays.setUniformf(rays.fetchUniformLocation("u_sun", false), x / WORLD_WIDTH, y / WORLD_HEIGHT);
 		rays.setUniformf(rays.fetchUniformLocation("u_rays", false), LabControls.read(rayStrength), LabControls.read(rayLength));
+		rays.setUniformf(rays.fetchUniformLocation("u_color", false), lit.sunDisc[0], lit.sunDisc[1] * 0.92f, lit.sunDisc[2] * 0.75f);
 		float left = camera.position.x - WORLD_WIDTH / 2, bottom = camera.position.y - WORLD_HEIGHT / 2;
 		batch.draw(light.getColorBufferTexture(), left, bottom, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, 1, 1);
 		batch.end();
@@ -531,7 +747,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 	}
 
 	/**
-	 * A sun's light into {@link #light}: its disc, and the sky's glow round it, {@link #GLOW} across and dim, which the
+	 * The sun's light into {@link #light}: its disc, and the sky's glow round it, {@link #GLOW} across and dim, which the
 	 * ridges in front cut into rays while the disc is behind one.
 	 */
 	private void lightSun(float side, float height)
@@ -542,49 +758,57 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		batch.setColor(1, 1, 1, 0.45f);
 		batch.draw(sun, x - GLOW / 2, y - GLOW / 2, GLOW, GLOW);
 		batch.setColor(1, 1, 1, 1);
-		drawSun(side, height);
+		drawBody(sun, side, height);
 	}
 
-	private void drawSun(float side, float height)
+	/** A disc of the sky ({@link #sunDisc}, {@link #moonDisc}) where a body at {@code side}, {@code height} is seen. */
+	private void drawBody(Texture disc, float side, float height)
 	{
 		double a = Math.toRadians(side);
 		float x = camera.position.x + FOCAL * (float) Math.tan(a);
 		float y = camera.position.y - WORLD_HEIGHT / 2 + HORIZON + FOCAL * (float) (Math.tan(Math.toRadians(height)) / Math.cos(a));
 		float size = 3 * SUN;
-		batch.draw(sun, x - size / 2, y - size / 2, size, size);
+		batch.draw(disc, x - size / 2, y - size / 2, size, size);
 	}
 
 	/**
-	 * With the sun behind you, layer {@code k}'s own faces in its light: a flank turned toward it lit, warm, one turned
-	 * away in the shade, each in the layer's fog. The flanks are read from the layer's ridge line ({@link
-	 * #RELIEF_FRAGMENT}): a face leans as the ridge over it climbs, so a peak's flank on the sun's side is lit, the other
-	 * in the shade, down to its foot.
+	 * Behind you, layer {@code k}'s own faces in the light that casts the most (the sun's, or at night the moon's): a
+	 * flank turned toward it lit, in its colour, one turned away in the shade, each in the layer's fog, as strong as the
+	 * light's direct share. The flanks are read from the layer's ridge line ({@link #RELIEF_FRAGMENT}): a face leans as
+	 * the ridge over it climbs, so a peak's flank on the light's side is lit, the other in the shade, down to its foot.
 	 */
 	private void relief(int k)
 	{
-		float strength = LabControls.read(reliefStrength), h = height1At;
+		boolean byMoon = lit.moonCut > lit.sunCut;
+		float strength = LabControls.read(reliefStrength) * Math.min(1, 1.5f * (byMoon ? lit.moonShare : lit.sunShare));
+		float h = byMoon ? heightAt(hourAt, moonLate(ageAt), LabControls.read(noonHeight)) : height1At;
+		float s = byMoon ? lit.moonSide : side1At;
 		if (!behind || strength <= 0 || h <= 0)
 			return;
-		double a = Math.toRadians(side1At), up = Math.toRadians(h);
+		double a = Math.toRadians(s), up = Math.toRadians(h);
 		ParallaxLayer layer = hearts[CAST + k].parallaxReader.layers.get(k);
 		WholePage_Model page = pages[DRAWN + k];
-		float fog = ParallaxPageReader.fogOf(page.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[DRAWN + k].parallaxReader.layers), hearts[DRAWN + k].parallaxReader.layers.get(k));
-		Color f = page.fogColor;
+		float fogged = ParallaxPageReader.fogOf(page.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[DRAWN + k].parallaxReader.layers), hearts[DRAWN + k].parallaxReader.layers.get(k));
+		Color f = hearts[DRAWN + k].parallaxReader.getFogColor();
+		float[] from = byMoon ? lit.moonDisc : lit.sunDisc;
+		float b = lit.bright;
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 		batch.enableBlending();
 		batch.setShader(relief);
 		relief.bind();
 		relief.setUniformf(relief.fetchUniformLocation("u_sun", false), (float) (Math.sin(a) * Math.cos(up)), (float) Math.sin(up), (float) (Math.cos(a) * Math.cos(up)));
-		relief.setUniformf(relief.fetchUniformLocation("u_shade", false), SHADOW_COLOR.r * (1 - fog) + f.r * fog, SHADOW_COLOR.g * (1 - fog) + f.g * fog, SHADOW_COLOR.b * (1 - fog) + f.b * fog, strength * (1 - dusk(h)));
-		relief.setUniformf(relief.fetchUniformLocation("u_lit", false), SUNLIT.r * (1 - fog) + f.r * fog, SUNLIT.g * (1 - fog) + f.g * fog, SUNLIT.b * (1 - fog) + f.b * fog, 1);
+		relief.setUniformf(relief.fetchUniformLocation("u_shade", false), SHADOW_COLOR.r * (1 - fogged) + f.r * fogged, SHADOW_COLOR.g * (1 - fogged) + f.g * fogged,
+				SHADOW_COLOR.b * (1 - fogged) + f.b * fogged, strength);
+		relief.setUniformf(relief.fetchUniformLocation("u_lit", false), b * from[0] * (1 - fogged) + f.r * fogged, b * from[1] * (1 - fogged) + f.g * fogged,
+				b * from[2] * 0.85f * (1 - fogged) + f.b * fogged, 1);
 		draw(relief, hearts[CAST + k], layer, LabControls.read(reliefWidth), camera);
 		batch.setShader(null);
 	}
 
 	/**
 	 * Layer {@code receiver} into the stencil, where it is opaque; then, where it is set, the shadow the layer behind it
-	 * casts from each sun (the farthest layer: none, unless a sun has set).
+	 * casts from the sun and from the moon, each as dark as its direct share of the light ({@link Light#sunCut}).
 	 */
 	private void cast(int receiver)
 	{
@@ -598,82 +822,63 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		drawLayers(MASK + receiver);
 		batch.setShader(null);
 		Gdx.gl.glColorMask(true, true, true, true);
-		float d = LabControls.read(depth), h1 = height1At, h2 = LabControls.read(height2);
-		boolean two = LabControls.read(second) == 1;
-		// Night: every layer in the shade, as dark as one sun's, while every sun on is set; it fades over TWILIGHT
-		// degrees as the higher sun rises, and that sun's cast shadows fade in.
-		float night = dusk(two ? Math.max(h1, h2) : h1);
-		if (night > 0)
-			shade(receiver, -1, null, 0, night);
-		float from = LabControls.read(liftFrom), high = LabControls.read(liftHigh);
-		if (h1 > 0)
-			sun(receiver, side1At, h1, d, 2, (1 - dusk(h1)) * lift(h1, from, high));
-		if (two && h2 > 0)
-			sun(receiver, LabControls.read(side2), h2, d, 4, (1 - dusk(h2)) * lift(h2, from, high));
+		float d = LabControls.read(depth), noon = LabControls.read(noonHeight), late = moonLate(ageAt);
+		if (height1At > 0 && lit.sunCut > 0.002f)
+			sun(receiver, side1At, height1At, d, 2, lit.shadeOf(false));
+		float mh = heightAt(hourAt, late, noon);
+		if (mh > 0 && lit.moonCut > 0.002f)
+			sun(receiver, sideAt(hourAt, late), mh, d, 4, lit.shadeOf(true));
 		Gdx.gl.glStencilMask(0xff);
 		Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
 	}
 
 	/**
-	 * One sun's shadows on {@code receiver}: ahead, the layer behind it's ({@link #shadowOf}); behind you, every layer in
-	 * front of it laid on the ground ({@link #groundOf}), each pixel once ({@code drawn}).
+	 * One light's shadows on {@code receiver}: ahead, the layer behind it's ({@link #shadowOf}); behind you, every layer
+	 * in front of it laid on the ground ({@link #groundOf}), each pixel once ({@code drawn}).
 	 */
-	private void sun(int receiver, float side, float height, float depth, int drawn, float weight)
+	private void sun(int receiver, float side, float height, float depth, int drawn, float[] shade)
 	{
 		if (!behind)
 		{
-			shade(receiver, receiver - 1, shadowOf(side, height, depth), drawn, weight);
+			shade(receiver, receiver - 1, shadowOf(side, height, depth), drawn, shade);
 			return;
 		}
 		float[] g = groundOf(side, height);
 		for (int caster = LAYERS - 1; caster > receiver; caster--)
-			shade(receiver, caster, g, drawn, weight);
+			shade(receiver, caster, g, drawn, shade);
 	}
 
 	/**
-	 * One sun's shadow on {@code receiver} from {@code caster}, a sun ahead's: the layer behind it shifted by {@code k} ({@link #shadowOf}), wider about the
-	 * view's middle by {@code withReceiver} of the receiver's speed over its own, darkened and blurred, in the
-	 * receiver's fog; and under it, to the view's bottom, its mass: a ridge's shadow is all that is under it too. Each
-	 * pixel once a sun: the stencil's bit {@code drawn}, set where it is drawn, keeps the mass (laid over the caster's
-	 * foot, so no seam shows between them) and the wide camera's tiles off what it already shades. No {@code k}: the night,
-	 * the whole receiver in the shade (drawn again in its colour), the farthest layer too. Its darkness times
-	 * {@code weight}, the twilight's fade.
+	 * One light's shadow on {@code receiver} from {@code caster}, a sun ahead's: the layer behind it shifted by {@code k}
+	 * ({@link #shadowOf}), wider about the view's middle by {@code withReceiver} of the receiver's speed over its own,
+	 * blurred; and under it, to the view's bottom, its mass: a ridge's shadow is all that is under it too. Drawn as a
+	 * product (GL_ZERO, GL_SRC_COLOR): what is drawn there times {@code shade}, the light that is left once the direct
+	 * light is gone (the sky's, blue), in the receiver's fog (which the shadow does not darken). Each pixel once a light:
+	 * the stencil's bit {@code drawn}, set where it is drawn, keeps the mass (laid over the caster's foot, so no seam
+	 * shows between them) and the wide camera's tiles off what it already shades.
 	 */
-	private void shade(int receiver, int caster, float[] k, int drawn, float weight)
+	private void shade(int receiver, int caster, float[] k, int drawn, float[] shade)
 	{
-		boolean set = k == null;
-		if (!set && (caster < 0 || caster >= LAYERS || caster == PINES && LabControls.read(view) != 0) || weight <= 0)
+		if (caster < 0 || caster >= LAYERS || caster == PINES && LabControls.read(view) != 0)
 			return;
 		Gdx.gl.glStencilFunc(GL20.GL_EQUAL, 1, 1 | drawn);
 		Gdx.gl.glStencilMask(drawn);
 		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_INVERT);
 		ParallaxLayer onto = hearts[DRAWN + receiver].parallaxReader.layers.get(receiver);
 		WholePage_Model page = pages[DRAWN + receiver];
-		float fog = ParallaxPageReader.fogOf(page.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[DRAWN + receiver].parallaxReader.layers), onto);
-		Color fogColor = page.fogColor;
-		float r = SHADOW_COLOR.r * (1 - fog) + fogColor.r * fog, g = SHADOW_COLOR.g * (1 - fog) + fogColor.g * fog,
-				b = SHADOW_COLOR.b * (1 - fog) + fogColor.b * fog, dark = weight * LabControls.read(darkness);
+		float fogged = ParallaxPageReader.fogOf(page.getFogStrength(), ParallaxPageReader.frontSpeedOf(hearts[DRAWN + receiver].parallaxReader.layers), onto);
 
 		batch.setShader(shadow);
 		shadow.bind();
-		shadow.setUniformf(shadow.fetchUniformLocation("u_shadow", false), r, g, b, dark);
+		shadow.setUniformf(shadow.fetchUniformLocation("u_shadow", false), shade[0] + (1 - shade[0]) * fogged, shade[1] + (1 - shade[1]) * fogged,
+				shade[2] + (1 - shade[2]) * fogged, 1);
 		shadow.setUniformf(shadow.fetchUniformLocation("u_ground", false), 0, 0, 0, 0);
 		camera.update();
 		wide.position.set(camera.position);
 		wide.update();
 		batch.setProjectionMatrix(camera.combined);
 		batch.enableBlending();
-		if (set)
-		{
-			// The receiver itself in the shade's colour, through its own alpha: its soft edges stay soft (the stencil's
-			// would cut the hazy far peaks hard), on every pixel of it whatever the other sun did.
-			Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
-			shadow.setUniformf(shadow.fetchUniformLocation("u_shift", false), 0, 0, camera.position.x, 1);
-			draw(hearts[CAST + receiver], onto, 0, camera);
-			Gdx.gl.glEnable(GL20.GL_STENCIL_TEST);
-			batch.setShader(null);
-			return;
-		}
+		batch.setBlendFunction(GL20.GL_ZERO, GL20.GL_SRC_COLOR);
 		ParallaxLayer from = hearts[CAST + caster].parallaxReader.layers.get(caster);
 		float bottom = camera.position.y - WORLD_HEIGHT / 2;
 		if (behind)
@@ -684,21 +889,23 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			shadow.setUniformf(shadow.fetchUniformLocation("u_ground", false), k[0], k[1], foot, 1);
 			shadow.setUniformf(shadow.fetchUniformLocation("u_horizon", false), bottom + HORIZON, camera.position.x);
 			draw(hearts[CAST + caster], from, LabControls.read(softness), wide);
-			batch.setShader(null);
-			return;
 		}
-		float wider = 1 + LabControls.read(withReceiver) * (onto.getParallaxSpeedRatioX() / from.getParallaxSpeedRatioX() - 1);
-		shadow.setUniformf(shadow.fetchUniformLocation("u_shift", false), k[0], k[1], camera.position.x, wider);
-		draw(hearts[CAST + caster], from, LabControls.read(softness), wide);
-		// The mass under the caster's foot, from inside its opaque foot (FOOT): it goes on where the layer stops. Placed as
-		// the caster is: the shader shifts it with it.
-		float top = bottom + hearts[CAST + caster].parallaxReader.getDrawingHeight() + from.getCurrentDistanceY() + FOOT;
-		float under = bottom - 1 - Math.abs(k[1]);
-		shadow.setUniformf(shadow.fetchUniformLocation("u_soft", false), 0, 0);
-		batch.begin();
-		batch.setColor(1, 1, 1, 1);
-		batch.draw(sun, camera.position.x - wide.viewportWidth / 2, under, wide.viewportWidth, top - under, 0.5f, 0.5f, 0.5f, 0.5f);
-		batch.end();
+		else
+		{
+			float wider = 1 + LabControls.read(withReceiver) * (onto.getParallaxSpeedRatioX() / from.getParallaxSpeedRatioX() - 1);
+			shadow.setUniformf(shadow.fetchUniformLocation("u_shift", false), k[0], k[1], camera.position.x, wider);
+			draw(hearts[CAST + caster], from, LabControls.read(softness), wide);
+			// The mass under the caster's foot, from inside its opaque foot (FOOT): it goes on where the layer stops.
+			// Placed as the caster is: the shader shifts it with it.
+			float top = bottom + hearts[CAST + caster].parallaxReader.getDrawingHeight() + from.getCurrentDistanceY() + FOOT;
+			float under = bottom - 1 - Math.abs(k[1]);
+			shadow.setUniformf(shadow.fetchUniformLocation("u_soft", false), 0, 0);
+			batch.begin();
+			batch.setColor(1, 1, 1, 1);
+			batch.draw(sun, camera.position.x - wide.viewportWidth / 2, under, wide.viewportWidth, top - under, 0.5f, 0.5f, 0.5f, 0.5f);
+			batch.end();
+		}
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		batch.setShader(null);
 	}
 
@@ -745,13 +952,258 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 		relief.dispose();
 		light.dispose();
 		sun.dispose();
+		haze.dispose();
+		if (moon != null)
+			moon.dispose();
 	}
 
-	/** The shadow's colour out of the fog: a blue black, as the shade of a bright sky's light. */
-	static final Color SHADOW_COLOR = new Color(0.04f, 0.06f, 0.12f, 1);
+	/**
+	 * The light of an hour, from the measured clear-sky day (docs/daylight.md; the tables are
+	 * tools/r425-daylight/daylight.py --java's). Lux: the sun's (its own and its sky's) by its height, the moon's 0.27 lux
+	 * full and high times its phase's share (Krisciunas and Schaefer) and its height's, and the night's 0.001. The
+	 * world's brightness is the lux on a log scale between a moonless night and the sun {@code fullFrom} degrees up,
+	 * raised to {@code curve}, from {@code 1 - nightDark} to 1 (Simon at 11:08: "higher when there is no sun, way lower
+	 * when the sun is at the zenith [...] not in a linear fashion"). Its colour: the sun's direct light (red low down),
+	 * the moon's (the sun's, a little redder), the sky's (blue), each by its share, white-balanced to a high sun; at low
+	 * light, toward a grey blue, as eyes see in the dark (Purkinje). A cast shadow lacks a light's direct share, times
+	 * {@code darkness}: what is left is the sky's.
+	 */
+	static final class Light
+	{
+		static final float[] LIGHT_HEIGHTS = { -18f, -15f, -12f, -9f, -6f, -4f, -2f, -1f, 0f, 1f, 2f, 3f, 5f, 7.5f, 10f, 15f, 20f, 30f, 45f, 60f, 90f };
+		static final float[] LIGHT_LOG_LUX = { -2.80f, -2.50f, -2.05f, -0.78f, 0.53f, 1.27f, 2.01f, 2.38f, 2.75f, 2.89f, 3.22f, 3.43f, 3.71f, 3.94f, 4.11f, 4.34f, 4.49f, 4.70f, 4.88f, 4.99f, 5.06f };
+		static final float[] LIGHT_DIRECT = { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.13f, 0.22f, 0.30f, 0.45f, 0.56f, 0.64f, 0.73f, 0.79f, 0.84f, 0.88f, 0.90f, 0.91f };
+		static final float[] LIGHT_FACING = { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.93f, 0.93f, 0.93f, 0.93f, 0.93f, 0.93f, 0.92f, 0.91f, 0.89f, 0.85f, 0.78f, 0.00f };
+		static final float[] LIGHT_SUN = { 1.000f, 0.252f, 0.000f, 1.000f, 0.252f, 0.000f, 1.000f, 0.252f, 0.000f, 1.000f, 0.252f, 0.000f, 1.000f, 0.252f, 0.000f, 1.000f, 0.252f, 0.000f, 1.000f, 0.252f, 0.000f, 1.000f, 0.252f, 0.000f, 1.000f, 0.252f, 0.000f, 1.000f, 0.438f, 0.000f, 1.000f, 0.560f, 0.000f, 1.000f, 0.645f, 0.000f, 1.000f, 0.753f, 0.323f, 1.000f, 0.828f, 0.496f, 1.000f, 0.873f, 0.608f, 1.000f, 0.923f, 0.746f, 1.000f, 0.949f, 0.825f, 1.000f, 0.976f, 0.912f, 1.000f, 0.992f, 0.972f, 1.000f, 1.000f, 1.000f, 0.983f, 0.988f, 1.000f };
+		static final float[] LIGHT_SKY = { 0.140f, 0.504f, 1.000f, 0.142f, 0.508f, 1.000f, 0.146f, 0.513f, 1.000f, 0.152f, 0.523f, 1.000f, 0.164f, 0.539f, 1.000f, 0.276f, 0.590f, 1.000f, 0.393f, 0.655f, 1.000f, 0.460f, 0.694f, 1.000f, 0.536f, 0.740f, 1.000f, 0.536f, 0.740f, 1.000f, 0.536f, 0.740f, 1.000f, 0.536f, 0.740f, 1.000f, 0.505f, 0.704f, 1.000f, 0.508f, 0.692f, 1.000f, 0.510f, 0.685f, 1.000f, 0.512f, 0.678f, 1.000f, 0.513f, 0.674f, 1.000f, 0.514f, 0.670f, 1.000f, 0.514f, 0.668f, 1.000f, 0.514f, 0.667f, 1.000f, 0.514f, 0.666f, 1.000f };
+		/** A moonless night's light, lux: stars and airglow. A full moon high up: lux. */
+		static final float NIGHT_LUX = 0.001f, FULL_MOON_LUX = 0.27f;
+		/** The moon's light is the sun's, a little redder (its soil reflects red more than blue). */
+		static final float[] MOON_TINT = { 1, 0.93f, 0.84f };
+		/** What eyes see in the dark: a grey blue (encoded), and the light's log lux over which they turn to it. */
+		static final float[] NIGHT_SEEN = { 0.62f, 0.74f, 1 };
+		static final float SEEN_DAY = 1, SEEN_NIGHT = -2;
+		/** A moonless night's and the noon sun's log lux. */
+		static final float LOG_NIGHT = -3;
 
-	/** A face in the sun's light: a warm white. */
-	static final Color SUNLIT = new Color(1, 0.92f, 0.76f, 1);
+		/** The whole light, lux; the world's brightness, 0 to 1; the shares of it that come straight from the sun, the moon. */
+		float lux, bright, sunShare, moonShare;
+		/** How much darker a sun's, a moon's cast shadow is, 0 to 1 (its encoded luminance's loss), for the readout. */
+		float sunCut, moonCut;
+		float sunSide, moonSide;
+		/** The layers' tint (encoded, the brightness in it); the sky's at its top and at the horizon, over the painted. */
+		final float[] tint = new float[3], zenith = new float[3], horizon = new float[3], haze = new float[3];
+		/** The glow of a low sun over the horizon (behind you, the pink band opposite it): its colour and amount. */
+		final float[] glowColor = new float[3];
+		float glow;
+		/** What a sun's, a moon's shadow leaves of what is drawn there, per channel (encoded). */
+		final float[] sunShade = new float[3], moonShade = new float[3];
+		/** The sun's disc colour; the moon's, and its opacity (paler by day). */
+		final float[] sunDisc = new float[3], moonDisc = new float[4];
+		private final float[] a = new float[3], b = new float[3], c = new float[3], litLinear = new float[3], noonLinear = new float[3];
+
+		float[] shadeOf(boolean moon)
+		{return moon ? moonShade : sunShade;}
+
+		void set(float sunHeight, float moonHeight, float moonAge, float nightDark, float curve, float fullFrom, float warmth, float nightBlue, float darkness, boolean behind)
+		{
+			float sunLux = sunLux(sunHeight), moonLux = moonLux(moonHeight, moonAge);
+			lux = sunLux + moonLux + NIGHT_LUX;
+			float sunDirect = sunLux * table(LIGHT_DIRECT, sunHeight), moonDirect = moonLux * table(LIGHT_DIRECT, moonHeight);
+			sunShare = sunDirect / lux;
+			moonShare = moonDirect / lux;
+			// The light's colour, linear: each part by its lux, its colour of luminance 1. Ahead of you, the faces you see
+			// take the sun's light as level ground does; behind you, they are turned to it, and take far more of it low
+			// down (LIGHT_FACING: the golden hour), eased in over its first 3 degrees, as the disc clears the horizon's haze.
+			float sunLit = behind ? sunLux * table(LIGHT_FACING, sunHeight) * smooth(sunHeight / 3) : sunDirect;
+			float moonLit = behind ? moonLux * table(LIGHT_FACING, moonHeight) * smooth(moonHeight / 3) : moonDirect;
+			lightLinear(litLinear, sunHeight, sunLit, sunLux - sunLit, moonHeight, moonLit, moonLux - moonLit, NIGHT_LUX, warmth);
+			lightLinear(noonLinear, 60, 0.9f, 0.1f, 0, 0, 0, 0, warmth);
+			float s = clamp((log10(lux) - LOG_NIGHT) / (LIGHT_LOG_LUX_AT(fullFrom) - LOG_NIGHT));
+			bright = 1 - nightDark + nightDark * (float) Math.pow(s, curve);
+			// Night eyes: from SEEN_DAY down to SEEN_NIGHT log lux, the colour turns grey blue.
+			float seen = nightBlue * smooth((SEEN_DAY - log10(lux)) / (SEEN_DAY - SEEN_NIGHT));
+			for (int i = 0; i < 3; i++)
+				c[i] = litLinear[i] / noonLinear[i];
+			normalise(c);
+			encode(c);
+			float grey = 0.2126f * c[0] + 0.7152f * c[1] + 0.0722f * c[2];
+			for (int i = 0; i < 3; i++)
+				tint[i] = bright * (c[i] + (grey * NIGHT_SEEN[i] - c[i]) * seen);
+			// A cast shadow: the light without (darkness of) that body's direct part.
+			cut(sunShade, sunHeight, darkness * sunDirect, false, moonHeight, warmth);
+			cut(moonShade, moonHeight, darkness * moonDirect, true, sunHeight, warmth);
+			sunCut = 1 - luminance(sunShade);
+			moonCut = 1 - luminance(moonShade);
+			// The sky: its colour at this sun's height over its colour at noon (the page's painted sky), then night eyes;
+			// at the horizon, the glow of a low sun (red-gold) where it is, ahead; behind you, the pink band opposite it.
+			tableColor(LIGHT_SKY, sunHeight, a);
+			tableColor(LIGHT_SKY, 60, b);
+			for (int i = 0; i < 3; i++)
+			{
+				a[i] = (float) Math.pow(a[i], 2.2) / (float) Math.pow(b[i], 2.2);
+				a[i] = 1 + (a[i] - 1) * Math.min(1, warmth);
+			}
+			normalise(a);
+			encode(a);
+			grey = 0.2126f * a[0] + 0.7152f * a[1] + 0.0722f * a[2];
+			for (int i = 0; i < 3; i++)
+				zenith[i] = bright * (a[i] + (grey * NIGHT_SEEN[i] - a[i]) * seen);
+			float glow = Math.min(1, warmth) * (float) Math.exp(-sunHeight * sunHeight / 30f) * (behind ? 0.4f : 0.8f);
+			tableColor(LIGHT_SUN, Math.max(0, sunHeight), b);
+			if (behind)
+			{
+				b[0] = 1;
+				b[1] = 0.72f;
+				b[2] = 0.78f;
+			}
+			for (int i = 0; i < 3; i++)
+			{
+				horizon[i] = zenith[i] + (bright * b[i] - zenith[i]) * glow;
+				// The air between: lit as the sky, the glow faint in it (the far peaks are mostly fog).
+				haze[i] = zenith[i] + (bright * b[i] - zenith[i]) * glow * 0.2f;
+				glowColor[i] = bright * b[i];
+			}
+			this.glow = glow;
+			// The discs: the sun in its own colour; the moon reddened as low, paler by day.
+			tableColor(LIGHT_SUN, Math.max(0, sunHeight), sunDisc);
+			tableColor(LIGHT_SUN, Math.max(0, moonHeight), b);
+			for (int i = 0; i < 3; i++)
+				moonDisc[i] = 0.35f + 0.65f * b[i];
+			moonDisc[3] = 1 - 0.65f * clamp((log10(sunLux + 1e-6f) - 0.5f) / 2.5f);
+		}
+
+		/** Into {@code out}, linear: each light's lux times its colour of luminance 1. */
+		private void lightLinear(float[] out, float sunHeight, float sunDirect, float sunSky, float moonHeight, float moonDirect, float moonSky, float night, float warmth)
+		{
+			out[0] = out[1] = out[2] = 0;
+			add(out, LIGHT_SUN, Math.max(0, sunHeight), sunDirect, null, warmth);
+			add(out, LIGHT_SKY, sunHeight, sunSky, null, warmth);
+			add(out, LIGHT_SUN, Math.max(0, moonHeight), moonDirect, MOON_TINT, warmth);
+			add(out, LIGHT_SKY, 30, moonSky + night, null, warmth);
+		}
+
+		private void add(float[] out, float[] colours, float height, float lux, float[] filter, float warmth)
+		{
+			if (lux <= 0)
+				return;
+			tableColor(colours, height, a);
+			for (int i = 0; i < 3; i++)
+			{
+				a[i] = (float) Math.pow(a[i], 2.2) * (filter == null ? 1 : filter[i]);
+				// warmth 0: white light; 1: as measured; over 1, more so.
+				a[i] = (float) Math.pow(Math.max(1e-4f, a[i]), warmth);
+			}
+			float l = 0.2126f * a[0] + 0.7152f * a[1] + 0.0722f * a[2];
+			for (int i = 0; i < 3; i++)
+				out[i] += lux * a[i] / l;
+		}
+
+		/** What is left, per channel (encoded), once {@code direct} lux of one body's light is taken off the whole. */
+		private void cut(float[] out, float height, float direct, boolean moon, float otherHeight, float warmth)
+		{
+			if (direct <= 0)
+			{
+				out[0] = out[1] = out[2] = 1;
+				return;
+			}
+			c[0] = c[1] = c[2] = 0;
+			add(c, LIGHT_SUN, Math.max(0, height), direct, moon ? MOON_TINT : null, warmth);
+			for (int i = 0; i < 3; i++)
+				out[i] = (float) Math.pow(clamp(1 - c[i] / litLinear[i]), 1 / 2.2);
+		}
+
+		static float sunLux(float height)
+		{return height < -24 ? 0 : Math.max(0, (float) Math.pow(10, table(LIGHT_LOG_LUX, height)) - NIGHT_LUX);}
+
+		/** The moon's lux at that height and age: a full high one's times its phase's share and its height's. */
+		static float moonLux(float height, float age)
+		{return height <= 0 ? 0 : FULL_MOON_LUX * phaseLight(age) * sunLux(height) / sunLux(90);}
+
+		/** The share of a full moon's light a moon {@code age} days old gives (Krisciunas and Schaefer 1991). */
+		static float phaseLight(float age)
+		{
+			float angle = Math.abs(180 - 360 * (age % MONTH) / MONTH);
+			return (float) Math.pow(10, -0.4 * (0.026 * angle + 4e-9 * Math.pow(angle, 4)));
+		}
+
+		static String phaseName(float age)
+		{
+			float f = (age % MONTH) / MONTH;
+			String[] names = { "new", "waxing crescent", "first quarter", "waxing gibbous", "full", "waning gibbous", "last quarter", "waning crescent" };
+			return names[Math.round(f * 8) % 8] + " (" + Math.round(100 * phaseLight(age)) + "% of a full one's light)";
+		}
+
+		static String luxText(float lux)
+		{
+			if (lux >= 100)
+				return String.valueOf(Math.round(lux / 10) * 10);
+			if (lux >= 1)
+				return String.valueOf(Math.round(lux * 10) / 10f);
+			// Two significant digits.
+			int places = (int) Math.ceil(-log10(lux)) + 1;
+			double k = Math.pow(10, places);
+			return String.valueOf(Math.round(lux * k) / k);
+		}
+
+		static float LIGHT_LOG_LUX_AT(float height)
+		{return table(LIGHT_LOG_LUX, height);}
+
+		static float table(float[] values, float height)
+		{
+			if (height <= LIGHT_HEIGHTS[0])
+				return values[0];
+			for (int i = 1; i < LIGHT_HEIGHTS.length; i++)
+				if (height <= LIGHT_HEIGHTS[i])
+				{
+					float t = (height - LIGHT_HEIGHTS[i - 1]) / (LIGHT_HEIGHTS[i] - LIGHT_HEIGHTS[i - 1]);
+					return values[i - 1] + (values[i] - values[i - 1]) * t;
+				}
+			return values[values.length - 1];
+		}
+
+		static void tableColor(float[] values, float height, float[] out)
+		{
+			int last = LIGHT_HEIGHTS.length - 1;
+			int i = 1;
+			while (i < last && height > LIGHT_HEIGHTS[i])
+				i++;
+			float t = clamp((height - LIGHT_HEIGHTS[i - 1]) / (LIGHT_HEIGHTS[i] - LIGHT_HEIGHTS[i - 1]));
+			for (int k = 0; k < 3; k++)
+				out[k] = values[3 * (i - 1) + k] + (values[3 * i + k] - values[3 * (i - 1) + k]) * t;
+		}
+
+		private static void normalise(float[] c)
+		{
+			float max = Math.max(c[0], Math.max(c[1], c[2]));
+			for (int i = 0; i < 3; i++)
+				c[i] /= max;
+		}
+
+		private static void encode(float[] c)
+		{
+			for (int i = 0; i < 3; i++)
+				c[i] = (float) Math.pow(Math.max(0, c[i]), 1 / 2.2);
+		}
+
+		private static float luminance(float[] c)
+		{return 0.2126f * c[0] + 0.7152f * c[1] + 0.0722f * c[2];}
+
+		static float log10(float x)
+		{return (float) (Math.log(x) / Math.log(10));}
+
+		static float clamp(float x)
+		{return Math.max(0, Math.min(1, x));}
+
+		static float smooth(float x)
+		{
+			float t = clamp(x);
+			return t * t * (3 - 2 * t);
+		}
+	}
+
+	/** A flank turned from the light: a blue black, as the shade of a bright sky's light. */
+	static final Color SHADOW_COLOR = new Color(0.04f, 0.06f, 0.12f, 1);
 
 	/** The stencil's and the shadows' effects: none, so their layers draw through the batch's shader, the lab's. */
 	static final LayerEffects BATCH_SHADER = new LayerEffects()
@@ -794,11 +1246,13 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 
 	/**
 	 * {@link #light} blurred toward the sun, u_sun in the view's 0 to 1: 48 samples along the line from the pixel to it,
-	 * each weaker than the one before, over u_rays.y of the way; times u_rays.x, warm, added to what is drawn.
+	 * each weaker than the one before, over u_rays.y of the way; times u_rays.x, in u_color (the sun's), added to what is
+	 * drawn.
 	 */
 	static final String RAYS_FRAGMENT = HEAD
 			+ "uniform vec2 u_sun;\n"
 			+ "uniform vec2 u_rays;\n"
+			+ "uniform vec3 u_color;\n"
 			+ "void main()\n"
 			+ "{\n"
 			+ "	vec2 step = (v_texCoords - u_sun) * u_rays.y / 48.0;\n"
@@ -811,7 +1265,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			+ "		sum += texture2D(u_texture, at).rgb * weight;\n"
 			+ "		weight *= 0.985;\n"
 			+ "	}\n"
-			+ "	gl_FragColor = vec4(sum / 48.0 * u_rays.x * vec3(1.0, 0.88, 0.66), 1.0);\n"
+			+ "	gl_FragColor = vec4(sum / 48.0 * u_rays.x * u_color, 1.0);\n"
 			+ "}\n";
 
 	/**
@@ -889,8 +1343,8 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			+ "}\n";
 
 	/**
-	 * The caster as a shadow: its alpha, averaged over a disc of u_soft (in the page's texture), in u_shadow's colour at
-	 * u_shadow.a, discarded where it is all but clear. u_strips: the strips a page height holds, and half a texel: the samples stay in their strip.
+	 * The caster as a shadow: its alpha, averaged over a disc of u_soft (in the page's texture), times u_shadow.a, from
+	 * nothing to u_shadow.rgb (what the shadow leaves of the light, per channel), discarded where it is all but clear. u_strips: the strips a page height holds, and half a texel: the samples stay in their strip.
 	 */
 	static final String SHADOW_FRAGMENT = HEAD
 			+ "uniform vec2 u_soft;\n"
@@ -916,6 +1370,7 @@ public class ShadowLab extends ApplicationAdapter implements LabKit.Clip
 			// Nothing drawn sets no stencil: the mass under the caster still goes there.
 			+ "	if (alpha < 0.004)\n"
 			+ "		discard;\n"
-			+ "	gl_FragColor = vec4(u_shadow.rgb, alpha);\n"
+			// Drawn as a product (GL_ZERO, GL_SRC_COLOR): what is there times what the shadow leaves of it.
+			+ "	gl_FragColor = vec4(mix(vec3(1.0), u_shadow.rgb, alpha), 1.0);\n"
 			+ "}\n";
 }
