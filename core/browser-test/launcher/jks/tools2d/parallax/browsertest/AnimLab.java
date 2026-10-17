@@ -27,7 +27,7 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * can judge which to ship before any is written three times. Opened with anim-lab.html: tools/anim-lab.sh. The clouds'
  * BILLOW has a lab of its own since r451, {@link CloudsLab}.
  * <p>
- * The sea: r365's AI beach page (core/test-data/anim), its sea (l1) a SHADER layer drawn four ways: WAVE (what ships,
+ * The sea: the AI beach page (core/test-data/anim: r365's sea, r478's backdrop), its sea (l1) a SHADER layer drawn four ways: WAVE (what ships,
  * GdxLayerEffects' own), SWELL, GLINT, and SWELL then GLINT in one shader. SWELL ships since r431: it, and SWELL + GLINT,
  * are GdxLayerEffects' own SWELL program (r435), the lab's GLSL keeps its SWELL for its other MIRROR views. MIRROR by
  * the water's colour + GLINT ships since r455 (Enum_ShaderEffect.MIRROR): it, and the detail levels' 'high', draw
