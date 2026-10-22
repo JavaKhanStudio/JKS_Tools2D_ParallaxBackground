@@ -158,9 +158,14 @@ scores 6.4 to 160, so the 2 / 255 threshold catches both. `tools/start-demo-chec
 The pixel-art round (r27) scored 0.35 on 2026-10-23; jME magnifying a `Nearest` atlas `Bilinear` scored 3.65, and every
 atlas `Nearest` 3.81 (`tools/r27-jme-pixelart/mutate.sh`).
 
-**Not drawn:** a `PARTICLES` layer (parallax-readers:r31), so `engines/rounds/particles` is not played. `PlaxBackground`
-builds the page with `forceLoad(atlas)`, which loads no effect, and libGDX's `ParticleEmitter.draw` sets the batch's
-blend function, which `JmeBatch` throws on.
+A `PARTICLES` layer (parallax-readers:r31) is libGDX's own `ParticleEffect`: `PlaxBackground` builds the page with
+`forceLoad(atlas, files)`, its `.p` found beside the atlas `JmeAtlas.load` read, and `JmeBatch` draws the emitters' quads
+blended as their `.p` asks (normal, additive, premultiplied: a run of its own, `BlendMode.Custom`). Both shot runners seed
+`MathUtils.random` from the scene's id (`Round.seedRandom`), so `engines/rounds/particles` is compared by pixels: on
+2026-10-23 (NVIDIA) its worst still scored 0.11, with no pixel off by over 32. The flakes are small (leaving them out
+moves 0.15 to 0.66 / 255, under the 2 / 255 mean), so the round also fails past 0.05 % of a still's pixels off by over 32
+(`pixelsOff`): `BREAK=particles` (no flakes), `BREAK=anchor` (VIEW drawn as LAYER) and `BREAK=blend` (every emitter
+blended normally, q11 and q12) fail it.
 **Not there yet:** atlas regions packed rotated (as in Godot), and assets in an Android jME game (tried on the desktop
 only). **In CI** (r115): the `jme-frames` job of `.github/workflows/ci.yml` (its own job since parallax-readers:r10; before,
 it ran after the Godot rounds in `godot-frames`) runs `engines/jme/tools/frame-check.sh` on Xvfb and Mesa llvmpipe, and fails on a FAIL. There, on 2026-09-30 (llvmpipe, LLVM 20.1.2),

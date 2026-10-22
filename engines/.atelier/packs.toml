@@ -70,6 +70,9 @@ THE REFERENCE is core/ (libGDX): rounds live in core/test-data and engines/round
 tests/shots.gd. A new feature or scene goes in engines/rounds/features.json, never round.json.
 A MUTANT RUN (BREAK, PLAX_MUTANT=1 or a tools/*/mutate.sh) lands in build/jme/.mutant/<round> via tools/shots-out.sh,
 never build/jme/<round>. A pixel round's effect must outweigh the 2/255 tolerance (measure effect vs plain).
+PARTICLES are compared by pixels (engines/rounds/particles): Round.seedRandom seeds MathUtils.random per scene in
+ParallaxShots and JmeParallaxShots, so a random call one runner makes and the other does not moves every flake. Small
+effects gate on the round's "pixelsOff" (tools/compare-parallax-frames.py), not the mean.
 When jME gains or loses a feature: its 'unsupported' entry in tools/readers-health/health.py, engines/jme/README.md
 and docs/other-engines.md change with it.
 Build rules (#build): versions in gradle.properties, repositories only in settings.gradle, every JavaExec offscreen or headless.

@@ -4,11 +4,13 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -20,6 +22,7 @@ import com.badlogic.gdx.utils.NumberUtils;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.MatParamTexture;
 import com.jme3.material.Material;
+import com.jme3.material.RenderState.BlendFunc;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.material.RenderState.FaceCullMode;
 import com.jme3.renderer.queue.RenderQueue.Bucket;
@@ -40,7 +43,8 @@ import com.jme3.util.BufferUtils;
  * {@link #draw(Texture, float[], int, int)}, a page round a planet's (r347), and of the turned region draw a game's hook
  * stands a thing on a planet with, into one mesh per run of the same texture, in draw order, as SpriteBatch flushes.
  * The quads keep libGDX's packed vertex colour (8 bits a channel, the alpha's lowest bit dropped) and its blending
- * (source alpha, one minus source alpha).
+ * (source alpha, one minus source alpha), or the one {@link #setBlendFunction} sets, as a PARTICLES layer's emitters
+ * do (additive, premultiplied), in runs of its own.
  * <p>
  * Positions are in the reader's world units, mapped to pixels by {@link #setView}. A SHADER layer's run is drawn with
  * the material {@link #setEffect} names, which {@link JmeLayerEffects} sets around its tiles. The other draws, libGDX
@@ -57,6 +61,8 @@ public class JmeBatch implements Batch
 		byte[] colors = new byte[4 * 4 * 16];
 		int quads, capacity;
 		Texture2D texture;
+		/** The blend function its quads were drawn with, {@link #blendKey()}. */
+		long blend;
 		Material material;
 
 		Run(int index)
@@ -70,7 +76,8 @@ public class JmeBatch implements Batch
 	private final Node node;
 	private final float z;
 	private final List<Run> runs = new ArrayList<>();
-	private final Map<Texture2D, Material> materials = new IdentityHashMap<>();
+	/** Each texture's materials, one per blend function ({@link #blendKey()}). */
+	private final Map<Texture2D, Map<Long, Material>> materials = new IdentityHashMap<>();
 	private int used;
 	private Run current;
 	private boolean drawing;
@@ -79,6 +86,9 @@ public class JmeBatch implements Batch
 
 	private final Color color = new Color(1, 1, 1, 1);
 	private byte red = -1, green = -1, blue = -1, alpha = (byte) 0xFE;
+	/** The blend function the next quads are drawn with, as GL20 factors, colour then alpha: SpriteBatch's until set. */
+	private int blendSrc = GL20.GL_SRC_ALPHA, blendDst = GL20.GL_ONE_MINUS_SRC_ALPHA;
+	private int blendSrcAlpha = GL20.GL_SRC_ALPHA, blendDstAlpha = GL20.GL_ONE_MINUS_SRC_ALPHA;
 
 	private float viewLeft, viewBottom, pixelsPerUnitX = 1, pixelsPerUnitY = 1;
 
@@ -207,7 +217,7 @@ public class JmeBatch implements Batch
 	private Run quad(Texture texture)
 	{
 		Texture2D page = ((JmeAtlas.PageTexture) texture).texture;
-		if (current == null || current.texture != page)
+		if (current == null || current.texture != page || current.blend != blendKey())
 			current = nextRun(page);
 		ensureCapacity(current, current.quads + 1);
 		return current;
@@ -235,7 +245,9 @@ public class JmeBatch implements Batch
 		used++;
 		run.quads = 0;
 		run.texture = texture;
-		Material material = effect != null ? effect : materials.computeIfAbsent(texture, this::material);
+		run.blend = blendKey();
+		Material material = effect != null ? effect
+				: materials.computeIfAbsent(texture, t -> new HashMap<>()).computeIfAbsent(run.blend, b -> material(texture));
 		if (effect != null)
 		{
 			MatParamTexture map = effect.getTextureParam("ColorMap");
@@ -256,7 +268,56 @@ public class JmeBatch implements Batch
 		material.setTexture("ColorMap", texture);
 		material.setBoolean("VertexColor", true);
 		renderAsRuns(material);
+		if (blendKey() != DEFAULT_BLEND)
+		{
+			material.getAdditionalRenderState().setBlendMode(BlendMode.Custom);
+			material.getAdditionalRenderState().setCustomBlendFactors(blendFunc(blendSrc), blendFunc(blendDst),
+					blendFunc(blendSrcAlpha), blendFunc(blendDstAlpha));
+		}
 		return material;
+	}
+
+	/** SpriteBatch's blend function, {@link BlendMode#Alpha}'s, as {@link #blendKey()} packs it. */
+	private static final long DEFAULT_BLEND = blendKey(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA, GL20.GL_SRC_ALPHA,
+			GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+	/** The blend function the next quads are drawn with, its four factors in one number. */
+	private long blendKey()
+	{return blendKey(blendSrc, blendDst, blendSrcAlpha, blendDstAlpha);}
+
+	private static long blendKey(int src, int dst, int srcAlpha, int dstAlpha)
+	{return (long) src << 48 | (long) dst << 32 | (long) srcAlpha << 16 | dstAlpha;}
+
+	/** jME's name for a GL20 blend factor. */
+	private static BlendFunc blendFunc(int factor)
+	{
+		switch (factor)
+		{
+			case GL20.GL_ZERO:
+				return BlendFunc.Zero;
+			case GL20.GL_ONE:
+				return BlendFunc.One;
+			case GL20.GL_SRC_COLOR:
+				return BlendFunc.Src_Color;
+			case GL20.GL_ONE_MINUS_SRC_COLOR:
+				return BlendFunc.One_Minus_Src_Color;
+			case GL20.GL_DST_COLOR:
+				return BlendFunc.Dst_Color;
+			case GL20.GL_ONE_MINUS_DST_COLOR:
+				return BlendFunc.One_Minus_Dst_Color;
+			case GL20.GL_SRC_ALPHA:
+				return BlendFunc.Src_Alpha;
+			case GL20.GL_ONE_MINUS_SRC_ALPHA:
+				return BlendFunc.One_Minus_Src_Alpha;
+			case GL20.GL_DST_ALPHA:
+				return BlendFunc.Dst_Alpha;
+			case GL20.GL_ONE_MINUS_DST_ALPHA:
+				return BlendFunc.One_Minus_Dst_Alpha;
+			case GL20.GL_SRC_ALPHA_SATURATE:
+				return BlendFunc.Src_Alpha_Saturate;
+			default:
+				throw new UnsupportedOperationException("JmeBatch blends with no GL factor 0x" + Integer.toHexString(factor));
+		}
 	}
 
 	/** Blends as SpriteBatch, draws both faces, ignores depth: what every run's material is set to. */
@@ -367,6 +428,39 @@ public class JmeBatch implements Batch
 		materials.clear();
 	}
 
+	/**
+	 * Draws what follows blended so, colour and alpha alike, as glBlendFunc: a PARTICLES layer's emitters set it (normal,
+	 * additive or premultiplied, as their .p asks), and the reader sets the one before back after them.
+	 */
+	@Override
+	public void setBlendFunction(int srcFunc, int dstFunc)
+	{setBlendFunctionSeparate(srcFunc, dstFunc, srcFunc, dstFunc);}
+
+	@Override
+	public void setBlendFunctionSeparate(int srcFuncColor, int dstFuncColor, int srcFuncAlpha, int dstFuncAlpha)
+	{
+		blendSrc = srcFuncColor;
+		blendDst = dstFuncColor;
+		blendSrcAlpha = srcFuncAlpha;
+		blendDstAlpha = dstFuncAlpha;
+	}
+
+	@Override
+	public int getBlendSrcFunc()
+	{return blendSrc;}
+
+	@Override
+	public int getBlendDstFunc()
+	{return blendDst;}
+
+	@Override
+	public int getBlendSrcFuncAlpha()
+	{return blendSrcAlpha;}
+
+	@Override
+	public int getBlendDstFuncAlpha()
+	{return blendDstAlpha;}
+
 	// What the reader never calls.
 
 	private static UnsupportedOperationException unsupported()
@@ -424,29 +518,6 @@ public class JmeBatch implements Batch
 	public void disableBlending()
 	{throw unsupported();}
 
-	@Override
-	public void setBlendFunction(int srcFunc, int dstFunc)
-	{throw unsupported();}
-
-	@Override
-	public void setBlendFunctionSeparate(int srcFuncColor, int dstFuncColor, int srcFuncAlpha, int dstFuncAlpha)
-	{throw unsupported();}
-
-	@Override
-	public int getBlendSrcFunc()
-	{throw unsupported();}
-
-	@Override
-	public int getBlendDstFunc()
-	{throw unsupported();}
-
-	@Override
-	public int getBlendSrcFuncAlpha()
-	{throw unsupported();}
-
-	@Override
-	public int getBlendDstFuncAlpha()
-	{throw unsupported();}
 
 	@Override
 	public Matrix4 getProjectionMatrix()

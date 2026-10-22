@@ -107,6 +107,7 @@ public class ParallaxShots extends ApplicationAdapter
 	/** Shows {@code scene} from its start. */
 	private void show(Scene scene)
 	{
+		Round.seedRandom(scene);
 		WholePage_Model page = Utils_Page_Json.loadPage(new FileHandle(Paths.get(scene.page).toFile()));
 		heart.relativePath = Paths.get(scene.atlasDir).toAbsolutePath().toString();
 		heart.setPage(page);

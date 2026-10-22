@@ -1,6 +1,7 @@
 {
  "round": "particles",
- "about": "PARTICLES layers in Godot (r179, docs/effect-layers.md phase 2). Not a pixel comparison: each engine draws its own particle system. engines/godot/tests/particles.gd scrolls each scene at 60 units/s, stepped at 1/60 s, and checks at 0, 6 and 12 s that the layer's Godot scene is instanced, between the layers before and after it, where its layer has scrolled it; it saves a still of each. Pages and scenes from core/test-data/particles (libGDX's round there). Its q06 to q08 zoom the camera, dollied or not (r278); q09 and q10 are round a planet (r330, r347), each node turned as one block as its box's middle is.",
+ "pixelsOff": 0.05,
+ "about": "PARTICLES layers in Godot (r179, docs/effect-layers.md phase 2) and jME (r31). For Godot not a pixel comparison: each engine draws its own particle system. jME runs libGDX's own effects, so engines/jme/tools/frame-check.sh compares its stills pixel by pixel: both runners seed MathUtils.random from the scene's id (Round.seedRandom), and the snow falls flake for flake the same. Leaving the flakes out moves 0.15 to 0.66/255 of a still, under the 2/255 mean but 0.15 to 0.66% of its pixels by over 32: the round gates on pixels off (pixelsOff 0.05%), which only jME's report is judged by. engines/godot/tests/particles.gd scrolls each scene at 60 units/s, stepped at 1/60 s, and checks at 0, 6 and 12 s that the layer's Godot scene is instanced, between the layers before and after it, where its layer has scrolled it; it saves a still of each. Pages and scenes from core/test-data/particles (libGDX's round there). Its q06 to q08 zoom the camera, dollied or not (r278); q09 and q10 are round a planet (r330, r347), each node turned as one block as its box's middle is.",
  "scenes": [
   {
    "id": "q01",
@@ -96,6 +97,20 @@
     0.7
    ],
    "dolly": true
+  },
+  {
+   "id": "q11",
+   "page": "core/test-data/particles/glow.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "view-anchored-additive",
+   "about": "q01 with snow-glow.p: orange flakes blended additively (SRC_ALPHA, ONE), as the .p asks (r31): they light the sky, a reader that blends them normally draws them orange"
+  },
+  {
+   "id": "q12",
+   "page": "core/test-data/particles/pma.jplax",
+   "atlasDir": "core/test-data/particles",
+   "name": "view-anchored-premultiplied",
+   "about": "q01 with snow-pma.p: orange flakes blended premultiplied (ONE, ONE_MINUS_SRC_ALPHA), as the .p asks (r31); snowflake.png is not premultiplied, so each flake shows its square, in libGDX as in jME"
   }
  ]
 }

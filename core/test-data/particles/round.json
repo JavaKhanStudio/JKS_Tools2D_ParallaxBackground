@@ -1,6 +1,6 @@
 {
  "round": "particles",
- "about": "PARTICLES layers in libGDX (r178, docs/effect-layers.md phase 1): Hiver's layers with snow between its two front ones, from HiverSnow.atlas (Hiver.png and a snowflake page). Stills only: tools/parallax-lab-shots.sh core/test-data/particles OUT. jME draws none; Godot plays snow.tscn and snow-wide.tscn, which engines/rounds/particles checks (r179).",
+ "about": "PARTICLES layers in libGDX (r178, docs/effect-layers.md phase 1): Hiver's layers with snow between its two front ones, from HiverSnow.atlas (Hiver.png and a snowflake page). Stills only: tools/parallax-lab-shots.sh core/test-data/particles OUT. jME is compared with these effects in engines/rounds/particles, pixel by pixel (r31); Godot plays snow.tscn and snow-wide.tscn, which engines/rounds/particles checks (r179).",
  "scenes": [
   {
    "id": "p01",

@@ -42,9 +42,7 @@ READERS = [
     {'id': 'jme', 'name': 'jMonkeyEngine 3', 'folder': 'engines/jme', 'role': "runs core's reader as is, through JmeBatch",
      'needs': 'java', 'check': 'engines/jme/tools/frame-check.sh', 'jobs': ['jME frames against libGDX'],
      'watch': ['engines/jme', 'core/src', 'engines/rounds/reader'],
-     'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh',
-     'unsupported': {'engines/rounds/particles': ('r31', ('jME draws no PARTICLES layer yet: no effect is loaded, '
-                                                   'and JmeBatch throws on the emitters\' blend function'), 'particles')}},
+     'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh'},
     {'id': 'unity', 'name': 'Unity', 'folder': None, 'role': 'not written: parallax:r103, paused on its install',
      'needs': 'unity', 'paused': True},
 ]

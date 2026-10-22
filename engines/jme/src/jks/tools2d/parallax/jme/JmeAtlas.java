@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.InputStream;
 
 import com.badlogic.gdx.Files.FileType;
+import com.badlogic.gdx.assets.loaders.FileHandleResolver;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
@@ -27,7 +28,7 @@ public final class JmeAtlas
 	private JmeAtlas()
 	{}
 
-	/** The atlas at {@code atlasPath}, an asset path; its PNG pages are found next to it. */
+	/** The atlas at {@code atlasPath}, an asset path; its PNG pages, and its pages' particle effects, are found next to it. */
 	public static TextureAtlas load(AssetManager assets, String atlasPath)
 	{
 		AssetHandle pack = new AssetHandle(assets, atlasPath);
@@ -35,7 +36,31 @@ public final class JmeAtlas
 		for (TextureAtlasData.Page page : data.getPages())
 			page.texture = new PageTexture(loadTexture(assets, ((AssetHandle) page.textureFile).path, page), (int) page.width, (int) page.height);
 		// Builds the AtlasRegions exactly as libGDX does, over the textures set above.
-		return new TextureAtlas(data);
+		return new Loaded(data, (AssetHandle) pack.parent());
+	}
+
+	/**
+	 * Where a PARTICLES layer's .p is found for a page drawn from {@code atlas}: beside the atlas, as libGDX's preload
+	 * finds it; null for an atlas {@link #load} did not read, whose PARTICLES layers then draw nothing.
+	 */
+	static FileHandleResolver effectFiles(TextureAtlas atlas)
+	{
+		if (!(atlas instanceof Loaded))
+			return null;
+		AssetHandle folder = ((Loaded) atlas).folder;
+		return folder::child;
+	}
+
+	/** An atlas {@link #load} read, and the asset folder it was read from. */
+	private static final class Loaded extends TextureAtlas
+	{
+		final AssetHandle folder;
+
+		Loaded(TextureAtlasData data, AssetHandle folder)
+		{
+			super(data);
+			this.folder = folder;
+		}
 	}
 
 	/** Unflipped, as libGDX uploads it: the atlas's v coordinates then need no conversion. */

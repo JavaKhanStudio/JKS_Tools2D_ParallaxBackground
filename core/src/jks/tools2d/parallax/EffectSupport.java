@@ -33,20 +33,13 @@ public final class EffectSupport
 	public static boolean draws(Enum_LayerKind kind, Engine engine)
 	{return whyNot(kind, engine) == null;}
 
-	/** Why {@code engine} draws no layer of {@code kind}, for a person to read; null when it draws it. */
+	/**
+	 * Why {@code engine} draws no layer of {@code kind}, for a person to read; null when it draws it. Every engine draws
+	 * every kind: a PARTICLES layer's libGDX effect in libGDX, the browser and jME (which runs it through JmeBatch,
+	 * engines/rounds/particles compared by pixels, parallax-readers r31), its Godot scene in Godot.
+	 */
 	public static String whyNot(Enum_LayerKind kind, Engine engine)
-	{
-		if (kind != Enum_LayerKind.PARTICLES)
-			return null;
-		switch (engine)
-		{
-			case JME:
-				return "jME has no 2D particle system, and libGDX's ParticleEffect draws through a Batch call JmeBatch does not"
-						+ " implement: fill an EMPTY layer from a hook instead";
-			default:
-				return null;
-		}
-	}
+	{return null;}
 
 	/**
 	 * True when {@code engine} draws a SHADER layer's image through {@code effect}. Every effect is drawn by all four:

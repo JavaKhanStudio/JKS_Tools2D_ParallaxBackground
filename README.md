@@ -236,8 +236,8 @@ More:
   a page shows its snow already falling, as a Godot scene's `preprocess` does. The effect loops, and allocates
   nothing per frame (`FrameAllocationTest`). Each particle is a quad blended over the layers behind it: on a still
   page, 630 flakes took a frame from 0.33 to 0.51 ms (`tools/r178-particle-stress/run.sh`). A browser game draws them
-  too. Godot plays the layer's own Godot scene (below), jME none (no 2D particle
-  system: fill an `EMPTY` layer instead); `EffectSupport` says which engine draws which kind, and why not.
+  too. Godot plays the layer's own Godot scene (below), jME the libGDX effect, as libGDX draws it
+  (`PlaxBackground` finds the `.p` beside the atlas); `EffectSupport` says which engine draws which kind, and why not.
   `WholePage_Model.forceLoad(atlas)` builds no effect; `forceLoad(atlas, files)` finds them with `files`.
 - **Water and fog:** a `SHADER` layer is an image layer drawn through one of the effects the library ships: `WAVE`, a
   horizontal ripple (water, heat), `FOG`, drifting patches that thin the image's opacity (a plain white band is a

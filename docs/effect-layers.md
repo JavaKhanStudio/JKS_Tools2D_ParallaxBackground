@@ -44,7 +44,7 @@ depth, and the trees are drawn over it.
 |---|---|---|---|
 | What the page stores | rate, lifetime, speed and angle ranges, gravity, wind, size and alpha over life, an atlas region, a cap, a seed | a file per engine (libGDX `.p`, a Godot `.tscn`) | a name |
 | Same picture everywhere | yes, ported line by line like `act`/`tile`, and checked by the pixel rounds with a fixed seed | no: three systems, three looks | whatever the game does |
-| jME | draws through `draw(region, x, y, w, h)`: works as is | no 2D particle system; would need `ParticleEffect` → throws | the game's |
+| jME | draws through `draw(region, x, y, w, h)`: works as is | no 2D particle system; would need `ParticleEffect` → throws (since parallax-readers:r31 it runs libGDX's) | the game's |
 | Editor | edits and previews it | can only preview libGDX's | shows an outline of the slot |
 | Cost to build | one emitter in Java, one in GDScript, a pixel round | three tools, three formats, no check | small |
 
@@ -53,9 +53,9 @@ one effect file per engine, as paths relative to the page like its images: a lib
 libGDX's `ParticleEffect`, in a desktop game and in the browser) and a Godot scene holding a `GPUParticles2D` or
 `CPUParticles2D` (instanced by `plax_background.gd` at the layer's place in the draw order). What follows from it:
 
-- **jME draws no particles.** It has no 2D particle system, and `ParticleEffect` draws through
-  `draw(texture, float[] vertices, ...)`, which `JmeBatch` throws on. The jME reader skips a `PARTICLES` layer, without
-  throwing, and `EffectSupport` says so; a game that wants them there fills an `EMPTY` layer itself.
+- **jME draws libGDX's effect.** It has no 2D particle system, so `PlaxBackground` runs the page's libGDX `.p`
+  through `JmeBatch` (parallax-readers:r31: until then it drew none), compared by pixels with libGDX in
+  `engines/rounds/particles`.
 - **The same page looks different per engine.** Each file is drawn by its own system: nothing compares them by pixels.
   The rounds check what can be checked: the effect is there, at its layer's place in the draw order, where the layer
   scrolled it, and an engine with no file for it draws nothing and says so once.
@@ -227,7 +227,7 @@ fails twelve wrong copies in Godot, jME and core.
 ## Saying what an engine cannot draw
 
 `core/src` gets a table, `EffectSupport`: for each kind and each effect, whether libGDX, the browser, Godot and jME
-draw it, and a line saying why not (jME and particles: no 2D particle system). The editor reads it: every control of an
+draw it, and a line saying why not (until parallax-readers:r31, jME and particles). The editor reads it: every control of an
 effect layer shows the engines it works on (a row of marks next to the kind selector), and a control whose value an
 engine ignores is marked on that control; a `PARTICLES` layer with no Godot file marks Godot as missing. Each reader's
 round writes the result the table claims, so the table cannot drift from the truth: a `yes` without a passing round

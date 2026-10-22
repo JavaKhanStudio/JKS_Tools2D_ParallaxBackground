@@ -4,6 +4,8 @@ import java.io.*;
 /**
  * Writes a falling-snow .p with libGDX's own writer, from a spawn line WIDTH world units wide whose flakes live LIFE ms:
  * java -cp gdx.jar MakeSnow.java > snow.p (12, 3000), and java -cp gdx.jar MakeSnow.java 46 9000 > snow-wide.p.
+ * snow-glow.p and snow-pma.p are snow-wide.p tinted orange (0.9, 0.3, 0.1), additive and premultiplied: what
+ * engines/rounds/particles' q11 and q12 draw a reader's blend functions with (parallax-readers r31).
  */
 public class MakeSnow {
   public static void main(String[] a) throws Exception {

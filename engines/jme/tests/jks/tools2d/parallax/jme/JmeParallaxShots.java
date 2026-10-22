@@ -5,12 +5,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.lwjgl.glfw.GLFW;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.ParticleEmitter;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
@@ -20,6 +24,9 @@ import com.jme3.system.AppSettings;
 import com.jme3.system.lwjgl.LwjglWindow;
 
 import jks.tools2d.parallax.LayerDetail;
+import jks.tools2d.parallax.ParallaxLayer;
+import jks.tools2d.parallax.pages.Enum_LayerKind;
+import jks.tools2d.parallax.pages.Enum_ParticleAnchor;
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.rounds.Round;
 import jks.tools2d.parallax.rounds.Round.Hook;
@@ -39,7 +46,11 @@ import jks.tools2d.parallax.rounds.Round.Transfer;
  * </pre>
  * {@code -Dparallax.jme.break=scroll} draws with a deliberately wrong scroll (x1.1), to prove the comparison sees one;
  * {@code lurker} reveals every LURKER layer named "hooded" at every step (engines/rounds/lurker): its figure is then
- * always there, as a reader that ignores its sightings draws it, which the lurker round must fail (r370).
+ * always there, as a reader that ignores its sightings draws it, which the lurker round must fail (r370);
+ * {@code particles} drops every PARTICLES layer's effect, {@code anchor} draws each from the other anchor (VIEW as
+ * LAYER and back) and {@code blend} blends every emitter normally, whatever its .p asks (additive, premultiplied),
+ * which engines/rounds/particles must fail (r31). Its stills hold the same snow as libGDX's because
+ * both runners seed the particles' random ({@link Round#seedRandom}) before building a scene's page.
  */
 public class JmeParallaxShots extends SimpleApplication
 {
@@ -51,6 +62,11 @@ public class JmeParallaxShots extends SimpleApplication
 	private List<Scene> scenes;
 	private final float speedFactor = "scroll".equals(System.getProperty("parallax.jme.break")) ? 1.1f : 1;
 	private final boolean breakLurker = "lurker".equals(System.getProperty("parallax.jme.break"));
+	private final boolean breakParticles = "particles".equals(System.getProperty("parallax.jme.break"));
+	private final boolean breakAnchor = "anchor".equals(System.getProperty("parallax.jme.break"));
+	private final boolean breakBlend = "blend".equals(System.getProperty("parallax.jme.break"));
+	/** The PARTICLES layers {@code anchor} has turned to the other anchor: each once. */
+	private final Set<ParallaxLayer> reanchored = Collections.newSetFromMap(new IdentityHashMap<>());
 	private PlaxBackground bg;
 	/** The layer names the scene on screen hooked. */
 	private final List<String> hooked = new ArrayList<>();
@@ -169,15 +185,43 @@ public class JmeParallaxShots extends SimpleApplication
 			bg.act(STEP * speedFactor);
 			if (breakLurker)
 				bg.getReader().reveal("hooded");
+			if (breakParticles || breakAnchor || breakBlend)
+			{
+				breakParticles(bg.getReader().layers);
+				breakParticles(bg.getReader().transferLayers);
+			}
 		}
 		bg.setZoom(scene.zoomAt(at));
 		grab.grab(outDir.resolve(scene.id + "-t" + (int) at + ".png").toFile());
 		shotIndex++;
 	}
 
+	/** The {@code particles}, {@code anchor} and {@code blend} mutants, on the PARTICLES layers on screen. */
+	private void breakParticles(List<ParallaxLayer> layers)
+	{
+		for (ParallaxLayer layer : layers)
+		{
+			if (layer.getKind() != Enum_LayerKind.PARTICLES)
+				continue;
+			if (breakParticles)
+				layer.setParticles(null);
+			else if (breakBlend && layer.getParticles() != null)
+			{
+				for (ParticleEmitter emitter : layer.getParticles().getEmitters())
+				{
+					emitter.setAdditive(false);
+					emitter.setPremultipliedAlpha(false);
+				}
+			}
+			else if (breakAnchor && reanchored.add(layer))
+				layer.setAnchor(layer.getAnchor() == Enum_ParticleAnchor.VIEW ? Enum_ParticleAnchor.LAYER : Enum_ParticleAnchor.VIEW);
+		}
+	}
+
 	private void show(int index)
 	{
 		Scene scene = scenes.get(index);
+		Round.seedRandom(scene);
 		WholePage_Model page = PlaxBackground.loadPage(assetManager, scene.page);
 		TextureAtlas atlas = JmeAtlas.load(assetManager, scene.atlasDir + "/" + page.pageModel.atlasName);
 		bg.setPage(page, atlas);
@@ -222,6 +266,8 @@ public class JmeParallaxShots extends SimpleApplication
 			bg.getReader().setLayerDetail(named.getKey(), named.getValue());
 			detailed.add(named.getKey());
 		}
+		if (breakParticles || breakAnchor || breakBlend)
+			breakParticles(bg.getReader().layers);
 		shotIndex = 0;
 		time = 0;
 		transferred = 0;

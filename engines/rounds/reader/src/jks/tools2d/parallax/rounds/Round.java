@@ -13,6 +13,7 @@ import java.util.Map;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 
@@ -213,6 +214,14 @@ public final class Round
 			detail = detail.mirrorFrom(Enum_Detail.valueOf(levels.getString("mirror")));
 		return detail;
 	}
+
+	/**
+	 * Seeds libGDX's {@link MathUtils#random} from the scene's id, what a PARTICLES layer's emitters draw their particles
+	 * with (r31): called by each runner before it builds the scene's page, the libGDX and jME stills then hold the same
+	 * snow, particle for particle, and a run the same as the one before.
+	 */
+	public static void seedRandom(Scene scene)
+	{MathUtils.random.setSeed(scene.id.hashCode());}
 
 	/** The n-th region of that name, in atlas order, as a page names its layers' images: a hook's region. */
 	public static TextureRegion findRegion(TextureAtlas atlas, String name, int position)

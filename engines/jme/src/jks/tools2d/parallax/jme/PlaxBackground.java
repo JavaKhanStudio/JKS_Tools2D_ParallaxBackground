@@ -132,7 +132,10 @@ public class PlaxBackground extends BaseAppState
 	protected void onDisable()
 	{root.setCullHint(CullHint.Always);}
 
-	/** Shows {@code model}, its layers built from {@code atlas}, from their decal positions. */
+	/**
+	 * Shows {@code model}, its layers built from {@code atlas}, from their decal positions; its PARTICLES layers' .p
+	 * files are read from beside the atlas, when {@link JmeAtlas#load} read it.
+	 */
 	public void setPage(WholePage_Model model, TextureAtlas atlas)
 	{
 		if (!isInitialized())
@@ -231,7 +234,7 @@ public class PlaxBackground extends BaseAppState
 		// forceLoad places the layers in the default world: this one.
 		Gvars_Parallax.setWorldWidth(reader.getWorldWidth());
 		Gvars_Parallax.setWorldHeight(reader.getWorldHeight());
-		model.forceLoad(atlas);
+		model.forceLoad(atlas, JmeAtlas.effectFiles(atlas));
 	}
 
 	private void transferFinished()

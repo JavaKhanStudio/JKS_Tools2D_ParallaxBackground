@@ -120,7 +120,7 @@ class ParticlePageTest
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.LIBGDX));
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.BROWSER), "ParticleCases run in Chrome");
 		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.GODOT), "engines/rounds/particles");
-		assertTrue(EffectSupport.whyNot(Enum_LayerKind.PARTICLES, EffectSupport.Engine.JME).contains("EMPTY"));
+		assertTrue(EffectSupport.draws(Enum_LayerKind.PARTICLES, EffectSupport.Engine.JME), "engines/rounds/particles, by pixels");
 		// engines/rounds/shaders, compared by pixels in Godot and jME; WebGlCases in Chrome.
 		for (EffectSupport.Engine engine : EffectSupport.Engine.values())
 		{
