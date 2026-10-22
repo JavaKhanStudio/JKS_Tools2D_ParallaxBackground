@@ -54,5 +54,5 @@ mutant "core: the reader never calls beginPatch (libGDX before r397)" "$READER" 
 	'' \
 	engines/godot/tools/frame-check.sh
 rm -rf build/r397/before-gdx
-cp -r build/godot/animated/gdx build/r397/before-gdx
+cp -r build/godot/.mutant/animated/gdx build/r397/before-gdx
 exit $status

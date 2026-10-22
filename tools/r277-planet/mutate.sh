@@ -46,7 +46,7 @@ PY
 		echo "NOT CAUGHT: $1 passes the $(basename "$round") round ($(grep -o 'worst mean diff [0-9.]*' "$LOG" | head -1))"; status=1
 	elif [ "$(basename "$round")" = particles ]; then
 		# Not pixels: particles.gd's FAIL lines, by scene.
-		failed=$(grep -o '^FAIL q[0-9]*' "build/godot/particles/godot.log" | sort -u | cut -c6- | tr '\n' ' ')
+		failed=$(grep -o '^FAIL q[0-9]*' "build/godot/.mutant/particles/godot.log" | sort -u | cut -c6- | tr '\n' ' ')
 		echo "caught: $1 (particles.gd fails ${failed:-nothing, see the log})"
 	else
 		# Which stills it fails: the report's lines over the threshold.
