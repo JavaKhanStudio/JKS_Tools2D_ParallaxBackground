@@ -225,6 +225,10 @@ repair.
   `Float.floatToIntBits`, never by their printed text. GWT does not round a float either: a `static final float`
   holding `1 / 60f` steps a clock to another time than the literal does (r311 moved a lab's still 4/255), so a step
   that must match keeps the literal.
+- Every headless Chrome here starts through `tools/browser.py` (r488): Playwright's `launch(p, chrome)`, a command
+  line's `python3 tools/browser.py flags CHROME`. It draws WebGL on the GPU and falls back to SwiftShader, said on
+  stderr, where there is none (CI); `PARALLAX_GL=soft` forces it. A new launch with flags of its own puts SwiftShader
+  back on the CPU: about 5 cores a browser, 3-5 fps on a loaded machine.
 - The HTML labs (`core/browser-test/webapp/*-lab.html`, r232) share one kit: `lab.css`, `lab.js` (Copy settings),
   `LabKit` (r311: the clip's clock, the panels, `exportClip`'s `<name>Act` that `tools/*-lab.sh` call, a lab shader's
   uniforms) and `LabControls.slider`, whose name shows up to its first " (", the rest a tooltip, one effect's sliders

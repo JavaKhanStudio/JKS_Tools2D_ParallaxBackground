@@ -8,6 +8,7 @@ page's own speeds, as before) they must not, or the measure is blind. Prints the
   python3 tools/r275-floor/planted.py WAR CHROME   (WAR: core/build/browserTest/war, tools/effects-lab.sh builds it;
                                                     needs Playwright, numpy, Pillow)"""
 import io
+import os
 import socket
 import subprocess
 import sys
@@ -16,6 +17,9 @@ import numpy as np
 from PIL import Image
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
 
 war, chrome = sys.argv[1:3]
 # The canvas is the one panel, 960 x 540 px. Per set (make_lab.py): the trees' foot in frame heights up (Hiver: their
@@ -60,7 +64,7 @@ def run(index, unplanted):
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+            browser = launch(p, chrome)
             page = browser.new_page(viewport={"width": 1540, "height": 900})
             for attempt in range(50):
                 try:

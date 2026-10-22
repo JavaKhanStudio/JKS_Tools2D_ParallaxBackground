@@ -3,7 +3,7 @@
 # HEAD) and as it is in the working tree on the same input, and diffs what they print; the browser ones against one
 # served war, in headless Chrome. Exit 1 on any difference.
 #   tools/r304-fstrings/same.sh [REF] [--no-build]
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 REF=HEAD BUILD=1

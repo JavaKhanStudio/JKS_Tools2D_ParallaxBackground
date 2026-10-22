@@ -12,6 +12,9 @@ import sys
 from PIL import Image, ImageChops, ImageStat
 from playwright.sync_api import sync_playwright
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
+
 url, chrome, out = sys.argv[1:4]
 os.makedirs(out, exist_ok=True)
 
@@ -28,7 +31,7 @@ def diff(a, b):
 
 
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     page = browser.new_page(viewport={"width": 1540, "height": 900})
     page.goto(url)
     page.wait_for_selector("[data-key=cameraScroll]", timeout=60000)

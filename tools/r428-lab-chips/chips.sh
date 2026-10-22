@@ -3,7 +3,7 @@
 # option picked, the panel drawn again, and Copy settings carrying it. Stills of each lab's stage before and after into
 # OUT. Fails when a chip cannot be clicked through the titles' grid, or a pick changes nothing on the canvas.
 #   tools/r428-lab-chips/chips.sh OUT [--no-build]
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 OUT="$(realpath -m "${1:?usage: chips.sh OUT [--no-build]}")"

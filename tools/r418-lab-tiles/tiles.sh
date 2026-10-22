@@ -3,7 +3,7 @@
 # the icons core/browser-test/webapp/index.html shows. Run it again when a lab's picture changes, or for a new lab
 # (add it to tiles.py and its tile to index.html).
 #   tools/r418-lab-tiles/tiles.sh [--no-build]
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 [ "${1:-}" = --no-build ] || ./gradlew -q :core:browserTestWar >/dev/null || exit 1

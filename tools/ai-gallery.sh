@@ -56,9 +56,11 @@ fi
 python3 - "$URL" "$CHROME" "$OUT" <<'PY' || exit 1
 import sys
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, "tools")
+from browser import launch
 url, chrome, out = sys.argv[1:]
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome)
+    browser = launch(p, chrome)
     page = browser.new_page(viewport={"width": 1400, "height": 900})
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))

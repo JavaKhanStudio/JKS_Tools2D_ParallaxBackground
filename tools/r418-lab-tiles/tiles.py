@@ -6,6 +6,9 @@ import sys
 from PIL import Image
 from playwright.sync_api import sync_playwright
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
+
 base, chrome, out = sys.argv[1:]
 # name (the tile's file), page, the lab's ready flag, its panels across and down, and which panel of the top row is the
 # tile when not the first: the same pages as tools/r232-lab-kit/shots.py, the suite left out.
@@ -32,7 +35,7 @@ W, H = 480, 270
 
 os.makedirs(out, exist_ok=True)
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     for name, path, ready, cols, rows, *which in LABS:
         page = browser.new_page(viewport={"width": 1580, "height": 710})
         page.goto(f"{base}/{path}{'&' if '?' in path else '?'}clip=1")

@@ -7,7 +7,7 @@
 # slider's box or a name out of its choice's, a slider picks among names (r248: that is a choice), a PASS cell breaks
 # over two lines, a choice on a panel's title (r428) is cut, or a page is wider than the phone (the kit's layout rules:
 # core/browser-test/webapp/lab.css).
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 OUT="$(realpath -m "${1:?usage: shots.sh OUT [--no-build]}")"

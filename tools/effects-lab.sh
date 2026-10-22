@@ -72,13 +72,15 @@ if [ $MODE = open ]; then
 	exit 0
 fi
 
-# Headless: Playwright drives the system Chrome on SwiftShader and steps the lab through window.effectsLabAct.
+# Headless: Playwright drives the system Chrome on the GPU (tools/browser.py) and steps the lab through window.effectsLabAct.
 python3 - "$URL&clip=1" "$CHROME" "$OUT" "$MODE" "$LAB" "$SLIDERS" <<'PY' || exit 1
 import sys, json
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, "tools")
+from browser import launch
 url, chrome, out, mode, lab, sliders = sys.argv[1:]
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     page = browser.new_page(viewport={"width": 1540, "height": 900})
     errors = []
     page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and errors.append(m.text))

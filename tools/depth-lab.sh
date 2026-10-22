@@ -68,7 +68,7 @@ if [ $MODE = open ]; then
 	exit 0
 fi
 
-# Headless: Playwright drives the system Chrome on SwiftShader, steps the lab through window.depthLabAct and screenshots
+# Headless: Playwright drives the system Chrome on the GPU (tools/browser.py), steps the lab through window.depthLabAct and screenshots
 # its canvas, one frame per 1/30 s of game time, so the clip plays at game speed.
 FRAMES=$(mktemp -d)
 trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT

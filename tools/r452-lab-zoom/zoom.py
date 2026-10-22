@@ -17,6 +17,9 @@ from zoom_pics import (
     zoom_box,
 )
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
+
 base, chrome, out = sys.argv[1:]
 LABS = [
     ("fog", "fog-lab.html", "fogLabReady", "fog"),
@@ -72,7 +75,7 @@ def canvas_image(page):
 
 failures = []
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     for name, path, ready, lab in LABS:
         for size, (w, h) in SIZES.items():
             phone = size == "phone"

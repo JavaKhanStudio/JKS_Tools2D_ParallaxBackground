@@ -5,7 +5,7 @@
 # closer to another panel's), the stage did not change, its title is not the clicked panel's, a step or the way back
 # lands elsewhere, the stage comes back changed, or Copy settings moved.
 #   [ZOOM_LABS="anim hills"] tools/r452-lab-zoom/zoom.sh OUT [--no-build]
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 OUT="$(realpath -m "${1:?usage: zoom.sh OUT [--no-build]}")"
@@ -20,5 +20,5 @@ python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WAR" >/dev/null 2>
 SERVER=$!
 trap 'kill $SERVER 2>/dev/null; rm -rf "$WAR"' EXIT
 for _ in $(seq 50); do python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:$PORT/index.html')" 2>/dev/null && break; sleep 0.1; done
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 python3 "$(dirname "$0")/zoom.py" "http://127.0.0.1:$PORT" "$CHROME" "$OUT"

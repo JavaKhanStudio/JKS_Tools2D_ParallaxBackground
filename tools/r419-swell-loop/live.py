@@ -1,6 +1,6 @@
 """The anim-lab as Simon opens it (r419): no ?clip=1, the lab's own clock, on a chosen GL, one still per view.
 
-tools/anim-lab.sh's headless modes step the lab through window.animLabAct on SwiftShader; Simon's window runs it in real
+tools/anim-lab.sh's headless modes stepped the lab through window.animLabAct on SwiftShader until r488; Simon's window runs it in real
 time on his GPU, and saw WAVE pure white and no reflection there (r419, 15 Oct 21:38) where the clips showed both.
 
     python3 tools/r419-swell-loop/live.py WAR OUT_DIR [--gl swiftshader|gpu] [--wait S] [--page P --choice KEY]
@@ -16,9 +16,13 @@ import functools
 import http.server
 import os
 import shutil
+import sys
 import threading
 
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
 
 ap = argparse.ArgumentParser()
 ap.add_argument("war")
@@ -40,11 +44,9 @@ server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 url = f"http://127.0.0.1:{server.server_address[1]}/{args.page}"
 
-flags = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] if args.gl == "swiftshader" else [
-    "--use-angle=gl-egl", "--ignore-gpu-blocklist", "--enable-gpu"]
 chrome = os.environ.get("CHROME") or shutil.which("google-chrome") or shutil.which("chromium")
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=flags)
+    browser = launch(p, chrome, "soft" if args.gl == "swiftshader" else "gpu")
     page = browser.new_page(viewport={"width": 1580, "height": 800})
     errors = []
     page.on("console", lambda m: m.type in ("error", "warning") and errors.append(m.text))

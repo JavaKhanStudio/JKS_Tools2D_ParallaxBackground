@@ -1,9 +1,13 @@
 """r248: each lab's choices (LabControls.choice) picked as a person picks them, through the dropdown, and what the lab
 does with it: the readout or Copy settings must follow. Run from a served war: python3 pick.py BASE CHROME."""
 import json
+import os
 import sys
 
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
 
 base, chrome = sys.argv[1:]
 # lab page, ready flag, control, option label to pick, what must then be in the readout (or the copied JSON's field)
@@ -18,7 +22,7 @@ CASES = [
 ]
 failures = []
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     for path, ready, key, label, expect in CASES:
         page = browser.new_page(viewport={"width": 1580, "height": 710})
         page.goto(f"{base}/{path}{'&clip=1' if '?' in path else '?clip=1'}")

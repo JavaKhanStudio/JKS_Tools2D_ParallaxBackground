@@ -1,11 +1,15 @@
 """tools/depth-lab.sh's headless driver (r444): stills, a clip, and the seam check (the 3D view at 0 is the game's frame)."""
 import math
+import os
 import sys
 
 import numpy as np
 from PIL import Image
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
 
 url, chrome, frames, mode, big, sliders = sys.argv[1:]
 PAGES = 5
@@ -61,7 +65,7 @@ def shot(page, path, what="#depth-lab"):
 
 
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     if mode == "shot":
         page, errors = open_lab(browser)
         page.evaluate("window.depthLabAct(4)")

@@ -1,11 +1,15 @@
 """lab-check.py URL CHROME OUT SECONDS: lab-check.sh's driver (r369). See lab-check.sh."""
 import io
 import json
+import os
 import sys
 
 import numpy as np
 from PIL import Image
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
 
 url, chrome, out, seconds = sys.argv[1], sys.argv[2], sys.argv[3], float(sys.argv[4])
 STEPS = round(seconds * 60)
@@ -35,7 +39,7 @@ def frame(page):
 report = {'seconds': seconds}
 failures = []
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])
+    browser = launch(p, chrome)
     there, errors_a = opened(browser, '', 2)
     gone, errors_b = opened(browser, '&figure=gone', 2)
     covered, worst, uncovered_seen, uncovered_shot = 0, (0, None, None), 0, None

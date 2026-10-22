@@ -38,8 +38,7 @@ trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE"' EXIT
 URL="http://127.0.0.1:$PORT/index.html"
 for _ in $(seq 50); do python3 -c "import urllib.request; urllib.request.urlopen('$URL')" 2>/dev/null && break; sleep 0.1; done
 
-# SwiftShader is Chrome's software WebGL: the page is a libGDX app and needs a GL context, with or without a GPU.
-FLAGS=(--user-data-dir="$PROFILE" --no-first-run --no-default-browser-check --enable-unsafe-swiftshader)
+FLAGS=(--user-data-dir="$PROFILE" --no-first-run --no-default-browser-check)
 if [ $MODE = open ]; then
 	# The board's server has neither DISPLAY nor WAYLAND_DISPLAY: GLFW (the demo, the editor) falls back to wayland-0
 	# by itself, Chrome exits with "Missing X server". Point it at the session's Wayland socket.
@@ -55,7 +54,10 @@ if [ $MODE = open ]; then
 	exit 0
 fi
 
-HEADLESS=(--headless=new --use-angle=swiftshader --virtual-time-budget=20000)
+# The page is a libGDX app and needs a GL context: the GPU's, or SwiftShader's (Chrome's software WebGL) where there is
+# none, as on CI. tools/browser.py picks (r488), PARALLAX_GL=soft forces SwiftShader.
+mapfile -t GL < <(python3 tools/browser.py flags "$CHROME")
+HEADLESS=(--headless=new "${GL[@]}" --virtual-time-budget=20000)
 SUMMARY=$(timeout 120 "$CHROME" "${FLAGS[@]}" "${HEADLESS[@]}" --dump-dom "$URL" 2>/dev/null \
 	| python3 -c '
 import html, re, sys

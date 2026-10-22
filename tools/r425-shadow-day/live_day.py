@@ -26,6 +26,9 @@ import numpy as np
 from PIL import Image
 from playwright.sync_api import sync_playwright
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
+
 ap = argparse.ArgumentParser()
 ap.add_argument("war")
 ap.add_argument("out")
@@ -44,13 +47,11 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
 server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=args.war))
 threading.Thread(target=server.serve_forever, daemon=True).start()
 url = f"http://127.0.0.1:{server.server_address[1]}/shadow-lab.html"
-flags = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] if args.gl == "swiftshader" else [
-    "--use-angle=gl-egl", "--ignore-gpu-blocklist", "--enable-gpu"]
 chrome = os.environ.get("CHROME") or shutil.which("google-chrome") or shutil.which("chromium")
 track = []
 shade = []
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=flags)
+    browser = launch(p, chrome, "soft" if args.gl == "swiftshader" else "gpu")
     page = browser.new_page(viewport={"width": 1580, "height": 800})
     errors = []
     page.on("console", lambda m: m.type in ("error", "warning") and "404" not in m.text and errors.append(m.text))

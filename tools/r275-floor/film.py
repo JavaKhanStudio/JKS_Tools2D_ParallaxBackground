@@ -13,11 +13,14 @@ import tempfile
 
 from playwright.sync_api import sync_playwright
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
+
 url, chrome, out = sys.argv[1:4]
 seconds = float(sys.argv[4]) if len(sys.argv) > 4 else 4
 frames = tempfile.mkdtemp()
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     page = browser.new_page(viewport={"width": 1540, "height": 900})
     page.goto(url)
     page.wait_for_function("window.effectsLabReady === true", timeout=60000)

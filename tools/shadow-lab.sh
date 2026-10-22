@@ -78,7 +78,7 @@ if [ $MODE = open ]; then
 	exit 0
 fi
 
-# Headless: Playwright drives the system Chrome on SwiftShader, steps the lab through window.shadowLabAct and screenshots
+# Headless: Playwright drives the system Chrome on the GPU (tools/browser.py), steps the lab through window.shadowLabAct and screenshots
 # it, one frame per 1/30 s of game time, so the clip plays at game speed.
 FRAMES=$(mktemp -d)
 trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT
@@ -86,9 +86,11 @@ python3 - "$URL?clip=1" "$CHROME" "$FRAMES" "$MODE" "$SLIDERS" <<'PY' || exit 1
 import os
 import sys
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, "tools")
+from browser import launch
 url, chrome, frames, mode, sliders = sys.argv[1:]
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     page = browser.new_page(viewport={"width": 1540, "height": 700})
     errors = []
     # A failed load is reported below with its URL: the console's line names none (r320: it was the favicon).

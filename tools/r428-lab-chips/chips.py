@@ -1,11 +1,15 @@
 """chips.sh's driver (r428): each lab's choices on its panels' titles, clicked, picked, the canvas compared."""
 import io
+import os
 import sys
 
 import numpy as np
 from PIL import Image
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
 
 base, chrome, out = sys.argv[1:]
 # lab, page, ready flag, the lab's Copy settings name; then the choice to pick and the option to pick in it. A lab
@@ -25,7 +29,7 @@ LABS = [
 
 failures = []
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     for name, path, ready, lab, key, option in LABS:
         page = browser.new_page(viewport={"width": 1580, "height": 710})
         errors = []

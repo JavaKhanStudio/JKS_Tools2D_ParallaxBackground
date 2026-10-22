@@ -10,7 +10,7 @@
 # switches and none while the figure is uncovered in the view, by the lab's own reckoning, while "every 2 s, anywhere"
 # makes some there. Writes OUT/report.json and OUT/worst-covered.png, OUT/uncovered.png.
 # LAB_WAR serves another war than core/build/browserTest/war (a copy with a mutant cover: lab-mutate.sh).
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 set -eu
 cd "$(dirname "$0")/../.." || exit 1
 OUT="$(realpath -m "${1:?usage: lab-check.sh OUT [SECONDS] [--no-build]}")"

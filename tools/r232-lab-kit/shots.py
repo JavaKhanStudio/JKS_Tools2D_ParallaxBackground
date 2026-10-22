@@ -1,8 +1,12 @@
 """shots.sh's driver (r232): each lab at the desktop window's size and on a phone, screenshots and fit checks."""
 import json
+import os
 import sys
 
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
 
 base, chrome, out = sys.argv[1:]
 LABS = [
@@ -71,7 +75,7 @@ MEASURE = """() => {
 failures = []
 report = {}
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     for name, path, ready in LABS:
         for size, (w, h) in SIZES.items():
             page = browser.new_page(viewport={"width": w, "height": h})

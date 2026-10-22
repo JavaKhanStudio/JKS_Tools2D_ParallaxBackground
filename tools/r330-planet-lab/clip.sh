@@ -3,7 +3,7 @@
 # STEP seconds for 8 s, as a GIF: the page round its planet, the snow and the game's towers among its layers.
 #   tools/r330-planet-lab/clip.sh OUT.gif [K=V ...] [--no-build]   K a control's data-key (planetRadius, towersHook,
 #                                                                  snowAnchor, cameraScroll), a choice by its index
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 OUT="$(realpath -m "${1:?usage: clip.sh OUT.gif [K=V ...] [--no-build]}")"; shift
@@ -24,12 +24,14 @@ import sys
 
 from PIL import Image
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, "tools")
+from browser import launch
 
 url, chrome, out, settings = sys.argv[1:]
 STEP, SECONDS = 0.25, 8
 frames = []
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     page = browser.new_page(viewport={"width": 1540, "height": 900})
     page.goto(url)
     page.wait_for_function("window.effectsLabReady === true", timeout=60000)

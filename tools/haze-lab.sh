@@ -57,15 +57,17 @@ if [ $MODE = open ]; then
 	exit 0
 fi
 
-# Headless: Playwright drives the system Chrome on SwiftShader and steps the lab through window.hazeLabAct.
+# Headless: Playwright drives the system Chrome on the GPU (tools/browser.py) and steps the lab through window.hazeLabAct.
 QUERY="?clip=1"
 [ $MODE = same ] && QUERY="?clip=1&same=1"
 python3 - "$URL$QUERY" "$CHROME" "$OUT" "$MODE" <<'PY' || exit 1
 import sys, json
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, "tools")
+from browser import launch
 url, chrome, out, mode = sys.argv[1:]
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     # --same compares panels pixel for pixel: wide enough that lab.css draws the canvas 1:1, no resampling between rows.
     page = browser.new_page(viewport={"width": 1600 if mode == "same" else 1540, "height": 760})
     errors = []

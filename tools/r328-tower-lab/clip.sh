@@ -2,7 +2,7 @@
 # The tower lab turning (r328), headless: TowerLab stepped through window.effectsLabAct, the canvas saved every
 # STEP seconds for one turn (12.6 s at the lab's start values), as a GIF.
 #   tools/r328-tower-lab/clip.sh OUT.gif [--no-build]
-# headless: Playwright drives the system Chrome headless on SwiftShader, no window.
+# headless: Playwright drives the system Chrome headless on the GPU (tools/browser.py), no window.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 OUT="$(realpath -m "${1:?usage: clip.sh OUT.gif [--no-build]}")"
@@ -21,12 +21,14 @@ import sys
 
 from PIL import Image
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, "tools")
+from browser import launch
 
 url, chrome, out = sys.argv[1:]
 STEP, SECONDS = 0.25, 12.75
 frames = []
 with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path=chrome, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    browser = launch(p, chrome)
     page = browser.new_page(viewport={"width": 1540, "height": 900})
     page.goto(url)
     page.wait_for_function("window.effectsLabReady === true", timeout=60000)
