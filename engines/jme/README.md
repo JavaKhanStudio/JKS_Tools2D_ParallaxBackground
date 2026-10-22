@@ -24,7 +24,8 @@ from 2.5.0 on. The dependency, the setup and the gamma note: the root README,
 
 - `tools/frame-check.sh [ROUND_DIR...]` — the frame check: draws rounds of [`engines/rounds`](../rounds) with libGDX
   and with jME, off screen in cage, and compares them still by still at 2/255 (`build/jme/<round>/compare.png`,
-  `report.txt`). Without arguments it plays every round jME draws. `BREAK=scroll` draws jME 10 % too fast: it must
+  `report.txt`). Without arguments it plays every round jME draws: all of Godot's but `engines/rounds/particles`, jME
+  drawing no `PARTICLES` layer yet (parallax-readers:r31). `BREAK=scroll` draws jME 10 % too fast: it must
   FAIL. CI's `jme-frames` job runs it under `xvfb-run` (`ATELIER_NO_OFFSCREEN=1`). Needs cage, Xwayland, Pillow.
 - `tools/bench.sh [OUT_JSON]` — jME's latency on [`engines/rounds/bench`](../rounds/bench/round.json)
   (`JmeParallaxBench`): each scene's load time, then 600 frames vsync off, act and render with the GPU finished (no swap, as libGDX's),

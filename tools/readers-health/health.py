@@ -26,7 +26,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # check: its frame check, whose default ROUNDS line says what it plays. job: its job's name in ci.yml. needs: the
 # program it cannot run without. watch: what, changed after its last run, makes that run stale; a reader with a check
 # watches the rounds it plays too, and only those (r23: a commit to engines/rounds/bench stales nobody). bench: how its
-# build/bench/<id>.json is made, or the task that will make it.
+# build/bench/<id>.json is made, or the task that will make it. unsupported: a round it does not play, and why (r27).
 READERS = [
     {'id': 'gdx', 'name': 'libGDX', 'folder': 'core', 'role': 'the reference: every other reader is checked against its stills',
      'needs': 'java', 'jobs': ['Build and test (JDK 17)', 'Build and test (JDK 21)', 'Build and test (JDK 25)'],
@@ -39,7 +39,9 @@ READERS = [
     {'id': 'jme', 'name': 'jMonkeyEngine 3', 'folder': 'engines/jme', 'role': "runs core's reader as is, through JmeBatch",
      'needs': 'java', 'check': 'engines/jme/tools/frame-check.sh', 'jobs': ['jME frames against libGDX'],
      'watch': ['engines/jme', 'core/src', 'engines/rounds/reader'],
-     'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh'},
+     'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh',
+     'unsupported': {'engines/rounds/particles': ('r31', ('jME draws no PARTICLES layer yet: no effect is loaded, '
+                                                   'and JmeBatch throws on the emitters\' blend function'))}},
     {'id': 'unity', 'name': 'Unity', 'folder': None, 'role': 'not written: parallax:r103, paused on its install',
      'needs': 'unity', 'paused': True},
 ]
@@ -278,7 +280,8 @@ def page(d):
     p.append('</div>')
 
     p.append('<h2>Frame checks: each round, each reader</h2><p class="sub">Mean difference from libGDX\'s stills per '
-             'channel, out of 255; a check fails over 2. A dash: the reader does not play that round.</p>'
+             'channel, out of 255; a check fails over 2. "Not drawn": the reader cannot draw that round yet, its task named. '
+             'A dash: the reader does not play that round.</p>'
              '<table><tr><th>Round</th><th>Scenes</th>' + ''.join(f'<th>{e(r["name"])}</th>' for r in played) + '</tr>')
     for rd in all_rounds:
         name = os.path.basename(rd)
@@ -286,7 +289,10 @@ def page(d):
         p.append(f'<tr><td><code>{e(name)}</code></td><td class="n">{scenes}</td>')
         for r in played:
             v = r['rounds'].get(rd)
-            if not v:
+            if not v and rd in r.get('unsupported', {}):
+                ref, why = r['unsupported'][rd]
+                p.append(f'<td class="na" title="{e(why)}">not drawn<small>{e(ref)}</small></td>')
+            elif not v:
                 p.append('<td class="na">&ndash;</td>')
             elif not v['report']:
                 p.append('<td class="never">never run</td>')

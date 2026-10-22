@@ -146,15 +146,21 @@ ports its 60 lines (opaque, colours packed as ShapeRenderer packs them). `JmeBat
 calls, `draw(region, x, y, width, height)`, and throws on every other: a reader that starts calling another fails
 there, loudly.
 
-**How it is checked.** `engines/jme/tools/frame-check.sh` renders three of the Godot check's rounds (`engines/rounds/round1`,
-`engines/rounds/conformance` and `engines/rounds/transfer`, with their Y scroll, resizes,
-cross-fades and tints) with libGDX and with `JmeParallaxShots`, off screen in cage, and compares them with the same
+**How it is checked.** `engines/jme/tools/frame-check.sh` renders the Godot check's rounds but one (`engines/rounds/round1`,
+`engines/rounds/conformance`, `engines/rounds/transfer` with their Y scroll, resizes, cross-fades and tints,
+`engines/rounds/pixelart` and the effect rounds after them) with libGDX and with `JmeParallaxShots`, off screen in cage, and compares them with the same
 `tools/compare-parallax-frames.py`. On 2026-09-30 (jME 3.9.0, LWJGL 3.3.6, NVIDIA): worst mean difference **0.25 /
 255** (round 1), 0.13 (conformance), 0.23 (transfer). A port with a scroll 10 % too fast (`BREAK=scroll`) scores
 4.3 to 39 on every still taken after the scroll started, and a jME frame compared with the libGDX frame 12 s later
 scores 6.4 to 160, so the 2 / 255 threshold catches both. `tools/start-demo-check.sh jme` runs `JmeParallaxDemo`
 (`./gradlew :jme:run`: the demo's Hiver and Printemps `.plax` behind a jME cube) off screen, with SPACE and N pressed.
 
+The pixel-art round (r27) scored 0.35 on 2026-10-23; jME magnifying a `Nearest` atlas `Bilinear` scored 3.65, and every
+atlas `Nearest` 3.81 (`tools/r27-jme-pixelart/mutate.sh`).
+
+**Not drawn:** a `PARTICLES` layer (parallax-readers:r31), so `engines/rounds/particles` is not played. `PlaxBackground`
+builds the page with `forceLoad(atlas)`, which loads no effect, and libGDX's `ParticleEmitter.draw` sets the batch's
+blend function, which `JmeBatch` throws on.
 **Not there yet:** atlas regions packed rotated (as in Godot), and assets in an Android jME game (tried on the desktop
 only). **In CI** (r115): the `jme-frames` job of `.github/workflows/ci.yml` (its own job since parallax-readers:r10; before,
 it ran after the Godot rounds in `godot-frames`) runs `engines/jme/tools/frame-check.sh` on Xvfb and Mesa llvmpipe, and fails on a FAIL. There, on 2026-09-30 (llvmpipe, LLVM 20.1.2),
