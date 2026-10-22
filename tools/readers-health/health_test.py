@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """health_test.py — health.py's verdicts on a made-up checkout: a FAIL report makes its reader Failing, a round never
-run makes it Stale, all PASS makes it Healthy, a missing program Not installed, and only a round it plays, changed, makes it Stale (r23).
+run makes it Stale, all PASS makes it Healthy, a missing program Not installed, and only a round it plays, changed, makes it Stale (r23);
+the feature table judges each feature by its own scenes, and shows a feature no scene checks as "no round" (r28).
 Plain Python 3: python3 tools/readers-health/health_test.py"""
 import json
 import os
@@ -74,5 +75,48 @@ for name, row, want in cases[-2:]:
     print(('ok   ' if good else 'FAIL ') + f"{name}: {row['status']} ({row['why']}), want {want}")
 row = status({'a': ok, 'b': ok})
 assert row['count'] == 12, row['count']  # 2 rounds x 2 scenes x 3 stills
+
+
+def feature_table():
+    """r28: features.json's features judged scene by scene. Round a: x1 passes, x2 fails at 3.0; round b is not
+    played; round c is played but never drawn (unsupported, for feature 'gone')."""
+    health.ROOT = checkout({'a': 'FAIL: worst mean diff 3.00 (threshold 2.0)'})
+    with open(os.path.join(health.ROOT, 'build/fake/a/report.txt'), 'w') as f:
+        f.write('x1-t0.png  mean diff 0.10 / 255\nx1-t6.png  mean diff 0.40 / 255\n'
+                'x2-t0.png  mean diff 3.00 / 255\nFAIL: worst mean diff 3.00 (threshold 2.0)\n')
+    os.makedirs(os.path.join(health.ROOT, 'engines/rounds/c'))
+    with open(os.path.join(health.ROOT, 'engines/rounds/c/round.json'), 'w') as f:
+        json.dump({'scenes': [{'id': 'z1'}]}, f)
+    with open(os.path.join(health.ROOT, 'tools/check.sh'), 'w') as f:
+        f.write('[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/a)\n')
+    with open(os.path.join(health.ROOT, health.FEATURES), 'w') as f:
+        json.dump({'features': [
+            {'id': 'one', 'name': 'one', 'scenes': {'a': ['x1']}},
+            {'id': 'two', 'name': 'two', 'scenes': {'a': '*', 'b': ['x1']}},
+            {'id': 'none', 'name': 'none', 'scenes': {}},
+            {'id': 'typo', 'name': 'typo', 'scenes': {'a': ['x1', 'x9']}},
+            {'id': 'elsewhere', 'name': 'elsewhere', 'scenes': {'b': '*'}},
+            {'id': 'gone', 'name': 'gone', 'scenes': {'c': '*', 'a': ['x1']}},
+        ]}, f)
+    health.READERS = [{'id': 'fake', 'name': 'Fake', 'role': '', 'needs': 'python3', 'check': 'tools/check.sh', 'watch': [],
+                       'unsupported': {'engines/rounds/c': ('r0', 'cannot', 'gone')}}]
+    return {r['feature']['id']: r for r in health.gather(False)['features']}
+
+
+rows = feature_table()
+cell = {k: (r['cells']['fake'] or {}).get('kind', 'no round') + ' ' + (r['cells']['fake'] or {}).get('text', '') for k, r in rows.items()}
+cases = [
+    ('a feature whose one scene passes', cell['one'], 'pass 0.40'),
+    ('a feature with one failing scene of its round', cell['two'], 'fail 1 FAIL'),
+    ('a feature no scene checks', cell['none'], 'no round '),
+    ('a feature only in a round the reader does not play', cell['elsewhere'], 'na not played'),
+    ('a feature the reader cannot draw', cell['gone'], 'na not drawn'),
+    ('a scene id no round.json has', str(rows['typo']['unknown']), "[('engines/rounds/a', 'x9')]"),
+    ('scene ids shown as runs', health.scene_span(['s01', 's02', 's03', 's05', 'q1']), 's01-s03, s05, q1'),
+]
+for name, got, want in cases:
+    good = got == want
+    failed += not good
+    print(('ok   ' if good else 'FAIL ') + f"{name}: {got}, want {want}")
 print('health_test: ' + ('PASS' if not failed else f'{failed} FAIL'))
 sys.exit(1 if failed else 0)

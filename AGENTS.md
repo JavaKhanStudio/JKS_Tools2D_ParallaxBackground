@@ -85,6 +85,10 @@ repair.
   `draw(region, x, y, width, height)` (and a planet's quads and turned draw, r347), and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
   method, change the gradients, or make `ParallaxPageReader` or `ParallaxLayer` reach a libGDX native (`OrthographicCamera.update` does), and
   run `engines/jme/tools/frame-check.sh`.
+- Every runtime feature below is a row of `engines/rounds/features.json` (r28): its format, its tickets, the round
+  scenes that check it, its browser `*Cases`. A new feature, or a round scene that checks one, is named there, not in
+  `round.json` (the `core/test-data/*/make_round.py` rewrite those): the readers dashboard (`tools/readers-health.sh`)
+  shows each feature's verdict per reader from it, and a feature no scene names as "no round".
 - An IMAGE layer's animated patch (format 16, r393, r394: `animRegion`, `animX`, `animY`, `animFps`) is drawn after
   each tile by `ParallaxLayer.drawAnim`, its frame `floor(effect time × fps)` modulo the count
   (`ParallaxLayer.setAnimTime`). Godot's copy is `plax_anim.gd`; jME runs core's. The shots never reset the effect

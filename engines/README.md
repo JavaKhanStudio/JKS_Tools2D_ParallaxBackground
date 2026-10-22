@@ -12,7 +12,10 @@ reference; every other reader lives here, one folder each, and is checked frame 
 **How they all are:** `tools/readers-health.sh` builds `build/readers-health/index.html` (parallax-readers:r17): each
 reader's checks and how many stills they compare, when they last ran here and in CI and what they said, every round's
 verdict per reader, and each reader's latency on [`rounds/bench`](rounds/bench/round.json) (few and many layers, plain
-and with effects, a cross-fade: load time, frame time). It reads what the checks left and runs nothing;
+and with effects, a cross-fade: load time, frame time). Its feature table (r28) answers "is MIRROR in jME?": each feature,
+its page format and tickets, the scenes that check it, and per reader the verdict of those scenes (libGDX's: its browser
+cases). The features and their scenes are [`rounds/features.json`](rounds/features.json): a new feature, or a new scene
+that checks one, is named there, or the table shows it as "no round". It reads what the checks left and runs nothing;
 `--run [gdx godot jme]` runs them first (about 10 minutes), `--shot F.png` screenshots it, `--open` opens it.
 On the board it is the header's **Site** button: `--serve 8797` serves it, rebuilt on each load.
 

@@ -8,7 +8,9 @@ bench files (build/bench/<reader>.json, shots/.../ParallaxBench's shape), git (w
 CI run on develop through gh (skipped with --no-ci, or when gh fails). Writes OUT_DIR/index.html, self-contained but
 for its links to the compare sheets, and prints the same as text.
 
-A new reader is one entry in READERS (engines/README.md, "What a new reader must have").
+A new reader is one entry in READERS (engines/README.md, "What a new reader must have"). The feature table (r28) reads
+engines/rounds/features.json: each feature's scenes, judged scene by scene from the same reports, and libGDX's by its
+browser cases' names in core's JUnit results.
 """
 import datetime
 import glob
@@ -26,7 +28,8 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # check: its frame check, whose default ROUNDS line says what it plays. job: its job's name in ci.yml. needs: the
 # program it cannot run without. watch: what, changed after its last run, makes that run stale; a reader with a check
 # watches the rounds it plays too, and only those (r23: a commit to engines/rounds/bench stales nobody). bench: how its
-# build/bench/<id>.json is made, or the task that will make it. unsupported: a round it does not play, and why (r27).
+# build/bench/<id>.json is made, or the task that will make it. unsupported: a round it does not play: (its task, why, the feature
+# it cannot draw, by features.json's id) (r27, r28).
 READERS = [
     {'id': 'gdx', 'name': 'libGDX', 'folder': 'core', 'role': 'the reference: every other reader is checked against its stills',
      'needs': 'java', 'jobs': ['Build and test (JDK 17)', 'Build and test (JDK 21)', 'Build and test (JDK 25)'],
@@ -41,7 +44,7 @@ READERS = [
      'watch': ['engines/jme', 'core/src', 'engines/rounds/reader'],
      'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh',
      'unsupported': {'engines/rounds/particles': ('r31', ('jME draws no PARTICLES layer yet: no effect is loaded, '
-                                                   'and JmeBatch throws on the emitters\' blend function'))}},
+                                                   'and JmeBatch throws on the emitters\' blend function'), 'particles')}},
     {'id': 'unity', 'name': 'Unity', 'folder': None, 'role': 'not written: parallax:r103, paused on its install',
      'needs': 'unity', 'paused': True},
 ]
@@ -88,6 +91,138 @@ def report(reader, round_dir):
     verdict = 'PASS' if 'PASS' in last and 'FAIL' not in last else 'FAIL'
     m = re.search(r'worst mean diff ([\d.]+)', last)
     return verdict, float(m.group(1)) if m else None, os.path.getmtime(path), os.path.relpath(os.path.dirname(path), ROOT)
+
+
+FEATURES = 'engines/rounds/features.json'
+
+
+def features():
+    """engines/rounds/features.json's features, [] when there is none."""
+    path = os.path.join(ROOT, FEATURES)
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        return json.load(f)['features']
+
+
+def scene_verdicts(reader, round_dir):
+    """Each scene's verdict in build/<reader>/<round>/report.txt: {scene id: (PASS/FAIL, worst mean diff or None)}.
+    A still over the report's threshold, or over the round's pixelsOff, fails its scene, as compare-parallax-frames.py
+    judges the round; the particles round's report names its failing shots (FAIL q03-t6: ...)."""
+    path = os.path.join(ROOT, 'build', reader, os.path.basename(round_dir), 'report.txt')
+    if not os.path.exists(path):
+        return {}
+    with open(path) as f:
+        lines = [l for l in f.read().splitlines() if l.strip()]
+    if not lines:
+        return {}
+    m = re.search(r'threshold ([\d.]+)', lines[-1])
+    threshold = float(m.group(1)) if m else 2.0
+    with open(os.path.join(ROOT, round_dir, 'round.json')) as f:
+        pixels_off = json.load(f).get('pixelsOff')
+    out = {}
+    for l in lines:
+        m = re.match(r'(\S+?)-t\d+\.png\s+mean diff ([\d.]+) / 255(?:\s+pixels off by >32: ([\d.]+)%)?', l)
+        if m:
+            sid, mean = m.group(1), float(m.group(2))
+            bad = mean > threshold or (pixels_off is not None and m.group(3) is not None and float(m.group(3)) > pixels_off)
+            was = out.get(sid, ('PASS', 0.0))
+            out[sid] = ('FAIL' if bad or was[0] == 'FAIL' else 'PASS', max(was[1], mean))
+            continue
+        m = re.match(r'(\S+?)-t\d+\.png\s+(MISSING|size)', l) or re.match(r'FAIL (\w+?)-t\d+', l)
+        if m:
+            out[m.group(1)] = ('FAIL', None)
+    if not any(v[1] is not None for v in out.values()):
+        # No still compared by pixels (the particles round): the scenes it names failed, the others took its verdict.
+        verdict = 'PASS' if 'PASS' in lines[-1] and 'FAIL' not in lines[-1] else 'FAIL'
+        for s in scenes_of(round_dir):
+            out.setdefault(s['id'], (verdict if verdict == 'PASS' or not out else 'PASS', None))
+    return out
+
+
+def case_names(cls, pattern):
+    """The browser cases of core/browser-test/cases' class `cls` whose names match `pattern` (all when None)."""
+    names = []
+    for f in glob.glob(os.path.join(ROOT, 'core/browser-test/cases/**', cls + '.java'), recursive=True):
+        with open(f) as fh:
+            names += re.findall(r'new BrowserCase\("([^"]+)"', fh.read())
+    return [n for n in names if pattern is None or re.search(pattern, n)]
+
+
+def junit_cases():
+    """Every JUnit test case core last ran: {name: passed}."""
+    out = {}
+    for f in glob.glob(os.path.join(ROOT, 'core/build/test-results/test/TEST-*.xml')):
+        for c in ET.parse(f).getroot().iter('testcase'):
+            out[c.get('name')] = c.find('failure') is None and c.find('error') is None
+    return out
+
+
+def scene_list(spec):
+    """features.json's scenes, expanded: [(round dir, [scene ids], [ids no round.json has])]."""
+    out = []
+    for name, ids in spec.items():
+        rd = 'engines/rounds/' + name
+        try:
+            known = [s['id'] for s in scenes_of(rd)]
+        except OSError:
+            out.append((rd, [], ['*'] if ids == '*' else list(ids)))
+            continue
+        ids = known if ids == '*' else list(ids)
+        out.append((rd, [i for i in ids if i in known], [i for i in ids if i not in known]))
+    return out
+
+
+def feature_cell(reader, fid, scenes, cases):
+    """One reader's verdict on one feature: {'kind': pass/fail/never/na, 'text', 'small'}."""
+    if reader.get('paused'):
+        return {'kind': 'na', 'text': 'paused', 'small': ''}
+    if reader['id'] == 'gdx':
+        names = [n for cls, pattern in cases for n in case_names(cls, pattern)]
+        if not names:
+            return {'kind': 'na', 'text': 'no case', 'small': 'draws the stills the others match'}
+        ran = junit_cases()
+        seen = [n for n in names if n in ran]
+        if not seen:
+            return {'kind': 'never', 'text': 'never run', 'small': f'{len(names)} cases'}
+        bad = [n for n in seen if not ran[n]]
+        return {'kind': 'fail' if bad else 'pass', 'text': f'{len(bad)} FAIL' if bad else 'PASS',
+                'small': f'{len(seen)} cases' + (f', {len(names) - len(seen)} not run' if len(seen) < len(names) else '')}
+    total = sum(len(ids) for _, ids, _ in scenes)
+    played = [(rd, ids) for rd, ids, _ in scenes if rd in reader['rounds']]
+    # A feature the reader cannot draw (its 'unsupported') is not drawn, whatever its other scenes pass: jME passes the
+    # effects round's e06 by drawing no particles at all.
+    refs = sorted({u[0] for u in reader.get('unsupported', {}).values() if u[2:] == (fid,)})
+    if refs or not played:
+        return {'kind': 'na', 'text': 'not drawn' if refs else 'not played', 'small': ', '.join(refs)}
+    verdicts, unrun = [], 0
+    for rd, ids in played:
+        got = scene_verdicts(reader['id'], rd)
+        for i in ids:
+            if i in got:
+                verdicts.append(got[i])
+            else:
+                unrun += 1
+    n = sum(len(ids) for _, ids in played)
+    of = f'{n} of {total} scenes' if n < total else f'{n} scenes'
+    if any(v[0] == 'FAIL' for v in verdicts):
+        return {'kind': 'fail', 'text': f'{sum(v[0] == "FAIL" for v in verdicts)} FAIL', 'small': of}
+    if not verdicts:
+        return {'kind': 'never', 'text': 'never run', 'small': of}
+    worst = max((v[1] for v in verdicts if v[1] is not None), default=None)
+    return {'kind': 'pass' if not unrun else 'never', 'text': 'PASS' if worst is None else f'{worst:.2f}',
+            'small': of + (f', {unrun} never run' if unrun else '')}
+
+
+def feature_rows(readers):
+    """The feature table: each feature, its scenes, and every reader's verdict on them."""
+    rows = []
+    for f in features():
+        scenes = scene_list(f.get('scenes', {}))
+        rows.append({'feature': f, 'scenes': scenes, 'unknown': [(rd, i) for rd, _, bad in scenes for i in bad],
+                     'cells': {r['id']: (feature_cell(r, f['id'], scenes, f.get('cases', []))
+                                         if any(ids for _, ids, _ in scenes) else None) for r in readers}})
+    return rows
 
 
 def junit():
@@ -215,7 +350,8 @@ def gather(use_ci):
             row['status'], row['why'] = 'fail', 'CI: ' + ', '.join(f'{c[0]} {c[1]}' for c in row['ci'] if c[1] != 'success')
         rows.append(row)
     head = sh('git', 'log', '-1', '--format=%h %s')
-    return {'now': now, 'head': head, 'ci': ci_run, 'readers': rows, 'bench_scenes': bench_scenes}
+    return {'now': now, 'head': head, 'ci': ci_run, 'readers': rows, 'bench_scenes': bench_scenes,
+            'features': feature_rows(rows)}
 
 
 STATUS = {'ok': ('Healthy', '#1a7f37'), 'stale': ('Stale', '#9a6700'), 'never': ('Never run', '#9a6700'),
@@ -229,6 +365,11 @@ def text(d):
         out.append(f"CI on develop: {r['conclusion'] or r['status']} at {r['headSha'][:7]}, {r['createdAt']}")
     for r in d['readers']:
         out.append(f"  {r['name']:16} {STATUS[r['status']][0]:13} {r['why']}; {r['checks']}; last run {age(r['last'], d['now'])}")
+    lost = [f['feature']['name'] for f in d['features'] if not any(ids for _, ids, _ in f['scenes'])]
+    out.append(f"  {len(d['features'])} features" + (f"; no round: {', '.join(lost)}" if lost else ''))
+    for f in d['features']:
+        for rd, i in f['unknown']:
+            out.append(f"  {FEATURES} names {i} in {rd}, which has no such scene")
     return '\n'.join(out)
 
 
@@ -279,6 +420,27 @@ def page(d):
         p.append('</dl></div>')
     p.append('</div>')
 
+    p.append('<h2>Features: each one, its scenes, each reader</h2><p class="sub">From <code>engines/rounds/features.json</code>. '
+             'Godot and jME: the worst still of the scenes that check the feature (mean difference from libGDX, out of 255; a '
+             'check fails over 2), judged scene by scene. libGDX: its browser cases for the feature, in core\'s last JUnit run. '
+             '"No round": no scene checks it. Tickets are the parallax board\'s.</p>'
+             '<table><tr><th>Feature</th><th>Format</th><th>Tickets</th><th>Scenes</th>'
+             + ''.join(f'<th>{e(r["name"])}</th>' for r in readers) + '</tr>')
+    for row in d['features']:
+        f = row['feature']
+        where = '; '.join(f'{os.path.basename(rd)} {scene_span(ids)}' for rd, ids, _ in row['scenes'] if ids)
+        bad = ''.join(f'<small class="bad">{e(i)}: no such scene in {e(os.path.basename(rd))}</small>' for rd, i in row['unknown'])
+        p.append(f'<tr><td>{e(f["name"])}<small>{e(f.get("about", ""))}</small></td>'
+                 f'<td class="n">{f.get("format", "")}</td>'
+                 f'<td>{e(", ".join("parallax:" + t for t in f.get("tickets", [])))}</td>'
+                 + (f'<td>{e(where)}{bad}</td>' if where else f'<td class="fail">no round{bad}</td>'))
+        for r in readers:
+            c = row['cells'][r['id']]
+            p.append('<td class="na">&ndash;</td>' if c is None else
+                     f'<td class="{c["kind"]}">{e(c["text"])}<small>{e(c["small"])}</small></td>')
+        p.append('</tr>')
+    p.append('</table>')
+
     p.append('<h2>Frame checks: each round, each reader</h2><p class="sub">Mean difference from libGDX\'s stills per '
              'channel, out of 255; a check fails over 2. "Not drawn": the reader cannot draw that round yet, its task named. '
              'A dash: the reader does not play that round.</p>'
@@ -290,7 +452,7 @@ def page(d):
         for r in played:
             v = r['rounds'].get(rd)
             if not v and rd in r.get('unsupported', {}):
-                ref, why = r['unsupported'][rd]
+                ref, why = r['unsupported'][rd][:2]
                 p.append(f'<td class="na" title="{e(why)}">not drawn<small>{e(ref)}</small></td>')
             elif not v:
                 p.append('<td class="na">&ndash;</td>')
@@ -331,6 +493,22 @@ def page(d):
     return '\n'.join(p)
 
 
+def scene_span(ids):
+    """s01 s02 s03 s05 as s01-s03, s05."""
+    out, run = [], []
+    for i in ids + [None]:
+        m = re.match(r'([a-z]+)(\d+)$', i or '')
+        if run and m and m.group(1) == run[-1][0] and int(m.group(2)) == run[-1][1] + 1:
+            run.append((m.group(1), int(m.group(2)), i))
+            continue
+        if run:
+            out.append(run[0][2] if len(run) == 1 else f'{run[0][2]}-{run[-1][2]}')
+        run = [(m.group(1), int(m.group(2)), i)] if m else []
+        if i and not m:
+            out.append(i)
+    return ', '.join(out)
+
+
 CSS = """
 :root { color-scheme: light dark; --fg: #1f2328; --mute: #59636e; --line: #d1d9e0; --bg: #fff; --cell: #f6f8fa; }
 @media (prefers-color-scheme: dark) { :root { --fg: #e6edf3; --mute: #9198a1; --line: #3d444d; --bg: #0d1117; --cell: #151b23; } }
@@ -348,6 +526,7 @@ table { border-collapse: collapse; font-size: 14px; }
 th, td { border: 1px solid var(--line); padding: 4px 10px; text-align: left; vertical-align: top; }
 th small, td small { display: block; color: var(--mute); font-weight: normal; font-size: 12px; max-width: 420px; }
 td.n { text-align: right; } td.na { color: var(--mute); text-align: center; }
+small.bad { color: #cf222e; }
 td.pass { background: #1a7f3722; } td.fail { background: #cf222e33; font-weight: 700; } td.never { background: #9a670022; color: var(--mute); }
 """
 

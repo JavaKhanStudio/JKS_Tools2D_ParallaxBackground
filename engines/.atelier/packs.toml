@@ -22,6 +22,9 @@ engines/*/tools/*.sh too: a new reader's script that opens a window runs it in c
 HEALTH (r17): tools/readers-health.sh builds build/readers-health/index.html from what the checks left (report.txt, JUnit,
 CI through gh, build/bench/<reader>.json); --run runs them first; --serve 8797 is the board's Site button. A new reader is an entry in tools/readers-health/health.py's
 READERS. engines/rounds/bench is timed (tools/parallax-bench.sh), never compared: no frame check plays it.
+FEATURES (r28): engines/rounds/features.json maps each runtime feature to the scenes that check it (and its *Cases);
+the dashboard's feature table judges it per reader from them. A new feature or scene goes there, never in round.json,
+which make_round.py scripts rewrite. A reader's 'unsupported' entry in health.py names the round, its task and the feature.
 A MUTANT RUN (r26) never lands in build/<reader>/<round>: tools/shots-out.sh links a frame check run under BREAK,
 PLAX_MUTANT=1 or a tools/*/mutate.sh at build/<reader>/.mutant/<round>, so the dashboard keeps the last clean verdict.
 A mutate.sh that reads the stills it just made reads build/<reader>/.mutant/<round> (r277, r397 do).
