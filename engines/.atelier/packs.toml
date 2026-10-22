@@ -3,10 +3,12 @@
 
 [tags.readers]
 label = "Readers"
-description = "Each engine's reader (libGDX core, jME, Godot, later Unity) as its own sub project: folder layout, build, tests, CI job, release artifact (r1, ex parallax:r317). How a page scrolls, fades or shades in a reader stays on parallax (#runtime, #shader, #format)"
+description = "Each engine's reader (libGDX core, jME, Godot, later Unity) as its own sub project: folder layout, build, tests, CI job, release artifact (r1, ex parallax:r317). Work inside one reader goes to its own tag (#jme, #godot, #readers-health for the dashboard, r29); #readers keeps what spans them: the layout, a new reader, the shared rounds and stills. How a page scrolls, fades or shades in a reader stays on parallax (#runtime, #shader, #format)"
 color = "#c9a0ff"
 sort = 60
 context = """
+WORK INSIDE ONE READER is tagged #jme, #godot or #readers-health (the dashboard), each with its own pack (r29); this
+tag is for what spans readers.
 A READER draws a saved page in one engine. Today, in this one repository:
   core/          libGDX, the reference: parallax-background on Maven Central. Every other reader is checked against it.
   engines/jme/   :jme. src/ is published as parallax-background-jme, with core's version; tests/ holds the frame runner and demo.
@@ -44,4 +46,77 @@ WHAT A NEW READER MUST HAVE (folder, README, frame check, CI job, release artifa
 engines/README.md, "What a new reader must have" (r12): follow it, and change it when a reader changes the shape.
 Build rules are the #build pack's: versions in gradle.properties, repositories only in settings.gradle, every JavaExec
 offscreen or headless.
+"""
+
+# #readers divided by reader (r29): a tag is leased to one session at a time, so each reader's
+# folder gets its own tag and the readers' tickets run side by side. #readers keeps what spans them:
+# the layout, a new reader, the shared rounds and stills, the cross-reader CI shape.
+
+[tags.jme]
+label = "jME reader"
+description = "The jMonkeyEngine reader in engines/jme (:jme): JmeBatch, PlaxBackground, its frame check, bench and demo. What spans readers stays #readers"
+color = "#7fb3ff"
+sort = 61
+context = """
+engines/jme/ is :jme, the jMonkeyEngine READER. src/ (jks.tools2d.parallax.jme: PlaxBackground, JmeBatch, JmeAtlas,
+JmeGradient, JmeLayerEffects) is published as parallax-background-jme with core's version. It runs core's
+ParallaxPageReader and WholePage_Model AS IS, drawing through JmeBatch, a libGDX Batch over jME: a libGDX call JmeBatch
+does not implement throws unsupported(). tests/ holds JmeParallaxShots (the frame runner) and the demo.
+Its scripts are engines/jme/tools/: frame-check.sh (ROUNDS it plays, compared with core's libGDX stills), bench.sh
+(build/bench/jme.json) and probe/. Each cd's to the repository root first; every window runs offscreen/in cage
+(tools/offscreen-lint.sh reads engines/*/tools/*.sh). CI job: jme-frames in .github/workflows/ci.yml.
+THE REFERENCE is core/ (libGDX): rounds live in core/test-data and engines/rounds (no reader owns them), read by Round
+(:rounds, engines/rounds/reader) for both ParallaxShots and JmeParallaxShots. A new round field goes in Round AND in Godot's
+tests/shots.gd. A new feature or scene goes in engines/rounds/features.json, never round.json.
+A MUTANT RUN (BREAK, PLAX_MUTANT=1 or a tools/*/mutate.sh) lands in build/jme/.mutant/<round> via tools/shots-out.sh,
+never build/jme/<round>. A pixel round's effect must outweigh the 2/255 tolerance (measure effect vs plain).
+When jME gains or loses a feature: its 'unsupported' entry in tools/readers-health/health.py, engines/jme/README.md
+and docs/other-engines.md change with it.
+Build rules (#build): versions in gradle.properties, repositories only in settings.gradle, every JavaExec offscreen or headless.
+A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
+"""
+
+[tags.godot]
+label = "Godot reader"
+description = "The Godot 4 reader in engines/godot: addons/jks_parallax (GDScript port of core), its tests, frame check, bench, addon zip, and the mutate.sh scripts that break it. What spans readers stays #readers"
+color = "#6fd6a0"
+sort = 62
+context = """
+engines/godot/ is a Godot 4 project. addons/jks_parallax is a GDScript port of core/ (libGDX, the reference), LINE FOR
+LINE: what each port must copy and which frame round proves it is in AGENTS.md "Runtime". release.yml attaches
+jks-parallax-godot-X.Y.Z.zip from 2.5.0 on (addon-zip.sh, checked by addon-zip-check.sh); the Asset Library listing is
+parallax:r104 (paused). tests/: shots.gd (the frame runner; reads the round file itself, so a new round field goes there
+AND in Round, :rounds), particles.gd (checks particles by where they are), bench.gd, sequence_cycle.gd, demo.
+Scripts are engines/godot/tools/: frame-check.sh (compares with core's libGDX stills), bench.sh (build/bench/godot.json),
+addon-zip.sh, addon-zip-check.sh. Each cd's to the repository root first; every window runs headless/in cage
+(tools/offscreen-lint.sh reads engines/*/tools/*.sh). CI job: godot-frames in .github/workflows/ci.yml.
+Rounds live in core/test-data and engines/rounds (no reader owns them); a new feature or scene goes in
+engines/rounds/features.json, never round.json (make_round.py rewrites it).
+MUTATE SCRIPTS: many tools/r<NNN>-*/mutate.sh sed a line of addons/jks_parallax/*.gd and expect the frame check to FAIL.
+They grep the exact line they edit: a port change silently breaks them ("mutation N did not apply"). A mutant run lands in
+build/godot/.mutant/<round> via tools/shots-out.sh, never build/godot/<round>; a mutate.sh reading its own stills reads
+.mutant/. Never edit a mutate.sh while it runs. Re-run the mutate.sh of the round you touch.
+A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
+"""
+
+[tags.readers-health]
+label = "Readers' dashboard"
+description = "The readers' health dashboard: tools/readers-health.sh, tools/readers-health/ (health.py, health_test.py, serve.py), its board Site button, and the gates that run its tests"
+color = "#ffc46b"
+sort = 63
+context = """
+tools/readers-health.sh builds build/readers-health/index.html from what the readers' checks LEFT: each frame check's
+report.txt under build/<reader>/<round>, JUnit, CI runs through gh, build/bench/<reader>.json. --run runs the checks first;
+--serve 8797 serves it on loopback, rebuilt on each load: it is the board's Site button ([viewers.readers_health] in
+atelier's projects/parallax-readers.toml, start runs in engines/, so the script is ../tools/readers-health.sh).
+tools/readers-health/health.py holds READERS (a new reader is an entry there), each reader's 'unsupported' entries
+(naming the round, its task and the feature), the statuses (Stale, FAIL, no round) and the FEATURE TABLE (r28), judged
+per reader from engines/rounds/features.json (feature -> scenes and *Cases). health_test.py covers the statuses and the
+feature table: run python3 tools/readers-health/health_test.py after any health.py change.
+A MUTANT RUN never becomes a verdict (r26): tools/shots-out.sh links it at build/<reader>/.mutant/<round>; the dashboard
+reads build/<reader>/<round> only. engines/rounds/bench is timed, never compared: no frame check plays it, so it never
+marks a reader Stale (r23). Relative paths given to its flags resolve against the caller's cwd (r24).
+Readers today: libGDX (core/, the reference), jME (engines/jme, CI job jme-frames), Godot (engines/godot, godot-frames).
+Gates: the pre-commit hook runs tools/pre-commit-check.sh (CI's lint on the staged .py/.sh/.gd); CI is .github/workflows/ci.yml.
+A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
 """
