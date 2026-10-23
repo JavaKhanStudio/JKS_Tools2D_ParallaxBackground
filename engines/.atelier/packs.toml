@@ -125,7 +125,9 @@ SRC_ALPHA, ONE_MINUS_SRC_ALPHA on the colour and ONE, ONE_MINUS_SRC_ALPHA on the
 drawing buffer is un-premultiplied by toBlob and the compositor, and brightened every half-transparent texel (r34: c07
 read 4.6 / 255 before the fix, 0.00 after). A new material keeps both rules: spread LAYER_BLENDING into it; a
 ShaderMaterial without three's colorspace chunk is already raw. libGDX packs a vertex colour to 8 bits TRUNCATED
-(Color.toFloatBits): the gradients are cut so (packed()), or every still is off by 1 (r39: 0.95 -> 0.00). Mind
+(Color.toFloatBits): the gradients are cut so (packed()), or every still is off by 1 (r39: 0.95 -> 0.00); a layer's
+tint too, its alpha to 254 levels (packedAlpha()), and under the page fog the haze, not the tint (_drawLayer, r45:
+cross-fades 0.26 -> 0.00). Mind
 THREE.Vector4() is (0, 0, 0, 1): a uniform meant 0 is new Vector4(0, 0, 0, 0) (r39: grade.a 1 drew every effect black).
 THE RUNNER is a page: tests/shots.html?round=<dir> (shots.js) steps the scroll as ParallaxShots and POSTs each still to
 tools/serve.py, which serves the repository root; tools/run-page.sh opens it in headless Chrome with tools/browser.py's

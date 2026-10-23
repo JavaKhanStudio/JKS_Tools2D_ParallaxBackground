@@ -631,6 +631,12 @@ export class PlaxBackground {
     this._gradients.visible = !!this.page;
   }
 
+  // Whether libGDX draws the page's layers without an effect through its page fog's shader: this page or the incoming
+  // one has a fog (ParallaxPageReader.beginDraw).
+  _pageFog() {
+    return this.page?.fogStrength > 0 || (this.transferLayers.length > 0 && this.transferPage?.fogStrength > 0);
+  }
+
   // The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's.
   _alphaOf(l) {
     if (!this.transferLayers.length) return 1;
@@ -640,7 +646,11 @@ export class PlaxBackground {
   _drawLayer(l) {
     const alpha = this.tint[3] * this._alphaOf(l);
     if (!(alpha > 0)) return;
-    l.quads.setColor(this.tint, alpha);
+    // As libGDX packs the batch colour (Color.toFloatBits): the alpha to 254 levels, and, but through the page fog's
+    // shader (ParallaxPageReader.drawImageLayer: a page with a fog, a layer without an effect), the tint to 8 bits.
+    // That shader takes the tint as a uniform and the layer's fog in the batch colour's red: the fog is cut instead.
+    const pageFog = this._pageFog() && l.model.kind !== 'SHADER';
+    l.quads.setColor(pageFog ? this.tint : this.tint.map(packed), packedAlpha(alpha));
     this._quads = l.quads;
     // Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
     const z = this.zoom;
@@ -654,7 +664,7 @@ export class PlaxBackground {
       if (m.kind === 'SHADER') {
         PlaxEffects.apply(u, l, this._effectTime, viewW, viewH, 0, 0, [this._repeatX ? 1 : 0, this._repeatY ? 1 : 0]);
       }
-      u.haze.value = l.haze;
+      u.haze.value = pageFog ? packed(l.haze) : l.haze;
       u.fog_color.value.set(...l.fogColor);
     }
     this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH);
@@ -1238,5 +1248,8 @@ function gradientMesh() {
 
 // A colour channel as libGDX packs it into a vertex: 8 bits, truncated.
 const packed = c => Math.floor(255 * Math.min(1, Math.max(0, c))) / 255;
+// An alpha as libGDX packs it: 8 bits, truncated, the lowest dropped (NumberUtils.intToFloatColor), and stretched back
+// to 0..1 by the vertex shader's 255 / 254.
+const packedAlpha = a => (Math.floor(255 * Math.min(1, Math.max(0, a))) & 0xfe) / 254;
 const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 const join = (dir, file) => !dir ? file : dir.endsWith('/') ? dir + file : dir + '/' + file;
