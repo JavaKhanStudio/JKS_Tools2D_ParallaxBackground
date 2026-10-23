@@ -5,6 +5,8 @@ Reads OUT_DIR/gdx/<scene>-t0/6/12.png (tools/parallax-lab-shots.sh) and OUT_DIR/
 OUT_DIR/compare.png (libGDX | engine | difference x4, per still) and OUT_DIR/report.txt, and exits 1 when a still's
 mean absolute difference per channel (0-255) is over THRESHOLD, or, when round.json gives a "pixelsOff" (percent), when
 more of its pixels than that differ by over 32: what a small thing drawn wrong moves (r370's lurker, 0.07% of a still).
+SKIP_SCENES="s12 s13 ..." (and SKIP_WHY, the task that will draw them) leaves scenes the engine does not draw yet out
+of the verdict and the sheet, each named SKIPPED in report.txt (engines/threejs/tools/frame-check.sh, r39).
 engines/godot/tools/frame-check.sh (ENGINE godot) and
 engines/jme/tools/frame-check.sh (ENGINE jme) run it. Needs Pillow.
 """
@@ -19,12 +21,17 @@ label_of = {'godot': 'Godot', 'jme': 'jME'}.get(engine, engine)
 with open(os.path.join(round_dir, 'round.json')) as f:
     round_json = json.load(f)
 scenes, pixels_off = round_json['scenes'], round_json.get('pixelsOff')
+skipped = set(os.environ.get('SKIP_SCENES', '').split())
+skip_why = os.environ.get('SKIP_WHY', '')
 worst_big = 0.0
 w, h, label = 426, 240, 22
-sheet = Image.new('RGB', (w * 3, (h + label) * len(scenes) * 3), 'black')
+sheet = Image.new('RGB', (w * 3, (h + label) * max(1, sum(s['id'] not in skipped for s in scenes)) * 3), 'black')
 draw = ImageDraw.Draw(sheet)
 lines, worst, row = [], 0.0, 0
 for s in scenes:
+    if s['id'] in skipped:
+        lines.append(f"{s['id']}  SKIPPED: not drawn by {label_of} yet" + (f' ({skip_why})' if skip_why else ''))
+        continue
     for t in (0, 6, 12):
         name = f"{s['id']}-t{t}.png"
         gdx_path, other_path = os.path.join(out, 'gdx', name), os.path.join(out, engine, name)

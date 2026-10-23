@@ -12,7 +12,7 @@ repair.
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `engines/godot/tools/frame-check.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. Split out of the grading lab's `--shots` mode, which the lab no longer has (r157). | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/rounds/reader/` | `:rounds` (r312): `Round`, a reader round's `round.json` read once for `:shots` and `:jme`'s frame runner (Godot's `tests/shots.gd` reads it a third time). A new round field goes there. Gdx core only. Not published. | 17 | `./gradlew :rounds:build`, then the frame checks |
-| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE and SEQUENCE layers, cross-fades, tints so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart and sequence, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
+| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE, SEQUENCE and SHADER layers (not MIRROR), the page fog, cross-fades, tints so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart, sequence, shaders (s01-s11) and fog, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `engines/jme/tools/frame-check.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:jme:run` and `:shots:run`
@@ -88,8 +88,9 @@ repair.
 - `engines/threejs/src/plax.js` ports the same pieces from `plax_background.gd`, `plax_page.gd` and `plax_atlas.gd`
   (`_actLayer`, `_tile`, `_drawRegion`, the cross-fade, the tint, the gradients; `loadAtlas`, `readPage`): change how a
   page scrolls, fades or draws, change it there too, and run `engines/threejs/tools/frame-check.sh` (`round1`,
-  `conformance`, `pixelart` and `sequence` prove it; `pixelart` is its cross-fade round until the transfer round plays,
-  r40; a SEQUENCE layer's pieces are `PlaxSequence`'s, from `plax_sequence.gd`). A kind
+  `conformance`, `pixelart`, `sequence`, `shaders` and `fog` prove it; `pixelart` is its cross-fade round until the
+  transfer round plays, r40; a SEQUENCE layer's pieces are `PlaxSequence`'s, from `plax_sequence.gd`, the effects'
+  `PlaxEffects`', from `plax_effects.gd`). A kind
   it does not draw throws in `readPage` (`KINDS`): the rounds that need one are its 'unsupported' entries in
   `tools/readers-health/health.py`, each naming its task.
 - `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
@@ -121,8 +122,9 @@ repair.
   only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/rounds` (`effects` is EMPTY's).
 - A `SHADER` layer's effects (`Enum_ShaderEffect`, format 7) are written three times, line for line:
   `core/src/.../GdxLayerEffects.java` (GLSL ES 1.0, WebGL too), `engines/godot/addons/jks_parallax/plax_effects.gd`
-  and `engines/jme/resources/.../ParallaxEffect.frag`, all fed `GdxLayerEffects.uniforms`. Change one, change all
-  three, and run both frame checks on `engines/rounds/shaders`; a new effect goes in `Enum_ShaderEffect` (append
+  and `engines/jme/resources/.../ParallaxEffect.frag`, all fed `GdxLayerEffects.uniforms`, and a fourth time in
+  `engines/threejs/src/plax.js` (`PlaxEffects`, `EFFECT_FRAGMENTS`; not MIRROR nor the glint yet, r44). Change one,
+  change them all, and run the frame checks on `engines/rounds/shaders`; a new effect goes in `Enum_ShaderEffect` (append
   only), `plax_effects.gd`'s `EFFECTS` and that round, strong enough that leaving it out fails
   (`tools/r180-shader-round/strength.sh`). The reader draws them through the engine's `LayerEffects`, never
   `Batch.setShader`, which `JmeBatch` throws on. FOG's x and y are `along()`, the view's x minus

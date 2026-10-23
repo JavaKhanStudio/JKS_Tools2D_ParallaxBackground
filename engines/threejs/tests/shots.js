@@ -5,7 +5,8 @@
 // seed and its "zoom": [1, 0.5] zooms the camera straight from the first at 0 s to the second at 12 s. engines/threejs/tools/frame-check.sh serves the repository with
 // engines/threejs/tools/serve.py and opens
 //   shots.html?round=<round dir>
-// which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done.
+// which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done. &skip=s12,s13 leaves scenes out
+// (frame-check.sh's SKIP: what this reader does not draw yet).
 import * as THREE from 'three';
 import { PlaxBackground, loadAtlas, loadPage } from '../src/plax.js';
 
@@ -34,7 +35,9 @@ async function shots() {
   const bg = new PlaxBackground();
   const resize = (w, h) => { renderer.setSize(w, h); bg.setSize(w, h); };
   const step = f32(1 / 60);
+  const skip = (new URLSearchParams(location.search).get('skip') ?? '').split(',');
   for (const scene of round.scenes) {
+    if (skip.includes(scene.id)) { say('skipped: ' + scene.id); continue; }
     resize(1280, 720);
     await bg.load(root + scene.page, root + scene.atlasDir);
     if (scene.sequenceSeed !== undefined) bg.setSequenceSeed(scene.sequenceSeed);

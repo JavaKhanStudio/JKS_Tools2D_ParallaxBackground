@@ -4,15 +4,17 @@
 (r170 or later), as the libGDX library in [`core/`](../../core) draws it. It is one ES module, ported from core through
 the Godot reader (which copies core line for line): scrolling, tiling on X and Y with pads and mirrors, `flipX`/`flipY`,
 `useOriginalSize`, `SEQUENCE` layers (their cycles picked as core's `SequenceCycle` picks them, `setSequenceSeed` for a
-game's own seed), the two gradients, zoom, resizing, plain cross-fades (`transfertInto`) and tints (`tintTo`). Each
-texture keeps its atlas's filter, so a pixel-art page stays sharp. It does not read `.plax` (Kryo is Java's).
+game's own seed), `SHADER` layers (`WAVE`, `FOG`, `SWELL`: core's shaders, in GLSL), the page's depth fog, the two
+gradients, zoom, resizing, plain cross-fades (`transfertInto`) and tints (`tintTo`). Each texture keeps its atlas's
+filter, so a pixel-art page stays sharp. It does not read `.plax` (Kryo is Java's).
 
 It was born as Crypto en visuel's `lib/plax.js` (deux-generaux r195, r449), which drew Simon's calm-day page as the
 saga's sky; parallax-readers r34 brought it to core's numbers and checks it here.
 
-**Not ported yet**, each a task of its own, in the order the rounds need them: `SHADER` and the page fog (r39), the transfer styles (r40), `EMPTY` layer hooks and `PARTICLES` (r41), `FLOOR`, `LURKER` and the animated
-patch (r42), dolly, towers and planets (r43), glint, `MIRROR` and detail levels (r44). A page with a layer of a kind it
-does not draw fails to load, with the layer named; an `EMPTY` layer draws nothing.
+**Not ported yet**, each a task of its own, in the order the rounds need them: the transfer styles (r40), `EMPTY`
+layer hooks and `PARTICLES` (r41), `FLOOR`, `LURKER` and the animated patch (r42), dolly, towers and planets (r43),
+glint, `MIRROR` and detail levels (r44). A page with a layer of a kind or an effect it does not draw fails to load,
+with the layer named; an `EMPTY` layer draws nothing; a glint is not drawn.
 
 ## How a game gets it
 
@@ -58,11 +60,17 @@ back), so a page looks as it does in the editor.
 
 - `tools/frame-check.sh [ROUND_DIR...]` — the frame check: draws each round with libGDX and with three.js in headless
   Chrome, and compares them still by still at 2/255 (`build/threejs/<round>/compare.png`, `report.txt`). Without
-  arguments it plays the rounds it ports: `round1`, `conformance`, `pixelart`, `sequence` (worst still 0.26 / 255 on the
-  GPU here, sequence's cross-fade). With `sequence` it also opens `tests/sequence_cycle.html`: every pick of
-  `engines/rounds/sequence/picks.json` (the JVM's `SequenceCycle`) and the slots drawn against a walk over all of them. `BREAK=scroll` must fail it. CI's `threejs-frames` job runs it under `xvfb-run` (for the
+  arguments it plays the rounds it ports: `round1`, `conformance`, `pixelart`, `sequence`, `shaders` and `fog` (worst
+  still 0.26 / 255 on the GPU here, sequence's cross-fade). Its `SKIP` leaves out the scenes it does not draw yet, the
+  task that will named in `report.txt`: `shaders` s12-s18 (MIRROR, the glint, detail levels: r44). With `sequence` it
+  also opens `tests/sequence_cycle.html`: every pick of `engines/rounds/sequence/picks.json` (the JVM's
+  `SequenceCycle`) and the slots drawn against a walk over all of them. `BREAK=scroll` must fail it. CI's `threejs-frames` job runs it under `xvfb-run` (for the
   libGDX stills; Chrome is headless). Needs Chrome (or `CHROME=`), python3 with Pillow, and what
   `tools/parallax-lab-shots.sh` needs.
+- `tools/mutate-effects.sh [MUTANT...]` — breaks one piece of the effects at a time (WAVE's ripple, FOG's patches,
+  SWELL's waves, `wrappedX`, `wrappedY`, the page fog's haze) and runs the round that should see it: each must FAIL
+  (r39: each failed, its worst still 7.9 to 68.6 / 255). Refuses to start on an uncommitted `plax.js`; restores it on
+  exit.
 - `tools/bench.sh [OUT_JSON]` — the latency on [`engines/rounds/bench`](../rounds/bench/round.json): each scene's load
   time, then 600 frames (act, render, a one-pixel `readPixels` to finish the GPU's work), best of 3 runs, into
   `build/bench/threejs.json`. A scene with a kind it does not port is skipped and named. Not in CI.

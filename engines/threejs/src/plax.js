@@ -31,10 +31,15 @@
 //
 //   bg.setSequenceSeed(seed)                           // Java's int: 32 bits; clearSequenceSeed() goes back
 //
+// A SHADER layer is drawn as an image layer, through its effect (PlaxEffects, the shaders of core's GdxLayerEffects),
+// which moves on act()'s clock. The page's depth fog (fogStrength, fogColor) mixes each IMAGE, SEQUENCE and SHADER
+// layer toward the fog's colour, more the slower it scrolls (PlaxEffects.fogOf), through the same shaders.
+//
 // Ported: IMAGE layers (decal, sizeRatio, flips, speeds, speedXAtRest, pads, mirror, repeat on X and Y,
-// useOriginalSize), SEQUENCE layers, the two gradients, plain cross-fades, tints, zoom (not the dolly), resizing.
-// EMPTY layers draw nothing. A page with a layer of another kind (SHADER, PARTICLES, FLOOR, LURKER) fails to load, as
-// in libGDX a page from a newer version does: they are ported in the order engines/rounds needs them.
+// useOriginalSize), SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the page's depth fog, the two gradients, plain
+// cross-fades, tints, zoom (not the dolly), resizing. EMPTY layers draw nothing. A page with a layer of another kind
+// (PARTICLES, FLOOR, LURKER) or a MIRROR effect fails to load, as in libGDX a page from a newer version does: they are
+// ported in the order engines/rounds needs them. Not yet: the glint, detail levels.
 import * as THREE from 'three';
 
 export const WORLD_WIDTH = 40;
@@ -45,10 +50,14 @@ const LAYER_DEFAULTS = {
   parallaxScalingSpeedX: 0, parallaxScalingSpeedY: 0, speedXAtRest: 0, sizeRatio: 1,
   decal_X_Ratio: 0, decal_Y_Ratio: 0, padX: 0, padXFactor: 0, padY: 0, padYFactor: 0,
   mirror: false, kind: 'IMAGE', name: '',
+  shaderEffect: 'WAVE', shaderAmplitude: 0, shaderWavelength: 0, shaderSpeed: 0, shaderHaze: 0,
   sequenceSegments: [], sequenceSeed: 0, sequenceLength: 16,
+  glintStrength: 0,
 };
 // The kinds this reader draws; another fails the page's load. A SEQUENCE layer's cycle is drawn by drawCycle.
-const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE'];
+const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE', 'SHADER'];
+// The effects a SHADER layer is drawn through here (PlaxEffects.EFFECTS less MIRROR); another fails the page's load.
+const EFFECTS = ['WAVE', 'FOG', 'SWELL'];
 // What a seed of 0 starts from (SequenceCycle.ZERO_SEED): xorshift never leaves 0.
 const ZERO_SEED = 0x6D2B79F5;
 const WHITE = [1, 1, 1, 1];
@@ -150,6 +159,11 @@ export function readPage(json, inside) {
     topHalfSize: json.topHalfSize ?? 0.5, bottomHalfSize: json.bottomHalfSize ?? 0.5,
     repeatOnX: json.repeatOnX ?? true, repeatOnY: json.repeatOnY ?? false,
     useOriginalSize: json.useOriginalSize ?? false,
+    // The depth fog (WholePage_Model.getFogStrength, format 10): 0 or more; PlaxEffects.fogOf mixes each layer toward
+    // fogColor by it, more the slower the layer. Read from a page saved before format 10, it is the largest FOG
+    // layer's shaderHaze.
+    fogStrength: json.fogStrength != null ? Math.max(0, json.fogStrength) : 0,
+    fogColor: color(json.fogColor, [0.93, 0.95, 0.97, 1]),
     atlasName: json.pageModel?.atlasName ?? '',
     layers: [],
   };
@@ -168,8 +182,19 @@ export function readPage(json, inside) {
       throw new Error(`plax: layer ${i} (${layer.name || layer.regionName}) is a ${layer.kind} layer: not ported to `
         + 'three.js yet (engines/threejs/README.md)');
     }
+    if (layer.kind === 'SHADER' && !EFFECTS.includes(layer.shaderEffect)) {
+      throw new Error(`plax: layer ${i} (${layer.name || layer.regionName}) has the ${layer.shaderEffect} effect: not `
+        + 'ported to three.js yet (engines/threejs/README.md)');
+    }
     page.layers.push(layer);
   });
+  if (!('fogStrength' in json)) {
+    for (const layer of page.layers) {
+      if (layer.kind === 'SHADER' && layer.shaderEffect === 'FOG' && layer.shaderHaze > page.fogStrength) {
+        page.fogStrength = Math.min(1, layer.shaderHaze);
+      }
+    }
+  }
   return page;
 }
 
@@ -260,6 +285,8 @@ export class PlaxBackground {
     // The game's seed for the SEQUENCE layers, when _hasSequenceSeed (setSequenceSeed).
     this._sequenceSeed = 0;
     this._hasSequenceSeed = false;
+    // The clock the SHADER layers' effects run on: act()'s seconds.
+    this._effectTime = 0;
     this._gradients = gradientMesh();
     this.scene.add(this._gradients);
   }
@@ -371,6 +398,7 @@ export class PlaxBackground {
     const speedY = this.speedConstantY + this.speedConsumableY;
     this.speedConsumableX = this.speedConsumableY = 0;
     if (!this.page) return;
+    this._effectTime += delta;
     this._actGradients(delta);
     for (const l of this.layers) this._actLayer(l, delta, speedX, speedY);
     if (this.transferLayers.length) {
@@ -445,6 +473,14 @@ export class PlaxBackground {
       this.scene.add(l.quads.group);
       built.push(l);
     }
+    // The depth fog of each layer, by its speed against the page's front: what ParallaxPageReader.drawImageLayer reckons.
+    const front = PlaxEffects.frontSpeedOf(built);
+    for (const l of built) {
+      l.haze = l.model.kind === 'EMPTY' ? 0 : PlaxEffects.fogOf(page.fogStrength, front, l.model);
+      l.fogColor = page.fogColor.slice(0, 3);
+      if (l.model.kind === 'SHADER') l.quads.setEffect(l.model.shaderEffect);
+      else if (l.haze > 0 && (l.model.kind === 'IMAGE' || l.model.kind === 'SEQUENCE')) l.quads.setEffect('PLAIN');
+    }
     return built;
   }
 
@@ -452,6 +488,7 @@ export class PlaxBackground {
     const l = measureRegion(region, useOriginalSize);
     l.model = model;
     l.distanceX = l.distanceY = 0;
+    l.wrappedX = l.wrappedY = 0;
     l.incoming = false;
     l.quads = new Quads();
     this._sizeLayer(l);
@@ -473,6 +510,7 @@ export class PlaxBackground {
   _resetPosition(l) {
     l.distanceX = l.model.decal_X_Ratio * (this.worldWidth / 100);
     l.distanceY = l.model.decal_Y_Ratio * (this.worldHeight / 100);
+    l.wrappedX = l.wrappedY = 0;
   }
 
   // ParallaxLayer.act.
@@ -482,8 +520,20 @@ export class PlaxBackground {
     l.distanceX += -delta * (m.speedXAtRest + speedX) * m.parallaxScalingSpeedX;
     // Kept within one tile so the tiling loops stay short and floats stay precise.
     const totalW = l.width + m.padX, totalH = l.height + m.padY;
-    if (this._repeatX && totalW > 0) l.distanceX %= totalW;
-    if (this._repeatY && totalH > 0) l.distanceY %= totalH;
+    if (this._repeatX && totalW > 0) {
+      const before = l.distanceX;
+      l.distanceX %= totalW;
+      // What was wrapped, within the effect's period: FOG's noise runs on across the tiles (ParallaxLayer.wrappedX).
+      const period = PlaxEffects.period(m);
+      l.wrappedX = period > 0 ? (l.wrappedX + before - l.distanceX) % period : 0;
+    }
+    if (this._repeatY && totalH > 0) {
+      const below = l.distanceY;
+      l.distanceY %= totalH;
+      // The same on Y, within its period up (ParallaxLayer.wrappedY, r262).
+      const periodY = PlaxEffects.periodY(m);
+      l.wrappedY = periodY > 0 ? (l.wrappedY + below - l.distanceY) % periodY : 0;
+    }
   }
 
   _updateWorld() {
@@ -571,7 +621,9 @@ export class PlaxBackground {
       // An empty band is folded to nothing.
       if (y1 <= y0) y1 = y0;
       pos.set([0, y0, 0, w, y0, 0, w, y1, 0, 0, y1, 0], i * 12);
-      col.set([...top.slice(0, 3), ...top.slice(0, 3), ...bottom.slice(0, 3), ...bottom.slice(0, 3)], i * 12);
+      // As ShapeRenderer packs them (Color.toFloatBits): each channel cut to 8 bits, (int) (255 * c), not rounded.
+      const t = top.slice(0, 3).map(packed), b = bottom.slice(0, 3).map(packed);
+      col.set([...t, ...t, ...b, ...b], i * 12);
     };
     band(0, 0, topH, tt, tb);
     band(1, h - bottomH, h, bt, bb);
@@ -596,6 +648,15 @@ export class PlaxBackground {
     const m = l.model, viewW = this.worldWidth * z, viewH = this.worldHeight * z;
     // EMPTY: drawn by the game, which this reader has no hook for yet.
     if (m.kind === 'EMPTY') return;
+    const u = l.quads.uniforms;
+    if (u) {
+      u.view.value.set(this.width, this.height);
+      if (m.kind === 'SHADER') {
+        PlaxEffects.apply(u, l, this._effectTime, viewW, viewH, 0, 0, [this._repeatX ? 1 : 0, this._repeatY ? 1 : 0]);
+      }
+      u.haze.value = l.haze;
+      u.fog_color.value.set(...l.fogColor);
+    }
     this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH);
     if (m.mirror && this._repeatX !== this._repeatY) {
       // A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
@@ -748,6 +809,258 @@ export const PlaxSequence = {
   },
 };
 
+// --- SHADER layers and the page fog (PlaxEffects: core's GdxLayerEffects) ----------------------------------------------
+
+// The SHADER layers' effects (Enum_ShaderEffect), as GLSL: plax_effects.gd's shaders line for line, which copy core's
+// GdxLayerEffects, the same numbers (uniforms), the same picture. Change one, change core/src/.../GdxLayerEffects.java,
+// plax_effects.gd and engines/jme's ParallaxEffect.frag, and run engines/threejs/tools/frame-check.sh
+// engines/rounds/shaders.
+//
+// Each effect works on the image's own coordinates, taken from UV: x and y in page units from the image's bottom-left,
+// as it is drawn. region: the region's u, v, u2, v2 (v at the image's top); size: the drawn image's width and height in
+// page units; effect: amplitude, wavelength, phase; haze: the depth fog at the layer, 0 to 1, which hazed() mixes the
+// colour toward fog_color by, then toward grade's rgb by its a (a transfert through a colour), its alpha times
+// dissolved() (a transfert's dissolve: side 0 none, 1 outgoing, 2 incoming; ramp, softness, drift; cells across and up
+// the view). across: the view's width in page units, where the layer's noise starts from its left (effectStartX), 1 or
+// -1 (flipped on X); along() reads it at SCREEN_UV: where the fragment is along the layer, local() carried on across
+// its tiles, so FOG has no seam at a tile edge (r229); up: the same up the view, from its bottom (effectStartY), -1
+// flipped on Y (r262), which WAVE's ripple reads too (r273). SCREEN_UV is Godot's: 0 to 1 across and down the view,
+// from the quad's own screen pixels (vScreen), so a game's pixel ratio or viewport does not move it. "PLAIN" is no
+// effect: an IMAGE or SEQUENCE layer the page's depth fog reaches. No colour management: the shaders write what they
+// compute, blended as every layer is (LAYER_BLENDING).
+const EFFECT_VERTEX = `varying vec2 vUv;
+varying vec2 vScreen;
+void main() {
+	vUv = uv;
+	vScreen = position.xy;
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const EFFECT_HEAD = `#define TAU 6.283185307179586
+uniform sampler2D tex;
+uniform vec4 tint;
+uniform vec2 view;
+uniform vec4 region;
+uniform vec2 size;
+uniform vec3 effect;
+uniform float haze;
+uniform vec3 fog_color;
+uniform vec4 dissolve;
+uniform vec2 cells;
+uniform vec4 grade;
+uniform vec3 across;
+uniform vec3 up;
+uniform vec2 wrap;
+varying vec2 vUv;
+varying vec2 vScreen;
+vec2 local(vec2 uv) {
+	return vec2((uv.x - region.x) / (region.z - region.x) * size.x, (region.w - uv.y) / (region.w - region.y) * size.y);
+}
+vec2 along(vec2 screen_uv) {
+	return vec2(across.z * (screen_uv.x * across.x - across.y), up.z * ((1.0 - screen_uv.y) * up.x - up.y));
+}
+float dissolved(vec2 screen_uv) {
+	if (dissolve.x < 0.5)
+		return 1.0;
+	vec2 p = vec2(screen_uv.x, 1.0 - screen_uv.y) * cells + vec2(dissolve.w, 0.0);
+	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
+		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
+		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
+	float e = dissolve.z;
+	float m = smoothstep(n - e, n + e, dissolve.y * (1.0 + 2.0 * e) - e);
+	return dissolve.x < 1.5 ? 1.0 - m : m;
+}
+vec4 hazed(vec4 color, vec2 screen_uv) {
+	return vec4(mix(mix(color.rgb, fog_color, haze), grade.rgb, grade.a), color.a * dissolved(screen_uv));
+}
+`;
+
+const EFFECT_FRAGMENTS = {
+  // WAVE: each row shifted sideways by amplitude * sin(2 pi (y - phase) / wavelength), kept inside the region; y is
+  // along().y, running on up across the tiles (r273).
+  WAVE: `void main() {
+	vec2 SCREEN_UV = vScreen / view;
+	float shift = effect.x * sin(TAU * (along(SCREEN_UV).y - effect.z) / effect.y);
+	float u = clamp(vUv.x + shift / size.x * (region.z - region.x), min(region.x, region.z), max(region.x, region.z));
+	vec2 uv = vec2(u, vUv.y);
+	vec4 image = texture2D(tex, uv);
+	gl_FragColor = hazed(tint * image, SCREEN_UV);
+}
+`,
+  // FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines whose x frequencies are 7, 17 and 23 per
+  // 8 wavelengths (FOG_PERIOD).
+  FOG: `void main() {
+	vec2 SCREEN_UV = vScreen / view;
+	vec2 p = (along(SCREEN_UV) + vec2(effect.z, 0.0)) / effect.y;
+	float n = (sin(TAU * 0.875 * p.x + 2.0 * sin(0.5 * TAU * p.y))
+		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
+		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
+	vec4 image = texture2D(tex, vUv);
+	vec4 color = tint * image;
+	color.a *= 1.0 - effect.x * n;
+	gl_FragColor = hazed(color, SCREEN_UV);
+}
+`,
+  // SWELL (r431): each pixel read from where two crossing travelling waves move it, up to amplitude sideways and half
+  // that up and down, the image wrapped on the axes its page repeats on (wrap: 1 wraps, 0 holds the edge rows, r434)
+  // and held on the others; whole turns over FOG_PERIOD wavelengths across and FOG_PERIOD_Y up.
+  SWELL: `void main() {
+	vec2 SCREEN_UV = vScreen / view;
+	vec2 a = along(SCREEN_UV);
+	float L = effect.y;
+	float t = effect.z / L;
+	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);
+	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);
+	vec2 l = local(vUv) + effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));
+	vec2 f = mix(clamp(l / size, 0.0, 1.0), fract(l / size), wrap);
+	vec2 uv = vec2(mix(region.x, region.z, f.x), mix(region.w, region.y, f.y));
+	vec4 image = texture2D(tex, uv);
+	gl_FragColor = hazed(tint * image, SCREEN_UV);
+}
+`,
+  // PLAIN: no effect, the depth fog only.
+  PLAIN: `void main() {
+	vec2 SCREEN_UV = vScreen / view;
+	gl_FragColor = hazed(tint * texture2D(tex, vUv), SCREEN_UV);
+}
+`,
+};
+
+export const PlaxEffects = {
+  // Enum_ShaderEffect.FOG_PERIOD: how many wavelengths FOG's patches run before they repeat, SWELL's waves too.
+  FOG_PERIOD: 8,
+  // Enum_ShaderEffect.FOG_PERIOD_Y: how many wavelengths they run up before they repeat (r262).
+  FOG_PERIOD_Y: 10,
+
+  // A layer's uniforms, at what the Godot shaders default them to; every run of the layer shares them.
+  uniforms() {
+    return {
+      tint: { value: new THREE.Vector4(1, 1, 1, 1) }, view: { value: new THREE.Vector2(1280, 720) },
+      region: { value: new THREE.Vector4(0, 0, 1, 1) }, size: { value: new THREE.Vector2(1, 1) },
+      effect: { value: new THREE.Vector3(0, 1, 0) }, haze: { value: 0 },
+      fog_color: { value: new THREE.Vector3(0.93, 0.95, 0.97) }, dissolve: { value: new THREE.Vector4(0, 0, 0, 0) },
+      cells: { value: new THREE.Vector2() }, grade: { value: new THREE.Vector4(0, 0, 0, 0) },
+      across: { value: new THREE.Vector3(0, 0, 1) }, up: { value: new THREE.Vector3(0, 0, 1) },
+      wrap: { value: new THREE.Vector2(1, 0) },
+    };
+  },
+
+  // A material for one run of a layer drawn through `effect` ('PLAIN' for a fogged one), its texture its own, its
+  // other numbers `uniforms`, the layer's.
+  material(effect, uniforms) {
+    return new THREE.ShaderMaterial({
+      ...LAYER_BLENDING, uniforms: { ...uniforms, tex: { value: null } },
+      vertexShader: EFFECT_VERTEX, fragmentShader: EFFECT_HEAD + (EFFECT_FRAGMENTS[effect] ?? EFFECT_FRAGMENTS.WAVE),
+    });
+  },
+
+  // ParallaxLayer.getShaderPhase: speed * seconds wrapped to where the effect repeats (one wavelength, FOG_PERIOD for
+  // FOG and SWELL), never negative; 0 without a wavelength.
+  phase(model, seconds) {
+    const wavelength = model.shaderWavelength;
+    if (!(wavelength > 0)) return 0;
+    const period = wavelength * PlaxEffects._across(model);
+    const p = (seconds * model.shaderSpeed) % period;
+    return p < 0 ? p + period : p;
+  },
+
+  // ParallaxLayer.getShaderPeriod: where the effect repeats, one wavelength, FOG_PERIOD for FOG and SWELL, at least
+  // FOG's for a glinting layer; 0 without a wavelength.
+  period(model) {
+    const wavelength = model.shaderWavelength ?? 0;
+    if (!(wavelength > 0)) return 0;
+    return wavelength * PlaxEffects._across(model);
+  },
+
+  // ParallaxLayer.glints: a SHADER layer with a positive glint strength and wavelength. Its period counts here; the
+  // glint itself is not drawn yet (r44).
+  glints(model) {
+    return model.kind === 'SHADER' && (model.glintStrength ?? 0) > 0 && (model.shaderWavelength ?? 0) > 0;
+  },
+
+  // ParallaxLayer.periodAcross: the wavelengths the effect runs across before it repeats, FOG's with it when glinting.
+  _across(model) {
+    const own = ['FOG', 'SWELL', 'MIRROR'].includes(model.shaderEffect) ? PlaxEffects.FOG_PERIOD : 1;
+    return PlaxEffects.glints(model) ? PlaxEffects._leastMultiple(own, PlaxEffects.FOG_PERIOD) : own;
+  },
+
+  // ParallaxLayer.periodUp: the same up.
+  _up(model) {
+    const own = ['FOG', 'SWELL', 'MIRROR'].includes(model.shaderEffect) ? PlaxEffects.FOG_PERIOD_Y : 1;
+    return PlaxEffects.glints(model) ? PlaxEffects._leastMultiple(own, PlaxEffects.FOG_PERIOD_Y) : own;
+  },
+
+  _leastMultiple(a, b) {
+    let x = a, y = b;
+    while (y !== 0) [x, y] = [y, x % y];
+    return a / x * b;
+  },
+
+  // ParallaxLayer.getEffectStartX: where FOG's noise starts on X, in page units from the view's left, wrapped to the
+  // period: the image's left edge in the tile at distanceX (its right edge flipped on X), carried back by what
+  // _actLayer wrapped.
+  effectStartX(l) {
+    const trim = l.model.flipX ? 1 - l.trimLeft : l.trimLeft;
+    const start = l.distanceX + l.wrappedX + l.width * trim;
+    const p = PlaxEffects.period(l.model);
+    return p > 0 ? start % p : start;
+  },
+
+  // ParallaxLayer.getShaderPeriodY: where the effect repeats up, one wavelength, FOG_PERIOD_Y for FOG and SWELL, at
+  // least FOG's for a glinting layer; 0 without one.
+  periodY(model) {
+    const wavelength = model.shaderWavelength ?? 0;
+    if (!(wavelength > 0)) return 0;
+    return wavelength * PlaxEffects._up(model);
+  },
+
+  // ParallaxLayer.getEffectStartY: where FOG's noise starts on Y, in page units from the view's bottom, wrapped to
+  // periodY: the image's bottom edge in the tile at distanceY (its top edge flipped on Y), carried back by what
+  // _actLayer wrapped (r262).
+  effectStartY(l) {
+    const trim = l.model.flipY ? 1 - l.trimBottom : l.trimBottom;
+    const start = l.distanceY + l.wrappedY + l.height * trim;
+    const p = PlaxEffects.periodY(l.model);
+    return p > 0 ? start % p : start;
+  },
+
+  // GdxLayerEffects.uniforms: the numbers of a SHADER layer `l` of PlaxBackground, set on its `uniforms`; `viewW` and
+  // `viewH` the view's size in page units; `wrap` 1 on an axis the page repeats on, 0 on one it does not (SWELL's,
+  // GdxLayerEffects.setRepeat, r434).
+  apply(u, l, seconds, viewW, viewH, left = 0, floorY = 0, wrap = [1, 0]) {
+    const image = l.region.page.texture.image, model = l.model, src = l.src;
+    u.region.value.set(src.x / image.width, src.y / image.height, (src.x + src.w) / image.width,
+      (src.y + src.h) / image.height);
+    u.size.value.set(l.width * l.packedW, l.height * l.packedH);
+    const on = model.shaderWavelength > 0;
+    let amplitude = model.shaderAmplitude;
+    if (model.shaderEffect === 'FOG') amplitude = Math.min(1, Math.max(0, amplitude));
+    u.effect.value.set(on ? amplitude : 0, on ? model.shaderWavelength : 1, on ? PlaxEffects.phase(model, seconds) : 0);
+    u.across.value.set(viewW, left + PlaxEffects.effectStartX(l), model.flipX ? -1 : 1);
+    u.up.value.set(viewH, floorY + PlaxEffects.effectStartY(l), model.flipY ? -1 : 1);
+    u.wrap.value.set(wrap[0], wrap[1]);
+  },
+
+  // ParallaxPageReader.fogOf: how much of the fog's colour layer `model` is mixed toward, 0 to 1:
+  // 1 - exp(-strength * (1 / speed - 1 / front)), speed its speed ratio X and front the page's fastest (frontSpeedOf),
+  // as magnitudes. 0 for the front layer, for no fog and for a page that does not scroll; 1 for a still layer.
+  fogOf(strength, front, model) {
+    if (!(strength > 0) || !(front > 0)) return 0;
+    const speed = Math.abs(model.parallaxScalingSpeedX);
+    if (!(speed > 0)) return 1;
+    const depth = 1 / speed - 1 / front;
+    return depth > 0 ? 1 - Math.exp(-strength * depth) : 0;
+  },
+
+  // ParallaxPageReader.frontSpeedOf: the fastest speed ratio X of `page` (PlaxBackground's layers), as a magnitude.
+  frontSpeedOf(page) {
+    let front = 0;
+    for (const l of page) front = Math.max(front, Math.abs(l.model.parallaxScalingSpeedX));
+    return front;
+  },
+};
+
 // A region's box: where its packed image sits in it, the image's size, its width in heights, and the texels drawn of it. useOriginalSize: a
 // region packed with its whitespace stripped keeps its original size, and its packed image is drawn at its offset
 // inside it. Off: the packed image is stretched over the whole box.
@@ -778,6 +1091,19 @@ class Quads {
     this.used = 0;
     this.color = new THREE.Color(1, 1, 1);
     this.opacity = 1;
+    // Drawn through a PlaxEffects shader (setEffect): its name, and the uniforms every run shares; null for none.
+    this.effect = null;
+    this.uniforms = null;
+  }
+
+  // Draws every run through PlaxEffects' `effect` ('WAVE', 'FOG', 'SWELL' or 'PLAIN'), its numbers in `uniforms`,
+  // set once a frame for the whole layer, as one Godot canvas's material.
+  setEffect(effect) {
+    this.effect = effect;
+    this.uniforms = PlaxEffects.uniforms();
+    for (const run of this.runs) run.dispose();
+    this.runs = [];
+    this.used = 0;
   }
 
   begin(order) {
@@ -789,16 +1115,19 @@ class Quads {
   setColor(rgb, alpha) {
     this.color.setRGB(rgb[0], rgb[1], rgb[2]);
     this.opacity = alpha;
+    if (this.uniforms) this.uniforms.tint.value.set(rgb[0], rgb[1], rgb[2], alpha);
   }
 
   // A quad at (x, y) in screen pixels, y down, `src` the texels drawn of `texture`, mirrored by fx, fy.
   add(texture, x, y, w, h, src, fx, fy) {
     let run = this.used ? this.runs[this.used - 1] : null;
     if (!run || run.texture !== texture) {
-      run = this.runs[this.used] ??= new QuadRun(this.runs.length);
+      run = this.runs[this.used] ??= new QuadRun(this.runs.length, this.effect, this.uniforms);
       if (run.texture !== texture) run.setTexture(texture);
-      run.material.color.copy(this.color);
-      run.material.opacity = this.opacity;
+      if (!this.effect) {
+        run.material.color.copy(this.color);
+        run.material.opacity = this.opacity;
+      }
       if (run.mesh.parent !== this.group) this.group.add(run.mesh);
       this.used++;
     }
@@ -815,21 +1144,26 @@ class Quads {
   }
 }
 
-// One run of Quads: one texture, one draw.
+// SpriteBatch's SRC_ALPHA, ONE_MINUS_SRC_ALPHA on the colour; the alpha stays 1, the background opaque: an alpha under
+// 1 is un-premultiplied when the canvas is shown or saved, and brightens what is half transparent. Every layer
+// material, shader or not, draws with it.
+const LAYER_BLENDING = {
+  transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
+  blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
+  blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+  blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
+};
+
+// One run of Quads: one texture, one draw; through `effect`'s shader, its `uniforms` shared with the layer's other
+// runs, when it has one.
 class QuadRun {
-  constructor(order) {
+  constructor(order, effect = null, uniforms = null) {
     this.texture = null;
     this.count = 0;
     this.capacity = 0;
     this.geometry = new THREE.BufferGeometry();
-    this.material = new THREE.MeshBasicMaterial({
-      transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
-      // SpriteBatch's SRC_ALPHA, ONE_MINUS_SRC_ALPHA on the colour; the alpha stays 1, the background opaque: an
-      // alpha under 1 is un-premultiplied when the canvas is shown or saved, and brightens what is half transparent.
-      blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
-      blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
-      blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor, toneMapped: false,
-    });
+    this.material = effect ? PlaxEffects.material(effect, uniforms)
+      : new THREE.MeshBasicMaterial({ ...LAYER_BLENDING, toneMapped: false });
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = order;
@@ -838,6 +1172,10 @@ class QuadRun {
 
   setTexture(texture) {
     this.texture = texture;
+    if (this.material.isShaderMaterial) {
+      this.material.uniforms.tex.value = texture;
+      return;
+    }
     this.material.map = texture;
     this.material.needsUpdate = true;
   }
@@ -898,5 +1236,7 @@ function gradientMesh() {
   return mesh;
 }
 
+// A colour channel as libGDX packs it into a vertex: 8 bits, truncated.
+const packed = c => Math.floor(255 * Math.min(1, Math.max(0, c))) / 255;
 const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 const join = (dir, file) => !dir ? file : dir.endsWith('/') ? dir + file : dir + '/' + file;

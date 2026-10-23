@@ -28,8 +28,8 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # check: its frame check, whose default ROUNDS line says what it plays. job: its job's name in ci.yml. needs: the
 # program it cannot run without. watch: what, changed after its last run, makes that run stale; a reader with a check
 # watches the rounds it plays too, and only those (r23: a commit to engines/rounds/bench stales nobody). bench: how its
-# build/bench/<id>.json is made, or the task that will make it. unsupported: a round it does not play: (its task, why, the feature
-# it cannot draw, by features.json's id) (r27, r28).
+# build/bench/<id>.json is made, or the task that will make it. unsupported: a round it does not play: (its task, why, the features
+# it cannot draw, by features.json's id: one or more) (r27, r28, r39).
 READERS = [
     {'id': 'gdx', 'name': 'libGDX', 'folder': 'core', 'role': 'the reference: every other reader is checked against its stills',
      'needs': 'java', 'jobs': ['Build and test (JDK 17)', 'Build and test (JDK 21)', 'Build and test (JDK 25)'],
@@ -49,9 +49,7 @@ READERS = [
      'watch': ['engines/threejs', 'core/src'],
      'run': 'engines/threejs/tools/frame-check.sh && engines/threejs/tools/bench.sh', 'bench': 'engines/threejs/tools/bench.sh',
      'unsupported': {
-         'engines/rounds/shaders': ('r39', 'SHADER layers are not ported yet', 'shader'),
-         'engines/rounds/fog': ('r39', 'the page fog and FOG layers are not ported yet', 'pagefog'),
-         'engines/rounds/transfer': ('r40', 'transfer styles and SHADER layers are not ported yet', 'dissolve'),
+         'engines/rounds/transfer': ('r40', 'transfer styles are not ported yet', 'dissolve'),
          'engines/rounds/effects': ('r41', 'EMPTY layer hooks are not ported yet', 'hooks'),
          'engines/rounds/particles': ('r41', 'PARTICLES layers are not ported yet', 'particles'),
          'engines/rounds/floor': ('r42', 'FLOOR layers are not ported yet', 'floor'),
@@ -60,7 +58,8 @@ READERS = [
          'engines/rounds/dolly': ('r43', 'the dolly is not ported yet', 'dolly'),
          'engines/rounds/tower': ('r43', 'towers are not ported yet', 'tower'),
          'engines/rounds/planet': ('r43', 'planets are not ported yet', 'planet'),
-         'engines/rounds/glint': ('r44', 'glint, MIRROR and detail levels are not ported yet', 'glint'),
+         # And the shaders round's s12-s18 (frame-check.sh's SKIP): the features mirror and detail are drawn there too.
+         'engines/rounds/glint': ('r44', 'glint, MIRROR and detail levels are not ported yet', 'glint', 'mirror', 'detail'),
      }},
     {'id': 'unity', 'name': 'Unity', 'folder': None, 'role': 'not written: parallax:r103, paused on its install',
      'needs': 'unity', 'paused': True},
@@ -209,7 +208,7 @@ def feature_cell(reader, fid, scenes, cases):
     played = [(rd, ids) for rd, ids, _ in scenes if rd in reader['rounds']]
     # A feature the reader cannot draw (its 'unsupported') is not drawn, whatever its other scenes pass: jME passes the
     # effects round's e06 by drawing no particles at all.
-    refs = sorted({u[0] for u in reader.get('unsupported', {}).values() if u[2:] == (fid,)})
+    refs = sorted({u[0] for u in reader.get('unsupported', {}).values() if fid in u[2:]})
     if refs or not played:
         return {'kind': 'na', 'text': 'not drawn' if refs else 'not played', 'small': ', '.join(refs)}
     verdicts, unrun = [], 0
