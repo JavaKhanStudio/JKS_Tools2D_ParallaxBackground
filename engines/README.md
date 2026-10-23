@@ -7,6 +7,7 @@ reference; every other reader lives here, one folder each, and is checked frame 
 |--------|--------|-------------------|-----------|
 | [`godot/`](godot/README.md) | Godot 4, a GDScript port of core | `jks-parallax-godot-X.Y.Z.zip` on each GitHub release | `godot/tools/frame-check.sh`, CI job `godot-frames` |
 | [`jme/`](jme/README.md) | jMonkeyEngine 3, runs core as is | `parallax-background-jme` on Maven Central | `jme/tools/frame-check.sh`, CI job `jme-frames` |
+| [`threejs/`](threejs/README.md) | three.js, an ES module port of core (IMAGE layers so far) | `jks-parallax-threejs-X.Y.Z.zip` on each GitHub release | `threejs/tools/frame-check.sh`, CI job `threejs-frames` |
 | [`rounds/`](rounds) | none: the rounds every reader is checked on, and `:rounds` (`reader/`), their `round.json` read for the Java runners | | |
 
 **How they all are:** `tools/readers-health.sh` builds `build/readers-health/index.html` (parallax-readers:r17): each
@@ -24,7 +25,8 @@ Unity is next (parallax:r103, paused); what it would take is in
 
 ## What a new reader must have
 
-Copy the shape of `jme/` (a Java engine) or `godot/` (any other one). A reader is done when all of these hold:
+Copy the shape of `jme/` (a Java engine), `threejs/` (a browser one: its runner is a page in headless Chrome) or
+`godot/` (any other one). A reader is done when all of these hold:
 
 1. **Its folder, `engines/<reader>/`,** with what a game copies (`jme/src/`, `godot/addons/jks_parallax/`) kept apart
    from what checks it (`tests/`, `tools/`). Nothing of the reader's lives in the shared `tools/`.

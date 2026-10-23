@@ -12,6 +12,7 @@ repair.
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `engines/godot/tools/frame-check.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. Split out of the grading lab's `--shots` mode, which the lab no longer has (r157). | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/rounds/reader/` | `:rounds` (r312): `Round`, a reader round's `round.json` read once for `:shots` and `:jme`'s frame runner (Godot's `tests/shots.gd` reads it a third time). A new round field goes there. Gdx core only. Not published. | 17 | `./gradlew :rounds:build`, then the frame checks |
+| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE layers, cross-fades, tints so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance and pixelart, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `engines/jme/tools/frame-check.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:jme:run` and `:shots:run`
@@ -44,7 +45,9 @@ repair.
   One job per reader: `godot-frames` runs `engines/godot/tools/frame-check.sh` under `xvfb-run` on Mesa llvmpipe
   (`ATELIER_NO_OFFSCREEN=1`, Godot from its GitHub release, `GODOT_VERSION` in the job), `jme-frames` runs
   `engines/jme/tools/frame-check.sh` the same way (no Godot), and each fails on a FAIL. A manual run's `break` input sets
-  `BREAK` for `jme-frames`: `gh workflow run ci.yml --ref <branch> -f break=scroll` must fail it.
+  `BREAK` for `jme-frames`: `gh workflow run ci.yml --ref <branch> -f break=scroll` must fail it. `threejs-frames` runs
+  `engines/threejs/tools/frame-check.sh` (libGDX under `xvfb-run`, three.js in headless Chrome on SwiftShader) and
+  takes the same `break` input.
 
 ## `.plax` is a file format
 
@@ -58,7 +61,8 @@ repair.
   fields by hand, and one it misses loads as its default without an error. Add it to `PlaxFormatTest.assertPageEquals`,
   which `JsonPageTest` uses.
 - A new stored field is read a third time in `engines/godot/addons/jks_parallax/plax_page.gd` (`LAYER_DEFAULTS` for a
-  layer's): one it misses loads as its default in a Godot game.
+  layer's): one it misses loads as its default in a Godot game. And a fourth in `engines/threejs/src/plax.js`
+  (`readPage`, `LAYER_DEFAULTS`) once the three.js reader draws what it is for.
 - A new layer field is also written back from the `ParallaxLayer` by `pages/Utils_Page.buildFromPage`, the editor's
   save path: one it misses is dropped when the editor saves. `BuildFromPageTest` round-trips a page through it.
 - `core/test-data/**` holds the test fixtures for `core/test/.../PlaxFormatTest` and the reader rounds' atlases:
@@ -81,6 +85,12 @@ repair.
   layers are placed by `plax_particles.gd` (ParallaxPageReader's particle branch; round `engines/rounds/particles`),
   a FLOOR's rows measured, scrolled and drawn by `plax_floor.gd`, a SEQUENCE's cycle laid out and drawn by
   `plax_sequence.gd`, a tower's strips by `plax_tower.gd` (r307, r324: `gdlint` caps a script at 1000 lines).
+- `engines/threejs/src/plax.js` ports the same pieces from `plax_background.gd`, `plax_page.gd` and `plax_atlas.gd`
+  (`_actLayer`, `_tile`, `_drawRegion`, the cross-fade, the tint, the gradients; `loadAtlas`, `readPage`): change how a
+  page scrolls, fades or draws, change it there too, and run `engines/threejs/tools/frame-check.sh` (`round1`,
+  `conformance` and `pixelart` prove it; `pixelart` is its cross-fade round until the transfer round plays, r40). A kind
+  it does not draw throws in `readPage` (`KINDS`): the rounds that need one are its 'unsupported' entries in
+  `tools/readers-health/health.py`, each naming its task.
 - `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
   `draw(region, x, y, width, height)` (and a planet's quads and turned draw, r347), and ports `SquareBackground` in `JmeGradient`. Draw through another `Batch`
   method, change the gradients, or make `ParallaxPageReader` or `ParallaxLayer` reach a libGDX native (`OrthographicCamera.update` does), and

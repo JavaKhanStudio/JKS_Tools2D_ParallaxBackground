@@ -480,13 +480,33 @@ pages built without a heart. Two hearts can show the same `WholePage_Model`: the
 places and scrolls its own. A page read from a folder (`heart.relativePath`) owns its atlas and frees it
 when the last heart showing it moves on or is disposed, not the first.
 
+### In three.js
+
+The reader's own folder, its checks and demo: [engines/threejs/README.md](engines/threejs/README.md). Each GitHub
+release carries `jks-parallax-threejs-X.Y.Z.zip`: `jks_parallax_threejs/plax.js`, one ES module that imports `three`
+(r170 or later; your game maps the name to its copy).
+
+```js
+import { PlaxBackground } from './jks_parallax_threejs/plax.js';
+const bg = new PlaxBackground();
+await bg.load('backgrounds/calm.jplax');      // its .atlas and images next to it
+bg.speedConstantX = 60;
+bg.setSize(innerWidth, innerHeight);
+// each frame: bg.act(delta); bg.render(renderer); then the game over it (renderer.autoClear = false)
+```
+
+It draws what the libGDX library draws (`engines/threejs/tools/frame-check.sh` compares them frame by frame), colours
+included: no colour management on the background. It draws IMAGE layers, cross-fades and tints so far; a page with a
+`SEQUENCE`, `SHADER`, `PARTICLES`, `FLOOR` or `LURKER` layer fails to load until those are ported (the reader's README
+names each one's task).
+
 ## File formats
 
 | Extension | Content                                              | Written by    | Read by                   |
 |-----------|------------------------------------------------------|---------------|---------------------------|
 | `.plax`   | Exported page, Kryo binary                           | Export        | games (`Utils_Page`), jME games (`engines/jme`), editor |
-| `.jplax`  | Exported page, JSON (Jackson)                        | Export, hand  | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), jME games, editor, other tools |
-| `.plaxpj` | Project: page, loose images, default values, pixel art, ETC2 (JSON) | Save project  | editor, browser games (`Utils_Page_Json`), Godot games, jME games |
+| `.jplax`  | Exported page, JSON (Jackson)                        | Export, hand  | browser games (`Utils_Page_Json`), Godot games (`engines/godot`), jME games, three.js games (`engines/threejs`), editor, other tools |
+| `.plaxpj` | Project: page, loose images, default values, pixel art, ETC2 (JSON) | Save project  | editor, browser games (`Utils_Page_Json`), Godot games, jME games, three.js games |
 | `.etc2.atlas` + `.zktx` | ETC2 copy of an exported atlas: same regions, pages as gzipped KTX (ETC2 RGBA8, mip chain) | Export with ETC2 | libGDX games with `Gvars_Parallax.setCompressedAtlases(true)` |
 
 A page references its atlas by file name, and looks for it next to itself. **Save project** therefore copies the atlas
@@ -546,9 +566,12 @@ engines/jme/tools/                its checks: frame-check.sh, probe/ (a fresh ga
 engines/godot/addons/jks_parallax the Godot 4 reader
 engines/godot/tests/              Godot's runners for the rounds: shots.gd, particles.gd, sequence_cycle.gd
 engines/godot/tools/              its checks: frame-check.sh, addon-zip.sh (the release zip), addon-zip-check.sh
+engines/threejs/src/plax.js       the three.js reader, one ES module
+engines/threejs/tests/            its runners, pages in headless Chrome: shots.js, bench.js; demo.html; three.js r170
+engines/threejs/tools/            its checks: frame-check.sh, bench.sh, run-page.sh + serve.py, zip.sh (the release zip)
 engines/rounds/                   the reader rounds every reader is checked on: round1, conformance, transfer, pixelart, effects, particles, shaders
 engines/rounds/reader/src/.../Round  a round's round.json, read for ParallaxShots and JmeParallaxShots (:rounds)
-shots/src/.../ParallaxShots       libGDX stills of a round, what the Godot and jME frames are compared with
+shots/src/.../ParallaxShots       libGDX stills of a round, what the Godot, jME and three.js frames are compared with
 core/test-data/samples/           the sample pages and atlases the tests and the rounds read (copies, never re-exported)
 core/test-data/particles/         snow .p files (MakeSnow.java), HiverSnow.atlas, and a libGDX stills round of them
 core/test-data/shaders/           HiverFog.atlas (Hiver and a mist band) and make_round.py, which writes the shaders round

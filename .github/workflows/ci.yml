@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       break:
-        description: 'BREAK for the jME frames (scroll: its negative control, must fail)'
+        description: 'BREAK for the jME and three.js frames (scroll: their negative control, must fail)'
         required: false
         default: ''
 
@@ -163,4 +163,50 @@ jobs:
             build/jme/*/report.txt
             build/jme/*/*.log
             build/jme/*/gdx/lab.log
+          retention-days: 7
+
+  threejs-frames:
+    # engines/threejs draws what core draws: engines/threejs/tools/frame-check.sh renders the rounds it ports with libGDX
+    # (under Xvfb) and with three.js in headless Chrome, on SwiftShader here (r34). BREAK=scroll must fail it.
+    name: three.js frames against libGDX
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Install Xvfb, Mesa and Pillow
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-pil
+
+      - name: Compare the frames
+        env:
+          ATELIER_NO_OFFSCREEN: '1'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          ALSOFT_DRIVERS: 'null'
+          BREAK: ${{ inputs.break }}
+        run: |
+          xvfb-run -a -s "-screen 0 1920x1440x24" engines/threejs/tools/frame-check.sh
+          grep -h "^renderer" build/threejs/*/threejs.log | sort -u || true
+
+      - name: Upload the frames
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: threejs-frames
+          path: |
+            build/threejs/*/compare.png
+            build/threejs/*/report.txt
+            build/threejs/*/*.log
+            build/threejs/*/threejs/chrome.log
+            build/threejs/*/gdx/lab.log
           retention-days: 7

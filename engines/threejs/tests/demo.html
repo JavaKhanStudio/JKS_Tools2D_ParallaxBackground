@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- The three.js reader's demo: Calm scrolling (round1's s10), T cross-fades it into OneNight (s14) and back, SPACE stops and starts the
+     scroll. Served from the repository root (python3 -m http.server), open /engines/threejs/tests/demo.html;
+     ?page=<path from the root>&atlas=<its atlas folder> draws another page. -->
+<html><head><meta charset="utf-8"><title>plax three.js demo</title>
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
+<style>html, body { margin: 0; height: 100%; overflow: hidden; background: #000; } canvas { display: block; }
+#keys { position: fixed; left: 12px; bottom: 10px; color: #fff; font: 13px system-ui, sans-serif; text-shadow: 0 1px 2px #000; }</style>
+</head><body><div id="keys">T cross-fade &middot; SPACE scroll</div><script type="module">
+import * as THREE from 'three';
+import { PlaxBackground, loadAtlas, loadPage } from '../src/plax.js';
+
+const q = new URLSearchParams(location.search);
+const pages = q.has('page') ? [[q.get('page'), q.get('atlas') ?? q.get('page').replace(/[^/]*$/, '')]]
+  : [['engines/rounds/round1/s10.jplax', 'core/test-data/samples/transfer'],
+     ['engines/rounds/round1/s14.jplax', 'core/test-data/samples/Demos']];
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+document.body.appendChild(renderer.domElement);
+const bg = new PlaxBackground();
+const fit = () => { renderer.setSize(innerWidth, innerHeight); bg.setSize(innerWidth, innerHeight); };
+addEventListener('resize', fit);
+fit();
+await bg.load('/' + pages[0][0], '/' + pages[0][1]);
+bg.speedConstantX = 60;
+let shown = 0;
+addEventListener('keydown', async e => {
+  if (e.code === 'Space') bg.speedConstantX = bg.speedConstantX ? 0 : 60;
+  if (e.code === 'KeyT' && pages.length > 1) {
+    shown = (shown + 1) % pages.length;
+    const page = await loadPage('/' + pages[shown][0]);
+    bg.transfertInto(page, await loadAtlas('/' + pages[shown][1] + '/' + page.atlasName), 3);
+  }
+});
+let last = performance.now();
+renderer.setAnimationLoop(now => { bg.act(Math.min(0.1, (now - last) / 1000)); last = now; bg.render(renderer); });
+</script></body></html>

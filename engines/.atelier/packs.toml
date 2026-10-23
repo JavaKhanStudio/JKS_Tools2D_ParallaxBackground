@@ -3,11 +3,11 @@
 
 [tags.readers]
 label = "Readers"
-description = "Each engine's reader (libGDX core, jME, Godot, later Unity) as its own sub project: folder layout, build, tests, CI job, release artifact (r1, ex parallax:r317). Work inside one reader goes to its own tag (#jme, #godot, #readers-health for the dashboard, r29); #readers keeps what spans them: the layout, a new reader, the shared rounds and stills. How a page scrolls, fades or shades in a reader stays on parallax (#runtime, #shader, #format)"
+description = "Each engine's reader (libGDX core, jME, Godot, three.js, later Unity) as its own sub project: folder layout, build, tests, CI job, release artifact (r1, ex parallax:r317). Work inside one reader goes to its own tag (#jme, #godot, #threejs, #readers-health for the dashboard, r29); #readers keeps what spans them: the layout, a new reader, the shared rounds and stills. How a page scrolls, fades or shades in a reader stays on parallax (#runtime, #shader, #format)"
 color = "#c9a0ff"
 sort = 60
 context = """
-WORK INSIDE ONE READER is tagged #jme, #godot or #readers-health (the dashboard), each with its own pack (r29); this
+WORK INSIDE ONE READER is tagged #jme, #godot, #threejs or #readers-health (the dashboard), each with its own pack (r29); this
 tag is for what spans readers.
 A READER draws a saved page in one engine. Today, in this one repository:
   core/          libGDX, the reference: parallax-background on Maven Central. Every other reader is checked against it.
@@ -15,9 +15,13 @@ A READER draws a saved page in one engine. Today, in this one repository:
                  It runs core's ParallaxPageReader as is, through JmeBatch.
   engines/godot/ a Godot 4 project. addons/jks_parallax is a GDScript port of core, line for line. release.yml attaches
                  jks-parallax-godot-X.Y.Z.zip from 2.5.0 on; the Asset Library listing is parallax:r104 (paused).
+  engines/threejs/ src/plax.js, an ES module port of core for three.js (r34, from Crypto en visuel's lib/plax.js); its
+                 frame runner is a page in headless Chrome. release.yml attaches jks-parallax-threejs-X.Y.Z.zip.
+                 It ports IMAGE layers, plain cross-fades and tints so far; the other kinds are queued #threejs tasks.
   Unity: parallax:r103 (paused). No Unity or dotnet is installed on this machine.
 EACH READER'S FOLDER holds its README.md (what it is, how a game gets it, its checks and demo) and its own scripts in
-engines/<reader>/tools/ (r11): godot's frame-check.sh, bench.sh, addon-zip.sh, addon-zip-check.sh; jme's frame-check.sh, bench.sh and probe/.
+engines/<reader>/tools/ (r11): godot's frame-check.sh, bench.sh, addon-zip.sh, addon-zip-check.sh; jme's frame-check.sh, bench.sh and probe/;
+threejs's frame-check.sh, bench.sh, run-page.sh, serve.py, zip.sh.
 Each script cd's to the repository root first, so it runs from anywhere. Scripts every reader shares stay in tools/
 (parallax-lab-shots.sh, shots-out.sh, compare-parallax-frames.py, nested-x.sh). tools/offscreen-lint.sh reads
 engines/*/tools/*.sh too: a new reader's script that opens a window runs it in cage.
@@ -37,10 +41,10 @@ tests, README, CI job and release artifact. The mother board stays "parallax". H
 libGDX should be 2 different repos". The later, explicit pick is one repository: confirm with him before creating
 any GitHub repository.
 SHARED BY EVERY READER'S CHECK: the rounds in core/test-data and engines/rounds (a home no reader owns, r9), and the libGDX stills that :shots
-(shots/, ParallaxShots) draws from them. engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh compare each
-reader with those stills; CI runs each in its own job, godot-frames and jme-frames (r10). The round file is read twice: by
-Round (:rounds, engines/rounds/reader, parallax:r312) for ParallaxShots and JmeParallaxShots, and by Godot's tests/shots.gd. A new round
-field goes in both, and in each runner that plays it.
+(shots/, ParallaxShots) draws from them. engines/<reader>/tools/frame-check.sh compares each reader with those stills;
+CI runs each in its own job, godot-frames, jme-frames and threejs-frames (r10). The round file is read three times: by
+Round (:rounds, engines/rounds/reader, parallax:r312) for ParallaxShots and JmeParallaxShots, by Godot's tests/shots.gd and by
+three.js's tests/shots.js. A new round field goes in all three, and in each runner that plays it.
 What each port must copy line for line, and which frame round proves it, is in AGENTS.md "Runtime".
 WHAT A NEW READER MUST HAVE (folder, README, frame check, CI job, release artifact, AGENTS.md duties) is
 engines/README.md, "What a new reader must have" (r12): follow it, and change it when a reader changes the shape.
@@ -102,6 +106,33 @@ build/godot/.mutant/<round> via tools/shots-out.sh, never build/godot/<round>; a
 A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
 """
 
+[tags.threejs]
+label = "three.js reader"
+description = "The three.js reader in engines/threejs: src/plax.js (ES module port of core), its browser runners (tests/shots.js, bench.js), frame check, bench and release zip. What spans readers stays #readers"
+color = "#7fb2ff"
+sort = 64
+context = """
+engines/threejs/src/plax.js is an ES module port of core/ (libGDX, the reference) for three.js r170+, written from the Godot
+port (engines/godot/addons/jks_parallax), which copies core LINE FOR LINE: port from the matching .gd file, keep its names
+(camelCase) and order, and AGENTS.md "Runtime" says which round proves each piece. It draws each layer as one Mesh of
+quads (class Quads, SpriteBatch for one texture) in its own OrthographicCamera, in screen pixels, y down.
+COLOURS ARE LIBGDX'S: textures decoded with createImageBitmap(premultiplyAlpha 'none', colorSpaceConversion 'none'),
+NoColorSpace, the renderer's output LinearSRGBColorSpace while it draws: no colour management anywhere. Blending is
+SRC_ALPHA, ONE_MINUS_SRC_ALPHA on the colour and ONE, ONE_MINUS_SRC_ALPHA on the alpha: an alpha left under 1 in the
+drawing buffer is un-premultiplied by toBlob and the compositor, and brightened every half-transparent texel (r34: c07
+read 4.6 / 255 before the fix, 0.00 after). A new material keeps both rules.
+THE RUNNER is a page: tests/shots.html?round=<dir> (shots.js) steps the scroll as ParallaxShots and POSTs each still to
+tools/serve.py, which serves the repository root; tools/run-page.sh opens it in headless Chrome with tools/browser.py's
+GL flags (the GPU here, SwiftShader on CI) and waits for its POST done. shots.js parses round.json itself: a new round
+field goes in Round (:rounds), shots.gd AND shots.js. tests/vendor/three is three.js r170 (MIT), for the tests only: a
+game brings its own three.
+Scripts are engines/threejs/tools/: frame-check.sh (default ROUNDS = the rounds it ports; BREAK=scroll must FAIL),
+bench.sh (build/bench/threejs.json; skips a bench scene whose kinds it does not port), zip.sh (the release zip).
+A kind it does not port throws in readPage (KINDS): port it, add it to KINDS, add its round to frame-check.sh's ROUNDS and
+drop its 'unsupported' entry in tools/readers-health/health.py. CI job: threejs-frames in .github/workflows/ci.yml.
+A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
+"""
+
 [tags.readers-health]
 label = "Readers' dashboard"
 description = "The readers' health dashboard: tools/readers-health.sh, tools/readers-health/ (health.py, health_test.py, serve.py), its board Site button, and the gates that run its tests"
@@ -121,7 +152,8 @@ feature table: run python3 tools/readers-health/health_test.py after any health.
 A MUTANT RUN never becomes a verdict (r26): tools/shots-out.sh links it at build/<reader>/.mutant/<round>; the dashboard
 reads build/<reader>/<round> only. engines/rounds/bench is timed, never compared: no frame check plays it, so it never
 marks a reader Stale (r23). Relative paths given to its flags resolve against the caller's cwd (r24).
-Readers today: libGDX (core/, the reference), jME (engines/jme, CI job jme-frames), Godot (engines/godot, godot-frames).
+Readers today: libGDX (core/, the reference), jME (engines/jme, CI job jme-frames), Godot (engines/godot, godot-frames),
+three.js (engines/threejs, threejs-frames).
 Gates: the pre-commit hook runs tools/pre-commit-check.sh (CI's lint on the staged .py/.sh/.gd); CI is .github/workflows/ci.yml.
 A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
 """

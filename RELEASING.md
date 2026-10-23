@@ -95,7 +95,8 @@ Each release publishes:
   `io.github.javakhanstudio:parallax-background-jme`. Its classes are public API: keep them compatible;
 - a GitHub release with the downloads: the library jars (+ sources, + javadoc), the jME reader's jars and
   `jks-parallax-godot-X.Y.Z.zip` (the Godot reader, `addons/jks_parallax/` at its root, made by
-  `engines/godot/tools/addon-zip.sh`). The editor is a separate commercial product, released on its own (r133, r269):
+  `engines/godot/tools/addon-zip.sh`) and `jks-parallax-threejs-X.Y.Z.zip` (the three.js reader,
+  `jks_parallax_threejs/plax.js` at its root, made by `engines/threejs/tools/zip.sh`). The editor is a separate commercial product, released on its own (r133, r269):
   nothing here links to it or attaches it.
 
 ## Godot Asset Library

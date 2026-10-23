@@ -107,6 +107,8 @@ jobs:
           cp engines/jme/build/libs/parallax-background-jme-*.jar release/
           # 2. The Godot reader, addons/jks_parallax at the zip's root.
           engines/godot/tools/addon-zip.sh release
+          # 3. The three.js reader, jks_parallax_threejs/plax.js at the zip's root.
+          engines/threejs/tools/zip.sh release
           ls -la release
 
           # The release notes only point at Maven Central when the library was published there.
