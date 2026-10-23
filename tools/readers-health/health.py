@@ -418,7 +418,7 @@ def page(d):
         p.append('</dl></div>')
     p.append('</div>')
 
-    p.append('<h2>Features: each one, its scenes, each reader</h2><p class="sub">From <code>engines/rounds/features.json</code>. '
+    p.append('<h2 id="features">Features: each one, its scenes, each reader</h2><p class="sub">From <code>engines/rounds/features.json</code>. '
              'Godot and jME: the worst still of the scenes that check the feature (mean difference from libGDX, out of 255; a '
              'check fails over 2), judged scene by scene. libGDX: its browser cases for the feature, in core\'s last JUnit run. '
              '"No round": no scene checks it. Tickets are the parallax board\'s.</p>'

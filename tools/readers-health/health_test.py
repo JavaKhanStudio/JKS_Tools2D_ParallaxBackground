@@ -104,6 +104,7 @@ def feature_table():
 
 
 rows = feature_table()
+health.OUT = os.path.join(health.ROOT, 'build/readers-health')
 cell = {k: (r['cells']['fake'] or {}).get('kind', 'no round') + ' ' + (r['cells']['fake'] or {}).get('text', '') for k, r in rows.items()}
 cases = [
     ('a feature whose one scene passes', cell['one'], 'pass 0.40'),
@@ -112,6 +113,7 @@ cases = [
     ('a feature only in a round the reader does not play', cell['elsewhere'], 'na not played'),
     ('a feature the reader cannot draw', cell['gone'], 'na not drawn'),
     ('a scene id no round.json has', str(rows['typo']['unknown']), "[('engines/rounds/a', 'x9')]"),
+    ('the anchor the parallax board\'s Site button opens (r33)', '<h2 id="features">' in health.page(health.gather(False)), True),
     ('scene ids shown as runs', health.scene_span(['s01', 's02', 's03', 's05', 'q1']), 's01-s03, s05, q1'),
 ]
 for name, got, want in cases:

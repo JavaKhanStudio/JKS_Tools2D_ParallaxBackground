@@ -112,6 +112,8 @@ tools/readers-health.sh builds build/readers-health/index.html from what the rea
 report.txt under build/<reader>/<round>, JUnit, CI runs through gh, build/bench/<reader>.json. --run runs the checks first;
 --serve 8797 serves it on loopback, rebuilt on each load: it is the board's Site button ([viewers.readers_health] in
 atelier's projects/parallax-readers.toml, start runs in engines/, so the script is ../tools/readers-health.sh).
+The feature table's <h2 id="features"> is a second Site button on both boards ([viewers.readers_features], url
+/readers-health/#features; on parallax.toml start has no ../): keep the id, health_test.py checks it (r33).
 tools/readers-health/health.py holds READERS (a new reader is an entry there), each reader's 'unsupported' entries
 (naming the round, its task and the feature), the statuses (Stale, FAIL, no round) and the FEATURE TABLE (r28), judged
 per reader from engines/rounds/features.json (feature -> scenes and *Cases). health_test.py covers the statuses and the
