@@ -2,7 +2,7 @@
 # frame-check.sh [ROUND_DIR...] — the three.js reader (engines/threejs) against the libGDX runtime, frame by frame (r34).
 #
 #   engines/threejs/tools/frame-check.sh                        engines/rounds/round1, /conformance, /pixelart, /sequence,
-#                                                               /shaders (s01-s11), /fog
+#                                                               /shaders (s01-s11), /fog, /transfer
 #   engines/threejs/tools/frame-check.sh engines/rounds/round1
 #
 # For each round: renders its scenes with libGDX (tools/parallax-lab-shots.sh, 0, 6 and 12 s into the lab's scroll)
@@ -10,7 +10,7 @@
 # then compares them pixel by pixel. Writes build/threejs/<round>/ (a link to this
 # run's own folder: tools/shots-out.sh): the libGDX stills in gdx/, three.js's in threejs/, compare.png and report.txt.
 # Fails when a still differs by more than THRESHOLD (mean absolute difference per channel, 0-255; default 2).
-# The default rounds are those whose layer kinds the reader ports: IMAGE (and EMPTY), SEQUENCE, SHADER and the page fog;
+# The default rounds are those whose layer kinds the reader ports: IMAGE (and EMPTY), SEQUENCE, SHADER, the page fog and the transfer styles;
 # a round with a kind it does not port fails in threejs.log. SKIP names a round's scenes it does not draw yet, and the
 # task that will: they are not shot, and report.txt names them SKIPPED (tools/compare-parallax-frames.py). With engines/rounds/sequence it runs the cycle check too
 # (engines/threejs/tests/sequence_cycle.html: the picks against picks.json, the slots drawn against a walk over all). Chrome draws on the GPU when tools/browser.py finds one, else on SwiftShader (CI), where
@@ -24,7 +24,7 @@ ROOT="$PWD"
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
 [ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/pixelart engines/rounds/sequence
-	engines/rounds/shaders engines/rounds/fog)
+	engines/rounds/shaders engines/rounds/fog engines/rounds/transfer)
 # MIRROR, the glint and detail levels: r44.
 declare -A SKIP=([engines/rounds/shaders]="s12 s13 s14 s15 s16 s17 s18|r44")
 status=0

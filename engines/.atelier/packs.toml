@@ -17,7 +17,8 @@ A READER draws a saved page in one engine. Today, in this one repository:
                  jks-parallax-godot-X.Y.Z.zip from 2.5.0 on; the Asset Library listing is parallax:r104 (paused).
   engines/threejs/ src/plax.js, an ES module port of core for three.js (r34, from Crypto en visuel's lib/plax.js); its
                  frame runner is a page in headless Chrome. release.yml attaches jks-parallax-threejs-X.Y.Z.zip.
-                 It ports IMAGE layers, plain cross-fades and tints so far; the other kinds are queued #threejs tasks.
+                 It ports IMAGE, SEQUENCE and SHADER layers, the page fog, cross-fades with their styles and tints so far;
+                 the other kinds are queued #threejs tasks.
   Unity: parallax:r103 (paused). No Unity or dotnet is installed on this machine.
 EACH READER'S FOLDER holds its README.md (what it is, how a game gets it, its checks and demo) and its own scripts in
 engines/<reader>/tools/ (r11): godot's frame-check.sh, bench.sh, addon-zip.sh, addon-zip-check.sh; jme's frame-check.sh, bench.sh and probe/;
@@ -45,6 +46,9 @@ SHARED BY EVERY READER'S CHECK: the rounds in core/test-data and engines/rounds 
 CI runs each in its own job, godot-frames, jme-frames and threejs-frames (r10). The round file is read three times: by
 Round (:rounds, engines/rounds/reader, parallax:r312) for ParallaxShots and JmeParallaxShots, by Godot's tests/shots.gd and by
 three.js's tests/shots.js. A new round field goes in all three, and in each runner that plays it.
+THE RINGS ROUND (r47), engines/rounds/rings, has no stills: core's ParallaxRings numbers (a page round a 3D world,
+docs/page-as-3d-sky.md) per scene, written by ./gradlew :rounds:rings (RingsRound, OUT/gdx/<id>.json); a 3D reader writes
+OUT/<reader>/<id>.json and tools/compare-rings.py ROUND OUT <reader> judges it (1e-4). Round, shots.gd and shots.js never read it.
 What each port must copy line for line, and which frame round proves it, is in AGENTS.md "Runtime".
 WHAT A NEW READER MUST HAVE (folder, README, frame check, CI job, release artifact, AGENTS.md duties) is
 engines/README.md, "What a new reader must have" (r12): follow it, and change it when a reader changes the shape.
@@ -127,7 +131,8 @@ read 4.6 / 255 before the fix, 0.00 after). A new material keeps both rules: spr
 ShaderMaterial without three's colorspace chunk is already raw. libGDX packs a vertex colour to 8 bits TRUNCATED
 (Color.toFloatBits): the gradients are cut so (packed()), or every still is off by 1 (r39: 0.95 -> 0.00); a layer's
 tint too, its alpha to 254 levels (packedAlpha()), and under the page fog the haze, not the tint (_drawLayer, r45:
-cross-fades 0.26 -> 0.00). Mind
+cross-fades 0.26 -> 0.00). A dissolve or a grade (PlaxTransfertStyle, r40) gives a layer with no shader the PLAIN one
+(l.dissolvePlain) and _unmask takes it off: libGDX has no page fog's shader then (_pageFog). Mind
 THREE.Vector4() is (0, 0, 0, 1): a uniform meant 0 is new Vector4(0, 0, 0, 0) (r39: grade.a 1 drew every effect black).
 THE RUNNER is a page: tests/shots.html?round=<dir> (shots.js) steps the scroll as ParallaxShots and POSTs each still to
 tools/serve.py, which serves the repository root; tools/run-page.sh opens it in headless Chrome with tools/browser.py's

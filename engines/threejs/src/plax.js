@@ -20,9 +20,10 @@
 // conversion) for its own draw and puts back.
 //
 // Cross-fading into another page and tinting, as Parallax_Heart.transfertIntoPage and
-// ParallaxPageReader.addColorTransfert:
+// ParallaxPageReader.addColorTransfert; a style (PlaxTransfertStyle) staggers, dissolves, or goes through a colour:
 //
 //   bg.transfertInto(await loadPage(url), await loadAtlas(atlasUrl), 2)
+//   bg.transfertInto(page, atlas, 3, PlaxTransfertStyle.dissolve(5, 0.08, 0.5))
 //   bg.tintTo([1, 0.6, 0.4, 1], 2)
 //
 // A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set (PlaxSequence), by
@@ -36,8 +37,9 @@
 // layer toward the fog's colour, more the slower it scrolls (PlaxEffects.fogOf), through the same shaders.
 //
 // Ported: IMAGE layers (decal, sizeRatio, flips, speeds, speedXAtRest, pads, mirror, repeat on X and Y,
-// useOriginalSize), SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the page's depth fog, the two gradients, plain
-// cross-fades, tints, zoom (not the dolly), resizing. EMPTY layers draw nothing. A page with a layer of another kind
+// useOriginalSize), SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the page's depth fog, the two gradients,
+// cross-fades and their styles (depth stagger, dissolve, through a colour, fog creep), tints, zoom (not the dolly),
+// resizing. EMPTY layers draw nothing. A page with a layer of another kind
 // (PARTICLES, FLOOR, LURKER) or a MIRROR effect fails to load, as in libGDX a page from a newer version does: they are
 // ported in the order engines/rounds needs them. Not yet: the glint, detail levels.
 import * as THREE from 'three';
@@ -56,6 +58,8 @@ const LAYER_DEFAULTS = {
 };
 // The kinds this reader draws; another fails the page's load. A SEQUENCE layer's cycle is drawn by drawCycle.
 const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE', 'SHADER'];
+// The kinds a dissolve masks and a transfert through a colour grades; an EMPTY one fades to its share instead.
+const MASKED = ['IMAGE', 'SEQUENCE', 'SHADER'];
 // The effects a SHADER layer is drawn through here (PlaxEffects.EFFECTS less MIRROR); another fails the page's load.
 const EFFECTS = ['WAVE', 'FOG', 'SWELL'];
 // What a seed of 0 starts from (SequenceCycle.ZERO_SEED): xorshift never leaves 0.
@@ -270,6 +274,8 @@ export class PlaxBackground {
     this._newAlpha = 0;
     this._oldAlpha = 1;
     this._fadeSpeed = 0;
+    // How the cross-fade under way is drawn (ParallaxPageReader.transfertStyle): null outside one, and for a plain fade.
+    this._style = null;
     this._tintFrom = [...WHITE];
     this._tintTo = [...WHITE];
     this._tintDuration = 0;
@@ -280,6 +286,8 @@ export class PlaxBackground {
     this._gradientDuration = 0;
     this._gradientElapsed = 0;
     this._gradientFading = false;
+    // How the gradients fade (TransfertStyle.gradient): null straight, as a plain fade.
+    this._gradientStyle = null;
     this._topHalfSize = 0.5;
     this._bottomHalfSize = 0.5;
     // The game's seed for the SEQUENCE layers, when _hasSequenceSeed (setSequenceSeed).
@@ -317,10 +325,16 @@ export class PlaxBackground {
   // Cross-fades into `page` over `seconds` (0: at once), as Parallax_Heart.transfertIntoPage. The pages are matched
   // from their front layer: an incoming layer takes the distance its counterpart has scrolled, so nothing jumps. The
   // gradients' colours fade too; the repeat and the gradients' sizes stay those of the page given to setPage. A fade
-  // started during another drops the page that was fading in.
-  transfertInto(page, atlas, seconds) {
+  // started during another drops the page that was fading in. `style` (null: every layer slot at once) is how the
+  // layers fade, as Parallax_Heart.transfertIntoPage(page, seconds, style): PlaxTransfertStyle.depthStagger(s) fades
+  // each slot in its own window, the back ones first; PlaxTransfertStyle.dissolve(patches, softness, s) has each slot's
+  // incoming layer eat the outgoing one in patches; PlaxTransfertStyle.throughColor(color, s) goes through a colour,
+  // white possible, the gradients too; PlaxTransfertStyle.fogCreep(mist, s) sinks the page into a mist and brings the
+  // new one out of it.
+  transfertInto(page, atlas, seconds, style = null) {
     if (!this.page) { this.setPage(page, atlas); return; }
     this._drop(this.transferLayers);
+    this._unmask(this.layers);
     this._resetTransfert();
     const incoming = this._buildLayers(page, atlas);
     if (incoming.length) {
@@ -330,9 +344,13 @@ export class PlaxBackground {
       for (const l of incoming) l.incoming = true;
       this._syncTransferPositions();
       if (seconds <= 0) this._finishTransfert();
-      else this._fadeSpeed = 1 / seconds;
+      else {
+        this._fadeSpeed = 1 / seconds;
+        this._style = style;
+      }
     }
-    this._fadeGradients([page.topHalfTop, page.topHalfBottom, page.bottomHalfTop, page.bottomHalfBottom], seconds);
+    this._fadeGradients([page.topHalfTop, page.topHalfBottom, page.bottomHalfTop, page.bottomHalfBottom], seconds,
+      style);
   }
 
   // Draws every SEQUENCE layer's cycle, on screen and fading in, from `seed` XOR the seed its page stores rather than
@@ -566,6 +584,7 @@ export class PlaxBackground {
     this.page = this.transferPage;
     this.atlas = this.transferAtlas;
     this._drop(this.layers);
+    this._unmask(this.transferLayers);
     this.layers = this.transferLayers;
     for (const l of this.layers) l.incoming = false;
     this._resetTransfert();
@@ -575,13 +594,15 @@ export class PlaxBackground {
     this.transferPage = null;
     this.transferAtlas = null;
     this.transferLayers = [];
+    this._style = null;
     this._newAlpha = 0;
     this._oldAlpha = 1;
   }
 
-  // SquareBackground.transfertInto: both colours of both gradients, alpha included, straight toward the incoming
-  // page's.
-  _fadeGradients(target, seconds) {
+  // SquareBackground.transfertInto: both colours of both gradients, alpha included, toward the incoming page's, as
+  // `style` goes (null: straight).
+  _fadeGradients(target, seconds, style = null) {
+    this._gradientStyle = style;
     this._gradientFrom = [...this._gradient];
     this._gradientTo = target;
     this._gradientElapsed = 0;
@@ -594,7 +615,8 @@ export class PlaxBackground {
     if (!this._gradientFading) return;
     this._gradientElapsed += delta;
     const progress = this._gradientDuration > 0 ? Math.min(1, this._gradientElapsed / this._gradientDuration) : 1;
-    this._gradient = this._gradientFrom.map((from, i) => lerp(from, this._gradientTo[i], progress));
+    this._gradient = this._gradientFrom.map((from, i) => this._gradientStyle
+      ? this._gradientStyle.gradient(from, this._gradientTo[i], progress) : lerp(from, this._gradientTo[i], progress));
     if (progress >= 1) this._gradientFading = false;
   }
 
@@ -604,8 +626,9 @@ export class PlaxBackground {
     const oldOffset = total - this.layers.length, newOffset = total - this.transferLayers.length;
     const order = [];
     for (let slot = 0; slot < total; slot++) {
-      if (slot >= oldOffset) order.push(this.layers[slot - oldOffset]);
-      if (slot >= newOffset) order.push(this.transferLayers[slot - newOffset]);
+      // Its slot, for a depth stagger (_alphaOf).
+      if (slot >= oldOffset) order.push(Object.assign(this.layers[slot - oldOffset], { slot }));
+      if (slot >= newOffset) order.push(Object.assign(this.transferLayers[slot - newOffset], { slot }));
     }
     return order;
   }
@@ -632,15 +655,61 @@ export class PlaxBackground {
   }
 
   // Whether libGDX draws the page's layers without an effect through its page fog's shader: this page or the incoming
-  // one has a fog (ParallaxPageReader.beginDraw).
+  // one has a fog, and no dissolve or grade begins each layer with its own shader (ParallaxPageReader.beginDraw).
   _pageFog() {
+    if (this.transferLayers.length && this._style && (this._style.kind === 'DISSOLVE' || this._style.grades())) {
+      return false;
+    }
     return this.page?.fogStrength > 0 || (this.transferLayers.length > 0 && this.transferPage?.fogStrength > 0);
   }
 
-  // The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's.
+  // The opacity of the page the layer belongs to: during a cross-fade, the incoming page's or the outgoing one's; with
+  // a depth stagger, its slot's, each slot at its own point of the fade (ParallaxPageReader.draw). In a dissolve a
+  // layer the mask draws (_masked) is at full opacity while its share of the slot is above 0; an EMPTY one fades to its
+  // share (ParallaxPageReader.drawDissolved). Through a colour or in a fog creep only one side of a slot shows, the
+  // outgoing layer until the slot is all colour, the incoming one after (PlaxTransfertStyle.showsIncoming): at full
+  // opacity when graded (_graded), else faded out by as much as the grade (ParallaxPageReader.drawGraded).
   _alphaOf(l) {
     if (!this.transferLayers.length) return 1;
-    return l.incoming ? this._newAlpha : this._oldAlpha;
+    if (!this._style || this._style.kind === 'FADE') return l.incoming ? this._newAlpha : this._oldAlpha;
+    if (this._style.grades()) {
+      const total = Math.max(this.layers.length, this.transferLayers.length);
+      if (this._style.showsIncoming(this._newAlpha, l.slot, total) !== !!l.incoming) return 0;
+      return this._graded(l) ? 1 : 1 - this._style.gradeAt(this._newAlpha, l.slot, total);
+    }
+    const share = this._shareOf(l);
+    return this._masked(l) ? (share > 0 ? 1 : 0) : share;
+  }
+
+  // The layer's share of its slot, 0 to 1: its slot's ramp, the outgoing layer's 1 minus it.
+  _shareOf(l) {
+    const ramp = this._style.slotRamp(this._newAlpha, l.slot, Math.max(this.layers.length, this.transferLayers.length));
+    return l.incoming ? ramp : 1 - ramp;
+  }
+
+  // Whether a dissolve draws the layer through its mask now: an IMAGE, SEQUENCE or SHADER one, during a dissolve.
+  _masked(l) {
+    return this.transferLayers.length > 0 && this._style?.kind === 'DISSOLVE' && MASKED.includes(l.model.kind);
+  }
+
+  // Whether a transfert through a colour or a fog creep mixes the layer toward it now: an IMAGE, SEQUENCE or SHADER
+  // one, during one.
+  _graded(l) {
+    return this.transferLayers.length > 0 && !!this._style?.grades() && MASKED.includes(l.model.kind);
+  }
+
+  // Takes the dissolve's mask and the colour's grade off `page`'s layers: the PLAIN shader either gave a layer that had
+  // none goes.
+  _unmask(page) {
+    for (const l of page) {
+      if (l.dissolvePlain) {
+        l.quads.setEffect(null);
+        l.dissolvePlain = false;
+      } else if (l.quads.uniforms) {
+        l.quads.uniforms.dissolve.value.set(0, 0, 0, 0);
+        l.quads.uniforms.grade.value.set(0, 0, 0, 0);
+      }
+    }
   }
 
   _drawLayer(l) {
@@ -650,7 +719,8 @@ export class PlaxBackground {
     // shader (ParallaxPageReader.drawImageLayer: a page with a fog, a layer without an effect), the tint to 8 bits.
     // That shader takes the tint as a uniform and the layer's fog in the batch colour's red: the fog is cut instead.
     const pageFog = this._pageFog() && l.model.kind !== 'SHADER';
-    l.quads.setColor(pageFog ? this.tint : this.tint.map(packed), packedAlpha(alpha));
+    const color = pageFog ? this.tint : this.tint.map(packed);
+    l.quads.setColor(color, packedAlpha(alpha));
     this._quads = l.quads;
     // Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
     const z = this.zoom;
@@ -658,6 +728,22 @@ export class PlaxBackground {
     const m = l.model, viewW = this.worldWidth * z, viewH = this.worldHeight * z;
     // EMPTY: drawn by the game, which this reader has no hook for yet.
     if (m.kind === 'EMPTY') return;
+    const total = Math.max(this.layers.length, this.transferLayers.length);
+    if ((this._masked(l) || this._graded(l)) && !l.quads.effect) {
+      l.quads.setEffect('PLAIN');
+      l.quads.setColor(color, packedAlpha(alpha));
+      l.dissolvePlain = true;
+    }
+    if (this._masked(l)) {
+      const ramp = this._style.slotRamp(this._newAlpha, l.slot, total);
+      l.quads.uniforms.dissolve.value.set(l.incoming ? 2 : 1, ramp, this._style.softness,
+        PlaxTransfertStyle.drift(this._effectTime));
+      l.quads.uniforms.cells.value.set(this._style.patches, this._style.cellsUp(viewW, viewH));
+    }
+    if (this._graded(l)) {
+      const c = this._style.color;
+      l.quads.uniforms.grade.value.set(c[0], c[1], c[2], clamp(this._style.gradeAt(this._newAlpha, l.slot, total), 0, 1));
+    }
     const u = l.quads.uniforms;
     if (u) {
       u.view.value.set(this.width, this.height);
@@ -818,6 +904,147 @@ export const PlaxSequence = {
     }
   },
 };
+
+// --- transfer styles (PlaxTransfertStyle: core's TransfertStyle) -----------------------------------------------------
+
+// How a cross-fade into another page is drawn (PlaxBackground.transfertInto's `style`): the copy of
+// plax_transfert_style.gd, slotRamp line for line. The game's call, never stored in a page.
+//
+//   bg.transfertInto(page, atlas, 3, PlaxTransfertStyle.depthStagger(0.5))
+//
+// FADE (or no style): every layer slot fades at once. DEPTH_STAGGER: each slot over its own window, the back ones
+// first. DISSOLVE: in each slot the incoming layer eats the outgoing one in patches (PlaxEffects' dissolved()), over
+// the same windows. THROUGH_COLOR: in each slot the outgoing layer goes to a colour, then the incoming one comes out of
+// it (PlaxEffects' grade), the gradients too, over the same windows. FOG_CREEP: the whole page sinks into a mist, far
+// layers first, the incoming page swapped in at the middle and coming out of it, near layers first (the same grade).
+export class PlaxTransfertStyle {
+  // TransfertStyle.MAX_STAGGER, MIN_PATCHES, MAX_PATCHES, MIN_SOFTNESS, MAX_SOFTNESS, DISSOLVE_DRIFT.
+  static MAX_STAGGER = 2;
+  static MIN_PATCHES = 0.5;
+  static MAX_PATCHES = 64;
+  static MIN_SOFTNESS = 0.01;
+  static MAX_SOFTNESS = 0.5;
+  static DISSOLVE_DRIFT = 0.15;
+
+  constructor() {
+    // 'FADE', 'DEPTH_STAGGER', 'DISSOLVE', 'THROUGH_COLOR' or 'FOG_CREEP', as TransfertStyle.Kind.
+    this.kind = 'FADE';
+    // How far apart the slots' windows are, 0 to MAX_STAGGER; 0 for FADE.
+    this.stagger = 0;
+    // A dissolve's patches across the view, and how soft their edges are; 0 for every other style.
+    this.patches = 0;
+    this.softness = 0;
+    // THROUGH_COLOR's colour or FOG_CREEP's mist, [r, g, b, 1]; black for every other style.
+    this.color = [0, 0, 0, 1];
+  }
+
+  // Every layer slot at once: what a cross-fade with no style does.
+  static fade() {
+    return new PlaxTransfertStyle();
+  }
+
+  // TransfertStyle.depthStagger: the back slot over the first 1 / (1 + stagger) of the fade, the front one over the
+  // last; `stagger` clamped to 0..MAX_STAGGER, 0 is fade().
+  static depthStagger(value) {
+    const style = new PlaxTransfertStyle();
+    const s = clamp(value, 0, PlaxTransfertStyle.MAX_STAGGER);
+    if (s > 0) {
+      style.kind = 'DEPTH_STAGGER';
+      style.stagger = s;
+    }
+    return style;
+  }
+
+  // TransfertStyle.dissolve: about `patchCount` patches across the view, their edges `soft` soft (0.01 hard, 0.5 a
+  // blur), the slots over depthStagger's windows. Clamped as there.
+  static dissolve(patchCount, soft, value) {
+    const style = new PlaxTransfertStyle();
+    style.kind = 'DISSOLVE';
+    style.stagger = clamp(value, 0, PlaxTransfertStyle.MAX_STAGGER);
+    style.patches = clamp(patchCount, PlaxTransfertStyle.MIN_PATCHES, PlaxTransfertStyle.MAX_PATCHES);
+    style.softness = clamp(soft, PlaxTransfertStyle.MIN_SOFTNESS, PlaxTransfertStyle.MAX_SOFTNESS);
+    return style;
+  }
+
+  // TransfertStyle.throughColor: each slot's outgoing layer mixed toward `through` ([r, g, b], 0 to 1, an alpha
+  // ignored) until it is all that colour halfway through the slot's window, then the incoming one out of it; the slots
+  // over depthStagger's windows.
+  static throughColor(through, value) {
+    const style = new PlaxTransfertStyle();
+    style.kind = 'THROUGH_COLOR';
+    style.stagger = clamp(value, 0, PlaxTransfertStyle.MAX_STAGGER);
+    style.color = [...through.slice(0, 3).map(c => clamp(c, 0, 1)), 1];
+    return style;
+  }
+
+  // TransfertStyle.fogCreep: the whole page mixed toward `mist` ([r, g, b], 0 to 1, an alpha ignored), the far layers
+  // ahead by `value` (clamped to 0..MAX_STAGGER), all mist at the middle, where the incoming page comes in and out of
+  // it, the near layers first.
+  static fogCreep(mist, value) {
+    const style = new PlaxTransfertStyle();
+    style.kind = 'FOG_CREEP';
+    style.stagger = clamp(value, 0, PlaxTransfertStyle.MAX_STAGGER);
+    style.color = [...mist.slice(0, 3).map(c => clamp(c, 0, 1)), 1];
+    return style;
+  }
+
+  // TransfertStyle.gradeOf: how much of the colour a layer of a slot at `ramp` is mixed toward, 0 to 1, peaking at 1
+  // halfway.
+  static gradeOf(ramp) {
+    return ramp < 0.5 ? 2 * ramp : 2 - 2 * ramp;
+  }
+
+  // TransfertStyle.incomingShows: whether a slot at `ramp` draws its incoming layer rather than its outgoing one.
+  static incomingShows(ramp) {
+    return ramp >= 0.5;
+  }
+
+  // TransfertStyle.grades: whether the style mixes its layers toward its colour, THROUGH_COLOR and FOG_CREEP.
+  grades() {
+    return this.kind === 'THROUGH_COLOR' || this.kind === 'FOG_CREEP';
+  }
+
+  // TransfertStyle.showsIncoming: whether slot `slot` of `total` draws its incoming layer at `progress`; THROUGH_COLOR
+  // halfway through the slot's window, FOG_CREEP every slot halfway through the fade.
+  showsIncoming(progress, slot, total) {
+    return this.kind === 'FOG_CREEP' ? progress >= 0.5
+      : PlaxTransfertStyle.incomingShows(this.slotRamp(progress, slot, total));
+  }
+
+  // TransfertStyle.gradeAt: how much of the colour slot `slot` of `total` is mixed toward at `progress`. FOG_CREEP: the
+  // slot's ramp over 2 progress going in, 2 - 2 progress coming out, smoothstepped.
+  gradeAt(progress, slot, total) {
+    if (this.kind !== 'FOG_CREEP') return PlaxTransfertStyle.gradeOf(this.slotRamp(progress, slot, total));
+    const r = this.slotRamp(progress < 0.5 ? 2 * progress : 2 - 2 * progress, slot, total);
+    return r * r * (3 - 2 * r);
+  }
+
+  // TransfertStyle.gradient: a gradient's colour `progress` into a fade from `from` to `to`; THROUGH_COLOR's and
+  // FOG_CREEP's go through their colour at the back slot's pace.
+  gradient(from, to, progress) {
+    if (!this.grades()) return lerp(from, to, progress);
+    return lerp(this.showsIncoming(progress, 0, 1) ? to : from, this.color, this.gradeAt(progress, 0, 1));
+  }
+
+  // TransfertStyle.cellsUp: the dissolve's noise cells up a view `viewW` by `viewH`, stretched 2.5 times.
+  cellsUp(viewW, viewH) {
+    return viewW > 0 ? this.patches * viewH / viewW * 2.5 : 0;
+  }
+
+  // TransfertStyle.drift: how far the dissolve's noise has drifted on x at `seconds` of the clock, in cells, wrapped at
+  // 8.
+  static drift(seconds) {
+    const d = (seconds * PlaxTransfertStyle.DISSOLVE_DRIFT) % 8;
+    return d < 0 ? d + 8 : d;
+  }
+
+  // TransfertStyle.slotRamp: how far along slot `slot` of `total` (0 at the back) is, 0 to 1, when the fade is at
+  // `progress`: the incoming layer's opacity, the outgoing one's 1 minus it.
+  slotRamp(progress, slot, total) {
+    const k = total > 1 ? slot / (total - 1) : 0;
+    return clamp(progress * (1 + this.stagger) - this.stagger * k, 0, 1);
+  }
+}
 
 // --- SHADER layers and the page fog (PlaxEffects: core's GdxLayerEffects) ----------------------------------------------
 
@@ -1107,11 +1334,14 @@ class Quads {
   }
 
   // Draws every run through PlaxEffects' `effect` ('WAVE', 'FOG', 'SWELL' or 'PLAIN'), its numbers in `uniforms`,
-  // set once a frame for the whole layer, as one Godot canvas's material.
+  // set once a frame for the whole layer, as one Godot canvas's material; null, back to no shader.
   setEffect(effect) {
     this.effect = effect;
-    this.uniforms = PlaxEffects.uniforms();
-    for (const run of this.runs) run.dispose();
+    this.uniforms = effect ? PlaxEffects.uniforms() : null;
+    for (const run of this.runs) {
+      this.group.remove(run.mesh);
+      run.dispose();
+    }
     this.runs = [];
     this.used = 0;
   }
@@ -1251,5 +1481,6 @@ const packed = c => Math.floor(255 * Math.min(1, Math.max(0, c))) / 255;
 // An alpha as libGDX packs it: 8 bits, truncated, the lowest dropped (NumberUtils.intToFloatColor), and stretched back
 // to 0..1 by the vertex shader's 255 / 254.
 const packedAlpha = a => (Math.floor(255 * Math.min(1, Math.max(0, a))) & 0xfe) / 254;
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 const join = (dir, file) => !dir ? file : dir.endsWith('/') ? dir + file : dir + '/' + file;

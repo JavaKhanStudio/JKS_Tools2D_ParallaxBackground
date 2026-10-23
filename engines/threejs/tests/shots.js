@@ -8,7 +8,7 @@
 // which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done. &skip=s12,s13 leaves scenes out
 // (frame-check.sh's SKIP: what this reader does not draw yet).
 import * as THREE from 'three';
-import { PlaxBackground, loadAtlas, loadPage } from '../src/plax.js';
+import { PlaxBackground, PlaxTransfertStyle, loadAtlas, loadPage } from '../src/plax.js';
 
 const SHOT_TIMES = [0, 6, 12];
 // BREAK=scroll (frame-check.sh's negative control): a scroll 10 % too fast, which the check must fail.
@@ -72,11 +72,25 @@ async function shots() {
 
 // Into the scene's transfer page, or into the page on screen when it names none.
 async function transfer(bg, root, scene, t) {
-  if (t.style) throw new Error(`transfer style ${t.style.kind}: not ported to three.js yet`);
-  if (!t.page) { bg.transfertInto(bg.page, bg.atlas, t.seconds); return; }
+  const style = styleOf(t.style ?? {});
+  if (!t.page) { bg.transfertInto(bg.page, bg.atlas, t.seconds, style); return; }
   const page = await loadPage(root + t.page);
   const atlasDir = root + (t.atlasDir ?? scene.atlasDir);
-  bg.transfertInto(page, await loadAtlas(atlasDir + '/' + page.atlasName), t.seconds);
+  bg.transfertInto(page, await loadAtlas(atlasDir + '/' + page.atlasName), t.seconds, style);
+}
+
+// A transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1} or {"kind": "DISSOLVE", "patches": 5,
+// "softness": 0.08, "stagger": 0.5} or {"kind": "THROUGH_COLOR", "color": "ffffff", "stagger": 0} or {"kind":
+// "FOG_CREEP", "color": "eef2f7", "stagger": 1}; none, or another kind: a plain fade (null), as ParallaxShots.style.
+function styleOf(style) {
+  const hex = h => [0, 2, 4].map(i => parseInt((h ?? 'ffffff').slice(i, i + 2), 16) / 255);
+  switch (style.kind) {
+    case 'DEPTH_STAGGER': return PlaxTransfertStyle.depthStagger(style.stagger ?? 0);
+    case 'DISSOLVE': return PlaxTransfertStyle.dissolve(style.patches ?? 5, style.softness ?? 0.08, style.stagger ?? 0);
+    case 'THROUGH_COLOR': return PlaxTransfertStyle.throughColor(hex(style.color), style.stagger ?? 0);
+    case 'FOG_CREEP': return PlaxTransfertStyle.fogCreep(hex(style.color), style.stagger ?? 0);
+    default: return null;
+  }
 }
 
 shots().then(() => say('shots: PASS'), e => say('FAIL: ' + (e.stack || e)))
