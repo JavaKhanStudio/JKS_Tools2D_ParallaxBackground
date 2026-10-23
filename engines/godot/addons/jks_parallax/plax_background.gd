@@ -907,11 +907,11 @@ func _draw_gradients(screen: Vector2) -> void:
 		_draw_gradient(Rect2(0, screen.y - bottom_h, screen.x, bottom_h), _gradient[2], _gradient[3])
 
 
+## Opaque, each channel cut to the byte libGDX's ShapeRenderer packs it to (Color.toFloatBits: (int)(255 * c)).
 func _draw_gradient(rect: Rect2, top: Color, bottom: Color) -> void:
-	top.a = 1
-	bottom.a = 1
-	_canvas.draw_polygon(
-		PackedVector2Array(
+	top = Color(floorf(255 * top.r) / 255, floorf(255 * top.g) / 255, floorf(255 * top.b) / 255)
+	bottom = Color(floorf(255 * bottom.r) / 255, floorf(255 * bottom.g) / 255, floorf(255 * bottom.b) / 255)
+	_canvas.draw_polygon(PackedVector2Array(
 			[rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]),
 		PackedColorArray([top, top, bottom, bottom]))
 
