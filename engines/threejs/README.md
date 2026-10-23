@@ -69,8 +69,9 @@ back), so a page looks as it does in the editor.
   libGDX stills; Chrome is headless). Needs Chrome (or `CHROME=`), python3 with Pillow, and what
   `tools/parallax-lab-shots.sh` needs.
 - `tools/mutate-effects.sh [MUTANT...]` — breaks one piece of the effects at a time (WAVE's ripple, FOG's patches,
-  SWELL's waves, `wrappedX`, `wrappedY`, the page fog's haze) and runs the round that should see it: each must FAIL
-  (r39: each failed, its worst still 7.9 to 68.6 / 255). Refuses to start on an uncommitted `plax.js`; restores it on
+  SWELL's waves, `wrappedX`, `wrappedY`, the page fog's haze; the dissolve's drift, the gradients' grade, the slots'
+  stagger) and runs the round that should see it: each must FAIL (r39, r40: each failed, its worst still 7.9 to
+  78.9 / 255). Refuses to start on an uncommitted `plax.js`; restores it on
   exit.
 - `tools/bench.sh [OUT_JSON]` — the latency on [`engines/rounds/bench`](../rounds/bench/round.json): each scene's load
   time, then 600 frames (act, render, a one-pixel `readPixels` to finish the GPU's work), best of 3 runs, into
