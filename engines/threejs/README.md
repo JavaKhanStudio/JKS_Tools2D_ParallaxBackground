@@ -3,14 +3,14 @@
 `src/plax.js` draws a page saved by the parallax editor (`.jplax`, `.plaxpj`, and its libGDX `.atlas`) in three.js
 (r170 or later), as the libGDX library in [`core/`](../../core) draws it. It is one ES module, ported from core through
 the Godot reader (which copies core line for line): scrolling, tiling on X and Y with pads and mirrors, `flipX`/`flipY`,
-`useOriginalSize`, the two gradients, zoom, resizing, plain cross-fades (`transfertInto`) and tints (`tintTo`). Each
+`useOriginalSize`, `SEQUENCE` layers (their cycles picked as core's `SequenceCycle` picks them, `setSequenceSeed` for a
+game's own seed), the two gradients, zoom, resizing, plain cross-fades (`transfertInto`) and tints (`tintTo`). Each
 texture keeps its atlas's filter, so a pixel-art page stays sharp. It does not read `.plax` (Kryo is Java's).
 
 It was born as Crypto en visuel's `lib/plax.js` (deux-generaux r195, r449), which drew Simon's calm-day page as the
 saga's sky; parallax-readers r34 brought it to core's numbers and checks it here.
 
-**Not ported yet**, each a task of its own, in the order the rounds need them: `SEQUENCE` (r38), `SHADER` and the page
-fog (r39), the transfer styles (r40), `EMPTY` layer hooks and `PARTICLES` (r41), `FLOOR`, `LURKER` and the animated
+**Not ported yet**, each a task of its own, in the order the rounds need them: `SHADER` and the page fog (r39), the transfer styles (r40), `EMPTY` layer hooks and `PARTICLES` (r41), `FLOOR`, `LURKER` and the animated
 patch (r42), dolly, towers and planets (r43), glint, `MIRROR` and detail levels (r44). A page with a layer of a kind it
 does not draw fails to load, with the layer named; an `EMPTY` layer draws nothing.
 
@@ -48,6 +48,7 @@ back), so a page looks as it does in the editor.
 
     src/plax.js            the reader: what a game copies
     tests/shots.html, .js  the frame runner: a round's stills, stepped as ParallaxShots steps them
+    tests/sequence_cycle.html, .js  the cycle check: drawCycle against the JVM's picks, PlaxSequence.draw against a walk
     tests/bench.html, .js  the latency runner (engines/rounds/bench)
     tests/demo.html        Calm scrolling, T cross-fades into OneNight, SPACE stops the scroll
     tests/vendor/three/    three.js r170 (MIT), for the tests and the demo only
@@ -57,8 +58,9 @@ back), so a page looks as it does in the editor.
 
 - `tools/frame-check.sh [ROUND_DIR...]` — the frame check: draws each round with libGDX and with three.js in headless
   Chrome, and compares them still by still at 2/255 (`build/threejs/<round>/compare.png`, `report.txt`). Without
-  arguments it plays the rounds it ports: `round1`, `conformance`, `pixelart` (worst still 0.22 / 255 on the GPU here,
-  0.25 on SwiftShader). `BREAK=scroll` must fail it. CI's `threejs-frames` job runs it under `xvfb-run` (for the
+  arguments it plays the rounds it ports: `round1`, `conformance`, `pixelart`, `sequence` (worst still 0.26 / 255 on the
+  GPU here, sequence's cross-fade). With `sequence` it also opens `tests/sequence_cycle.html`: every pick of
+  `engines/rounds/sequence/picks.json` (the JVM's `SequenceCycle`) and the slots drawn against a walk over all of them. `BREAK=scroll` must fail it. CI's `threejs-frames` job runs it under `xvfb-run` (for the
   libGDX stills; Chrome is headless). Needs Chrome (or `CHROME=`), python3 with Pillow, and what
   `tools/parallax-lab-shots.sh` needs.
 - `tools/bench.sh [OUT_JSON]` — the latency on [`engines/rounds/bench`](../rounds/bench/round.json): each scene's load

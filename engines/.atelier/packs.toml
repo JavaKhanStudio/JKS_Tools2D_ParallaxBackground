@@ -114,8 +114,11 @@ sort = 64
 context = """
 engines/threejs/src/plax.js is an ES module port of core/ (libGDX, the reference) for three.js r170+, written from the Godot
 port (engines/godot/addons/jks_parallax), which copies core LINE FOR LINE: port from the matching .gd file, keep its names
-(camelCase) and order, and AGENTS.md "Runtime" says which round proves each piece. It draws each layer as one Mesh of
-quads (class Quads, SpriteBatch for one texture) in its own OrthographicCamera, in screen pixels, y down.
+(camelCase) and order, and AGENTS.md "Runtime" says which round proves each piece. It draws each layer as a Group of
+quads (class Quads, SpriteBatch: one Mesh per run of one texture, a texture switch starts the next run, so draw order
+holds) in its own OrthographicCamera, in screen pixels, y down. A ported .gd class of statics (PlaxSequence) is a plain
+object of functions there; a new one's check that has no stills is a page too (tests/sequence_cycle.html, run by
+frame-check.sh with its round).
 COLOURS ARE LIBGDX'S: textures decoded with createImageBitmap(premultiplyAlpha 'none', colorSpaceConversion 'none'),
 NoColorSpace, the renderer's output LinearSRGBColorSpace while it draws: no colour management anywhere. Blending is
 SRC_ALPHA, ONE_MINUS_SRC_ALPHA on the colour and ONE, ONE_MINUS_SRC_ALPHA on the alpha: an alpha left under 1 in the

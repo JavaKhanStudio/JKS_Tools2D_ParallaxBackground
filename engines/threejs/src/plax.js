@@ -25,10 +25,16 @@
 //   bg.transfertInto(await loadPage(url), await loadAtlas(atlasUrl), 2)
 //   bg.tintTo([1, 0.6, 0.4, 1], 2)
 //
+// A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set (PlaxSequence), by
+// drawCycle from the page's seed: the same picks as core's SequenceCycle. The cycle is the layer's tile. A game draws
+// a new ground each run with its own seed, XORed with each layer's stored one, as ParallaxPageReader.setSequenceSeed:
+//
+//   bg.setSequenceSeed(seed)                           // Java's int: 32 bits; clearSequenceSeed() goes back
+//
 // Ported: IMAGE layers (decal, sizeRatio, flips, speeds, speedXAtRest, pads, mirror, repeat on X and Y,
-// useOriginalSize), the two gradients, plain cross-fades, tints, zoom (not the dolly), resizing. EMPTY layers draw
-// nothing. A page with a layer of another kind (SEQUENCE, SHADER, PARTICLES, FLOOR, LURKER) fails to load, as in
-// libGDX a page from a newer version does: they are ported in the order engines/rounds needs them.
+// useOriginalSize), SEQUENCE layers, the two gradients, plain cross-fades, tints, zoom (not the dolly), resizing.
+// EMPTY layers draw nothing. A page with a layer of another kind (SHADER, PARTICLES, FLOOR, LURKER) fails to load, as
+// in libGDX a page from a newer version does: they are ported in the order engines/rounds needs them.
 import * as THREE from 'three';
 
 export const WORLD_WIDTH = 40;
@@ -39,9 +45,12 @@ const LAYER_DEFAULTS = {
   parallaxScalingSpeedX: 0, parallaxScalingSpeedY: 0, speedXAtRest: 0, sizeRatio: 1,
   decal_X_Ratio: 0, decal_Y_Ratio: 0, padX: 0, padXFactor: 0, padY: 0, padYFactor: 0,
   mirror: false, kind: 'IMAGE', name: '',
+  sequenceSegments: [], sequenceSeed: 0, sequenceLength: 16,
 };
-// The kinds this reader draws; another fails the page's load.
-const KINDS = ['IMAGE', 'EMPTY'];
+// The kinds this reader draws; another fails the page's load. A SEQUENCE layer's cycle is drawn by drawCycle.
+const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE'];
+// What a seed of 0 starts from (SequenceCycle.ZERO_SEED): xorshift never leaves 0.
+const ZERO_SEED = 0x6D2B79F5;
 const WHITE = [1, 1, 1, 1];
 
 // --- reading ---------------------------------------------------------------------------------------------------------
@@ -150,6 +159,11 @@ export function readPage(json, inside) {
     if (Array.isArray(inside) && i < inside.length && !inside[i]) return;
     const layer = { ...LAYER_DEFAULTS };
     for (const key in m) if (m[key] !== null && m[key] !== undefined) layer[key] = m[key];
+    // A seed is the int Java stored; a segment without a weight weighs 1.
+    layer.sequenceSeed |= 0;
+    layer.sequenceSegments = layer.sequenceSegments.map(segment => ({
+      regionName: segment.regionName ?? '', regionPosition: segment.regionPosition ?? 0, weight: segment.weight ?? 1,
+    }));
     if (!KINDS.includes(layer.kind)) {
       throw new Error(`plax: layer ${i} (${layer.name || layer.regionName}) is a ${layer.kind} layer: not ported to `
         + 'three.js yet (engines/threejs/README.md)');
@@ -157,6 +171,40 @@ export function readPage(json, inside) {
     page.layers.push(layer);
   });
   return page;
+}
+
+// SequenceCycle.next: the 32-bit xorshift step (13, 17, 5) of `state`, both unsigned 32-bit ints (0 .. 2^32 - 1).
+// JS shifts work on 32 bits already: << and ^ give a signed int, >>> 0 brings it back unsigned, and a right shift of
+// an unsigned value is Java's >>>.
+export function sequenceNext(state) {
+  state = (state ^ (state << 13)) >>> 0;
+  state = (state ^ (state >>> 17)) >>> 0;
+  state = (state ^ (state << 5)) >>> 0;
+  return state;
+}
+
+// SequenceCycle.draw, bit for bit: `length` segment indexes picked from `seed` (Java's int: negative or not) and
+// `weights`, one per segment. For each slot the state steps once and (state >>> 1) % total walks the weights; a weight
+// of 0 or less is never picked, and when none is above 0 each weighs 1. Integers only: a float would pick otherwise.
+export function drawCycle(seed, weights, length) {
+  let total = 0;
+  for (const weight of weights) if (weight > 0) total += weight;
+  let state = seed >>> 0;
+  if (state === 0) state = ZERO_SEED;
+  const cycle = new Int32Array(Math.max(1, length));
+  for (let slot = 0; slot < cycle.length; slot++) {
+    state = sequenceNext(state);
+    let pick = (state >>> 1) % (total > 0 ? total : weights.length);
+    let segment = 0;
+    while (segment < weights.length - 1) {
+      const weight = total > 0 ? Math.max(weights[segment], 0) : 1;
+      if (pick < weight) break;
+      pick -= weight;
+      segment++;
+    }
+    cycle[slot] = segment;
+  }
+  return cycle;
 }
 
 async function fetchOk(url) {
@@ -209,6 +257,9 @@ export class PlaxBackground {
     this._gradientFading = false;
     this._topHalfSize = 0.5;
     this._bottomHalfSize = 0.5;
+    // The game's seed for the SEQUENCE layers, when _hasSequenceSeed (setSequenceSeed).
+    this._sequenceSeed = 0;
+    this._hasSequenceSeed = false;
     this._gradients = gradientMesh();
     this.scene.add(this._gradients);
   }
@@ -255,6 +306,34 @@ export class PlaxBackground {
       else this._fadeSpeed = 1 / seconds;
     }
     this._fadeGradients([page.topHalfTop, page.topHalfBottom, page.bottomHalfTop, page.bottomHalfBottom], seconds);
+  }
+
+  // Draws every SEQUENCE layer's cycle, on screen and fading in, from `seed` XOR the seed its page stores rather than
+  // from the stored one alone: a new ground each run (ParallaxPageReader.setSequenceSeed). `seed` is Java's int: 32 bits.
+  setSequenceSeed(seed) {
+    this._sequenceSeed = seed | 0;
+    this._hasSequenceSeed = true;
+    this._drawCycles();
+  }
+
+  // Back to the seeds the pages store: what the editor previews.
+  clearSequenceSeed() {
+    this._hasSequenceSeed = false;
+    this._drawCycles();
+  }
+
+  _drawCycles() {
+    for (const l of [...this.layers, ...this.transferLayers]) this._drawCycleOf(l);
+  }
+
+  // Draws a SEQUENCE layer's cycle from the seed this background gives it, when it was drawn from another.
+  _drawCycleOf(l) {
+    if (l.model.kind !== 'SEQUENCE') return;
+    const seed = (this._hasSequenceSeed ? this._sequenceSeed ^ l.model.sequenceSeed : l.model.sequenceSeed) >>> 0;
+    if (l.drawnSeed === seed) return;
+    l.drawnSeed = seed;
+    PlaxSequence.layOut(l, seed);
+    this._sizeLayer(l);
   }
 
   isInTransfer() { return this.transferLayers.length > 0; }
@@ -338,11 +417,20 @@ export class PlaxBackground {
   _buildLayers(page, atlas) {
     const built = [];
     for (const model of page.layers) {
+      if (model.kind === 'SEQUENCE') {
+        const sequence = PlaxSequence.build(this, model, page, atlas);
+        if (!sequence) continue;
+        this._drawCycleOf(sequence);
+        this._resetPosition(sequence);
+        this.scene.add(sequence.quads.group);
+        built.push(sequence);
+        continue;
+      }
       if (model.kind === 'EMPTY') {
-        const l = { model, distanceX: 0, distanceY: 0, quads: new Quads(null) };
+        const l = { model, distanceX: 0, distanceY: 0, quads: new Quads() };
         this._sizeLayer(l);
         this._resetPosition(l);
-        this.scene.add(l.quads.mesh);
+        this.scene.add(l.quads.group);
         built.push(l);
         continue;
       }
@@ -352,24 +440,34 @@ export class PlaxBackground {
         continue;
       }
       if (region.rotate) console.warn(`plax: region '${model.regionName}' is packed rotated, which is not supported: drawn as is`);
-      const l = measureRegion(region, page.useOriginalSize);
-      l.model = model;
-      l.distanceX = l.distanceY = 0;
-      l.incoming = false;
-      l.quads = new Quads(region.page.texture);
-      this.scene.add(l.quads.mesh);
-      this._sizeLayer(l);
+      const l = this._buildLayer(model, region, page.useOriginalSize);
       this._resetPosition(l);
+      this.scene.add(l.quads.group);
       built.push(l);
     }
     return built;
   }
 
-  // A layer is sizeRatio worlds wide; its height follows the image. An EMPTY one is sizeRatio worlds high.
+  _buildLayer(model, region, useOriginalSize) {
+    const l = measureRegion(region, useOriginalSize);
+    l.model = model;
+    l.distanceX = l.distanceY = 0;
+    l.incoming = false;
+    l.quads = new Quads();
+    this._sizeLayer(l);
+    return l;
+  }
+
+  // A layer is sizeRatio worlds wide; its height follows the image. An EMPTY one is sizeRatio worlds high. A SEQUENCE
+  // one is as high as its first segment makes it, and as wide as its cycle, without the padX after the last slot
+  // (ParallaxLayer.getWidth).
   _sizeLayer(l) {
     l.width = this.worldWidth * l.model.sizeRatio;
     l.height = l.model.kind === 'EMPTY' ? this.worldHeight * l.model.sizeRatio
       : l.imageH * (this.worldWidth / l.imageW) * l.model.sizeRatio;
+    if (l.model.kind === 'SEQUENCE' && l.edges) {
+      l.width = l.height * l.edges[l.cycle.length] + (l.cycle.length - 1) * l.model.padX;
+    }
   }
 
   _resetPosition(l) {
@@ -394,7 +492,7 @@ export class PlaxBackground {
 
   _drop(layers) {
     for (const l of layers) {
-      this.scene.remove(l.quads.mesh);
+      this.scene.remove(l.quads.group);
       l.quads.dispose();
     }
   }
@@ -491,6 +589,7 @@ export class PlaxBackground {
     const alpha = this.tint[3] * this._alphaOf(l);
     if (!(alpha > 0)) return;
     l.quads.setColor(this.tint, alpha);
+    this._quads = l.quads;
     // Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
     const z = this.zoom;
     this._ppu = this.width / (this.worldWidth * z);
@@ -509,39 +608,147 @@ export class PlaxBackground {
   // (x 0..viewW, y 0..viewH).
   _tile(l, x, y, onX, onY, mirror, viewW, viewH) {
     const { width, height } = l;
-    if (width <= 0 || height <= 0) return;
+    const sequence = l.model.kind === 'SEQUENCE';
+    // A SEQUENCE layer whose pads outweigh its segments is no wider than 0, its slots still drawn: once, below.
+    if ((width <= 0 && !sequence) || height <= 0) return;
+    // What is drawn of a tile, from its corner: the box, or a SEQUENCE layer's slots (ParallaxLayer.getCycleLeft/Right).
+    const left = sequence ? PlaxSequence.cycleLeft(l) : 0;
+    const right = sequence ? PlaxSequence.cycleRight(l) : width;
     // A step <= 0 (a negative padding larger than the image) can't tile: the layer is drawn once.
     const stepX = width + l.model.padX, stepY = height + l.model.padY;
     const tileX = onX && stepX > 0, tileY = onY && stepY > 0;
-    const startX = tileX ? x - Math.ceil((x + width) / stepX) * stepX : x;
+    const startX = tileX ? x - Math.ceil((x + right) / stepX) * stepX : x;
     const startY = tileY ? y - Math.ceil((y + height) / stepY) * stepY : y;
-    const countX = tileX ? Math.ceil((viewW - startX) / stepX) + 1 : 1;
+    const countX = tileX ? Math.ceil((viewW - left - startX) / stepX) + 1 : 1;
     const countY = tileY ? Math.ceil((viewH - startY) / stepY) + 1 : 1;
     for (let row = 0; row < countY; row++) {
       const drawY = startY + row * stepY;
       if (drawY + height <= 0 || drawY >= viewH) continue;
       for (let column = 0; column < countX; column++) {
         const drawX = startX + column * stepX;
-        if (drawX + width <= 0 || drawX >= viewW) continue;
+        if (drawX + right <= 0 || drawX + left >= viewW) continue;
         let fx = l.model.flipX, fy = l.model.flipY;
         // Mirrored: flipped vertically when tiling on X, horizontally when tiling on Y.
         if (mirror) { if (onX) fy = !fy; else fx = !fx; }
-        this._drawRegion(l, drawX, drawY, width, height, fx, fy);
+        if (sequence) PlaxSequence.draw(this, l, drawX, drawY, 0, viewW, fx, fy);
+        else this._drawRegion(l, drawX, drawY, width, height, fx, fy);
       }
     }
   }
 
-  // The packed image of `l` in a box at (x, y); a flip mirrors where it sits in the box too.
+  // The packed image of `l` (a layer, or a sequence's segment) in a box at (x, y); a flip mirrors where it sits in the
+  // box too. Into the quads of the layer being drawn.
   _drawRegion(l, x, y, width, height, fx, fy) {
     const drawW = width * l.packedW, drawH = height * l.packedH;
     const left = x + width * (fx ? 1 - l.trimLeft - l.packedW : l.trimLeft);
     const bottom = y + height * (fy ? 1 - l.trimBottom - l.packedH : l.trimBottom);
     const ppu = this._ppu, top = this.height - (bottom + drawH) * ppu;
-    l.quads.add(left * ppu, top, drawW * ppu, drawH * ppu, l.src, fx, fy);
+    this._quads.add(l.region.page.texture, left * ppu, top, drawW * ppu, drawH * ppu, l.src, fx, fy);
   }
 }
 
-// A region's box: where its packed image sits in it, the image's size, and the texels drawn of it. useOriginalSize: a
+// --- SEQUENCE layers (PlaxSequence: ParallaxLayer's sequence half) ----------------------------------------------------
+
+// A SEQUENCE layer's cycle: its segments measured when the layer is built, its slots laid out when its seed changes,
+// never in a frame, and drawn through the background's _drawRegion.
+export const PlaxSequence = {
+  // WholePage_Model.buildLayer, ParallaxLayer.measureSegments: its first segment sizes it as an image layer's region
+  // does, every segment is as wide as the layer's height and its own image make it, the first as wide as the layer.
+  // Null when a segment's region is missing. Its cycle is not laid out yet (layOut).
+  build(bg, model, fromPage, fromAtlas) {
+    if (!model.sequenceSegments.length) {
+      console.error(`plax: the sequence layer '${model.name}' has no segments`);
+      return null;
+    }
+    const segments = [], weights = [];
+    for (const named of model.sequenceSegments) {
+      const region = fromAtlas?.findRegion(named.regionName, named.regionPosition);
+      if (!region) {
+        console.error(`plax: region '${named.regionName}' #${named.regionPosition} of the sequence layer `
+          + `'${model.name}' not found in ${fromPage.atlasName}`);
+        return null;
+      }
+      if (region.rotate) console.warn(`plax: region '${named.regionName}' is packed rotated, which is not supported: drawn as is`);
+      segments.push(measureRegion(region, fromPage.useOriginalSize));
+      weights.push(named.weight);
+    }
+    // The first segment sizes the layer, as an image layer's region does.
+    const l = bg._buildLayer(model, segments[0].region, fromPage.useOriginalSize);
+    l.segments = segments;
+    l.weights = weights;
+    l.narrowest = Infinity;
+    for (const segment of segments) l.narrowest = Math.min(l.narrowest, segment.aspect);
+    return l;
+  },
+
+  // The layer's cycle from `seed`, and where each slot starts, without the pads, in layer heights: slot i at
+  // height * edges[i] + i * padX. One edge more than the slots.
+  layOut(l, seed) {
+    l.cycle = drawCycle(seed, l.weights, l.model.sequenceLength);
+    const edges = new Float64Array(l.cycle.length + 1);
+    let edge = 0;
+    for (let slot = 0; slot < l.cycle.length; slot++) {
+      edges[slot] = edge;
+      edge += l.segments[l.cycle[slot]].aspect;
+    }
+    edges[l.cycle.length] = edge;
+    l.edges = edges;
+  },
+
+  // ParallaxLayer.getCycleLeft: where a SEQUENCE layer's leftmost slot starts, from the tile's corner; below 0 only
+  // when a negative padX wider than a segment takes slots back past it.
+  cycleLeft(l) {
+    if (PlaxSequence.ordered(l)) return 0;
+    let left = 0;
+    for (let slot = 0; slot < l.cycle.length; slot++) left = Math.min(left, l.height * l.edges[slot] + slot * l.model.padX);
+    return left;
+  },
+
+  // ParallaxLayer.getCycleRight: where its rightmost slot ends; the layer's width unless slots go back.
+  cycleRight(l) {
+    if (PlaxSequence.ordered(l)) return l.width;
+    let right = -Infinity;
+    for (let slot = 0; slot < l.cycle.length; slot++) {
+      right = Math.max(right, l.height * (l.edges[slot] + l.segments[l.cycle[slot]].aspect) + slot * l.model.padX);
+    }
+    return right;
+  },
+
+  // Every slot starts right of the one before: no negative padX outweighs the narrowest segment.
+  ordered(l) {
+    return l.height * l.narrowest + l.model.padX > 0;
+  },
+
+  // ParallaxLayer.drawCycle: the slots of a SEQUENCE layer's cycle, starting at (x, y), that reach between `fromX` and
+  // `toX`, each drawn by `bg`'s _drawRegion. A binary search finds the first, then the walk stops past `toX`, so a
+  // long cycle costs only what shows. A flip mirrors each segment in its own slot; the slots keep their order.
+  draw(bg, l, x, y, fromX, toX, fx, fy) {
+    const { height, edges, cycle } = l, pad = l.model.padX, slots = cycle.length;
+    // A negative padX wider than a segment makes the edges go back: then every slot is looked at.
+    const inOrder = PlaxSequence.ordered(l);
+    let first = 0;
+    if (inOrder) {
+      let last = slots;
+      while (first < last) {
+        const middle = (first + last) >> 1;
+        if (x + height * edges[middle + 1] + middle * pad > fromX) last = middle;
+        else first = middle + 1;
+      }
+    }
+    for (let slot = first; slot < slots; slot++) {
+      const left = x + height * edges[slot] + slot * pad;
+      if (left >= toX) {
+        if (inOrder) break;
+        continue;
+      }
+      const segment = l.segments[cycle[slot]], width = height * segment.aspect;
+      if (left + width <= fromX) continue;
+      bg._drawRegion(segment, left, y, width, height, fx, fy);
+    }
+  },
+};
+
+// A region's box: where its packed image sits in it, the image's size, its width in heights, and the texels drawn of it. useOriginalSize: a
 // region packed with its whitespace stripped keeps its original size, and its packed image is drawn at its offset
 // inside it. Off: the packed image is stretched over the whole box.
 function measureRegion(region, useOriginalSize) {
@@ -554,21 +761,69 @@ function measureRegion(region, useOriginalSize) {
     m.imageW = region.originalWidth;
     m.imageH = region.originalHeight;
   }
+  m.aspect = m.imageW / m.imageH;
   // Half a texel in from each edge, as ParallaxPageReader draws a region: its neighbours in the atlas never bleed in.
   const inset = region.width >= 2 && region.height >= 2 ? 0.5 : 0;
   m.src = { x: region.x + inset, y: region.y + inset, w: region.width - 2 * inset, h: region.height - 2 * inset };
   return m;
 }
 
-// The quads of one layer, refilled every update: libGDX's SpriteBatch for one texture and one colour.
+// The quads of one layer, refilled every update: libGDX's SpriteBatch, one colour. A run of quads on one texture is
+// one Mesh; a quad on another texture starts the next run, as SpriteBatch flushes on a texture switch, so a sequence
+// whose segments sit on several atlas pages keeps its draw order. The runs are drawn in order inside `group`.
 class Quads {
-  constructor(texture) {
-    this.texture = texture;
+  constructor() {
+    this.group = new THREE.Group();
+    this.runs = [];
+    this.used = 0;
+    this.color = new THREE.Color(1, 1, 1);
+    this.opacity = 1;
+  }
+
+  begin(order) {
+    for (const run of this.runs) run.count = 0;
+    this.used = 0;
+    this.group.renderOrder = order;
+  }
+
+  setColor(rgb, alpha) {
+    this.color.setRGB(rgb[0], rgb[1], rgb[2]);
+    this.opacity = alpha;
+  }
+
+  // A quad at (x, y) in screen pixels, y down, `src` the texels drawn of `texture`, mirrored by fx, fy.
+  add(texture, x, y, w, h, src, fx, fy) {
+    let run = this.used ? this.runs[this.used - 1] : null;
+    if (!run || run.texture !== texture) {
+      run = this.runs[this.used] ??= new QuadRun(this.runs.length);
+      if (run.texture !== texture) run.setTexture(texture);
+      run.material.color.copy(this.color);
+      run.material.opacity = this.opacity;
+      if (run.mesh.parent !== this.group) this.group.add(run.mesh);
+      this.used++;
+    }
+    run.add(x, y, w, h, src, fx, fy);
+  }
+
+  end() {
+    this.runs.forEach((run, i) => run.end(i < this.used));
+  }
+
+  dispose() {
+    for (const run of this.runs) run.dispose();
+    this.runs = [];
+  }
+}
+
+// One run of Quads: one texture, one draw.
+class QuadRun {
+  constructor(order) {
+    this.texture = null;
     this.count = 0;
     this.capacity = 0;
     this.geometry = new THREE.BufferGeometry();
     this.material = new THREE.MeshBasicMaterial({
-      map: texture, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
+      transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
       // SpriteBatch's SRC_ALPHA, ONE_MINUS_SRC_ALPHA on the colour; the alpha stays 1, the background opaque: an
       // alpha under 1 is un-premultiplied when the canvas is shown or saved, and brightens what is half transparent.
       blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
@@ -577,7 +832,14 @@ class Quads {
     });
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = order;
     this._grow(4);
+  }
+
+  setTexture(texture) {
+    this.texture = texture;
+    this.material.map = texture;
+    this.material.needsUpdate = true;
   }
 
   _grow(capacity) {
@@ -594,17 +856,6 @@ class Quads {
     this.mesh.geometry = this.geometry;
   }
 
-  begin(order) {
-    this.count = 0;
-    this.mesh.renderOrder = order;
-  }
-
-  setColor(rgb, alpha) {
-    this.material.color.setRGB(rgb[0], rgb[1], rgb[2]);
-    this.material.opacity = alpha;
-  }
-
-  // A quad at (x, y) in screen pixels, y down, `src` the texels drawn of the texture, mirrored by fx, fy.
   add(x, y, w, h, src, fx, fy) {
     if (this.count === this.capacity) {
       const pos = this.position, uv = this.uv;
@@ -621,10 +872,10 @@ class Quads {
     this.uv.set([u0, v0, u1, v0, u1, v1, u0, v1], i * 8);
   }
 
-  end() {
+  end(used) {
     this.geometry.setDrawRange(0, this.count * 6);
     this.geometry.attributes.position.needsUpdate = this.geometry.attributes.uv.needsUpdate = true;
-    this.mesh.visible = this.count > 0;
+    this.mesh.visible = used && this.count > 0;
   }
 
   dispose() {

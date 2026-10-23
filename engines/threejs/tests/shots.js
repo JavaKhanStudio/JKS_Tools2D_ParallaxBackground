@@ -1,8 +1,8 @@
 // Stills of every scene of a lab round, as shots/.../ParallaxShots takes them with libGDX: the same page, the same 60
 // units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in (engines/godot/tests/shots.gd does the same). A scene's
 // "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same step as the lab, its "speedY" scrolls
-// it up too, its "resize" resizes the screen mid-scroll and its "zoom": [1, 0.5] zooms the camera straight from the
-// first at 0 s to the second at 12 s. engines/threejs/tools/frame-check.sh serves the repository with
+// it up too, its "resize" resizes the screen mid-scroll, its "sequenceSeed" draws the SEQUENCE layers from that game
+// seed and its "zoom": [1, 0.5] zooms the camera straight from the first at 0 s to the second at 12 s. engines/threejs/tools/frame-check.sh serves the repository with
 // engines/threejs/tools/serve.py and opens
 //   shots.html?round=<round dir>
 // which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done.
@@ -37,6 +37,8 @@ async function shots() {
   for (const scene of round.scenes) {
     resize(1280, 720);
     await bg.load(root + scene.page, root + scene.atlasDir);
+    if (scene.sequenceSeed !== undefined) bg.setSequenceSeed(scene.sequenceSeed);
+    else bg.clearSequenceSeed();
     bg.tintTo([1, 1, 1, 1], 0);
     bg.speedConstantX = SPEED;
     bg.speedConstantY = scene.speedY ?? 0;

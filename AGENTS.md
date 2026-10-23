@@ -12,7 +12,7 @@ repair.
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `engines/godot/tools/frame-check.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. Split out of the grading lab's `--shots` mode, which the lab no longer has (r157). | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/rounds/reader/` | `:rounds` (r312): `Round`, a reader round's `round.json` read once for `:shots` and `:jme`'s frame runner (Godot's `tests/shots.gd` reads it a third time). A new round field goes there. Gdx core only. Not published. | 17 | `./gradlew :rounds:build`, then the frame checks |
-| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE layers, cross-fades, tints so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance and pixelart, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
+| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE and SEQUENCE layers, cross-fades, tints so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart and sequence, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `engines/jme/tools/frame-check.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:jme:run` and `:shots:run`
@@ -88,7 +88,8 @@ repair.
 - `engines/threejs/src/plax.js` ports the same pieces from `plax_background.gd`, `plax_page.gd` and `plax_atlas.gd`
   (`_actLayer`, `_tile`, `_drawRegion`, the cross-fade, the tint, the gradients; `loadAtlas`, `readPage`): change how a
   page scrolls, fades or draws, change it there too, and run `engines/threejs/tools/frame-check.sh` (`round1`,
-  `conformance` and `pixelart` prove it; `pixelart` is its cross-fade round until the transfer round plays, r40). A kind
+  `conformance`, `pixelart` and `sequence` prove it; `pixelart` is its cross-fade round until the transfer round plays,
+  r40; a SEQUENCE layer's pieces are `PlaxSequence`'s, from `plax_sequence.gd`). A kind
   it does not draw throws in `readPage` (`KINDS`): the rounds that need one are its 'unsupported' entries in
   `tools/readers-health/health.py`, each naming its task.
 - `engines/jme` runs `ParallaxPageReader` itself, through `JmeBatch`, which implements only
@@ -176,7 +177,9 @@ repair.
   copy is `plax_page.gd`'s `draw_cycle` (32-bit masked) and `plax_sequence.gd`'s `draw`:
   `engines/godot/tests/sequence_cycle.gd` holds them to the JVM's picks (`engines/rounds/sequence/picks.json`, written by
   `tools/r183-sequence/PickTable.java`) and to a walk over every slot; `engines/godot/tools/frame-check.sh` runs it with the
-  `sequence` round.
+  `sequence` round. The three.js copy is `plax.js`'s `drawCycle`/`sequenceNext` (`>>> 0` after every shift) and
+  `PlaxSequence.draw`: `engines/threejs/tests/sequence_cycle.html` holds them to the same, run by
+  `engines/threejs/tools/frame-check.sh` with the `sequence` round.
 - A `FLOOR` layer (r275, format 11) is drawn row by row, each row at its own speed and distance
   (`ParallaxLayer.measureFloor`/`drawFloor`, its strips cut when a setting changes, never in a frame), and
   `ParallaxPageReader.plant` moves every layer in front of it at the speed of the row under its foot, every `act()`,
