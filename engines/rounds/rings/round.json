@@ -1,0 +1,46 @@
+{
+ "round": "rings",
+ "about": "A page drawn round a 3D world as rings (parallax-readers r47, docs/page-as-3d-sky.md): no stills, numbers. Each scene is a page and the options a 3D scene gives core's ParallaxRings (front, far, foot, lift, scale, pageDegrees, fogStrength; fogStrength left out is the page's own). engines/rounds/reader's RingsRound writes core's numbers (./gradlew :rounds:rings -Pround=engines/rounds/rings -Pout=OUT: OUT/gdx/<id>.json); a 3D reader writes its own as OUT/<reader>/<id>.json, and tools/compare-rings.py OUT <reader> compares them.",
+ "scenes": [
+  {
+   "id": "g01",
+   "page": "engines/rounds/round1/s10.jplax",
+   "atlasDir": "core/test-data/samples/transfer",
+   "name": "calm-depth",
+   "about": "calm-day (s10 is the saga's sky page, the same layers) at the library's depths: the front band at 330, the back 9.1 times as far, the page's foot at 50",
+   "rings": {"front": 330, "foot": 50}
+  },
+  {
+   "id": "g02",
+   "page": "engines/rounds/round1/s10.jplax",
+   "atlasDir": "core/test-data/samples/transfer",
+   "name": "calm-saga",
+   "about": "calm-day as deux-generaux lib/saga/sky.js draws it: compressed into 330..760, lowered by 2 and squeezed to 0.7 onto a ridge at 50",
+   "rings": {"front": 330, "far": 760, "foot": 50, "lift": -2, "scale": 0.7}
+  },
+  {
+   "id": "g03",
+   "page": "engines/rounds/fog/f02.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "fog-sequence-padded",
+   "about": "f02: SEQUENCE and SHADER layers, pads, the page's own fog of 0.06",
+   "rings": {"front": 200}
+  },
+  {
+   "id": "g04",
+   "page": "engines/rounds/planet/p01.jplax",
+   "atlasDir": "core/test-data/floor",
+   "name": "still-sky",
+   "about": "p01: a still layer (infinitely far, drawn first, on the sky) and gradients of 0.6 and 0.4; its planet is a 2D setting the rings ignore",
+   "rings": {"front": 100, "far": 400}
+  },
+  {
+   "id": "g05",
+   "page": "engines/rounds/effects/e01.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "empty-tall",
+   "about": "e01: EMPTY layers (no ring), pads, the page 60 degrees high",
+   "rings": {"front": 150, "pageDegrees": 60}
+  }
+ ]
+}

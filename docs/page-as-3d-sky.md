@@ -96,5 +96,13 @@ Simon's answers (r35, 23 Oct 2026), each the first option:
    to keep the look he picked on deux-generaux r339.
 3. **One `ParallaxRings` in core**, ported line for line by each reader and checked as JSON against core's numbers.
 
+**Built so far** (r47): `core/src/jks/tools2d/parallax/ParallaxRings.java`, its `RingsCases`, and the rings round
+`engines/rounds/rings` (calm-day at the library's depth and as the saga draws it, a SEQUENCE and SHADER page with pads
+and fog, a still layer, EMPTY layers): `./gradlew :rounds:rings` writes core's numbers, `tools/compare-rings.py` judges
+a reader's. Its g02 gives sky.js's radii, heights and repeat counts for calm-day. Two choices of r47 a port keeps: the
+page's height is its world's at 16:9 (a ring has no screen), and a still layer is infinitely far (radius null in the
+JSON), drawn on the sky round the camera. A band's scroll is the 2D reader's own: its image is offset round the ring by
+its layer's `currentDistanceX / totalWidth`, a tile being `1 / repeat` of it.
+
 The build: r47 (`ParallaxRings` in core and the ring round), then r48 (three.js and its lab, shown to Simon), then
 r49 (Godot) and r50 (jME).

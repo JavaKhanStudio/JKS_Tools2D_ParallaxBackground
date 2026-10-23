@@ -20,3 +20,13 @@ sourceSets {
 dependencies {
     api project(':core')
 }
+
+// The rings round's reference numbers (parallax-readers r47): core's ParallaxRings for each scene of a rings round,
+// OUT/gdx/<id>.json. No window, no GL. ./gradlew :rounds:rings -Pround=engines/rounds/rings -Pout=build/rings
+tasks.register('rings', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'jks.tools2d.parallax.rounds.RingsRound'
+    workingDir = rootProject.projectDir
+    rootProject.headless(it)
+    args = [project.findProperty('round') ?: 'engines/rounds/rings', project.findProperty('out') ?: 'build/rings']
+}

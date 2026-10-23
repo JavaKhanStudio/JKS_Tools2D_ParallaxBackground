@@ -38,11 +38,13 @@ READERS = [
     {'id': 'godot', 'name': 'Godot 4', 'folder': 'engines/godot', 'role': 'a GDScript port of core, line for line',
      'needs': 'godot', 'check': 'engines/godot/tools/frame-check.sh', 'jobs': ['Godot frames against libGDX'],
      'watch': ['engines/godot', 'core/src', 'engines/rounds/reader'],
-     'run': 'engines/godot/tools/frame-check.sh && engines/godot/tools/bench.sh', 'bench': 'engines/godot/tools/bench.sh'},
+     'run': 'engines/godot/tools/frame-check.sh && engines/godot/tools/bench.sh', 'bench': 'engines/godot/tools/bench.sh',
+     'unsupported': {'engines/rounds/rings': ('r49', 'the rings (a page round a 3D world) are not ported yet', 'rings')}},
     {'id': 'jme', 'name': 'jMonkeyEngine 3', 'folder': 'engines/jme', 'role': "runs core's reader as is, through JmeBatch",
      'needs': 'java', 'check': 'engines/jme/tools/frame-check.sh', 'jobs': ['jME frames against libGDX'],
      'watch': ['engines/jme', 'core/src', 'engines/rounds/reader'],
-     'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh'},
+     'run': 'engines/jme/tools/frame-check.sh && engines/jme/tools/bench.sh', 'bench': 'engines/jme/tools/bench.sh',
+     'unsupported': {'engines/rounds/rings': ('r50', 'the rings (a page round a 3D world) are not ported yet', 'rings')}},
     {'id': 'threejs', 'name': 'three.js', 'folder': 'engines/threejs',
      'role': "an ES module port of core for three.js, drawn in headless Chrome (r34, from Crypto en visuel's reader)",
      'needs': 'google-chrome', 'check': 'engines/threejs/tools/frame-check.sh', 'jobs': ['three.js frames against libGDX'],
@@ -57,6 +59,7 @@ READERS = [
          'engines/rounds/dolly': ('r43', 'the dolly is not ported yet', 'dolly'),
          'engines/rounds/tower': ('r43', 'towers are not ported yet', 'tower'),
          'engines/rounds/planet': ('r43', 'planets are not ported yet', 'planet'),
+         'engines/rounds/rings': ('r48', 'the rings (a page round a 3D world) are not ported yet', 'rings'),
          # And the shaders round's s12-s18 (frame-check.sh's SKIP): the features mirror and detail are drawn there too.
          'engines/rounds/glint': ('r44', 'glint, MIRROR and detail levels are not ported yet', 'glint', 'mirror', 'detail'),
      }},
@@ -144,7 +147,8 @@ def scene_verdicts(reader, round_dir):
             was = out.get(sid, ('PASS', 0.0))
             out[sid] = ('FAIL' if bad or was[0] == 'FAIL' else 'PASS', max(was[1], mean))
             continue
-        m = re.match(r'(\S+?)-t\d+\.png\s+(MISSING|size)', l) or re.match(r'FAIL (\w+?)-t\d+', l)
+        # the particles round names a failing shot (FAIL q03-t6: ...), the rings round a scene (FAIL g03: ..., r47)
+        m = re.match(r'(\S+?)-t\d+\.png\s+(MISSING|size)', l) or re.match(r'FAIL (\w+?)(?:-t\d+|:)', l)
         if m:
             out[m.group(1)] = ('FAIL', None)
     if not any(v[1] is not None for v in out.values()):

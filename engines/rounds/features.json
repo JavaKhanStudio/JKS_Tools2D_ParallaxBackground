@@ -92,6 +92,10 @@
   {"id": "fogcreep", "name": "Transfert: fog creep", "tickets": ["r252"],
    "about": "the far layers sinking into a mist first",
    "cases": [["TransfertStyleCases", "fogCreep"]],
-   "scenes": {"transfer": ["t13", "t14", "t17"]}}
+   "scenes": {"transfer": ["t13", "t14", "t17"]}},
+  {"id": "rings", "name": "Rings: the page round a 3D world",
+   "about": "each layer an open cylinder round a 3D world at its depth, its band at the elevations the page gives it, the gradients by elevation (parallax-readers r35, r47, docs/page-as-3d-sky.md): core's ParallaxRings numbers, compared as JSON by tools/compare-rings.py",
+   "cases": [["RingsCases", null]],
+   "scenes": {"rings": "*"}}
  ]
 }
