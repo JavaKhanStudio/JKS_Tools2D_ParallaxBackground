@@ -6,8 +6,8 @@ correctly in the parallax board, both in reader and everywhere else we could use
 camera. Crypto en visuel built one way and Simon picked it (deux-generaux r339, lab
 [parallax-sky/compare.html](https://javakhanstudio.github.io/Crypto_en_visuel/lab/parallax-sky/compare.html): way b,
 « Anneaux », over a screen-space backdrop). Its code is deux-generaux `lib/saga/sky.js`, about 130 lines of three.js over
-its own copy of the reader. This page is what the readers would take from it. **Nothing here is built**: Simon answers
-the questions at the end first (r35), and the build is its own tickets.
+its own copy of the reader. This page is what the readers would take from it. **Nothing here is built yet**: Simon
+answered the questions at the end (r35), and the build is its own tickets.
 
 ## What sky.js does
 
@@ -89,4 +89,12 @@ now gives, so a band ignores them and draws the layer's image plain.
    compressed between two radii, as the saga's sky Simon picked does.
 3. Whether the numbers live in core (one `ParallaxRings`, ported) or only in each reader.
 
-Simon's answers are written here when they come.
+Simon's answers (r35, 23 Oct 2026), each the first option:
+
+1. **three.js now**; Godot 3D and jME are queued until he has seen three.js's lab.
+2. **The library's depths by default** (front / speed); a `far` option compresses them, and the saga passes `far: 760`
+   to keep the look he picked on deux-generaux r339.
+3. **One `ParallaxRings` in core**, ported line for line by each reader and checked as JSON against core's numbers.
+
+The build: r47 (`ParallaxRings` in core and the ring round), then r48 (three.js and its lab, shown to Simon), then
+r49 (Godot) and r50 (jME).
