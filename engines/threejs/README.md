@@ -7,13 +7,15 @@ the Godot reader (which copies core line for line): scrolling, tiling on X and Y
 game's own seed), `SHADER` layers (`WAVE`, `FOG`, `SWELL`: core's shaders, in GLSL), the page's depth fog, the two
 gradients, zoom, resizing, cross-fades (`transfertInto`) with their styles (`PlaxTransfertStyle`: depth stagger,
 dissolve, through a colour, fog creep), tints (`tintTo`), `EMPTY` layers, drawn by the game's hook
-(`setLayerHook`), and `PARTICLES` layers, drawing the page's libGDX effect (`.p`) as libGDX does. Each texture keeps its atlas's
+(`setLayerHook`), `PARTICLES` layers, drawing the page's libGDX effect (`.p`) as libGDX does, `FLOOR` layers (their rows
+in `MODE7` or `LINE_SCROLL`, the layers in front planted on them), `LURKER` layers (`revealLurker` for a game's sure
+first scare) and the animated patch. Each texture keeps its atlas's
 filter, so a pixel-art page stays sharp. It does not read `.plax` (Kryo is Java's).
 
 It was born as Crypto en visuel's `lib/plax.js` (deux-generaux r195, r449), which drew Simon's calm-day page as the
 saga's sky; parallax-readers r34 brought it to core's numbers and checks it here.
 
-**Not ported yet**, each a task of its own, in the order the rounds need them: `FLOOR`, `LURKER` and the animated patch (r42), dolly, towers and planets (r43),
+**Not ported yet**, each a task of its own, in the order the rounds need them: dolly, towers and planets (r43),
 glint, `MIRROR` and detail levels (r44). A page with a layer of a kind or an effect it does not draw fails to load,
 with the layer named; a glint is not drawn.
 

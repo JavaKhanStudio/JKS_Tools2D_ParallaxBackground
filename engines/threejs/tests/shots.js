@@ -8,12 +8,19 @@
 // which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done. &skip=s12,s13 leaves scenes out
 // (frame-check.sh's SKIP: what this reader does not draw yet).
 import * as THREE from 'three';
-import { PlaxBackground, PlaxParticles, PlaxTransfertStyle, loadAtlas, loadPage, loadParticles } from '../src/plax.js';
+import {
+  PlaxAnim, PlaxBackground, PlaxFloor, PlaxLurker, PlaxParticles, PlaxTransfertStyle, loadAtlas, loadPage, loadParticles,
+} from '../src/plax.js';
 
 const SHOT_TIMES = [0, 6, 12];
 // BREAK=scroll (frame-check.sh's negative control): a scroll 10 % too fast, which the check must fail.
 const BREAK = new URLSearchParams(location.search).get('break');
 const SPEED = BREAK === 'scroll' ? 66 : 60;
+// BREAK=plant (no layer planted on a floor), lurker (every figure always there) and anim (every patch at its first
+// frame): the floor, lurker and animated rounds must FAIL each.
+if (BREAK === 'plant') PlaxFloor.plant = () => {};
+if (BREAK === 'lurker') PlaxLurker.isThere = () => true;
+if (BREAK === 'anim') PlaxAnim.setTime = () => {};
 const f32 = Math.fround;
 const log = [];
 const say = line => { log.push(line); console.log(line); };

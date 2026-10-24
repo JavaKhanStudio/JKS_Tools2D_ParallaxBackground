@@ -12,7 +12,7 @@ repair.
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `engines/godot/tools/frame-check.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. Split out of the grading lab's `--shots` mode, which the lab no longer has (r157). | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/rounds/reader/` | `:rounds` (r312): `Round`, a reader round's `round.json` read once for `:shots` and `:jme`'s frame runner (Godot's `tests/shots.gd` reads it a third time). A new round field goes there. Gdx core only. Not published. | 17 | `./gradlew :rounds:build`, then the frame checks |
-| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE, SEQUENCE, SHADER (not MIRROR), EMPTY and PARTICLES layers, the page fog, cross-fades and their styles, tints, the rings so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart, sequence, shaders (s01-s11), fog, transfer, effects, particles (not the dolly nor planets) and rings, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
+| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE, SEQUENCE, SHADER (not MIRROR), EMPTY, PARTICLES, FLOOR and LURKER layers, the animated patch, the page fog, cross-fades and their styles, tints, the rings so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart, sequence, shaders (s01-s11), fog, transfer, effects, particles, floor, lurker, animated (not the dolly nor planets) and rings, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `engines/jme/tools/frame-check.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:jme:run` and `:shots:run`
@@ -90,7 +90,8 @@ repair.
   page scrolls, fades or draws, change it there too, and run `engines/threejs/tools/frame-check.sh` (`round1`,
   `conformance`, `pixelart`, `sequence`, `shaders` and `fog` prove it; `pixelart` is its cross-fade round until the
   transfer round plays, r40; a SEQUENCE layer's pieces are `PlaxSequence`'s, from `plax_sequence.gd`, the effects'
-  `PlaxEffects`', from `plax_effects.gd`). Its PARTICLES layers draw the page's libGDX `.p` (`PlaxParticles`, r41):
+  `PlaxEffects`', from `plax_effects.gd`; a FLOOR's `PlaxFloor`, a LURKER's `PlaxLurker` and the animated patch's
+  `PlaxAnim`, from `plax_floor.gd`, `plax_lurker.gd` and `plax_anim.gd`, r42). Its PARTICLES layers draw the page's libGDX `.p` (`PlaxParticles`, r41):
   libGDX 1.14's `ParticleEmitter`, `Sprite` and `MathUtils` random and sine table ported in Java's float arithmetic
   (`Math.fround`), so a seed drops the snow flake for flake as libGDX does (`engines/rounds/particles`, compared by
   pixels; a float counted as a double there, as the cross-fade's alpha was, ends a fade a step apart and the snow
@@ -107,7 +108,7 @@ repair.
   shows each feature's verdict per reader from it, and a feature no scene names as "no round".
 - An IMAGE layer's animated patch (format 16, r393, r394: `animRegion`, `animX`, `animY`, `animFps`) is drawn after
   each tile by `ParallaxLayer.drawAnim`, its frame `floor(effect time × fps)` modulo the count
-  (`ParallaxLayer.setAnimTime`). Godot's copy is `plax_anim.gd`; jME runs core's. The shots never reset the effect
+  (`ParallaxLayer.setAnimTime`). Godot's copy is `plax_anim.gd`, three.js's `plax.js`'s `PlaxAnim`; jME runs core's. The shots never reset the effect
   clock between scenes: scene k's stills are at about 12k + 0, 6 and 12 s, which `core/test-data/animated/make_round.py`
   reckons to keep every still off a frame change. Change the patch and run both frame checks on `engines/rounds/animated`;
   `tools/r394-animated/mutate.sh` proves the round sees a wrong Godot copy. Its palms move too little to fail a wrong
@@ -117,7 +118,8 @@ repair.
   reader runs its sightings in `act()` (every step, against the last draw's view) and in `draw()`
   (`ParallaxPageReader.sightLurkers`, `reveal(name)`), its draws from `SequenceCycle.next`, integers only; where the
   layers in front cover it is baked once from the atlas (`src-jvm` `LurkerCover`, `tools/lurker-cover.sh`), never read
-  from a texture at run time. jME runs core's; Godot's copy is `plax_lurker.gd` (r371, `reveal_lurker(name)`). Change
+  from a texture at run time. jME runs core's; Godot's copy is `plax_lurker.gd` (r371, `reveal_lurker(name)`), three.js's
+  `plax.js`'s `PlaxLurker` (r42, `revealLurker(name)`). Change
   the rule and run `LurkerCases` and both frame checks on `engines/rounds/lurker` (`pixelsOff`: the figure is too small
   for the mean); `BREAK=lurker` must fail jME's, `tools/r370-lurker/mutate.sh` proves `LurkerCases` sees a wrong rule,
   `tools/r371-lurker/mutate.sh` that Godot's check sees a wrong copy.
@@ -195,7 +197,7 @@ repair.
   (`ParallaxLayer.measureFloor`/`drawFloor`, its strips cut when a setting changes, never in a frame), and
   `ParallaxPageReader.plant` moves every layer in front of it at the speed of the row under its foot, every `act()`,
   without touching its stored speed. Godot's copy is `plax_floor.gd`'s `measure`, `scroll`, `draw` and
-  `plant`; jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/rounds/floor`;
+  `plant`, three.js's `plax.js`'s `PlaxFloor` (r42); jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/rounds/floor`;
   `tools/r275-floor/strength.sh` proves the round sees a floor against its flat twin, `mutate.sh` a wrong Godot copy.
 - The dolly (r278, `ParallaxPageReader.setDolly`, no format change) draws each layer at its own zoom
   (`dollyZoom`: `1 - k (1 - zoom)`, k its speed over its page's front), tiled across its own view and placed from the

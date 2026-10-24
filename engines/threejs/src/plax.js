@@ -45,16 +45,22 @@
 //
 //   bg.setSequenceSeed(seed)                           // Java's int: 32 bits; clearSequenceSeed() goes back
 //
+// A FLOOR layer is drawn as rows, each at its depth (PlaxFloor: MODE7 or LINE_SCROLL), and the layers in front of it
+// scroll at the speed of the row under their foot. A LURKER layer is drawn as an IMAGE one while its sightings say its
+// figure is there (PlaxLurker): it appears or vanishes only while nothing of it is on screen; a game's sure first
+// scare is bg.revealLurker(name). An IMAGE or SHADER layer with an animRegion draws its animated patch (PlaxAnim) over
+// each tile, at floor(time x animFps) on act()'s clock.
+//
 // A SHADER layer is drawn as an image layer, through its effect (PlaxEffects, the shaders of core's GdxLayerEffects),
 // which moves on act()'s clock. The page's depth fog (fogStrength, fogColor) mixes each IMAGE, SEQUENCE and SHADER
 // layer toward the fog's colour, more the slower it scrolls (PlaxEffects.fogOf), through the same shaders.
 //
 // Ported: IMAGE layers (decal, sizeRatio, flips, speeds, speedXAtRest, pads, mirror, repeat on X and Y,
-// useOriginalSize), SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the page's depth fog, the two gradients,
-// cross-fades and their styles (depth stagger, dissolve, through a colour, fog creep), tints, zoom (not the dolly),
-// resizing, EMPTY layers (setLayerHook), PARTICLES layers (not round a planet). A page with a layer of another kind
-// (FLOOR, LURKER) or a MIRROR effect fails to load, as in libGDX a page from a newer version does: they are
-// ported in the order engines/rounds needs them. Not yet: the glint, detail levels.
+// useOriginalSize), FLOOR and LURKER layers, the animated patch, SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the
+// page's depth fog, the two gradients, cross-fades and their styles (depth stagger, dissolve, through a colour, fog
+// creep), tints, zoom (not the dolly), resizing, EMPTY layers (setLayerHook), PARTICLES layers (not round a planet). A
+// page with a MIRROR effect fails to load, as in libGDX a page from a newer version does: it is ported in the order
+// engines/rounds needs it (r44). Not yet: the dolly, towers, planets (r43), the glint, detail levels (r44).
 //
 // A 3D game can stand the page round its world instead (PlaxRings, r48: each layer a cylinder as far as its speed
 // says, docs/page-as-3d-sky.md): new PlaxRings(bg, { front: 330, foot: 50 }), its group in the scene, update(delta).
@@ -70,13 +76,19 @@ const LAYER_DEFAULTS = {
   mirror: false, kind: 'IMAGE', name: '',
   shaderEffect: 'WAVE', shaderAmplitude: 0, shaderWavelength: 0, shaderSpeed: 0, shaderHaze: 0,
   sequenceSegments: [], sequenceSeed: 0, sequenceLength: 16,
+  floorMapping: 'MODE7', floorTopSpeed: 0, floorRows: 96, floorHeight: 0,
+  lurkerSeed: 0, lurkerOdds: 3, lurkerCover: [],
+  animRegion: '', animX: 0, animY: 0, animFps: 12,
   glintStrength: 0,
   particlesLibgdx: '', particlesAnchor: 'LAYER',
 };
 // The kinds this reader draws; another fails the page's load. A PARTICLES layer's effect is loadParticles'. A SEQUENCE layer's cycle is drawn by drawCycle.
-const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE', 'SHADER', 'PARTICLES'];
+// A FLOOR layer's rows by PlaxFloor.draw, a LURKER layer as an IMAGE one while its sightings say it is there (PlaxLurker).
+const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE', 'SHADER', 'PARTICLES', 'FLOOR', 'LURKER'];
+// How a FLOOR layer's rows map its image (Enum_FloorMapping).
+const FLOOR_MAPPINGS = ['MODE7', 'LINE_SCROLL'];
 // The kinds a dissolve masks and a transfert through a colour grades; an EMPTY one fades to its share instead.
-const MASKED = ['IMAGE', 'SEQUENCE', 'SHADER'];
+const MASKED = ['IMAGE', 'SEQUENCE', 'SHADER', 'FLOOR', 'LURKER'];
 // The effects a SHADER layer is drawn through here (PlaxEffects.EFFECTS less MIRROR); another fails the page's load.
 const EFFECTS = ['WAVE', 'FOG', 'SWELL'];
 // What a seed of 0 starts from (SequenceCycle.ZERO_SEED): xorshift never leaves 0.
@@ -203,6 +215,10 @@ export function readPage(json, inside) {
       throw new Error(`plax: layer ${i} (${layer.name || layer.regionName}) is a ${layer.kind} layer: not ported to `
         + 'three.js yet (engines/threejs/README.md)');
     }
+    if (!FLOOR_MAPPINGS.includes(layer.floorMapping)) {
+      throw new Error(`plax: layer ${i} (${layer.name || layer.regionName}) has the floor mapping ${layer.floorMapping}: `
+        + 'unknown to this reader');
+    }
     if (layer.kind === 'SHADER' && !EFFECTS.includes(layer.shaderEffect)) {
       throw new Error(`plax: layer ${i} (${layer.name || layer.regionName}) has the ${layer.shaderEffect} effect: not `
         + 'ported to three.js yet (engines/threejs/README.md)');
@@ -314,6 +330,10 @@ export class PlaxBackground {
     this._effectTime = 0;
     // What draws each EMPTY layer, by layer name (setLayerHook).
     this._hooks = new Map();
+    // The camera zoom of the last draw of a LURKER layer, which act()'s sightings run against; NaN before it (PlaxLurker).
+    this._lurkerZoom = NaN;
+    // Which of a SHADER layer's two draws _tile is on: 0 both, its tiles (1) and its patches (2) apart (_drawLayer).
+    this._part = 0;
     this._gradients = gradientMesh();
     this.scene.add(this._gradients);
   }
@@ -387,6 +407,13 @@ export class PlaxBackground {
     else this._hooks.delete(name);
   }
 
+  // ParallaxPageReader.reveal: the next sighting of every LURKER layer named `name` shows its figure, at once when it
+  // is not in sight now, else from the end of this sighting: a game's sure first scare (PlaxLurker).
+  revealLurker(name) {
+    PlaxLurker.reveal(this.layers, name);
+    PlaxLurker.reveal(this.transferLayers, name);
+  }
+
   // Back to the seeds the pages store: what the editor previews.
   clearSequenceSeed() {
     this._hasSequenceSeed = false;
@@ -444,6 +471,8 @@ export class PlaxBackground {
     if (!this.page) return;
     this._effectTime += delta;
     this._actGradients(delta);
+    PlaxFloor.plant(this.layers, this.worldHeight);
+    PlaxFloor.plant(this.transferLayers, this.worldHeight);
     for (const l of this.layers) this._actLayer(l, delta, speedX, speedY);
     if (this.transferLayers.length) {
       for (const l of this.transferLayers) this._actLayer(l, delta, speedX, speedY);
@@ -457,6 +486,8 @@ export class PlaxBackground {
       this._tintElapsed = Math.min(this._tintDuration, this._tintElapsed + delta);
       this.tint = lerp(this._tintFrom, this._tintTo, this._tintElapsed / this._tintDuration);
     }
+    // Every step, drawn or not: a sighting between two draws counts. Against the last draw's view.
+    PlaxLurker.sight(this, this._lurkerZoom);
   }
 
   // Lays the scene out as the background is now: the gradients, then the layers in draw order.
@@ -467,6 +498,12 @@ export class PlaxBackground {
       l.quads.begin(order++);
       if (this.page) this._drawLayer(l);
       l.quads.end();
+      if (l.animQuads) {
+        // A SHADER layer's patches after its tiles, through their own material (_buildLayers).
+        l.animQuads.begin(order++);
+        if (this.page) this._drawLayer(l, true);
+        l.animQuads.end();
+      }
     }
   }
 
@@ -523,8 +560,17 @@ export class PlaxBackground {
       }
       if (region.rotate) console.warn(`plax: region '${model.regionName}' is packed rotated, which is not supported: drawn as is`);
       const l = this._buildLayer(model, region, page.useOriginalSize);
+      if (!PlaxAnim.build(l, model, atlas, page.useOriginalSize)) continue;
+      if (model.kind === 'FLOOR') PlaxFloor.measure(l);
       this._resetPosition(l);
       this.scene.add(l.quads.group);
+      if (model.kind === 'SHADER' && l.anim.length) {
+        // Its patches after its tiles, in quads of their own: their effect is given the frame's region, which one
+        // material cannot change between draws (ParallaxPageReader.drawImageLayer, r397).
+        l.animQuads = new Quads();
+        l.animQuads.setEffect(model.shaderEffect);
+        this.scene.add(l.animQuads.group);
+      }
       built.push(l);
     }
     // The depth fog of each layer, by its speed against the page's front: what ParallaxPageReader.drawImageLayer reckons.
@@ -533,7 +579,7 @@ export class PlaxBackground {
       l.haze = l.model.kind === 'EMPTY' || l.model.kind === 'PARTICLES' ? 0 : PlaxEffects.fogOf(page.fogStrength, front, l.model);
       l.fogColor = page.fogColor.slice(0, 3);
       if (l.model.kind === 'SHADER') l.quads.setEffect(l.model.shaderEffect);
-      else if (l.haze > 0 && (l.model.kind === 'IMAGE' || l.model.kind === 'SEQUENCE')) l.quads.setEffect('PLAIN');
+      else if (l.haze > 0 && ['IMAGE', 'SEQUENCE', 'FLOOR', 'LURKER'].includes(l.model.kind)) l.quads.setEffect('PLAIN');
     }
     return built;
   }
@@ -556,6 +602,11 @@ export class PlaxBackground {
     l.width = this.worldWidth * l.model.sizeRatio;
     l.height = l.model.kind === 'EMPTY' || l.model.kind === 'PARTICLES' ? this.worldHeight * l.model.sizeRatio
       : l.imageH * (this.worldWidth / l.imageW) * l.model.sizeRatio;
+    if (l.model.kind === 'FLOOR') {
+      // Its box (ParallaxLayer.getHeight): its own height, or the tile's; mode 7's depths follow it.
+      l.floorH = l.model.floorHeight > 0 ? l.model.floorHeight * (this.worldHeight / 100) : l.height;
+      if (l.rowStrips) PlaxFloor.measure(l);
+    }
     if (l.model.kind === 'SEQUENCE' && l.edges) {
       l.width = l.height * l.edges[l.cycle.length] + (l.cycle.length - 1) * l.model.padX;
     }
@@ -570,7 +621,10 @@ export class PlaxBackground {
   // ParallaxLayer.act.
   _actLayer(l, delta, speedX, speedY) {
     const m = l.model;
-    const moveX = -delta * (m.speedXAtRest + speedX) * m.parallaxScalingSpeedX, moveY = -delta * speedY * m.parallaxScalingSpeedY;
+    const moveY = -delta * speedY * m.parallaxScalingSpeedY;
+    // Planted on a floor: the speed of the row under its foot (PlaxFloor.plant).
+    const planted = l.planted ?? NaN;
+    const moveX = -delta * (m.speedXAtRest + speedX) * (Number.isNaN(planted) ? m.parallaxScalingSpeedX : planted);
     l.distanceY += moveY;
     l.distanceX += moveX;
     if (l.particles) {
@@ -594,6 +648,7 @@ export class PlaxBackground {
       const periodY = PlaxEffects.periodY(m);
       l.wrappedY = periodY > 0 ? (l.wrappedY + below - l.distanceY) % periodY : 0;
     }
+    if (l.rowDistance) PlaxFloor.scroll(l, delta * (m.speedXAtRest + speedX));
   }
 
   _updateWorld() {
@@ -602,8 +657,11 @@ export class PlaxBackground {
 
   _drop(layers) {
     for (const l of layers) {
-      this.scene.remove(l.quads.group);
-      l.quads.dispose();
+      for (const quads of [l.quads, l.animQuads]) {
+        if (!quads) continue;
+        this.scene.remove(quads.group);
+        quads.dispose();
+      }
     }
   }
 
@@ -729,13 +787,14 @@ export class PlaxBackground {
     return l.incoming ? ramp : 1 - ramp;
   }
 
-  // Whether a dissolve draws the layer through its mask now: an IMAGE, SEQUENCE or SHADER one, during a dissolve.
+  // Whether a dissolve draws the layer through its mask now: an IMAGE, SEQUENCE, SHADER, FLOOR or LURKER one, during
+  // a dissolve.
   _masked(l) {
     return this.transferLayers.length > 0 && this._style?.kind === 'DISSOLVE' && MASKED.includes(l.model.kind);
   }
 
-  // Whether a transfert through a colour or a fog creep mixes the layer toward it now: an IMAGE, SEQUENCE or SHADER
-  // one, during one.
+  // Whether a transfert through a colour or a fog creep mixes the layer toward it now: an IMAGE, SEQUENCE, SHADER,
+  // FLOOR or LURKER one, during one.
   _graded(l) {
     return this.transferLayers.length > 0 && !!this._style?.grades() && MASKED.includes(l.model.kind);
   }
@@ -748,13 +807,26 @@ export class PlaxBackground {
         l.quads.setEffect(null);
         l.dissolvePlain = false;
       } else if (l.quads.uniforms) {
-        l.quads.uniforms.dissolve.value.set(0, 0, 0, 0);
-        l.quads.uniforms.grade.value.set(0, 0, 0, 0);
+        for (const quads of [l.quads, l.animQuads]) {
+          if (!quads) continue;
+          quads.uniforms.dissolve.value.set(0, 0, 0, 0);
+          quads.uniforms.grade.value.set(0, 0, 0, 0);
+        }
       }
     }
   }
 
-  _drawLayer(l) {
+  // A layer's quads draw it; a layer at alpha 0 is not drawn. `patches`: a SHADER layer's patches' quads draw them
+  // (_buildLayers).
+  _drawLayer(l, patches = false) {
+    this._part = l.animQuads ? (patches ? 2 : 1) : 0;
+    if (l.model.kind === 'LURKER') {
+      // The lurkers against this view; a figure not there is not drawn (PlaxLurker).
+      this._lurkerZoom = this.zoom;
+      PlaxLurker.sight(this, this.zoom);
+      if (!PlaxLurker.isThere(l)) return;
+    }
+    const quads = patches ? l.animQuads : l.quads;
     const alpha = this.tint[3] * this._alphaOf(l);
     if (!(alpha > 0)) return;
     // As libGDX packs the batch colour (Color.toFloatBits): the alpha to 254 levels, and, but through the page fog's
@@ -762,9 +834,9 @@ export class PlaxBackground {
     // That shader takes the tint as a uniform and the layer's fog in the batch colour's red: the fog is cut instead.
     const pageFog = this._pageFog() && !['SHADER', 'EMPTY', 'PARTICLES'].includes(l.model.kind);
     const color = pageFog ? this.tint : this.tint.map(packed);
-    l.quads.setColor(color, packedAlpha(alpha));
+    quads.setColor(color, packedAlpha(alpha));
     this._hookColor = [...color.slice(0, 3), packedAlpha(alpha)];
-    this._quads = l.quads;
+    this._quads = quads;
     // Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
     const z = this.zoom;
     this._ppu = this.width / (this.worldWidth * z);
@@ -780,22 +852,22 @@ export class PlaxBackground {
       return;
     }
     const total = Math.max(this.layers.length, this.transferLayers.length);
-    if ((this._masked(l) || this._graded(l)) && !l.quads.effect) {
-      l.quads.setEffect('PLAIN');
-      l.quads.setColor(color, packedAlpha(alpha));
+    if ((this._masked(l) || this._graded(l)) && !quads.effect) {
+      quads.setEffect('PLAIN');
+      quads.setColor(color, packedAlpha(alpha));
       l.dissolvePlain = true;
     }
     if (this._masked(l)) {
       const ramp = this._style.slotRamp(this._newAlpha, l.slot, total);
-      l.quads.uniforms.dissolve.value.set(l.incoming ? 2 : 1, ramp, this._style.softness,
+      quads.uniforms.dissolve.value.set(l.incoming ? 2 : 1, ramp, this._style.softness,
         PlaxTransfertStyle.drift(this._effectTime));
-      l.quads.uniforms.cells.value.set(this._style.patches, this._style.cellsUp(viewW, viewH));
+      quads.uniforms.cells.value.set(this._style.patches, this._style.cellsUp(viewW, viewH));
     }
     if (this._graded(l)) {
       const c = this._style.color;
-      l.quads.uniforms.grade.value.set(c[0], c[1], c[2], clamp(this._style.gradeAt(this._newAlpha, l.slot, total), 0, 1));
+      quads.uniforms.grade.value.set(c[0], c[1], c[2], clamp(this._style.gradeAt(this._newAlpha, l.slot, total), 0, 1));
     }
-    const u = l.quads.uniforms;
+    const u = quads.uniforms;
     if (u) {
       u.view.value.set(this.width, this.height);
       if (m.kind === 'SHADER') {
@@ -803,6 +875,14 @@ export class PlaxBackground {
       }
       u.haze.value = pageFog ? packed(l.haze) : l.haze;
       u.fog_color.value.set(...l.fogColor);
+    }
+    // The animated patch's frame, on the clock the effects run on: drawn after each tile (PlaxAnim.draw).
+    PlaxAnim.setTime(l, this._effectTime);
+    if (patches) PlaxAnim.apply(u, l);
+    if (m.kind === 'FLOOR') {
+      // Its rows across the whole view, whatever the page repeats; no mirrored copy.
+      PlaxFloor.draw(this, l, l.distanceY, viewW, viewH);
+      return;
     }
     this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH);
     if (m.mirror && this._repeatX !== this._repeatY) {
@@ -869,7 +949,10 @@ export class PlaxBackground {
         // Mirrored: flipped vertically when tiling on X, horizontally when tiling on Y.
         if (mirror) { if (onX) fy = !fy; else fx = !fx; }
         if (sequence) PlaxSequence.draw(this, l, drawX, drawY, 0, viewW, fx, fy);
-        else this._drawRegion(l, drawX, drawY, width, height, fx, fy);
+        else {
+          if (this._part !== 2) this._drawRegion(l, drawX, drawY, width, height, fx, fy);
+          if (this._part !== 1) PlaxAnim.draw(this, l, drawX, drawY, fx, fy);
+        }
       }
     }
   }
@@ -983,6 +1066,311 @@ export const PlaxSequence = {
       if (left + width <= fromX) continue;
       bg._drawRegion(segment, left, y, width, height, fx, fy);
     }
+  },
+};
+
+// --- FLOOR layers (PlaxFloor: ParallaxLayer's floor half, ParallaxPageReader.plant) ----------------------------------
+
+// A FLOOR layer's rows, measured when the layer is built or resized, never in a frame, scrolled, drawn, and the layers
+// in front planted on them.
+export const PlaxFloor = {
+  // The most rows a FLOOR layer is cut in (ParallaxLayer.MAX_FLOOR_ROWS), and mode 7's tilt (ParallaxLayer.FLOOR_TILT).
+  MAX_FLOOR_ROWS: 512,
+  FLOOR_TILT: 0.6,
+
+  // ParallaxLayer.measureFloor: a FLOOR layer's rows, bottom to top, from its settings and its image: each row's speed
+  // (the bottom row's to the top row's, straight, at the row's middle), its stretch across (MODE7: its speed over the
+  // bottom row's; LINE_SCROLL: 1) and the strip of the image it draws, in the atlas' pixels (MODE7: where the ground is
+  // at the row's depth, the image's height one tile of depth; LINE_SCROLL: the image's rows i/n to (i+1)/n).
+  measure(l) {
+    const m = l.model;
+    const n = clamp(m.floorRows | 0, 2, PlaxFloor.MAX_FLOOR_ROWS);
+    const bottom = f32p(m.parallaxScalingSpeedX);
+    const top = f32p(m.floorTopSpeed);
+    const mode7 = m.floorMapping === 'MODE7';
+    const recedes = mode7 && Math.abs(bottom) > Math.abs(top) && bottom * top >= 0 && l.height > 0;
+    const nearInHeights = recedes ? l.floorH / l.height * bottom / (PlaxFloor.FLOOR_TILT * (bottom - top)) : 0;
+    const drawn = l.src;
+    l.rowSpeed = new Float64Array(n);
+    l.rowStretch = new Float64Array(n);
+    l.rowStrips = [];
+    for (let i = 0; i < n; i++) {
+      const t0 = i / n, t1 = (i + 1) / n, tc = (i + 0.5) / n;
+      const speed = bottom + (top - bottom) * tc;
+      l.rowSpeed[i] = speed;
+      l.rowStretch[i] = mode7 && bottom !== 0 ? Math.max(0.02, speed / bottom) : 1;
+      let from = t0, to = t1;
+      if (recedes) {
+        from = PlaxFloor._along(bottom, top, t0, nearInHeights);
+        to = PlaxFloor._along(bottom, top, t1, nearInHeights);
+        const start = from - Math.floor(from);
+        to = Math.min(1, start + (to - from));
+        from = start;
+      }
+      // The image's rows count down from its top, t up from its bottom.
+      l.rowStrips.push({ x: drawn.x, y: drawn.y + drawn.h * (1 - to), w: drawn.w, h: drawn.h * (to - from) });
+    }
+    // Allocated once: a resize measures the rows again and keeps where they have scrolled to.
+    if (!l.rowDistance || l.rowDistance.length !== n) l.rowDistance = new Float64Array(n).fill(l.distanceX);
+  },
+
+  // Each row of a FLOOR layer scrolled by `travel` (the page's speed times the step) times its own speed, kept within
+  // one of its tiles: a floor is tiled across whatever the page repeats (ParallaxLayer.act).
+  scroll(l, travel) {
+    for (let i = 0; i < l.rowDistance.length; i++) {
+      const step = l.width * l.rowStretch[i];
+      const distance = l.rowDistance[i] - travel * l.rowSpeed[i];
+      l.rowDistance[i] = step > 0 ? distance % step : distance;
+    }
+  },
+
+  // ParallaxPageReader.plant: every layer in front of the page's last FLOOR layer scrolls at the speed of the floor's
+  // row under its foot (footY); one whose foot is above the floor's top row, and every other layer, at its own.
+  plant(pageLayers, worldHeight) {
+    let floor = -1;
+    pageLayers.forEach((l, i) => { if (l.model.kind === 'FLOOR') floor = i; });
+    pageLayers.forEach((l, i) => {
+      l.planted = floor >= 0 && i > floor ? PlaxFloor.plantedSpeedOn(pageLayers[floor], l, worldHeight) : NaN;
+    });
+  },
+
+  // ParallaxPageReader.plantedSpeedOn: the speed of `floor`'s row under `l`'s foot, NaN above the floor's top row.
+  plantedSpeedOn(floor, l, worldHeight) {
+    const bottom = floor.model.decal_Y_Ratio * (worldHeight / 100);
+    const height = floor.floorH;
+    let t = height > 0 ? (PlaxFloor.footY(l, worldHeight) - bottom) / height : 0;
+    if (t > 1) return NaN;
+    t = Math.max(0, t);
+    return floor.model.parallaxScalingSpeedX + (floor.model.floorTopSpeed - floor.model.parallaxScalingSpeedX) * t;
+  },
+
+  // ParallaxLayer.getFootY: where a layer stands, its decal, and over it the rows an atlas trimmed off an IMAGE or
+  // SHADER layer's image's bottom (a LURKER's too: drawn as an IMAGE layer).
+  footY(l, worldHeight) {
+    let foot = l.model.decal_Y_Ratio * (worldHeight / 100);
+    if (['IMAGE', 'SHADER', 'LURKER'].includes(l.model.kind)) {
+      foot += l.height * (l.model.flipY ? 1 - l.trimBottom - l.packedH : l.trimBottom);
+    }
+    return foot;
+  },
+
+  // ParallaxLayer.drawFloor: a FLOOR layer's rows in its box, its bottom at `y`, each tiled across the view (x 0 to
+  // `viewW`) from where it has scrolled, its tiles `width * stretch` wide, stretched about the view's middle; into the
+  // quads of the layer being drawn, at `bg`'s scale.
+  draw(bg, l, y, viewW, viewH) {
+    const n = l.rowStrips.length;
+    const width = l.width;
+    const rowH = l.floorH / n;
+    const middle = viewW / 2;
+    const texture = l.region.page.texture;
+    const ppu = bg._ppu;
+    const screenH = bg.height;
+    for (let i = 0; i < n; i++) {
+      const rowY = y + i * rowH;
+      if (rowY + rowH <= 0 || rowY >= viewH) continue;
+      const stretch = l.rowStretch[i];
+      const across = width * stretch;
+      if (!(across > 0)) continue;
+      const origin = middle + (0 - middle) * stretch + l.rowDistance[i];
+      const first = origin + across * Math.floor((0 - origin) / across);
+      const count = Math.ceil((viewW - first) / across);
+      for (let k = 0; k < count; k++) {
+        const x = first + k * across;
+        bg._quads.add(texture, x * ppu, screenH - (rowY + rowH) * ppu, across * ppu, rowH * ppu, l.rowStrips[i], false, false);
+      }
+    }
+  },
+
+  // ParallaxLayer.along: how far along the ground the row at `t` is from the bottom row, in image heights.
+  _along(bottom, top, t, nearInHeights) {
+    const speed = bottom + (top - bottom) * t;
+    return (bottom / speed - 1) * nearInHeights;
+  },
+};
+
+// --- LURKER layers (PlaxLurker: ParallaxPageReader.sightLurkers, r371; docs/lurker-layers.md) ------------------------
+
+// The figure appears or vanishes only while nothing of it is on screen. Gone at the sighting after one where it was
+// seen, else there by its seed's draws (sequenceNext: the JVM's picks), or when the game says (reveal). Its state is on
+// the layer: lurkerState, lurkerStarted, lurkerThere, lurkerSeen, lurkerInSight, lurkerForced. Run every act() step
+// against the view of the last draw, and at each draw against its own.
+export const PlaxLurker = {
+  // Whether layer `l`'s figure is drawn now (ParallaxLayer.isLurkerThere): true for one no sighting has run yet.
+  isThere(l) {
+    return !l.lurkerStarted || l.lurkerThere;
+  },
+
+  // Runs the sightings of every LURKER layer on screen, of both pages during a cross-fade, at the camera zoom `zoom`
+  // of the last draw (NaN before the first: nothing is in the view).
+  sight(bg, zoom) {
+    PlaxLurker._sightPage(bg, bg.layers, false, zoom);
+    PlaxLurker._sightPage(bg, bg.transferLayers, true, zoom);
+  },
+
+  _sightPage(bg, page, incoming, zoom) {
+    page.forEach((figure, i) => {
+      if (figure.model.kind !== 'LURKER') return;
+      if (!figure.lurkerStarted) PlaxLurker._start(figure);
+      const inSight = PlaxLurker._inSight(bg, page, i, incoming, zoom);
+      if (inSight && figure.lurkerThere) figure.lurkerSeen = true;
+      else if (!inSight && figure.lurkerInSight) PlaxLurker._hide(figure);
+      figure.lurkerInSight = inSight;
+    });
+  },
+
+  // The figure's first draw, from its seed (0: ZERO_SEED), as each later one: rule 2.
+  _start(figure) {
+    const seed = figure.model.lurkerSeed >>> 0;
+    figure.lurkerState = sequenceNext(seed !== 0 ? seed : ZERO_SEED);
+    figure.lurkerThere = PlaxLurker._drawsThere(figure);
+    figure.lurkerSeen = false;
+    figure.lurkerInSight = false;
+    figure.lurkerForced = false;
+    figure.lurkerStarted = true;
+  },
+
+  // A sighting has ended: whether the figure is there at the next one. Forced by reveal; else gone after it was seen;
+  // else the state steps once and it is there by 1 chance in its odds. Integers only.
+  _hide(figure) {
+    if (figure.lurkerForced) figure.lurkerThere = true;
+    else if (figure.lurkerSeen) figure.lurkerThere = false;
+    else {
+      figure.lurkerState = sequenceNext(figure.lurkerState);
+      figure.lurkerThere = PlaxLurker._drawsThere(figure);
+    }
+    figure.lurkerForced = false;
+    figure.lurkerSeen = false;
+  },
+
+  // (state >>> 1) % lurkerOdds == 0, the state an unsigned 32-bit int.
+  _drawsThere(figure) {
+    return (figure.lurkerState >>> 1) % Math.max(1, figure.model.lurkerOdds | 0) === 0;
+  },
+
+  // ParallaxPageReader.lurkerInSight: whether a copy of the figure `index` of `page` is in the view (its tile's box;
+  // the view's bottom left corner at 0, 0) and not wholly covered by one layer in front of it. The cover counts only
+  // where it was worked out for: a page repeating on X, the figure's own row, no planet, no panorama, the dolly at
+  // zoom 1, no cross-fade, the tint at full opacity, and the layers' Y apart as saved. The dolly, the anchor and the
+  // panorama are r43's: until then the figure is at the camera's zoom, from the view's corner.
+  _inSight(bg, page, index, incoming, zoom) {
+    const figure = page[index];
+    const width = figure.width, height = figure.height;
+    if (!(width > 0) || !(height > 0) || Number.isNaN(zoom)) return false;
+    const z = zoom;
+    const vw = bg.worldWidth * z, vh = bg.worldHeight * z;
+    const originX = figure.distanceX, originY = figure.distanceY;
+    const fromPage = incoming ? bg.transferPage : bg.page;
+    const covers = bg._repeatX && figure.model.lurkerCover.length > 0 && !(fromPage.planetRadius > 0)
+      && bg.transferLayers.length === 0 && bg.tint[3] >= 1;
+    const stepX = width + figure.model.padX, stepY = height + figure.model.padY;
+    const tileX = bg._repeatX && stepX > 0, tileY = bg._repeatY && stepY > 0;
+    const firstColumn = tileX ? -Math.ceil((originX + width) / stepX) : 0;
+    const firstRow = tileY ? -Math.ceil((originY + height) / stepY) : 0;
+    for (let row = firstRow; ; row++) {
+      const y = originY + row * stepY;
+      if (row > firstRow && (!tileY || y >= vh)) break;
+      if (!(y + height > 0 && y < vh)) continue;
+      for (let column = firstColumn; ; column++) {
+        const x = originX + column * stepX;
+        if (column > firstColumn && (!tileX || x >= vw)) break;
+        if (x + width > 0 && x < vw && !(covers && row === 0 && PlaxLurker._covered(bg, page, index, x))) return true;
+      }
+    }
+    return false;
+  },
+
+  // ParallaxPageReader.lurkerCovered: whether a layer in front covers the copy of figure `index` whose tile corner is
+  // `x` from the anchor: its offset against that layer's tiles, modulo their period, in one of the cover's intervals.
+  _covered(bg, page, index, x) {
+    const figure = page[index];
+    const cover = figure.model.lurkerCover;
+    for (let k = 0; k + 2 < cover.length; k += 3) {
+      const nearAt = index + (cover[k] | 0), from = cover[k + 1], to = cover[k + 2];
+      if (nearAt <= index || nearAt >= page.length) continue;
+      const near = page[nearAt];
+      const period = near.width + near.model.padX;
+      if (!(period > 0)) continue;
+      // Their Y apart as saved, which the sweep took them at.
+      const restApart = (figure.model.decal_Y_Ratio - near.model.decal_Y_Ratio) * bg.worldHeight / 100;
+      if (Math.abs(figure.distanceY - near.distanceY - restApart) > 1e-3 * figure.height) continue;
+      const d = ((x - near.distanceX) % period + period) % period;
+      if (((d - from) % period + period) % period <= to - from) return true;
+    }
+    return false;
+  },
+
+  // ParallaxPageReader.reveal: the next sighting of every LURKER layer named `name` in `page` shows its figure, at
+  // once when it is not in sight now, else from the end of this sighting.
+  reveal(page, name) {
+    for (const figure of page) {
+      if (figure.model.kind !== 'LURKER' || figure.model.name !== name) continue;
+      if (!figure.lurkerStarted) PlaxLurker._start(figure);
+      if (figure.lurkerInSight) figure.lurkerForced = true;
+      else figure.lurkerThere = true;
+    }
+  },
+};
+
+// --- the animated patch (PlaxAnim: format 16, docs/animated-layers.md) -----------------------------------------------
+
+// A layer's animated patch: WholePage_Model.findFrames, ParallaxLayer.setAnimTime and drawAnim, line for line. Drawn
+// after each tile through _drawRegion, so the layer's effect and the fog take it as they take the tile.
+export const PlaxAnim = {
+  // The patch's frames for layer `l` built from `model`: the regions named animRegion in the atlas's order, each
+  // measured as the layer's region is (measureRegion). Only an IMAGE or SHADER layer has one. False, said in the log,
+  // when the atlas has none of that name: libGDX fails the load.
+  build(l, model, atlas, useOriginalSize) {
+    l.anim = [];
+    l.animFrame = 0;
+    if (!['IMAGE', 'SHADER'].includes(model.kind) || !model.animRegion) return true;
+    const frames = [];
+    for (;;) {
+      const region = atlas?.findRegion(model.animRegion, frames.length);
+      if (!region) break;
+      frames.push(measureRegion(region, useOriginalSize));
+    }
+    if (!frames.length) {
+      console.error(`plax: region '${model.animRegion}' #0 not found in the atlas`);
+      return false;
+    }
+    l.anim = frames;
+    return true;
+  },
+
+  // ParallaxLayer.setAnimTime: frame floor(`time` x fps) modulo the count, a negative one wrapped, NaN or infinite 0.
+  setTime(l, time) {
+    const count = l.anim?.length ?? 0;
+    if (count === 0) return;
+    const f = Math.floor(time * l.model.animFps) % count;
+    if (Number.isNaN(f)) {
+      l.animFrame = 0;
+      return;
+    }
+    l.animFrame = f < 0 ? f + count : f;
+  },
+
+  // ParallaxLayer.drawAnim: the current frame over the tile at (x, y), its place in the layer's image scaled to the
+  // drawn size, mirrored with the tile by a flip.
+  draw(bg, l, x, y, fx, fy) {
+    if (!l.anim?.length) return;
+    const width = l.width, height = l.height;
+    const scaleX = width / l.imageW, scaleY = height / l.imageH;
+    const frame = l.anim[l.animFrame];
+    const patchW = frame.imageW * scaleX, patchH = frame.imageH * scaleY;
+    const ax = l.model.animX * scaleX, ay = l.model.animY * scaleY;
+    const left = fx ? x + width - (ax + patchW) : x + ax;
+    const bottom = fy ? y + height - (ay + patchH) : y + ay;
+    bg._drawRegion(frame, left, bottom, patchW, patchH, fx, fy);
+  },
+
+  // GdxLayerEffects.patchUniforms: a SHADER layer's patch quads' uniforms `u` given the current frame's region and
+  // drawn size in the place of the layer's (r397): the effect keeps its samples inside the region it is given.
+  apply(u, l) {
+    const frame = l.anim[l.animFrame];
+    const image = frame.region.page.texture.image, src = frame.src;
+    u.region.value.set(src.x / image.width, src.y / image.height, (src.x + src.w) / image.width,
+      (src.y + src.h) / image.height);
+    u.size.value.set(frame.imageW * l.width / l.imageW * frame.packedW, frame.imageH * l.height / l.imageH * frame.packedH);
   },
 };
 
