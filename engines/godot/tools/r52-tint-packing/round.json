@@ -1,0 +1,45 @@
+{
+ "round": "r52-tint-packing",
+ "about": "r52: transfer t05 (a translucent tint, no fog: the tint's channels packed as libGDX's batch colour, 0.54 / 255 unpacked) and fog f05 (a tinted cross-fade into a fogged page: through libGDX's page fog shader the tint is not packed but the haze is, 0.34 without that exception, 0.30 with). Read by engines/godot/tools/r52-tint-packing/mutate.sh.",
+ "scenes": [
+  {
+   "id": "t05",
+   "page": "engines/rounds/conformance/c03.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "tint-translucent",
+   "about": "repeat Y, mirrored: a tint only, to a half-transparent night blue",
+   "tint": {
+    "at": 4,
+    "seconds": 4,
+    "color": [
+     0.35,
+     0.4,
+     0.8,
+     0.5
+    ]
+   }
+  },
+  {
+   "id": "f05",
+   "page": "engines/rounds/fog/f01.jplax",
+   "atlasDir": "core/test-data/haze",
+   "name": "fog-cross-fade-tinted",
+   "about": "f01 cross-fading into f02 (another fog, another colour) while tinting orange: each page fogs its own layers by its own fog, faded and tinted, the fog's colours untinted",
+   "transfer": {
+    "at": 4,
+    "seconds": 4,
+    "page": "engines/rounds/fog/f02.jplax"
+   },
+   "tint": {
+    "at": 4,
+    "seconds": 4,
+    "color": [
+     1.0,
+     0.55,
+     0.3,
+     1.0
+    ]
+   }
+  }
+ ]
+}

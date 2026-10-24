@@ -399,3 +399,38 @@ static func front_speed_of(page: Array[Dictionary]) -> float:
 	for l in page:
 		front = maxf(front, absf(float(l.model.parallaxScalingSpeedX)))
 	return front
+
+
+## A colour channel as libGDX packs the batch colour (Color.toFloatBits): 8 bits, truncated (r52).
+static func packed(c: float) -> float:
+	return floorf(255 * clampf(c, 0, 1)) / 255
+
+
+## `c`'s red, green and blue packed (packed), its alpha as is.
+static func packed_rgb(c: Color) -> Color:
+	return Color(packed(c.r), packed(c.g), packed(c.b), c.a)
+
+
+## An alpha as libGDX packs it: 8 bits, truncated, the lowest dropped (NumberUtils.intToFloatColor), stretched back to
+## 0..1 by the vertex shader's 255 / 254 (r51).
+static func packed_alpha(a: float) -> float:
+	return float(int(255 * clampf(a, 0, 1)) & 0xfe) / 254
+
+
+## Whether libGDX draws layer `l` of `bg` through its page fog's shared shader (ParallaxPageReader.beginDraw,
+## drawImageLayer): an image layer drawing no effect, this page or the incoming one fogged, and no dissolve or grade
+## giving each layer its own shader. There the tint is a uniform, not packed, and the layer's haze rides in the batch
+## colour's red, packed (r52, three.js r45).
+static func page_fogged(bg: PlaxBackground, l: Dictionary) -> bool:
+	if bg.page == null or l.model.kind in ["EMPTY", "PARTICLES"] or l.get("drawn_effect", "") != "":
+		return false
+	var fading := not bg.transfer_layers.is_empty()
+	if fading and bg._style != null and (bg._style.kind == "DISSOLVE" or bg._style.grades()):
+		return false
+	return bg.page.fog_strength > 0 or (fading and bg.transfer_page.fog_strength > 0)
+
+
+## Layer `l`'s haze as libGDX hands it to the shader: packed in the batch colour's red through the page fog's shader
+## (page_fogged), a uniform through the layer's own.
+static func haze_of(bg: PlaxBackground, l: Dictionary) -> float:
+	return packed(l.haze) if page_fogged(bg, l) else l.haze

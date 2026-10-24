@@ -804,9 +804,9 @@ func _unmask(page: Array[Dictionary]) -> void:
 				PlaxEffects.set_grade(l.anim_canvas.material, Color.BLACK, 0)
 
 
-## The tint at that opacity, its alpha packed by Color.toFloatBits (r51), and whether it shows (setBatchColor).
-func _set_modulate(alpha: float) -> bool:
-	_modulate = Color(tint.r, tint.g, tint.b, float(int(255 * clampf(tint.a * alpha, 0, 1)) & 0xfe) / 254)
+## The tint at that opacity, packed as libGDX packs it (PlaxEffects.page_fogged), and whether it shows (setBatchColor).
+func _set_modulate(alpha: float, fogged := false) -> bool:
+	_modulate = Color(tint if fogged else PlaxEffects.packed_rgb(tint), PlaxEffects.packed_alpha(tint.a * alpha))
 	return _modulate.a > 0
 
 
@@ -820,7 +820,7 @@ func _draw_layer(l: Dictionary, patches := false) -> void:
 		PlaxLurker.sight(self, zoom)
 		if not PlaxLurker.is_there(l):
 			return
-	if page == null or not _set_modulate(_alpha_of(l)):
+	if page == null or not _set_modulate(_alpha_of(l), PlaxEffects.page_fogged(self, l)):
 		return
 	# Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
 	var z := _zoom_of(l)
@@ -872,7 +872,7 @@ func _draw_layer(l: Dictionary, patches := false) -> void:
 		PlaxEffects.apply(_target.material, l, _effect_time, view_w, view_h, anchor.x, anchor.y,
 				Vector2(1.0 if _repeat_x else 0.0, 1.0 if _repeat_y else 0.0))
 	if _target.material:
-		_target.material.set_shader_parameter("haze", l.haze)
+		_target.material.set_shader_parameter("haze", PlaxEffects.haze_of(self, l))
 		_target.material.set_shader_parameter("fog_color", l.fog_color)
 	# The animated patch's frame, on the clock the effects run on: drawn after each tile (PlaxAnim.draw).
 	PlaxAnim.set_time(l, _effect_time)

@@ -107,6 +107,11 @@ MUTATE SCRIPTS: many tools/r<NNN>-*/mutate.sh sed a line of addons/jks_parallax/
 They grep the exact line they edit: a port change silently breaks them ("mutation N did not apply"). A mutant run lands in
 build/godot/.mutant/<round> via tools/shots-out.sh, never build/godot/<round>; a mutate.sh reading its own stills reads
 .mutant/. Never edit a mutate.sh while it runs. Re-run the mutate.sh of the round you touch.
+COLOURS AS libGDX PACKS THEM (Color.toFloatBits): the gradients cut to 8 bits (r46), a layer's alpha to 254 levels and
+its tint to 8 bits (PlaxEffects.packed_alpha, packed_rgb; r51, r52), but through libGDX's page fog shader
+(PlaxEffects.page_fogged) the tint stays a float and the haze is cut. Fed floats, cross-fades were off by up to 3/255;
+proofs: engines/godot/tools/r51-alpha-packing and r52-tint-packing (mutate.sh, thin but repeatable margins).
+plax_background.gd sits at gdlint's 1000-line cap: put new helpers in the plax_*.gd beside it.
 A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
 """
 
