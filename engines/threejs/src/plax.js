@@ -60,12 +60,12 @@
 // layer toward the fog's colour, more the slower it scrolls (PlaxEffects.fogOf), through the same shaders.
 //
 // Ported: IMAGE layers (decal, sizeRatio, flips, speeds, speedXAtRest, pads, mirror, repeat on X and Y,
-// useOriginalSize), FLOOR and LURKER layers, the animated patch, SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the
-// page's depth fog, the two gradients, cross-fades and their styles (depth stagger, dissolve, through a colour, fog
-// creep), tints, zoom and the dolly (bg.dolly = true: each layer zoomed by its depth, about the view's middle), towers
-// and the panoramas round a near one (PlaxTower, PlaxPanorama), planets (PlaxPlanet: the page's planetRadius), resizing,
-// EMPTY layers (setLayerHook), PARTICLES layers. A page with a MIRROR effect fails to load, as in libGDX a page from a
-// newer version does: it is ported in the order engines/rounds needs it (r44). Not yet: the glint, detail levels (r44).
+// useOriginalSize), FLOOR and LURKER layers, the animated patch, SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL,
+// MIRROR) and their glint, the page's depth fog, the two gradients, cross-fades and their styles (depth stagger,
+// dissolve, through a colour, fog creep), tints, zoom and the dolly (bg.dolly = true: each layer zoomed by its depth,
+// about the view's middle), towers and the panoramas round a near one (PlaxTower, PlaxPanorama), planets (PlaxPlanet:
+// the page's planetRadius), resizing, EMPTY layers (setLayerHook), PARTICLES layers, detail levels (PlaxDetail:
+// bg.detail, setLayerDetail, setLayerDefaultDetail; r44).
 //
 // A 3D game can stand the page round its world instead (PlaxRings, r48: each layer a cylinder as far as its speed
 // says, docs/page-as-3d-sky.md): new PlaxRings(bg, { front: 330, foot: 50 }), its group in the scene, update(delta).
@@ -85,7 +85,7 @@ const LAYER_DEFAULTS = {
   towerRadius: 0, towerShade: 0.65, towerCamera: 0,
   lurkerSeed: 0, lurkerOdds: 3, lurkerCover: [],
   animRegion: '', animX: 0, animY: 0, animFps: 12,
-  glintStrength: 0,
+  glintStrength: 0, mirrorHorizon: 1, mirrorDepth: 3,
   particlesLibgdx: '', particlesAnchor: 'LAYER',
 };
 // The kinds this reader draws; another fails the page's load. A PARTICLES layer's effect is loadParticles'. A SEQUENCE layer's cycle is drawn by drawCycle.
@@ -95,8 +95,8 @@ const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE', 'SHADER', 'PARTICLES', 'FLOOR', 'LU
 const FLOOR_MAPPINGS = ['MODE7', 'LINE_SCROLL'];
 // The kinds a dissolve masks and a transfert through a colour grades; an EMPTY one fades to its share instead.
 const MASKED = ['IMAGE', 'SEQUENCE', 'SHADER', 'FLOOR', 'LURKER'];
-// The effects a SHADER layer is drawn through here (PlaxEffects.EFFECTS less MIRROR); another fails the page's load.
-const EFFECTS = ['WAVE', 'FOG', 'SWELL'];
+// The effects a SHADER layer is drawn through (PlaxEffects.EFFECTS); another fails the page's load, as in libGDX.
+const EFFECTS = ['WAVE', 'FOG', 'SWELL', 'MIRROR'];
 // What a seed of 0 starts from (SequenceCycle.ZERO_SEED): xorshift never leaves 0.
 const ZERO_SEED = 0x6D2B79F5;
 const WHITE = [1, 1, 1, 1];
@@ -342,6 +342,11 @@ export class PlaxBackground {
     this._effectTime = 0;
     // What draws each EMPTY layer, by layer name (setLayerHook).
     this._hooks = new Map();
+    // ParallaxPageReader.setDetail: how much of the page is drawn (bg.detail), HIGH as stored; from which levels each
+    // layer named is drawn (setLayerDetail), and every other layer (PlaxDetail.ruleOf).
+    this._detail = PlaxDetail.Level.HIGH;
+    this._details = new Map();
+    this._defaultDetail = PlaxDetail.DEFAULT;
     // The camera zoom of the last draw of a LURKER layer, which act()'s sightings run against; NaN before it (PlaxLurker).
     this._lurkerZoom = NaN;
     // Which of a SHADER layer's two draws _tile is on: 0 both, its tiles (1) and its patches (2) apart (_drawLayer).
@@ -426,6 +431,30 @@ export class PlaxBackground {
   setLayerHook(name, hook) {
     if (hook) this._hooks.set(name, hook);
     else this._hooks.delete(name);
+  }
+
+  // ParallaxPageReader.setDetail: how much of the page is drawn, a PlaxDetail.Level, each layer by its rule.
+  get detail() {
+    return this._detail;
+  }
+
+  set detail(level) {
+    this._detail = level;
+    PlaxDetail.applyAll(this);
+  }
+
+  // ParallaxPageReader.setLayerDetail: the layers named `name` drawn from the levels `rule` names over
+  // PlaxDetail.DEFAULT ({ shown, effect, glint, mirror }); empty or null: as every other layer.
+  setLayerDetail(name, rule) {
+    if (!rule || !Object.keys(rule).length) this._details.delete(name);
+    else this._details.set(name, PlaxDetail.rule(rule));
+    PlaxDetail.applyAll(this);
+  }
+
+  // ParallaxPageReader.setLayerDefaultDetail: every layer not named drawn from the levels `rule` names over the default.
+  setLayerDefaultDetail(rule) {
+    this._defaultDetail = PlaxDetail.rule(rule ?? {});
+    PlaxDetail.applyAll(this);
   }
 
   // ParallaxPageReader.planetPlaceAt (r347): where the point `at` ([x, y]) of layer `l` is drawn round its page's
@@ -569,9 +598,10 @@ export class PlaxBackground {
       if (this.page) this._drawLayer(l);
       l.quads.end();
       if (l.animQuads) {
-        // A SHADER layer's patches after its tiles, through their own material (_buildLayers).
+        // A SHADER layer's patches after its tiles, through their own material (_buildLayers); drawn plain at its detail
+        // level, with its tiles (PlaxDetail).
         l.animQuads.begin(order++);
-        if (this.page) this._drawLayer(l, true);
+        if (this.page && l.drawnEffect) this._drawLayer(l, true);
         l.animQuads.end();
       }
     }
@@ -648,8 +678,12 @@ export class PlaxBackground {
     for (const l of built) {
       l.haze = l.model.kind === 'EMPTY' || l.model.kind === 'PARTICLES' ? 0 : PlaxEffects.fogOf(page.fogStrength, front, l.model);
       l.fogColor = page.fogColor.slice(0, 3);
+      // What a MIRROR layer mirrors: its page's top gradient (WholePage_Model.buildLayer).
+      l.sky = page.topHalfBottom.slice(0, 3);
+      l.zenith = page.topHalfTop.slice(0, 3);
       if (l.model.kind === 'SHADER') l.quads.setEffect(l.model.shaderEffect);
       else if (l.haze > 0 && ['IMAGE', 'SEQUENCE', 'FLOOR', 'LURKER'].includes(l.model.kind)) l.quads.setEffect('PLAIN');
+      PlaxDetail.apply(l, this._detail, PlaxDetail.ruleOf(this, l));
     }
     return built;
   }
@@ -889,7 +923,9 @@ export class PlaxBackground {
   // A layer's quads draw it; a layer at alpha 0 is not drawn. `patches`: a SHADER layer's patches' quads draw them
   // (_buildLayers).
   _drawLayer(l, patches = false) {
-    this._part = l.animQuads ? (patches ? 2 : 1) : 0;
+    // Not drawn at its detail level, it scrolls on (PlaxDetail); drawn plain, a SHADER layer's patches go with its tiles.
+    if (!l.shown) return;
+    this._part = l.animQuads && l.drawnEffect ? (patches ? 2 : 1) : 0;
     if (l.model.kind === 'LURKER') {
       // The lurkers against this view; a figure not there is not drawn (PlaxLurker).
       this._lurkerZoom = this.zoom;
@@ -902,7 +938,8 @@ export class PlaxBackground {
     // As libGDX packs the batch colour (Color.toFloatBits): the alpha to 254 levels, and, but through the page fog's
     // shader (ParallaxPageReader.drawImageLayer: a page with a fog, a layer without an effect), the tint to 8 bits.
     // That shader takes the tint as a uniform and the layer's fog in the batch colour's red: the fog is cut instead.
-    const pageFog = this._pageFog() && !['SHADER', 'EMPTY', 'PARTICLES'].includes(l.model.kind);
+    // A SHADER layer drawn plain at its detail level is an image layer there (PlaxEffects.page_fogged).
+    const pageFog = this._pageFog() && !['EMPTY', 'PARTICLES'].includes(l.model.kind) && !l.drawnEffect;
     const color = pageFog ? this.tint : this.tint.map(packed);
     quads.setColor(color, packedAlpha(alpha));
     this._hookColor = [...color.slice(0, 3), packedAlpha(alpha)];
@@ -961,7 +998,7 @@ export class PlaxBackground {
     const u = quads.uniforms;
     if (u) {
       u.view.value.set(this.width, this.height);
-      if (m.kind === 'SHADER') {
+      if (m.kind === 'SHADER' && l.drawnEffect) {
         PlaxEffects.apply(u, l, this._effectTime, viewW, viewH, anchor[0], anchor[1],
           [this._repeatX ? 1 : 0, this._repeatY ? 1 : 0]);
       }
@@ -1950,6 +1987,59 @@ export class PlaxTransfertStyle {
   }
 }
 
+// --- detail levels (PlaxDetail: ParallaxPageReader.setDetail, r464) ---------------------------------------------------
+
+// Detail levels, for a PlaxBackground (ParallaxPageReader.setDetail, Enum_Detail, LayerDetail; plax_detail.gd): how much
+// of a page a game draws, a player's choice of quality, never stored in a page. At each level a layer is drawn, drawn
+// plain or not drawn as its rule says: from which level it is shown, its SHADER effect drawn (below: its image), its
+// glint drawn, a MIRROR layer's reflection drawn (below: through SWELL, in SWELL's sun). Its state is on the layer:
+// shown, drawnEffect ('' for none) and drawnGlint, set when the page is built and when the game changes a level:
+//
+//   bg.detail = PlaxDetail.Level.MEDIUM
+//   bg.setLayerDetail('birds', { shown: PlaxDetail.Level.HIGH })   // a flock at HIGH only
+//   bg.setLayerDetail('sea', { mirror: PlaxDetail.Level.MEDIUM })  // a sea that keeps its reflection at MEDIUM
+export const PlaxDetail = {
+  // Enum_Detail, lowest first.
+  Level: { OFF: 0, MEDIUM: 1, HIGH: 2 },
+  // LayerDetail.DEFAULT: shown at every level, its effect and glint from MEDIUM, a MIRROR's reflection at HIGH only.
+  DEFAULT: { shown: 0, effect: 1, glint: 1, mirror: 2 },
+
+  // A layer's rule: DEFAULT with `over`'s keys (shown, effect, glint, mirror) in their place.
+  rule(over) {
+    return { ...PlaxDetail.DEFAULT, ...over };
+  },
+
+  // The rule `bg` draws layer `l` by: its name's (PlaxBackground.setLayerDetail), else every layer's.
+  ruleOf(bg, l) {
+    return bg._details.get(l.model.name) ?? bg._defaultDetail;
+  },
+
+  // Sets what `bg.detail` draws of each of its layers, both pages of a cross-fade (ParallaxPageReader.setDetail).
+  applyAll(bg) {
+    for (const l of [...bg.layers, ...bg.transferLayers]) PlaxDetail.apply(l, bg.detail, PlaxDetail.ruleOf(bg, l));
+  },
+
+  // Sets what `level` draws of layer `l` under rule `r` (ParallaxPageReader.drawLayer, ParallaxLayer.getDrawnEffect,
+  // drawsGlint): shown or not (it scrolls on), and a SHADER layer's quads drawn through the effect it is drawn through,
+  // or for none PLAIN when it is fogged.
+  apply(l, level, r) {
+    const m = l.model;
+    l.shown = level >= r.shown;
+    let effect = '';
+    if (m.kind === 'SHADER' && level >= r.effect) {
+      effect = m.shaderEffect === 'MIRROR' && level < r.mirror ? 'SWELL' : m.shaderEffect;
+    }
+    l.drawnGlint = effect !== '' && level >= r.glint;
+    const before = l.drawnEffect ?? (m.kind === 'SHADER' ? m.shaderEffect : '');
+    l.drawnEffect = effect;
+    if (m.kind !== 'SHADER' || before === effect) return;
+    l.dissolvePlain = false;
+    l.quads.setEffect(effect || (l.haze > 0 ? 'PLAIN' : null));
+    // Drawn plain, its patches go with its tiles, as an IMAGE layer's (ParallaxPageReader.drawImageLayer; update()).
+    if (l.animQuads && effect) l.animQuads.setEffect(effect);
+  },
+};
+
 // --- SHADER layers and the page fog (PlaxEffects: core's GdxLayerEffects) ----------------------------------------------
 
 // The SHADER layers' effects (Enum_ShaderEffect), as GLSL: plax_effects.gd's shaders line for line, which copy core's
@@ -1995,6 +2085,10 @@ uniform vec4 grade;
 uniform vec3 across;
 uniform vec3 up;
 uniform vec2 wrap;
+uniform vec4 glint;
+uniform vec2 sun;
+uniform vec4 glint_a;
+uniform vec4 glint_b;
 varying vec2 vUv;
 varying vec2 vScreen;
 // Quads.shade: what a tower's piece darkens the tint by (PlaxTower.draw); 1 for every other quad.
@@ -2019,6 +2113,24 @@ float dissolved(vec2 screen_uv) {
 vec4 hazed(vec4 color, vec2 screen_uv) {
 	return vec4(mix(mix(color.rgb, fog_color, haze), grade.rgb, grade.a), color.a * dissolved(screen_uv));
 }
+vec4 glinted(vec4 color, vec4 image, vec2 uv, vec2 screen_uv) {
+	if (glint.x <= 0.0)
+		return color;
+	const vec3 LUMA = vec3(0.299, 0.587, 0.114);
+	float dv = glint.w / size.y * (region.w - region.y);
+	float lo = min(region.y, region.w), hi = max(region.y, region.w);
+	vec4 above = texture2D(tex, vec2(uv.x, clamp(uv.y - dv, lo, hi)));
+	vec4 below = texture2D(tex, vec2(uv.x, clamp(uv.y + dv, lo, hi)));
+	float ridge = dot(image.rgb, LUMA) - 0.5 * (dot(above.rgb, LUMA) + dot(below.rgb, LUMA));
+	float crest = smoothstep(0.005, 0.035, ridge) * min(above.a, below.a) * image.a;
+	float sun_at = (screen_uv.x - sun.x) / sun.y;
+	vec2 q = along(screen_uv) / glint_b.zw;
+	float n = (cos(TAU * (glint_a.x * q.x + glint_a.y * q.y))
+		+ 0.6 * cos(TAU * (glint_a.z * q.x + glint_a.w * q.y + 0.3))) / 1.6;
+	float pulse = 0.5 + 0.5 * cos(TAU * (glint.z + 1.5 * sin(TAU * (glint_b.x * q.x + glint_b.y * q.y))));
+	float glow = smoothstep(1.0 - glint.y, 1.0, n) * pulse * pulse * crest * exp(-sun_at * sun_at);
+	return vec4(min(color.rgb + glint.x * glow * vec3(1.0, 0.96, 0.85), 1.0), color.a);
+}
 `;
 
 const EFFECT_FRAGMENTS = {
@@ -2030,7 +2142,7 @@ const EFFECT_FRAGMENTS = {
 	float u = clamp(vUv.x + shift / size.x * (region.z - region.x), min(region.x, region.z), max(region.x, region.z));
 	vec2 uv = vec2(u, vUv.y);
 	vec4 image = texture2D(tex, uv);
-	gl_FragColor = hazed(vec4(tint.rgb * vShade, tint.a) * image, SCREEN_UV);
+	gl_FragColor = hazed(glinted(vec4(tint.rgb * vShade, tint.a) * image, image, uv, SCREEN_UV), SCREEN_UV);
 }
 `,
   // FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines whose x frequencies are 7, 17 and 23 per
@@ -2044,7 +2156,7 @@ const EFFECT_FRAGMENTS = {
 	vec4 image = texture2D(tex, vUv);
 	vec4 color = vec4(tint.rgb * vShade, tint.a) * image;
 	color.a *= 1.0 - effect.x * n;
-	gl_FragColor = hazed(color, SCREEN_UV);
+	gl_FragColor = hazed(glinted(color, image, vUv, SCREEN_UV), SCREEN_UV);
 }
 `,
   // SWELL (r431): each pixel read from where two crossing travelling waves move it, up to amplitude sideways and half
@@ -2061,7 +2173,55 @@ const EFFECT_FRAGMENTS = {
 	vec2 f = mix(clamp(l / size, 0.0, 1.0), fract(l / size), wrap);
 	vec2 uv = vec2(mix(region.x, region.z, f.x), mix(region.w, region.y, f.y));
 	vec4 image = texture2D(tex, uv);
-	gl_FragColor = hazed(vec4(tint.rgb * vShade, tint.a) * image, SCREEN_UV);
+	gl_FragColor = hazed(glinted(vec4(tint.rgb * vShade, tint.a) * image, image, uv, SCREEN_UV), SCREEN_UV);
+}
+`,
+  // MIRROR (r455): SWELL, then the water a mirror of the page's sky (GdxLayerEffects.MIRROR): a facet, tilted by the
+  // swell's slope, three finer ripples and the painting's relief, bends the painting's own colour by how much more
+  // or less of the sky it mirrors than flat water there does. mirror: strength, relief, shine, tint; mirror_at: the
+  // horizon's height in local() and the depth; sky, zenith: the page's top gradient, its bottom and top.
+  MIRROR: `uniform vec4 mirror;
+uniform vec2 mirror_at;
+uniform vec3 sky;
+uniform vec3 zenith;
+vec2 wrapped(vec2 l) {
+	vec2 f = mix(clamp(l / size, 0.0, 1.0), fract(l / size), wrap);
+	return vec2(mix(region.x, region.z, f.x), mix(region.w, region.y, f.y));
+}
+vec3 mirror_of(float s) {
+	float hard = 0.5 - 0.4 * mirror.z;
+	vec3 mirrored = mix(sky, zenith, smoothstep(0.5 - hard, 0.5 + hard, s));
+	mirrored = mix(mirrored, vec3(1.0), mirror.z * (1.0 - smoothstep(-0.3, 0.1, s)));
+	return mirrored * (1.0 - 0.5 * mirror.z * smoothstep(0.9, 1.4, s));
+}
+void main() {
+	vec2 SCREEN_UV = vScreen / view;
+	vec2 a = along(SCREEN_UV);
+	float L = effect.y;
+	float t = effect.z / L;
+	float p1 = TAU * ((a.x + 0.6 * a.y) / L - t);
+	float p2 = TAU * (0.625 * a.x / L - 0.9 * a.y / L + 2.0 * t);
+	vec2 l = local(vUv) + effect.x * vec2(0.6 * sin(p1) + 0.4 * sin(p2), 0.5 * (0.6 * cos(p1) - 0.4 * cos(p2)));
+	vec2 uv = wrapped(l);
+	vec4 image = texture2D(tex, uv);
+	vec4 color = vec4(tint.rgb * vShade, tint.a) * image;
+	vec2 mq = vec2(a.x / (8.0 * L), a.y / (10.0 * L));
+	float tilt = TAU / L * effect.x * (0.18 * cos(p1) - 0.18 * cos(p2))
+		+ effect.x * (0.9 * sin(TAU * (13.0 * mq.x + 41.0 * mq.y - 3.0 * t))
+		+ 0.7 * sin(TAU * (-7.0 * mq.x + 57.0 * mq.y - 4.0 * t))
+		+ 0.5 * sin(TAU * (21.0 * mq.x + 83.0 * mq.y - 5.0 * t + 0.5 * sin(TAU * (5.0 * mq.x - 9.0 * mq.y + t)))));
+	const vec3 GREY = vec3(0.299, 0.587, 0.114);
+	const float D = 0.05;
+	float relief = dot(texture2D(tex, wrapped(l + vec2(0.0, D))).rgb
+		- texture2D(tex, wrapped(l - vec2(0.0, D))).rgb, GREY) / (2.0 * D);
+	float facet = tilt + 0.5 * mirror.y * relief;
+	float level = (mirror_at.x - local(vUv).y) / mirror_at.y;
+	vec3 mirrored = mirror_of(level + 1.2 * facet);
+	vec3 still = mirror_of(level);
+	vec3 bend = mirrored / max(still, 0.05);
+	bend = mix(bend, vec3(dot(mirrored, GREY) / max(dot(still, GREY), 0.05)), mirror.w);
+	color.rgb = mix(color.rgb, min(color.rgb * bend, 1.0), mirror.x);
+	gl_FragColor = hazed(glinted(color, image, uv, SCREEN_UV), SCREEN_UV);
 }
 `,
   // PLAIN: no effect, the depth fog only.
@@ -2077,6 +2237,20 @@ export const PlaxEffects = {
   FOG_PERIOD: 8,
   // Enum_ShaderEffect.FOG_PERIOD_Y: how many wavelengths they run up before they repeat (r262).
   FOG_PERIOD_Y: 10,
+  // GdxLayerEffects' GLINT_*: what a page does not store of the glint, as the animation lab drew it (r408).
+  GLINT_SIZE: 0.8,
+  GLINT_CREST: 0.2,
+  GLINT_DENSITY: 0.6,
+  GLINT_TWINKLE: 0.3,
+  GLINT_SUN_X: 0.5,
+  GLINT_SUN_WIDTH: 0.3,
+  // GdxLayerEffects.MIRROR_SUN_*: a MIRROR layer's glint's sun (r455).
+  MIRROR_SUN_X: 0.25,
+  MIRROR_SUN_WIDTH: 0.45,
+  // GdxLayerEffects.MIRROR_*: MIRROR's strength, relief, shine and tint, which a page does not store (r455).
+  MIRROR_NUMBERS: [0.15, 3.0, 1.0, 1.0],
+  GLINT_ACROSS: [1.0, 1.37, 0.53],
+  GLINT_UP: [1.0, -0.71, 1.3],
 
   // A layer's uniforms, at what the Godot shaders default them to; every run of the layer shares them.
   uniforms() {
@@ -2088,6 +2262,10 @@ export const PlaxEffects = {
       cells: { value: new THREE.Vector2() }, grade: { value: new THREE.Vector4(0, 0, 0, 0) },
       across: { value: new THREE.Vector3(0, 0, 1) }, up: { value: new THREE.Vector3(0, 0, 1) },
       wrap: { value: new THREE.Vector2(1, 0) },
+      glint: { value: new THREE.Vector4(0, 0, 0, 0) }, sun: { value: new THREE.Vector2(0.5, 0.3) },
+      glint_a: { value: new THREE.Vector4(0, 0, 0, 0) }, glint_b: { value: new THREE.Vector4(0, 0, 1, 1) },
+      mirror: { value: new THREE.Vector4(0, 0, 0, 0) }, mirror_at: { value: new THREE.Vector2(1, 1) },
+      sky: { value: new THREE.Vector3(1, 1, 1) }, zenith: { value: new THREE.Vector3(1, 1, 1) },
     };
   },
 
@@ -2118,8 +2296,7 @@ export const PlaxEffects = {
     return wavelength * PlaxEffects._across(model);
   },
 
-  // ParallaxLayer.glints: a SHADER layer with a positive glint strength and wavelength. Its period counts here; the
-  // glint itself is not drawn yet (r44).
+  // ParallaxLayer.glints: a SHADER layer with a positive glint strength and wavelength.
   glints(model) {
     return model.kind === 'SHADER' && (model.glintStrength ?? 0) > 0 && (model.shaderWavelength ?? 0) > 0;
   },
@@ -2175,16 +2352,52 @@ export const PlaxEffects = {
   // GdxLayerEffects.setRepeat, r434).
   apply(u, l, seconds, viewW, viewH, left = 0, floorY = 0, wrap = [1, 0]) {
     const image = l.region.page.texture.image, model = l.model, src = l.src;
+    // The effect its detail level draws (PlaxDetail): SWELL for a MIRROR without its reflection.
+    const effect = l.drawnEffect ?? model.shaderEffect;
     u.region.value.set(src.x / image.width, src.y / image.height, (src.x + src.w) / image.width,
       (src.y + src.h) / image.height);
     u.size.value.set(l.width * l.packedW, l.height * l.packedH);
     const on = model.shaderWavelength > 0;
     let amplitude = model.shaderAmplitude;
-    if (model.shaderEffect === 'FOG') amplitude = Math.min(1, Math.max(0, amplitude));
+    if (effect === 'FOG') amplitude = Math.min(1, Math.max(0, amplitude));
     u.effect.value.set(on ? amplitude : 0, on ? model.shaderWavelength : 1, on ? PlaxEffects.phase(model, seconds) : 0);
     u.across.value.set(viewW, left + PlaxEffects.effectStartX(l), model.flipX ? -1 : 1);
     u.up.value.set(viewH, floorY + PlaxEffects.effectStartY(l), model.flipY ? -1 : 1);
     u.wrap.value.set(wrap[0], wrap[1]);
+    PlaxEffects._applyGlint(u, l, seconds);
+    if (effect === 'MIRROR') PlaxEffects._applyMirror(u, l);
+  },
+
+  // GdxLayerEffects.mirrorUniforms: MIRROR's numbers, the horizon's height in local() and the depth, the page's sky.
+  _applyMirror(u, l) {
+    u.mirror.value.set(...PlaxEffects.MIRROR_NUMBERS);
+    u.mirror_at.value.set((l.model.mirrorHorizon - l.trimBottom) * l.height, Math.max(0.01, l.model.mirrorDepth));
+    u.sky.value.set(...l.sky);
+    u.zenith.value.set(...l.zenith);
+  },
+
+  // GdxLayerEffects.glintUniforms: the glint's numbers, its strength 0 for a layer that does not glint, or whose detail
+  // level draws none (PlaxDetail: ParallaxLayer.drawsGlint); each wave a whole number of turns over the effect's period.
+  _applyGlint(u, l, seconds) {
+    const model = l.model;
+    const on = PlaxEffects.glints(model) && l.drawnGlint !== false;
+    const periodX = on ? PlaxEffects.period(model) : 1;
+    const periodUp = on ? PlaxEffects.periodY(model) : 1;
+    u.glint.value.set(on ? model.glintStrength : 0, PlaxEffects.GLINT_DENSITY,
+      (seconds * PlaxEffects.GLINT_TWINKLE) % 1000, PlaxEffects.GLINT_CREST);
+    // A MIRROR drawn through SWELL takes SWELL's sun (Simon on r464).
+    const mirrored = (l.drawnEffect ?? model.shaderEffect) === 'MIRROR';
+    u.sun.value.set(mirrored ? PlaxEffects.MIRROR_SUN_X : PlaxEffects.GLINT_SUN_X,
+      mirrored ? PlaxEffects.MIRROR_SUN_WIDTH : PlaxEffects.GLINT_SUN_WIDTH);
+    const across = periodX / (2.5 * PlaxEffects.GLINT_SIZE);
+    const upTurns = periodUp / 0.9;
+    const t = [];
+    for (let k = 0; k < 3; k++) {
+      t.push(Math.max(1, Math.floor(PlaxEffects.GLINT_ACROSS[k] * across + 0.5)));
+      t.push(Math.floor(PlaxEffects.GLINT_UP[k] * upTurns + 0.5));
+    }
+    u.glint_a.value.set(t[0], t[1], t[2], t[3]);
+    u.glint_b.value.set(t[4], t[5], periodX, periodUp);
   },
 
   // ParallaxPageReader.fogOf: how much of the fog's colour layer `model` is mixed toward, 0 to 1:
@@ -3732,7 +3945,7 @@ class Quads {
     this.shade = null;
   }
 
-  // Draws every run through PlaxEffects' `effect` ('WAVE', 'FOG', 'SWELL' or 'PLAIN'), its numbers in `uniforms`,
+  // Draws every run through PlaxEffects' `effect` ('WAVE', 'FOG', 'SWELL', 'MIRROR' or 'PLAIN'), its numbers in `uniforms`,
   // set once a frame for the whole layer, as one Godot canvas's material; null, back to no shader.
   setEffect(effect) {
     this.effect = effect;

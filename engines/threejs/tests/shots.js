@@ -4,14 +4,16 @@
 // it up too, its "resize" resizes the screen mid-scroll, its "sequenceSeed" draws the SEQUENCE layers from that game
 // seed its "hooks" draw its EMPTY layers (an atlas region stretched over each tile, as ParallaxShots; "planet": stood on
 // the tile's foot round the page's planet, turned as it leans) and its "zoom": [1, 0.5] zooms the camera straight from
-// the first at 0 s to the second at 12 s, dollied when its "dolly" is true. engines/threejs/tools/frame-check.sh serves the repository with
+// the first at 0 s to the second at 12 s, dollied when its "dolly" is true. Its "detail": "MEDIUM" draws it at that
+// PlaxDetail.Level, "detailDefault": {"mirror": "MEDIUM"} every layer from those levels and "layerDetail":
+// {"mist": {"shown": "MEDIUM"}} the layers of that name (r464, as shots.gd _set_details). engines/threejs/tools/frame-check.sh serves the repository with
 // engines/threejs/tools/serve.py and opens
 //   shots.html?round=<round dir>
 // which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done. &skip=s12,s13 leaves scenes out
 // (frame-check.sh's SKIP: what this reader does not draw yet).
 import * as THREE from 'three';
 import {
-  PlaxAnim, PlaxBackground, PlaxFloor, PlaxLurker, PlaxPanorama, PlaxParticles, PlaxPlanet, PlaxTransfertStyle, loadAtlas,
+  PlaxAnim, PlaxBackground, PlaxDetail, PlaxFloor, PlaxLurker, PlaxPanorama, PlaxParticles, PlaxPlanet, PlaxTransfertStyle, loadAtlas,
   loadPage, loadParticles,
 } from '../src/plax.js';
 
@@ -68,6 +70,7 @@ async function shots() {
     bg.speedConstantY = scene.speedY ?? 0;
     // ParallaxShots: the dolly (r278) for the scene's zoom.
     bg.dolly = !!scene.dolly && BREAK !== 'dolly';
+    setDetails(bg, scene);
     const zoom = scene.zoom ?? [1, 1];
     let resizeAt = scene.resize ?? null, tint = scene.tint ?? null;
     // One transfer, or a list of them started one after the other.
@@ -94,6 +97,30 @@ async function shots() {
 }
 
 // A hook per EMPTY layer the scene names, drawing a region of the page's atlas; the scene before's are removed.
+// The scene's detail level and rules (Round.java's "detail", "detailDefault", "layerDetail"); the last scene's go.
+// BREAK=detail draws every scene at HIGH, as stored (glint's g06, g07 and shaders' s15, s16, s18 must FAIL); BREAK=glint no
+// glint (glint must FAIL), BREAK=mirror every MIRROR through SWELL (shaders' s12-s14 and glint's g05 must FAIL).
+let detailed = [];
+function setDetails(bg, scene) {
+  for (const name of detailed) bg.setLayerDetail(name, null);
+  detailed = [];
+  const never = PlaxDetail.Level.HIGH + 1;
+  const levels = names => Object.fromEntries(Object.entries(names ?? {}).map(([k, v]) => [k, PlaxDetail.Level[v]]));
+  if (BREAK === 'detail') {
+    bg.setLayerDefaultDetail({});
+    bg.detail = PlaxDetail.Level.HIGH;
+    return;
+  }
+  bg.setLayerDefaultDetail({
+    ...levels(scene.detailDefault), ...(BREAK === 'glint' ? { glint: never } : BREAK === 'mirror' ? { mirror: never } : {}),
+  });
+  for (const [name, rule] of Object.entries(scene.layerDetail ?? {})) {
+    bg.setLayerDetail(name, levels(rule));
+    detailed.push(name);
+  }
+  bg.detail = PlaxDetail.Level[scene.detail ?? 'HIGH'];
+}
+
 function setHooks(bg, hooks) {
   for (const name of [...bg._hooks.keys()]) bg.setLayerHook(name, null);
   for (const name in hooks) {

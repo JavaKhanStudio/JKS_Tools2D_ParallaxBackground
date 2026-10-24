@@ -171,6 +171,12 @@ effect shaders read it as vShade), packed as libGDX packs it (_towerShade: in th
 PARTICLES effect round a planet is turned as one block, in floats (PlaxPlanet.turn, PlaxParticles.draw). A hook draws
 turned with batch.drawRegion(region, x, y, w, h, bg.planetPlaceAt(l, foot), bg.planetAngleAt(l, foot[0])).
 BREAK=dolly must FAIL dolly, planet planet, shade and panorama tower.
+THE GLINT, MIRROR AND DETAIL LEVELS (r44): glinted() in EFFECT_HEAD runs after every effect but PLAIN, its numbers set
+by PlaxEffects._applyGlint, MIRROR's by _applyMirror (l.sky, l.zenith: the page's top gradient). PlaxDetail (plax_detail.gd)
+puts l.shown, l.drawnEffect ('' drawn plain) and l.drawnGlint on each layer when it is built and when bg.detail,
+setLayerDetail or setLayerDefaultDetail change; it swaps the quads' effect (Quads.setEffect), and code that asks
+whether a SHADER layer draws its effect reads l.drawnEffect, never model.kind (pageFog, _part, update()'s animQuads).
+BREAK=glint must FAIL glint, mirror shaders s12-s14, detail s15, s16, s18, g06 and g07 (tests/shots.js setDetails).
 THE RINGS (PlaxRings, r48: the page as the sky of a 3D world, docs/page-as-3d-sky.md): its statics are core's
 ParallaxRings line for line, checked as JSON by frame-check.sh's rings round (tests/rings.html, tools/compare-rings.py
 within 1e-4); change core's and they change together. The instance draws them from PlaxBackground's state (layers,

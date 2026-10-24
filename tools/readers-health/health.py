@@ -49,11 +49,7 @@ READERS = [
      'role': "an ES module port of core for three.js, drawn in headless Chrome (r34, from Crypto en visuel's reader)",
      'needs': 'google-chrome', 'check': 'engines/threejs/tools/frame-check.sh', 'jobs': ['three.js frames against libGDX'],
      'watch': ['engines/threejs', 'core/src'],
-     'run': 'engines/threejs/tools/frame-check.sh && engines/threejs/tools/bench.sh', 'bench': 'engines/threejs/tools/bench.sh',
-     'unsupported': {
-         # And the shaders round's s12-s18 (frame-check.sh's SKIP): the features mirror and detail are drawn there too.
-         'engines/rounds/glint': ('r44', 'glint, MIRROR and detail levels are not ported yet', 'glint', 'mirror', 'detail'),
-     }},
+     'run': 'engines/threejs/tools/frame-check.sh && engines/threejs/tools/bench.sh', 'bench': 'engines/threejs/tools/bench.sh'},
     {'id': 'unity', 'name': 'Unity', 'folder': None, 'role': 'not written: parallax:r103, paused on its install',
      'needs': 'unity', 'paused': True},
 ]

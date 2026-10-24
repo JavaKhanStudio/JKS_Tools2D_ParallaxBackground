@@ -12,7 +12,7 @@ repair.
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `engines/godot/tools/frame-check.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. Split out of the grading lab's `--shots` mode, which the lab no longer has (r157). | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/rounds/reader/` | `:rounds` (r312): `Round`, a reader round's `round.json` read once for `:shots` and `:jme`'s frame runner (Godot's `tests/shots.gd` reads it a third time). A new round field goes there. Gdx core only. Not published. | 17 | `./gradlew :rounds:build`, then the frame checks |
-| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE, SEQUENCE, SHADER (not MIRROR), EMPTY, PARTICLES, FLOOR and LURKER layers, the animated patch, the dolly, towers, planets, the page fog, cross-fades and their styles, tints, the rings so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart, sequence, shaders (s01-s11), fog, transfer, effects, particles, floor, lurker, animated, dolly, tower, planet and rings, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
+| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE, SEQUENCE, SHADER, EMPTY, PARTICLES, FLOOR and LURKER layers, the animated patch, the dolly, towers, planets, the glint, detail levels, the page fog, cross-fades and their styles, tints, the rings so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart, sequence, shaders, fog, transfer, effects, particles, floor, lurker, animated, dolly, tower, planet, glint and rings, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `engines/jme/tools/frame-check.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:jme:run` and `:shots:run`
@@ -134,7 +134,7 @@ repair.
 - A `SHADER` layer's effects (`Enum_ShaderEffect`, format 7) are written three times, line for line:
   `core/src/.../GdxLayerEffects.java` (GLSL ES 1.0, WebGL too), `engines/godot/addons/jks_parallax/plax_effects.gd`
   and `engines/jme/resources/.../ParallaxEffect.frag`, all fed `GdxLayerEffects.uniforms`, and a fourth time in
-  `engines/threejs/src/plax.js` (`PlaxEffects`, `EFFECT_FRAGMENTS`; not MIRROR nor the glint yet, r44). Change one,
+  `engines/threejs/src/plax.js` (`PlaxEffects`, `EFFECT_FRAGMENTS`, r39, r44). Change one,
   change them all, and run the frame checks on `engines/rounds/shaders`; a new effect goes in `Enum_ShaderEffect` (append
   only), `plax_effects.gd`'s `EFFECTS` and that round, strong enough that leaving it out fails
   (`tools/r180-shader-round/strength.sh`). The reader draws them through the engine's `LayerEffects`, never
@@ -145,12 +145,12 @@ repair.
   `tools/r262-fog-seam-y/mutate.sh`). WAVE's y is `along().y` too (r273, s08, `tools/r273-wave-seam-y/mutate.sh`).
 - A `SHADER` layer's glint (format 17, r427: `glintStrength`, its only stored number) ends every effect shader in
   `glinted()`, before `hazed()`, written three times like the effects and fed `GdxLayerEffects.glintUniforms` (Godot's
-  `PlaxEffects._apply_glint`, its `GLINT_*` copied). A glinting layer's period is at least FOG's
+  `PlaxEffects._apply_glint`, its `GLINT_*` copied; three.js's `_applyGlint`). A glinting layer's period is at least FOG's
   (`ParallaxLayer.glints`, `periodAcross`/`periodUp`; Godot's `_across`/`_up`), so the glint loops across the wrap.
   Change it and run both frame checks on `engines/rounds/glint`, gated by `pixelsOff` (the glint is too sparse for
   the mean); `tools/r427-glint/strength.sh` proves the round sees it, `mutate.sh` a wrong Godot or jME copy.
 - A `MIRROR` layer (r455, format 18: `mirrorHorizon`, `mirrorDepth`) is SWELL, then the water a mirror of its page's
-  sky, the page's top gradient handed to each layer it builds (`ParallaxLayer.setMirrorSky`, Godot's `l.sky`/`l.zenith`),
+  sky, the page's top gradient handed to each layer it builds (`ParallaxLayer.setMirrorSky`, Godot's and three.js's `l.sky`/`l.zenith`),
   its numbers in `GdxLayerEffects.mirrorUniforms`, its glint's sun `MIRROR_SUN_*` (every other effect keeps `GLINT_SUN_*`).
   Change it and run both frame checks on `engines/rounds/shaders` (s12-s14) and `engines/rounds/glint` (g05);
   `tools/r455-mirror/strength.sh` proves the round sees the mirror past SWELL, `mutate.sh` a wrong Godot or jME copy.
@@ -160,7 +160,7 @@ repair.
   reader sets each layer's `setDetailDrawn` before drawing it; every engine's effects draw `ParallaxLayer.getDrawnEffect`
   (SWELL for a MIRROR below its mirror's level, null drawn plain) and `drawsGlint`, never `getShaderEffect`/`glints`,
   which keep the periods. Godot's copy is `plax_detail.gd` (`bg.detail`, `set_layer_detail`, the canvases' materials
-  and visibility). Change it and run both frame checks on `engines/rounds/shaders` (s15-s18) and `engines/rounds/glint`
+  and visibility), three.js's `PlaxDetail` in `plax.js` (`l.drawnEffect`, `Quads.setEffect`). Change it and run the frame checks on `engines/rounds/shaders` (s15-s18) and `engines/rounds/glint`
   (g06, g07) and `DetailCases`; `tools/r464-detail/strength.sh` proves the rounds see a reader ignoring the level or the
   rules, `mutate.sh` a wrong Godot, jME or core copy.
 - A page's depth fog (`fogStrength`, `fogColor`, format 10; format 9's `shaderHaze` is read as its strength) ends
