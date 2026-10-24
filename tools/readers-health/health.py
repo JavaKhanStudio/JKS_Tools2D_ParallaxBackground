@@ -51,7 +51,6 @@ READERS = [
      'watch': ['engines/threejs', 'core/src'],
      'run': 'engines/threejs/tools/frame-check.sh && engines/threejs/tools/bench.sh', 'bench': 'engines/threejs/tools/bench.sh',
      'unsupported': {
-         'engines/rounds/effects': ('r41', 'EMPTY layer hooks are not ported yet', 'hooks'),
          'engines/rounds/particles': ('r41', 'PARTICLES layers are not ported yet', 'particles'),
          'engines/rounds/floor': ('r42', 'FLOOR layers are not ported yet', 'floor'),
          'engines/rounds/lurker': ('r42', 'LURKER layers are not ported yet', 'lurker'),

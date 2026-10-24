@@ -26,6 +26,15 @@
 //   bg.transfertInto(page, atlas, 3, PlaxTransfertStyle.dissolve(5, 0.08, 0.5))
 //   bg.tintTo([1, 0.6, 0.4, 1], 2)
 //
+// An EMPTY layer (kind "EMPTY") is drawn by the game, as ParallaxPageReader.setLayerHook:
+//
+//   const bird = bg.atlas.findRegion('bird');
+//   bg.setLayerHook('birds', (batch, rect, color, l) => batch.drawRegion(bird, rect.x, rect.y, rect.width, rect.height));
+//
+// called in the layer's place in the draw order, once per tile of it the view shows, `rect` in screen pixels (y down),
+// `batch` the layer's quads, already in `color`: the page's tint at the layer's opacity, packed as libGDX packs it. A
+// layer with no hook draws nothing; setLayerHook(name, null) removes one.
+//
 // A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set (PlaxSequence), by
 // drawCycle from the page's seed: the same picks as core's SequenceCycle. The cycle is the layer's tile. A game draws
 // a new ground each run with its own seed, XORed with each layer's stored one, as ParallaxPageReader.setSequenceSeed:
@@ -39,7 +48,7 @@
 // Ported: IMAGE layers (decal, sizeRatio, flips, speeds, speedXAtRest, pads, mirror, repeat on X and Y,
 // useOriginalSize), SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the page's depth fog, the two gradients,
 // cross-fades and their styles (depth stagger, dissolve, through a colour, fog creep), tints, zoom (not the dolly),
-// resizing. EMPTY layers draw nothing. A page with a layer of another kind
+// resizing, EMPTY layers (setLayerHook). A page with a layer of another kind
 // (PARTICLES, FLOOR, LURKER) or a MIRROR effect fails to load, as in libGDX a page from a newer version does: they are
 // ported in the order engines/rounds needs them. Not yet: the glint, detail levels.
 //
@@ -60,7 +69,7 @@ const LAYER_DEFAULTS = {
   glintStrength: 0,
 };
 // The kinds this reader draws; another fails the page's load. A SEQUENCE layer's cycle is drawn by drawCycle.
-const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE', 'SHADER'];
+const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE', 'SHADER', 'PARTICLES'];
 // The kinds a dissolve masks and a transfert through a colour grades; an EMPTY one fades to its share instead.
 const MASKED = ['IMAGE', 'SEQUENCE', 'SHADER'];
 // The effects a SHADER layer is drawn through here (PlaxEffects.EFFECTS less MIRROR); another fails the page's load.
@@ -298,6 +307,8 @@ export class PlaxBackground {
     this._hasSequenceSeed = false;
     // The clock the SHADER layers' effects run on: act()'s seconds.
     this._effectTime = 0;
+    // What draws each EMPTY layer, by layer name (setLayerHook).
+    this._hooks = new Map();
     this._gradients = gradientMesh();
     this.scene.add(this._gradients);
   }
@@ -362,6 +373,12 @@ export class PlaxBackground {
     this._sequenceSeed = seed | 0;
     this._hasSequenceSeed = true;
     this._drawCycles();
+  }
+
+  // Makes `hook` draw every EMPTY layer named `name`; null removes it. See the class doc.
+  setLayerHook(name, hook) {
+    if (hook) this._hooks.set(name, hook);
+    else this._hooks.delete(name);
   }
 
   // Back to the seeds the pages store: what the editor previews.
@@ -475,7 +492,7 @@ export class PlaxBackground {
         built.push(sequence);
         continue;
       }
-      if (model.kind === 'EMPTY') {
+      if (model.kind === 'EMPTY' || model.kind === 'PARTICLES') {
         const l = { model, distanceX: 0, distanceY: 0, quads: new Quads() };
         this._sizeLayer(l);
         this._resetPosition(l);
@@ -497,7 +514,7 @@ export class PlaxBackground {
     // The depth fog of each layer, by its speed against the page's front: what ParallaxPageReader.drawImageLayer reckons.
     const front = PlaxEffects.frontSpeedOf(built);
     for (const l of built) {
-      l.haze = l.model.kind === 'EMPTY' ? 0 : PlaxEffects.fogOf(page.fogStrength, front, l.model);
+      l.haze = l.model.kind === 'EMPTY' || l.model.kind === 'PARTICLES' ? 0 : PlaxEffects.fogOf(page.fogStrength, front, l.model);
       l.fogColor = page.fogColor.slice(0, 3);
       if (l.model.kind === 'SHADER') l.quads.setEffect(l.model.shaderEffect);
       else if (l.haze > 0 && (l.model.kind === 'IMAGE' || l.model.kind === 'SEQUENCE')) l.quads.setEffect('PLAIN');
@@ -521,7 +538,7 @@ export class PlaxBackground {
   // (ParallaxLayer.getWidth).
   _sizeLayer(l) {
     l.width = this.worldWidth * l.model.sizeRatio;
-    l.height = l.model.kind === 'EMPTY' ? this.worldHeight * l.model.sizeRatio
+    l.height = l.model.kind === 'EMPTY' || l.model.kind === 'PARTICLES' ? this.worldHeight * l.model.sizeRatio
       : l.imageH * (this.worldWidth / l.imageW) * l.model.sizeRatio;
     if (l.model.kind === 'SEQUENCE' && l.edges) {
       l.width = l.height * l.edges[l.cycle.length] + (l.cycle.length - 1) * l.model.padX;
@@ -721,16 +738,23 @@ export class PlaxBackground {
     // As libGDX packs the batch colour (Color.toFloatBits): the alpha to 254 levels, and, but through the page fog's
     // shader (ParallaxPageReader.drawImageLayer: a page with a fog, a layer without an effect), the tint to 8 bits.
     // That shader takes the tint as a uniform and the layer's fog in the batch colour's red: the fog is cut instead.
-    const pageFog = this._pageFog() && l.model.kind !== 'SHADER';
+    const pageFog = this._pageFog() && !['SHADER', 'EMPTY', 'PARTICLES'].includes(l.model.kind);
     const color = pageFog ? this.tint : this.tint.map(packed);
     l.quads.setColor(color, packedAlpha(alpha));
+    this._hookColor = [...color.slice(0, 3), packedAlpha(alpha)];
     this._quads = l.quads;
     // Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
     const z = this.zoom;
     this._ppu = this.width / (this.worldWidth * z);
     const m = l.model, viewW = this.worldWidth * z, viewH = this.worldHeight * z;
-    // EMPTY: drawn by the game, which this reader has no hook for yet.
-    if (m.kind === 'EMPTY') return;
+    if (m.kind === 'EMPTY') {
+      // No mirrored copy: the hook draws what it likes in each tile.
+      const hook = this._hooks.get(m.name);
+      if (hook) this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH, hook);
+      return;
+    }
+    // PARTICLES: not drawn yet (r41).
+    if (m.kind === 'PARTICLES') return;
     const total = Math.max(this.layers.length, this.transferLayers.length);
     if ((this._masked(l) || this._graded(l)) && !l.quads.effect) {
       l.quads.setEffect('PLAIN');
@@ -766,7 +790,7 @@ export class PlaxBackground {
 
   // The layer at (x, y) plus every repetition, on the requested axes, that intersects the view
   // (x 0..viewW, y 0..viewH).
-  _tile(l, x, y, onX, onY, mirror, viewW, viewH) {
+  _tile(l, x, y, onX, onY, mirror, viewW, viewH, hook = null) {
     const { width, height } = l;
     const sequence = l.model.kind === 'SEQUENCE';
     // A SEQUENCE layer whose pads outweigh its segments is no wider than 0, its slots still drawn: once, below.
@@ -787,6 +811,12 @@ export class PlaxBackground {
       for (let column = 0; column < countX; column++) {
         const drawX = startX + column * stepX;
         if (drawX + right <= 0 || drawX + left >= viewW) continue;
+        if (hook) {
+          const ppu = this._ppu;
+          hook(l.quads, { x: drawX * ppu, y: this.height - (drawY + height) * ppu, width: width * ppu, height: height * ppu },
+            this._hookColor, l);
+          continue;
+        }
         let fx = l.model.flipX, fy = l.model.flipY;
         // Mirrored: flipped vertically when tiling on X, horizontally when tiling on Y.
         if (mirror) { if (onX) fy = !fy; else fx = !fx; }
@@ -1807,6 +1837,12 @@ class Quads {
       this.used++;
     }
     run.add(x, y, w, h, src, fx, fy);
+  }
+
+  // An atlas region (atlas.findRegion) stretched over a box at (x, y) in screen pixels, y down, as Batch.draw(region,
+  // x, y, width, height): what a layer hook draws with, in the layer's colour.
+  drawRegion(region, x, y, w, h) {
+    this.add(region.page.texture, x, y, w, h, { x: region.x, y: region.y, w: region.width, h: region.height }, false, false);
   }
 
   end() {

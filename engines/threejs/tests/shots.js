@@ -2,7 +2,7 @@
 // units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in (engines/godot/tests/shots.gd does the same). A scene's
 // "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same step as the lab, its "speedY" scrolls
 // it up too, its "resize" resizes the screen mid-scroll, its "sequenceSeed" draws the SEQUENCE layers from that game
-// seed and its "zoom": [1, 0.5] zooms the camera straight from the first at 0 s to the second at 12 s. engines/threejs/tools/frame-check.sh serves the repository with
+// seed its "hooks" draw its EMPTY layers (an atlas region stretched over each tile, as ParallaxShots) and its "zoom": [1, 0.5] zooms the camera straight from the first at 0 s to the second at 12 s. engines/threejs/tools/frame-check.sh serves the repository with
 // engines/threejs/tools/serve.py and opens
 //   shots.html?round=<round dir>
 // which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done. &skip=s12,s13 leaves scenes out
@@ -12,7 +12,8 @@ import { PlaxBackground, PlaxTransfertStyle, loadAtlas, loadPage } from '../src/
 
 const SHOT_TIMES = [0, 6, 12];
 // BREAK=scroll (frame-check.sh's negative control): a scroll 10 % too fast, which the check must fail.
-const SPEED = new URLSearchParams(location.search).get('break') === 'scroll' ? 66 : 60;
+const BREAK = new URLSearchParams(location.search).get('break');
+const SPEED = BREAK === 'scroll' ? 66 : 60;
 const f32 = Math.fround;
 const log = [];
 const say = line => { log.push(line); console.log(line); };
@@ -40,6 +41,8 @@ async function shots() {
     if (skip.includes(scene.id)) { say('skipped: ' + scene.id); continue; }
     resize(1280, 720);
     await bg.load(root + scene.page, root + scene.atlasDir);
+    // BREAK=hooks: no EMPTY layer drawn, which the effects round must fail.
+    setHooks(bg, BREAK === 'hooks' ? {} : scene.hooks ?? {});
     if (scene.sequenceSeed !== undefined) bg.setSequenceSeed(scene.sequenceSeed);
     else bg.clearSequenceSeed();
     bg.tintTo([1, 1, 1, 1], 0);
@@ -67,6 +70,16 @@ async function shots() {
       await post(`save/${scene.id}-t${at}.png`, png);
     }
     say('shots: ' + scene.id);
+  }
+}
+
+// A hook per EMPTY layer the scene names, drawing a region of the page's atlas; the scene before's are removed.
+function setHooks(bg, hooks) {
+  for (const name of [...bg._hooks.keys()]) bg.setLayerHook(name, null);
+  for (const name in hooks) {
+    if (hooks[name].planet) throw new Error(`hook '${name}': round a planet, not ported yet (r43)`);
+    const region = bg.atlas.findRegion(hooks[name].region, hooks[name].position ?? 0);
+    bg.setLayerHook(name, (batch, rect) => batch.drawRegion(region, rect.x, rect.y, rect.width, rect.height));
   }
 }
 

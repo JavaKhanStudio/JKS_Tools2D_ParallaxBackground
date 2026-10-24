@@ -6,15 +6,16 @@ the Godot reader (which copies core line for line): scrolling, tiling on X and Y
 `useOriginalSize`, `SEQUENCE` layers (their cycles picked as core's `SequenceCycle` picks them, `setSequenceSeed` for a
 game's own seed), `SHADER` layers (`WAVE`, `FOG`, `SWELL`: core's shaders, in GLSL), the page's depth fog, the two
 gradients, zoom, resizing, cross-fades (`transfertInto`) with their styles (`PlaxTransfertStyle`: depth stagger,
-dissolve, through a colour, fog creep) and tints (`tintTo`). Each texture keeps its atlas's
+dissolve, through a colour, fog creep), tints (`tintTo`) and `EMPTY` layers, drawn by the game's hook
+(`setLayerHook`). Each texture keeps its atlas's
 filter, so a pixel-art page stays sharp. It does not read `.plax` (Kryo is Java's).
 
 It was born as Crypto en visuel's `lib/plax.js` (deux-generaux r195, r449), which drew Simon's calm-day page as the
 saga's sky; parallax-readers r34 brought it to core's numbers and checks it here.
 
-**Not ported yet**, each a task of its own, in the order the rounds need them: `EMPTY` layer hooks and `PARTICLES` (r41), `FLOOR`, `LURKER` and the animated patch (r42), dolly, towers and planets (r43),
+**Not ported yet**, each a task of its own, in the order the rounds need them: `PARTICLES` (r41), `FLOOR`, `LURKER` and the animated patch (r42), dolly, towers and planets (r43),
 glint, `MIRROR` and detail levels (r44). A page with a layer of a kind or an effect it does not draw fails to load,
-with the layer named; an `EMPTY` layer draws nothing; a glint is not drawn.
+with the layer named; a `PARTICLES` layer draws nothing; a glint is not drawn.
 
 ## How a game gets it
 
@@ -46,6 +47,16 @@ renderer.setAnimationLoop(() => {
 (call `bg.update()` first). Colours are libGDX's: no colour management on the background (its textures are
 `NoColorSpace`, and `render()` draws with the output colour space set to `LinearSRGBColorSpace`, then puts the game's
 back), so a page looks as it does in the editor.
+
+An `EMPTY` layer is a slot the game draws, in the layer's place in the draw order, once per tile of it on screen:
+
+```js
+const bird = bg.atlas.findRegion('bird');
+bg.setLayerHook('birds', (batch, rect, color, l) => batch.drawRegion(bird, rect.x, rect.y, rect.width, rect.height));
+```
+
+`rect` is the tile in screen pixels (y down), `batch` the layer's quads, already in `color` (the page's tint at the
+layer's opacity, so a cross-fade fades it). `setLayerHook('birds', null)` removes it.
 
 ## The page as the sky of a 3D world: `PlaxRings`
 
