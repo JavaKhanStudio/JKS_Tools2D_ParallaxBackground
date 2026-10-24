@@ -51,11 +51,7 @@ READERS = [
      'watch': ['engines/threejs', 'core/src'],
      'run': 'engines/threejs/tools/frame-check.sh && engines/threejs/tools/bench.sh', 'bench': 'engines/threejs/tools/bench.sh',
      'unsupported': {
-         'engines/rounds/dolly': ('r43', 'the dolly is not ported yet', 'dolly'),
-         'engines/rounds/tower': ('r43', 'towers are not ported yet', 'tower'),
-         'engines/rounds/planet': ('r43', 'planets are not ported yet', 'planet'),
-         # And the animated round's a03, a04 (dolly, planet) and the shaders round's s12-s18 (frame-check.sh's SKIP):
-         # the features dolly, planet, mirror and detail are drawn there too.
+         # And the shaders round's s12-s18 (frame-check.sh's SKIP): the features mirror and detail are drawn there too.
          'engines/rounds/glint': ('r44', 'glint, MIRROR and detail levels are not ported yet', 'glint', 'mirror', 'detail'),
      }},
     {'id': 'unity', 'name': 'Unity', 'folder': None, 'role': 'not written: parallax:r103, paused on its install',

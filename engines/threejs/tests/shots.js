@@ -2,14 +2,17 @@
 // units/s scroll stepped at 1/60 s, grabbed 0, 6 and 12 s in (engines/godot/tests/shots.gd does the same). A scene's
 // "transfer" (one, or a list) and "tint" start a cross-fade or a tint at the same step as the lab, its "speedY" scrolls
 // it up too, its "resize" resizes the screen mid-scroll, its "sequenceSeed" draws the SEQUENCE layers from that game
-// seed its "hooks" draw its EMPTY layers (an atlas region stretched over each tile, as ParallaxShots) and its "zoom": [1, 0.5] zooms the camera straight from the first at 0 s to the second at 12 s. engines/threejs/tools/frame-check.sh serves the repository with
+// seed its "hooks" draw its EMPTY layers (an atlas region stretched over each tile, as ParallaxShots; "planet": stood on
+// the tile's foot round the page's planet, turned as it leans) and its "zoom": [1, 0.5] zooms the camera straight from
+// the first at 0 s to the second at 12 s, dollied when its "dolly" is true. engines/threejs/tools/frame-check.sh serves the repository with
 // engines/threejs/tools/serve.py and opens
 //   shots.html?round=<round dir>
 // which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done. &skip=s12,s13 leaves scenes out
 // (frame-check.sh's SKIP: what this reader does not draw yet).
 import * as THREE from 'three';
 import {
-  PlaxAnim, PlaxBackground, PlaxFloor, PlaxLurker, PlaxParticles, PlaxTransfertStyle, loadAtlas, loadPage, loadParticles,
+  PlaxAnim, PlaxBackground, PlaxFloor, PlaxLurker, PlaxPanorama, PlaxParticles, PlaxPlanet, PlaxTransfertStyle, loadAtlas,
+  loadPage, loadParticles,
 } from '../src/plax.js';
 
 const SHOT_TIMES = [0, 6, 12];
@@ -21,6 +24,11 @@ const SPEED = BREAK === 'scroll' ? 66 : 60;
 if (BREAK === 'plant') PlaxFloor.plant = () => {};
 if (BREAK === 'lurker') PlaxLurker.isThere = () => true;
 if (BREAK === 'anim') PlaxAnim.setTime = () => {};
+// BREAK=dolly (the zoom without it) must FAIL dolly, planet (every page flat) planet, shade (no tower darker toward its
+// sides) and panorama (nothing wrapped round a near tower) tower (r43).
+if (BREAK === 'planet') PlaxPlanet.radiusOf = () => 0;
+if (BREAK === 'shade') PlaxBackground.prototype._towerShade = () => null;
+if (BREAK === 'panorama') PlaxPanorama.radiusOf = () => 0;
 const f32 = Math.fround;
 const log = [];
 const say = line => { log.push(line); console.log(line); };
@@ -58,6 +66,8 @@ async function shots() {
     bg.tintTo([1, 1, 1, 1], 0);
     bg.speedConstantX = SPEED;
     bg.speedConstantY = scene.speedY ?? 0;
+    // ParallaxShots: the dolly (r278) for the scene's zoom.
+    bg.dolly = !!scene.dolly && BREAK !== 'dolly';
     const zoom = scene.zoom ?? [1, 1];
     let resizeAt = scene.resize ?? null, tint = scene.tint ?? null;
     // One transfer, or a list of them started one after the other.
@@ -87,9 +97,18 @@ async function shots() {
 function setHooks(bg, hooks) {
   for (const name of [...bg._hooks.keys()]) bg.setLayerHook(name, null);
   for (const name in hooks) {
-    if (hooks[name].planet) throw new Error(`hook '${name}': round a planet, not ported yet (r43)`);
     const region = bg.atlas.findRegion(hooks[name].region, hooks[name].position ?? 0);
-    bg.setLayerHook(name, (batch, rect) => batch.drawRegion(region, rect.x, rect.y, rect.width, rect.height));
+    // "planet": round a planet, stood on its tile's foot, placed and turned as the planet says (r347).
+    const planet = !!hooks[name].planet;
+    bg.setLayerHook(name, (batch, rect, color, l) => {
+      if (!planet) {
+        batch.drawRegion(region, rect.x, rect.y, rect.width, rect.height);
+        return;
+      }
+      const foot = [rect.x + rect.width / 2, rect.y + rect.height];
+      batch.drawRegion(region, -rect.width / 2, -rect.height, rect.width, rect.height, bg.planetPlaceAt(l, foot),
+        bg.planetAngleAt(l, foot[0]));
+    });
   }
 }
 

@@ -12,7 +12,7 @@ repair.
 | `engines/godot/` | A Godot 4 project: the reader for other engines, first port (r87). `addons/jks_parallax` reads a `.jplax`/`.plaxpj` and its libGDX `.atlas`, and draws it as `core` does. See `docs/other-engines.md`. | - | `engines/godot/tools/frame-check.sh` (Godot 4, cage, Xwayland): libGDX and Godot frames of the same pages, compared. The board's Actions tab opens its demo through `tools/start-demo.sh godot` |
 | `shots/` | `:shots`, the reference renderer (r130): `ParallaxShots` draws a round's scenes with `core` and saves the stills the Godot and jME frames are compared with. Not published. Split out of the grading lab's `--shots` mode, which the lab no longer has (r157). | 17 | `tools/parallax-lab-shots.sh ROUND OUT` |
 | `engines/rounds/reader/` | `:rounds` (r312): `Round`, a reader round's `round.json` read once for `:shots` and `:jme`'s frame runner (Godot's `tests/shots.gd` reads it a third time). A new round field goes there. Gdx core only. Not published. | 17 | `./gradlew :rounds:build`, then the frame checks |
-| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE, SEQUENCE, SHADER (not MIRROR), EMPTY, PARTICLES, FLOOR and LURKER layers, the animated patch, the page fog, cross-fades and their styles, tints, the rings so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart, sequence, shaders (s01-s11), fog, transfer, effects, particles, floor, lurker, animated (not the dolly nor planets) and rings, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
+| `engines/threejs/` | The three.js reader (parallax-readers r34): `src/plax.js`, one ES module ported from core through the Godot reader, released as `jks-parallax-threejs-X.Y.Z.zip`; `tests/` its runners (pages in headless Chrome) and demo, `tests/vendor/three` three.js r170 for them. IMAGE, SEQUENCE, SHADER (not MIRROR), EMPTY, PARTICLES, FLOOR and LURKER layers, the animated patch, the dolly, towers, planets, the page fog, cross-fades and their styles, tints, the rings so far. | - | `engines/threejs/tools/frame-check.sh` (Chrome, headless): round1, conformance, pixelart, sequence, shaders (s01-s11), fog, transfer, effects, particles, floor, lurker, animated, dolly, tower, planet and rings, libGDX against three.js. `tests/demo.html` from a `python3 -m http.server` at the root |
 | `engines/jme/` | `:jme`, the jMonkeyEngine reader (r112): `core` runs as is, `JmeBatch` implements libGDX's `Batch` with jME meshes. `src/` is published as `parallax-background-jme` (public API, released with core), `tests/` the frame runner and demo. | 17 | `engines/jme/tools/frame-check.sh` (cage, Xwayland): the Godot check's rounds, libGDX against jME. `./gradlew :jme:run`: the demo |
 
 - Never open a window on Simon's screen. With `ATELIER_AGENT` set or `CLAUDECODE=1`, `:jme:run` and `:shots:run`
@@ -204,7 +204,8 @@ repair.
   view at zoom 1, through `DollyBatch` (its quads and particle vertices scaled into the camera's view); the effects keep
   the game's batch (jME's casts it) and take the layers' corner in `setView(width, height, left, floor)`. Godot's copy
   is `plax_background.gd`'s `_zoom_of`/`_anchor_of` (each layer in its own view at its own `_ppu`) and
-  `plax_particles.gd`'s `place`. Change it and run both frame checks on `engines/rounds/dolly`;
+  `plax_particles.gd`'s `place`; three.js's is `plax.js`'s `_zoomOf`/`_anchorOf` (r43). Change it and run the frame
+  checks on `engines/rounds/dolly`;
   `tools/r278-dolly/mutate.sh` proves the round sees a wrong Godot copy.
 - A tower (r276, format 12: `towerRadius`, `towerShade` on an IMAGE layer) is drawn by `ParallaxLayer.drawTower`
   (`ParallaxPageReader.towerRows` tiles it up): the front half of a cylinder in the view's middle, in
@@ -215,7 +216,8 @@ repair.
   a wrong Godot copy and a wrong core law. Seen from close by (r350, format 14: the tower layer's `towerCamera`, in
   radii from its axis, above 1), each strip is scaled about the view's middle (`ParallaxLayer.towerScaleAt`: the
   courses arc) and the page's slower IMAGE, SHADER and SEQUENCE layers are drawn through `PanoramaBatch`
-  (`ParallaxPageReader.nearTowerOf`/`panoramaRadiusOf`), Godot's `plax_panorama.gd`; round scenes w05-w08.
+  (`ParallaxPageReader.nearTowerOf`/`panoramaRadiusOf`), Godot's `plax_panorama.gd`; round scenes w05-w08. three.js's
+  copies are `plax.js`'s `PlaxTower` and `PlaxPanorama` (r43: the shade a per-corner colour, `Quads.shade`).
 - A planet (r277, r347, format 13: the page's `planetRadius`) wraps a page's IMAGE, SHADER and SEQUENCE layers, still ones
   too, round one centre R under the middle of the view's bottom through `PlanetBatch`, which wraps the layer's batch
   (the dolly's, when dollied: R scaled to the layer's view, `planetInView`) and cuts each `draw(region, x, y, w, h)` at
@@ -225,8 +227,9 @@ repair.
   cross-faded page wrapped round its own. A PARTICLES effect is turned as one block as its layer box's middle is
   (`PlanetBatch.turn`), and a hook asks `ParallaxPageReader.planetPlaceAt`/`planetAngleAt` and draws turned
   (`JmeBatch` draws the quads and the turned region draw). Godot's copy is `plax_planet.gd` (quads by
-  `draw_primitive`, from `_draw_region`), `planet_place_at`/`planet_angle_at` and `plax_particles.gd`'s placing; jME
-  runs core's. Change it and run both frame checks on `engines/rounds/planet` (p08: a hook) and
+  `draw_primitive`, from `_draw_region`), `planet_place_at`/`planet_angle_at` and `plax_particles.gd`'s placing;
+  three.js's is `plax.js`'s `PlaxPlanet` (quads by `Quads.addCorners`), `planetPlaceAt`/`planetAngleAt` and
+  `PlaxParticles.draw`'s `turn` (r43); jME runs core's. Change it and run both frame checks on `engines/rounds/planet` (p08: a hook) and
   `engines/rounds/particles` (q09, q10); `tools/r277-planet/strength.sh` proves the round sees the planet,
   `mutate.sh` a wrong Godot copy (a leaning-less one among them) and a wrong core law.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a

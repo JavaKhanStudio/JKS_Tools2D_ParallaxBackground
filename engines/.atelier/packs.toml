@@ -18,8 +18,8 @@ A READER draws a saved page in one engine. Today, in this one repository:
   engines/threejs/ src/plax.js, an ES module port of core for three.js (r34, from Crypto en visuel's lib/plax.js); its
                  frame runner is a page in headless Chrome. release.yml attaches jks-parallax-threejs-X.Y.Z.zip.
                  It ports every layer kind (IMAGE, EMPTY, SEQUENCE, SHADER, PARTICLES, FLOOR, LURKER), the animated patch,
-                 the page fog, cross-fades with their styles and tints; the dolly, towers, planets, MIRROR, the glint and
-                 detail levels are queued #threejs tasks (r43, r44).
+                 the dolly, towers, planets, the page fog, cross-fades with their styles and tints; MIRROR, the glint and
+                 detail levels are a queued #threejs task (r44).
   Unity: parallax:r103 (paused). No Unity or dotnet is installed on this machine.
 EACH READER'S FOLDER holds its README.md (what it is, how a game gets it, its checks and demo) and its own scripts in
 engines/<reader>/tools/ (r11): godot's frame-check.sh, bench.sh, addon-zip.sh, addon-zip-check.sh; jme's frame-check.sh, bench.sh and probe/;
@@ -161,9 +161,16 @@ FLOOR, LURKER and the animated patch (r42) are PlaxFloor, PlaxLurker and PlaxAni
 plax_anim.gd. act() plants the layers in front of a floor (l.planted) before it scrolls them, and runs the sightings
 after every step; _drawLayer runs them again against its own view before a LURKER's alpha. A SHADER layer with a patch
 draws it through a second Quads (l.animQuads, its own renderOrder after the layer's): PlaxAnim.apply gives that
-material the frame's region, and this._part keeps the tiles (1) and the patches (2) apart in _tile. PlaxLurker._inSight
-has no dolly, anchor nor panorama yet: r43 adds them there as in plax_lurker.gd. BREAK=plant must FAIL floor,
-BREAK=lurker lurker, BREAK=anim animated; animated's a03, a04 (dolly, planet) are SKIPPED until r43.
+material the frame's region, and this._part keeps the tiles (1) and the patches (2) apart in _tile. BREAK=plant must
+FAIL floor, BREAK=lurker lurker, BREAK=anim animated.
+THE DOLLY, TOWERS AND PLANETS (r43): _drawLayer gives each layer its own zoom (_zoomOf), corner (_anchorOf) and ppu,
+then sets this._planet/_reach (PlaxPlanet) or this._panorama (PlaxPanorama, behind a near tower) that _drawRegion
+reads: a planet piece is a quad of any shape (Quads.addCorners), a tower's or panorama's an axis-aligned one. A tower
+piece's darkness is a per-corner colour (Quads.shade, the 'color' attribute every QuadRun carries, 1 elsewhere; the
+effect shaders read it as vShade), packed as libGDX packs it (_towerShade: in the blue under the page fog). A
+PARTICLES effect round a planet is turned as one block, in floats (PlaxPlanet.turn, PlaxParticles.draw). A hook draws
+turned with batch.drawRegion(region, x, y, w, h, bg.planetPlaceAt(l, foot), bg.planetAngleAt(l, foot[0])).
+BREAK=dolly must FAIL dolly, planet planet, shade and panorama tower.
 THE RINGS (PlaxRings, r48: the page as the sky of a 3D world, docs/page-as-3d-sky.md): its statics are core's
 ParallaxRings line for line, checked as JSON by frame-check.sh's rings round (tests/rings.html, tools/compare-rings.py
 within 1e-4); change core's and they change together. The instance draws them from PlaxBackground's state (layers,

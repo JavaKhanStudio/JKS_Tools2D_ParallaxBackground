@@ -15,8 +15,7 @@ filter, so a pixel-art page stays sharp. It does not read `.plax` (Kryo is Java'
 It was born as Crypto en visuel's `lib/plax.js` (deux-generaux r195, r449), which drew Simon's calm-day page as the
 saga's sky; parallax-readers r34 brought it to core's numbers and checks it here.
 
-**Not ported yet**, each a task of its own, in the order the rounds need them: dolly, towers and planets (r43),
-glint, `MIRROR` and detail levels (r44). A page with a layer of a kind or an effect it does not draw fails to load,
+**Not ported yet**, a task of its own: the glint, `MIRROR` and detail levels (r44). A page with a layer of a kind or an effect it does not draw fails to load,
 with the layer named; a glint is not drawn.
 
 ## How a game gets it
@@ -117,12 +116,12 @@ alone (radius, elevations, repeat, draw order, fog per band), core's to 1e-4 (th
 - `tools/frame-check.sh [ROUND_DIR...]` — the frame check: draws each round with libGDX and with three.js in headless
   Chrome, and compares them still by still at 2/255 (`build/threejs/<round>/compare.png`, `report.txt`). Without
   arguments it plays the rounds it ports: `round1`, `conformance`, `pixelart`, `sequence`, `shaders`, `fog`,
-  `transfer`, `effects`, `particles` and `rings` (worst still 0.24 / 255 on the GPU here, transfer's t05 after its
+  `transfer`, `effects`, `particles`, `floor`, `lurker`, `animated`, `dolly`, `tower`, `planet` and `rings` (worst still 0.24 / 255 on the GPU here, transfer's t05 after its
   half-transparent tint). Its `SKIP` leaves out the scenes it does not draw yet, the task that will named in
-  `report.txt`: `shaders` s12-s18 (MIRROR, the glint, detail levels: r44), `particles` q06, q07, q09 and q10 (the dolly
-  and planets: r43). `particles` is judged by pixels off too (its `pixelsOff`): the snow is seeded from each scene's id
+  `report.txt`: `shaders` s12-s18 (MIRROR, the glint, detail levels: r44). `particles` is judged by pixels off too (its `pixelsOff`): the snow is seeded from each scene's id
   as libGDX's runner seeds it, and falls flake for flake the same. `BREAK=hooks` (no EMPTY layer drawn) must fail
-  `effects`; `BREAK=particles`, `anchor` and `blend` must fail `particles`. With `sequence` it
+  `effects`; `BREAK=particles`, `anchor` and `blend` must fail `particles`; `BREAK=plant` `floor`, `lurker` `lurker`,
+  `anim` `animated`, `dolly` `dolly`, `planet` `planet`, `shade` and `panorama` `tower`. With `sequence` it
   also opens `tests/sequence_cycle.html`: every pick of `engines/rounds/sequence/picks.json` (the JVM's
   `SequenceCycle`) and the slots drawn against a walk over all of them. `BREAK=scroll` must fail it. CI's `threejs-frames` job runs it under `xvfb-run` (for the
   libGDX stills; Chrome is headless). Needs Chrome (or `CHROME=`), python3 with Pillow, and what

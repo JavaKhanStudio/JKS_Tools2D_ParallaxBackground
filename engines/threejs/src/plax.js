@@ -33,7 +33,11 @@
 //
 // called in the layer's place in the draw order, once per tile of it the view shows, `rect` in screen pixels (y down),
 // `batch` the layer's quads, already in `color`: the page's tint at the layer's opacity, packed as libGDX packs it. A
-// layer with no hook draws nothing; setLayerHook(name, null) removes one.
+// layer with no hook draws nothing; setLayerHook(name, null) removes one. Round a planet the hook is not bent: it draws
+// what stands at a point where bg.planetPlaceAt(l, point) puts it, turned by bg.planetAngleAt(l, x) (r347):
+//
+//   const foot = [rect.x + rect.width / 2, rect.y + rect.height];
+//   batch.drawRegion(tower, -w / 2, -h, w, h, bg.planetPlaceAt(l, foot), bg.planetAngleAt(l, foot[0]));
 //
 // A PARTICLES layer draws the libGDX effect (.p) its page names, from the atlas's folder (PlaxParticles: libGDX's
 // emitter, ported), anchored to the view or tiled with its layer. bg.load fetches it; a page given to setPage or
@@ -58,9 +62,10 @@
 // Ported: IMAGE layers (decal, sizeRatio, flips, speeds, speedXAtRest, pads, mirror, repeat on X and Y,
 // useOriginalSize), FLOOR and LURKER layers, the animated patch, SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the
 // page's depth fog, the two gradients, cross-fades and their styles (depth stagger, dissolve, through a colour, fog
-// creep), tints, zoom (not the dolly), resizing, EMPTY layers (setLayerHook), PARTICLES layers (not round a planet). A
-// page with a MIRROR effect fails to load, as in libGDX a page from a newer version does: it is ported in the order
-// engines/rounds needs it (r44). Not yet: the dolly, towers, planets (r43), the glint, detail levels (r44).
+// creep), tints, zoom and the dolly (bg.dolly = true: each layer zoomed by its depth, about the view's middle), towers
+// and the panoramas round a near one (PlaxTower, PlaxPanorama), planets (PlaxPlanet: the page's planetRadius), resizing,
+// EMPTY layers (setLayerHook), PARTICLES layers. A page with a MIRROR effect fails to load, as in libGDX a page from a
+// newer version does: it is ported in the order engines/rounds needs it (r44). Not yet: the glint, detail levels (r44).
 //
 // A 3D game can stand the page round its world instead (PlaxRings, r48: each layer a cylinder as far as its speed
 // says, docs/page-as-3d-sky.md): new PlaxRings(bg, { front: 330, foot: 50 }), its group in the scene, update(delta).
@@ -77,6 +82,7 @@ const LAYER_DEFAULTS = {
   shaderEffect: 'WAVE', shaderAmplitude: 0, shaderWavelength: 0, shaderSpeed: 0, shaderHaze: 0,
   sequenceSegments: [], sequenceSeed: 0, sequenceLength: 16,
   floorMapping: 'MODE7', floorTopSpeed: 0, floorRows: 96, floorHeight: 0,
+  towerRadius: 0, towerShade: 0.65, towerCamera: 0,
   lurkerSeed: 0, lurkerOdds: 3, lurkerCover: [],
   animRegion: '', animX: 0, animY: 0, animFps: 12,
   glintStrength: 0,
@@ -197,6 +203,9 @@ export function readPage(json, inside) {
     // layer's shaderHaze.
     fogStrength: json.fogStrength != null ? Math.max(0, json.fogStrength) : 0,
     fogColor: color(json.fogColor, [0.93, 0.95, 0.97, 1]),
+    // The planet the page's ground runs round (WholePage_Model.planetRadius, format 13): its radius in percent of the
+    // world width; 0 flat (PlaxPlanet).
+    planetRadius: json.planetRadius != null ? json.planetRadius : 0,
     atlasName: json.pageModel?.atlasName ?? '',
     layers: [],
   };
@@ -288,6 +297,9 @@ export class PlaxBackground {
     // The camera's zoom, as libGDX's OrthographicCamera.zoom: the page zooms as one picture about the view's bottom
     // left corner, where its layers are placed from.
     this.zoom = 1;
+    // ParallaxPageReader.setDolly (r278): the zoom scales each layer by its depth (PlaxEffects.dollyZoom), the near ones
+    // more, a still one not at all, about the view's middle.
+    this.dolly = false;
     // The page on screen; during a cross-fade, the one fading out. Its layers: the ParallaxLayer state.
     this.page = null;
     this.atlas = null;
@@ -334,6 +346,15 @@ export class PlaxBackground {
     this._lurkerZoom = NaN;
     // Which of a SHADER layer's two draws _tile is on: 0 both, its tiles (1) and its patches (2) apart (_drawLayer).
     this._part = 0;
+    // Set by _drawLayer: the radius of the planet the layer drawn is wrapped round, in its view (PlaxPlanet.radiusOf; 0
+    // for none), how far over the view its top corners reach, and the view's width.
+    this._planet = 0;
+    this._reach = 0;
+    this._viewW = 0;
+    // Set by _drawLayer: the panorama the layer drawn is wrapped in round its page's near tower (PlaxPanorama: rho, q,
+    // the strips' edges and scales; null for none), and the eye's height it is scaled about.
+    this._panorama = null;
+    this._eyeY = 0;
     this._gradients = gradientMesh();
     this.scene.add(this._gradients);
   }
@@ -405,6 +426,55 @@ export class PlaxBackground {
   setLayerHook(name, hook) {
     if (hook) this._hooks.set(name, hook);
     else this._hooks.delete(name);
+  }
+
+  // ParallaxPageReader.planetPlaceAt (r347): where the point `at` ([x, y]) of layer `l` is drawn round its page's
+  // planet, both in the screen pixels a hook draws in (y down): the view is the side of a world turning round one
+  // centre under the middle of its bottom, x along the ground's arc and y along the radius. For a hook to place what it
+  // draws, turned by planetAngleAt; `at` for no planet. Called from a hook, the view is the layer's own (dolly).
+  planetPlaceAt(l, at) {
+    const radius = this._planetOf(l);
+    if (!(radius > 0)) return at;
+    const to = PlaxPlanet.place(radius, this._viewW, at[0] / this._ppu, (this.height - at[1]) / this._ppu);
+    return [to[0] * this._ppu, this.height - to[1] * this._ppu];
+  }
+
+  // ParallaxPageReader.planetAngleAt: how far what stands at `x` (screen pixels) in layer `l` leans round its page's
+  // planet, in radians clockwise on screen (y down): out along the radius. 0 for no planet.
+  planetAngleAt(l, x) {
+    return PlaxPlanet.angleAt(this._planetOf(l), this._viewW, x / this._ppu);
+  }
+
+  // The radius of the planet layer `l`'s page runs round, in its view (PlaxPlanet.radiusOf); 0 for none.
+  _planetOf(l) {
+    const fromPage = l.incoming ? this.transferPage : this.page;
+    return PlaxPlanet.radiusOf(fromPage.planetRadius, this.worldWidth, this._zoomOf(l), this.zoom);
+  }
+
+  // The zoom `l` is drawn at: the camera's (zoom), or dollied, by its depth against its page's front
+  // (ParallaxPageReader.drawLayer).
+  _zoomOf(l) {
+    if (!this.dolly) return this.zoom;
+    return PlaxEffects.dollyZoom(this.zoom, PlaxEffects.frontSpeedOf(l.incoming ? this.transferLayers : this.layers), l.model);
+  }
+
+  // Where the layers are placed from in the view at zoom `z`, from its bottom left corner: the corner itself, or
+  // dollied, the corner of the view at zoom 1, so that a zoom scales them about the middle (ParallaxPageReader.view).
+  _anchorOf(z) {
+    if (!this.dolly) return [0, 0];
+    return [this.worldWidth * (z - 1) / 2, this.worldHeight * (z - 1) / 2];
+  }
+
+  // What a tower's piece at `bright` multiplies the layer's colour by (Quads.shade), as libGDX darkens it
+  // (ParallaxLayer.drawTower): through the page fog's shader the darkness goes in the batch colour's blue, cut to 8 bits,
+  // and the shader multiplies the tint by 1 minus it; else the tint times bright is packed (Color.toFloatBits).
+  _towerShade(bright) {
+    if (this._towerFog) {
+      const dim = 1 - packed(1 - bright);
+      return [dim, dim, dim];
+    }
+    const c = this._quads.color, rgb = [c.r, c.g, c.b];
+    return rgb.map((v, i) => v > 0 ? packed(this.tint[i] * bright) / v : 0);
   }
 
   // ParallaxPageReader.reveal: the next sighting of every LURKER layer named `name` shows its figure, at once when it
@@ -838,17 +908,38 @@ export class PlaxBackground {
     this._hookColor = [...color.slice(0, 3), packedAlpha(alpha)];
     this._quads = quads;
     // Its own view, at its zoom: tiled across, and drawn into the screen at as many pixels a unit.
-    const z = this.zoom;
+    const z = this._zoomOf(l);
     this._ppu = this.width / (this.worldWidth * z);
     const m = l.model, viewW = this.worldWidth * z, viewH = this.worldHeight * z;
+    const anchor = this._anchorOf(z);
+    const x = l.distanceX + anchor[0], y = l.distanceY + anchor[1];
+    this._viewW = viewW;
+    this._planet = 0;
+    this._reach = 0;
+    this._panorama = null;
+    this._eyeY = viewH / 2;
+    // Behind a tower seen from close by: a panorama round its axis (ParallaxPageReader.drawImageLayer); else, round the
+    // page's planet.
+    const near = PlaxPanorama.nearTowerOf(l.incoming ? this.transferLayers : this.layers);
+    const pano = PlaxPanorama.radiusOf(near, l, this.worldWidth);
+    if (pano > 0) {
+      const camera = PlaxPanorama.cameraOf(near, this.worldWidth);
+      const front = camera - near.model.towerRadius * (this.worldWidth / 100);
+      this._panorama = [front * pano / (camera + pano), camera / pano, new Float32Array(PlaxPanorama.STRIPS + 1),
+        new Float32Array(PlaxPanorama.STRIPS)];
+      PlaxPanorama.layOut(this._panorama[0], this._panorama[1], viewW, this._panorama[2], this._panorama[3]);
+    } else if (m.kind === 'IMAGE' || m.kind === 'SHADER' || m.kind === 'SEQUENCE') {
+      this._planet = this._planetOf(l);
+      this._reach = PlaxPlanet.reachOf(this._planet, viewW, viewH);
+    }
     if (m.kind === 'EMPTY') {
       // No mirrored copy: the hook draws what it likes in each tile.
       const hook = this._hooks.get(m.name);
-      if (hook) this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH, hook);
+      if (hook) this._tile(l, x, y, this._repeatX, this._repeatY, false, viewW, viewH, hook);
       return;
     }
     if (m.kind === 'PARTICLES') {
-      this._drawParticleLayer(l, [this.tint[0], this.tint[1], this.tint[2], alpha], viewW, viewH);
+      this._drawParticleLayer(l, [this.tint[0], this.tint[1], this.tint[2], alpha], x, y, anchor, viewW, viewH);
       return;
     }
     const total = Math.max(this.layers.length, this.transferLayers.length);
@@ -871,7 +962,8 @@ export class PlaxBackground {
     if (u) {
       u.view.value.set(this.width, this.height);
       if (m.kind === 'SHADER') {
-        PlaxEffects.apply(u, l, this._effectTime, viewW, viewH, 0, 0, [this._repeatX ? 1 : 0, this._repeatY ? 1 : 0]);
+        PlaxEffects.apply(u, l, this._effectTime, viewW, viewH, anchor[0], anchor[1],
+          [this._repeatX ? 1 : 0, this._repeatY ? 1 : 0]);
       }
       u.haze.value = pageFog ? packed(l.haze) : l.haze;
       u.fog_color.value.set(...l.fogColor);
@@ -881,30 +973,52 @@ export class PlaxBackground {
     if (patches) PlaxAnim.apply(u, l);
     if (m.kind === 'FLOOR') {
       // Its rows across the whole view, whatever the page repeats; no mirrored copy.
-      PlaxFloor.draw(this, l, l.distanceY, viewW, viewH);
+      PlaxFloor.draw(this, l, y, viewW, viewH);
       return;
     }
-    this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH);
+    if (PlaxTower.isTower(l)) {
+      this._planet = 0;
+      this._reach = 0;
+      // Round its tower in the view's middle, tiled up as the page says; no mirrored copy. Its darkness goes as libGDX
+      // puts it: in the colour's blue through the page fog's shader, else multiplied into it (ParallaxLayer.drawTower).
+      this._towerFog = pageFog;
+      PlaxTower.drawRows(this, l, x, y, viewW, viewH);
+      quads.shade = null;
+      return;
+    }
+    this._tile(l, x, y, this._repeatX, this._repeatY, false, viewW, viewH);
     if (m.mirror && this._repeatX !== this._repeatY) {
       // A mirrored copy is stacked next to the tiled strip: above it when tiling on X, to its right on Y.
-      if (this._repeatX) this._tile(l, l.distanceX, l.distanceY + m.padY + l.height, true, false, true, viewW, viewH);
-      else this._tile(l, l.distanceX + m.padX + l.width, l.distanceY, false, true, true, viewW, viewH);
+      if (this._repeatX) this._tile(l, x, y + m.padY + l.height, true, false, true, viewW, viewH);
+      else this._tile(l, x + m.padX + l.width, y, false, true, true, viewW, viewH);
     }
   }
 
-  // A PARTICLES layer: its effect from the view's corner plus its decal (VIEW), or in each tile (LAYER), in `tint`
-  // (ParallaxPageReader.drawParticleLayer). Not round a planet yet (r43).
-  _drawParticleLayer(l, tint, viewW, viewH) {
+  // A PARTICLES layer: its effect from the view's corner plus its decal (VIEW), or in each tile (LAYER), its tile's
+  // corner at (x, y), in `tint` (ParallaxPageReader.drawParticleLayer). Round a planet each effect is turned as one
+  // block, moved and turned as the middle of its layer's box is (PlaxPlanet.turn, r347).
+  _drawParticleLayer(l, tint, x, y, anchor, viewW, viewH) {
     const particles = l.particles;
     if (!particles || particles.empty) return;
+    this._particlePlanet = this._planetOf(l);
     if (l.model.particlesAnchor === 'VIEW') {
-      const x = l.model.decal_X_Ratio * (this.worldWidth / 100), y = l.model.decal_Y_Ratio * (this.worldHeight / 100);
-      if (x + particles.maxX > 0 && x + particles.minX < viewW && y + particles.maxY > 0 && y + particles.minY < viewH) {
-        particles.draw(l.quads, x, y, tint, this._ppu, this.height);
+      const vx = anchor[0] + l.model.decal_X_Ratio * (this.worldWidth / 100);
+      const vy = anchor[1] + l.model.decal_Y_Ratio * (this.worldHeight / 100);
+      // Round a planet, where the middle of its box goes, as far down and across as it goes.
+      const midX = vx + l.width / 2, midY = vy + l.height / 2;
+      let dx = 0, dy = 0, turn = null;
+      if (this._particlePlanet > 0) {
+        turn = PlaxPlanet.turn(this._particlePlanet, viewW, midX, midY);
+        dx = turn.toX - midX;
+        dy = turn.toY - midY;
+      }
+      if (vx + dx + particles.maxX > 0 && vx + dx + particles.minX < viewW && vy + dy + particles.maxY > 0
+        && vy + dy + particles.minY < viewH) {
+        particles.draw(l.quads, vx, vy, tint, this._ppu, this.height, turn);
       }
     } else {
       this._particleTint = tint;
-      this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH);
+      this._tile(l, x, y, this._repeatX, this._repeatY, false, viewW, viewH);
     }
   }
 
@@ -921,22 +1035,32 @@ export class PlaxBackground {
     // (ParallaxLayer.getCycleLeft/Right).
     const left = particles ? particles.minX : sequence ? PlaxSequence.cycleLeft(l) : 0;
     const right = particles ? particles.maxX : sequence ? PlaxSequence.cycleRight(l) : width;
-    const bottom = particles ? particles.minY : 0, top = particles ? particles.maxY : height;
+    let bottom = particles ? particles.minY : 0;
+    const top = particles ? particles.maxY : height;
+    if (particles && this._particlePlanet > 0) {
+      // Round a planet each tile's effect is turned as its box's middle is: lowered, at most, as the ground is under
+      // one whose particles just reach into the view at its side.
+      bottom -= PlaxPlanet.dropAt(this._particlePlanet, viewW, 0 - Math.max(right - width / 2, width / 2 - left));
+    }
+    // Round a planet the view's top corners show what lies a little over it.
+    const viewTop = viewH + this._reach;
     // A step <= 0 (a negative padding larger than the image) can't tile: the layer is drawn once.
     const stepX = width + l.model.padX, stepY = height + l.model.padY;
     const tileX = onX && stepX > 0, tileY = onY && stepY > 0;
     const startX = tileX ? x - Math.ceil((x + right) / stepX) * stepX : x;
     const startY = tileY ? y - Math.ceil((y + top) / stepY) * stepY : y;
     const countX = tileX ? Math.ceil((viewW - left - startX) / stepX) + 1 : 1;
-    const countY = tileY ? Math.ceil((viewH - bottom - startY) / stepY) + 1 : 1;
+    const countY = tileY ? Math.ceil((viewTop - bottom - startY) / stepY) + 1 : 1;
     for (let row = 0; row < countY; row++) {
       const drawY = startY + row * stepY;
-      if (drawY + top <= 0 || drawY + bottom >= viewH) continue;
+      if (drawY + top <= 0 || drawY + bottom >= viewTop) continue;
       for (let column = 0; column < countX; column++) {
         const drawX = startX + column * stepX;
         if (drawX + right <= 0 || drawX + left >= viewW) continue;
         if (particles) {
-          particles.draw(l.quads, drawX, drawY, this._particleTint, this._ppu, this.height);
+          const turn = this._particlePlanet > 0
+            ? PlaxPlanet.turn(this._particlePlanet, viewW, drawX + width / 2, drawY + height / 2) : null;
+          particles.draw(l.quads, drawX, drawY, this._particleTint, this._ppu, this.height, turn);
           continue;
         }
         if (hook) {
@@ -963,8 +1087,19 @@ export class PlaxBackground {
     const drawW = width * l.packedW, drawH = height * l.packedH;
     const left = x + width * (fx ? 1 - l.trimLeft - l.packedW : l.trimLeft);
     const bottom = y + height * (fy ? 1 - l.trimBottom - l.packedH : l.trimBottom);
+    const texture = l.region.page.texture;
+    if (this._panorama) {
+      // Behind a near tower: cut in strips, each placed round the panorama and scaled about the eye.
+      PlaxPanorama.draw(this, texture, l.src, left, bottom, drawW, drawH, fx, fy, this._panorama, this._eyeY, this._viewW);
+      return;
+    }
+    if (this._planet > 0) {
+      // Round the page's planet: cut in strips, each wrapped round it (ParallaxPageReader.drawImageLayer).
+      PlaxPlanet.draw(this, texture, l.src, left, bottom, drawW, drawH, fx, fy, this._planet, this._viewW);
+      return;
+    }
     const ppu = this._ppu, top = this.height - (bottom + drawH) * ppu;
-    this._quads.add(l.region.page.texture, left * ppu, top, drawW * ppu, drawH * ppu, l.src, fx, fy);
+    this._quads.add(texture, left * ppu, top, drawW * ppu, drawH * ppu, l.src, fx, fy);
   }
 }
 
@@ -1250,17 +1385,18 @@ export const PlaxLurker = {
   // ParallaxPageReader.lurkerInSight: whether a copy of the figure `index` of `page` is in the view (its tile's box;
   // the view's bottom left corner at 0, 0) and not wholly covered by one layer in front of it. The cover counts only
   // where it was worked out for: a page repeating on X, the figure's own row, no planet, no panorama, the dolly at
-  // zoom 1, no cross-fade, the tint at full opacity, and the layers' Y apart as saved. The dolly, the anchor and the
-  // panorama are r43's: until then the figure is at the camera's zoom, from the view's corner.
+  // zoom 1, no cross-fade, the tint at full opacity, and the layers' Y apart as saved.
   _inSight(bg, page, index, incoming, zoom) {
     const figure = page[index];
     const width = figure.width, height = figure.height;
     if (!(width > 0) || !(height > 0) || Number.isNaN(zoom)) return false;
-    const z = zoom;
+    const z = bg.dolly ? PlaxEffects.dollyZoom(zoom, PlaxEffects.frontSpeedOf(page), figure.model) : zoom;
     const vw = bg.worldWidth * z, vh = bg.worldHeight * z;
-    const originX = figure.distanceX, originY = figure.distanceY;
+    const anchor = bg._anchorOf(z);
+    const originX = anchor[0] + figure.distanceX, originY = anchor[1] + figure.distanceY;
     const fromPage = incoming ? bg.transferPage : bg.page;
     const covers = bg._repeatX && figure.model.lurkerCover.length > 0 && !(fromPage.planetRadius > 0)
+      && !PlaxPanorama.nearTowerOf(page) && (!bg.dolly || zoom === 1)
       && bg.transferLayers.length === 0 && bg.tint[3] >= 1;
     const stepX = width + figure.model.padX, stepY = height + figure.model.padY;
     const tileX = bg._repeatX && stepX > 0, tileY = bg._repeatY && stepY > 0;
@@ -1273,7 +1409,9 @@ export const PlaxLurker = {
       for (let column = firstColumn; ; column++) {
         const x = originX + column * stepX;
         if (column > firstColumn && (!tileX || x >= vw)) break;
-        if (x + width > 0 && x < vw && !(covers && row === 0 && PlaxLurker._covered(bg, page, index, x))) return true;
+        if (x + width > 0 && x < vw && !(covers && row === 0 && PlaxLurker._covered(bg, page, index, x - anchor[0]))) {
+          return true;
+        }
       }
     }
     return false;
@@ -1371,6 +1509,303 @@ export const PlaxAnim = {
     u.region.value.set(src.x / image.width, src.y / image.height, (src.x + src.w) / image.width,
       (src.y + src.h) / image.height);
     u.size.value.set(frame.imageW * l.width / l.imageW * frame.packedW, frame.imageH * l.height / l.imageH * frame.packedH);
+  },
+};
+
+// --- planets (PlaxPlanet: core's PlanetBatch, r277, r347; docs/depth-tricks.md §3) -----------------------------------
+
+// A page round its planet: core's PlanetBatch and ParallaxPageReader.planetInView, planetReachOf and planetPlaceAt, as
+// plax_planet.gd has them. The layer's view is the side of a world turning round one centre `radius` under the middle
+// of its bottom: a point (x, y) of the view goes to the angle (x - middle) / radius round it, at radius plus its height
+// from it, so what scrolls across turns and what stands up leans out along the radius. Each IMAGE, SHADER and SEQUENCE
+// layer is cut in vertical strips fixed in the view, each piece drawn as the quad its four corners go to;
+// PlaxBackground._drawRegion hands its regions here.
+export const PlaxPlanet = {
+  // PlanetBatch.STRIPS: how many strips the view is cut in, across.
+  STRIPS: 256,
+
+  // ParallaxPageReader.planetInView: the radius, in page units, of the planet `radius` percent of `worldWidth` in a
+  // layer's view at zoom `z`, the camera at `zoom` (a dollied layer's view is scaled back into the camera's, so every
+  // layer is wrapped round the same circle on screen); 0 for none.
+  radiusOf(radius, worldWidth, z, zoom) {
+    const r = radius * (worldWidth / 100);
+    return r > 0 ? r * z / zoom : 0;
+  },
+
+  // ParallaxPageReader.planetReachOf: how far above a view `viewW` by `viewH` its top corners show, round a planet of
+  // `radius` under its bottom; 0 for none.
+  reachOf(radius, viewW, viewH) {
+    if (!(radius > 0)) return 0;
+    const far = radius + viewH;
+    return Math.sqrt(far * far + viewW * viewW / 4) - far;
+  },
+
+  // PlanetBatch.placeX/placeY: where (x, y) of a view from (0, 0), `viewW` wide, goes round a centre `radius` under the
+  // middle of its bottom, in page units, y up.
+  place(radius, viewW, x, y) {
+    const a = (x - viewW / 2) / radius;
+    return [viewW / 2 + (radius + y) * Math.sin(a), -radius + (radius + y) * Math.cos(a)];
+  },
+
+  // How far what stands at `x` leans round the planet, in radians clockwise on screen: right of the middle, to the
+  // right. ParallaxPageReader.planetAngleAt, which is counterclockwise in degrees.
+  angleAt(radius, viewW, x) {
+    return radius > 0 ? (x - viewW / 2) / radius : 0;
+  },
+
+  // ParallaxPageReader.particleDrop: how far the ground under `x` is lowered round the planet.
+  dropAt(radius, viewW, x) {
+    return -PlaxPlanet.place(radius, viewW, x, 0)[1];
+  },
+
+  // PlanetBatch.turn: a particle effect turned as one block, moved and turned as the point (x, y) is, its middle; in
+  // floats, as libGDX turns its vertices (PlaxParticles.draw).
+  turn(radius, viewW, x, y) {
+    const middle = viewW / 2;
+    const a = f32p(f32p(x - middle) / radius);
+    const angle = -a;
+    return {
+      pivotX: x, pivotY: y,
+      toX: f32p(middle + f32p(f32p(radius + y) * f32p(Math.sin(a)))),
+      toY: f32p(f32p(-radius) + f32p(f32p(radius + y) * f32p(Math.cos(a)))),
+      cos: f32p(Math.cos(angle)), sin: f32p(Math.sin(angle)),
+    };
+  },
+
+  // PlanetBatch.draw: `src` of `texture` in the box from (left, bottom), drawW by drawH page units (x 0..viewW of the
+  // layer's view), flipped as `fx`, `fy` say, cut at the strips, each piece the quad its corners go to round a centre
+  // `radius` under the view. What lies outside the view is not drawn.
+  draw(bg, texture, src, left, bottom, drawW, drawH, fx, fy, radius, viewW) {
+    const step = viewW / PlaxPlanet.STRIPS;
+    const right = left + drawW;
+    if (!(drawW > 0) || !(step > 0) || right <= 0 || left >= viewW) return;
+    const first = Math.max(0, Math.floor(left / step));
+    const last = Math.min(PlaxPlanet.STRIPS - 1, Math.floor(right / step));
+    const W = texture.image.width, H = texture.image.height;
+    // The image's top at the box's top and its bottom at the box's bottom; flipped on Y, the other way round.
+    const vTop = (fy ? src.y + src.h : src.y) / H;
+    const vBottom = (fy ? src.y : src.y + src.h) / H;
+    const top = bottom + drawH;
+    const pixels = at => [at[0] * bg._ppu, bg.height - at[1] * bg._ppu];
+    for (let strip = first; strip <= last; strip++) {
+      const p0 = Math.max(left, strip * step);
+      const p1 = Math.min(right, (strip + 1) * step);
+      if (!(p1 > p0)) continue;
+      // The piece's share of the image, left to right; flipped on X the image runs right to left.
+      const t0 = (p0 - left) / drawW, t1 = (p1 - left) / drawW;
+      const u0 = (src.x + src.w * (fx ? 1 - t0 : t0)) / W;
+      const u1 = (src.x + src.w * (fx ? 1 - t1 : t1)) / W;
+      // SpriteBatch's order: bottom left, top left, top right, bottom right.
+      bg._quads.addCorners(texture, [
+        ...pixels(PlaxPlanet.place(radius, viewW, p0, bottom)), ...pixels(PlaxPlanet.place(radius, viewW, p0, top)),
+        ...pixels(PlaxPlanet.place(radius, viewW, p1, top)), ...pixels(PlaxPlanet.place(radius, viewW, p1, bottom))],
+      [u0, vBottom, u0, vTop, u1, vTop, u1, vBottom]);
+    }
+  },
+};
+
+// --- towers (PlaxTower: ParallaxLayer.drawTower, r276; docs/depth-tricks.md §2) --------------------------------------
+
+// An IMAGE layer wrapped round a tower: ParallaxPageReader's towerRows and ParallaxLayer.drawTower, as plax_tower.gd.
+export const PlaxTower = {
+  // How many strips a tower's front half is cut in, by angle (ParallaxLayer.TOWER_STRIPS).
+  TOWER_STRIPS: 128,
+
+  // ParallaxLayer.isTower: an IMAGE layer with a radius.
+  isTower(l) {
+    return l.model.kind === 'IMAGE' && l.model.towerRadius > 0;
+  },
+
+  // ParallaxPageReader.towerRows: the tower round its axis in the view's middle, its tile at (x, y); once, or on a page
+  // repeating on Y every repetition up that intersects the view (y 0 to `viewH`).
+  drawRows(bg, l, x, y, viewW, viewH) {
+    const height = l.height;
+    const stepY = height + l.model.padY;
+    if (!(height > 0)) return;
+    const tileY = bg._repeatY && stepY > 0;
+    const startY = tileY ? y - Math.ceil((y + height) / stepY) * stepY : y;
+    const countY = tileY ? Math.ceil((viewH - startY) / stepY) + 1 : 1;
+    for (let row = 0; row < countY; row++) {
+      const drawY = startY + row * stepY;
+      if (drawY + height <= 0 || drawY >= viewH) continue;
+      PlaxTower.draw(bg, l, viewW / 2, x, drawY, 0, viewW, viewH / 2);
+    }
+  },
+
+  // ParallaxLayer.towerScaleAt: how much a tower seen from `camera` radii from its axis scales its wall at angle `a`
+  // from its front, about the view's middle: (camera - 1) / (camera - cos a); 1 for a camera up to 1 (far away).
+  scaleAt(camera, a) {
+    return camera > 1 ? (camera - 1) / (camera - Math.cos(a)) : 1;
+  },
+
+  // ParallaxLayer.drawTower: the layer round a cylinder of its radius (percent of the world width) whose axis is at
+  // `axisX`, its box's bottom at `y`. The point an arc s round the wall from its front shows what the flat layer, its
+  // tile at `x`, shows at axisX + s, drawn at axisX + radius sin(s / radius); the front half cut in TOWER_STRIPS strips
+  // of equal angle and at each image's edges, each piece at 1 - towerShade (1 - cos a) of the tint, at its middle. Seen
+  // from close by (towerCamera above 1, r350), each piece is also scaled about `eyeY` by scaleAt at its middle.
+  draw(bg, l, axisX, x, y, viewLeft, viewRight, eyeY) {
+    const m = l.model;
+    const radius = m.towerRadius * (bg.worldWidth / 100);
+    const width = l.width, height = l.height;
+    if (!(radius > 0) || !(width > 0) || !(height > 0)) return;
+    const stripAngle = Math.PI / PlaxTower.TOWER_STRIPS;
+    // What shows of the front half: its arc from the view's left edge to its right one.
+    const from = radius * Math.asin(clamp((viewLeft - axisX) / radius, -1, 1));
+    const to = radius * Math.asin(clamp((viewRight - axisX) / radius, -1, 1));
+    if (!(to > from)) return;
+    const fx = m.flipX, fy = m.flipY;
+    // The image in its tile, along the arc, and up the box, as _drawRegion places it.
+    const imageLeft = width * (fx ? 1 - l.trimLeft - l.packedW : l.trimLeft);
+    const imageW = width * l.packedW;
+    const drawH = height * l.packedH;
+    const bottom = y + height * (fy ? 1 - l.trimBottom - l.packedH : l.trimBottom);
+    // Tile k's image starts at an arc of corner + k * step; a step <= 0 can't tile: the image goes round once.
+    const corner = x - axisX + imageLeft;
+    const step = width + m.padX;
+    let first = 0, last = 0;
+    if (step > 0) {
+      first = Math.floor((from - corner - imageW) / step);
+      last = Math.ceil((to - corner) / step);
+    }
+    const src = l.src;
+    const texture = l.region.page.texture;
+    const ppu = bg._ppu;
+    const camera = m.towerCamera;
+    for (let k = first; k <= last; k++) {
+      const left = corner + k * step;
+      const lo = Math.max(from, left);
+      const hi = Math.min(to, left + imageW);
+      if (!(hi > lo)) continue;
+      let strip = Math.max(0, Math.floor((lo / radius + Math.PI / 2) / stripAngle));
+      const lastStrip = Math.min(PlaxTower.TOWER_STRIPS - 1, Math.floor((hi / radius + Math.PI / 2) / stripAngle));
+      for (; strip <= lastStrip; strip++) {
+        const p0 = Math.max(lo, radius * (strip * stripAngle - Math.PI / 2));
+        const p1 = Math.min(hi, radius * ((strip + 1) * stripAngle - Math.PI / 2));
+        if (!(p1 > p0)) continue;
+        const x0 = axisX + radius * Math.sin(p0 / radius);
+        const x1 = axisX + radius * Math.sin(p1 / radius);
+        const mid = (p0 + p1) / (2 * radius);
+        const bright = 1 - m.towerShade * (1 - Math.cos(mid));
+        const scale = PlaxTower.scaleAt(camera, mid);
+        const pieceY = eyeY + (bottom - eyeY) * scale;
+        // The piece's share of its image, left to right; flipped on X the image runs right to left.
+        const f0 = (p0 - left) / imageW, f1 = (p1 - left) / imageW;
+        const g0 = fx ? 1 - f1 : f0, g1 = fx ? 1 - f0 : f1;
+        const piece = { x: src.x + src.w * g0, y: src.y, w: src.w * (g1 - g0), h: src.h };
+        const pxW = (x1 - x0) * ppu, pxH = drawH * scale * ppu;
+        bg._quads.shade = bg._towerShade(bright);
+        bg._quads.add(texture, x0 * ppu, bg.height - pieceY * ppu - pxH, pxW, pxH, piece, fx, fy);
+      }
+    }
+  },
+};
+
+// --- panoramas (PlaxPanorama: core's PanoramaBatch, r350; docs/depth-tricks.md §2) -----------------------------------
+
+// The layers behind a tower seen from close by: ParallaxPageReader.nearTowerOf/panoramaRadiusOf and core's
+// PanoramaBatch, as plax_panorama.gd. Each IMAGE, SHADER and SEQUENCE layer slower than the tower, and not still, is the
+// far side of a cylinder round the tower's axis; its point at angle t from that side's middle is drawn at
+// axis + rho sin t (q + 1) / (q + cos t) and scaled about the eye by (q + 1) / (q + cos t). Drawn as vertical strips
+// fixed in the view, each piece placed by its edges and scaled at its strip's middle; PlaxBackground._drawRegion hands
+// its regions here when the layer is one.
+export const PlaxPanorama = {
+  // PanoramaBatch.STRIPS: how many strips the view is cut in, across.
+  STRIPS: 128,
+
+  // ParallaxLayer.isNearTower: a tower whose camera stands more than one radius from its axis.
+  isNearTower(l) {
+    return PlaxTower.isTower(l) && l.model.towerCamera > 1;
+  },
+
+  // ParallaxPageReader.nearTowerOf: the page's tower seen from close by, the fastest when there are more; null for none.
+  nearTowerOf(pageLayers) {
+    let tower = null;
+    for (const l of pageLayers) {
+      if (PlaxPanorama.isNearTower(l) && (!tower
+        || Math.abs(l.model.parallaxScalingSpeedX) > Math.abs(tower.model.parallaxScalingSpeedX))) tower = l;
+    }
+    return tower;
+  },
+
+  // ParallaxPageReader.towerCameraOf: how far the camera looking at `tower` stands from its axis, in world units.
+  cameraOf(tower, worldWidth) {
+    return tower.model.towerRadius * (worldWidth / 100) * tower.model.towerCamera;
+  },
+
+  // ParallaxPageReader.panoramaRadiusOf: the radius of the panorama `l` is wrapped in round `tower`, world units; 0
+  // flat. The tower's front f = D - r away, the layer f s_tower / s, R = that - D, at least D.
+  radiusOf(tower, l, worldWidth) {
+    if (!tower || tower === l || PlaxTower.isTower(l)) return 0;
+    const kind = l.model.kind;
+    if (kind !== 'IMAGE' && kind !== 'SHADER' && kind !== 'SEQUENCE') return 0;
+    const speed = Math.abs(l.model.parallaxScalingSpeedX);
+    const towerSpeed = Math.abs(tower.model.parallaxScalingSpeedX);
+    if (!(speed > 0) || !(speed < towerSpeed)) return 0;
+    const camera = PlaxPanorama.cameraOf(tower, worldWidth);
+    const radius = tower.model.towerRadius * (worldWidth / 100);
+    return Math.max(camera, (camera - radius) * towerSpeed / speed - camera);
+  },
+
+  // PanoramaBatch.screenOf: where the panorama's point at angle t is drawn, from the axis.
+  screenOf(rho, q, t) {
+    return rho * Math.sin(t) * (q + 1) / (q + Math.cos(t));
+  },
+
+  // PanoramaBatch.scaleAt: how much the panorama is scaled about the eye at angle t: 1 at its middle.
+  scaleAt(q, t) {
+    return (q + 1) / (q + Math.cos(t));
+  },
+
+  // PanoramaBatch.angleAt: the angle of the point drawn x from the axis.
+  angleAt(rho, q, x) {
+    const c = rho * (q + 1);
+    const a = Math.sqrt(c * c + x * x);
+    return Math.atan2(x, c) + Math.asin(clamp(x * q / a, -1, 1));
+  },
+
+  // PanoramaBatch.set: the strips' edges as arcs from the axis (`edges`, STRIPS + 1) and their scales (`scales`,
+  // STRIPS), for a panorama of `rho` at its own scale, the camera `q` of its radius from the axis in the view's middle.
+  layOut(rho, q, viewW, edges, scales) {
+    const step = viewW / PlaxPanorama.STRIPS;
+    for (let i = 0; i <= PlaxPanorama.STRIPS; i++) edges[i] = rho * PlaxPanorama.angleAt(rho, q, i * step - viewW / 2);
+    for (let i = 0; i < PlaxPanorama.STRIPS; i++) {
+      scales[i] = PlaxPanorama.scaleAt(q, PlaxPanorama.angleAt(rho, q, (i + 0.5) * step - viewW / 2));
+    }
+  },
+
+  // PanoramaBatch.draw: `src` of `texture` in the box from (left, bottom), drawW by drawH page units (x 0..viewW of the
+  // layer's view), flipped as `fx`, `fy` say, cut at the strips, each piece placed round the panorama and scaled about
+  // the eye at `eyeY`. What lies outside the view is not drawn.
+  draw(bg, texture, src, left, bottom, drawW, drawH, fx, fy, layout, eyeY, viewW) {
+    const [rho, q, edges, scales] = layout;
+    const STRIPS = PlaxPanorama.STRIPS;
+    const step = viewW / STRIPS;
+    const axis = viewW / 2;
+    const a = left - axis;
+    const b = left + drawW - axis;
+    if (!(b > a) || !(step > 0) || b <= edges[0] || a >= edges[STRIPS]) return;
+    let lo = 0, hi = STRIPS - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (edges[mid + 1] <= a) lo = mid + 1;
+      else hi = mid;
+    }
+    const ppu = bg._ppu;
+    for (let s = lo; s < STRIPS && edges[s] < b; s++) {
+      const p0 = Math.max(a, edges[s]);
+      const p1 = Math.min(b, edges[s + 1]);
+      if (!(p1 > p0)) continue;
+      // The piece's share of the image, left to right; flipped on X the image runs right to left.
+      const t0 = (p0 + axis - left) / drawW, t1 = (p1 + axis - left) / drawW;
+      const g0 = fx ? 1 - t1 : t0, g1 = fx ? 1 - t0 : t1;
+      const piece = { x: src.x + src.w * g0, y: src.y, w: src.w * (g1 - g0), h: src.h };
+      const x0 = p0 === edges[s] ? s * step : axis + PlaxPanorama.screenOf(rho, q, p0 / rho);
+      const x1 = p1 === edges[s + 1] ? (s + 1) * step : axis + PlaxPanorama.screenOf(rho, q, p1 / rho);
+      const scale = scales[s];
+      const pieceY = eyeY + (bottom - eyeY) * scale;
+      const pxW = (x1 - x0) * ppu, pxH = drawH * scale * ppu;
+      bg._quads.add(texture, x0 * ppu, bg.height - pieceY * ppu - pxH, pxW, pxH, piece, fx, fy);
+    }
   },
 };
 
@@ -1536,9 +1971,11 @@ export class PlaxTransfertStyle {
 // compute, blended as every layer is (LAYER_BLENDING).
 const EFFECT_VERTEX = `varying vec2 vUv;
 varying vec2 vScreen;
+varying vec3 vShade;
 void main() {
 	vUv = uv;
 	vScreen = position.xy;
+	vShade = color;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
@@ -1560,6 +1997,8 @@ uniform vec3 up;
 uniform vec2 wrap;
 varying vec2 vUv;
 varying vec2 vScreen;
+// Quads.shade: what a tower's piece darkens the tint by (PlaxTower.draw); 1 for every other quad.
+varying vec3 vShade;
 vec2 local(vec2 uv) {
 	return vec2((uv.x - region.x) / (region.z - region.x) * size.x, (region.w - uv.y) / (region.w - region.y) * size.y);
 }
@@ -1591,7 +2030,7 @@ const EFFECT_FRAGMENTS = {
 	float u = clamp(vUv.x + shift / size.x * (region.z - region.x), min(region.x, region.z), max(region.x, region.z));
 	vec2 uv = vec2(u, vUv.y);
 	vec4 image = texture2D(tex, uv);
-	gl_FragColor = hazed(tint * image, SCREEN_UV);
+	gl_FragColor = hazed(vec4(tint.rgb * vShade, tint.a) * image, SCREEN_UV);
 }
 `,
   // FOG: the opacity times 1 - amplitude * n, n in 0..1 a sum of three sines whose x frequencies are 7, 17 and 23 per
@@ -1603,7 +2042,7 @@ const EFFECT_FRAGMENTS = {
 		+ sin(TAU * (2.125 * p.x - 0.5 * p.y) + 1.3)
 		+ sin(TAU * (2.875 * p.x + 0.8 * p.y) + 2.9)) / 6.0 + 0.5;
 	vec4 image = texture2D(tex, vUv);
-	vec4 color = tint * image;
+	vec4 color = vec4(tint.rgb * vShade, tint.a) * image;
 	color.a *= 1.0 - effect.x * n;
 	gl_FragColor = hazed(color, SCREEN_UV);
 }
@@ -1622,13 +2061,13 @@ const EFFECT_FRAGMENTS = {
 	vec2 f = mix(clamp(l / size, 0.0, 1.0), fract(l / size), wrap);
 	vec2 uv = vec2(mix(region.x, region.z, f.x), mix(region.w, region.y, f.y));
 	vec4 image = texture2D(tex, uv);
-	gl_FragColor = hazed(tint * image, SCREEN_UV);
+	gl_FragColor = hazed(vec4(tint.rgb * vShade, tint.a) * image, SCREEN_UV);
 }
 `,
   // PLAIN: no effect, the depth fog only.
   PLAIN: `void main() {
 	vec2 SCREEN_UV = vScreen / view;
-	gl_FragColor = hazed(tint * texture2D(tex, vUv), SCREEN_UV);
+	gl_FragColor = hazed(vec4(tint.rgb * vShade, tint.a) * texture2D(tex, vUv), SCREEN_UV);
 }
 `,
 };
@@ -1656,7 +2095,7 @@ export const PlaxEffects = {
   // other numbers `uniforms`, the layer's.
   material(effect, uniforms) {
     return new THREE.ShaderMaterial({
-      ...LAYER_BLENDING, uniforms: { ...uniforms, tex: { value: null } },
+      ...LAYER_BLENDING, vertexColors: true, uniforms: { ...uniforms, tex: { value: null } },
       vertexShader: EFFECT_VERTEX, fragmentShader: EFFECT_HEAD + (EFFECT_FRAGMENTS[effect] ?? EFFECT_FRAGMENTS.WAVE),
     });
   },
@@ -1757,6 +2196,15 @@ export const PlaxEffects = {
     if (!(speed > 0)) return 1;
     const depth = 1 / speed - 1 / front;
     return depth > 0 ? 1 - Math.exp(-strength * depth) : 0;
+  },
+
+  // ParallaxPageReader.dollyZoom: the zoom a dollied layer is drawn at, the camera's being `zoom` and its page's front
+  // `front`: 1 - k (1 - zoom), k its speed ratio X over the front's, as magnitudes; the camera's for a still page.
+  // In floats, as libGDX reckons it.
+  dollyZoom(zoom, front, model) {
+    if (!(front > 0)) return zoom;
+    const k = Math.min(1, f32p(f32p(Math.abs(model.parallaxScalingSpeedX)) / f32p(front)));
+    return f32p(1 - f32p(k * f32p(1 - zoom)));
   },
 
   // ParallaxPageReader.frontSpeedOf: the fastest speed ratio X of `page` (PlaxBackground's layers), as a magnitude.
@@ -3081,7 +3529,8 @@ export class PlaxParticles {
 
   // Into `sprites` (the layer's ParticleQuads), moved by (x, y) page units, their colours multiplied by `tint`; `ppu`
   // and `screenH` turn page units, y up, into screen pixels, y down. Each emitter blends as its .p asks.
-  draw(sprites, x, y, tint, ppu, screenH) {
+  // `turn`: round a planet, every vertex turned as one block about its pivot (PlaxPlanet.turn, PlanetBatch.draw).
+  draw(sprites, x, y, tint, ppu, screenH, turn = null) {
     const xy = new Float32Array(8), uv = new Float32Array(8), rgba = new Float32Array(4);
     for (const e of this.emitters) {
       const blend = e.blend(), fade = e.premultipliedAlpha ? tint[3] : 1;
@@ -3089,8 +3538,14 @@ export class PlaxParticles {
         if (!e.active[i]) continue;
         const p = e.particles[i], v = p.getVertices(), c = p.color;
         for (let k = 0; k < 8; k += 2) {
-          xy[k] = f32p(v[k] + x) * ppu;
-          xy[k + 1] = screenH - f32p(v[k + 1] + y) * ppu;
+          let vx = f32p(v[k] + x), vy = f32p(v[k + 1] + y);
+          if (turn) {
+            const dx = f32p(vx - turn.pivotX), dy = f32p(vy - turn.pivotY);
+            vx = f32p(f32p(turn.toX + f32p(dx * turn.cos)) - f32p(dy * turn.sin));
+            vy = f32p(f32p(turn.toY + f32p(dx * turn.sin)) + f32p(dy * turn.cos));
+          }
+          xy[k] = vx * ppu;
+          xy[k + 1] = screenH - vy * ppu;
         }
         // Bottom left, top left, top right, bottom right, as Sprite's vertices.
         uv.set([p.u, p.v2, p.u, p.v, p.u2, p.v, p.u2, p.v2]);
@@ -3273,6 +3728,8 @@ class Quads {
     // Drawn through a PlaxEffects shader (setEffect): its name, and the uniforms every run shares; null for none.
     this.effect = null;
     this.uniforms = null;
+    // What the next quads' colour is multiplied by, [r, g, b] (a tower's darkness, PlaxTower.draw); null for 1.
+    this.shade = null;
   }
 
   // Draws every run through PlaxEffects' `effect` ('WAVE', 'FOG', 'SWELL' or 'PLAIN'), its numbers in `uniforms`,
@@ -3302,6 +3759,16 @@ class Quads {
 
   // A quad at (x, y) in screen pixels, y down, `src` the texels drawn of `texture`, mirrored by fx, fy.
   add(texture, x, y, w, h, src, fx, fy) {
+    this._runOf(texture).add(x, y, w, h, src, fx, fy, this.shade);
+  }
+
+  // A quad of any shape: its four corners `xy` ([x0, y0, .. x3, y3], screen pixels, y down) and their `uv`, as
+  // SpriteBatch.draw(texture, vertices) takes them (PlaxPlanet.draw).
+  addCorners(texture, xy, uv) {
+    this._runOf(texture).addCorners(xy, uv, this.shade);
+  }
+
+  _runOf(texture) {
     let run = this.used ? this.runs[this.used - 1] : null;
     if (!run || run.texture !== texture) {
       run = this.runs[this.used] ??= new QuadRun(this.runs.length, this.effect, this.uniforms);
@@ -3313,13 +3780,25 @@ class Quads {
       if (run.mesh.parent !== this.group) this.group.add(run.mesh);
       this.used++;
     }
-    run.add(x, y, w, h, src, fx, fy);
+    return run;
   }
 
   // An atlas region (atlas.findRegion) stretched over a box at (x, y) in screen pixels, y down, as Batch.draw(region,
-  // x, y, width, height): what a layer hook draws with, in the layer's colour.
-  drawRegion(region, x, y, w, h) {
-    this.add(region.page.texture, x, y, w, h, { x: region.x, y: region.y, w: region.width, h: region.height }, false, false);
+  // x, y, width, height): what a layer hook draws with, in the layer's colour. With `place` ([x, y]) and `angle`
+  // (radians, clockwise on screen), the box is in a frame moved to `place` and turned by `angle`: round a planet, a hook
+  // stands what it draws where bg.planetPlaceAt puts its foot, turned by bg.planetAngleAt (r347).
+  drawRegion(region, x, y, w, h, place = null, angle = 0) {
+    const src = { x: region.x, y: region.y, w: region.width, h: region.height };
+    if (!place) {
+      this.add(region.page.texture, x, y, w, h, src, false, false);
+      return;
+    }
+    const image = region.page.texture.image, cos = Math.cos(angle), sin = Math.sin(angle);
+    const at = (px, py) => [place[0] + px * cos - py * sin, place[1] + px * sin + py * cos];
+    const u0 = src.x / image.width, u1 = (src.x + src.w) / image.width;
+    const v0 = src.y / image.height, v1 = (src.y + src.h) / image.height;
+    this.addCorners(region.page.texture, [...at(x, y), ...at(x + w, y), ...at(x + w, y + h), ...at(x, y + h)],
+      [u0, v0, u1, v0, u1, v1, u0, v1]);
   }
 
   end() {
@@ -3351,7 +3830,7 @@ class QuadRun {
     this.capacity = 0;
     this.geometry = new THREE.BufferGeometry();
     this.material = effect ? PlaxEffects.material(effect, uniforms)
-      : new THREE.MeshBasicMaterial({ ...LAYER_BLENDING, toneMapped: false });
+      : new THREE.MeshBasicMaterial({ ...LAYER_BLENDING, vertexColors: true, toneMapped: false });
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = order;
@@ -3372,35 +3851,52 @@ class QuadRun {
     this.capacity = capacity;
     this.position = new Float32Array(capacity * 12);
     this.uv = new Float32Array(capacity * 8);
+    // Each corner's shade (Quads.shade): 1 but on a tower's pieces.
+    this.shade = new Float32Array(capacity * 12).fill(1);
     const index = new Uint32Array(capacity * 6);
     for (let i = 0; i < capacity; i++) index.set([0, 1, 2, 0, 2, 3].map(v => v + i * 4), i * 6);
     this.geometry.dispose();
     this.geometry = new THREE.BufferGeometry();
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.position, 3));
     this.geometry.setAttribute('uv', new THREE.BufferAttribute(this.uv, 2));
+    this.geometry.setAttribute('color', new THREE.BufferAttribute(this.shade, 3));
     this.geometry.setIndex(new THREE.BufferAttribute(index, 1));
     this.mesh.geometry = this.geometry;
   }
 
-  add(x, y, w, h, src, fx, fy) {
-    if (this.count === this.capacity) {
-      const pos = this.position, uv = this.uv;
-      this._grow(this.capacity * 2);
-      this.position.set(pos);
-      this.uv.set(uv);
-    }
-    const image = this.texture.image, i = this.count++;
+  add(x, y, w, h, src, fx, fy, shade = null) {
+    const image = this.texture.image;
     let u0 = src.x / image.width, u1 = (src.x + src.w) / image.width;
     let v0 = src.y / image.height, v1 = (src.y + src.h) / image.height;
     if (fx) [u0, u1] = [u1, u0];
     if (fy) [v0, v1] = [v1, v0];
-    this.position.set([x, y, 0, x + w, y, 0, x + w, y + h, 0, x, y + h, 0], i * 12);
-    this.uv.set([u0, v0, u1, v0, u1, v1, u0, v1], i * 8);
+    this.addCorners([x, y, x + w, y, x + w, y + h, x, y + h], [u0, v0, u1, v0, u1, v1, u0, v1], shade);
+  }
+
+  addCorners(xy, uv, shade = null) {
+    if (this.count === this.capacity) {
+      const pos = this.position, uvs = this.uv, shades = this.shade;
+      this._grow(this.capacity * 2);
+      this.position.set(pos);
+      this.uv.set(uvs);
+      this.shade.set(shades);
+    }
+    const i = this.count++;
+    for (let k = 0; k < 4; k++) {
+      this.position[i * 12 + k * 3] = xy[k * 2];
+      this.position[i * 12 + k * 3 + 1] = xy[k * 2 + 1];
+      this.position[i * 12 + k * 3 + 2] = 0;
+      this.shade[i * 12 + k * 3] = shade ? shade[0] : 1;
+      this.shade[i * 12 + k * 3 + 1] = shade ? shade[1] : 1;
+      this.shade[i * 12 + k * 3 + 2] = shade ? shade[2] : 1;
+    }
+    this.uv.set(uv, i * 8);
   }
 
   end(used) {
     this.geometry.setDrawRange(0, this.count * 6);
     this.geometry.attributes.position.needsUpdate = this.geometry.attributes.uv.needsUpdate = true;
+    this.geometry.attributes.color.needsUpdate = true;
     this.mesh.visible = used && this.count > 0;
   }
 
