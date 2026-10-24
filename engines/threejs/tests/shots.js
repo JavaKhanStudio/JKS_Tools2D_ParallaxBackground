@@ -8,7 +8,7 @@
 // which POSTs each still to save/<scene>-t<seconds>.png, and what it logged to done. &skip=s12,s13 leaves scenes out
 // (frame-check.sh's SKIP: what this reader does not draw yet).
 import * as THREE from 'three';
-import { PlaxBackground, PlaxTransfertStyle, loadAtlas, loadPage } from '../src/plax.js';
+import { PlaxBackground, PlaxParticles, PlaxTransfertStyle, loadAtlas, loadPage, loadParticles } from '../src/plax.js';
 
 const SHOT_TIMES = [0, 6, 12];
 // BREAK=scroll (frame-check.sh's negative control): a scroll 10 % too fast, which the check must fail.
@@ -40,9 +40,12 @@ async function shots() {
   for (const scene of round.scenes) {
     if (skip.includes(scene.id)) { say('skipped: ' + scene.id); continue; }
     resize(1280, 720);
+    // The particles' random seeded from the scene's id, as Round.seedRandom: the snow falls as in libGDX.
+    PlaxParticles.random.setSeed(PlaxParticles.hashCode(scene.id));
     await bg.load(root + scene.page, root + scene.atlasDir);
     // BREAK=hooks: no EMPTY layer drawn, which the effects round must fail.
     setHooks(bg, BREAK === 'hooks' ? {} : scene.hooks ?? {});
+    breakParticles(bg);
     if (scene.sequenceSeed !== undefined) bg.setSequenceSeed(scene.sequenceSeed);
     else bg.clearSequenceSeed();
     bg.tintTo([1, 1, 1, 1], 0);
@@ -88,8 +91,21 @@ async function transfer(bg, root, scene, t) {
   const style = styleOf(t.style ?? {});
   if (!t.page) { bg.transfertInto(bg.page, bg.atlas, t.seconds, style); return; }
   const page = await loadPage(root + t.page);
-  const atlasDir = root + (t.atlasDir ?? scene.atlasDir);
-  bg.transfertInto(page, await loadAtlas(atlasDir + '/' + page.atlasName), t.seconds, style);
+  const atlasDir = root + (t.atlasDir ?? scene.atlasDir), atlas = await loadAtlas(atlasDir + '/' + page.atlasName);
+  await loadParticles(page, atlas);
+  bg.transfertInto(page, atlas, t.seconds, style);
+  breakParticles(bg);
+}
+
+// BREAK=particles (no flakes drawn), anchor (a VIEW layer drawn as LAYER) and blend (every emitter blended normally):
+// the particles round must FAIL each, as engines/jme's.
+function breakParticles(bg) {
+  for (const l of [...bg.layers, ...bg.transferLayers]) {
+    if (!l.particles) continue;
+    if (BREAK === 'particles') l.particles.draw = () => {};
+    if (BREAK === 'anchor') l.model = { ...l.model, particlesAnchor: 'LAYER' };
+    if (BREAK === 'blend') for (const e of l.particles.emitters) e.blend = () => 'normal';
+  }
 }
 
 // A transfer's "style": {"kind": "DEPTH_STAGGER", "stagger": 1} or {"kind": "DISSOLVE", "patches": 5,

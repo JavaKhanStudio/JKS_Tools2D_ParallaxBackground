@@ -7,7 +7,7 @@
 //   bench.html?round=<round dir>
 // which POSTs save/bench.json, in ParallaxBench's shape, and what it logged to done.
 import * as THREE from 'three';
-import { PlaxBackground, loadAtlas, loadPage } from '../src/plax.js';
+import { PlaxBackground, loadAtlas, loadPage, loadParticles } from '../src/plax.js';
 
 const WARMUP = 60, FRAMES = 600, STEP = 1 / 60;
 const log = [];
@@ -41,7 +41,9 @@ async function bench() {
       const transfers = scene.transfer === undefined ? [] : Array.isArray(scene.transfer) ? scene.transfer : [scene.transfer];
       for (const t of transfers) {
         const page = await loadPage('/' + t.page);
-        bg.transfertInto(page, await loadAtlas('/' + (t.atlasDir ?? scene.atlasDir) + '/' + page.atlasName), t.seconds);
+        const atlas = await loadAtlas('/' + (t.atlasDir ?? scene.atlasDir) + '/' + page.atlasName);
+        await loadParticles(page, atlas);
+        bg.transfertInto(page, atlas, t.seconds);
       }
     } catch (e) {
       say(`skipped ${scene.id}: ${e.message}`);

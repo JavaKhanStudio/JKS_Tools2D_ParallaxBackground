@@ -10,6 +10,10 @@ The editor includes code adapted from:
 - libGDX (https://github.com/libgdx/libgdx): PixmapPacker, PixmapPackerIO
   Copyright 2011 See AUTHORS file. Licensed under the Apache License, Version 2.0.
 
+- libGDX (https://github.com/libgdx/libgdx): ParticleEffect, ParticleEmitter, Sprite, MathUtils and
+  RandomXS128, ported to JavaScript in the three.js reader (engines/threejs/src/plax.js, PlaxParticles)
+  Copyright 2011 See AUTHORS file. Licensed under the Apache License, Version 2.0.
+
 - libgdx-utils by dermetfan (https://github.com/dermetfan/libgdx-utils): FC_List, FileChooser, Utils_Scene2D
   Licensed under the Apache License, Version 2.0.
 

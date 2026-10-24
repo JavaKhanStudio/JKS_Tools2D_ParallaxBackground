@@ -35,6 +35,10 @@
 // `batch` the layer's quads, already in `color`: the page's tint at the layer's opacity, packed as libGDX packs it. A
 // layer with no hook draws nothing; setLayerHook(name, null) removes one.
 //
+// A PARTICLES layer draws the libGDX effect (.p) its page names, from the atlas's folder (PlaxParticles: libGDX's
+// emitter, ported), anchored to the view or tiled with its layer. bg.load fetches it; a page given to setPage or
+// transfertInto needs `await loadParticles(page, atlas)` first. PlaxParticles.random.setSeed(n) repeats a run's snow.
+//
 // A SEQUENCE layer chains its segments (atlas regions) in a cycle drawn once, when the page is set (PlaxSequence), by
 // drawCycle from the page's seed: the same picks as core's SequenceCycle. The cycle is the layer's tile. A game draws
 // a new ground each run with its own seed, XORed with each layer's stored one, as ParallaxPageReader.setSequenceSeed:
@@ -48,8 +52,8 @@
 // Ported: IMAGE layers (decal, sizeRatio, flips, speeds, speedXAtRest, pads, mirror, repeat on X and Y,
 // useOriginalSize), SEQUENCE layers, SHADER layers (WAVE, FOG, SWELL), the page's depth fog, the two gradients,
 // cross-fades and their styles (depth stagger, dissolve, through a colour, fog creep), tints, zoom (not the dolly),
-// resizing, EMPTY layers (setLayerHook). A page with a layer of another kind
-// (PARTICLES, FLOOR, LURKER) or a MIRROR effect fails to load, as in libGDX a page from a newer version does: they are
+// resizing, EMPTY layers (setLayerHook), PARTICLES layers (not round a planet). A page with a layer of another kind
+// (FLOOR, LURKER) or a MIRROR effect fails to load, as in libGDX a page from a newer version does: they are
 // ported in the order engines/rounds needs them. Not yet: the glint, detail levels.
 //
 // A 3D game can stand the page round its world instead (PlaxRings, r48: each layer a cylinder as far as its speed
@@ -67,8 +71,9 @@ const LAYER_DEFAULTS = {
   shaderEffect: 'WAVE', shaderAmplitude: 0, shaderWavelength: 0, shaderSpeed: 0, shaderHaze: 0,
   sequenceSegments: [], sequenceSeed: 0, sequenceLength: 16,
   glintStrength: 0,
+  particlesLibgdx: '', particlesAnchor: 'LAYER',
 };
-// The kinds this reader draws; another fails the page's load. A SEQUENCE layer's cycle is drawn by drawCycle.
+// The kinds this reader draws; another fails the page's load. A PARTICLES layer's effect is loadParticles'. A SEQUENCE layer's cycle is drawn by drawCycle.
 const KINDS = ['IMAGE', 'EMPTY', 'SEQUENCE', 'SHADER', 'PARTICLES'];
 // The kinds a dissolve masks and a transfert through a colour grades; an EMPTY one fades to its share instead.
 const MASKED = ['IMAGE', 'SEQUENCE', 'SHADER'];
@@ -133,7 +138,7 @@ export async function loadAtlas(url) {
   }
   await Promise.all(pages.map(async p => { p.texture = await loadTexture(dir + p.file, p.mipmaps, p.nearest); }));
   return {
-    pages, regions,
+    pages, regions, dir,
     // The n-th region called `name`, counting from 0 in libGDX's order: how a page names its layers.
     findRegion(name, position = 0) {
       return regions.filter(r => r.name === name)[position] ?? null;
@@ -315,8 +320,9 @@ export class PlaxBackground {
 
   // Reads a .jplax or .plaxpj, and its atlas from `atlasDir` (the page's folder when not given).
   async load(pageUrl, atlasDir = pageUrl.replace(/[^/]*$/, '')) {
-    const page = await loadPage(pageUrl);
-    this.setPage(page, await loadAtlas(join(atlasDir, page.atlasName)));
+    const page = await loadPage(pageUrl), atlas = await loadAtlas(join(atlasDir, page.atlasName));
+    await loadParticles(page, atlas);
+    this.setPage(page, atlas);
   }
 
   setPage(page, atlas) {
@@ -359,7 +365,7 @@ export class PlaxBackground {
       this._syncTransferPositions();
       if (seconds <= 0) this._finishTransfert();
       else {
-        this._fadeSpeed = 1 / seconds;
+        this._fadeSpeed = Math.fround(1 / seconds);
         this._style = style;
       }
     }
@@ -441,8 +447,10 @@ export class PlaxBackground {
     for (const l of this.layers) this._actLayer(l, delta, speedX, speedY);
     if (this.transferLayers.length) {
       for (const l of this.transferLayers) this._actLayer(l, delta, speedX, speedY);
-      this._newAlpha = Math.min(1, this._newAlpha + delta * this._fadeSpeed);
-      this._oldAlpha = Math.max(0, this._oldAlpha - delta * this._fadeSpeed);
+      // In floats, as libGDX counts them: the fade ends on the same step, and a PARTICLES layer of the page going
+      // updates, and draws from the random, as many times (q04).
+      this._newAlpha = Math.min(1, f32p(this._newAlpha + f32p(delta * this._fadeSpeed)));
+      this._oldAlpha = Math.max(0, f32p(this._oldAlpha - f32p(delta * this._fadeSpeed)));
       if (this._newAlpha >= 1) this._finishTransfert();
     }
     if (this._tintElapsed < this._tintDuration) {
@@ -492,7 +500,15 @@ export class PlaxBackground {
         built.push(sequence);
         continue;
       }
-      if (model.kind === 'EMPTY' || model.kind === 'PARTICLES') {
+      if (model.kind === 'PARTICLES') {
+        const l = { model, distanceX: 0, distanceY: 0, quads: new ParticleQuads(), particles: particlesOf(model, page, atlas) };
+        this._sizeLayer(l);
+        this._resetPosition(l);
+        this.scene.add(l.quads.group);
+        built.push(l);
+        continue;
+      }
+      if (model.kind === 'EMPTY') {
         const l = { model, distanceX: 0, distanceY: 0, quads: new Quads() };
         this._sizeLayer(l);
         this._resetPosition(l);
@@ -554,8 +570,14 @@ export class PlaxBackground {
   // ParallaxLayer.act.
   _actLayer(l, delta, speedX, speedY) {
     const m = l.model;
-    l.distanceY += -delta * speedY * m.parallaxScalingSpeedY;
-    l.distanceX += -delta * (m.speedXAtRest + speedX) * m.parallaxScalingSpeedX;
+    const moveX = -delta * (m.speedXAtRest + speedX) * m.parallaxScalingSpeedX, moveY = -delta * speedY * m.parallaxScalingSpeedY;
+    l.distanceY += moveY;
+    l.distanceX += moveX;
+    if (l.particles) {
+      // Emitted from the view, the particles still move with the depth they are at.
+      if (m.particlesAnchor === 'VIEW') l.particles.translateParticles(moveX, moveY);
+      l.particles.update(delta);
+    }
     // Kept within one tile so the tiling loops stay short and floats stay precise.
     const totalW = l.width + m.padX, totalH = l.height + m.padY;
     if (this._repeatX && totalW > 0) {
@@ -753,8 +775,10 @@ export class PlaxBackground {
       if (hook) this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH, hook);
       return;
     }
-    // PARTICLES: not drawn yet (r41).
-    if (m.kind === 'PARTICLES') return;
+    if (m.kind === 'PARTICLES') {
+      this._drawParticleLayer(l, [this.tint[0], this.tint[1], this.tint[2], alpha], viewW, viewH);
+      return;
+    }
     const total = Math.max(this.layers.length, this.transferLayers.length);
     if ((this._masked(l) || this._graded(l)) && !l.quads.effect) {
       l.quads.setEffect('PLAIN');
@@ -788,6 +812,22 @@ export class PlaxBackground {
     }
   }
 
+  // A PARTICLES layer: its effect from the view's corner plus its decal (VIEW), or in each tile (LAYER), in `tint`
+  // (ParallaxPageReader.drawParticleLayer). Not round a planet yet (r43).
+  _drawParticleLayer(l, tint, viewW, viewH) {
+    const particles = l.particles;
+    if (!particles || particles.empty) return;
+    if (l.model.particlesAnchor === 'VIEW') {
+      const x = l.model.decal_X_Ratio * (this.worldWidth / 100), y = l.model.decal_Y_Ratio * (this.worldHeight / 100);
+      if (x + particles.maxX > 0 && x + particles.minX < viewW && y + particles.maxY > 0 && y + particles.minY < viewH) {
+        particles.draw(l.quads, x, y, tint, this._ppu, this.height);
+      }
+    } else {
+      this._particleTint = tint;
+      this._tile(l, l.distanceX, l.distanceY, this._repeatX, this._repeatY, false, viewW, viewH);
+    }
+  }
+
   // The layer at (x, y) plus every repetition, on the requested axes, that intersects the view
   // (x 0..viewW, y 0..viewH).
   _tile(l, x, y, onX, onY, mirror, viewW, viewH, hook = null) {
@@ -795,22 +835,30 @@ export class PlaxBackground {
     const sequence = l.model.kind === 'SEQUENCE';
     // A SEQUENCE layer whose pads outweigh its segments is no wider than 0, its slots still drawn: once, below.
     if ((width <= 0 && !sequence) || height <= 0) return;
-    // What is drawn of a tile, from its corner: the box, or a SEQUENCE layer's slots (ParallaxLayer.getCycleLeft/Right).
-    const left = sequence ? PlaxSequence.cycleLeft(l) : 0;
-    const right = sequence ? PlaxSequence.cycleRight(l) : width;
+    // A PARTICLES layer's tile is where its particles are, which may reach past its box.
+    const particles = l.model.kind === 'PARTICLES' ? l.particles : null;
+    // What is drawn of a tile, from its corner: the box, the particles, or a SEQUENCE layer's slots
+    // (ParallaxLayer.getCycleLeft/Right).
+    const left = particles ? particles.minX : sequence ? PlaxSequence.cycleLeft(l) : 0;
+    const right = particles ? particles.maxX : sequence ? PlaxSequence.cycleRight(l) : width;
+    const bottom = particles ? particles.minY : 0, top = particles ? particles.maxY : height;
     // A step <= 0 (a negative padding larger than the image) can't tile: the layer is drawn once.
     const stepX = width + l.model.padX, stepY = height + l.model.padY;
     const tileX = onX && stepX > 0, tileY = onY && stepY > 0;
     const startX = tileX ? x - Math.ceil((x + right) / stepX) * stepX : x;
-    const startY = tileY ? y - Math.ceil((y + height) / stepY) * stepY : y;
+    const startY = tileY ? y - Math.ceil((y + top) / stepY) * stepY : y;
     const countX = tileX ? Math.ceil((viewW - left - startX) / stepX) + 1 : 1;
-    const countY = tileY ? Math.ceil((viewH - startY) / stepY) + 1 : 1;
+    const countY = tileY ? Math.ceil((viewH - bottom - startY) / stepY) + 1 : 1;
     for (let row = 0; row < countY; row++) {
       const drawY = startY + row * stepY;
-      if (drawY + height <= 0 || drawY >= viewH) continue;
+      if (drawY + top <= 0 || drawY + bottom >= viewH) continue;
       for (let column = 0; column < countX; column++) {
         const drawX = startX + column * stepX;
         if (drawX + right <= 0 || drawX + left >= viewW) continue;
+        if (particles) {
+          particles.draw(l.quads, drawX, drawY, this._particleTint, this._ppu, this.height);
+          continue;
+        }
         if (hook) {
           const ppu = this._ppu;
           hook(l.quads, { x: drawX * ppu, y: this.height - (drawY + height) * ppu, width: width * ppu, height: height * ppu },
@@ -1781,6 +1829,1047 @@ function measureRegion(region, useOriginalSize) {
   const inset = region.width >= 2 && region.height >= 2 ? 0.5 : 0;
   m.src = { x: region.x + inset, y: region.y + inset, w: region.width - 2 * inset, h: region.height - 2 * inset };
   return m;
+}
+
+// --- PARTICLES layers (PlaxParticles: core's ParallaxParticles, on libGDX's ParticleEffect) --------------------------
+
+// A PARTICLES layer draws the libGDX effect (.p) its page names (particlesLibgdx), found in the atlas's folder and
+// fetched by loadParticles: libGDX's ParticleEffect, ParticleEmitter and the Sprite each particle is, ported here line
+// for line (libGDX 1.14, Apache 2.0) in Java's float arithmetic (Math.fround), with MathUtils' random (RandomXS128) and
+// sine table, so that one seed (PlaxParticles.random.setSeed, as engines/rounds' Round.seedRandom) drops the snow flake
+// for flake as libGDX does. Only what a .p file can ask is ported: no ParticleEffectPool, no scaling, no flips.
+const f32p = Math.fround;
+const MASK64 = (1n << 64n) - 1n;
+
+// libGDX's RandomXS128 (xorshift128+), its 64-bit longs as unsigned BigInts.
+class RandomXS128 {
+  constructor(seed = BigInt(Math.floor(Math.random() * 2 ** 52))) {
+    this.setSeed(seed);
+  }
+
+  // A Java long (a Number or a BigInt, as Java's int widens to it).
+  setSeed(seed) {
+    const s = BigInt.asUintN(64, BigInt(seed));
+    const seed0 = murmurHash3(s === 0n ? 1n << 63n : s);
+    this.seed0 = seed0;
+    this.seed1 = murmurHash3(seed0);
+  }
+
+  nextLong() {
+    let s1 = this.seed0;
+    const s0 = this.seed1;
+    this.seed0 = s0;
+    s1 = (s1 ^ (s1 << 23n)) & MASK64;
+    this.seed1 = s1 ^ s0 ^ (s1 >> 17n) ^ (s0 >> 26n);
+    return (this.seed1 + s0) & MASK64;
+  }
+
+  nextFloat() {
+    return Number(this.nextLong() >> 40n) / 16777216;
+  }
+
+  // nextInt(n): nextLong(n), Java's signed longs.
+  nextInt(n) {
+    const bound = BigInt(n);
+    for (;;) {
+      const bits = this.nextLong() >> 1n, value = bits % bound;
+      if (BigInt.asIntN(64, bits - value + (bound - 1n)) >= 0n) return Number(value);
+    }
+  }
+}
+
+function murmurHash3(x) {
+  x ^= x >> 33n;
+  x = (x * 0xff51afd7ed558ccdn) & MASK64;
+  x ^= x >> 33n;
+  x = (x * 0xc4ceb9fe1a85ec53n) & MASK64;
+  x ^= x >> 33n;
+  return x;
+}
+
+// MathUtils.sinDeg and cosDeg: a table of 2^14 sines, read at the index the angle falls in.
+const SIN_BITS = 14, SIN_MASK = ~(-1 << SIN_BITS), SIN_COUNT = SIN_MASK + 1;
+const DEG_TO_INDEX = f32p(SIN_COUNT / 360);
+const SIN_TABLE = (() => {
+  const table = new Float32Array(SIN_COUNT), radFull = f32p(f32p(Math.PI) * 2);
+  for (let i = 0; i < SIN_COUNT; i++) table[i] = Math.sin(f32p(f32p(f32p(i + 0.5) / SIN_COUNT) * radFull));
+  table[0] = 0;
+  table[(f32p(90 * DEG_TO_INDEX) | 0) & SIN_MASK] = 1;
+  table[(f32p(180 * DEG_TO_INDEX) | 0) & SIN_MASK] = 0;
+  table[(f32p(270 * DEG_TO_INDEX) | 0) & SIN_MASK] = -1;
+  return table;
+})();
+const sinDeg = degrees => SIN_TABLE[(f32p(degrees * DEG_TO_INDEX) | 0) & SIN_MASK];
+const cosDeg = degrees => SIN_TABLE[(f32p(f32p(degrees + 90) * DEG_TO_INDEX) | 0) & SIN_MASK];
+
+// What a particle's colour and blending are drawn with: libGDX's emitter sets the batch's blend function as its .p
+// asks (ParticleEmitter.draw). The alpha keeps ONE, ONE_MINUS_SRC_ALPHA, as every layer's: the drawing buffer stays
+// opaque.
+const PARTICLE_BLENDS = {
+  normal: [THREE.SrcAlphaFactor, THREE.OneMinusSrcAlphaFactor],
+  additive: [THREE.SrcAlphaFactor, THREE.OneFactor],
+  premultiplied: [THREE.OneFactor, THREE.OneMinusSrcAlphaFactor],
+};
+
+// The text of a .p file, one line at a time, as ParticleEmitter.load reads its BufferedReader.
+class EffectReader {
+  constructor(text) {
+    // As Java's readLine: a last line break ends the last line, it does not start an empty one.
+    this.lines = text.split(/\r?\n/);
+    if (this.lines[this.lines.length - 1] === '') this.lines.pop();
+    this.at = 0;
+    this.marked = 0;
+  }
+
+  readLine() {
+    return this.at < this.lines.length ? this.lines[this.at++] : null;
+  }
+
+  mark() { this.marked = this.at; }
+
+  reset() { this.at = this.marked; }
+
+  // ParticleEmitter.readString: what follows the line's first colon, or the whole line without one.
+  string(name) {
+    const line = this.readLine();
+    if (line === null) throw new Error(`plax: a .p file misses its ${name}`);
+    return line.slice(line.indexOf(':') + 1).trim();
+  }
+
+  bool(name) { return this.string(name) === 'true'; }
+
+  int(name) { return parseInt(this.string(name), 10); }
+
+  float(name) { return f32p(parseFloat(this.string(name))); }
+}
+
+// ParticleEmitter.RangedNumericValue, ScaledNumericValue and IndependentScaledNumericValue in one: what the file
+// holds of each is read by the matching load.
+class ParticleValue {
+  constructor(alwaysActive = false) {
+    this.alwaysActive = alwaysActive;
+    this.active = alwaysActive;
+    this.lowMin = this.lowMax = this.highMin = this.highMax = 0;
+    this.relative = false;
+    this.independent = false;
+    this.scaling = [1];
+    this.timeline = [0];
+  }
+
+  isActive() { return this.alwaysActive || this.active; }
+
+  _loadActive(r) {
+    this.active = this.alwaysActive ? true : r.bool('active');
+  }
+
+  loadRanged(r) {
+    this._loadActive(r);
+    if (!this.active) return this;
+    this.lowMin = r.float('lowMin');
+    this.lowMax = r.float('lowMax');
+    return this;
+  }
+
+  loadScaled(r) {
+    this.loadRanged(r);
+    if (!this.active) return this;
+    this.highMin = r.float('highMin');
+    this.highMax = r.float('highMax');
+    this.relative = r.bool('relative');
+    this.scaling = Array.from({ length: r.int('scalingCount') }, (_, i) => r.float('scaling' + i));
+    this.timeline = Array.from({ length: r.int('timelineCount') }, (_, i) => r.float('timeline' + i));
+    return this;
+  }
+
+  // An older file has no "independent" line: the reader goes back.
+  loadIndependent(r) {
+    this.loadScaled(r);
+    r.mark();
+    const line = r.readLine();
+    if (line === null) throw new Error('plax: a .p file misses its independent');
+    if (line.includes('independent')) this.independent = line.slice(line.indexOf(':') + 1).trim() === 'true';
+    else r.reset();
+    return this;
+  }
+
+  newLowValue(random) {
+    return f32p(this.lowMin + f32p(f32p(this.lowMax - this.lowMin) * random.nextFloat()));
+  }
+
+  newHighValue(random) {
+    return f32p(this.highMin + f32p(f32p(this.highMax - this.highMin) * random.nextFloat()));
+  }
+
+  getScale(percent) {
+    const timeline = this.timeline, n = timeline.length;
+    let endIndex = -1;
+    for (let i = 1; i < n; i++) {
+      if (timeline[i] > percent) {
+        endIndex = i;
+        break;
+      }
+    }
+    if (endIndex === -1) return this.scaling[n - 1];
+    const startIndex = endIndex - 1, startValue = this.scaling[startIndex], startTime = timeline[startIndex];
+    return f32p(startValue + f32p(f32p(this.scaling[endIndex] - startValue)
+      * f32p(f32p(percent - startTime) / f32p(timeline[endIndex] - startTime))));
+  }
+}
+
+// ParticleEmitter.GradientColorValue: the tint over a particle's life.
+class GradientColorValue {
+  constructor() {
+    this.colors = [1, 1, 1];
+    this.timeline = [0];
+    this.temp = [0, 0, 0];
+  }
+
+  load(r) {
+    this.colors = Array.from({ length: r.int('colorsCount') }, (_, i) => r.float('colors' + i));
+    this.timeline = Array.from({ length: r.int('timelineCount') }, (_, i) => r.float('timeline' + i));
+    return this;
+  }
+
+  getColor(percent) {
+    const timeline = this.timeline, n = timeline.length, colors = this.colors, temp = this.temp;
+    let startIndex = 0, endIndex = -1;
+    for (let i = 1; i < n; i++) {
+      if (timeline[i] > percent) {
+        endIndex = i;
+        break;
+      }
+      startIndex = i;
+    }
+    const startTime = timeline[startIndex];
+    startIndex *= 3;
+    const r1 = colors[startIndex], g1 = colors[startIndex + 1], b1 = colors[startIndex + 2];
+    if (endIndex === -1) {
+      temp[0] = r1;
+      temp[1] = g1;
+      temp[2] = b1;
+      return temp;
+    }
+    const factor = f32p(f32p(percent - startTime) / f32p(timeline[endIndex] - startTime));
+    endIndex *= 3;
+    temp[0] = f32p(r1 + f32p(f32p(colors[endIndex] - r1) * factor));
+    temp[1] = f32p(g1 + f32p(f32p(colors[endIndex + 1] - g1) * factor));
+    temp[2] = f32p(b1 + f32p(f32p(colors[endIndex + 2] - b1) * factor));
+    return temp;
+  }
+}
+
+// What an emitter reads from its .p, as ParticleEmitter.load: shared by every emitter built from it.
+function readEmitter(r) {
+  const e = { name: r.string('name') };
+  r.readLine();
+  e.delay = new ParticleValue().loadRanged(r);
+  r.readLine();
+  e.duration = new ParticleValue(true).loadRanged(r);
+  r.readLine();
+  e.minParticleCount = r.int('minParticleCount');
+  e.maxParticleCount = r.int('maxParticleCount');
+  r.readLine();
+  e.emission = new ParticleValue(true).loadScaled(r);
+  r.readLine();
+  e.life = new ParticleValue(true).loadIndependent(r);
+  r.readLine();
+  e.lifeOffset = new ParticleValue().loadIndependent(r);
+  r.readLine();
+  e.xOffset = new ParticleValue().loadScaled(r);
+  r.readLine();
+  e.yOffset = new ParticleValue().loadScaled(r);
+  r.readLine();
+  e.spawnShape = { shape: 'point', edges: false, side: 'both' };
+  {
+    const shape = r.string('shape');
+    e.spawnShape.shape = shape;
+    if (shape === 'ellipse') {
+      e.spawnShape.edges = r.bool('edges');
+      e.spawnShape.side = r.string('side');
+    }
+  }
+  r.readLine();
+  e.spawnWidth = new ParticleValue(true).loadScaled(r);
+  r.readLine();
+  e.spawnHeight = new ParticleValue(true).loadScaled(r);
+  e.xScale = new ParticleValue(true);
+  e.yScale = new ParticleValue();
+  if (r.readLine().trim() === '- Scale -') {
+    e.xScale.loadScaled(r);
+    e.yScale.active = false;
+  } else {
+    e.xScale.loadScaled(r);
+    r.readLine();
+    e.yScale.loadScaled(r);
+  }
+  r.readLine();
+  e.velocity = new ParticleValue().loadScaled(r);
+  r.readLine();
+  e.angle = new ParticleValue().loadScaled(r);
+  r.readLine();
+  e.rotation = new ParticleValue().loadScaled(r);
+  r.readLine();
+  e.wind = new ParticleValue().loadScaled(r);
+  r.readLine();
+  e.gravity = new ParticleValue().loadScaled(r);
+  r.readLine();
+  e.tint = new GradientColorValue().load(r);
+  r.readLine();
+  e.transparency = new ParticleValue(true).loadScaled(r);
+  r.readLine();
+  e.attached = r.bool('attached');
+  e.continuous = r.bool('continuous');
+  e.aligned = r.bool('aligned');
+  e.additive = r.bool('additive');
+  e.behind = r.bool('behind');
+  e.premultipliedAlpha = false;
+  e.spriteMode = 'single';
+  let line = r.readLine();
+  if (line?.startsWith('premultipliedAlpha')) {
+    e.premultipliedAlpha = line.slice(line.indexOf(':') + 1).trim() === 'true';
+    line = r.readLine();
+  }
+  if (line?.startsWith('spriteMode')) {
+    e.spriteMode = line.slice(line.indexOf(':') + 1).trim();
+    line = r.readLine();
+  }
+  e.imagePaths = [];
+  while ((line = r.readLine()) !== null && line !== '') e.imagePaths.push(line);
+  return e;
+}
+
+// ParticleEffect.loadEmitters: the emitters of a .p file, each ending at a blank line.
+function readEffect(text) {
+  const r = new EffectReader(text), emitters = [];
+  for (;;) {
+    emitters.push(readEmitter(r));
+    if (r.readLine() === null) break;
+  }
+  return emitters;
+}
+
+// A libGDX Sprite on an atlas region (atlas.createSprite): its size the region's, its origin its middle.
+function spriteOf(region) {
+  const image = region.page.texture.image;
+  return {
+    texture: region.page.texture,
+    u: region.x / image.width, v: region.y / image.height,
+    u2: (region.x + region.width) / image.width, v2: (region.y + region.height) / image.height,
+    width: region.width, height: region.height, originX: region.width / 2, originY: region.height / 2,
+  };
+}
+
+const UPDATE_SCALE = 1 << 0, UPDATE_ANGLE = 1 << 1, UPDATE_ROTATION = 1 << 2, UPDATE_VELOCITY = 1 << 3;
+const UPDATE_WIND = 1 << 4, UPDATE_GRAVITY = 1 << 5, UPDATE_TINT = 1 << 6, UPDATE_SPRITE = 1 << 7;
+
+// A particle: libGDX's ParticleEmitter.Particle, a Sprite with its life's numbers.
+class Particle {
+  constructor(sprite) {
+    this.set(sprite);
+    this.life = this.currentLife = 0;
+    this.xScale = this.xScaleDiff = this.yScale = this.yScaleDiff = 0;
+    this.rotationStart = this.rotationDiff = 0;
+    this.velocity = this.velocityDiff = this.angle = this.angleDiff = this.angleCos = this.angleSin = 0;
+    this.transparency = this.transparencyDiff = this.wind = this.windDiff = this.gravity = this.gravityDiff = 0;
+    this.tint = [0, 0, 0];
+    this.frame = 0;
+    this.vertices = new Float32Array(8);
+  }
+
+  // Sprite.set: the sprite's region, size, origin, white, no rotation nor scale.
+  set(sprite) {
+    this.texture = sprite.texture;
+    this.u = sprite.u;
+    this.v = sprite.v;
+    this.u2 = sprite.u2;
+    this.v2 = sprite.v2;
+    this.x = this.y = 0;
+    this.width = sprite.width;
+    this.height = sprite.height;
+    this.originX = sprite.originX;
+    this.originY = sprite.originY;
+    this.rotation = 0;
+    this.scaleX = this.scaleY = 1;
+    this.color = [1, 1, 1, 1];
+  }
+
+  setRegion(sprite) {
+    this.texture = sprite.texture;
+    this.u = sprite.u;
+    this.v = sprite.v;
+    this.u2 = sprite.u2;
+    this.v2 = sprite.v2;
+  }
+
+  setBounds(x, y, width, height) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+  }
+
+  translate(x, y) {
+    this.x = f32p(this.x + x);
+    this.y = f32p(this.y + y);
+  }
+
+  // Sprite.getVertices' corners, x then y: bottom left, top left, top right, bottom right.
+  getVertices() {
+    const v = this.vertices;
+    let localX = -this.originX, localY = -this.originY;
+    let localX2 = f32p(localX + this.width), localY2 = f32p(localY + this.height);
+    const worldOriginX = f32p(this.x - localX), worldOriginY = f32p(this.y - localY);
+    if (this.scaleX !== 1 || this.scaleY !== 1) {
+      localX = f32p(localX * this.scaleX);
+      localY = f32p(localY * this.scaleY);
+      localX2 = f32p(localX2 * this.scaleX);
+      localY2 = f32p(localY2 * this.scaleY);
+    }
+    if (this.rotation !== 0) {
+      const cos = cosDeg(this.rotation), sin = sinDeg(this.rotation);
+      const xCos = f32p(localX * cos), xSin = f32p(localX * sin), yCos = f32p(localY * cos), ySin = f32p(localY * sin);
+      const x2Cos = f32p(localX2 * cos), x2Sin = f32p(localX2 * sin);
+      const y2Cos = f32p(localY2 * cos), y2Sin = f32p(localY2 * sin);
+      const x1 = f32p(f32p(xCos - ySin) + worldOriginX), y1 = f32p(f32p(yCos + xSin) + worldOriginY);
+      const x2 = f32p(f32p(xCos - y2Sin) + worldOriginX), y2 = f32p(f32p(y2Cos + xSin) + worldOriginY);
+      const x3 = f32p(f32p(x2Cos - y2Sin) + worldOriginX), y3 = f32p(f32p(y2Cos + x2Sin) + worldOriginY);
+      v[0] = x1; v[1] = y1; v[2] = x2; v[3] = y2; v[4] = x3; v[5] = y3;
+      v[6] = x1 + (x3 - x2); v[7] = y3 - (y2 - y1);
+    } else {
+      const x1 = f32p(localX + worldOriginX), y1 = f32p(localY + worldOriginY);
+      const x2 = f32p(localX2 + worldOriginX), y2 = f32p(localY2 + worldOriginY);
+      v[0] = x1; v[1] = y1; v[2] = x1; v[3] = y2; v[4] = x2; v[5] = y2; v[6] = x2; v[7] = y1;
+    }
+    return v;
+  }
+}
+
+// One emitter of a PARTICLES layer's effect: libGDX's ParticleEmitter, its particles built when the page loads
+// (ParallaxParticles.allocate).
+class PlaxEmitter {
+  constructor(spec, sprites, random) {
+    Object.assign(this, spec);
+    this.random = random;
+    this.sprites = sprites;
+    this.particles = sprites.length ? Array.from({ length: spec.maxParticleCount }, () => new Particle(sprites[0])) : [];
+    this.active = new Array(spec.maxParticleCount).fill(false);
+    this.activeCount = 0;
+    this.accumulator = 0;
+    this.x = this.y = 0;
+    this.firstUpdate = false;
+    this.allowCompletion = false;
+    this.updateFlags = 0;
+    this.emissionNow = this.emissionDiff = this.emissionDelta = 0;
+    this.lifeOffsetNow = this.lifeOffsetDiff = this.lifeNow = this.lifeDiff = 0;
+    this.spawnWidthNow = this.spawnWidthDiff = this.spawnHeightNow = this.spawnHeightDiff = 0;
+    this.durationNow = 1;
+    this.durationTimer = 0;
+    this.delayNow = this.delayTimer = 0;
+  }
+
+  addParticle() {
+    if (this.activeCount === this.maxParticleCount) return;
+    for (let i = 0; i < this.active.length; i++) {
+      if (!this.active[i]) {
+        this._activateParticle(i);
+        this.active[i] = true;
+        this.activeCount++;
+        break;
+      }
+    }
+  }
+
+  addParticles(count) {
+    count = Math.min(count, this.maxParticleCount - this.activeCount);
+    if (count === 0) return;
+    const active = this.active, n = active.length;
+    let index = 0;
+    outer:
+    for (let i = 0; i < count; i++) {
+      for (; index < n; index++) {
+        if (!active[index]) {
+          this._activateParticle(index);
+          active[index++] = true;
+          continue outer;
+        }
+      }
+      break;
+    }
+    this.activeCount += count;
+  }
+
+  update(delta) {
+    this.accumulator = f32p(this.accumulator + f32p(delta * 1000));
+    if (this.accumulator < 1) return;
+    const deltaMillis = this.accumulator | 0;
+    this.accumulator = f32p(this.accumulator - deltaMillis);
+    if (this.delayTimer < this.delayNow) {
+      this.delayTimer = f32p(this.delayTimer + deltaMillis);
+    } else {
+      let done = false;
+      if (this.firstUpdate) {
+        this.firstUpdate = false;
+        this.addParticle();
+      }
+      if (this.durationTimer < this.durationNow) this.durationTimer = f32p(this.durationTimer + deltaMillis);
+      else if (!this.continuous || this.allowCompletion) done = true;
+      else this._restart();
+      if (!done) {
+        this.emissionDelta += deltaMillis;
+        let emissionTime = f32p(this.emissionNow
+          + f32p(this.emissionDiff * this.emission.getScale(f32p(this.durationTimer / this.durationNow))));
+        if (emissionTime > 0) {
+          emissionTime = f32p(1000 / emissionTime);
+          if (this.emissionDelta >= emissionTime) {
+            let emitCount = f32p(this.emissionDelta / emissionTime) | 0;
+            emitCount = Math.min(emitCount, this.maxParticleCount - this.activeCount);
+            this.emissionDelta = f32p(this.emissionDelta - f32p(emitCount * emissionTime)) | 0;
+            this.emissionDelta = f32p(this.emissionDelta % emissionTime) | 0;
+            this.addParticles(emitCount);
+          }
+        }
+        if (this.activeCount < this.minParticleCount) this.addParticles(this.minParticleCount - this.activeCount);
+      }
+    }
+    const active = this.active, particles = this.particles;
+    let activeCount = this.activeCount;
+    for (let i = 0; i < active.length; i++) {
+      if (active[i] && !this._updateParticle(particles[i], delta, deltaMillis)) {
+        active[i] = false;
+        activeCount--;
+      }
+    }
+    this.activeCount = activeCount;
+  }
+
+  start() {
+    this.firstUpdate = true;
+    this.allowCompletion = false;
+    this._restart();
+  }
+
+  reset(start) {
+    this.emissionDelta = 0;
+    this.durationTimer = this.durationNow;
+    this.active.fill(false);
+    this.activeCount = 0;
+    if (start) this.start();
+  }
+
+  isComplete() {
+    if (this.continuous && !this.allowCompletion) return false;
+    if (this.delayTimer < this.delayNow) return false;
+    return this.durationTimer >= this.durationNow && this.activeCount === 0;
+  }
+
+  _restart() {
+    const random = this.random;
+    this.delayNow = this.delay.active ? this.delay.newLowValue(random) : 0;
+    this.delayTimer = 0;
+    this.durationTimer = f32p(this.durationTimer - this.durationNow);
+    this.durationNow = this.duration.newLowValue(random);
+    this.emissionNow = this.emission.newLowValue(random) | 0;
+    this.emissionDiff = this.emission.newHighValue(random) | 0;
+    if (!this.emission.relative) this.emissionDiff -= this.emissionNow;
+    if (!this.life.independent) this._generateLifeValues();
+    if (!this.lifeOffset.independent) this._generateLifeOffsetValues();
+    this.spawnWidthNow = this.spawnWidth.newLowValue(random);
+    this.spawnWidthDiff = this.spawnWidth.newHighValue(random);
+    if (!this.spawnWidth.relative) this.spawnWidthDiff = f32p(this.spawnWidthDiff - this.spawnWidthNow);
+    this.spawnHeightNow = this.spawnHeight.newLowValue(random);
+    this.spawnHeightDiff = this.spawnHeight.newHighValue(random);
+    if (!this.spawnHeight.relative) this.spawnHeightDiff = f32p(this.spawnHeightDiff - this.spawnHeightNow);
+    let flags = 0;
+    if (this.angle.active && this.angle.timeline.length > 1) flags |= UPDATE_ANGLE;
+    if (this.velocity.active) flags |= UPDATE_VELOCITY;
+    if (this.xScale.timeline.length > 1) flags |= UPDATE_SCALE;
+    if (this.yScale.active && this.yScale.timeline.length > 1) flags |= UPDATE_SCALE;
+    if (this.rotation.active && this.rotation.timeline.length > 1) flags |= UPDATE_ROTATION;
+    if (this.wind.active) flags |= UPDATE_WIND;
+    if (this.gravity.active) flags |= UPDATE_GRAVITY;
+    if (this.tint.timeline.length > 1) flags |= UPDATE_TINT;
+    if (this.spriteMode === 'animated') flags |= UPDATE_SPRITE;
+    this.updateFlags = flags;
+  }
+
+  _activateParticle(index) {
+    const random = this.random;
+    // Array.random: MathUtils.random(0, size - 1).
+    const sprite = this.spriteMode === 'random' ? this.sprites[random.nextInt(this.sprites.length)] : this.sprites[0];
+    const particle = this.particles[index];
+    particle.set(sprite);
+    const percent = f32p(this.durationTimer / this.durationNow), flags = this.updateFlags;
+    if (this.life.independent) this._generateLifeValues();
+    if (this.lifeOffset.independent) this._generateLifeOffsetValues();
+    particle.currentLife = particle.life = this.lifeNow + (f32p(this.lifeDiff * this.life.getScale(percent)) | 0);
+    if (this.velocity.active) {
+      particle.velocity = this.velocity.newLowValue(random);
+      particle.velocityDiff = this.velocity.newHighValue(random);
+      if (!this.velocity.relative) particle.velocityDiff = f32p(particle.velocityDiff - particle.velocity);
+    }
+    particle.angle = this.angle.newLowValue(random);
+    particle.angleDiff = this.angle.newHighValue(random);
+    if (!this.angle.relative) particle.angleDiff = f32p(particle.angleDiff - particle.angle);
+    let angle = 0;
+    if ((flags & UPDATE_ANGLE) === 0) {
+      angle = f32p(particle.angle + f32p(particle.angleDiff * this.angle.getScale(0)));
+      particle.angle = angle;
+      particle.angleCos = cosDeg(angle);
+      particle.angleSin = sinDeg(angle);
+    }
+    const spriteWidth = sprite.width, spriteHeight = sprite.height;
+    particle.xScale = f32p(this.xScale.newLowValue(random) / spriteWidth);
+    particle.xScaleDiff = f32p(this.xScale.newHighValue(random) / spriteWidth);
+    if (!this.xScale.relative) particle.xScaleDiff = f32p(particle.xScaleDiff - particle.xScale);
+    if (this.yScale.active) {
+      particle.yScale = f32p(this.yScale.newLowValue(random) / spriteHeight);
+      particle.yScaleDiff = f32p(this.yScale.newHighValue(random) / spriteHeight);
+      if (!this.yScale.relative) particle.yScaleDiff = f32p(particle.yScaleDiff - particle.yScale);
+      particle.scaleX = f32p(particle.xScale + f32p(particle.xScaleDiff * this.xScale.getScale(0)));
+      particle.scaleY = f32p(particle.yScale + f32p(particle.yScaleDiff * this.yScale.getScale(0)));
+    } else {
+      particle.scaleX = particle.scaleY = f32p(particle.xScale + f32p(particle.xScaleDiff * this.xScale.getScale(0)));
+    }
+    if (this.rotation.active) {
+      particle.rotationStart = this.rotation.newLowValue(random);
+      particle.rotationDiff = this.rotation.newHighValue(random);
+      if (!this.rotation.relative) particle.rotationDiff = f32p(particle.rotationDiff - particle.rotationStart);
+      let rotation = f32p(particle.rotationStart + f32p(particle.rotationDiff * this.rotation.getScale(0)));
+      if (this.aligned) rotation = f32p(rotation + angle);
+      particle.rotation = rotation;
+    }
+    if (this.wind.active) {
+      particle.wind = this.wind.newLowValue(random);
+      particle.windDiff = this.wind.newHighValue(random);
+      if (!this.wind.relative) particle.windDiff = f32p(particle.windDiff - particle.wind);
+    }
+    if (this.gravity.active) {
+      particle.gravity = this.gravity.newLowValue(random);
+      particle.gravityDiff = this.gravity.newHighValue(random);
+      if (!this.gravity.relative) particle.gravityDiff = f32p(particle.gravityDiff - particle.gravity);
+    }
+    const temp = this.tint.getColor(0);
+    particle.tint[0] = temp[0];
+    particle.tint[1] = temp[1];
+    particle.tint[2] = temp[2];
+    particle.transparency = this.transparency.newLowValue(random);
+    particle.transparencyDiff = f32p(this.transparency.newHighValue(random) - particle.transparency);
+    // Spawn.
+    let x = this.x;
+    if (this.xOffset.active) x = f32p(x + this.xOffset.newLowValue(random));
+    let y = this.y;
+    if (this.yOffset.active) y = f32p(y + this.yOffset.newLowValue(random));
+    const shape = this.spawnShape;
+    const width = () => f32p(this.spawnWidthNow + f32p(this.spawnWidthDiff * this.spawnWidth.getScale(percent)));
+    const height = () => f32p(this.spawnHeightNow + f32p(this.spawnHeightDiff * this.spawnHeight.getScale(percent)));
+    if (shape.shape === 'square') {
+      const w = width(), h = height();
+      x = f32p(x + f32p(f32p(random.nextFloat() * w) - f32p(w * 0.5)));
+      y = f32p(y + f32p(f32p(random.nextFloat() * h) - f32p(h * 0.5)));
+    } else if (shape.shape === 'ellipse') {
+      const w = width(), h = height();
+      const radiusX = f32p(w * 0.5), radiusY = f32p(h * 0.5);
+      if (radiusX !== 0 && radiusY !== 0) {
+        const scaleY = f32p(radiusX / radiusY);
+        if (shape.edges) {
+          const spawnAngle = shape.side === 'top' ? -f32p(random.nextFloat() * 179)
+            : shape.side === 'bottom' ? f32p(random.nextFloat() * 179) : f32p(random.nextFloat() * 360);
+          const cos = cosDeg(spawnAngle), sin = sinDeg(spawnAngle);
+          x = f32p(x + f32p(cos * radiusX));
+          y = f32p(y + f32p(f32p(sin * radiusX) / scaleY));
+          if ((flags & UPDATE_ANGLE) === 0) {
+            particle.angle = spawnAngle;
+            particle.angleCos = cos;
+            particle.angleSin = sin;
+          }
+        } else {
+          const radius2 = f32p(radiusX * radiusX);
+          for (;;) {
+            const px = f32p(f32p(random.nextFloat() * w) - radiusX), py = f32p(f32p(random.nextFloat() * w) - radiusX);
+            if (f32p(f32p(px * px) + f32p(py * py)) <= radius2) {
+              x = f32p(x + px);
+              y = f32p(y + f32p(py / scaleY));
+              break;
+            }
+          }
+        }
+      }
+    } else if (shape.shape === 'line') {
+      const w = width(), h = height();
+      if (w !== 0) {
+        const lineX = f32p(w * random.nextFloat());
+        x = f32p(x + lineX);
+        y = f32p(y + f32p(lineX * f32p(h / w)));
+      } else y = f32p(y + f32p(h * random.nextFloat()));
+    }
+    particle.setBounds(f32p(x - f32p(spriteWidth * 0.5)), f32p(y - f32p(spriteHeight * 0.5)), spriteWidth, spriteHeight);
+    let offsetTime = f32p(this.lifeOffsetNow + f32p(this.lifeOffsetDiff * this.lifeOffset.getScale(percent))) | 0;
+    if (offsetTime > 0) {
+      if (offsetTime >= particle.currentLife) offsetTime = particle.currentLife - 1;
+      this._updateParticle(particle, f32p(offsetTime / 1000), offsetTime);
+    }
+  }
+
+  _updateParticle(particle, delta, deltaMillis) {
+    const life = particle.currentLife - deltaMillis;
+    if (life <= 0) return false;
+    particle.currentLife = life;
+    const percent = f32p(1 - f32p(particle.currentLife / particle.life)), flags = this.updateFlags;
+    if ((flags & UPDATE_SCALE) !== 0) {
+      particle.scaleX = f32p(particle.xScale + f32p(particle.xScaleDiff * this.xScale.getScale(percent)));
+      particle.scaleY = this.yScale.active
+        ? f32p(particle.yScale + f32p(particle.yScaleDiff * this.yScale.getScale(percent))) : particle.scaleX;
+    }
+    if ((flags & UPDATE_VELOCITY) !== 0) {
+      const velocity = f32p(f32p(particle.velocity + f32p(particle.velocityDiff * this.velocity.getScale(percent))) * delta);
+      let velocityX, velocityY;
+      if ((flags & UPDATE_ANGLE) !== 0) {
+        const angle = f32p(particle.angle + f32p(particle.angleDiff * this.angle.getScale(percent)));
+        velocityX = f32p(velocity * cosDeg(angle));
+        velocityY = f32p(velocity * sinDeg(angle));
+        if ((flags & UPDATE_ROTATION) !== 0) {
+          let rotation = f32p(particle.rotationStart + f32p(particle.rotationDiff * this.rotation.getScale(percent)));
+          if (this.aligned) rotation = f32p(rotation + angle);
+          particle.rotation = rotation;
+        }
+      } else {
+        velocityX = f32p(velocity * particle.angleCos);
+        velocityY = f32p(velocity * particle.angleSin);
+        if (this.aligned || (flags & UPDATE_ROTATION) !== 0) {
+          let rotation = f32p(particle.rotationStart + f32p(particle.rotationDiff * this.rotation.getScale(percent)));
+          if (this.aligned) rotation = f32p(rotation + particle.angle);
+          particle.rotation = rotation;
+        }
+      }
+      if ((flags & UPDATE_WIND) !== 0) {
+        velocityX = f32p(velocityX + f32p(f32p(particle.wind + f32p(particle.windDiff * this.wind.getScale(percent))) * delta));
+      }
+      if ((flags & UPDATE_GRAVITY) !== 0) {
+        velocityY = f32p(velocityY
+          + f32p(f32p(particle.gravity + f32p(particle.gravityDiff * this.gravity.getScale(percent))) * delta));
+      }
+      particle.translate(velocityX, velocityY);
+    } else if ((flags & UPDATE_ROTATION) !== 0) {
+      particle.rotation = f32p(particle.rotationStart + f32p(particle.rotationDiff * this.rotation.getScale(percent)));
+    }
+    const color = (flags & UPDATE_TINT) !== 0 ? this.tint.getColor(percent) : particle.tint;
+    const a = f32p(particle.transparency + f32p(particle.transparencyDiff * this.transparency.getScale(percent)));
+    const c = particle.color;
+    if (this.premultipliedAlpha) {
+      const alphaMultiplier = this.additive ? 0 : 1;
+      c[0] = f32p(color[0] * a);
+      c[1] = f32p(color[1] * a);
+      c[2] = f32p(color[2] * a);
+      c[3] = f32p(a * alphaMultiplier);
+    } else {
+      c[0] = color[0];
+      c[1] = color[1];
+      c[2] = color[2];
+      c[3] = a;
+    }
+    if ((flags & UPDATE_SPRITE) !== 0) {
+      const frame = Math.min(f32p(percent * this.sprites.length) | 0, this.sprites.length - 1);
+      if (particle.frame !== frame) {
+        const sprite = this.sprites[frame];
+        const prevWidth = particle.width, prevHeight = particle.height;
+        particle.setRegion(sprite);
+        particle.width = sprite.width;
+        particle.height = sprite.height;
+        particle.originX = sprite.originX;
+        particle.originY = sprite.originY;
+        particle.translate(f32p(f32p(prevWidth - sprite.width) * 0.5), f32p(f32p(prevHeight - sprite.height) * 0.5));
+        particle.frame = frame;
+      }
+    }
+    return true;
+  }
+
+  _generateLifeValues() {
+    this.lifeNow = this.life.newLowValue(this.random) | 0;
+    this.lifeDiff = this.life.newHighValue(this.random) | 0;
+    if (!this.life.relative) this.lifeDiff -= this.lifeNow;
+  }
+
+  _generateLifeOffsetValues() {
+    this.lifeOffsetNow = this.lifeOffset.active ? this.lifeOffset.newLowValue(this.random) | 0 : 0;
+    this.lifeOffsetDiff = this.lifeOffset.newHighValue(this.random) | 0;
+    if (!this.lifeOffset.relative) this.lifeOffsetDiff -= this.lifeOffsetNow;
+  }
+
+  // setPosition: an attached emitter carries its live particles.
+  setPosition(x, y) {
+    if (this.attached) {
+      const xAmount = f32p(x - this.x), yAmount = f32p(y - this.y);
+      for (let i = 0; i < this.active.length; i++) if (this.active[i]) this.particles[i].translate(xAmount, yAmount);
+    }
+    this.x = x;
+    this.y = y;
+  }
+
+  // The blend its .p asks for (ParticleEmitter.draw).
+  blend() {
+    return this.premultipliedAlpha ? 'premultiplied' : this.additive ? 'additive' : 'normal';
+  }
+}
+
+// A PARTICLES layer's effect: core's ParallaxParticles. Its emitters stay at (0, 0) and its particles live in the
+// layer's own space, in page units: draw moves them to where the layer is drawn, once per tile, and multiplies the
+// page's tint and fade into each one, as the batch colour does an image. A finished effect starts again.
+export class PlaxParticles {
+  // `emitters`: readEffect's, for this layer; its images, regions of `atlas`. Starts it and warms it up.
+  constructor(emitters, atlas) {
+    this.emitters = emitters.map(spec => {
+      const sprites = spec.imagePaths.map(path => {
+        const file = path.replace(/\\/g, '/').replace(/^.*\//, ''), name = file.replace(/\.[^.]*$/, '');
+        const region = atlas?.findRegion(name);
+        if (!region) throw new Error(`plax: the atlas has no region '${name}' for the particle emitter '${spec.name}'`);
+        if (region.rotate || region.width !== region.originalWidth || region.height !== region.originalHeight) {
+          console.warn(`plax: the particle image '${name}' is packed rotated or stripped, which is not supported: drawn as is`);
+        }
+        return spriteOf(region);
+      });
+      return new PlaxEmitter(spec, sprites, PlaxParticles.random);
+    });
+    this.minX = this.minY = this.maxX = this.maxY = 0;
+    this.empty = true;
+    for (const e of this.emitters) e.start();
+    this.warmUp();
+  }
+
+  // Runs it on in steps of WARM_UP_STEP for as long as its slowest emitter takes to start and its longest-lived
+  // particle lives: a page shows its snow already falling, not falling in.
+  warmUp() {
+    for (let left = this.warmUpSeconds(); left > 0; left = f32p(left - PlaxParticles.WARM_UP_STEP)) {
+      this.update(Math.min(PlaxParticles.WARM_UP_STEP, left));
+    }
+  }
+
+  warmUpSeconds() {
+    let longest = 0;
+    for (const e of this.emitters) {
+      const delay = e.delay.isActive() ? e.delay.lowMax : 0, life = e.life;
+      const lowest = Math.max(life.lowMin, life.lowMax);
+      const highest = f32p(Math.max(life.highMin, life.highMax) + (life.relative ? lowest : 0));
+      longest = Math.max(longest, f32p(f32p(delay + Math.max(lowest, highest)) / 1000));
+    }
+    return Math.min(longest, PlaxParticles.MAX_WARM_UP);
+  }
+
+  // `delta` seconds on, starting it again once finished, and where its particles are now.
+  update(delta) {
+    for (const e of this.emitters) e.update(delta);
+    if (this.emitters.every(e => e.isComplete())) for (const e of this.emitters) e.reset(true);
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const e of this.emitters) {
+      for (let i = 0; i < e.active.length; i++) {
+        if (!e.active[i]) continue;
+        const v = e.particles[i].getVertices();
+        for (let k = 0; k < 8; k += 2) {
+          minX = Math.min(minX, v[k]);
+          maxX = Math.max(maxX, v[k]);
+          minY = Math.min(minY, v[k + 1]);
+          maxY = Math.max(maxY, v[k + 1]);
+        }
+      }
+    }
+    this.empty = !(minX <= maxX && minY <= maxY);
+    if (!this.empty) Object.assign(this, { minX, minY, maxX, maxY });
+  }
+
+  // Moves every live particle, not the emitters: a VIEW-anchored effect's particles drift as its layer scrolls.
+  translateParticles(x, y) {
+    if (x === 0 && y === 0) return;
+    x = f32p(x);
+    y = f32p(y);
+    for (const e of this.emitters) {
+      const attached = e.attached;
+      e.attached = true;
+      e.setPosition(f32p(e.x + x), f32p(e.y + y));
+      e.attached = false;
+      e.setPosition(f32p(e.x - x), f32p(e.y - y));
+      e.attached = attached;
+    }
+  }
+
+  // Into `sprites` (the layer's ParticleQuads), moved by (x, y) page units, their colours multiplied by `tint`; `ppu`
+  // and `screenH` turn page units, y up, into screen pixels, y down. Each emitter blends as its .p asks.
+  draw(sprites, x, y, tint, ppu, screenH) {
+    const xy = new Float32Array(8), uv = new Float32Array(8), rgba = new Float32Array(4);
+    for (const e of this.emitters) {
+      const blend = e.blend(), fade = e.premultipliedAlpha ? tint[3] : 1;
+      for (let i = 0; i < e.active.length; i++) {
+        if (!e.active[i]) continue;
+        const p = e.particles[i], v = p.getVertices(), c = p.color;
+        for (let k = 0; k < 8; k += 2) {
+          xy[k] = f32p(v[k] + x) * ppu;
+          xy[k + 1] = screenH - f32p(v[k + 1] + y) * ppu;
+        }
+        // Bottom left, top left, top right, bottom right, as Sprite's vertices.
+        uv.set([p.u, p.v2, p.u, p.v, p.u2, p.v, p.u2, p.v2]);
+        rgba[0] = packed(c[0] * tint[0] * fade);
+        rgba[1] = packed(c[1] * tint[1] * fade);
+        rgba[2] = packed(c[2] * tint[2] * fade);
+        rgba[3] = packedAlpha(c[3] * tint[3]);
+        sprites.add(p.texture, blend, xy, uv, rgba);
+      }
+    }
+  }
+
+  // A .p file's emitters, to build each PARTICLES layer's PlaxParticles from (loadParticles reads them).
+  static read(text) {
+    return readEffect(text);
+  }
+}
+PlaxParticles.WARM_UP_STEP = f32p(1 / 30);
+PlaxParticles.MAX_WARM_UP = 30;
+// MathUtils.random: what every effect draws its particles from. setSeed(javaHashCode(id)) repeats a run.
+PlaxParticles.random = new RandomXS128();
+// Java's String.hashCode, a seed as engines/rounds' Round.seedRandom makes one from a scene's id.
+PlaxParticles.hashCode = text => {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = (Math.imul(31, h) + text.charCodeAt(i)) | 0;
+  return h;
+};
+
+// Fetches the .p file each PARTICLES layer of `page` names (particlesLibgdx), from `atlas`'s folder, as libGDX finds
+// them (WholePage_Model.loadParticles): before setPage or transfertInto with that page. A layer naming none, or one
+// not found, draws nothing.
+export async function loadParticles(page, atlas) {
+  page.effects ??= {};
+  for (const m of page.layers) {
+    const file = m.kind === 'PARTICLES' ? m.particlesLibgdx : '';
+    if (!file || file in page.effects) continue;
+    page.effects[file] = PlaxParticles.read(await (await fetchOk(join(atlas.dir, file))).text());
+  }
+}
+
+// A PARTICLES layer's effect, built from the .p its page names (loadParticles fetched it), started and warmed up; null,
+// said in the log as libGDX says it, when it names none.
+function particlesOf(model, page, atlas) {
+  const file = model.particlesLibgdx, name = model.name ? `'${model.name}' ` : '';
+  if (!file) {
+    console.log(`plax: the particle layer ${name}of ${page.atlasName} draws nothing: the page names no libGDX effect (.p)`);
+    return null;
+  }
+  const emitters = page.effects?.[file];
+  if (!emitters) {
+    console.warn(`plax: the particle layer ${name}of ${page.atlasName} draws nothing: ${file} was not loaded (loadParticles)`);
+    return null;
+  }
+  return new PlaxParticles(emitters, atlas);
+}
+
+// The quads of a PARTICLES layer: one Mesh per run of one texture and one blend, each particle its own corners and
+// colour (libGDX's SpriteBatch.draw(texture, vertices)), in screen pixels.
+class ParticleQuads {
+  constructor() {
+    this.group = new THREE.Group();
+    this.runs = [];
+    this.used = 0;
+    this.effect = null;
+    this.uniforms = null;
+  }
+
+  setEffect() {}
+
+  begin(order) {
+    for (const run of this.runs) run.count = 0;
+    this.used = 0;
+    this.group.renderOrder = order;
+  }
+
+  setColor() {}
+
+  add(texture, blend, xy, uv, rgba) {
+    let run = this.used ? this.runs[this.used - 1] : null;
+    if (!run || run.texture !== texture || run.blend !== blend) {
+      run = this.runs[this.used] ??= new ParticleRun(this.runs.length);
+      run.set(texture, blend);
+      if (run.mesh.parent !== this.group) this.group.add(run.mesh);
+      this.used++;
+    }
+    run.add(xy, uv, rgba);
+  }
+
+  end() {
+    this.runs.forEach((run, i) => run.end(i < this.used));
+  }
+
+  dispose() {
+    for (const run of this.runs) run.dispose();
+    this.runs = [];
+  }
+}
+
+class ParticleRun {
+  constructor(order) {
+    this.texture = null;
+    this.blend = null;
+    this.count = 0;
+    this.capacity = 0;
+    this.geometry = new THREE.BufferGeometry();
+    this.material = new THREE.MeshBasicMaterial({ ...LAYER_BLENDING, vertexColors: true, toneMapped: false });
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = order;
+    this._grow(64);
+  }
+
+  set(texture, blend) {
+    if (this.texture !== texture) {
+      this.texture = texture;
+      this.material.map = texture;
+      this.material.needsUpdate = true;
+    }
+    if (this.blend !== blend) {
+      this.blend = blend;
+      [this.material.blendSrc, this.material.blendDst] = PARTICLE_BLENDS[blend];
+    }
+  }
+
+  _grow(capacity) {
+    const old = this.capacity ? { position: this.position, uv: this.uv, color: this.color } : null;
+    this.capacity = capacity;
+    this.position = new Float32Array(capacity * 12);
+    this.uv = new Float32Array(capacity * 8);
+    this.color = new Float32Array(capacity * 16);
+    if (old) {
+      this.position.set(old.position);
+      this.uv.set(old.uv);
+      this.color.set(old.color);
+    }
+    const index = new Uint32Array(capacity * 6);
+    for (let i = 0; i < capacity; i++) index.set([0, 1, 2, 0, 2, 3].map(v => v + i * 4), i * 6);
+    this.geometry.dispose();
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.position, 3));
+    this.geometry.setAttribute('uv', new THREE.BufferAttribute(this.uv, 2));
+    this.geometry.setAttribute('color', new THREE.BufferAttribute(this.color, 4));
+    this.geometry.setIndex(new THREE.BufferAttribute(index, 1));
+    this.mesh.geometry = this.geometry;
+  }
+
+  add(xy, uv, rgba) {
+    if (this.count === this.capacity) this._grow(this.capacity * 2);
+    const i = this.count++;
+    for (let k = 0; k < 4; k++) {
+      this.position.set([xy[2 * k], xy[2 * k + 1], 0], i * 12 + k * 3);
+      this.color.set(rgba, i * 16 + k * 4);
+    }
+    this.uv.set(uv, i * 8);
+  }
+
+  end(used) {
+    this.geometry.setDrawRange(0, this.count * 6);
+    const a = this.geometry.attributes;
+    a.position.needsUpdate = a.uv.needsUpdate = a.color.needsUpdate = true;
+    this.mesh.visible = used && this.count > 0;
+  }
+
+  dispose() {
+    this.geometry.dispose();
+    this.material.dispose();
+  }
 }
 
 // The quads of one layer, refilled every update: libGDX's SpriteBatch, one colour. A run of quads on one texture is

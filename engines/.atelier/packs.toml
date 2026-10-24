@@ -149,6 +149,13 @@ does not draw yet, by task; BREAK=scroll must FAIL), mutate-effects.sh (each eff
 bench.sh (build/bench/threejs.json; skips a bench scene whose kinds it does not port), zip.sh (the release zip).
 A kind it does not port throws in readPage (KINDS): port it, add it to KINDS, add its round to frame-check.sh's ROUNDS and
 drop its 'unsupported' entry in tools/readers-health/health.py. CI job: threejs-frames in .github/workflows/ci.yml.
+PARTICLES (PlaxParticles, r41) is libGDX 1.14's ParticleEmitter, Sprite, MathUtils random (RandomXS128 in BigInt) and
+sine table, ported in Java's float arithmetic: every float field through Math.fround, every (int) cast as |0. The
+particles round compares the snow flake for flake (pixelsOff 0.05 %), seeded per scene as Round.seedRandom
+(shots.js): one draw from the random more or less, or a float counted as a double where libGDX counts a float (r41: the
+cross-fade's alpha ended the fade a step late, q04 t12 0.12 % off), and the snow diverges. A .p is fetched by
+loadParticles(page, atlas) before setPage/transfertInto (bg.load does it). BREAK=hooks must FAIL effects;
+BREAK=particles, anchor, blend must FAIL particles.
 THE RINGS (PlaxRings, r48: the page as the sky of a 3D world, docs/page-as-3d-sky.md): its statics are core's
 ParallaxRings line for line, checked as JSON by frame-check.sh's rings round (tests/rings.html, tools/compare-rings.py
 within 1e-4); change core's and they change together. The instance draws them from PlaxBackground's state (layers,
