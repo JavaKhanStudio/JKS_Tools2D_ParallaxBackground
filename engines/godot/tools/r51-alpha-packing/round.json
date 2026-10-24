@@ -1,0 +1,32 @@
+{
+ "round": "r51-alpha-packing",
+ "about": "r51: Hiver into OneNight caught early, where libGDX's packed layer alpha (Color.toFloatBits, 254 levels) shows most against a float one: 1.38 / 255 at 6 %, 0.80 at 25 % before the fix. Read by engines/godot/tools/r51-alpha-packing/mutate.sh.",
+ "scenes": [
+  {
+   "id": "a1",
+   "page": "engines/rounds/round1/s03.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "six-percent-in",
+   "about": "OneNight 15 steps into a 4 s fade at t6: 1/16 in",
+   "transfer": {
+    "at": 5.75,
+    "seconds": 4,
+    "page": "engines/rounds/round1/s06.jplax",
+    "atlasDir": "core/test-data/samples/Demos"
+   }
+  },
+  {
+   "id": "a2",
+   "page": "engines/rounds/round1/s03.jplax",
+   "atlasDir": "core/test-data/samples",
+   "name": "quarter-in",
+   "about": "t06's second transfer alone, without the interrupt: 1/4 in at t6",
+   "transfer": {
+    "at": 5,
+    "seconds": 4,
+    "page": "engines/rounds/round1/s06.jplax",
+    "atlasDir": "core/test-data/samples/Demos"
+   }
+  }
+ ]
+}

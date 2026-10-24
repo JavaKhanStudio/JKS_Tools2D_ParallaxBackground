@@ -804,9 +804,9 @@ func _unmask(page: Array[Dictionary]) -> void:
 				PlaxEffects.set_grade(l.anim_canvas.material, Color.BLACK, 0)
 
 
-## The tint at that opacity, and whether anything drawn with it would show (ParallaxPageReader.setBatchColor).
+## The tint at that opacity, its alpha packed by Color.toFloatBits (r51), and whether it shows (setBatchColor).
 func _set_modulate(alpha: float) -> bool:
-	_modulate = Color(tint.r, tint.g, tint.b, tint.a * alpha)
+	_modulate = Color(tint.r, tint.g, tint.b, float(int(255 * clampf(tint.a * alpha, 0, 1)) & 0xfe) / 254)
 	return _modulate.a > 0
 
 
