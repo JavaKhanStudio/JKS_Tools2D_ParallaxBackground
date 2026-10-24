@@ -42,6 +42,9 @@
 // resizing. EMPTY layers draw nothing. A page with a layer of another kind
 // (PARTICLES, FLOOR, LURKER) or a MIRROR effect fails to load, as in libGDX a page from a newer version does: they are
 // ported in the order engines/rounds needs them. Not yet: the glint, detail levels.
+//
+// A 3D game can stand the page round its world instead (PlaxRings, r48: each layer a cylinder as far as its speed
+// says, docs/page-as-3d-sky.md): new PlaxRings(bg, { front: 330, foot: 50 }), its group in the scene, update(delta).
 import * as THREE from 'three';
 
 export const WORLD_WIDTH = 40;
@@ -1297,6 +1300,438 @@ export const PlaxEffects = {
     return front;
   },
 };
+
+// --- depth (PlaxDepth: core's ParallaxDepth) --------------------------------------------------------------------------
+
+export const PlaxDepth = {
+  // ParallaxDepth.distanceOf: how far layer `model` is, in front distances, its page's fastest speed ratio X being
+  // `front` (PlaxEffects.frontSpeedOf): front / speed, as magnitudes. The front layer is at 1, a still one infinitely far;
+  // a page that does not scroll is one picture, every layer at 1.
+  distanceOf(front, model) {
+    if (!(front > 0)) return 1;
+    const speed = Math.abs(model.parallaxScalingSpeedX);
+    return speed > 0 ? front / speed : Infinity;
+  },
+};
+
+// --- rings (PlaxRings: core's ParallaxRings, and their drawing) -------------------------------------------------------
+
+// A page as the sky of a 3D world (parallax-readers r48, docs/page-as-3d-sky.md): each layer that draws an image is an
+// open cylinder round the world's centre, its radius from its speed, so a camera flying through the world sees the
+// layers slide by perspective alone; the page's gradients are a sphere round the camera. Built from a PlaxBackground's
+// state (its layers, scroll, cross-fades and tint), never a second loader:
+//
+//   const rings = new PlaxRings(bg, { front: 330, foot: 50 });   // or far: 760, lift: -2, scale: 0.7, as the saga
+//   scene.add(rings.group);
+//   renderer.setAnimationLoop(() => { rings.update(1 / 60); renderer.render(scene, camera); });
+//
+// The statics are core's ParallaxRings line for line, the numbers only (engines/rounds/rings checks them against
+// core's: tools/rings.html, frame-check.sh); the instance draws them. Its layers' colours are libGDX's as the flat
+// reader's are: raw ShaderMaterials (no colour management, no tone mapping), LAYER_BLENDING, the tint packed.
+export class PlaxRings {
+  // ParallaxRings.MAX_ELEVATION: no band reaches the zenith, a cylinder there would be infinitely high.
+  static MAX_ELEVATION = Math.fround(89 * Math.PI / 180);
+  // ParallaxLayer.drawsImage: the kinds a ring is drawn for; EMPTY and PARTICLES have none.
+  static DRAWS_IMAGE = ['IMAGE', 'SHADER', 'SEQUENCE', 'FLOOR', 'LURKER'];
+
+  // ParallaxRings.Options, what the 3D scene chooses (the page itself stores none of it), over `o`: front, the front
+  // band's radius in world units; far, when more than 0 the slowest moving band's radius, the depths compressed into
+  // front..far (radiusOf), 0 the library's depths; foot, the height of the eye the page is seen from, its horizon; lift,
+  // the page raised (lowered when negative) by this, in page units, before scale; scale, the page squeezed (or
+  // stretched) about its horizon; pageDegrees, how many degrees of sky the page's height spans at scale 1;
+  // fogStrength, the page fog's strength (PlaxEffects.fogOf).
+  static options(o = {}) {
+    return { front: 100, far: 0, foot: 0, lift: 0, scale: 1, pageDegrees: 45, fogStrength: 0, ...o };
+  }
+
+  // ParallaxRings.pageHeightOf: the page's height in its units, as a ring sees it: the world's at 16:9.
+  static pageHeightOf(worldWidth) {
+    return worldWidth * 9 / 16;
+  }
+
+  // ParallaxRings.elevationOf: the elevation of `pageY` (page units up from its bottom edge), in radians, kept under
+  // the zenith.
+  static elevationOf(pageY, worldWidth, options) {
+    const perUnit = options.pageDegrees * Math.PI / 180 / PlaxRings.pageHeightOf(worldWidth);
+    return Math.min(PlaxRings.MAX_ELEVATION, (pageY + options.lift) * perUnit * options.scale);
+  }
+
+  // ParallaxRings.radiusOf: the radius of layer `l`'s ring (PlaxBackground's layer state), the page's speeds running
+  // from `slowest` (the slowest that moves) to `front`, as magnitudes. The library's depth: options.front * front /
+  // speed. With options.far: options.front * (front / speed)^p, p = ln(far / options.front) / ln(front / slowest), which
+  // puts the slowest at far (deux-generaux lib/saga/sky.js's law). Still: infinite.
+  static radiusOf(front, slowest, l, options) {
+    const speed = Math.abs(l.model.parallaxScalingSpeedX);
+    if (!(speed > 0)) return Infinity;
+    const depth = PlaxDepth.distanceOf(front, l.model);
+    if (options.far > 0 && slowest > 0 && slowest < front) {
+      const p = Math.log(options.far / options.front) / Math.log(front / slowest);
+      return options.front * Math.pow(depth, p);
+    }
+    return options.front * depth;
+  }
+
+  // ParallaxRings.bands: the rings of `page`'s layers (PlaxBackground's layers) that draw an image, in page order. Each:
+  // layer (its index in `page`), radius (Infinity for a still layer, drawn on the sky round the camera), bottom and top
+  // (the elevations of its edges, radians, seen from the centre at the foot), y and height (its bottom edge's height in
+  // the world and its own, a finite ring's only), repeat (how often its tile goes round, at least once), imageShare (the
+  // share of a tile the image fills, the rest padX), order (0 first: far first, as the rings share a centre and no
+  // depth sort can order them) and fog (PlaxEffects.fogOf).
+  static bands(page, worldWidth, options) {
+    const front = PlaxEffects.frontSpeedOf(page);
+    let slowest = front;
+    for (const l of page) {
+      const speed = Math.abs(l.model.parallaxScalingSpeedX);
+      if (speed > 0 && speed < slowest) slowest = speed;
+    }
+    const pageHeight = PlaxRings.pageHeightOf(worldWidth);
+    const bands = [];
+    page.forEach((l, i) => {
+      if (!PlaxRings.DRAWS_IMAGE.includes(l.model.kind)) return;
+      const band = { layer: i, radius: PlaxRings.radiusOf(front, slowest, l, options), bottom: 0, top: 0, y: 0, height: 0,
+        repeat: 1, imageShare: 1, order: 0, fog: 0 };
+      // ParallaxLayer.getDecalPercentY, getRegionHeight, getTotalWidth and getWidth: a SEQUENCE layer's width is its
+      // cycle's without the padX after the last slot (_sizeLayer), its tile with it.
+      const foot = l.model.decal_Y_Ratio * pageHeight / 100, high = l.height;
+      band.bottom = PlaxRings.elevationOf(foot, worldWidth, options);
+      band.top = PlaxRings.elevationOf(foot + high, worldWidth, options);
+      const tile = l.width + l.model.padX;
+      band.imageShare = tile > 0 ? l.width / tile : 1;
+      if (band.radius !== Infinity) {
+        band.y = options.foot + band.radius * Math.tan(band.bottom);
+        band.height = band.radius * (Math.tan(band.top) - Math.tan(band.bottom));
+        // a tile as wide, for the band's height, as the image is for the layer's: the painting keeps its aspect
+        if (band.height > 0 && high > 0) {
+          band.repeat = Math.max(1, Math.round(2 * Math.PI * band.radius / (tile * band.height / high)));
+        }
+      } else if (band.top > band.bottom && high > 0) {
+        band.repeat = Math.max(1, Math.round(2 * Math.PI / (tile * (band.top - band.bottom) / high)));
+      }
+      band.fog = PlaxEffects.fogOf(options.fogStrength, front, l.model);
+      bands.push(band);
+    });
+    // far first; among equals, page order (back to front)
+    const sorted = [...bands];
+    for (let i = 1; i < sorted.length; i++) {
+      for (let j = i; j > 0 && sorted[j].radius > sorted[j - 1].radius; j--) {
+        [sorted[j], sorted[j - 1]] = [sorted[j - 1], sorted[j]];
+      }
+    }
+    sorted.forEach((band, i) => { band.order = i; });
+    return bands;
+  }
+
+  // ParallaxRings.gradient: the page's gradients by elevation, in radians, each over the part of the page's height the
+  // 2D heart gives it (topHalfSize and bottomHalfSize, the part each leaves uncovered): the top one from topFrom (its
+  // bottom colour) to topTo (its top colour), the bottom one from bottomFrom (its bottom colour) to bottomTo (its top
+  // colour), drawn over the top one where they meet.
+  static gradient(topHalfSize, bottomHalfSize, worldWidth, options) {
+    const h = PlaxRings.pageHeightOf(worldWidth);
+    return {
+      topFrom: PlaxRings.elevationOf(h * topHalfSize, worldWidth, options),
+      topTo: PlaxRings.elevationOf(h, worldWidth, options),
+      bottomFrom: PlaxRings.elevationOf(0, worldWidth, options),
+      bottomTo: PlaxRings.elevationOf(h * (1 - bottomHalfSize), worldWidth, options),
+    };
+  }
+
+  // The rings of `background`'s page, drawn: add `group` to the scene, call update() every frame. `options` are
+  // options()'s, and: fogStrength and fogColor ([r, g, b]) left out, the page's own; centre ({x, z}) where the world's
+  // centre is (the foot is its height); melt, the share of each band's height, from its bottom, that melts into the
+  // fog's colour (deux-generaux's 0.22; 0 none); horizon, how high, in radians, the fog climbs the sky from the
+  // horizon; renderOrder, the first of the render orders the rings take (one per band, the sky one under it), below
+  // what the game draws transparent. The scene's camera needs a far plane past the farthest band: the sky and a still
+  // band are drawn just inside it.
+  constructor(background, options = {}) {
+    this.background = background;
+    this.group = new THREE.Group();
+    this.group.name = 'plax-rings';
+    this.options = {};
+    // Per layer state (PlaxBackground's layer objects): its band's meshes, and what they were built from.
+    this._built = new Map();
+    this._bandsCache = new WeakMap();
+    this._version = 0;
+    this._sky = skyMesh();
+    this._sky.onBeforeRender = (renderer, scene, camera) => this._follow(this._sky, camera, 0.9);
+    this.group.add(this._sky);
+    this.set(options);
+  }
+
+  // Changes some options (as the constructor takes them); the bands are rebuilt at the next update().
+  set(options) {
+    this.options = { melt: 0.22, horizon: 0.12, renderOrder: -1000, centre: { x: 0, z: 0 }, ...this.options, ...options };
+    this.group.position.set(this.options.centre.x ?? 0, 0, this.options.centre.z ?? 0);
+    this._version++;
+  }
+
+  // The options core's ParallaxRings takes for `page`: these, the fog the page's when not given.
+  ringOptions(page) {
+    const o = this.options;
+    return PlaxRings.options({ front: o.front, far: o.far, foot: o.foot, lift: o.lift, scale: o.scale,
+      pageDegrees: o.pageDegrees, fogStrength: o.fogStrength ?? page?.fogStrength ?? 0 });
+  }
+
+  // Moves the background by `seconds` (its act: speedXAtRest's drift, the fades, the tint; 0 for none, when the game
+  // acts it itself), then lays the rings out as it is now.
+  update(seconds = 0) {
+    const bg = this.background;
+    if (seconds) bg.act(seconds);
+    // Each layer's slot, for the cross-fade's alphas (PlaxBackground._alphaOf).
+    bg._drawOrder();
+    const sides = [[bg.layers, bg.page], [bg.transferLayers, bg.transferPage]];
+    const live = new Set(), all = [];
+    for (const [layers, page] of sides) {
+      if (!layers.length || !page) continue;
+      const options = this.ringOptions(page);
+      for (const band of this._bandsOf(layers, options)) {
+        const l = layers[band.layer];
+        live.add(l);
+        all.push(this._sync(l, band, page));
+      }
+    }
+    for (const [l, built] of this._built) {
+      if (!live.has(l)) this._dropBand(l, built);
+    }
+    // Far first, the outgoing page before the incoming one among equals; the sky under them all.
+    // Compared, not subtracted: Infinity - Infinity is NaN, and two still bands keep their order.
+    const order = all.map((b, i) => [b, i]).sort((a, c) => {
+      const ra = a[0].band.radius, rc = c[0].band.radius;
+      return ra === rc ? a[1] - c[1] : rc > ra ? 1 : -1;
+    });
+    order.forEach(([b], i) => { for (const mesh of b.meshes) mesh.renderOrder = this.options.renderOrder + 1 + i; });
+    this._sky.renderOrder = this.options.renderOrder;
+    this._drawSky();
+  }
+
+  dispose() {
+    for (const [l, built] of this._built) this._dropBand(l, built);
+    this._sky.geometry.dispose();
+    this._sky.material.dispose();
+  }
+
+  // The bands of `layers`, computed again when the options, the layers or a sequence's cycle changed.
+  _bandsOf(layers, options) {
+    const key = `${this._version}|${JSON.stringify(options)}|${layers.map(l => `${l.drawnSeed ?? ''}:${l.width}`).join(',')}`;
+    const cached = this._bandsCache.get(layers);
+    if (cached?.key === key) return cached.bands;
+    const bands = PlaxRings.bands(layers, this.background.worldWidth, options);
+    this._bandsCache.set(layers, { key, bands });
+    return bands;
+  }
+
+  // The meshes of layer `l`'s band, built when it is new or its numbers changed; then this frame's scroll, colour,
+  // fog and fade set on them.
+  _sync(l, band, page) {
+    const bg = this.background;
+    let built = this._built.get(l);
+    if (!built || built.band !== band) {
+      if (built) this._dropBand(l, built);
+      built = this._buildBand(l, band);
+      this._built.set(l, built);
+    }
+    // The 2D reader's scroll: the tile at distanceX, one tile 1 / repeat of the ring.
+    const tile = l.width + l.model.padX;
+    built.holder.rotation.y = tile > 0 ? -l.distanceX / tile * 2 * Math.PI / band.repeat : 0;
+    const u = built.uniforms;
+    // During a cross-fade, the layer's opacity as the flat reader's; a dissolve fades it by its share, it has no mask.
+    const fade = bg._masked(l) ? bg._shareOf(l) : bg._alphaOf(l);
+    const alpha = bg.tint[3] * fade;
+    const tint = bg.tint.map(packed);
+    u.tint.value.set(tint[0], tint[1], tint[2], packedAlpha(alpha));
+    for (const mesh of built.meshes) mesh.visible = alpha > 0;
+    const fog = this.options.fogColor ?? page.fogColor;
+    u.fog_color.value.set(fog[0], fog[1], fog[2]);
+    u.haze.value = band.fog;
+    u.melt.value = this.options.melt;
+    if (bg._graded(l)) {
+      const c = bg._style.color, total = Math.max(bg.layers.length, bg.transferLayers.length);
+      u.grade.value.set(c[0], c[1], c[2], clamp(bg._style.gradeAt(bg._newAlpha, l.slot, total), 0, 1));
+    } else u.grade.value.set(0, 0, 0, 0);
+    return built;
+  }
+
+  // Layer `l`'s band as meshes, one per texture its images sit on, in a holder turned by the scroll: each image (an
+  // IMAGE or SHADER layer's, a SEQUENCE layer's slots) laid round the ring once per repeat, curved, its texture linear in
+  // angle and in elevation. A still band is on a cylinder of radius 1 round the camera, scaled to the sky's.
+  _buildBand(l, band) {
+    const still = band.radius === Infinity, R = still ? 1 : band.radius, footY = still ? 0 : this.options.foot;
+    const holder = new THREE.Group(), uniforms = ringUniforms(), m = l.model;
+    const tile = l.width + m.padX, turn = 2 * Math.PI / band.repeat;
+    const images = [];
+    if (m.kind === 'SEQUENCE' && l.edges) {
+      for (let slot = 0; slot < l.cycle.length; slot++) {
+        const segment = l.segments[l.cycle[slot]];
+        images.push([segment, l.height * l.edges[slot] + slot * m.padX, l.height * segment.aspect]);
+      }
+    } else images.push([l, 0, l.width]);
+    const runs = new Map();
+    const ROWS = 8, STEP = 2 * Math.PI / 192;
+    for (let k = 0; k < band.repeat; k++) {
+      for (const [image, left, width] of images) {
+        if (!(width > 0) || !(tile > 0)) continue;
+        const fx = m.flipX, fy = m.flipY;
+        // As _drawRegion: the packed image in its box, a flip mirroring where it sits in it.
+        const x0 = left + width * (fx ? 1 - image.trimLeft - image.packedW : image.trimLeft), w = width * image.packedW;
+        const b0 = fy ? 1 - image.trimBottom - image.packedH : image.trimBottom, bh = image.packedH;
+        const texture = image.region.page.texture, src = image.src, W = texture.image.width, H = texture.image.height;
+        let u0 = src.x / W, u1 = (src.x + src.w) / W, vTop = src.y / H, vBottom = (src.y + src.h) / H;
+        if (fx) [u0, u1] = [u1, u0];
+        if (fy) [vTop, vBottom] = [vBottom, vTop];
+        const run = runs.get(texture) ?? { position: [], uv: [], band: [], index: [] };
+        runs.set(texture, run);
+        const cols = Math.max(1, Math.ceil(w / tile * turn / STEP));
+        const first = run.position.length / 3;
+        for (let j = 0; j <= ROWS; j++) {
+          const along = b0 + bh * j / ROWS;
+          const y = footY + R * Math.tan(band.bottom + along * (band.top - band.bottom));
+          for (let i = 0; i <= cols; i++) {
+            const a = k * turn + (x0 + w * i / cols) / tile * turn;
+            run.position.push(R * Math.sin(a), y, -R * Math.cos(a));
+            run.uv.push(u0 + (u1 - u0) * i / cols, vBottom + (vTop - vBottom) * j / ROWS);
+            run.band.push(along);
+          }
+        }
+        for (let j = 0; j < ROWS; j++) {
+          for (let i = 0; i < cols; i++) {
+            const a = first + j * (cols + 1) + i, b = a + 1, c = a + cols + 1, d = c + 1;
+            run.index.push(a, b, d, a, d, c);
+          }
+        }
+      }
+    }
+    const meshes = [];
+    for (const [texture, run] of runs) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(run.position, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(run.uv, 2));
+      g.setAttribute('band', new THREE.Float32BufferAttribute(run.band, 1));
+      g.setIndex(run.index);
+      const mesh = new THREE.Mesh(g, ringMaterial(texture, uniforms));
+      mesh.frustumCulled = false;
+      if (still) mesh.onBeforeRender = (renderer, scene, camera) => this._follow(holder, camera, 0.85);
+      holder.add(mesh);
+      meshes.push(mesh);
+    }
+    this.group.add(holder);
+    return { band, holder, meshes, uniforms };
+  }
+
+  _dropBand(l, built) {
+    this.group.remove(built.holder);
+    for (const mesh of built.meshes) {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    }
+    this._built.delete(l);
+  }
+
+  // Puts `object` (the sky, a still band) round `camera`, its radius `share` of the camera's far plane.
+  _follow(object, camera, share) {
+    this.group.updateWorldMatrix(true, false);
+    object.position.copy(camera.getWorldPosition(_cameraAt)).sub(_groupAt.setFromMatrixPosition(this.group.matrixWorld));
+    object.scale.setScalar((camera.far ?? 1000) * share);
+    object.updateMatrixWorld(true);
+  }
+
+  // The page's gradients on the sky, by elevation, the fog under the horizon.
+  _drawSky() {
+    const bg = this.background, u = this._sky.material.uniforms, page = bg.page;
+    this._sky.visible = !!page;
+    if (!page) return;
+    const g = PlaxRings.gradient(bg._topHalfSize, bg._bottomHalfSize, bg.worldWidth, this.ringOptions(page));
+    const [tt, tb, bt, bb] = bg._gradient;
+    u.top_to.value.set(...tt.slice(0, 3).map(packed));
+    u.top_from.value.set(...tb.slice(0, 3).map(packed));
+    u.bottom_to.value.set(...bt.slice(0, 3).map(packed));
+    u.bottom_from.value.set(...bb.slice(0, 3).map(packed));
+    u.top.value.set(g.topFrom, g.topTo);
+    u.bottom.value.set(g.bottomFrom, g.bottomTo);
+    const fog = this.options.fogColor ?? page.fogColor;
+    u.fog_color.value.set(fog[0], fog[1], fog[2]);
+    u.horizon.value = this.options.horizon;
+  }
+}
+
+const _cameraAt = new THREE.Vector3(), _groupAt = new THREE.Vector3();
+
+// A band's numbers, shared by its meshes: the tint (packed as libGDX packs a batch colour, the cross-fade's alpha in
+// it), the fog's colour and the band's haze (PlaxEffects.fogOf), the melt and a transfert's grade (as hazed()).
+function ringUniforms() {
+  return {
+    tint: { value: new THREE.Vector4(1, 1, 1, 1) }, fog_color: { value: new THREE.Vector3(0.93, 0.95, 0.97) },
+    haze: { value: 0 }, melt: { value: 0 }, grade: { value: new THREE.Vector4(0, 0, 0, 0) },
+  };
+}
+
+// A band's material on `texture`: raw colours, blended as every layer is, behind the 3D world (it tests its depth and
+// writes none).
+function ringMaterial(texture, uniforms) {
+  return new THREE.ShaderMaterial({
+    ...LAYER_BLENDING, depthTest: true, uniforms: { ...uniforms, tex: { value: texture } },
+    vertexShader: `attribute float band;
+varying vec2 vUv;
+varying float vBand;
+void main() {
+	vUv = uv;
+	vBand = band;
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`,
+    fragmentShader: `uniform sampler2D tex;
+uniform vec4 tint;
+uniform vec3 fog_color;
+uniform float haze;
+uniform float melt;
+uniform vec4 grade;
+varying vec2 vUv;
+varying float vBand;
+void main() {
+	vec4 color = tint * texture2D(tex, vUv);
+	float fog = melt > 0.0 ? haze + (1.0 - haze) * (1.0 - smoothstep(0.0, melt, vBand)) : haze;
+	gl_FragColor = vec4(mix(mix(color.rgb, fog_color, fog), grade.rgb, grade.a), color.a);
+}
+`,
+  });
+}
+
+// The sky: a sphere of radius 1 round the camera (PlaxRings._follow scales it), coloured by elevation as
+// ParallaxRings.gradient lays the page's gradients out, under the bands; under the horizon, the fog.
+function skyMesh() {
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      top_from: { value: new THREE.Vector3(1, 1, 1) }, top_to: { value: new THREE.Vector3(1, 1, 1) },
+      bottom_from: { value: new THREE.Vector3(1, 1, 1) }, bottom_to: { value: new THREE.Vector3(1, 1, 1) },
+      top: { value: new THREE.Vector2(0, 1) }, bottom: { value: new THREE.Vector2(0, 1) },
+      fog_color: { value: new THREE.Vector3(0.93, 0.95, 0.97) }, horizon: { value: 0.12 },
+    },
+    side: THREE.BackSide, depthWrite: false, depthTest: false, blending: THREE.NoBlending,
+    vertexShader: `varying vec3 vDirection;
+void main() {
+	vDirection = position;
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`,
+    fragmentShader: `uniform vec3 top_from, top_to, bottom_from, bottom_to, fog_color;
+uniform vec2 top, bottom;
+uniform float horizon;
+varying vec3 vDirection;
+float along(float e, vec2 span) {
+	return span.y > span.x ? clamp((e - span.x) / (span.y - span.x), 0.0, 1.0) : step(span.x, e);
+}
+void main() {
+	float e = asin(clamp(normalize(vDirection).y, -1.0, 1.0));
+	vec3 color = mix(top_from, top_to, along(e, top));
+	if (e <= bottom.y)
+		color = mix(bottom_from, bottom_to, along(e, bottom));
+	gl_FragColor = vec4(mix(fog_color, color, smoothstep(-0.02, horizon, e)), 1.0);
+}
+`,
+  });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), material);
+  mesh.name = 'plax-rings-sky';
+  mesh.frustumCulled = false;
+  return mesh;
+}
 
 // A region's box: where its packed image sits in it, the image's size, its width in heights, and the texels drawn of it. useOriginalSize: a
 // region packed with its whitespace stripped keeps its original size, and its packed image is drawn at its offset

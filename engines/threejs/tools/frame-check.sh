@@ -2,7 +2,7 @@
 # frame-check.sh [ROUND_DIR...] — the three.js reader (engines/threejs) against the libGDX runtime, frame by frame (r34).
 #
 #   engines/threejs/tools/frame-check.sh                        engines/rounds/round1, /conformance, /pixelart, /sequence,
-#                                                               /shaders (s01-s11), /fog, /transfer
+#                                                               /shaders (s01-s11), /fog, /transfer, /rings
 #   engines/threejs/tools/frame-check.sh engines/rounds/round1
 #
 # For each round: renders its scenes with libGDX (tools/parallax-lab-shots.sh, 0, 6 and 12 s into the lab's scroll)
@@ -15,6 +15,8 @@
 # task that will: they are not shot, and report.txt names them SKIPPED (tools/compare-parallax-frames.py). With engines/rounds/sequence it runs the cycle check too
 # (engines/threejs/tests/sequence_cycle.html: the picks against picks.json, the slots drawn against a walk over all). Chrome draws on the GPU when tools/browser.py finds one, else on SwiftShader (CI), where
 # conformance's worst still was 0.25 / 255 (0.17 on the GPU).
+# engines/rounds/rings has no stills (r48): core's ParallaxRings numbers (./gradlew :rounds:rings) against PlaxRings'
+# (engines/threejs/tests/rings.html), every number within 1e-4 (tools/compare-rings.py).
 # BREAK=scroll draws three.js with a scroll 10 % too fast: it must FAIL (the threshold's negative control).
 # Needs Chrome (CHROME=, or google-chrome, chromium, chromium-browser on the PATH), python3 with Pillow.
 set -u
@@ -24,12 +26,20 @@ ROOT="$PWD"
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
 [ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/pixelart engines/rounds/sequence
-	engines/rounds/shaders engines/rounds/fog engines/rounds/transfer)
+	engines/rounds/shaders engines/rounds/fog engines/rounds/transfer engines/rounds/rings)
 # MIRROR, the glint and detail levels: r44.
 declare -A SKIP=([engines/rounds/shaders]="s12 s13 s14 s15 s16 s17 s18|r44")
 status=0
 for ROUND in "${ROUNDS[@]}"; do
 	OUT=$(shots_out "$ROOT/build/threejs" "$ROUND"); mkdir -p "$OUT/threejs"
+	if [ "$(basename "$ROUND")" = rings ]; then
+		./gradlew -q :rounds:rings -Pround="$ROUND" -Pout="$OUT" >"$OUT/gdx.log" 2>&1 || { echo "FAIL: core's rings numbers, see $OUT/gdx.log"; status=1; continue; }
+		engines/threejs/tools/run-page.sh "rings.html?round=$ROUND" "$OUT/threejs"
+		mv "$OUT/threejs/threejs.log" "$OUT/threejs.log" 2>/dev/null
+		grep -h "^FAIL" "$OUT/threejs.log" 2>/dev/null
+		python3 tools/compare-rings.py "$ROUND" "$OUT" threejs || status=1
+		continue
+	fi
 	tools/parallax-lab-shots.sh "$ROUND" "$OUT/gdx" >/dev/null || { echo "libGDX shots failed: $OUT/gdx/lab.log"; exit 1; }
 	SKIPPED=${SKIP[${ROUND%/}]:-}
 	SKIP_SCENES=${SKIPPED%|*} SKIP_WHY=${SKIPPED#*|}

@@ -59,7 +59,6 @@ READERS = [
          'engines/rounds/dolly': ('r43', 'the dolly is not ported yet', 'dolly'),
          'engines/rounds/tower': ('r43', 'towers are not ported yet', 'tower'),
          'engines/rounds/planet': ('r43', 'planets are not ported yet', 'planet'),
-         'engines/rounds/rings': ('r48', 'the rings (a page round a 3D world) are not ported yet', 'rings'),
          # And the shaders round's s12-s18 (frame-check.sh's SKIP): the features mirror and detail are drawn there too.
          'engines/rounds/glint': ('r44', 'glint, MIRROR and detail levels are not ported yet', 'glint', 'mirror', 'detail'),
      }},

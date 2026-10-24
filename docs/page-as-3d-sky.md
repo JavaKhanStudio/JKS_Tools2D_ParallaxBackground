@@ -6,8 +6,8 @@ correctly in the parallax board, both in reader and everywhere else we could use
 camera. Crypto en visuel built one way and Simon picked it (deux-generaux r339, lab
 [parallax-sky/compare.html](https://javakhanstudio.github.io/Crypto_en_visuel/lab/parallax-sky/compare.html): way b,
 « Anneaux », over a screen-space backdrop). Its code is deux-generaux `lib/saga/sky.js`, about 130 lines of three.js over
-its own copy of the reader. This page is what the readers would take from it. **Nothing here is built yet**: Simon
-answered the questions at the end (r35), and the build is its own tickets.
+its own copy of the reader. This page is what the readers would take from it. Simon
+answered the questions at the end (r35), and the build is its own tickets (r47 on, "Built so far" below).
 
 ## What sky.js does
 
@@ -103,6 +103,13 @@ a reader's. Its g02 gives sky.js's radii, heights and repeat counts for calm-day
 page's height is its world's at 16:9 (a ring has no screen), and a still layer is infinitely far (radius null in the
 JSON), drawn on the sky round the camera. A band's scroll is the 2D reader's own: its image is offset round the ring by
 its layer's `currentDistanceX / totalWidth`, a tile being `1 / repeat` of it.
+
+**three.js** (r48): `PlaxRings` in `engines/threejs/src/plax.js`, its statics `ParallaxRings` line for line (the rings
+round passes within 1e-4, in `engines/threejs/tools/frame-check.sh`), its instance drawing them from `PlaxBackground`'s
+state (README, "The page as the sky of a 3D world"). Three choices a port can keep or argue: a band's texture runs
+linearly in elevation, not in height up the cylinder (its rows at `foot + r tan(e)`); the gradients are not tinted, as
+the flat heart does not tint them; a dissolve fades a band by its share, without the patches. Its lab:
+`engines/threejs/tools/rings-lab.sh` (the board's `rings-lab`).
 
 The build: r47 (`ParallaxRings` in core and the ring round), then r48 (three.js and its lab, shown to Simon), then
 r49 (Godot) and r50 (jME).
