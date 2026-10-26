@@ -89,7 +89,9 @@ renderer.setAnimationLoop(() => {
 The options are core's `ParallaxRings.Options` (`front`, `far`, `foot`, `lift`, `scale`, `pageDegrees`, `fogStrength`;
 the page's own fog when left out) and the drawing's: `fogColor` (`[r, g, b]`, the page's when left out), `centre`
 (`{x, z}`), `melt` (the share of each band's height, from its bottom, that melts into the fog's colour: 0.22),
-`horizon` (how high the fog climbs the sky, in radians: 0.12) and `renderOrder` (the first of the orders the rings
+`eyeMelt` (how high, in radians above the camera's own horizon, the bands melt into the fog's colour as the camera sees
+them: 0, none; it holds where the bottom of a band is hidden behind the world's hills, as from a low camera, where
+`melt` shows nothing), `horizon` (how high the fog climbs the sky, in radians: 0.12) and `renderOrder` (the first of the orders the rings
 take, -1000, so they draw before the game's transparent objects). By default the bands stand at the library's depths,
 `front * frontSpeed / speed` (calm-day's back layer 9.1 times as far as its front); `far: 760` compresses them into
 `front..far`, as Crypto en visuel's saga sky does. `rings.set({...})` changes options; a still layer is drawn on the sky.

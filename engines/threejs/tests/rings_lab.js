@@ -11,19 +11,20 @@ import { PlaxBackground, PlaxRings, loadAtlas, loadPage } from '../src/plax.js';
 const ROUND = '/engines/rounds/rings';
 const query = new URLSearchParams(location.search);
 const VIEWS = [['both', 'A | B side by side'], ['a', 'A: library depth'], ['b', 'B: compressed to far']];
-// The sliders: key, label, min, max, step, section. Their start values: DEFAULTS, the scene's fit of the page (rings round), then
-// the URL's.
+// The sliders: key, label, min, max, step, section. Their start values: DEFAULTS (Simon's look on r48, 26 Oct: a low
+// flight, the bands compressed into 510..3000, 28 degrees of page, the eye melt), the page's fog strength, then the URL's.
+// The round's fit of each page (lift, scale, degrees) is for the numbers check, not the look.
 const SLIDERS = [
   ['front', 'front', 50, 800, 5, 'Rings'], ['far', 'far (B)', 100, 3000, 10, 'Rings'],
   ['foot', 'foot', 0, 120, 1, 'Rings'], ['lift', 'lift', -12, 12, 0.5, 'Rings'], ['scale', 'scale', 0.2, 2, 0.05, 'Rings'],
   ['pageDegrees', 'page degrees', 10, 90, 1, 'Rings'],
-  ['fogStrength', 'fog strength', 0, 0.2, 0.002, 'Fog'], ['melt', 'melt', 0, 0.6, 0.01, 'Fog'],
+  ['fogStrength', 'fog strength', 0, 0.2, 0.002, 'Fog'], ['melt', 'melt', 0, 0.6, 0.01, 'Fog'], ['eyeMelt', 'eye melt', 0, 0.8, 0.01, 'Fog'],
   ['horizon', 'horizon', 0, 0.5, 0.01, 'Fog'], ['worldFog', 'world fog far', 200, 3000, 10, 'Fog'],
   ['dusk', 'dusk tint', 0, 1, 0.01, 'World'], ['orbit', 'flight radius', 20, 240, 5, 'World'],
   ['height', 'flight height', 5, 120, 1, 'World'], ['speed', 'flight speed', 0, 3, 0.05, 'World'],
 ];
-const DEFAULTS = { front: 330, far: 760, foot: 50, lift: 0, scale: 1, pageDegrees: 45, fogStrength: 0, melt: 0.22,
-  horizon: 0.12, worldFog: 900, dusk: 0, orbit: 110, height: 30, speed: 1 };
+const DEFAULTS = { front: 510, far: 3000, foot: 51, lift: -2, scale: 1, pageDegrees: 28, fogStrength: 0, melt: 0,
+  eyeMelt: 0.3, horizon: 0.5, worldFog: 200, dusk: 0, orbit: 60, height: 10, speed: 0.4 };
 const NIGHT = [0x30 / 255, 0x38 / 255, 0x6e / 255, 1];
 
 const stage = document.getElementById('stage');
@@ -43,7 +44,7 @@ const bg = new PlaxBackground();
 const panels = { a: new PlaxRings(bg), b: new PlaxRings(bg) };
 scene.add(panels.a.group, panels.b.group);
 
-let scenes = [], current = null, knobs = { ...DEFAULTS }, opened = { ...DEFAULTS }, view = query.get('view') ?? 'both', zoomed = null;
+let scenes = [], current = null, knobs = { ...DEFAULTS }, opened = { ...DEFAULTS }, view = query.get('view') ?? 'b', zoomed = null;
 let flight = 0, playing = !query.has('still');
 const tags = {};
 
@@ -81,10 +82,7 @@ async function loadScene(id) {
   current = scenes.find(s => s.id === id) ?? scenes[0];
   const page = await loadPage(current.page);
   bg.setPage(page, await loadAtlas(`${current.atlasDir}/${page.atlasName}`));
-  // The scene's fit of the page (lift, scale, degrees); its front, far and foot are the round's numbers, not this
-  // valley's: the lab's front band stands past the ridge, its foot on it.
-  const { front, far, foot, ...fit } = current.rings;
-  knobs = { ...DEFAULTS, fogStrength: page.fogStrength, ...fit };
+  knobs = { ...DEFAULTS, fogStrength: page.fogStrength };
   for (const [key] of SLIDERS) if (query.has(key)) knobs[key] = Number(query.get(key));
   opened = { ...knobs };
   document.getElementById('about').textContent = `${current.id} ${current.name}: ${current.about}`;
@@ -94,7 +92,7 @@ async function loadScene(id) {
 
 function apply() {
   const common = { front: knobs.front, foot: knobs.foot, lift: knobs.lift, scale: knobs.scale,
-    pageDegrees: knobs.pageDegrees, fogStrength: knobs.fogStrength, melt: knobs.melt, horizon: knobs.horizon };
+    pageDegrees: knobs.pageDegrees, fogStrength: knobs.fogStrength, melt: knobs.melt, eyeMelt: knobs.eyeMelt, horizon: knobs.horizon };
   panels.a.set({ ...common, far: 0 });
   panels.b.set({ ...common, far: knobs.far });
   const fog = bg.page.fogColor;

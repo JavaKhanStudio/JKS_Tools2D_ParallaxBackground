@@ -109,7 +109,10 @@ round passes within 1e-4, in `engines/threejs/tools/frame-check.sh`), its instan
 state (README, "The page as the sky of a 3D world"). Three choices a port can keep or argue: a band's texture runs
 linearly in elevation, not in height up the cylinder (its rows at `foot + r tan(e)`); the gradients are not tinted, as
 the flat heart does not tint them; a dissolve fades a band by its share, without the patches. Its lab:
-`engines/threejs/tools/rings-lab.sh` (the board's `rings-lab`).
+`engines/threejs/tools/rings-lab.sh` (the board's `rings-lab`). Simon's look (r48, 26 Oct), which the lab opens at: a
+low flight (radius 60, height 10), the bands compressed into 510..3000, 28 degrees of page at scale 1, the sky's fog
+up to 0.5 rad. From that camera sky.js's melt (the bottom 22 % of each band) is behind the ridge and shows nothing, so
+three.js adds `eyeMelt`: the bands melt into the fog by their elevation as the camera sees them, 0.3 rad in the lab.
 
 The build: r47 (`ParallaxRings` in core and the ring round), then r48 (three.js and its lab, shown to Simon), then
 r49 (Godot) and r50 (jME).

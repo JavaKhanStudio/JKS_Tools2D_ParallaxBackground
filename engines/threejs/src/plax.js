@@ -2565,8 +2565,9 @@ export class PlaxRings {
   // The rings of `background`'s page, drawn: add `group` to the scene, call update() every frame. `options` are
   // options()'s, and: fogStrength and fogColor ([r, g, b]) left out, the page's own; centre ({x, z}) where the world's
   // centre is (the foot is its height); melt, the share of each band's height, from its bottom, that melts into the
-  // fog's colour (deux-generaux's 0.22; 0 none); horizon, how high, in radians, the fog climbs the sky from the
-  // horizon; renderOrder, the first of the render orders the rings take (one per band, the sky one under it), below
+  // fog's colour (deux-generaux's 0.22; 0 none); eyeMelt, how high, in radians above the camera's own horizon, the
+  // bands melt into the fog's colour as the camera sees them (0 none): it holds where melt's part of a band is hidden
+  // behind the world's own hills; horizon, how high, in radians, the fog climbs the sky from the horizon; renderOrder, the first of the render orders the rings take (one per band, the sky one under it), below
   // what the game draws transparent. The scene's camera needs a far plane past the farthest band: the sky and a still
   // band are drawn just inside it.
   constructor(background, options = {}) {
@@ -2586,7 +2587,7 @@ export class PlaxRings {
 
   // Changes some options (as the constructor takes them); the bands are rebuilt at the next update().
   set(options) {
-    this.options = { melt: 0.22, horizon: 0.12, renderOrder: -1000, centre: { x: 0, z: 0 }, ...this.options, ...options };
+    this.options = { melt: 0.22, eyeMelt: 0, horizon: 0.12, renderOrder: -1000, centre: { x: 0, z: 0 }, ...this.options, ...options };
     this.group.position.set(this.options.centre.x ?? 0, 0, this.options.centre.z ?? 0);
     this._version++;
   }
@@ -2670,6 +2671,7 @@ export class PlaxRings {
     u.fog_color.value.set(fog[0], fog[1], fog[2]);
     u.haze.value = band.fog;
     u.melt.value = this.options.melt;
+    u.eye_melt.value = this.options.eyeMelt;
     if (bg._graded(l)) {
       const c = bg._style.color, total = Math.max(bg.layers.length, bg.transferLayers.length);
       u.grade.value.set(c[0], c[1], c[2], clamp(bg._style.gradeAt(bg._newAlpha, l.slot, total), 0, 1));
@@ -2786,7 +2788,7 @@ const _cameraAt = new THREE.Vector3(), _groupAt = new THREE.Vector3();
 function ringUniforms() {
   return {
     tint: { value: new THREE.Vector4(1, 1, 1, 1) }, fog_color: { value: new THREE.Vector3(0.93, 0.95, 0.97) },
-    haze: { value: 0 }, melt: { value: 0 }, grade: { value: new THREE.Vector4(0, 0, 0, 0) },
+    haze: { value: 0 }, melt: { value: 0 }, eye_melt: { value: 0 }, grade: { value: new THREE.Vector4(0, 0, 0, 0) },
   };
 }
 
@@ -2798,9 +2800,11 @@ function ringMaterial(texture, uniforms) {
     vertexShader: `attribute float band;
 varying vec2 vUv;
 varying float vBand;
+varying vec3 vFromEye;
 void main() {
 	vUv = uv;
 	vBand = band;
+	vFromEye = (modelMatrix * vec4(position, 1.0)).xyz - cameraPosition;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `,
@@ -2809,12 +2813,17 @@ uniform vec4 tint;
 uniform vec3 fog_color;
 uniform float haze;
 uniform float melt;
+uniform float eye_melt;
 uniform vec4 grade;
 varying vec2 vUv;
 varying float vBand;
+varying vec3 vFromEye;
 void main() {
 	vec4 color = tint * texture2D(tex, vUv);
-	float fog = melt > 0.0 ? haze + (1.0 - haze) * (1.0 - smoothstep(0.0, melt, vBand)) : haze;
+	float melted = melt > 0.0 ? 1.0 - smoothstep(0.0, melt, vBand) : 0.0;
+	if (eye_melt > 0.0)
+		melted = max(melted, 1.0 - smoothstep(0.0, eye_melt, asin(clamp(normalize(vFromEye).y, -1.0, 1.0))));
+	float fog = haze + (1.0 - haze) * melted;
 	gl_FragColor = vec4(mix(mix(color.rgb, fog_color, fog), grade.rgb, grade.a), color.a);
 }
 `,
