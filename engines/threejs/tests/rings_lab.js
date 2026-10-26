@@ -20,11 +20,11 @@ const SLIDERS = [
   ['pageDegrees', 'page degrees', 10, 90, 1, 'Rings'],
   ['fogStrength', 'fog strength', 0, 0.2, 0.002, 'Fog'], ['melt', 'melt', 0, 0.6, 0.01, 'Fog'], ['eyeMelt', 'eye melt', 0, 0.8, 0.01, 'Fog'],
   ['horizon', 'horizon', 0, 0.5, 0.01, 'Fog'], ['worldFog', 'world fog far', 200, 3000, 10, 'Fog'],
-  ['dusk', 'dusk tint', 0, 1, 0.01, 'World'], ['orbit', 'flight radius', 20, 240, 5, 'World'],
+  ['dusk', 'dusk tint', 0, 1, 0.01, 'World'], ['tintSky', 'tint sky (0/1)', 0, 1, 1, 'World'], ['orbit', 'flight radius', 20, 240, 5, 'World'],
   ['height', 'flight height', 5, 120, 1, 'World'], ['speed', 'flight speed', 0, 3, 0.05, 'World'],
 ];
 const DEFAULTS = { front: 510, far: 3000, foot: 51, lift: -2, scale: 1, pageDegrees: 28, fogStrength: 0, melt: 0,
-  eyeMelt: 0.3, horizon: 0.5, worldFog: 200, dusk: 0, orbit: 60, height: 10, speed: 0.4 };
+  eyeMelt: 0.3, horizon: 0.5, worldFog: 200, dusk: 0, tintSky: 0, orbit: 60, height: 10, speed: 0.4 };
 const NIGHT = [0x30 / 255, 0x38 / 255, 0x6e / 255, 1];
 
 const stage = document.getElementById('stage');
@@ -92,13 +92,15 @@ async function loadScene(id) {
 
 function apply() {
   const common = { front: knobs.front, foot: knobs.foot, lift: knobs.lift, scale: knobs.scale,
-    pageDegrees: knobs.pageDegrees, fogStrength: knobs.fogStrength, melt: knobs.melt, eyeMelt: knobs.eyeMelt, horizon: knobs.horizon };
+    pageDegrees: knobs.pageDegrees, fogStrength: knobs.fogStrength, melt: knobs.melt, eyeMelt: knobs.eyeMelt, horizon: knobs.horizon,
+    tintSky: knobs.tintSky > 0 };
   panels.a.set({ ...common, far: 0 });
   panels.b.set({ ...common, far: knobs.far });
-  const fog = bg.page.fogColor;
-  scene.fog = new THREE.Fog(new THREE.Color(fog[0], fog[1], fog[2]), knobs.front * 0.3, knobs.worldFog);
   bg.tintTo([1 + (NIGHT[0] - 1) * knobs.dusk, 1 + (NIGHT[1] - 1) * knobs.dusk, 1 + (NIGHT[2] - 1) * knobs.dusk, 1], 0);
   for (const p of Object.values(panels)) p.update(0);
+  // the world's fog in the rings' fog colour, tinted with tint sky
+  const fog = panels.b._fogColor(bg.page);
+  scene.fog = new THREE.Fog(new THREE.Color(fog[0], fog[1], fog[2]), knobs.front * 0.3, knobs.worldFog);
   describe();
 }
 

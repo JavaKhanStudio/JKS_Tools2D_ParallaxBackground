@@ -2567,7 +2567,9 @@ export class PlaxRings {
   // centre is (the foot is its height); melt, the share of each band's height, from its bottom, that melts into the
   // fog's colour (deux-generaux's 0.22; 0 none); eyeMelt, how high, in radians above the camera's own horizon, the
   // bands melt into the fog's colour as the camera sees them (0 none): it holds where melt's part of a band is hidden
-  // behind the world's own hills; horizon, how high, in radians, the fog climbs the sky from the horizon; renderOrder, the first of the render orders the rings take (one per band, the sky one under it), below
+  // behind the world's own hills; horizon, how high, in radians, the fog climbs the sky from the horizon; tintSky, the
+  // background's tint (tintTo) laid on the sky's gradients and the fog's colour too (off: as the flat reader, which
+  // tints the layers only); renderOrder, the first of the render orders the rings take (one per band, the sky one under it), below
   // what the game draws transparent. The scene's camera needs a far plane past the farthest band: the sky and a still
   // band are drawn just inside it.
   constructor(background, options = {}) {
@@ -2587,7 +2589,7 @@ export class PlaxRings {
 
   // Changes some options (as the constructor takes them); the bands are rebuilt at the next update().
   set(options) {
-    this.options = { melt: 0.22, eyeMelt: 0, horizon: 0.12, renderOrder: -1000, centre: { x: 0, z: 0 }, ...this.options, ...options };
+    this.options = { melt: 0.22, eyeMelt: 0, horizon: 0.12, tintSky: false, renderOrder: -1000, centre: { x: 0, z: 0 }, ...this.options, ...options };
     this.group.position.set(this.options.centre.x ?? 0, 0, this.options.centre.z ?? 0);
     this._version++;
   }
@@ -2667,7 +2669,7 @@ export class PlaxRings {
     const tint = bg.tint.map(packed);
     u.tint.value.set(tint[0], tint[1], tint[2], packedAlpha(alpha));
     for (const mesh of built.meshes) mesh.visible = alpha > 0;
-    const fog = this.options.fogColor ?? page.fogColor;
+    const fog = this._fogColor(page);
     u.fog_color.value.set(fog[0], fog[1], fog[2]);
     u.haze.value = band.fog;
     u.melt.value = this.options.melt;
@@ -2768,16 +2770,27 @@ export class PlaxRings {
     this._sky.visible = !!page;
     if (!page) return;
     const g = PlaxRings.gradient(bg._topHalfSize, bg._bottomHalfSize, bg.worldWidth, this.ringOptions(page));
-    const [tt, tb, bt, bb] = bg._gradient;
-    u.top_to.value.set(...tt.slice(0, 3).map(packed));
-    u.top_from.value.set(...tb.slice(0, 3).map(packed));
-    u.bottom_to.value.set(...bt.slice(0, 3).map(packed));
-    u.bottom_from.value.set(...bb.slice(0, 3).map(packed));
+    const [tt, tb, bt, bb] = bg._gradient.map(c => this._skyTinted(c).map(packed));
+    u.top_to.value.set(...tt);
+    u.top_from.value.set(...tb);
+    u.bottom_to.value.set(...bt);
+    u.bottom_from.value.set(...bb);
     u.top.value.set(g.topFrom, g.topTo);
     u.bottom.value.set(g.bottomFrom, g.bottomTo);
-    const fog = this.options.fogColor ?? page.fogColor;
+    const fog = this._fogColor(page);
     u.fog_color.value.set(fog[0], fog[1], fog[2]);
     u.horizon.value = this.options.horizon;
+  }
+
+  // The fog's colour (options.fogColor, else the page's), tinted with tintSky.
+  _fogColor(page) {
+    return this._skyTinted(this.options.fogColor ?? page.fogColor);
+  }
+
+  // Colour `c`'s red, green and blue, times the background's tint with tintSky.
+  _skyTinted(c) {
+    const t = this.background.tint;
+    return this.options.tintSky ? [c[0] * t[0], c[1] * t[1], c[2] * t[2]] : c.slice(0, 3);
   }
 }
 
