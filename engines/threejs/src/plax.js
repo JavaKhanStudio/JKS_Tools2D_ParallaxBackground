@@ -2070,6 +2070,26 @@ void main() {
 }
 `;
 
+// A SHADER layer's band on a ring (PlaxRings, r53): the effect's fragment shader as the flat reader's, with RING
+// defined, its SCREEN_UV the image's page units (view 1 by 1: page.x round the ring from the tile's left, page.y up
+// from the layer's bottom), so along() runs round the ring as it runs across the flat page.
+const RING_EFFECT_VERTEX = `attribute float band;
+attribute vec2 page;
+varying vec2 vUv;
+varying vec2 vScreen;
+varying vec3 vShade;
+varying float vBand;
+varying vec3 vFromEye;
+void main() {
+	vUv = uv;
+	vScreen = vec2(page.x, 1.0 - page.y);
+	vShade = vec3(1.0);
+	vBand = band;
+	vFromEye = (modelMatrix * vec4(position, 1.0)).xyz - cameraPosition;
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
 const EFFECT_HEAD = `#define TAU 6.283185307179586
 uniform sampler2D tex;
 uniform vec4 tint;
@@ -2110,8 +2130,25 @@ float dissolved(vec2 screen_uv) {
 	float m = smoothstep(n - e, n + e, dissolve.y * (1.0 + 2.0 * e) - e);
 	return dissolve.x < 1.5 ? 1.0 - m : m;
 }
+#ifdef RING
+// PlaxRings: a band's melt into the fog, by its own height (melt) and as the camera sees it (eye_melt).
+uniform float melt;
+uniform float eye_melt;
+varying float vBand;
+varying vec3 vFromEye;
+float ring_melted() {
+	float melted = melt > 0.0 ? 1.0 - smoothstep(0.0, melt, vBand) : 0.0;
+	if (eye_melt > 0.0)
+		melted = max(melted, 1.0 - smoothstep(0.0, eye_melt, asin(clamp(normalize(vFromEye).y, -1.0, 1.0))));
+	return melted;
+}
+#endif
 vec4 hazed(vec4 color, vec2 screen_uv) {
-	return vec4(mix(mix(color.rgb, fog_color, haze), grade.rgb, grade.a), color.a * dissolved(screen_uv));
+	float h = haze;
+#ifdef RING
+	h = haze + (1.0 - haze) * ring_melted();
+#endif
+	return vec4(mix(mix(color.rgb, fog_color, h), grade.rgb, grade.a), color.a * dissolved(screen_uv));
 }
 vec4 glinted(vec4 color, vec4 image, vec2 uv, vec2 screen_uv) {
 	if (glint.x <= 0.0)
@@ -2654,7 +2691,7 @@ export class PlaxRings {
   _sync(l, band, page) {
     const bg = this.background;
     let built = this._built.get(l);
-    if (!built || built.band !== band) {
+    if (!built || built.band !== band || built.effect !== PlaxRings.effectOf(l)) {
       if (built) this._dropBand(l, built);
       built = this._buildBand(l, band);
       this._built.set(l, built);
@@ -2678,6 +2715,17 @@ export class PlaxRings {
       const c = bg._style.color, total = Math.max(bg.layers.length, bg.transferLayers.length);
       u.grade.value.set(c[0], c[1], c[2], clamp(bg._style.gradeAt(bg._newAlpha, l.slot, total), 0, 1));
     } else u.grade.value.set(0, 0, 0, 0);
+    if (built.effect) {
+      // The flat reader's numbers (PlaxEffects.apply), then along() laid round the ring: page units (view 1 by 1) from
+      // the image's edge in its tile, as effectStartX and effectStartY take it, without the scroll, which turns the
+      // ring; no glint (its sun is a place on the screen) and no dissolve's patches.
+      PlaxEffects.apply(u, l, bg._effectTime, 1, 1, 0, 0, [1, 0]);
+      const m = l.model;
+      u.view.value.set(1, 1);
+      u.across.value.set(1, l.width * (m.flipX ? 1 - l.trimLeft : l.trimLeft), m.flipX ? -1 : 1);
+      u.up.value.set(1, l.height * (m.flipY ? 1 - l.trimBottom : l.trimBottom), m.flipY ? -1 : 1);
+      u.glint.value.x = 0;
+    }
     return built;
   }
 
@@ -2686,7 +2734,8 @@ export class PlaxRings {
   // angle and in elevation. A still band is on a cylinder of radius 1 round the camera, scaled to the sky's.
   _buildBand(l, band) {
     const still = band.radius === Infinity, R = still ? 1 : band.radius, footY = still ? 0 : this.options.foot;
-    const holder = new THREE.Group(), uniforms = ringUniforms(), m = l.model;
+    const m = l.model, effect = PlaxRings.effectOf(l);
+    const holder = new THREE.Group(), uniforms = effect ? { ...PlaxEffects.uniforms(), ...ringUniforms() } : ringUniforms();
     const tile = l.width + m.padX, turn = 2 * Math.PI / band.repeat;
     const images = [];
     if (m.kind === 'SEQUENCE' && l.edges) {
@@ -2708,7 +2757,7 @@ export class PlaxRings {
         let u0 = src.x / W, u1 = (src.x + src.w) / W, vTop = src.y / H, vBottom = (src.y + src.h) / H;
         if (fx) [u0, u1] = [u1, u0];
         if (fy) [vTop, vBottom] = [vBottom, vTop];
-        const run = runs.get(texture) ?? { position: [], uv: [], band: [], index: [] };
+        const run = runs.get(texture) ?? { position: [], uv: [], band: [], page: [], index: [] };
         runs.set(texture, run);
         const cols = Math.max(1, Math.ceil(w / tile * turn / STEP));
         const first = run.position.length / 3;
@@ -2720,6 +2769,7 @@ export class PlaxRings {
             run.position.push(R * Math.sin(a), y, -R * Math.cos(a));
             run.uv.push(u0 + (u1 - u0) * i / cols, vBottom + (vTop - vBottom) * j / ROWS);
             run.band.push(along);
+            run.page.push(k * tile + x0 + w * i / cols, along * l.height);
           }
         }
         for (let j = 0; j < ROWS; j++) {
@@ -2736,15 +2786,23 @@ export class PlaxRings {
       g.setAttribute('position', new THREE.Float32BufferAttribute(run.position, 3));
       g.setAttribute('uv', new THREE.Float32BufferAttribute(run.uv, 2));
       g.setAttribute('band', new THREE.Float32BufferAttribute(run.band, 1));
+      if (effect) g.setAttribute('page', new THREE.Float32BufferAttribute(run.page, 2));
       g.setIndex(run.index);
-      const mesh = new THREE.Mesh(g, ringMaterial(texture, uniforms));
+      const mesh = new THREE.Mesh(g, effect ? ringEffectMaterial(effect, texture, uniforms) : ringMaterial(texture, uniforms));
       mesh.frustumCulled = false;
       if (still) mesh.onBeforeRender = (renderer, scene, camera) => this._follow(holder, camera, 0.85);
       holder.add(mesh);
       meshes.push(mesh);
     }
     this.group.add(holder);
-    return { band, holder, meshes, uniforms };
+    return { band, holder, meshes, uniforms, effect };
+  }
+
+  // The effect layer `l`'s band is drawn through: its detail level's (l.drawnEffect, PlaxDetail), MIRROR as SWELL (its
+  // sky is the flat page's, not yet the ring's); null for an image drawn plain.
+  static effectOf(l) {
+    if (l.model.kind !== 'SHADER' || !l.drawnEffect) return null;
+    return l.drawnEffect === 'MIRROR' ? 'SWELL' : l.drawnEffect;
   }
 
   _dropBand(l, built) {
@@ -2840,6 +2898,15 @@ void main() {
 	gl_FragColor = vec4(mix(mix(color.rgb, fog_color, fog), grade.rgb, grade.a), color.a);
 }
 `,
+  });
+}
+
+// A SHADER layer's band material on `texture`: the flat reader's `effect` (EFFECT_FRAGMENTS) with RING defined, its
+// numbers `uniforms` (PlaxEffects.uniforms and ringUniforms), blended and depth tested as ringMaterial.
+function ringEffectMaterial(effect, texture, uniforms) {
+  return new THREE.ShaderMaterial({
+    ...LAYER_BLENDING, depthTest: true, defines: { RING: '' }, uniforms: { ...uniforms, tex: { value: texture } },
+    vertexShader: RING_EFFECT_VERTEX, fragmentShader: EFFECT_HEAD + EFFECT_FRAGMENTS[effect],
   });
 }
 

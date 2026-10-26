@@ -99,7 +99,8 @@ take, -1000, so they draw before the game's transparent objects). By default the
 `front..far`, as Crypto en visuel's saga sky does. `rings.set({...})` changes options; a still layer is drawn on the sky.
 The bands scroll as the flat background's layers do (`speedXAtRest`, the game's speeds), fade with `transfertInto`
 (a dissolve's layers by their share, without the patches), are tinted by `tintTo` and graded by `throughColor` and
-`fogCreep`. Not drawn on a ring yet: a `SHADER` layer's effect (its image is drawn plain).
+`fogCreep`. A `SHADER` layer's band draws its effect (WAVE, FOG, SWELL; MIRROR as SWELL, without its sky) round the
+ring as the flat page draws it across, on the same clock; without its glint, whose sun is a place on the screen.
 
 `PlaxRings.bands(bg.layers, bg.worldWidth, PlaxRings.options({...}))` and `PlaxRings.gradient(...)` give the numbers
 alone (radius, elevations, repeat, draw order, fog per band), core's to 1e-4 (the rings round below).

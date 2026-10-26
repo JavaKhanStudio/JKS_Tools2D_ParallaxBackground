@@ -10,6 +10,7 @@
 #                                                         warning or error (DIR/console.log); then the last scene
 #                                                         cross-fading into the next, half way and done
 #   engines/threejs/tools/rings-lab.sh --shot DIR K=V...  the same with sliders started at values (front=500 far=1200 ...)
+#                                                         (round=shaders SCENES="s08 s09": another round's pages)
 #   engines/threejs/tools/rings-lab.sh --clip F.mp4 [K=V...]  headless: the first scene of SCENES side by side, 12 s of
 #                                                         the flight at 30 fps, stepped through window.ringsLab.at
 #                                                         (needs ffmpeg); the same console rule

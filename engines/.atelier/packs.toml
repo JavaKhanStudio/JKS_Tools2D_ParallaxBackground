@@ -181,8 +181,10 @@ THE RINGS (PlaxRings, r48: the page as the sky of a 3D world, docs/page-as-3d-sk
 ParallaxRings line for line, checked as JSON by frame-check.sh's rings round (tests/rings.html, tools/compare-rings.py
 within 1e-4); change core's and they change together. The instance draws them from PlaxBackground's state (layers,
 distanceX, _alphaOf, tint), never its own loader: one Group, a band per layer turned by its scroll, depth tested and
-never written, far first by renderOrder; the sky sphere and a still band follow the camera (_follow). Judged by eye in
-tools/rings-lab.sh (--shot DIR, --clip F.mp4: headless on the GPU, fails on any console warning).
+never written, far first by renderOrder; the sky sphere and a still band follow the camera (_follow). A SHADER layer's
+band draws its effect through the flat EFFECT_FRAGMENTS with RING defined (ringEffectMaterial, r53): change a flat
+effect's shader and the ring's changes with it. Judged by eye in tools/rings-lab.sh (--shot DIR, --clip F.mp4:
+headless on the GPU, fails on any console warning; round=shaders SCENES="s08 s09" draws the shaders round's pages).
 A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
 """
 

@@ -4,12 +4,13 @@
 // into front..far, as the saga's sky does (Simon's r35 pick 2); click a panel to give it the whole stage, again to go
 // back. Sliders for every option of PlaxRings, the world's fog and the flight; Copy settings puts them as JSON on the
 // clipboard. engines/threejs/tools/rings-lab.sh opens it (a window), or shoots it headless through window.ringsLab.
-// URL: ?scene=g02&view=both&front=330... starts a scene, a view and any slider at a value.
+// URL: ?scene=g02&view=both&front=330... starts a scene, a view and any slider at a value; &round=shaders another round.
 import * as THREE from 'three';
 import { PlaxBackground, PlaxRings, loadAtlas, loadPage } from '../src/plax.js';
 
-const ROUND = '/engines/rounds/rings';
 const query = new URLSearchParams(location.search);
+// ?round=shaders draws another round's pages (its scenes' rings fits unused): the SHADER effects on a band (r53).
+const ROUND = `/engines/rounds/${query.get('round') ?? 'rings'}`;
 const VIEWS = [['both', 'A | B side by side'], ['a', 'A: library depth'], ['b', 'B: compressed to far']];
 // The sliders: key, label, min, max, step, section. Their start values: DEFAULTS (Simon's look on r48, 26 Oct: a low
 // flight, the bands compressed into 510..3000, 28 degrees of page, the eye melt), the page's fog strength, then the URL's.
