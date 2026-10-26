@@ -1,0 +1,12 @@
+{
+ "about": "r58: a lab fixture for the rings' join, not a reader round",
+ "scenes": [
+  {
+   "id": "j01",
+   "page": "engines/threejs/tests/rings-seam/seam.jplax",
+   "atlasDir": "core/test-data/shaders",
+   "name": "fog-seam",
+   "about": "r58: shaders s06's mist with its wavelength 3: a FOG period of 24 that 20-unit tiles do not fill round a ring, so the effect steps where the ring closes unless stretched"
+  }
+ ]
+}

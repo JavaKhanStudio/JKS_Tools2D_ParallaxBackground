@@ -46,6 +46,12 @@ with sync_playwright() as p:
             for t in (0, 8, 20):
                 page.evaluate(f'window.ringsLab.at({t})')
                 page.screenshot(path=os.path.join(out, f'{scene}-both-t{t}.png'))
+            # A page with a SHADER layer: panel B turned to where its band closes the ring (r58), at 8 s.
+            look = page.evaluate('window.ringsLab.at(8), window.ringsLab.lookAtJoin(8)')
+            if look is not None:
+                page.evaluate(f'window.ringsLab.set({{look: {look}}}), window.ringsLab.at(8)')
+                page.screenshot(path=os.path.join(out, f'{scene}-join-t8.png'))
+                page.evaluate('window.ringsLab.set({look: 0})')
         print(f'{scene}: {page.evaluate("JSON.stringify(window.ringsLab.knobs())")}')
     if not clip:
         # A cross-fade into the next scene's page, halfway (2 s of 4): both pages' bands at their alphas.

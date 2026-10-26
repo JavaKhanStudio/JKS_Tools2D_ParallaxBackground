@@ -2718,11 +2718,14 @@ export class PlaxRings {
     if (built.effect) {
       // The flat reader's numbers (PlaxEffects.apply), then along() laid round the ring: page units (view 1 by 1) from
       // the image's edge in its tile, as effectStartX and effectStartY take it, without the scroll, which turns the
-      // ring; no glint (its sun is a place on the screen) and no dissolve's patches.
+      // ring; no glint (its sun is a place on the screen) and no dissolve's patches. Round the ring the effect runs a
+      // whole number of its periods (PlaxEffects.period), stretched a little, or it would step where the ring closes
+      // (r58).
       PlaxEffects.apply(u, l, bg._effectTime, 1, 1, 0, 0, [1, 0]);
-      const m = l.model;
+      const m = l.model, round = band.repeat * tile, period = PlaxEffects.period(m);
+      const stretch = period > 0 && round > 0 ? Math.max(1, Math.round(round / period)) * period / round : 1;
       u.view.value.set(1, 1);
-      u.across.value.set(1, l.width * (m.flipX ? 1 - l.trimLeft : l.trimLeft), m.flipX ? -1 : 1);
+      u.across.value.set(stretch, l.width * (m.flipX ? 1 - l.trimLeft : l.trimLeft) * stretch, m.flipX ? -1 : 1);
       u.up.value.set(1, l.height * (m.flipY ? 1 - l.trimBottom : l.trimBottom), m.flipY ? -1 : 1);
       u.glint.value.x = 0;
     }

@@ -9,8 +9,9 @@ import * as THREE from 'three';
 import { PlaxBackground, PlaxRings, loadAtlas, loadPage } from '../src/plax.js';
 
 const query = new URLSearchParams(location.search);
-// ?round=shaders draws another round's pages (its scenes' rings fits unused): the SHADER effects on a band (r53).
-const ROUND = `/engines/rounds/${query.get('round') ?? 'rings'}`;
+// ?round=shaders draws another round's pages (its scenes' rings fits unused): the SHADER effects on a band (r53);
+// a round starting with / is a folder from the repository root (/engines/threejs/tests/rings-seam: r58's join).
+const ROUND = (r => r.startsWith('/') ? r : `/engines/rounds/${r}`)(query.get('round') ?? 'rings');
 const VIEWS = [['both', 'A | B side by side'], ['a', 'A: library depth'], ['b', 'B: compressed to far']];
 // The sliders: key, label, min, max, step, section. Their start values: DEFAULTS (Simon's look on r48, 26 Oct: a low
 // flight, the bands compressed into 510..3000, 28 degrees of page, the eye melt), the page's fog strength, then the URL's.
@@ -22,10 +23,10 @@ const SLIDERS = [
   ['fogStrength', 'fog strength', 0, 0.2, 0.002, 'Fog'], ['melt', 'melt', 0, 0.6, 0.01, 'Fog'], ['eyeMelt', 'eye melt', 0, 0.8, 0.01, 'Fog'],
   ['horizon', 'horizon', 0, 0.5, 0.01, 'Fog'], ['worldFog', 'world fog far', 200, 3000, 10, 'Fog'],
   ['dusk', 'dusk tint', 0, 1, 0.01, 'World'], ['tintSky', 'tint sky (0/1)', 0, 1, 1, 'World'], ['orbit', 'flight radius', 20, 240, 5, 'World'],
-  ['height', 'flight height', 5, 120, 1, 'World'], ['speed', 'flight speed', 0, 3, 0.05, 'World'],
+  ['height', 'flight height', 5, 120, 1, 'World'], ['speed', 'flight speed', 0, 3, 0.05, 'World'], ['look', 'look (deg)', -180, 180, 1, 'World'],
 ];
 const DEFAULTS = { front: 510, far: 3000, foot: 51, lift: -2, scale: 1, pageDegrees: 28, fogStrength: 0, melt: 0,
-  eyeMelt: 0.3, horizon: 0.5, worldFog: 200, dusk: 0, tintSky: 0, orbit: 60, height: 10, speed: 0.4 };
+  eyeMelt: 0.3, horizon: 0.5, worldFog: 200, dusk: 0, tintSky: 0, orbit: 60, height: 10, speed: 0.4, look: 0 };
 const NIGHT = [0x30 / 255, 0x38 / 255, 0x6e / 255, 1];
 
 const stage = document.getElementById('stage');
@@ -167,11 +168,11 @@ stage.onclick = e => {
   if (ports.length > 1) zoomed = ports.find(p => x >= p.x && x < p.x + p.w)?.name ?? null;
 };
 
-// The camera round the valley, looking ahead and out toward the ridge and the sky.
+// The camera round the valley, looking ahead and out toward the ridge and the sky, turned by look degrees.
 function fly(t) {
   const a = t * 0.12, r = knobs.orbit, y = knobs.height + 6 * Math.sin(t * 0.3);
   camera.position.set(r * Math.sin(a), y, -r * Math.cos(a));
-  const heading = a + Math.PI / 2 - 0.6;
+  const heading = a + Math.PI / 2 - 0.6 + knobs.look * Math.PI / 180;
   camera.lookAt(camera.position.x + Math.sin(heading) * 100, y + 14, camera.position.z - Math.cos(heading) * 100);
 }
 
@@ -280,4 +281,16 @@ window.ringsLab = {
   },
   set(values) { Object.assign(knobs, values); buildSliders(); apply(); },
   knobs: () => ({ scene: current.id, view, ...knobs }),
+  // The look (degrees) that turns the camera, at flight `t`, to where panel B's band of the first SHADER layer closes
+  // its ring (its tile repeat-1 meeting tile 0, at the holder's angle 0: r58).
+  lookAtJoin(t) {
+    const l = bg.layers.find(x => x.model.kind === 'SHADER'), built = l && panels.b._built.get(l);
+    if (!built) return null;
+    const turned = -built.holder.rotation.y, R = built.band.radius;
+    const a = t * knobs.speed * 0.12, r = knobs.orbit;
+    const dx = R * Math.sin(turned) - r * Math.sin(a), dz = -R * Math.cos(turned) + r * Math.cos(a);
+    const heading = Math.atan2(dx, -dz);
+    const look = ((heading - (a + Math.PI / 2 - 0.6)) * 180 / Math.PI + 540) % 360 - 180;
+    return Math.round(look);
+  },
 };

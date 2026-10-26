@@ -11,6 +11,8 @@
 #                                                         cross-fading into the next, half way and done
 #   engines/threejs/tools/rings-lab.sh --shot DIR K=V...  the same with sliders started at values (front=500 far=1200 ...)
 #                                                         (round=shaders SCENES="s08 s09": another round's pages)
+#                                                         and, for a page with a SHADER layer, <scene>-join-t8.png:
+#                                                         panel B turned to where that band closes its ring
 #   engines/threejs/tools/rings-lab.sh --clip F.mp4 [K=V...]  headless: the first scene of SCENES side by side, 12 s of
 #                                                         the flight at 30 fps, stepped through window.ringsLab.at
 #                                                         (needs ffmpeg); the same console rule
