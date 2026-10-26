@@ -7,8 +7,10 @@ extends Control
 ## Copy settings puts them as JSON on the clipboard and in the box under it. engines/godot/tools/rings-lab.sh opens it,
 ## or shoots it in cage:
 ##   godot --path engines/godot res://tests/rings_lab.tscn -- <repo root> [--shot DIR] [scene=g02] [view=b] [front=510]
+##       [round=engines/threejs/tests/rings-seam]  another round's scenes (its first scene, and its only one shot)
 ## --shot: DIR/<scene>-<view>-t<s>.png for each scene of scenes= (default g02,g01,g04), view both, at 0, 8 and 20 s of
-## the flight; then the last scene cross-fading into the next, half way and done; "rings_lab: PASS" when all are saved.
+## the flight, and for a page with a SHADER layer DIR/<scene>-join-t8.png, panel B turned to where its band closes
+## its ring; then the last scene cross-fading into the next, half way and done; "rings_lab: PASS" when all are saved.
 
 const ROUND := "engines/rounds/rings"
 const VIEWS := [["both", "A | B"], ["a", "A: library depth"], ["b", "B: compressed to far"]]
@@ -23,11 +25,11 @@ const SLIDERS := [
 	["worldFog", "world fog far", 200, 3000, 10, "Fog"],
 	["dusk", "dusk tint", 0, 1, 0.01, "World"], ["tintSky", "tint sky (0/1)", 0, 1, 1, "World"],
 	["orbit", "flight radius", 20, 240, 5, "World"], ["height", "flight height", 5, 120, 1, "World"],
-	["speed", "flight speed", 0, 3, 0.05, "World"],
+	["speed", "flight speed", 0, 3, 0.05, "World"], ["look", "look (deg)", -180, 180, 1, "World"],
 ]
 const DEFAULTS := {"front": 510.0, "far": 3000.0, "foot": 51.0, "lift": -2.0, "scale": 1.0, "pageDegrees": 28.0,
 	"fogStrength": 0.0, "melt": 0.0, "eyeMelt": 0.3, "horizon": 0.5, "worldFog": 200.0, "dusk": 0.0, "tintSky": 0.0,
-	"orbit": 60.0, "height": 10.0, "speed": 0.4}
+	"orbit": 60.0, "height": 10.0, "speed": 0.4, "look": 0.0}
 const NIGHT := Color(0x30 / 255.0, 0x38 / 255.0, 0x6e / 255.0)
 const CONTROLS_W := 380
 
@@ -79,11 +81,13 @@ func _ready() -> void:
 		i += 1
 	view = given.get("view", "b")
 	bg.auto_act = false
-	scenes = JSON.parse_string(FileAccess.get_file_as_string(root.path_join(ROUND).path_join("round.json"))).scenes
+	# round=: another round's folder, from the repository root (engines/threejs/tests/rings-seam, r58's join fixture)
+	var round_dir: String = given.get("round", ROUND)
+	scenes = JSON.parse_string(FileAccess.get_file_as_string(root.path_join(round_dir).path_join("round.json"))).scenes
 	_build_ui()
 	for name in ["a", "b"]:
 		panels[name] = _panel(name)
-	_load_scene(given.get("scene", "g02"))
+	_load_scene(given.get("scene", scenes[0].id))
 	_layout()
 	resized.connect(_layout)
 	if shot_dir != "":
@@ -222,13 +226,13 @@ func _describe() -> void:
 	_numbers.text = "\n".join(lines)
 
 
-## The camera round the valley, looking ahead and out toward the ridge and the sky.
+## The camera round the valley, looking ahead and out toward the ridge and the sky, turned by look degrees.
 func _fly(t: float) -> void:
 	var a := t * 0.12
 	var r: float = knobs.orbit
 	var y: float = knobs.height + 6 * sin(t * 0.3)
 	var at := Vector3(r * sin(a), y, -r * cos(a))
-	var heading := a + PI / 2 - 0.6
+	var heading := a + PI / 2 - 0.6 + deg_to_rad(knobs.look)
 	for p in panels.values():
 		p.camera.look_at_from_position(at, Vector3(at.x + sin(heading) * 100, y + 14, at.z - cos(heading) * 100))
 
@@ -419,6 +423,26 @@ func _at(t: float) -> void:
 	_draw_now()
 
 
+## The look (degrees) that turns the camera, now, to where panel B's band of the first SHADER layer closes its ring
+## (its tile repeat-1 meeting tile 0, at the holder's angle 0), as three.js's ringsLab.lookAtJoin (r58); NAN
+## without one.
+func _look_at_join() -> float:
+	var rings: PlaxRings = panels.b.rings
+	for l in bg.layers:
+		if l.model.kind != "SHADER" or not rings._built.has(l.get("ring_id", -1)):
+			continue
+		var built: Dictionary = rings._built[l.ring_id]
+		var turned: float = -built.holder.rotation.y
+		var big_r: float = built.band.radius
+		var a := flight * 0.12
+		var r: float = knobs.orbit
+		var dx := big_r * sin(turned) - r * sin(a)
+		var dz := -big_r * cos(turned) + r * cos(a)
+		var look := rad_to_deg(atan2(dx, -dz) - (a + PI / 2 - 0.6))
+		return roundf(fposmod(look + 180, 360) - 180)
+	return NAN
+
+
 func _save(path: String) -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -430,12 +454,24 @@ func _shoot(dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	view = given.get("view", "both")
 	_layout()
-	var ids: PackedStringArray = given.get("scenes", "g02,g01,g04").split(",")
+	var first: String = "g02,g01,g04" if not given.has("round") else scenes[0].id
+	var ids: PackedStringArray = given.get("scenes", first).split(",")
 	for id in ids:
 		_load_scene(id)
 		for t in [0, 8, 20]:
 			_at(t)
 			await _save(dir.path_join("%s-%s-t%d.png" % [id, view, t]))
+		# A page with a SHADER layer: panel B turned to where its band closes the ring (r58), at 8 s.
+		_at(8)
+		var look := _look_at_join()
+		if not is_nan(look):
+			knobs.look = look
+			print("rings_lab: look at the join %d" % look)
+			_build_sliders()
+			_at(8)
+			await _save(dir.path_join("%s-join-t8.png" % id))
+			knobs.look = 0.0
+			_build_sliders()
 	_fade_to_next(4.0)
 	for half in [2.0, 2.0]:
 		bg.act(half)

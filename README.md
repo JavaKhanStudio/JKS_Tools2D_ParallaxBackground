@@ -430,9 +430,10 @@ drawing's, `fogColor` (a `Color`), `melt` (0.22), `eyeMelt` (0), `horizon` (0.12
 `renderPriority` (-120: the first of the render priorities the bands take, far first, below the game's transparent
 materials). `rings.set_options({...})` changes them; `auto_update = false` and `rings.update(0)` when the game acts the
 background itself. The bands scroll, fade with `transfert_into`, are tinted by `tint_to` and graded by
-`through_color` and `fog_creep`, as three.js's; a still layer is drawn round the camera. Not yet: a `SHADER` layer's
-effect on its band (drawn as its plain image). `PlaxRings.bands(bg.layers, bg.world_width, PlaxRings.ring_options({...}))`
-gives the numbers alone, core's to 1e-4 (`engines/godot/tools/frame-check.sh engines/rounds/rings`). Its lab:
+`through_color` and `fog_creep`, as three.js's; a still layer is drawn round the camera. A `SHADER` layer's effect
+(`WAVE`, `FOG`, `SWELL`; `MIRROR` as `SWELL`) runs round its band on the background's clock, stretched to a whole number
+of its periods so the ring closes without a step; no glint and no dissolve's patches on a band.
+`PlaxRings.bands(bg.layers, bg.world_width, PlaxRings.ring_options({...}))` gives the numbers alone, core's to 1e-4 (`engines/godot/tools/frame-check.sh engines/rounds/rings`). Its lab:
 `engines/godot/tools/rings-lab.sh`.
 
 ### In jMonkeyEngine 3

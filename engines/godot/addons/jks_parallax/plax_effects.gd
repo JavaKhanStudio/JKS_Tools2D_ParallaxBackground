@@ -204,11 +204,17 @@ static var _shaders := {}
 static func material(effect_name: String) -> ShaderMaterial:
 	if not _shaders.has(effect_name):
 		var shader := Shader.new()
-		shader.code = {"FOG": _FOG, "SWELL": _SWELL, "MIRROR": _MIRROR, "PLAIN": _PLAIN}.get(effect_name, _WAVE)
+		shader.code = code(effect_name)
 		_shaders[effect_name] = shader
 	var m := ShaderMaterial.new()
 	m.shader = _shaders[effect_name]
 	return m
+
+
+## The canvas_item shader code of effect `effect_name` (WAVE when it is none of the others); PlaxRings makes a spatial
+## shader of it for a band (r59).
+static func code(effect_name: String) -> String:
+	return {"FOG": _FOG, "SWELL": _SWELL, "MIRROR": _MIRROR, "PLAIN": _PLAIN}.get(effect_name, _WAVE)
 
 
 ## ParallaxLayer.getShaderPhase: speed * seconds wrapped to where the effect repeats (one wavelength, FOG_PERIOD for

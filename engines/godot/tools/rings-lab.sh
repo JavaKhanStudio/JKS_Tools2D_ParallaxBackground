@@ -6,10 +6,12 @@
 #
 #   engines/godot/tools/rings-lab.sh                    the lab: a Godot window, until it closes
 #   engines/godot/tools/rings-lab.sh K=V...             the same, started at values (scene=g01 view=both front=330 ...)
+#                                                       (round=engines/threejs/tests/rings-seam: another round's scenes)
 #   engines/godot/tools/rings-lab.sh --shot DIR [K=V]   in cage's headless display: DIR/<scene>-both-t<s>.png for each
 #                                                       scene of scenes= (default g02,g01,g04) at 0, 8 and 20 s of the
-#                                                       flight, then the last cross-fading into the next, half way and
-#                                                       done; fails without "rings_lab: PASS" or on a SHADER or
+#                                                       flight (and <scene>-join-t8.png, panel B turned to where a
+#                                                       SHADER band closes its ring), then the last cross-fading into
+#                                                       the next, half way and done; fails without "rings_lab: PASS" or on a SHADER or
 #                                                       SCRIPT ERROR (DIR/godot.log)
 #
 # Needs godot 4.x (GODOT=), and for --shot cage and Xwayland.

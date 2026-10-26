@@ -125,7 +125,10 @@ statics are core's ParallaxRings line for line, checked as JSON by frame-check.s
 headless, no stills; r49-rings/mutate.sh). Its look is judged in tools/rings-lab.sh (--shot DIR renders in cage) beside
 three.js's. Its shaders hand colours over as the renderer outputs them (OUTPUT_IS_SRGB; the sky's output_srgb uniform):
 under Compatibility a linear-converted colour comes out dark. A layer Dictionary hashes by content: key per-layer state
-by the ring_id it stamps, never by the dictionary.
+by the ring_id it stamps, never by the dictionary. A SHADER band's shader is PlaxEffects.code(effect), the flat
+canvas_item one, rewritten by plax_rings.gd's _ring_effect_code text swaps (r59): an edit to plax_effects.gd's _HEAD must
+keep the strings they look for (the tint varying, vertex(), hazed()'s fog mix, "COLOR = ") or the lab logs "PlaxRings:
+no ..."; tools/r59-ring-seam/mutate.sh proves the band's effect moves and closes its ring without a step.
 A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
 """
 

@@ -61,6 +61,32 @@ void fragment() {
 }
 """
 
+# A SHADER layer's band (r59): its effect's canvas_item shader (PlaxEffects.code) made spatial by _ring_effect_code,
+# as three.js's ringEffectMaterial: the image's page units round the ring (UV2.y across, UV2.x times page_height up)
+# stand in for SCREEN_UV (a view 1 by 1), the tint a uniform, hazed() melting the band as RING_SHADER does.
+const RING_EFFECT_HEAD := """shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, fog_disabled, shadows_disabled;
+uniform sampler2D ring_tex : FILTER, repeat_disable;
+uniform float melt;
+uniform float eye_melt;
+uniform float page_height;
+varying vec2 ring_screen;
+varying float ring_band;
+varying vec3 from_eye;
+""" + SRGB
+const RING_EFFECT_VERTEX := """void vertex() {
+	ring_screen = vec2(UV2.y, 1.0 - UV2.x * page_height);
+	ring_band = UV2.x;
+	from_eye = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz - CAMERA_POSITION_WORLD;
+}"""
+const RING_EFFECT_HAZE := """float ring_haze() {
+	float melted = melt > 0.0 ? 1.0 - smoothstep(0.0, melt, ring_band) : 0.0;
+	if (eye_melt > 0.0)
+		melted = max(melted, 1.0 - smoothstep(0.0, eye_melt, asin(clamp(normalize(from_eye).y, -1.0, 1.0))));
+	return haze + (1.0 - haze) * melted;
+}
+"""
+
 # The sky: the page's gradients by elevation (ParallaxRings.gradient), the fog under the horizon.
 const SKY_SHADER := """shader_type sky;
 uniform vec3 top_from = vec3(1.0);
@@ -353,7 +379,8 @@ func _sync(l: Dictionary, band: Dictionary, page: PlaxPage) -> Dictionary:
 	var bg := background
 	var id := _id_of(l)
 	var built: Dictionary = _built.get(id, {})
-	if built.is_empty() or not is_same(built.band, band):
+	var effect := effect_of(l)
+	if built.is_empty() or not is_same(built.band, band) or built.effect != effect:
 		if not built.is_empty():
 			_drop_band(id)
 		built = _build_band(l, band)
@@ -379,6 +406,8 @@ func _sync(l: Dictionary, band: Dictionary, page: PlaxPage) -> Dictionary:
 		m.set_shader_parameter("melt", float(options.melt))
 		m.set_shader_parameter("eye_melt", float(options.eyeMelt))
 		m.set_shader_parameter("grade", grade)
+		if effect != "":
+			_apply_effect(m, l, band)
 	return built
 
 
@@ -445,13 +474,15 @@ func _build_band(l: Dictionary, band: Dictionary) -> Dictionary:
 					var a: float = k * turn + (x0 + w * i / cols) / tile * turn
 					run.position.append(Vector3(r * sin(a), y, -r * cos(a)))
 					run.uv.append(Vector2(u0 + (u1 - u0) * i / cols, v_bottom + (v_top - v_bottom) * j / ROWS))
-					run.band.append(Vector2(along, 0))
+					# x: the band's height share; y: page units round the ring from tile 0's left, an effect's across
+					run.band.append(Vector2(along, k * tile + x0 + w * i / cols))
 			for j in ROWS:
 				for i in cols:
 					var a := first + j * (cols + 1) + i
 					var c := a + cols + 1
 					run.index.append_array([a, a + 1, c + 1, a, c + 1, c])
 	var meshes: Array[MeshInstance3D] = []
+	var effect := effect_of(l)
 	for texture: Texture2D in runs:
 		var run: Dictionary = runs[texture]
 		var arrays := []
@@ -467,11 +498,38 @@ func _build_band(l: Dictionary, band: Dictionary) -> Dictionary:
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		# Never culled: a still band's box is round the camera, a near one's round the world.
 		instance.extra_cull_margin = 16384
-		instance.material_override = _ring_material(texture)
+		instance.material_override = _ring_material(texture, effect)
 		holder.add_child(instance)
 		meshes.append(instance)
 	add_child(holder)
-	return {"band": band, "holder": holder, "meshes": meshes, "still": still}
+	return {"band": band, "holder": holder, "meshes": meshes, "still": still, "effect": effect}
+
+
+## The effect layer `l`'s band is drawn through: its detail level's (drawn_effect, PlaxDetail), MIRROR as SWELL (its
+## sky is the flat page's, not the ring's); "" for an image drawn plain.
+static func effect_of(l: Dictionary) -> String:
+	if l.model.kind != "SHADER" or l.get("drawn_effect", "") == "":
+		return ""
+	return "SWELL" if l.drawn_effect == "MIRROR" else l.drawn_effect
+
+
+# The flat reader's numbers (PlaxEffects.apply) on an effect band's material `m`, then along() laid round the ring:
+# page units (a view 1 by 1) from the image's edge in its tile, as effect_start_x and effect_start_y take it, without
+# the scroll, which turns the ring; no glint (its sun is a place on the screen) and no dissolve's patches. Round the
+# ring the effect runs a whole number of its periods (PlaxEffects.period), stretched a little, or it would step where
+# the ring closes (three.js r58).
+func _apply_effect(m: ShaderMaterial, l: Dictionary, band: Dictionary) -> void:
+	var model: Dictionary = l.model
+	PlaxEffects.apply(m, l, background._effect_time, 1, 1)
+	var ring: float = band.repeat * (l.width + model.padX)
+	var period := PlaxEffects.period(model)
+	var stretch := maxf(1, roundf(ring / period)) * period / ring if period > 0 and ring > 0 else 1.0
+	var trim_x: float = (1 - l.trim_left) if model.flipX else l.trim_left
+	var trim_y: float = (1 - l.trim_bottom) if model.flipY else l.trim_bottom
+	m.set_shader_parameter("across", Vector3(stretch, l.width * trim_x * stretch, -1.0 if model.flipX else 1.0))
+	m.set_shader_parameter("up", Vector3(1, l.height * trim_y, -1.0 if model.flipY else 1.0))
+	m.set_shader_parameter("glint", Vector4())
+	m.set_shader_parameter("page_height", l.height)
 
 
 func _drop_band(id: int) -> void:
@@ -524,20 +582,44 @@ func _sky_tinted(c: Color) -> Color:
 # A band's material on `texture`: the page's colours mixed as the flat reader mixes them, then handed over as they are
 # (Compatibility, whose output is sRGB) or as linear (Forward+ and Mobile convert it back);
 # blended as every layer is, behind the 3D world (it tests its depth and writes none). A Nearest page (a CanvasTexture,
-# PlaxAtlas._load_texture) is sampled sharp.
-func _ring_material(texture: Texture2D) -> ShaderMaterial:
+# PlaxAtlas._load_texture) is sampled sharp. With `effect` (effect_of), that effect's shader (_ring_effect_code).
+func _ring_material(texture: Texture2D, effect := "") -> ShaderMaterial:
 	var nearest: bool = texture.get_meta("plax_nearest", false)
 	if texture is CanvasTexture:
 		texture = texture.diffuse_texture
 	var filter := "filter_nearest" if nearest else "filter_linear_mipmap"
-	if not _ring_shaders.has(filter):
+	var key := filter + effect
+	if not _ring_shaders.has(key):
 		var shader := Shader.new()
-		shader.code = RING_SHADER.replace("FILTER", filter)
-		_ring_shaders[filter] = shader
+		shader.code = _ring_effect_code(effect, filter) if effect != "" else RING_SHADER.replace("FILTER", filter)
+		_ring_shaders[key] = shader
 	var m := ShaderMaterial.new()
-	m.shader = _ring_shaders[filter]
-	m.set_shader_parameter("tex", texture)
+	m.shader = _ring_shaders[key]
+	m.set_shader_parameter("ring_tex" if effect != "" else "tex", texture)
 	return m
+
+
+# Effect `effect`'s canvas_item shader (PlaxEffects.code) as a band's spatial one: RING_EFFECT_HEAD for its first line,
+# the tint a uniform, RING_EFFECT_VERTEX for its vertex(), ring_screen for SCREEN_UV, ring_tex for TEXTURE, the haze
+# melted (RING_EFFECT_HAZE) and COLOR handed over as ALBEDO and ALPHA. A swap that finds nothing is an error: the flat
+# shader changed under it.
+static func _ring_effect_code(effect: String, filter: String) -> String:
+	var code := PlaxEffects.code(effect)
+	for swap in [
+		["shader_type canvas_item;", RING_EFFECT_HEAD.replace("FILTER", filter)],
+		["varying vec4 tint;", "uniform vec4 tint = vec4(1.0);"],
+		["void vertex() {\n\ttint = COLOR;\n}", RING_EFFECT_VERTEX],
+		["vec4 hazed(", RING_EFFECT_HAZE + "vec4 hazed("],
+		["mix(color.rgb, fog_color, haze)", "mix(color.rgb, fog_color, ring_haze())"],
+		["SCREEN_UV", "ring_screen"],
+		["TEXTURE", "ring_tex"],
+		["\tCOLOR = ", "\tvec4 ring_out = "],
+	]:
+		if not code.contains(swap[0]):
+			push_error("PlaxRings: no '%s' in %s's shader" % [swap[0], effect])
+		code = code.replace(swap[0], swap[1])
+	var end := code.rfind("}")
+	return code.substr(0, end) + "\tALBEDO = to_output(ring_out.rgb, OUTPUT_IS_SRGB);\n\tALPHA = ring_out.a;\n}\n"
 
 
 static func _sky_shader_of() -> Shader:
