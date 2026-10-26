@@ -113,6 +113,12 @@ its tint to 8 bits (PlaxEffects.packed_alpha, packed_rgb; r51, r52), but through
 (PlaxEffects.page_fogged) the tint stays a float and the haze is cut. Fed floats, cross-fades were off by up to 3/255;
 proofs: engines/godot/tools/r51-alpha-packing and r52-tint-packing (mutate.sh, thin but repeatable margins).
 plax_background.gd sits at gdlint's 1000-line cap: put new helpers in the plax_*.gd beside it.
+3D RINGS (r49): plax_rings.gd is PlaxRings, a Node3D drawing a page round a 3D world from PlaxBackground's state; its
+statics are core's ParallaxRings line for line, checked as JSON by frame-check.sh engines/rounds/rings (tests/rings.gd,
+headless, no stills; r49-rings/mutate.sh). Its look is judged in tools/rings-lab.sh (--shot DIR renders in cage) beside
+three.js's. Its shaders hand colours over as the renderer outputs them (OUTPUT_IS_SRGB; the sky's output_srgb uniform):
+under Compatibility a linear-converted colour comes out dark. A layer Dictionary hashes by content: key per-layer state
+by the ring_id it stamps, never by the dictionary.
 A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
 """
 

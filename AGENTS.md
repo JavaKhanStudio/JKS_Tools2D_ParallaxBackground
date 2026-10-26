@@ -125,9 +125,10 @@ repair.
   `tools/r371-lurker/mutate.sh` that Godot's check sees a wrong copy.
 - `ParallaxRings` (parallax-readers r47, docs/page-as-3d-sky.md) is a page round a 3D world as numbers only: each
   image layer's ring radius (`ParallaxDepth`, or compressed with `far`), elevations, height, repeat, draw order and fog
-  (`fogOf`), and the gradients by elevation. Every 3D reader ports it line for line (three.js r48, Godot r49; jME calls
-  it, r50). Change it, and its `RingsCases` and the readers' ports change with it; `engines/rounds/rings` checks the
-  ports' numbers (`./gradlew :rounds:rings`, `tools/compare-rings.py`).
+  (`fogOf`), and the gradients by elevation. Every 3D reader ports it line for line (three.js r48, Godot r49's
+  `plax_rings.gd`; jME calls it, r50). Change it, and its `RingsCases` and the readers' ports change with it;
+  `engines/rounds/rings` checks the ports' numbers (`./gradlew :rounds:rings`, `tools/compare-rings.py`), and
+  `engines/godot/tools/r49-rings/mutate.sh` that Godot's check sees a wrong copy.
 - An `EMPTY` layer (`Enum_LayerKind`, format 5) has no image: the reader calls the game's `LayerHook` per tile in its
   place, and so do `plax_background.gd` (`set_layer_hook`) and jME. A new layer kind goes in `Enum_LayerKind` (append
   only), in `plax_page.gd`'s `KINDS`, and in a round under `engines/rounds` (`effects` is EMPTY's).

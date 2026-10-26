@@ -116,5 +116,16 @@ three.js adds `eyeMelt`: the bands melt into the fog by their elevation as the c
 Simon then judged the look right (r49 and r50 port it, `eyeMelt` with it) and picked `tintSky`, off by default: the
 tint laid on the sky's gradients and the fog's colour too, so a night tint darkens the sky behind the bands.
 
+**Godot** (r49): `PlaxRings` in `engines/godot/addons/jks_parallax/plax_rings.gd`, a `Node3D`, its statics
+`ParallaxRings` line for line (the rings round passes within 1e-4 in `engines/godot/tools/frame-check.sh`, headless,
+and `engines/godot/tools/r49-rings/mutate.sh` proves it fails a port off in scale, far, order or repeat), its instance
+drawing them as three.js's does, with `eyeMelt` and `tintSky`: a `MeshInstance3D` per band and texture, unshaded, depth
+write off, ordered by `render_priority`; the gradients a sky shader (`apply_sky`). Two things a port meets in Godot:
+its 3D output is sRGB under Compatibility and linear under Forward+ and Mobile (the band shader reads
+`OUTPUT_IS_SRGB`; a sky shader has none, so the reader hands it the renderer's name), and a layer dictionary hashes by
+its contents, so a band is found again by an id stamped on its layer. Its lab: `engines/godot/tools/rings-lab.sh`, at
+Simon's look; its stills next to three.js's are on r49. A SHADER band draws its plain image there so far (three.js
+draws its effect since r53).
+
 The build: r47 (`ParallaxRings` in core and the ring round), then r48 (three.js and its lab, shown to Simon), then
 r49 (Godot) and r50 (jME).

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # frame-check.sh [ROUND_DIR] — the Godot reader (engines/godot) against the libGDX runtime, frame by frame (r87).
 #
-#   engines/godot/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet, /animated, /lurker, /glint
+#   engines/godot/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet, /animated, /lurker, /glint, /rings
 #   engines/godot/tools/frame-check.sh engines/rounds/round1
 #
 # For each round: renders its scenes with libGDX (tools/parallax-lab-shots.sh, 0, 6 and 12 s into the lab's scroll)
@@ -16,18 +16,29 @@
 # The particles round (r179) is not compared by pixels, each engine drawing its own particle system:
 # engines/godot/tests/particles.gd checks where Godot puts the particle nodes, saves its stills in godot/, and fails on
 # a FAIL in godot.log. The sequence round (r183) first runs engines/godot/tests/sequence_cycle.gd: Godot's cycle
-# generator against the JVM's picks.
+# generator against the JVM's picks. engines/rounds/rings has no stills (r49): core's ParallaxRings numbers
+# (./gradlew :rounds:rings) against PlaxRings' (engines/godot/tests/rings.gd, headless), every number within 1e-4
+# (tools/compare-rings.py); engines/godot/tools/r49-rings/mutate.sh breaks the port and expects it to FAIL.
 set -u
 cd "$(dirname "$0")/../../.." || exit 1
 ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/pixelart engines/rounds/effects engines/rounds/particles engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated engines/rounds/lurker engines/rounds/glint)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/pixelart engines/rounds/effects engines/rounds/particles engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated engines/rounds/lurker engines/rounds/glint engines/rounds/rings)
 GODOT="${GODOT:-godot}"
 status=0
 for ROUND in "${ROUNDS[@]}"; do
 	OUT=$(shots_out "$ROOT/build/godot" "$ROUND"); mkdir -p "$OUT/godot"
+	if [ "$(basename "$ROUND")" = rings ]; then
+		./gradlew -q :rounds:rings -Pround="$ROUND" -Pout="$OUT" >"$OUT/gdx.log" 2>&1 || { echo "FAIL: core's rings numbers, see $OUT/gdx.log"; status=1; continue; }
+		"$GODOT" --headless --path engines/godot --import >/dev/null 2>&1
+		"$GODOT" --headless --path engines/godot --script res://tests/rings.gd -- "$ROOT" "$ROUND" "$OUT/godot" >"$OUT/godot.log" 2>&1
+		grep -h "^FAIL" "$OUT/godot.log"
+		grep -q "^rings: .*PASS" "$OUT/godot.log" || { echo "FAIL: Godot's rings numbers, see $OUT/godot.log"; status=1; continue; }
+		python3 tools/compare-rings.py "$ROUND" "$OUT" godot || status=1
+		continue
+	fi
 	PARTICLES=0; [ "$(basename "$ROUND")" = particles ] && PARTICLES=1
 	if [ $PARTICLES = 0 ]; then
 		tools/parallax-lab-shots.sh "$ROUND" "$OUT/gdx" >/dev/null || { echo "libGDX shots failed: $OUT/gdx/lab.log"; exit 1; }

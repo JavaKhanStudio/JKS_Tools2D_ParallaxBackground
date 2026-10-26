@@ -407,6 +407,34 @@ export preset lists them under *Filters to export non-resource files* (`*.jplax,
 `filter: MipMap`, tick *Mipmaps > Generate* on its `.png` in the Import dock. Not there yet: atlas regions packed
 rotated. Unity and Unreal: see [docs/other-engines.md](docs/other-engines.md); every reader, and what a new one must have: [engines/README.md](engines/README.md).
 
+#### The page as the sky of a 3D world: `PlaxRings`
+
+A Godot 3D game can stand the page round its world instead of behind its screen
+([docs/page-as-3d-sky.md](docs/page-as-3d-sky.md)): `PlaxRings`, a `Node3D`, draws each layer that draws an image as
+an open cylinder round the world's centre, as far as its speed says, so a camera flying through the world sees the
+layers slide by perspective alone; the page's gradients become the `WorldEnvironment`'s sky, by elevation, the fog's
+colour under the horizon.
+
+```gdscript
+var bg := PlaxBackground.new()             # kept out of the tree: the rings draw it, not its canvas
+bg.load_page("res://backgrounds/calm.jplax")
+var rings := PlaxRings.new(bg, {"front": 330, "foot": 50})   # the front band at 330 units, the page's foot at 50
+add_child(rings)                           # each frame it acts bg (drift, fades, tint), then lays the bands out
+rings.apply_sky($WorldEnvironment.environment)               # the gradients as the sky
+# the Camera3D's far plane past the farthest band
+```
+
+Its options are three.js's (["In three.js"](#in-threejs), engines/threejs/README.md): core's `ParallaxRings.Options`
+(`front`, `far`, `foot`, `lift`, `scale`, `pageDegrees`, `fogStrength`, the page's own fog when left out) and the
+drawing's, `fogColor` (a `Color`), `melt` (0.22), `eyeMelt` (0), `horizon` (0.12), `tintSky` (false) and
+`renderPriority` (-120: the first of the render priorities the bands take, far first, below the game's transparent
+materials). `rings.set_options({...})` changes them; `auto_update = false` and `rings.update(0)` when the game acts the
+background itself. The bands scroll, fade with `transfert_into`, are tinted by `tint_to` and graded by
+`through_color` and `fog_creep`, as three.js's; a still layer is drawn round the camera. Not yet: a `SHADER` layer's
+effect on its band (drawn as its plain image). `PlaxRings.bands(bg.layers, bg.world_width, PlaxRings.ring_options({...}))`
+gives the numbers alone, core's to 1e-4 (`engines/godot/tools/frame-check.sh engines/rounds/rings`). Its lab:
+`engines/godot/tools/rings-lab.sh`.
+
 ### In jMonkeyEngine 3
 
 The reader's own folder, its checks and demo: [engines/jme/README.md](engines/jme/README.md).

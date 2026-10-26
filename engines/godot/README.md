@@ -4,7 +4,8 @@
 Godot 4, as the libGDX library in [`core/`](../../core) draws it. It is a GDScript port of core's
 `ParallaxPageReader`, line for line: scrolling, tiling, cross-fade, tint, the page fog, `EMPTY`, `PARTICLES`,
 `SHADER` (`plax_effects.gd`), `SEQUENCE`, `FLOOR`, `LURKER` (`plax_lurker.gd`), tower and dolly layers, and the
-detail levels (`plax_detail.gd`). It does not read `.plax` (Kryo is Java's).
+detail levels (`plax_detail.gd`); and `PlaxRings` (`plax_rings.gd`), the page as the sky of a 3D world, core's
+`ParallaxRings` drawn round it. It does not read `.plax` (Kryo is Java's).
 What each part must copy from core, and which round proves it, is in [AGENTS.md, "Runtime"](../../AGENTS.md#runtime-core).
 
 ## How a game gets it
@@ -16,7 +17,8 @@ settings and what is not there yet: the root README, ["In Godot 4"](../../README
 ## This folder
 
     addons/jks_parallax/   the reader: what a game copies
-    tests/                 the runners the frame check plays: shots.gd, particles.gd, sequence_cycle.gd; bench.gd
+    tests/                 the runners the frame check plays: shots.gd, particles.gd, sequence_cycle.gd, rings.gd;
+                           bench.gd; rings_lab.tscn, the rings lab
     demo.tscn, demo.gd     Hiver and Printemps cross-faded through the reader (SPACE, T, N)
     tools/                 this reader's checks, run from anywhere (each goes to the repository root first)
 
@@ -26,6 +28,12 @@ settings and what is not there yet: the root README, ["In Godot 4"](../../README
   [`engines/rounds`](../rounds) with libGDX and with Godot, off screen in cage, and compares them still by still at
   2/255 (`build/godot/<round>/compare.png`, `report.txt`). Without arguments it plays every round. CI's `godot-frames`
   job runs it under `xvfb-run` (`ATELIER_NO_OFFSCREEN=1`). Needs `godot` 4.x (or `GODOT=`), cage, Xwayland, Pillow.
+  `engines/rounds/rings` has no stills: core's `ParallaxRings` numbers against `PlaxRings`' (`tests/rings.gd`,
+  headless), every number within 1e-4; `tools/r49-rings/mutate.sh` breaks the port four ways and expects each to fail.
+- `tools/rings-lab.sh [K=V...]` — the rings lab: a page of the rings round round a small valley, a camera flying
+  through it, panel A at the library's depths and B compressed into `front..far`, sliders for every option, Copy
+  settings. `--shot DIR` renders its stills in cage instead (each scene at 0, 8 and 20 s of the flight, then a
+  cross-fade).
 - `tools/bench.sh [OUT_JSON]` — Godot's latency on [`engines/rounds/bench`](../rounds/bench/round.json)
   (`tests/bench.gd`): each scene's load time, then 600 frames vsync off, timed by Godot's own clocks (act, and the
   viewport's measured render time on the CPU and GPU), into `build/bench/godot.json`. Off screen in cage; not in CI.
