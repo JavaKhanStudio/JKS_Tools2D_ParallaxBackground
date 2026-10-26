@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # frame-check.sh [ROUND_DIR...] — the jMonkeyEngine reader (engines/jme) against the libGDX runtime, frame by frame (r112).
 #
-#   engines/jme/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet, /animated, /lurker and /glint
+#   engines/jme/tools/frame-check.sh                          engines/rounds/round1, /conformance, /transfer, /pixelart, /effects, /particles, /shaders, /sequence, /fog, /floor, /dolly, /tower, /planet, /animated, /lurker, /glint and /rings
 #   engines/jme/tools/frame-check.sh engines/rounds/round1
 #
 # The same rounds and stills as engines/godot/tools/frame-check.sh: libGDX's (tools/parallax-lab-shots.sh, 0, 6 and 12 s into
@@ -14,18 +14,28 @@
 # fails past its pixelsOff. BREAK=particles (no flakes), anchor (VIEW drawn as LAYER) and blend (every emitter blended
 # normally) must FAIL it (parallax-readers:r31).
 # BREAK=lurker reveals the lurker round's figure every step, always there: engines/rounds/lurker must FAIL (r370).
+# engines/rounds/rings has no stills (r50): core's ParallaxRings numbers (./gradlew :rounds:rings) against PlaxRings' as a
+# jME game loads the page (engines/jme/tests/.../JmeRingsRound, headless), every number within 1e-4 (tools/compare-rings.py).
+# BREAK=rings lays the rings out with each scene's front 1 % out: it must FAIL.
 set -u
 cd "$(dirname "$0")/../../.." || exit 1
 ROOT="$PWD"
 . tools/shots-out.sh
 THRESHOLD="${THRESHOLD:-2}"
 ROUNDS=("$@")
-[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/pixelart engines/rounds/effects engines/rounds/particles engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated engines/rounds/lurker engines/rounds/glint)
+[ ${#ROUNDS[@]} -eq 0 ] && ROUNDS=(engines/rounds/round1 engines/rounds/conformance engines/rounds/transfer engines/rounds/pixelart engines/rounds/effects engines/rounds/particles engines/rounds/shaders engines/rounds/sequence engines/rounds/fog engines/rounds/floor engines/rounds/dolly engines/rounds/tower engines/rounds/planet engines/rounds/animated engines/rounds/lurker engines/rounds/glint engines/rounds/rings)
 ./gradlew -q :jme:shotsClasspath || exit 1
 CP="$(cat engines/jme/build/shots.classpath)"
 status=0
 for ROUND in "${ROUNDS[@]}"; do
 	OUT=$(shots_out "$ROOT/build/jme" "$ROUND"); mkdir -p "$OUT/jme"
+	if [ "$(basename "$ROUND")" = rings ]; then
+		./gradlew -q :rounds:rings -Pround="$ROUND" -Pout="$OUT" >"$OUT/gdx.log" 2>&1 || { echo "FAIL: core's rings numbers, see $OUT/gdx.log"; status=1; continue; }
+		timeout 300 java -Dparallax.jme.break="${BREAK:-}" -cp "$CP" jks.tools2d.parallax.jme.JmeRingsRound "$ROUND" "$OUT/jme" >"$OUT/jme.log" 2>&1
+		grep -h "^FAIL" "$OUT/jme.log"
+		python3 tools/compare-rings.py "$ROUND" "$OUT" jme || status=1
+		continue
+	fi
 	tools/parallax-lab-shots.sh "$ROUND" "$OUT/gdx" >/dev/null || { echo "libGDX shots failed: $OUT/gdx/lab.log"; exit 1; }
 	# X11, cage's nested one: with no WAYLAND_DISPLAY, GLFW 3.4 tries the default wayland-0 first, Simon's desktop, not
 	# cage (r234). XDG_SESSION_TYPE=x11 makes it pick X11 without trying. tools/agent-screen-check.sh holds it.

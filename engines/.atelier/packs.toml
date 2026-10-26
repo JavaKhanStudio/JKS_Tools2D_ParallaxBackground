@@ -71,8 +71,15 @@ engines/jme/ is :jme, the jMonkeyEngine READER. src/ (jks.tools2d.parallax.jme: 
 JmeGradient, JmeLayerEffects) is published as parallax-background-jme with core's version. It runs core's
 ParallaxPageReader and WholePage_Model AS IS, drawing through JmeBatch, a libGDX Batch over jME: a libGDX call JmeBatch
 does not implement throws unsupported(). tests/ holds JmeParallaxShots (the frame runner) and the demo.
+RINGS (r50): PlaxRings, a Node drawing the page round a 3D world, calls core's ParallaxRings AS IS (no port) and reads
+scroll, fades and tint from the background's reader; a band's tile is core's ParallaxLayer.draw recorded by TileBatch.
+Bands: Transparent bucket, ordered only once a game calls PlaxRings.sortIn(viewPort); sky: Sky bucket. A still band
+and the sky follow the camera in their vertex shaders, so their bounds lie: their nodes are CullHint.Never. A game with
+rings disables the PlaxBackground (its preview viewport off): a disabled one must never render its stale scene.
+engines/rounds/rings is numbers only (JmeRingsRound, headless, BREAK=rings); its lab is tools/rings-lab.sh (--shot in
+cage), tools/rings-sheet.py sets it beside three.js's.
 Its scripts are engines/jme/tools/: frame-check.sh (ROUNDS it plays, compared with core's libGDX stills), bench.sh
-(build/bench/jme.json) and probe/. Each cd's to the repository root first; every window runs offscreen/in cage
+(build/bench/jme.json), rings-lab.sh and probe/. Each cd's to the repository root first; every window runs offscreen/in cage
 (tools/offscreen-lint.sh reads engines/*/tools/*.sh). CI job: jme-frames in .github/workflows/ci.yml.
 THE REFERENCE is core/ (libGDX): rounds live in core/test-data and engines/rounds (no reader owns them), read by Round
 (:rounds, engines/rounds/reader) for both ParallaxShots and JmeParallaxShots. A new round field goes in Round AND in Godot's

@@ -1376,6 +1376,18 @@ public class ParallaxPageReader implements Disposable
 	public Color getTint()
 	{return tint;}
 
+	/**
+	 * How far the transfert under way is: the incoming page's opacity in a fade, 0 to 1, what a style's ramps and grades
+	 * are read at ({@link TransfertStyle#slotRamp}); 0 outside one. For a reader that draws the layers its own way (a 3D
+	 * reader's rings, r50).
+	 */
+	public float getIncomingAlpha()
+	{return newLayerAlpha;}
+
+	/** The outgoing page's opacity in a fade, 1 to 0; 1 outside a transfert. */
+	public float getOutgoingAlpha()
+	{return oldLayerAlpha;}
+
 	public boolean isRepeatOnX()
 	{return repeatOnX;}
 

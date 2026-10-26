@@ -1,0 +1,37 @@
+// A band of PlaxRings (parallax-readers r50): a layer's image round the world, three.js's ringMaterial (plax.js) in jME.
+// PlaxRings sets the parameters each update and the render state (blended as a layer, depth tested, no depth written).
+MaterialDef PlaxRing {
+
+    MaterialParameters {
+        Texture2D ColorMap
+        // The background's tint, packed as libGDX packs a batch colour, the cross-fade's alpha in it (alpha / 254).
+        Vector4 Tint : 1.0 1.0 1.0 1.0
+        // The fog's colour, the band's haze (ParallaxPageReader.fogOf), its melt up its bottom and by elevation.
+        Vector3 FogColor : 0.93 0.95 0.97
+        Float Haze : 0.0
+        Float Melt : 0.0
+        Float EyeMelt : 0.0
+        // A transfert through a colour: the colour, and how much the band is mixed toward it.
+        Vector4 Grade : 0.0 0.0 0.0 0.0
+        // A still band: on the sky round the camera, its positions directions only.
+        Boolean Still
+    }
+
+    Technique {
+        VertexShader   GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/PlaxRing.vert
+        FragmentShader GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/PlaxRing.frag
+
+        WorldParameters {
+            WorldViewProjectionMatrix
+            WorldMatrix
+            ViewMatrix
+            ProjectionMatrix
+            CameraPosition
+            FrustumNearFar
+        }
+
+        Defines {
+            STILL : Still
+        }
+    }
+}

@@ -127,5 +127,14 @@ its contents, so a band is found again by an id stamped on its layer. Its lab: `
 Simon's look; its stills next to three.js's are on r49. A SHADER band draws its plain image there so far (three.js
 draws its effect since r53).
 
+**jME** (r50): `PlaxRings` in `engines/jme/src`, a `Node`. jME runs core as is, so it calls `ParallaxRings` itself (the
+rings round passes within 1e-4 through `JmeRingsRound`, headless, which loads each page as a jME game does) and reads
+the scroll, cross-fade and tint from the background's own `ParallaxPageReader` (`getIncomingAlpha` and
+`getOutgoingAlpha`, added to core for it). A band's tile is what core's `ParallaxLayer.draw` lays out, recorded and
+curved round the ring; its geometries are in the Transparent bucket, ordered by a comparator (`PlaxRings.sortIn`), the
+sky in the Sky bucket; a still band and the sky follow the camera in their vertex shaders (the view's turn only, as
+jME's own sky). Its lab: `engines/jme/tools/rings-lab.sh`, at Simon's look, its ground lit as three.js's: beside
+three.js's stills its sky and bands differ by 0.05 / 255. A SHADER band draws its plain image so far.
+
 The build: r47 (`ParallaxRings` in core and the ring round), then r48 (three.js and its lab, shown to Simon), then
 r49 (Godot) and r50 (jME).

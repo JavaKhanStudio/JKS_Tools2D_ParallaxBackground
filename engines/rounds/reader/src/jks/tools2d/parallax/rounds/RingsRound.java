@@ -57,8 +57,8 @@ public final class RingsRound
 		}
 	}
 
-	/** The scene's options, over the defaults; its fog the page's unless it names one. */
-	static Options options(JsonValue rings, WholePage_Model page)
+	/** The scene's options, over the defaults; its fog the page's unless it names one. jME's runner reads them too (r50). */
+	public static Options options(JsonValue rings, WholePage_Model page)
 	{
 		Options o = new Options();
 		o.fogStrength = page.getFogStrength();
@@ -109,8 +109,8 @@ public final class RingsRound
 		};
 	}
 
-	/** Numbers with 7 significant digits; a still ring's infinite radius is null. */
-	static String json(List<Band> bands, Gradient g, Options o)
+	/** Numbers with 7 significant digits; a still ring's infinite radius is null. jME's runner writes its own with it (r50). */
+	public static String json(List<Band> bands, Gradient g, Options o)
 	{
 		StringBuilder s = new StringBuilder("{\n \"options\": {");
 		s.append("\"front\": ").append(num(o.front)).append(", \"far\": ").append(num(o.far)).append(", \"foot\": ").append(num(o.foot))

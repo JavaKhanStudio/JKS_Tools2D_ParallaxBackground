@@ -106,7 +106,8 @@ public class PlaxBackground extends BaseAppState
 		viewPort.setClearFlags(true, true, true);
 		viewPort.setBackgroundColor(com.jme3.math.ColorRGBA.Black);
 		viewPort.attachScene(root);
-		app.getViewPort().setClearColor(false);
+		// onEnable turns it on, and stops the application's clearing: a background disabled before it was attached never is.
+		viewPort.setEnabled(false);
 		batch = new JmeBatch(assets, layers, 2);
 		reader.setLayerEffects(new JmeLayerEffects(assets));
 		resize(appCamera.getWidth(), appCamera.getHeight());
@@ -124,13 +125,26 @@ public class PlaxBackground extends BaseAppState
 		batch.dispose();
 	}
 
+	/** Drawn again: its viewport on, and the application's no longer clearing its colour. */
 	@Override
 	protected void onEnable()
-	{root.setCullHint(CullHint.Never);}
+	{
+		root.setCullHint(CullHint.Never);
+		viewPort.setEnabled(true);
+		getApplication().getViewPort().setClearColor(false);
+	}
 
+	/**
+	 * Not drawn, while it still moves when the game acts it (PlaxRings draws it so, r50): its viewport off, as render()
+	 * no longer updates its scene (a page set then would leave it stale), and the application's clearing its colour.
+	 */
 	@Override
 	protected void onDisable()
-	{root.setCullHint(CullHint.Always);}
+	{
+		root.setCullHint(CullHint.Always);
+		viewPort.setEnabled(false);
+		getApplication().getViewPort().setClearColor(true);
+	}
 
 	/**
 	 * Shows {@code model}, its layers built from {@code atlas}, from their decal positions; its PARTICLES layers' .p
@@ -320,6 +334,17 @@ public class PlaxBackground extends BaseAppState
 
 	public WholePage_Model getPage()
 	{return page;}
+
+	/** The page a cross-fade under way brings in; null outside one. */
+	public WholePage_Model getTransfertPage()
+	{return transfertPage;}
+
+	/** The two gradients, their colours as the cross-fade has them now (PlaxRings' sky): null before a page. */
+	JmeGradient topGradient()
+	{return top;}
+
+	JmeGradient bottomGradient()
+	{return bottom;}
 
 	public ParallaxPageReader getReader()
 	{return reader;}

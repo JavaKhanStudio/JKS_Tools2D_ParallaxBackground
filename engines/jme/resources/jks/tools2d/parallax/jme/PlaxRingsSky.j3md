@@ -1,0 +1,29 @@
+// The sky of PlaxRings (parallax-readers r50): the page's gradients by elevation (ParallaxRings.gradient), the fog under
+// the horizon, on a sphere round the camera in the Sky bucket. three.js's skyMesh (plax.js) in jME.
+MaterialDef PlaxRingsSky {
+
+    MaterialParameters {
+        // Each gradient's bottom (from) and top (to) colours, packed to 8 bits a channel.
+        Vector3 TopFrom : 1.0 1.0 1.0
+        Vector3 TopTo : 1.0 1.0 1.0
+        Vector3 BottomFrom : 1.0 1.0 1.0
+        Vector3 BottomTo : 1.0 1.0 1.0
+        // The elevations each spans, radians.
+        Vector2 Top : 0.0 1.0
+        Vector2 Bottom : 0.0 1.0
+        Vector3 FogColor : 0.93 0.95 0.97
+        // Up to which elevation the fog fades into the gradients.
+        Float Horizon : 0.12
+    }
+
+    Technique {
+        VertexShader   GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/PlaxRingsSky.vert
+        FragmentShader GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/PlaxRingsSky.frag
+
+        WorldParameters {
+            ViewMatrix
+            ProjectionMatrix
+            FrustumNearFar
+        }
+    }
+}
