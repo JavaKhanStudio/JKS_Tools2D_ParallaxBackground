@@ -1,0 +1,58 @@
+// A SHADER layer's band of PlaxRings (parallax-readers r61): ParallaxEffect.frag's WAVE, FOG or SWELL with RING defined,
+// on PlaxRing.vert's ring, three.js's ringEffectMaterial (plax.js) in jME. PlaxRings sets the parameters each update: the
+// flat reader's (GdxLayerEffects.uniforms), Across and Up laid round the ring, and PlaxRing.j3md's tint, fog and melts.
+MaterialDef PlaxRingEffect {
+
+    MaterialParameters {
+        Texture2D ColorMap
+        // ParallaxEffect.j3md's: the region, the image's size, amplitude, wavelength and phase, the effect's kind.
+        Vector4 Region
+        Vector2 Size
+        Vector3 Effect
+        Boolean Fog
+        Boolean Swell
+        // Across: how far along() runs per page unit round the ring (stretched to a whole number of periods), where it
+        // starts, 1 or -1 (flipped); Up the same up the band.
+        Vector3 Across : 1.0 0.0 1.0
+        Vector3 Up : 1.0 0.0 1.0
+        Vector2 Wrap : 1.0 0.0
+        // No glint (its sun is a place on the screen), no dissolve's patches: left at none.
+        Vector4 Glint : 0.0 0.0 0.0 0.0
+        Vector2 Sun : 0.5 0.3
+        Vector4 GlintA : 0.0 0.0 0.0 0.0
+        Vector4 GlintB : 0.0 0.0 1.0 1.0
+        Vector4 Dissolve : 0.0 0.0 0.0 0.0
+        Vector2 Cells : 0.0 0.0
+        // PlaxRing.j3md's.
+        Vector4 Tint : 1.0 1.0 1.0 1.0
+        Vector3 FogColor : 0.93 0.95 0.97
+        Float Haze : 0.0
+        Float Melt : 0.0
+        Float EyeMelt : 0.0
+        Vector4 Grade : 0.0 0.0 0.0 0.0
+        Boolean Still
+        // Always true: RING, the band's inputs and melt in the effect's shaders.
+        Boolean Ring : true
+    }
+
+    Technique {
+        VertexShader   GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/PlaxRing.vert
+        FragmentShader GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/ParallaxEffect.frag
+
+        WorldParameters {
+            WorldViewProjectionMatrix
+            WorldMatrix
+            ViewMatrix
+            ProjectionMatrix
+            CameraPosition
+            FrustumNearFar
+        }
+
+        Defines {
+            FOG : Fog
+            SWELL : Swell
+            STILL : Still
+            RING : Ring
+        }
+    }
+}

@@ -64,7 +64,14 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  */
 public class JmeRingsLab extends SimpleApplication
 {
-	private static final String ROUND = "engines/rounds/rings";
+	/**
+	 * The round whose pages the lab draws: engines/rounds/rings, or round=NAME another of engines/rounds (round=shaders: the
+	 * SHADER effects on a band, r61), round=/DIR a folder from the repository root (/engines/threejs/tests/rings-seam:
+	 * r58's join); its scenes' rings fits unused. As three.js's ?round=.
+	 */
+	private static String round = "engines/rounds/rings";
+	/** -Dparallax.jme.break=ringeffect draws every SHADER band's image plain (PlaxRings.effects off): r61's mutant. */
+	private static final boolean BREAK_EFFECT = "ringeffect".equals(System.getProperty("parallax.jme.break"));
 	private static final int CONTROLS = 300;
 	private static final String[] VIEWS = { "both", "a", "b" };
 
@@ -78,13 +85,13 @@ public class JmeRingsLab extends SimpleApplication
 		{ "worldFog", "world fog far", 200f, 3000f, 10f, "Fog" },
 		{ "dusk", "dusk tint", 0f, 1f, 0.01f, "World" }, { "tintSky", "tint sky (0/1)", 0f, 1f, 1f, "World" },
 		{ "orbit", "flight radius", 20f, 240f, 5f, "World" }, { "height", "flight height", 5f, 120f, 1f, "World" },
-		{ "speed", "flight speed", 0f, 3f, 0.05f, "World" },
+		{ "speed", "flight speed", 0f, 3f, 0.05f, "World" }, { "look", "look (deg)", -180f, 180f, 1f, "World" },
 	};
 	/** Simon's look on r48 (26 Oct): a low flight, the bands compressed into 510..3000, 28 degrees of page, the eye melt. */
 	private static final Map<String, Float> DEFAULTS = new LinkedHashMap<>();
 	static
 	{
-		float[] values = { 510, 3000, 51, -2, 1, 28, 0, 0, 0.3f, 0.5f, 200, 0, 0, 60, 10, 0.4f };
+		float[] values = { 510, 3000, 51, -2, 1, 28, 0, 0, 0.3f, 0.5f, 200, 0, 0, 60, 10, 0.4f, 0 };
 		for (int i = 0; i < KNOBS.length; i++)
 			DEFAULTS.put((String) KNOBS[i][0], values[i]);
 	}
@@ -136,6 +143,11 @@ public class JmeRingsLab extends SimpleApplication
 				shot = Paths.get(args[++i]);
 			else if (args[i].equals("--scenes"))
 				scenes = List.of(args[++i].trim().split("\\s+"));
+			else if (args[i].startsWith("round="))
+			{
+				String r = args[i].substring("round=".length());
+				round = r.startsWith("/") ? r.substring(1) : "engines/rounds/" + r;
+			}
 			else if (args[i].contains("="))
 				given.put(args[i].substring(0, args[i].indexOf('=')), Float.parseFloat(args[i].substring(args[i].indexOf('=') + 1)));
 		JmeRingsLab app = new JmeRingsLab(shot, scenes, given);
@@ -162,7 +174,7 @@ public class JmeRingsLab extends SimpleApplication
 		assetManager.registerLocator(Paths.get("").toAbsolutePath().toString(), FileLocator.class);
 		try
 		{
-			for (JsonValue s = new JsonReader().parse(Files.readString(Paths.get(ROUND, "round.json"))).get("scenes").child; s != null; s = s.next)
+			for (JsonValue s = new JsonReader().parse(Files.readString(Paths.get(round, "round.json"))).get("scenes").child; s != null; s = s.next)
 				scenes.add(s);
 		}
 		catch (IOException e)
@@ -176,6 +188,7 @@ public class JmeRingsLab extends SimpleApplication
 
 		ringsA = new PlaxRings(assetManager, bg);
 		ringsB = new PlaxRings(assetManager, bg);
+		ringsA.effects = ringsB.effects = !BREAK_EFFECT;
 		cam.setFrustumPerspective(60, 1, 0.5f, 20000);
 		camB = cam.clone();
 		sceneB = new Node("panel B");
@@ -318,12 +331,12 @@ public class JmeRingsLab extends SimpleApplication
 		return t * t * (3 - 2 * t);
 	}
 
-	/** The camera round the valley, looking ahead and out toward the ridge and the sky. */
+	/** The camera round the valley, looking ahead and out toward the ridge and the sky, turned by look degrees. */
 	private void fly(Camera camera, float t)
 	{
 		float a = t * 0.12f, r = knobs.get("orbit"), y = knobs.get("height") + 6 * FastMath.sin(t * 0.3f);
 		camera.setLocation(new Vector3f(r * FastMath.sin(a), y, -r * FastMath.cos(a)));
-		float heading = a + FastMath.HALF_PI - 0.6f;
+		float heading = a + FastMath.HALF_PI - 0.6f + knobs.get("look") * FastMath.DEG_TO_RAD;
 		camera.lookAt(new Vector3f(camera.getLocation().x + FastMath.sin(heading) * 100, y + 14,
 				camera.getLocation().z - FastMath.cos(heading) * 100), Vector3f.UNIT_Y);
 	}
@@ -686,6 +699,30 @@ public class JmeRingsLab extends SimpleApplication
 		ringsB.update(0);
 	}
 
+	/**
+	 * The look (degrees) that turns the camera, at the flight now, to where panel B's band of the first SHADER layer
+	 * closes its ring (its tile repeat-1 meeting tile 0, at the band's angle 0, turned by the scroll as PlaxRings.sync
+	 * turns it); null for a page without one. three.js's ringsLab.lookAtJoin (r58).
+	 */
+	private Float lookAtJoin()
+	{
+		List<jks.tools2d.parallax.ParallaxLayer> layers = bg.getReader().layers;
+		for (Band band : ringsB.bands())
+		{
+			jks.tools2d.parallax.ParallaxLayer l = layers.get(band.layer);
+			if (l.getDrawnEffect() == null)
+				continue;
+			float tile = l.getTotalWidth();
+			float turned = tile > 0 ? l.getCurrentDistanceX() / tile * FastMath.TWO_PI / band.repeat : 0, R = band.radius;
+			float a = flight * 0.12f, r = knobs.get("orbit");
+			float dx = R * FastMath.sin(turned) - r * FastMath.sin(a), dz = -R * FastMath.cos(turned) + r * FastMath.cos(a);
+			float heading = FastMath.atan2(dx, -dz);
+			float look = ((heading - (a + FastMath.HALF_PI - 0.6f)) * FastMath.RAD_TO_DEG + 540) % 360 - 180;
+			return (float) Math.round(look);
+		}
+		return null;
+	}
+
 	private void step(float t)
 	{
 		bg.act(t);
@@ -701,6 +738,17 @@ public class JmeRingsLab extends SimpleApplication
 			steps.add(new Object[] { (Runnable) () -> loadScene(scene), null });
 			for (int t : new int[] { 0, 8, 20 })
 				steps.add(new Object[] { (Runnable) () -> at(t), scene + "-both-t" + t + ".png" });
+			// A page with a SHADER layer: panel B turned to where its band closes the ring (r58), at 8 s; the scene's
+			// look put back after. Planned now, it is named when its page is loaded: a still only for such a page.
+			steps.add(new Object[] { (Runnable) () -> {
+				at(8);
+				Float look = lookAtJoin();
+				if (look != null)
+				{
+					steps.add(0, new Object[] { (Runnable) () -> { knobs.put("look", look); at(8); }, scene + "-join-t8.png" });
+					steps.add(1, new Object[] { (Runnable) () -> { knobs.put("look", opened.get("look")); at(8); }, null });
+				}
+			}, null });
 		}
 		String last = shotScenes.get(shotScenes.size() - 1);
 		// A cross-fade into the next scene's page, halfway (2 s of 4): both pages' bands at their alphas.

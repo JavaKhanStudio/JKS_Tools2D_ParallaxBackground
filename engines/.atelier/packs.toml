@@ -76,6 +76,9 @@ scroll, fades and tint from the background's reader; a band's tile is core's Par
 Bands: Transparent bucket, ordered only once a game calls PlaxRings.sortIn(viewPort); sky: Sky bucket. A still band
 and the sky follow the camera in their vertex shaders, so their bounds lie: their nodes are CullHint.Never. A game with
 rings disables the PlaxBackground (its preview viewport off): a disabled one must never render its stale scene.
+A SHADER band (r61) is PlaxRingEffect.j3md: ParallaxEffect.frag with RING defined on PlaxRing.vert, so a change to
+ParallaxEffect.frag's hazed() or along() reaches the rings too: rerun tools/rings-lab.sh --shot with
+round=/engines/threejs/tests/rings-seam SCENES=j01, and tools/ring-join.py on its join-t8 against BREAK=ringeffect's.
 engines/rounds/rings is numbers only (JmeRingsRound, headless, BREAK=rings); its lab is tools/rings-lab.sh (--shot in
 cage), tools/rings-sheet.py sets it beside three.js's.
 Its scripts are engines/jme/tools/: frame-check.sh (ROUNDS it plays, compared with core's libGDX stills), bench.sh

@@ -45,11 +45,31 @@ float dissolved()
     return m_Dissolve.x < 1.5 ? 1.0 - m : m;
 }
 
+#ifdef RING
+// PlaxRings (PlaxRingEffect.j3md, r61): a band's melt into the fog, by its own height (m_Melt) and as the camera sees it
+// (m_EyeMelt), as PlaxRing.frag melts a plain band.
+uniform float m_Melt;
+uniform float m_EyeMelt;
+varying float band;
+varying vec3 fromEye;
+float ringMelted()
+{
+    float melted = m_Melt > 0.0 ? 1.0 - smoothstep(0.0, m_Melt, band) : 0.0;
+    if (m_EyeMelt > 0.0)
+        melted = max(melted, 1.0 - smoothstep(0.0, m_EyeMelt, asin(clamp(normalize(fromEye).y, -1.0, 1.0))));
+    return melted;
+}
+#endif
+
 // The color mixed toward the fog's colour by the depth fog, then toward m_Grade's rgb by its a (a transfert through a
 // colour, LayerEffects.setGrade), its alpha times dissolved(); at 0, no grade and no dissolve the color itself.
 vec4 hazed(vec4 color)
 {
-    return vec4(mix(mix(color.rgb, m_FogColor, m_Haze), m_Grade.rgb, m_Grade.a), color.a * dissolved());
+    float haze = m_Haze;
+#ifdef RING
+    haze = m_Haze + (1.0 - m_Haze) * ringMelted();
+#endif
+    return vec4(mix(mix(color.rgb, m_FogColor, haze), m_Grade.rgb, m_Grade.a), color.a * dissolved());
 }
 
 // Where the fragment is in the image, in world units from its bottom-left.

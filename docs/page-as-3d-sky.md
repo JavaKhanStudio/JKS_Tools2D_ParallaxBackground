@@ -124,8 +124,8 @@ write off, ordered by `render_priority`; the gradients a sky shader (`apply_sky`
 its 3D output is sRGB under Compatibility and linear under Forward+ and Mobile (the band shader reads
 `OUTPUT_IS_SRGB`; a sky shader has none, so the reader hands it the renderer's name), and a layer dictionary hashes by
 its contents, so a band is found again by an id stamped on its layer. Its lab: `engines/godot/tools/rings-lab.sh`, at
-Simon's look; its stills next to three.js's are on r49. A SHADER band draws its plain image there so far (three.js
-draws its effect since r53).
+Simon's look; its stills next to three.js's are on r49. A SHADER band draws its effect since r59, as three.js's
+since r53 and r58.
 
 **jME** (r50): `PlaxRings` in `engines/jme/src`, a `Node`. jME runs core as is, so it calls `ParallaxRings` itself (the
 rings round passes within 1e-4 through `JmeRingsRound`, headless, which loads each page as a jME game does) and reads
@@ -134,7 +134,11 @@ the scroll, cross-fade and tint from the background's own `ParallaxPageReader` (
 curved round the ring; its geometries are in the Transparent bucket, ordered by a comparator (`PlaxRings.sortIn`), the
 sky in the Sky bucket; a still band and the sky follow the camera in their vertex shaders (the view's turn only, as
 jME's own sky). Its lab: `engines/jme/tools/rings-lab.sh`, at Simon's look, its ground lit as three.js's: beside
-three.js's stills its sky and bands differ by 0.05 / 255. A SHADER band draws its plain image so far.
+three.js's stills its sky and bands differ by 0.05 / 255. A SHADER band (r61) draws its effect through
+`PlaxRingEffect.j3md`: the flat reader's `ParallaxEffect.frag` with `RING` defined, its `viewPos` the image's page
+units round the ring, stretched to a whole number of the effect's periods; on g03 its sky is 0.13 / 255 off three.js's,
+and on three.js's join fixture (`round=/engines/threejs/tests/rings-seam`) `tools/ring-join.py` measures the join's
+worst column jump at 2.6 against the effect's own 3.3 (7.8 unstretched).
 
 The build: r47 (`ParallaxRings` in core and the ring round), then r48 (three.js and its lab, shown to Simon), then
 r49 (Godot) and r50 (jME).

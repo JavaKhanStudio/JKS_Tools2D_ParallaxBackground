@@ -58,14 +58,17 @@ slide by perspective alone; the page's gradients a sphere round the camera, the 
     // each frame: rings.update(tpf);          // acts the background (drift, fades, tint), then lays the rings out
 
 Its fields are three.js's options: `front`, `far`, `foot`, `lift`, `scale`, `pageDegrees`, `fogStrength` (NaN: the
-page's), `fogColor` (null: the page's), `melt`, `eyeMelt`, `horizon` and `tintSky`. The bands are in the Transparent
+page's), `fogColor` (null: the page's), `melt`, `eyeMelt`, `horizon`, `tintSky` and `effects` (true). The bands are in the Transparent
 bucket, depth tested and writing no depth (the world drawn before them stays in front); they share a centre, so
 `sortIn` gives that bucket a comparator that draws them before the rest, far first. The sky is in the Sky bucket. A
 band's image is each tile core's own `ParallaxLayer.draw` lays out (regions inset by half a texel, trims, flips, a
 SEQUENCE layer's cycle), recorded and curved round the ring; a still layer is on the sky round the camera. The scroll,
 cross-fades (every transfert style: a fade, a stagger, a dissolve by its share, through a colour) and the tint are the
-background's reader's. FLOOR, the dolly, towers, the planet and an animated patch are 2D ways to fake depth: a band
-draws its layer's image plain, as three.js's do.
+background's reader's. A `SHADER` layer's band draws its effect (`WAVE`, `FOG`, `SWELL`; `MIRROR` as `SWELL`) on the
+background's clock, as three.js's: `PlaxRingEffect.j3md` runs `ParallaxEffect.frag` with `RING` defined, its noise laid
+round the ring in page units and stretched to a whole number of its periods so the ring closes without a step; no glint
+and no dissolve's patches on a band. `rings.effects = false` draws it plain. FLOOR, the dolly, towers, the planet and an
+animated patch are 2D ways to fake depth: a band draws its layer's image plain, as three.js's do.
 
 **The lab**: `tools/rings-lab.sh` (the board's `jme-rings-lab`), three.js's rings lab in jME, opening at Simon's look
 on r48: a valley, a ridge at the page's foot, a camera flying round; panel A at the library's depths, B compressed into
@@ -73,7 +76,10 @@ front..far (a click on a panel zooms it). On the left the view pick, the scene, 
 click), left/right or the wheel move (shift: ten steps), V view, N next scene, F a cross-fade into it, Space pause, R
 reset, C Copy settings (JSON on the clipboard and in `build/jme/rings-lab/settings.json`). Its ground is lit as
 three.js's lab lights it, so beside three.js's stills (`tools/rings-sheet.py`) the sky and bands differ by 0.05 / 255
-and the whole panel by 2.3 (the ground's fog, mixed in sRGB here, in linear there).
+and the whole panel by 2.3 (the ground's fog, mixed in sRGB here, in linear there). `round=shaders` or
+`round=/engines/threejs/tests/rings-seam` draws another round's pages, as three.js's lab; a page with a SHADER layer adds
+`<scene>-join-t8.png`, panel B turned (the `look` knob) to where that band closes its ring, and `BREAK=ringeffect`
+draws every SHADER band plain. `tools/ring-join.py JOIN PLAIN` measures the step at that join (r61).
 
 ## Demo
 

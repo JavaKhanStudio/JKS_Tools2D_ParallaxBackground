@@ -168,6 +168,7 @@ moves 0.15 to 0.66 / 255, under the 2 / 255 mean), so the round also fails past 
 blended normally, q11 and q12) fail it.
 **The rings** (parallax-readers r50): `PlaxRings`, a `Node` drawing the page round a 3D world from core's
 `ParallaxRings` as is (docs/page-as-3d-sky.md); `engines/rounds/rings` passes through `JmeRingsRound` within 1e-4.
+A SHADER layer's band draws its effect, `ParallaxEffect.frag` with `RING` defined (r61).
 **Not there yet:** atlas regions packed rotated (as in Godot), and assets in an Android jME game (tried on the desktop
 only). **In CI** (r115): the `jme-frames` job of `.github/workflows/ci.yml` (its own job since parallax-readers:r10; before,
 it ran after the Godot rounds in `godot-frames`) runs `engines/jme/tools/frame-check.sh` on Xvfb and Mesa llvmpipe, and fails on a FAIL. There, on 2026-09-30 (llvmpipe, LLVM 20.1.2),

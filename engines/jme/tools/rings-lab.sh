@@ -10,6 +10,12 @@
 #                                                     scene cross-fading into the next, half way and done, and Copy settings
 #                                                     checked (DIR/settings.json); fails on a jME error or warning in DIR/lab.log
 #   engines/jme/tools/rings-lab.sh --shot DIR K=V...  the same with knobs started at values (front=500 far=1200 ...)
+#                                                     (round=shaders SCENES="s08 s09": another round's pages; round=/DIR a
+#                                                     folder from the repository root) and, for a page with a SHADER
+#                                                     layer, <scene>-join-t8.png: panel B turned to where that band closes
+#                                                     its ring (r61, as three.js's r58)
+#   BREAK=ringeffect ... --shot DIR                   every SHADER band drawn plain: r61's mutant (shoot it into
+#                                                     build/jme/.mutant/, never beside the real stills)
 #
 # Needs a JDK; --shot needs cage and Xwayland (tools/nested-x.sh).
 # on-screen: with no argument this is the rings lab, a window Simon asked for; --shot runs in cage.
@@ -33,7 +39,7 @@ fi
 
 mkdir -p "$OUT"
 # X11, cage's nested one, as engines/jme/tools/frame-check.sh runs its runner (r234).
-RUN="env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 java -cp \"$CP\" $MAIN --shot \"$OUT\" --scenes \"${SCENES:-g02 g01 g04}\" $* >\"$OUT/lab.log\" 2>&1"
+RUN="env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 java -Dparallax.jme.break=${BREAK:-} -cp \"$CP\" $MAIN --shot \"$OUT\" --scenes \"${SCENES:-g02 g01 g04}\" $* >\"$OUT/lab.log\" 2>&1"
 WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- tools/nested-x.sh 1600x760 bash -c "$RUN" >"$OUT/cage.log" 2>&1
 grep -m1 -i "renderer:" "$OUT/lab.log"
 # A lab draws clean: a shader that did not compile, a GL error or an exception fails it.

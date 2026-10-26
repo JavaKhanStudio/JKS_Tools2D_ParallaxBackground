@@ -29,12 +29,14 @@ import com.jme3.scene.shape.Sphere;
 import com.jme3.texture.Texture2D;
 import com.jme3.util.BufferUtils;
 
+import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
 import jks.tools2d.parallax.ParallaxPageReader;
 import jks.tools2d.parallax.ParallaxRings;
 import jks.tools2d.parallax.ParallaxRings.Band;
 import jks.tools2d.parallax.ParallaxRings.Gradient;
 import jks.tools2d.parallax.TransfertStyle;
+import jks.tools2d.parallax.pages.Enum_ShaderEffect;
 import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
@@ -58,8 +60,10 @@ import jks.tools2d.parallax.pages.WholePage_Model;
  * front; {@link #sortIn} gives that bucket a comparator that draws them first, far first. The sky is in the Sky bucket.
  * A band's image is each tile of its layer as core draws it (its regions inset by half a texel, trimmed and flipped, a
  * SEQUENCE layer's cycle), curved round the ring, its texture linear in angle and in elevation; a still layer's band is
- * on the sky round the camera. FLOOR, the dolly, towers, the planet and an animated patch are 2D ways to fake depth the
- * world now gives: a band draws its layer's image plain, as three.js's do.
+ * on the sky round the camera. A SHADER layer's band draws its effect (WAVE, FOG, SWELL; MIRROR as SWELL) as the flat
+ * reader does, round the ring a whole number of its periods (r61, three.js's r53 and r58). FLOOR, the dolly, towers, the
+ * planet and an animated patch are 2D ways to fake depth the world now gives: a band draws its layer's image plain, as
+ * three.js's do.
  */
 public class PlaxRings extends Node
 {
@@ -93,6 +97,8 @@ public class PlaxRings extends Node
 	public float horizon = 0.12f;
 	/** The background's tint laid on the sky's gradients and the fog's colour too, not only on the bands. */
 	public boolean tintSky;
+	/** A SHADER layer's band draws its effect; false: its image plain, as an IMAGE layer's (the lab's mutant). */
+	public boolean effects = true;
 
 	private final AssetManager assets;
 	private final PlaxBackground background;
@@ -105,10 +111,15 @@ public class PlaxRings extends Node
 	/** The page on screen's bands and gradient, as the last update laid them out. */
 	private List<Band> bands = new ArrayList<>();
 	private Gradient gradient;
+	private final float[] numbers = new float[9];
 
 	private static final class Built
 	{
 		Band band;
+		/** The effect its band is drawn through, null for its image plain ({@link PlaxRings#effectOf}). */
+		Enum_ShaderEffect effect;
+		/** Where the effect starts in its tile, in page units: the image's left edge (right when flipped), its bottom (top). */
+		float startX, startY;
 		final Node holder = new Node("plax ring");
 		final List<Geometry> geometries = new ArrayList<>();
 	}
@@ -254,7 +265,7 @@ public class PlaxRings extends Node
 	private Built sync(ParallaxLayer layer, Band band, WholePage_Model page, boolean isIncoming, int slot, int total)
 	{
 		Built b = built.get(layer);
-		if (b == null || !same(b.band, band))
+		if (b == null || !same(b.band, band) || b.effect != effectOf(layer))
 		{
 			if (b != null)
 				drop(layer, b);
@@ -305,8 +316,35 @@ public class PlaxRings extends Node
 				m.setVector4("Grade", new com.jme3.math.Vector4f(style.getColorR(), style.getColorG(), style.getColorB(), grade));
 			else
 				m.setVector4("Grade", new com.jme3.math.Vector4f(0, 0, 0, 0));
+			if (b.effect != null)
+				effectOn(m, layer, b, band, reader);
 		}
 		return b;
+	}
+
+	/**
+	 * A SHADER band's numbers: the flat reader's ({@link GdxLayerEffects#uniforms}, the phase on the reader's effect
+	 * clock), then along() laid round the ring, in page units from the image's edge in its tile, as getEffectStartX and
+	 * getEffectStartY take it, without the scroll, which turns the ring. Round the ring the effect runs a whole number of
+	 * its periods, stretched a little, or it would step where the ring closes (three.js's r58).
+	 */
+	private void effectOn(Material m, ParallaxLayer layer, Built b, Band band, ParallaxPageReader reader)
+	{
+		GdxLayerEffects.uniforms(layer, layer.getShaderPhase(reader.getEffectTime()), numbers);
+		m.setVector4("Region", new com.jme3.math.Vector4f(numbers[0], numbers[1], numbers[2], numbers[3]));
+		m.setVector2("Size", new com.jme3.math.Vector2f(numbers[4], numbers[5]));
+		m.setVector3("Effect", new Vector3f(numbers[6], numbers[7], numbers[8]));
+		float round = band.repeat * layer.getTotalWidth(), period = layer.getShaderPeriod();
+		float stretch = period > 0 && round > 0 ? Math.max(1, Math.round(round / period)) * period / round : 1;
+		m.setVector3("Across", new Vector3f(stretch, b.startX * stretch, layer.isFlipX() ? -1 : 1));
+		m.setVector3("Up", new Vector3f(1, b.startY, layer.isFlipY() ? -1 : 1));
+	}
+
+	/** The effect layer {@code layer}'s band is drawn through: its detail level's, MIRROR as SWELL (its sky is the flat page's); null plain. */
+	private Enum_ShaderEffect effectOf(ParallaxLayer layer)
+	{
+		Enum_ShaderEffect e = effects ? layer.getDrawnEffect() : null;
+		return e == Enum_ShaderEffect.MIRROR ? Enum_ShaderEffect.SWELL : e;
 	}
 
 	/** Whether two bands of one layer are laid out alike: then its meshes stand. */
@@ -330,6 +368,7 @@ public class PlaxRings extends Node
 		float radius = still ? 1 : band.radius, footY = still ? 0 : foot;
 		float tile = layer.getTotalWidth(), high = layer.getRegionHeight(), turn = FastMath.TWO_PI / band.repeat;
 		List<TileBatch.Quad> quads = tiles.capture(layer);
+		Enum_ShaderEffect effect = effectOf(layer);
 		Map<Texture2D, Run> runs = new LinkedHashMap<>();
 		for (int k = 0; k < band.repeat; k++)
 			for (TileBatch.Quad q : quads)
@@ -348,7 +387,8 @@ public class PlaxRings extends Node
 					for (int i = 0; i <= cols; i++)
 					{
 						float a = k * turn + (q.x0 + w * i / cols) / tile * turn;
-						run.add(radius * FastMath.sin(a), height, -radius * FastMath.cos(a), q.u0 + (q.u1 - q.u0) * i / cols, v, along);
+						run.add(radius * FastMath.sin(a), height, -radius * FastMath.cos(a), q.u0 + (q.u1 - q.u0) * i / cols, v, along,
+								k * tile + q.x0 + w * i / cols, y);
 					}
 				}
 				for (int j = 0; j < ROWS; j++)
@@ -360,13 +400,20 @@ public class PlaxRings extends Node
 			}
 		Built b = new Built();
 		b.band = band;
+		b.effect = effect;
+		if (effect != null && !quads.isEmpty())
+		{
+			TileBatch.Quad q = quads.get(0);
+			b.startX = layer.isFlipX() ? q.x1 : q.x0;
+			b.startY = layer.isFlipY() ? q.y1 : q.y0;
+		}
 		// Its bound is a unit cylinder at the centre, wherever its shader draws it: never culled for that.
 		if (still)
 			b.holder.setCullHint(CullHint.Never);
 		for (Map.Entry<Texture2D, Run> e : runs.entrySet())
 		{
-			Geometry g = new Geometry("plax ring of layer " + band.layer, e.getValue().mesh());
-			g.setMaterial(material(e.getKey(), still));
+			Geometry g = new Geometry("plax ring of layer " + band.layer, e.getValue().mesh(effect != null));
+			g.setMaterial(material(e.getKey(), still, effect));
 			g.setQueueBucket(Bucket.Transparent);
 			if (still)
 				g.setCullHint(CullHint.Never);
@@ -377,12 +424,20 @@ public class PlaxRings extends Node
 		return b;
 	}
 
-	/** A band's material: blended as every layer is, behind the 3D world (it tests its depth and writes none). */
-	private Material material(Texture2D texture, boolean still)
+	/**
+	 * A band's material: blended as every layer is, behind the 3D world (it tests its depth and writes none); with an
+	 * {@code effect}, the flat reader's effect shader on the ring (PlaxRingEffect.j3md).
+	 */
+	private Material material(Texture2D texture, boolean still, Enum_ShaderEffect effect)
 	{
-		Material m = new Material(assets, "jks/tools2d/parallax/jme/PlaxRing.j3md");
+		Material m = new Material(assets, effect != null ? "jks/tools2d/parallax/jme/PlaxRingEffect.j3md" : "jks/tools2d/parallax/jme/PlaxRing.j3md");
 		m.setTexture("ColorMap", texture);
 		m.setBoolean("Still", still);
+		if (effect != null)
+		{
+			m.setBoolean("Fog", effect == Enum_ShaderEffect.FOG);
+			m.setBoolean("Swell", effect == Enum_ShaderEffect.SWELL);
+		}
 		m.getAdditionalRenderState().setBlendMode(BlendMode.Custom);
 		m.getAdditionalRenderState().setCustomBlendFactors(BlendFunc.Src_Alpha, BlendFunc.One_Minus_Src_Alpha, BlendFunc.One,
 				BlendFunc.One_Minus_Src_Alpha);
@@ -449,17 +504,19 @@ public class PlaxRings extends Node
 	/** One texture's share of a band: its vertices and triangles as they are laid. */
 	private static final class Run
 	{
-		float[] positions = new float[256 * 3], uvs = new float[256 * 2], along = new float[256 * 2];
+		float[] positions = new float[256 * 3], uvs = new float[256 * 2], along = new float[256 * 2], page = new float[256 * 2];
 		int[] indices = new int[256 * 6];
 		int vertices, count;
 
-		void add(float x, float y, float z, float u, float v, float band)
+		/** A vertex: its place, its uv, how far up the layer's box it is; for an effect, its page units (x round, y up). */
+		void add(float x, float y, float z, float u, float v, float band, float pageX, float pageY)
 		{
 			if (vertices * 3 + 3 > positions.length)
 			{
 				positions = java.util.Arrays.copyOf(positions, positions.length * 2);
 				uvs = java.util.Arrays.copyOf(uvs, uvs.length * 2);
 				along = java.util.Arrays.copyOf(along, along.length * 2);
+				page = java.util.Arrays.copyOf(page, page.length * 2);
 			}
 			positions[vertices * 3] = x;
 			positions[vertices * 3 + 1] = y;
@@ -467,6 +524,8 @@ public class PlaxRings extends Node
 			uvs[vertices * 2] = u;
 			uvs[vertices * 2 + 1] = v;
 			along[vertices * 2] = band;
+			page[vertices * 2] = pageX;
+			page[vertices * 2 + 1] = pageY;
 			vertices++;
 		}
 
@@ -478,12 +537,15 @@ public class PlaxRings extends Node
 			count += six.length;
 		}
 
-		Mesh mesh()
+		/** The mesh, with the page units (TexCoord3) for an effect's band. */
+		Mesh mesh(boolean withPage)
 		{
 			Mesh mesh = new Mesh();
 			mesh.setBuffer(Type.Position, 3, BufferUtils.createFloatBuffer(java.util.Arrays.copyOf(positions, vertices * 3)));
 			mesh.setBuffer(Type.TexCoord, 2, BufferUtils.createFloatBuffer(java.util.Arrays.copyOf(uvs, vertices * 2)));
 			mesh.setBuffer(Type.TexCoord2, 2, BufferUtils.createFloatBuffer(java.util.Arrays.copyOf(along, vertices * 2)));
+			if (withPage)
+				mesh.setBuffer(Type.TexCoord3, 2, BufferUtils.createFloatBuffer(java.util.Arrays.copyOf(page, vertices * 2)));
 			mesh.setBuffer(Type.Index, 3, BufferUtils.createIntBuffer(java.util.Arrays.copyOf(indices, count)));
 			mesh.updateBound();
 			return mesh;
