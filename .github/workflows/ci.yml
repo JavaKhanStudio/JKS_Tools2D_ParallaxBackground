@@ -48,7 +48,7 @@ jobs:
 
       # ruff, shellcheck and gdlint at pinned versions: a rule cleaned once and gated by nothing came back (r314).
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.2
 
       # Every tracked tools/**/*_test.py, the readers' dashboard verdicts (parallax-readers:r17) among them: r404's test
       # went out a push before its fix and nothing went red (r411). None needs a GPU nor ../JKS_Tools2D_ParallaxAI
