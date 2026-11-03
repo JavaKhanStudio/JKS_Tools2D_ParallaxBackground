@@ -107,7 +107,7 @@ context = """
 engines/godot/ is a Godot 4 project. addons/jks_parallax is a GDScript port of core/ (libGDX, the reference), LINE FOR
 LINE: what each port must copy and which frame round proves it is in AGENTS.md "Runtime". release.yml attaches
 jks-parallax-godot-X.Y.Z.zip from 2.5.0 on (addon-zip.sh, checked by addon-zip-check.sh); the Asset Library listing is
-parallax:r104 (paused). tests/: shots.gd (the frame runner; reads the round file itself, so a new round field goes there
+r8 (paused). tests/: shots.gd (the frame runner; reads the round file itself, so a new round field goes there
 AND in Round, :rounds), particles.gd (checks particles by where they are), bench.gd, sequence_cycle.gd, demo.
 Scripts are engines/godot/tools/: frame-check.sh (compares with core's libGDX stills), bench.sh (build/bench/godot.json),
 addon-zip.sh, addon-zip-check.sh. Each cd's to the repository root first; every window runs headless/in cage

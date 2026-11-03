@@ -11,7 +11,7 @@ What each part must copy from core, and which round proves it, is in [AGENTS.md,
 ## How a game gets it
 
 From 2.5.0, each GitHub release carries `jks-parallax-godot-X.Y.Z.zip`, with `addons/jks_parallax/` at its root: unzip
-it into the game's project. The Godot Asset Library listing (parallax:r104) is paused. How to load a page, its export
+it into the game's project. The Godot Asset Library listing (parallax-readers r8) is paused. How to load a page, its export
 settings and what is not there yet: the root README, ["In Godot 4"](../../README.md#in-godot-4).
 
 ## This folder
