@@ -9,6 +9,8 @@ img2img at 0.65 keeps much of that colour: --colour (hex) sets the layer's for a
 --texture 1 (r365) textures the fill of a kind whose SPEC has a "texture" (mountains, hills, sea, dunes): img2img
 paints detail only where its start has some, and a flat fill came out a flat bar. Its keys: amp (the noise's strength),
 aspect (its rows against its columns: the sea's thin streaks), light (the shape embossed), foot (darker toward it).
+--warp F (r496) bends a kind with a "warp" in its SPEC (ruins, off by default), its mask and so its init, by wrapped noise
+up to F of the strip's height: img2img paints less rectangular towers from it, and the cut's mask still fits the init.
 --quiet-join turns the shape so the loop's join falls where its outline is flattest (a tree's flank there
 steps past what a SEQUENCE's joins may show); a variant (--edges-of) turns by its kept seed's, so it still fits.
 Every curve is a sum of sines of whole frequencies over the width, and every tree sits at a
@@ -33,7 +35,7 @@ SPEC = {
     "dunes": {"base": 0.30, "waves": [(2, 0.05), (3, 0.04), (7, 0.012)], "ridge": False, "colour": (200, 175, 125),
               "sky": (210, 225, 240), "texture": {"light": 1.0, "amp": 1.5}},
     "ruins": {"base": 0.14, "waves": [(3, 0.02), (9, 0.01)], "ridge": False, "towers": 26, "colour": (60, 55, 55),
-              "sky": (210, 225, 240)},
+              "sky": (210, 225, 240), "warp": 0.0},
     "sea": {"base": 0.22, "waves": [(17, 0.004), (29, 0.003)], "ridge": False, "colour": (70, 170, 170),
             "sky": (210, 225, 240), "texture": {"aspect": 20, "light": 0.0, "amp": 3}},
     "palms": {"base": 0.05, "waves": [(2, 0.025), (5, 0.012)], "ridge": False, "palms": 9, "colour": (40, 50, 35),
@@ -67,6 +69,7 @@ def main():
     ap.add_argument("--quiet-join", action="store_true", help="turn the shape: the join where the outline is flattest")
     ap.add_argument("--colour", help="the layer's colour in the init image, hex RRGGBB; default the kind's")
     ap.add_argument("--texture", type=float, default=0, help="texture in the init's fill, 0 (flat, r239) to 1 (r365)")
+    ap.add_argument("--warp", type=float, help="bend the shape by up to this fraction of h (r496); default the kind's")
     a = ap.parse_args()
     spec, w, h = SPEC[a.kind], a.w, a.h
     ss = 4  # supersample for antialiased edges
@@ -97,6 +100,9 @@ def main():
             own = [p for p in kept if end(p[0]) < 2 * a.edge] + [p for p in own if end(p[0]) >= 3 * a.edge]
         mask = np.maximum(mask, draw_palms(own, W, H, turn))
     mask = mask.reshape(h, ss, w, ss).mean(axis=(1, 3))
+    amount = spec["warp"] if "warp" in spec and a.warp is None else a.warp if "warp" in spec else 0
+    if amount:  # a variant bends as its kept seed does, so their ends still match
+        mask = warp(mask, amount, a.seed if a.edges_of is None else a.edges_of)
     Image.fromarray((mask * 255).astype(np.uint8)).save(f"{a.out}_mask.png")
     sky = np.array(spec["sky"], np.float32)
     shade = np.linspace(0.85, 1.1, h)[:, None, None]  # darker at the top of the layer, as haze lifts
@@ -106,6 +112,26 @@ def main():
         col = col * texture(spec, np.random.default_rng(a.seed + 7), mask, a.texture)[..., None]
     init = sky * (1 - mask[..., None]) + col * mask[..., None]
     Image.fromarray(init.clip(0, 255).astype(np.uint8)).save(f"{a.out}_init.png")
+
+
+def warp(mask, amount, seed):
+    """The mask bent by two smooth noise fields of up to `amount` of its height (r496, r493's try), wrapped along X and
+    clamped along Y, read bilinearly: column w-1 still runs on into column 0."""
+    h, w = mask.shape
+    rng = np.random.default_rng(seed + 11)
+
+    def field():
+        n = soften(rng.standard_normal((h, w)), max(2, h // 26))
+        return (np.argsort(np.argsort(n, axis=None)).reshape(h, w) / n.size - 0.5) * 2 * amount * h  # flat in histogram
+
+    dx, dy = field(), field()
+    yy, xx = np.mgrid[:h, :w]
+    fx, fy = xx + dx, np.clip(yy + dy, 0, h - 1)
+    x0, y0 = np.floor(fx).astype(int), np.floor(fy).astype(int)
+    tx, ty = fx - x0, fy - y0
+    x0, x1, y1 = x0 % w, (x0 + 1) % w, np.minimum(y0 + 1, h - 1)
+    top = mask[y0, x0] * (1 - tx) + mask[y0, x1] * tx
+    return top * (1 - ty) + (mask[y1, x0] * (1 - tx) + mask[y1, x1] * tx) * ty
 
 
 def noise(rng, w, h, cells, aspect):

@@ -518,6 +518,8 @@ def parse_args():
     ap.add_argument("--ipa-weight", type=float, default=0.6)
     ap.add_argument("--small", metavar="WxH", help="paint every strip at WxH, then upscale it to the strip's size with"
                     " RealESRGAN (r471)")
+    ap.add_argument("--warp", type=float, help="sil.py --warp on ruins strips: their shape bent by up to this fraction of"
+                    " the strip's height before painting (r496); default sil.py's, off")
     ap.add_argument("--timeout", type=int, default=TIMEOUT,
                     help="seconds a command (a strip: 10-60) may take before it is killed and run once more (r377)")
     a = ap.parse_args()
@@ -675,6 +677,11 @@ class Pipeline:
         return [PY, f"{d}/gen.py", mode, *self.model_args(), "--negative", negative(NEG, kind) + others, "--prompt",
                 f"2d game parallax background layer, {theme}, {depth} {WORDS[kind]}, painterly, plain pale sky"]
 
+    def warp_args(self, kind):
+        """sil.py's --warp, on the ruins strips of a run given one (r496): none otherwise, so a default run's commands
+        stay r305's."""
+        return ["--warp", str(self.a.warp)] if self.a.warp is not None and kind == "ruins" else []
+
     def inpaints(self, kind):
         """Whether depth's kind is painted by HILLS_INPAINT: hills, by the default SD 1.5, with no --denoise."""
         return kind == "hills" and not self.pixel and self.model["ckpt"] == GEN_CKPT and self.a.denoise is None
@@ -704,7 +711,8 @@ class Pipeline:
             with open(prefix + "_seed.txt", "w") as f:  # what a kept strip was painted with: its variants' ends
                 f.write(str(seed))
         if run(["python3", f"{d}/sil.py", kind, prefix, "--w", str(self.w), "--h", str(self.h), "--seed", str(seed),
-                "--colour", self.cols[k], "--quiet-join", "--texture", str(TEXTURE)], prefix + "_sil.log"):
+                "--colour", self.cols[k], "--quiet-join", "--texture", str(TEXTURE), *self.warp_args(kind)],
+               prefix + "_sil.log"):
             sys.exit(f"sil.py failed: {prefix}_sil.log")
         code = run(gen + self.source_args(gen, prefix) + self.tools_args(prefix)
                    + ["--tile", "x", "--seed", str(seed), "--out", f"{prefix}_ai.png"], prefix + "_gen.log")
@@ -860,7 +868,8 @@ class Pipeline:
             return True
         size = ["--w", str(self.w), "--h", str(self.h)] if (self.w, self.h) != (1024, 384) else []
         run(["python3", f"{d}/sil.py", ks[front], p, *size, "--seed", str(vs), "--edges-of", str(seeds[front]),
-             "--colour", self.cols[front], "--quiet-join", "--texture", str(TEXTURE)], p + "_sil.log")
+             "--colour", self.cols[front], "--quiet-join", "--texture", str(TEXTURE), *self.warp_args(ks[front])],
+            p + "_sil.log")
         code = run([PY, f"{d}/gen.py", "variants", *self.model_args(denoise=False), "--src", f"{src}_ai.png",
                     "--init", f"{p}_init.png", "--tile", "x", "--n", "1", "--edge", "96", "--denoise", str(denoise),
                     "--seed", str(vs), *inside, *self.tools_args(p), "--negative",
