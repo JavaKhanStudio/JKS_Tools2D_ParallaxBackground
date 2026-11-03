@@ -4,7 +4,8 @@
 
 Repaints parallax-ai R3's post-apo ruins strips (l1-l3 at denoise 0.70 and 0.60) from their saved inits, the round's
 own gen.py command (DreamShaperXL Turbo + Storybook 0.9, 8 steps, cfg 2, dpmpp_sde), seeds strip seed + 0..N-1, once
-per way (--neg: old, new, empty, nopost, abandoned). OUT/<d>-<l>-<seed>-<neg>.png; OUT/sheet-<d>-<l>.png puts each
+per way (--neg: old, new, empty, nopost, abandoned, page; page is what ai_page paints since r485, through its own
+theme_for and negative, and must come out bit for bit as abandoned). OUT/<d>-<l>-<seed>-<neg>.png; OUT/sheet-<d>-<l>.png puts each
 seed's ways side by side, the strips' lower half where the figures stood, for counting by eye. Reads ../JKS_Tools2D_ParallaxAI, never writes there.
 """
 import argparse
@@ -23,14 +24,17 @@ import ai_page  # noqa: E402
 R3 = os.path.join(os.path.dirname(ROOT), "JKS_Tools2D_ParallaxAI", "build", "rounds", "r3")
 PROMPT = ("2d game parallax background layer, post-apocalyptic ruined city, dusty orange haze, desolate, "
           "middle distance ruined city skyline, broken skyscrapers silhouette, painterly, plain pale sky")
-# What r485 adds: R3's figures stood under a negative that already said "people".
-FIGURES = ", person, human figure, man, woman, silhouette of a person, pedestrian, survivor, crowd"
-NEGS = {"old": ai_page.negative(ai_page.NEG, "ruins"), "new": ai_page.negative(ai_page.NEG, "ruins") + FIGURES}
+# What r485 added (ai_page.FIGURES): R3's figures stood under a negative that already said "people".
+NEGS = {"old": ai_page.NEG.replace(", buildings", ""), "new": ai_page.negative(ai_page.NEG, "ruins"),
+        "page": ai_page.negative(ai_page.NEG, "ruins")}
+THEME = "post-apocalyptic ruined city, dusty orange haze, desolate"
+PAGE_KINDS = ["mountains", "ruins", "ruins", "ruins"]
 # Ways tried beyond the negative, by name: the prompt they paint with (r443 struck a word from the prompt).
 PROMPTS = {"old": PROMPT, "new": PROMPT,
            "empty": PROMPT.replace("desolate,", "desolate, deserted, empty, uninhabited, no one,"),
            "nopost": PROMPT.replace("post-apocalyptic ruined city", "ruined city"),
-           "abandoned": PROMPT.replace("post-apocalyptic ruined city", "abandoned ruined city")}
+           "abandoned": PROMPT.replace("post-apocalyptic ruined city", "abandoned ruined city"),
+           "page": PROMPT.replace(THEME, ai_page.theme_for(THEME, "ruins", PAGE_KINDS)[0])}
 NEGS["empty"] = NEGS["nopost"] = NEGS["abandoned"] = NEGS["new"]
 MODEL = ["--ckpt", "DreamShaperXL_Turbo_v2_1.safetensors", "--lora", "StorybookRedmondV2_XL.safetensors",
          "--lora-strength", "0.9", "--w", "1536", "--h", "576", "--steps", "8", "--cfg", "2", "--sampler",

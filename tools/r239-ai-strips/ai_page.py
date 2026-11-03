@@ -109,6 +109,9 @@ PY = os.path.join(os.environ.get("COMFYUI_DIR", os.path.expanduser("~/ComfyUI"))
 NEG = "text, watermark, frame, border, people, buildings, foreground grass, birds, animals, creatures"
 # SDXL paints clouds and a sun whatever the prompt says (r243): its negative names them.
 NEG_XL = "clouds, sun, moon, birds, animals, creatures, gradient, text, watermark, frame, border, people, buildings"
+# A ruined skyline's negative besides (r485): DreamShaperXL Turbo stood small figures in R3's ruins under a negative
+# that said "people". At cfg 2 these words alone keep the figure of seed 13022 too: THEME_WORDS is what took it off.
+FIGURES = ", person, human figure, man, woman, silhouette of a person, pedestrian, survivor, crowd"
 # run.sh's words for each shape: the pines' grow trees past the shape, "forest treeline" alone leaves its spikes.
 WORDS = {"mountains": "rocky mountain range", "hills": "rolling hills with small trees",
          "pines": "dark pine forest treeline silhouette", "dunes": "sand dunes", "sea": "calm sea, flat horizon",
@@ -147,10 +150,10 @@ def cut_args(kind):
 
 
 def negative(neg, kind):
-    """The negative prompt for a shape: a ruined skyline is buildings, a cloud strip clouds."""
+    """The negative prompt for a shape: a ruined skyline is buildings and no one in them, a cloud strip clouds."""
     if kind == "clouds":
         return neg.replace("clouds, ", "")
-    return neg.replace(", buildings", "") if kind == "ruins" else neg
+    return neg.replace(", buildings", "") + FIGURES if kind == "ruins" else neg
 
 
 # The things a kind of layer is for, as a theme names them (r437): another layer's prompt that says "palm trees" got
@@ -165,12 +168,20 @@ OBJECTS = {"palms": r"palm trees?|palms?", "pines": r"pine (?:forest|trees?)|pin
 # little (sea on 6 dunes seeds of 10): the beach is a sea word, struck with the word before it ("tropical beach"), which
 # took it off all ten (r443, tools/r443-dunes-sea).
 IMPLIED = {"sea": ["sea", "ocean", "water"]}
+# A theme's word every strip paints as another (r485, Simon's answer): "post-apocalyptic" is the lone-survivor trope,
+# figures at about 1 ruins strip in 40 at denoise 0.70, which no negative word took off (cfg 2 again). "abandoned" kept
+# the rubble and the look and painted none in the same 40 seeds (tools/r485-figures). Reworded, not struck: it is not
+# a word to put in a negative. The page's recipe keeps the theme as typed.
+THEME_WORDS = {r"post[- ]?apocalyptic": "abandoned"}
 
 
 def theme_for(theme, kind, ks):
     """The theme as layer kind's prompt says it on a page of kinds ks, and the words struck from it: the things
-    another kind of the page is for (OBJECTS), its setting and light kept, and what such a kind implies (IMPLIED)."""
+    another kind of the page is for (OBJECTS), its setting and light kept, and what such a kind implies (IMPLIED).
+    THEME_WORDS are reworded first."""
     struck = []
+    for word, painted in THEME_WORDS.items():
+        theme = re.sub(rf"\b{word}\b", painted, theme, flags=re.IGNORECASE)
     for other in dict.fromkeys(ks):
         if other != kind and other in OBJECTS:
             rx = re.compile(rf"\b(?:{OBJECTS[other]})\b", re.IGNORECASE)

@@ -53,9 +53,26 @@ class ThemeWordsTest(unittest.TestCase):
 
     def test_the_city_s_ruins_keep_their_words(self):
         ks = ["mountains", "ruins", "ruins", "ruins"]
-        self.assertEqual(ai_page.theme_for(POSTAPO, "ruins", ks), (POSTAPO, []))
+        self.assertIn("ruined city", ai_page.theme_for(POSTAPO, "ruins", ks)[0])
+        self.assertEqual(ai_page.theme_for(POSTAPO, "ruins", ks)[1], [])
+        self.assertEqual(ai_page.theme_for(POSTAPO, "mountains", ks)[1], ["ruined city"])
+
+    def test_post_apocalyptic_is_painted_as_abandoned_in_every_strip(self):
+        # r485: seed 13022 stood a figure in the ruins under "post-apocalyptic" with any negative, none under "abandoned".
+        ks = ["mountains", "ruins", "ruins", "ruins"]
+        self.assertEqual(ai_page.theme_for(POSTAPO, "ruins", ks),
+                         ("abandoned ruined city, dusty orange haze, desolate", []))
         self.assertEqual(ai_page.theme_for(POSTAPO, "mountains", ks),
-                         ("post-apocalyptic, dusty orange haze, desolate", ["ruined city"]))
+                         ("abandoned, dusty orange haze, desolate", ["ruined city"]))
+        for typed in ("Post-Apocalyptic wasteland", "post apocalyptic wasteland", "postapocalyptic wasteland"):
+            self.assertEqual(ai_page.theme_for(typed, "ruins", ks)[0], "abandoned wasteland")
+
+    def test_a_ruins_negative_names_figures_and_no_other_kind_s_changes(self):
+        # r485: the words reach a ruins strip by every model's negative, and repaint no other kind's strip.
+        for neg in (ai_page.NEG, ai_page.NEG_XL):
+            self.assertIn("silhouette of a person", ai_page.negative(neg, "ruins"))
+            self.assertNotIn("buildings", ai_page.negative(neg, "ruins"))
+            self.assertEqual(ai_page.negative(neg, "mountains"), neg)
 
     def test_a_theme_naming_no_other_layer_s_things_is_left_whole(self):
         theme = "snowy pine valley at dawn"

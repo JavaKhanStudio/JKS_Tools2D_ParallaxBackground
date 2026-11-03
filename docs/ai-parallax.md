@@ -46,7 +46,10 @@ strikes those words (palms, pines, ruins, sea: `OBJECTS`, r437) from every other
 a page with a sea layer names "sea, ocean, water" in the others' negative even unsaid (`IMPLIED`, r442: "tropical
 beach" alone grew sea between the dunes). Under DreamShaperXL Turbo's cfg 2 a negative pulls little (sea still on 6
 dunes seeds of 10): the beach, coast or shore is a sea word too, struck with the word before it, which took the sea
-off all ten (r443, `tools/r443-dunes-sea`).
+off all ten (r443, `tools/r443-dunes-sea`). The same held for small figures in a ruined city: under "post-apocalyptic"
+about one ruins strip in 40 stood one at denoise 0.70, and no negative word took it off, so every strip paints that word
+as "abandoned" (`THEME_WORDS`, r485, `tools/r485-figures`), the ruins' negative names figures (`FIGURES`), and the
+recipe keeps the theme as typed. A lurker's prompt keeps it too: its figure is wanted.
 
 **The gallery (r239, 2026-10-11):** `tools/ai-gallery.sh` (the board's `ai-gallery` lab: `--open`) builds
 `build/ai-gallery/index.html` from every page under `build/ai`: its film, each layer's shape, painting and cut with
