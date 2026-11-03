@@ -167,6 +167,8 @@ displacement shader on one image and its depth map is the other way, and the cos
 - Shantae's planes (jumping into the background, Risky's Revenge): the game's own levels, drawn as layers; the page
   already scales and scrolls them.
 - Normal-mapped lighting: new art per layer, a shader three times; a look, not depth.
+- Occlusion baked from the depth map (r493, `tools/r493-material-ideas/try.py`): a dark halo on the meadow behind the
+  pines, and it falls on the farther layer, so it would slide off them at the first scroll.
 
 ## What I would build first
 
