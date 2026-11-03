@@ -56,7 +56,7 @@ mutate "no neck check" "found += on_neck(rgb, alpha, sky, r)" "found += 0 * on_n
 mutate "neck: the cut's outline only" "m = mass | (spread(mass, 4 * r) & (t > 0.5))" "m = mass"
 mutate "neck: far towers in the outline" "& (t > 0.5))" "& (t > 0.1))"
 mutate "neck: the outline far from the mass" "spread(mass, 4 * r) & (t" "spread(mass, 12 * r) & (t"
-mutate "neck: any head size" "if size < (2 * n + 1) ** 2 // 2:" "if size < 8:"
+mutate "neck: any head size" "if size < (2 * n + 1) ** 2 // 2 or" "if size < 8 or"
 mutate "neck: any head proportions" "if not 0.6 < h / w < 1.8 or" "if"
 mutate "neck: any head shape" " or size < 0.6 * w * h:" ":"
 mutate "neck: no sky over it" "].mean() >= cap:" "].mean() >= 2:"
