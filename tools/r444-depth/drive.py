@@ -164,6 +164,11 @@ with sync_playwright() as p:
             sys.exit(1)
         print("OK: three angles shot; no tag covers another or is cut, and a card shows, at 54 angles in each of 3 units")
     elif mode == "seam":
+        # No multisampling here either: on the GPU it drops the sky and the first layers of a frame at random (r506), and
+        # the check then fails on that frame, not on the seam (r507: 775 pixels on Hiver, 180977 on the pines, always one
+        # odd still). At 0 every quad lies on the pixel grid, so multisampling changes nothing this compares.
+        # DEPTH_SEAM_AA=1 keeps it, to count that failure (tools/r507-seam/repeat.sh).
+        aa = "" if os.environ.get("DEPTH_SEAM_AA") == "1" else "&noaa=1"
         worst = []
         pictures = []
         errors = []
@@ -171,8 +176,11 @@ with sync_playwright() as p:
         for i in range(PAGES):
             shots = []
             for query in ("&flat=1", ""):
-                page, errs = open_lab(browser, query)
+                page, errs = open_lab(browser, query + aa)
                 errors += errs
+                multisampled = page.evaluate("(c => (c.getContext('webgl2') || c.getContext('webgl')).getContextAttributes().antialias)(document.querySelector('#depth-lab canvas'))")
+                if multisampled != (aa == ""):
+                    sys.exit(f"the seam's canvas multisampling is {multisampled}, asked for {aa == ''}")
                 set_control(page, "page", i)
                 set_control(page, "view", 0)
                 page.evaluate("window.depthLabAct(4)")
@@ -186,7 +194,7 @@ with sync_playwright() as p:
             print(f"page {i}: max {diff.max()}/255, {off} of {diff.size} pixels off by more than 2/255, mean {diff.mean():.4f}")
             worst.append((off, diff.max()))
             # In 3D the cards show mipmapped pictures (r503): at 0 those are the same frame, softened only by the filtering.
-            page, errs = open_lab(browser, "&pictures=1")
+            page, errs = open_lab(browser, "&pictures=1" + aa)
             errors += errs
             page.on("console", lambda m: m.type == "warning" and warned.append(m.text))
             set_control(page, "page", i)
@@ -197,10 +205,11 @@ with sync_playwright() as p:
             page.close()
             diff = np.abs(shots[0] - np.asarray(Image.open(path).convert("RGB")).astype(int)).max(axis=2)
             off = int((diff > PICTURE_OFF).sum())
+            Image.fromarray((np.minimum(255, diff * 16)).astype(np.uint8)).save(f"{frames}/s{i}picturediff.png")
             print(f"page {i} through its pictures: {off} of {diff.size} pixels off by more than {PICTURE_OFF}/255, mean {diff.mean():.4f}")
             pictures.append((off / diff.size, diff.mean()))
             # Back at 0 after drawing in 3D, nothing of the pictures may be left behind.
-            page, errs = open_lab(browser)
+            page, errs = open_lab(browser, aa)
             errors += errs
             page.on("console", lambda m: m.type == "warning" and warned.append(m.text))
             set_control(page, "page", i)
@@ -214,6 +223,7 @@ with sync_playwright() as p:
             page.close()
             diff = np.abs(shots[0] - np.asarray(Image.open(path).convert("RGB")).astype(int)).max(axis=2)
             off = int((diff > 2).sum())
+            Image.fromarray((np.minimum(255, diff * 16)).astype(np.uint8)).save(f"{frames}/s{i}backdiff.png")
             print(f"page {i} back from 3D: {off} of {diff.size} pixels off by more than 2/255")
             worst.append((off, diff.max()))
         if any(off > diff.size * 0.001 for off, _ in worst):
@@ -228,7 +238,7 @@ with sync_playwright() as p:
         print("OK: the 3D view at 0 is the game's frame on every page, back from 3D too, and so are the cards' pictures")
     else:
         # No multisampling in a clip: stepped on the GPU, a multisampled canvas loses the sky or a layer at random frames
-        # (r506). Its lines and card edges are harder for it; stills and the live lab keep theirs.
+        # (r506). Its lines and card edges are harder for it; --shot, --pages, --angles and the live lab keep theirs.
         page, errors = open_lab(browser, "&noaa=1")
         set_control(page, "view", 0)
         # The slide arrives where the turn below starts, or the view snaps there at 3.0 s (r506: every clip's frame 89).

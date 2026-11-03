@@ -15,7 +15,9 @@
 #                                      no multisampling (&noaa=1): on the GPU it loses layers at random frames (r506)
 #   tools/depth-lab.sh --seam DIR      the check that the 3D view at 0 is the game's frame: every page drawn by the
 #                                      heart (&flat=1), through the cards at 0 and through their 3D pictures
-#                                      (&pictures=1, r503), and back at 0 after 3D, compared; fails on a difference or a page warning
+#                                      (&pictures=1, r503), and back at 0 after 3D, compared; fails on a difference or a page warning.
+#                                      no multisampling (&noaa=1), for r506's dropped layers: they failed 1 run in 4 under load (r507).
+#                                      DIR keeps its stills and diffs on a failure too; tools/r507-seam/repeat.sh repeats it under load
 #   tools/depth-lab.sh --big           before the rest: the canvas at 1280 x 720 (marketing captures)
 #   tools/depth-lab.sh --slider K=V    before --shot/--pages/--clip: start control K (its data-key) at V, a choice at its option's index
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python
@@ -74,10 +76,15 @@ fi
 # its canvas, one frame per 1/30 s of game time, so the clip plays at game speed.
 FRAMES=$(mktemp -d)
 trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT
-python3 tools/r444-depth/drive.py "$URL" "$CHROME" "$FRAMES" "$MODE" "$BIG" "$SLIDERS" || exit 1
+python3 tools/r444-depth/drive.py "$URL" "$CHROME" "$FRAMES" "$MODE" "$BIG" "$SLIDERS"
+DRIVER=$?
 if [ $MODE = pages ] || [ $MODE = seam ] || [ $MODE = angles ]; then
-	mkdir -p "$OUT" && cp "$FRAMES"/*.png "$OUT"/ && echo "stills: $OUT"
-elif [ $MODE = shot ]; then
+	# A failing run keeps its stills too: they are what it failed on (r507).
+	mkdir -p "$OUT" && find "$FRAMES" -maxdepth 1 -name '*.png' -exec cp -t "$OUT" {} + && echo "stills: $OUT"
+	exit $DRIVER
+fi
+[ $DRIVER = 0 ] || exit $DRIVER
+if [ $MODE = shot ]; then
 	cp "$FRAMES/still.png" "$OUT" && echo "still: $OUT"
 else
 	ffmpeg -loglevel error -y -framerate 30 -i "$FRAMES/f%04d.png" -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" \
