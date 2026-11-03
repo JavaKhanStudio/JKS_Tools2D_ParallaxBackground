@@ -20,8 +20,10 @@ that checks one, is named there, or the table shows it as "no round". It reads w
 `--run [gdx godot jme]` runs them first (about 10 minutes), `--shot F.png` screenshots it, `--open` opens it.
 On the board it is the header's **Site** button: `--serve 8797` serves it, rebuilt on each load.
 
-A page as the sky of a 3D world (three.js, Godot 3D, jME), drawn as rings round it: designed, not built, in
-[docs/page-as-3d-sky.md](../docs/page-as-3d-sky.md) (r35).
+A page as the sky of a 3D world, drawn as rings round it ([docs/page-as-3d-sky.md](../docs/page-as-3d-sky.md)):
+`PlaxRings` in three.js (`threejs/src/plax.js`), Godot (`godot/addons/jks_parallax/plax_rings.gd`) and jME
+(`jme/src/jks/tools2d/parallax/jme/PlaxRings.java`). Each reader's frame check plays `rounds/rings`, which has no
+stills: `tools/compare-rings.py` holds its numbers to core's `ParallaxRings`, within 1e-4.
 
 Unity is next (parallax-readers r7, paused); what it would take is in
 [docs/other-engines.md](../docs/other-engines.md#unity-and-unreal-what-they-would-take).
