@@ -331,6 +331,77 @@ class StubTest(unittest.TestCase):
         self.assertLess(text.index("r0"), text.index("f.png"))
         self.assertEqual(self.get("/live/e.png")[1], png(shade=5), "the atlas's page, not the loose file")
 
+    def test_an_atlas_is_plain_text_from_its_file_or_renamed(self):
+        self.start()
+        r = self.get("/live/a.atlas")[0]
+        self.assertEqual(r.headers["Content-Type"], "text/plain; charset=utf-8")
+        self.assertEqual(self.get("/live/a.png")[0].headers["Content-Type"], "image/png")
+
+    def test_an_atlas_in_a_folder_is_served_beside_its_images_and_the_json_says_so(self):
+        sub = os.path.join(self.atlas_dir, "sub")
+        os.makedirs(sub)
+        os.rename(os.path.join(self.atlas_dir, "a.atlas"), os.path.join(sub, "a.atlas"))
+        self.write(os.path.join(sub, "a.png"), png(shade=80))
+        self.write(self.page, json.dumps(page(atlas="sub/a.atlas")))
+        self.start()
+        self.assertEqual(self.stream().next()["images"], ["a.atlas", "a.png"])
+        self.assertEqual(json.loads(self.get("/live/page.jplax")[1])["pageModel"]["atlasName"], "a.atlas")
+        self.assertEqual(self.get("/live/a.atlas")[1].decode(), ATLAS)
+        self.assertEqual(self.get("/live/a.png")[1], png(shade=80), "the image beside the atlas on disk")
+        self.assertEqual(self.get("/live/sub/a.atlas")[0].status, 404)
+
+    def test_an_atlas_above_the_folder_is_served_the_same(self):
+        self.write(os.path.join(self.dir, "up.atlas"), ATLAS)
+        self.write(os.path.join(self.dir, "a.png"), png(shade=90))
+        self.write(self.page, json.dumps(page(atlas="../up.atlas")))
+        self.start()
+        self.assertEqual(json.loads(self.get("/live/page.jplax")[1])["pageModel"]["atlasName"], "up.atlas")
+        self.assertEqual(self.get("/live/a.png")[1], png(shade=90))
+
+    def with_effects(self, **fields):
+        model = page()
+        model["pageModel"]["pageList"][0].update(fields)
+        self.write(self.page, json.dumps(model))
+
+    def test_an_effect_above_the_atlas_is_served_under_its_base_name_and_the_json_says_so(self):
+        self.write(os.path.join(self.dir, "snow.p"), "snow")
+        self.write(os.path.join(self.dir, "snow.tscn"), "scene")
+        self.with_effects(particlesLibgdx="../snow.p", particlesGodot="../snow.tscn")
+        self.start()
+        s = self.stream()
+        self.assertEqual(s.next()["images"], ["a.atlas", "a.png", "snow.p", "snow.tscn"])
+        layer = json.loads(self.get("/live/page.jplax")[1])["pageModel"]["pageList"][0]
+        self.assertEqual((layer["particlesLibgdx"], layer["particlesGodot"]), ("snow.p", "snow.tscn"))
+        self.assertEqual(self.get("/live/snow.p")[1], b"snow")
+        self.assertEqual(self.get("/live/snow.tscn")[1], b"scene")
+        self.assertEqual(self.get("/live/../snow.p")[0].status, 404)
+        self.write(os.path.join(self.dir, "snow.p"), "more snow")
+        edit = s.next()
+        self.assertEqual((edit["page"], edit["images"]), (False, ["snow.p"]), "the JSON did not move")
+
+    def test_two_effects_of_one_base_name_and_one_named_twice(self):
+        for folder, body in (("one", "1"), ("two", "2")):
+            os.makedirs(os.path.join(self.dir, folder))
+            self.write(os.path.join(self.dir, folder, "snow.p"), body)
+        model = page(regions=("sky", "sky", "sky"))
+        for layer, name in zip(model["pageModel"]["pageList"], ("../one/snow.p", "../two/snow.p", "../one/snow.p")):
+            layer["particlesLibgdx"] = name
+        self.write(self.page, json.dumps(model))
+        self.start()
+        names = [l["particlesLibgdx"] for l in json.loads(self.get("/live/page.jplax")[1])["pageModel"]["pageList"]]
+        self.assertEqual(names, ["snow.p", "snow_2.p", "snow.p"])
+        self.assertEqual(self.get("/live/snow.p")[1], b"1")
+        self.assertEqual(self.get("/live/snow_2.p")[1], b"2")
+
+    def test_an_effect_in_a_folder_under_the_atlas_keeps_it_and_the_page_its_bytes(self):
+        os.makedirs(os.path.join(self.atlas_dir, "fx"))
+        self.write(os.path.join(self.atlas_dir, "fx", "snow.p"), "snow")
+        self.with_effects(particlesLibgdx="fx/snow.p")
+        self.start()
+        with open(self.page, "rb") as f:
+            self.assertEqual(self.get("/live/page.jplax")[1], f.read())
+        self.assertEqual(self.get("/live/fx/snow.p")[1], b"snow")
+
     def test_an_unreadable_page_keeps_the_last_good_one(self):
         self.start()
         s = self.stream()

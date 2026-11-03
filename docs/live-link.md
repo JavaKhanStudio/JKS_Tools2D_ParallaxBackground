@@ -57,7 +57,8 @@ else, writes nothing, and the person can see when it is on.
 
 `200`, `application/json`: the open page, **the same JSON Export writes for the same page**, as `.jplax` readers already
 read it ([other-engines.md](other-engines.md)), built by the same code. A page whose images are all in its atlas is
-byte for byte the `.jplax` Export would write at that moment.
+byte for byte the `.jplax` Export would write at that moment, unless it holds [a name a browser cannot ask
+for](#a-name-a-browser-cannot-ask-for).
 
 The rev is **not in the body**, or the body would not be what Export writes: it is in a header, `X-Plax-Rev`, the `rev` of
 the last event that moved the page. A reader rarely needs it: the events carry the same number.
@@ -69,23 +70,30 @@ Export itself differs from the link in one case, a page with loose images: see b
 The atlas, its images, the `.p` files and Godot scenes of the page's `PARTICLES` layers, under the names the page and the
 atlas use (a relative path keeps its folders, as in an export folder). The atlas is `text/plain`, a PNG `image/png`.
 
-### An image outside the atlas's folder
+### A name a browser cannot ask for
 
-An atlas may name its image above itself: `core/test-data/floor/HiverFloor.atlas` starts with `../samples/Hiver.png`.
-The link cannot serve that name: a browser turns `/live/../samples/Hiver.png` into `/samples/Hiver.png` before it asks,
-which is 404, and a reader reopens the stream every 2 s and draws nothing. So **the served name is what a browser would
-ask for, and the served atlas says it**:
+An atlas may name its image above itself: `core/test-data/floor/HiverFloor.atlas` starts with `../samples/Hiver.png`. The
+editor's file chooser writes a `.p` above the atlas the same way. The link cannot serve such a name: a browser turns
+`/live/../samples/Hiver.png` into `/samples/Hiver.png` before it asks, which is 404, and a reader reopens the stream every
+2 s and draws nothing. So **the served name is what a browser would ask for, and what names the file says it**:
 
-- A name that leaves the folder (`..` above it, an absolute path) is served under its base name: `Hiver.png`.
+- A name that leaves the folder (`..` above it, an absolute path) is served under its base name: `Hiver.png`, `snow.p`.
 - A name a browser would only tidy (`./a.png`, `sub/../a.png`, `sub\a.png`) is served tidied: `a.png`, `sub/a.png`.
-- A base name already taken goes to the moved image as `Hiver_2.png`, `Hiver_3.png`, as a region name does. An image that
-  needed no change keeps its name, whichever comes first in the atlas.
-- **The atlas's text changes on those page lines and nowhere else:** no region, no `regionPosition` moves, and a region
-  that happens to read like a path stays as it is. The atlas keeps its own name, the page's JSON is untouched, and an
-  atlas needing none of this is served byte for byte. The `images` of an event use the served names.
+- A base name already taken goes to the moved file as `Hiver_2.png`, `Hiver_3.png`, as a region name does. A file that
+  needed no change keeps its name, whichever comes first.
+- **The atlas is always served at the top, under its base name:** `sub/a.atlas` is `/live/a.atlas`, with its images
+  beside it, for a reader asks for those from `/live/`. A file the atlas or a layer names is found on disk from the
+  atlas's folder, as the editor finds it.
 
-The file on disk stays where it is, and that atlas stays as written: only the link's copy of the text changes. A reader
-sees an atlas with its image beside it, as in an export folder.
+What says the new name:
+
+- **An image:** that page line of the served atlas, and nowhere else. No region and no `regionPosition` moves, a region
+  that happens to read like a path stays as it is, and an atlas needing none of this is served byte for byte.
+- **The atlas, a `.p`, a Godot scene:** `atlasName`, `particlesLibgdx`, `particlesGodot` in the served JSON. Refusing such a
+  page instead would refuse one that loads from disk, so the link changes those fields, and no other.
+
+The files on disk stay where they are, and what the project stores stays as written: only the link's copy of the text
+changes. A reader sees an export folder. The `images` of an event use the served names.
 
 An ETC2 copy (`.etc2.atlas`, `.zktx`) is not served: readers draw the atlas's own images here.
 
@@ -108,10 +116,9 @@ hills
 
 - **Nothing is repacked**, so painting costs one image's refetch, and no reader needs a new idea. libGDX's parser, Godot's
   and three.js's read this atlas (`tools/r492-live-link/atlas-parsers.sh`, `browser-check.py`).
-- **With an atlas**, its text comes first, unchanged but for [an image outside its folder](#an-image-outside-the-atlass-folder),
+- **With an atlas**, its text comes first, unchanged but for [a name a browser cannot ask for](#a-name-a-browser-cannot-ask-for),
   and each loose image's page after it, so no region's `regionPosition` moves.
-- **With no atlas yet**, the served atlas is named `live.atlas`, and `atlasName` in the JSON says so: the one place the
-  link changes a field.
+- **With no atlas yet**, the served atlas is named `live.atlas`, and `atlasName` in the JSON says so.
 - **The JSON keeps every layer**, loose ones too, each naming its image's region at `regionPosition` 0. A region name is
   the image's file name without `.png`, unique among the atlas's (`_2`, `_3`, as `Utils_Saving.packTextures` names them).
   That name replaces the path on disk a project stores: a path never leaves the machine.

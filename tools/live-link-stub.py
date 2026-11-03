@@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 DEFAULT_PORT = 9797
 GENERATED_ATLAS = "live.atlas"
 PAGE = "page.jplax"
+EFFECT_FIELDS = ("particlesLibgdx", "particlesGodot")
 EVENT_WAIT = 0.15  # the longest an edit waits for its event, so a drag costs one every 150 ms, not one per step
 POLL = 0.04
 KEEP_ALIVE = 15
@@ -64,7 +65,7 @@ def atlas_pages(text):
 
 
 def wanted_name(name):
-    """The name a browser can ask for: docs/live-link.md "An image outside the atlas's folder". A browser resolves . and
+    """The name a browser can ask for: docs/live-link.md "A name a browser cannot ask for". A browser resolves . and
     .. and turns a backslash into a slash before it asks, so a table holding the name as written never matches."""
     slashed = name.replace("\\", "/")
     clean = posixpath.normpath(slashed)
@@ -74,7 +75,7 @@ def wanted_name(name):
 
 
 def served_names(names):
-    """Each image name as written -> the name it is served under. A name that needs no change keeps it, whatever the
+    """Each file name as written -> the name it is served under. A name that needs no change keeps it, whatever the
     order, so only the moved one takes _2, _3, as a region name does."""
     served = {name: name for name in names if wanted_name(name) == name}
     taken = set(served.values())
@@ -128,16 +129,22 @@ def read_state(page_path, atlas_dir, loose_dir):
     if atlas_path and os.path.isfile(atlas_path):
         with open(atlas_path, encoding="utf-8", newline="") as f:  # every byte but a renamed page line stays
             text = f.read()
+    beside_atlas = os.path.dirname(atlas_path) if atlas_path else atlas_dir  # what the atlas and a layer name start there
+    effects = [(layer, field) for layer in layers.get("pageList") or [] for field in EFFECT_FIELDS if layer.get(field)]
+    page_names = atlas_pages(text)
+    served = served_names(page_names + [layer[field] for layer, field in effects])
     # name -> (path on disk, or None with the bytes in `generated`)
     files, generated = {}, {}
-    served = served_names(atlas_pages(text))
-    for name, as_served in served.items():
-        files[as_served] = os.path.join(os.path.dirname(atlas_path), name.replace("\\", "/"))
+    for name in page_names:
+        files[served[name]] = os.path.join(beside_atlas, name.replace("\\", "/"))
     text_served = renamed_atlas(text, served)
-    for layer in layers.get("pageList") or []:
-        for effect in (layer.get("particlesLibgdx"), layer.get("particlesGodot")):
-            if effect and os.path.isfile(os.path.join(atlas_dir, effect)):
-                files[effect] = os.path.join(atlas_dir, effect)
+    for layer, field in effects:
+        name = layer[field]
+        if os.path.isfile(os.path.join(beside_atlas, name.replace("\\", "/"))):
+            files[served[name]] = os.path.join(beside_atlas, name.replace("\\", "/"))
+        layer[field] = served[name]
+    if atlas_name:  # the served atlas sits beside its images, whose names a reader resolves from /live/
+        layers["atlasName"] = atlas_name = posixpath.basename(atlas_name.replace("\\", "/"))
     loose = []
     if loose_dir and os.path.isdir(loose_dir):
         for name in sorted(os.listdir(loose_dir)):
@@ -149,15 +156,16 @@ def read_state(page_path, atlas_dir, loose_dir):
             loose.append((name, os.path.join(loose_dir, name)))
             files[name] = loose[-1][1]
     if loose or not text:
-        if not atlas_name:  # a page with no atlas yet: the one change the link makes to its JSON
+        if not atlas_name:  # a page with no atlas yet
             atlas_name = GENERATED_ATLAS
             layers["atlasName"] = atlas_name
-            page = json.dumps(model).encode()
         generated[atlas_name] = (text_served.rstrip("\n") + "\n" + loose_atlas_text(loose)).lstrip("\n").encode()
     elif text_served != text:
         generated[atlas_name] = text_served.encode()
     elif atlas_name:
         files[atlas_name] = atlas_path
+    if model != json.loads(page):  # byte for byte unless a name had to change
+        page = json.dumps(model).encode()
     stamps = {}
     for name, path in files.items():
         if os.path.isfile(path):
@@ -165,7 +173,7 @@ def read_state(page_path, atlas_dir, loose_dir):
             stamps[name] = (s.st_mtime_ns, s.st_size)
     for name, data in generated.items():
         stamps[name] = hashlib.sha1(data).hexdigest()
-    return {"page": page, "stamps": stamps, "files": files, "generated": generated}
+    return {"page": page, "stamps": stamps, "files": files, "generated": generated, "atlas": atlas_name}
 
 
 class Link:
@@ -304,7 +312,10 @@ def handler_for(link):
                 except OSError:
                     self.refuse(404)
                     return
-                kind = "image/png" if name.lower().endswith(".png") else "application/octet-stream"
+                if name == state["atlas"]:
+                    kind = "text/plain; charset=utf-8"
+                else:
+                    kind = "image/png" if name.lower().endswith(".png") else "application/octet-stream"
             else:
                 self.refuse(404)
                 return

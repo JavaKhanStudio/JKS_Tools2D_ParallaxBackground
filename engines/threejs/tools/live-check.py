@@ -356,6 +356,43 @@ def carried_scenario(browser, work, out, stubs):
         context.close()
 
 
+def moved_names_scenario(browser, work, out, stubs):
+    """An atlas in a folder, its image in ../ and its .p above it: the link's JSON and atlas say names a browser can ask (r75)."""
+    assets = os.path.join(work, "moved")
+    shutil.copytree(os.path.join(ROOT, "core", "test-data", "particles"), os.path.join(assets, "sub"))
+    shutil.copytree(SAMPLES, os.path.join(assets, "samples"))
+    with open(os.path.join(ROOT, "core", "test-data", "particles", "p01.jplax")) as f:
+        model = json.load(f)
+    model["pageModel"]["atlasName"] = "sub/" + model["pageModel"]["atlasName"]
+    os.makedirs(os.path.join(assets, "up"))
+    effects = [l for l in model["pageModel"]["pageList"] if l.get("particlesLibgdx")]
+    for layer in effects:
+        moved = os.path.join(assets, "up", layer["particlesLibgdx"])
+        if not os.path.exists(moved):
+            shutil.move(os.path.join(assets, "sub", layer["particlesLibgdx"]), moved)
+        layer["particlesLibgdx"] = "../up/" + layer["particlesLibgdx"]
+    check(bool(effects), "the page names a .p to move")
+    page_path = os.path.join(work, "moved.jplax")
+    write_json(page_path, model)
+    proc, url = start_stub(page_path, assets)
+    stubs.append(proc)
+    context, page = new_page(browser)
+    missing = []
+    page.on("response", lambda r: missing.append(r.url) if r.url.startswith("http://127.0.0.1") and r.status == 404 else None)
+    page.evaluate("u => connect(u)", url)
+    check(wait_pages(page, 1, 15) is not None, "moved names: drawn")
+    check(not missing, f"moved names: nothing read is missing: {missing[:3]}")
+    page.evaluate("setGame()")
+    page.evaluate("for (let i = 0; i < 60; i++) { step(0.1); frame(); }")
+    drawn = shot(page)
+    drawn.save(os.path.join(out, "6-moved-names.png"))
+    # The ground of this page is white: the snow is what is not.
+    ground = drawn.crop((0, 400, 960, 540)).convert("L").histogram()
+    flakes = sum(ground[:250])
+    check(flakes > 100, f"moved names: the .p snows on the ground, {flakes} pixels")
+    context.close()
+
+
 def refused_scenario(browser, work, stubs):
     """Chrome 156 with no permission: the stream ends CLOSED, which reads like an editor not running. Say so."""
     empty = os.path.join(work, "empty2")
@@ -386,6 +423,7 @@ def main():
             main_scenario(browser, work, out, stubs)
             merged_scenario(browser, work, stubs)
             carried_scenario(browser, work, out, stubs)
+            moved_names_scenario(browser, work, out, stubs)
             refused_scenario(browser, work, stubs)
             browser.close()
     finally:
