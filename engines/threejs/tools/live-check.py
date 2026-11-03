@@ -131,7 +131,9 @@ def main_scenario(browser, work, out, stubs):
     before.save(os.path.join(out, "1-first.png"))
     ring_before = shot(page, "ringFrame()")
     ring_before.save(os.path.join(out, "1-rings.png"))
-    check(moved(ring_before, Image.new("RGB", ring_before.size, ring_before.getpixel((0, 0)))) > 5, "the rings draw the page")
+    # The sky is one colour along a row: a band is what varies along one.
+    across = max(ImageStat.Stat(ring_before.crop((0, y, 960, y + 1))).stddev[0] for y in range(0, 540, 10))
+    check(across > 5, f"the rings draw the page, not only the sky: {across:.1f} along a row")
     scene_size = page.evaluate("scenes()")
 
     # What the front layer would do at its old speed, to tell the new speed from it.

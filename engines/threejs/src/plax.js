@@ -2721,9 +2721,12 @@ export class PlaxRings {
   // front..far (radiusOf), 0 the library's depths; foot, the height of the eye the page is seen from, its horizon; lift,
   // the page raised (lowered when negative) by this, in page units, before scale; scale, the page squeezed (or
   // stretched) about its horizon; pageDegrees, how many degrees of sky the page's height spans at scale 1;
-  // fogStrength, the page fog's strength (PlaxEffects.fogOf).
+  // fogStrength, the page fog's strength (PlaxEffects.fogOf). One given as undefined is left out: a default it replaced
+  // would make every band NaN (r73).
   static options(o = {}) {
-    return { front: 100, far: 0, foot: 0, lift: 0, scale: 1, pageDegrees: 45, fogStrength: 0, ...o };
+    const options = { front: 100, far: 0, foot: 0, lift: 0, scale: 1, pageDegrees: 45, fogStrength: 0 };
+    for (const key in o) if (o[key] !== undefined) options[key] = o[key];
+    return options;
   }
 
   // ParallaxRings.pageHeightOf: the page's height in its units, as a ring sees it: the world's at 16:9.
@@ -2844,7 +2847,12 @@ export class PlaxRings {
 
   // Changes some options (as the constructor takes them); the bands are rebuilt at the next update().
   set(options) {
-    this.options = { melt: 0.22, eyeMelt: 0, horizon: 0.12, tintSky: false, renderOrder: -1000, centre: { x: 0, z: 0 }, ...this.options, ...options };
+    // Core's options held filled in, those not chosen at their defaults: _buildBand reads them too (r73). Only fogStrength
+    // and fogColor may stay out: the page's own.
+    const { fogStrength, ...core } = PlaxRings.options();
+    const held = { ...core, melt: 0.22, eyeMelt: 0, horizon: 0.12, tintSky: false, renderOrder: -1000, centre: { x: 0, z: 0 }, ...this.options, ...options };
+    for (const key in core) held[key] ??= core[key];
+    this.options = held;
     this.group.position.set(this.options.centre.x ?? 0, 0, this.options.centre.z ?? 0);
     this._version++;
   }

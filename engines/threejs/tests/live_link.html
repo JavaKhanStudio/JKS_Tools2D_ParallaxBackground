@@ -10,7 +10,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuff
 renderer.setSize(960, 540);
 renderer.autoClear = false;
 document.body.appendChild(renderer.domElement);
-const RING_OPTIONS = PlaxRings.options({ front: 77, pageDegrees: 33 });
+const RING_OPTIONS = { front: 77, pageDegrees: 33 };
 let bg, rings, scene3d, camera3d, link;
 
 window.live = { pages: 0 };

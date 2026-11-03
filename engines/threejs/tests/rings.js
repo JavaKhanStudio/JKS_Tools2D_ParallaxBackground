@@ -24,6 +24,21 @@ async function scene(s) {
     gradient: PlaxRings.gradient(page.topHalfSize, page.bottomHalfSize, bg.worldWidth, options),
     bands: PlaxRings.bands(bg.layers, bg.worldWidth, options),
   };
+  // The same options as a game gives them to the instance, only those it chooses (r73: the rest were NaN).
+  const rings = new PlaxRings(bg, given);
+  const held = JSON.stringify(rings.ringOptions(page)), wanted = JSON.stringify(options);
+  if (held !== wanted) throw new Error(`new PlaxRings(bg, ${JSON.stringify(given)}) holds ${held}, not ${wanted}`);
+  // And the bands it builds from them, every corner a number.
+  rings.update();
+  let corners = 0;
+  rings.group.traverse(mesh => {
+    if (!mesh.isMesh || mesh === rings._sky) return;
+    const at = mesh.geometry.attributes.position.array;
+    corners += at.length;
+    if (at.some(Number.isNaN)) throw new Error(`new PlaxRings(bg, ${JSON.stringify(given)}) builds a NaN corner`);
+  });
+  if (numbers.bands.length && !corners) throw new Error(`new PlaxRings(bg, ${JSON.stringify(given)}) builds no band`);
+  rings.dispose();
   bg.dispose();
   const r = await fetch(`save/${s.id}.json`, { method: 'POST', body: JSON.stringify(numbers, null, 1) });
   if (!r.ok) throw new Error(`${s.id}: the save answered ${r.status}`);
