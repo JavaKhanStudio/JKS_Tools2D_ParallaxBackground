@@ -3,7 +3,8 @@ name: Release
 # Pushing a tag like v2.1.0 releases that version:
 #   - the library and the jMonkeyEngine reader go to Maven Central (parallax-background, parallax-background-jme)
 #   - the GitHub release gets the downloads: the library jars, the jME reader's jars and the Godot
-#     reader (jks-parallax-godot-X.Y.Z.zip, which the Godot Asset Library listing downloads: RELEASING.md)
+#     reader (jks-parallax-godot-X.Y.Z.zip, which the Godot Asset Library listing downloads: RELEASING.md) and the
+#     three.js reader (jks-parallax-threejs-X.Y.Z.zip)
 # Without the four Maven Central secrets the workflow FAILS before building anything: the README tells games to
 # depend on the Central artifact, so a release that skipped Central must not look green. To release the GitHub
 # downloads only, run the workflow by hand on the tag with "without_central" ticked.
@@ -135,6 +136,10 @@ jobs:
             echo
             echo "**Use a parallax in a Godot 4 game** — \`jks-parallax-godot-$VERSION.zip\`: unzip it at the root of your"
             echo "project (it holds \`addons/jks_parallax/\`)."
+            echo
+            echo "**Use a parallax in a three.js game** — \`jks-parallax-threejs-$VERSION.zip\`: unzip it in your project and"
+            echo "import \`jks_parallax_threejs/plax.js\`, one ES module that imports \`three\` from your own copy: see the README's"
+            echo "[In three.js](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground#in-threejs)."
             echo
             echo "See the [README](https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground#readme) to get started."
           } > release-notes.md
