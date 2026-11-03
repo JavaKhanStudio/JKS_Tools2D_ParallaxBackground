@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from scipy import ndimage as ni
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -28,6 +28,10 @@ import ai_page  # noqa: E402
 RIVER = os.path.join(ROOT, "build/ai/depth/river/cut")
 R3 = os.path.join(os.path.dirname(ROOT), "JKS_Tools2D_ParallaxAI", "build", "rounds", "r3", "postapo-d70", "strips")
 SKY = np.array([224, 180, 138], float)
+# PIL's default font sets its letters by whole pixels: at its size they run together ("cut stripas made", r499).
+TITLE_FONT = "/usr/share/fonts/open-sans/OpenSans-Semibold.ttf"
+TITLE_SIZE = 20
+TITLE_BAND = 34
 THEME = "post-apocalyptic ruined city, dusty orange haze, desolate"
 MODEL = ["--ckpt", "DreamShaperXL_Turbo_v2_1.safetensors", "--lora", "StorybookRedmondV2_XL.safetensors",
          "--lora-strength", "0.9", "--w", "1536", "--h", "576", "--steps", "8", "--cfg", "2", "--sampler",
@@ -69,12 +73,15 @@ def sheet(path, panels, cols=1, crop=None, scale=1):
         ims.append((title, im.resize((im.width * scale, im.height * scale), Image.LANCZOS if scale == 1 else Image.NEAREST)))
     w, h = ims[0][1].size
     rows = (len(ims) + cols - 1) // cols
-    out = Image.new("RGB", (cols * w + 6 * (cols - 1), rows * (h + 22)), "white")
+    out = Image.new("RGB", (cols * w + 6 * (cols - 1), rows * (h + TITLE_BAND)), "white")
     d = ImageDraw.Draw(out)
+    font = ImageFont.truetype(TITLE_FONT, TITLE_SIZE)
     for i, (title, im) in enumerate(ims):
-        x, y = (i % cols) * (w + 6), (i // cols) * (h + 22)
-        d.text((x + 4, y + 5), title, fill="black")
-        out.paste(im, (x, y + 22))
+        if d.textlength(title, font=font) > w - 8:
+            raise ValueError(f"title wider than its panel ({w} px): {title}")
+        x, y = (i % cols) * (w + 6), (i // cols) * (h + TITLE_BAND)
+        d.text((x + 6, y + TITLE_BAND // 2), title, fill="black", font=font, anchor="lm")
+        out.paste(im, (x, y + TITLE_BAND))
     out.save(path)
 
 
