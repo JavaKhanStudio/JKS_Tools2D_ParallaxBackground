@@ -12,6 +12,7 @@
 #                                      cuts one, or no card's tag shows (an empty view)
 #   tools/depth-lab.sh --clip F.mp4    a clip, headless: the slide from 2D into 3D, a turn round the page and back,
 #                                      12 s at 30 fps, stepped at game speed (window.depthLabAct)
+#                                      no multisampling (&noaa=1): on the GPU it loses layers at random frames (r506)
 #   tools/depth-lab.sh --seam DIR      the check that the 3D view at 0 is the game's frame: every page drawn by the
 #                                      heart (&flat=1), through the cards at 0 and through their 3D pictures
 #                                      (&pictures=1, r503), and back at 0 after 3D, compared; fails on a difference or a page warning

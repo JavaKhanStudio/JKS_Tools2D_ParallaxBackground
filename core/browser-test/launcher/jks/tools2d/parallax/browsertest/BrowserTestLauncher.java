@@ -63,10 +63,14 @@ public class BrowserTestLauncher extends GwtApplication
 		return config;
 	}
 
-	/** {@code config} antialiased (WebGL's multisampling): the depth lab's lines and card edges at any angle (r458). */
+	/**
+	 * {@code config} antialiased (WebGL's multisampling): the depth lab's lines and card edges at any angle (r458).
+	 * {@code &noaa=1} leaves it off, for a clip: stepped and read back on the GPU (ANGLE on the NVIDIA driver), a
+	 * multisampled canvas loses the sky or a layer at random frames (r506, tools/r506-clip-flicker/matrix.py).
+	 */
 	private static GwtApplicationConfiguration smooth(GwtApplicationConfiguration config)
 	{
-		config.antialiasing = true;
+		config.antialiasing = com.google.gwt.user.client.Window.Location.getParameter("noaa") == null;
 		return config;
 	}
 

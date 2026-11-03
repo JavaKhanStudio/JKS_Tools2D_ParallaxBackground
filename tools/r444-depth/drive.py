@@ -227,8 +227,13 @@ with sync_playwright() as p:
             sys.exit(1)
         print("OK: the 3D view at 0 is the game's frame on every page, back from 3D too, and so are the cards' pictures")
     else:
-        page, errors = open_lab(browser)
+        # No multisampling in a clip: stepped on the GPU, a multisampled canvas loses the sky or a layer at random frames
+        # (r506). Its lines and card edges are harder for it; stills and the live lab keep theirs.
+        page, errors = open_lab(browser, "&noaa=1")
         set_control(page, "view", 0)
+        # The slide arrives where the turn below starts, or the view snaps there at 3.0 s (r506: every clip's frame 89).
+        set_control(page, "yaw", 38)
+        set_control(page, "pitch", 16)
         page.evaluate("window.depthLabAct(0)")
         for i in range(360):
             t = i / 30
