@@ -6,6 +6,7 @@
 # strip nobody looked at shows here first; look at it before trusting the sweep. JOBS=8 at a time.
 set -u
 export LC_ALL=C # sort and join agree on the order
+export OMP_NUM_THREADS=1 # JOBS processes, not JOBS x every core: load 105 without it (r501)
 cd "$(dirname "$0")/../.." || exit 1
 REV="${1:-HEAD}"
 T=$(mktemp -d)

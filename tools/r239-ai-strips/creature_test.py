@@ -4,15 +4,19 @@ tower's top neither; a bird or a figure among those still is. No GPU, no strip o
 
     python3 tools/r239-ai-strips/creature_test.py
 """
+import io
 import os
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
 import numpy as np
+from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import creature
+import layer
 
 SAND = np.array([236.0, 192.0, 127.0])  # r437's DreamShaperXL Turbo dunes
 SKY, ORANGE, RUBBLE = np.array([205.0, 224.0, 218.0]), np.array([170.0, 105.0, 65.0]), np.array([40.0, 25.0, 15.0])
@@ -173,6 +177,34 @@ class CreatureTest(unittest.TestCase):
     def test_a_giants_head_is_a_figure(self):
         rgb, alpha = necked(30)
         self.assertEqual(len(creature.on_neck(rgb, alpha, SKY, 12)), 1)
+
+
+class CutAlpha(unittest.TestCase):
+    """r501: a cut's PNG answers as the alpha layer.py's gate saw, at the one line creature.py reads it."""
+
+    def test_every_key_stays_on_its_side_of_a_half_through_the_png(self):
+        keyed = np.concatenate([np.linspace(0, 1, 2001), [0.5, 0.499, 0.4999, 0.5001, 127.5 / 255, 127 / 255]])
+        keyed = keyed.reshape(1, -1).astype(np.float32)
+        with tempfile.TemporaryDirectory() as d:
+            layer.unmix(np.zeros(keyed.shape + (3,), np.float32), np.zeros(3, np.float32), keyed).save(d + "/cut.png")
+            stored = np.asarray(Image.open(d + "/cut.png").getchannel("A"))
+        read = layer.read_alpha(stored)
+        self.assertEqual(((read >= 0.5) != (keyed >= 0.5)).sum(), 0)
+        self.assertEqual(read[keyed == 0].max(), 0)
+        self.assertEqual(read[keyed == 1].min(), 1)
+
+    def test_a_bird_in_a_far_range_is_found_through_the_command_line(self):
+        rgb, alpha = dune()
+        rgb[150:156, 300:314] = 20  # a far range stores 0.5: read as 0.498 it is no mass, and the bird nobody's
+        alpha = alpha * 0.5
+        self.assertTrue(creature.find(rgb, alpha, 12, 750, r=6), "what the gate sees in a 512 px strip")
+        with tempfile.TemporaryDirectory() as d:
+            layer.unmix(rgb.astype(np.float32), SKY.astype(np.float32), alpha.astype(np.float32)).save(d + "/cut.png")
+            Image.fromarray(rgb.astype(np.uint8)).save(d + "/ai.png")
+            with mock.patch.object(sys, "argv", ["creature.py", d + "/cut.png", "--src", d + "/ai.png"]), \
+                    mock.patch.object(sys, "stderr", io.StringIO()), self.assertRaises(SystemExit) as out:
+                creature.main()
+        self.assertEqual(out.exception.code, 4)
 
 
 if __name__ == "__main__":

@@ -36,14 +36,14 @@ Exits 4 and names each one (x, y, size). layer.py and pixel.py call find() on th
 ai-page.sh paints the strip again on the next seed. tools/r261-creature/sweep.sh holds it to every strip on disk and to
 planted creatures, mutate.sh proves each rule above is needed.
 --src: the painted strip the cut came from: what layer.py and pixel.py look at (pixel.py's cut is one pixel per art
-cell, too small to see a bird in). The cut's alpha is scaled to it; sizes scale with its width (--min, --max and R are
+cell, too small to see a bird in). The cut's alpha is scaled to it, read as layer.read_alpha does (r501); sizes scale with its width (--min, --max and R are
 for 1024 px), and in pixel art a creature is six art pixels at least, R three.
 """
 import argparse
 import sys
 
 import numpy as np
-from layer import components, spread
+from layer import components, read_alpha, spread
 from PIL import Image
 
 
@@ -246,7 +246,7 @@ def main():
     a = ap.parse_args()
     cut = Image.open(a.cut).convert("RGBA")
     src = Image.open(a.src).convert("RGB") if a.src else cut.convert("RGB")
-    alpha = np.asarray(cut.getchannel("A").resize(src.size, Image.NEAREST)).astype(np.float64) / 255
+    alpha = read_alpha(cut.getchannel("A").resize(src.size, Image.NEAREST))  # what layer.py's gate saw, at 0.5
     k = (src.width / 1024) ** 2  # --min and --max are for a 1024 px strip
     cell = src.width / cut.width  # pixel art: an art pixel is a cell this wide in the painted strip
     rgb = np.asarray(src).astype(np.float64)

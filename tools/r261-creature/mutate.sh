@@ -7,26 +7,30 @@ set -u
 cd "$(dirname "$0")/../.." || exit 1
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
-bad=0
 # The copy keeps tools/'s layout: layer.py imports tools/parallax_rules.py from its parent (r400). Without it every
 # mutant failed on an ImportError and was "killed" (r438).
 D="$T/tools/r239-ai-strips"
 mkdir -p "$T/tools" && cp tools/parallax_rules.py "$T/tools/"
-mutate() { # NAME PYTHON-REPLACE-OLD PYTHON-REPLACE-NEW
-	rm -rf "$D" && cp -r tools/r239-ai-strips "$D"
-	python3 - "$D/creature.py" "$2" "$3" <<'PY' || { echo "$1: no such line"; exit 2; }
+mutate() { # NAME PYTHON-REPLACE-OLD PYTHON-REPLACE-NEW: each in a copy of its own, JOBS at a time (r501: a sweep is minutes)
+	while [ "$(jobs -r | wc -l)" -ge "${JOBS:-6}" ]; do wait -n; done
+	(
+		M=$(mktemp -d -p "$T")
+		mkdir -p "$M/tools" && cp tools/parallax_rules.py "$M/tools/"
+		cp -r tools/r239-ai-strips "$M/tools/"
+		python3 - "$M/tools/r239-ai-strips/creature.py" "$2" "$3" <<'PY' || { echo "$1: no such line" | tee -a "$T/bad"; exit 2; }
 import sys
 p, old, new = sys.argv[1:]
 s = open(p).read()
 assert old in s, old
 open(p, "w").write(s.replace(old, new))
 PY
-	if R239_DIR="$D" tools/r261-creature/sweep.sh "$B" >"$T/log" 2>&1; then
-		echo "SURVIVED $1: no strip proves this rule"
-		bad=1
-	else
-		echo "killed   $1: $(grep -c WRONG "$T/log") wrong answer(s)"
-	fi
+		if R239_DIR="$M/tools/r239-ai-strips" tools/r261-creature/sweep.sh "$B" >"$M/log" 2>&1; then
+			echo "SURVIVED $1: no strip proves this rule" | tee -a "$T/bad"
+		else
+			echo "killed   $1: $(grep -c WRONG "$M/log") wrong answer(s)"
+		fi
+		rm -rf "$M"
+	) &
 }
 B="${1:-build}"
 # The control: the copy unmutated must give every answer right, or a kill below proves nothing.
@@ -64,5 +68,9 @@ mutate "neck: straight down" "x = (a + b) // 2  # a neck leans" "pass  # a neck 
 mutate "neck: through the sky" "if not m[y, x]:
                     break" "pass"
 mutate "neck: no shoulders" "if b - a + 1 >= 0.8 * w:" "if True:"
-[ $bad = 0 ] && echo "mutate: every rule killed" || echo "mutate: rules no strip proves, above"
-exit $bad
+wait
+if [ -e "$T/bad" ]; then
+	echo "mutate: rules no strip proves, above"
+	exit 1
+fi
+echo "mutate: every rule killed"

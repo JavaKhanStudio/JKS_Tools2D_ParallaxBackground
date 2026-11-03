@@ -476,6 +476,22 @@ def edges_of(out, front):
     return Image.fromarray(np.dstack([rgb, a]).round().clip(0, 255).astype(np.uint8), "RGBA")
 
 
+def stored_alpha(alpha):
+    """alpha (0..1) as a cut's PNG holds it: 8 bits, truncated, and nothing under 0.5 stored as 127, the value a far
+    range's 0.5 stores as (r501). read_alpha then puts every pixel on the side of 0.5 the key did, the one line
+    creature.py reads alpha at."""
+    v = (alpha * 255).astype(np.uint8)
+    v[(v == 127) & (alpha < 0.5)] = 126
+    return v
+
+
+def read_alpha(v):
+    """A cut's stored alpha back as 0..1: the middle of what stores as v, clear and solid exact. v / 255 reads a far
+    range's 0.5 as 0.498, out of creature.py's mass: its command line refused other strips than the gate (r501)."""
+    v = np.asarray(v).astype(np.float64)
+    return np.where((v == 0) | (v == 255), v / 255, (v + 0.5) / 255)
+
+
 def unmix(img, sky, alpha, own=None):
     """The RGBA layer. The pixels of own keep their own colour, un-mixed: a far range half clear took the solid
     colours spread into it near the mass and its own farther off, in bands (r401)."""
@@ -495,7 +511,7 @@ def unmix(img, sky, alpha, own=None):
     if own is not None:
         reached &= ~own[..., None]
     rgb = np.where(solid[..., None] > 0, rgb, np.where(reached, fill / np.maximum(wsum, 1e-6)[..., None], rgb))
-    rgba = np.dstack([rgb, alpha * 255]).astype(np.uint8)
+    rgba = np.dstack([rgb.astype(np.uint8), stored_alpha(alpha)])
     return Image.fromarray(rgba, "RGBA")
 
 
@@ -554,7 +570,7 @@ def main():
     out = unmix(img, behind, alpha, regions.get("far"))
     if a.edges_of:
         out = edges_of(out, Image.open(a.edges_of))
-        alpha = np.asarray(out)[..., 3] / 255.0
+        alpha = read_alpha(np.asarray(out)[..., 3])
     if a.pixel > 1:
         out = pixelate(out, a)
     out.save(a.out)
