@@ -322,26 +322,9 @@ def pixels_off(a, b):
     return far.histogram()[255]
 
 
-def flat_copy(atlas_dir, into):
-    """A round's atlas folder with what its atlases name in ../ brought inside: the link cannot serve a ../ name."""
-    shutil.copytree(atlas_dir, into)
-    for name in os.listdir(into):
-        if not name.endswith(".atlas"):
-            continue
-        path = os.path.join(into, name)
-        with open(path) as f:
-            lines = f.read().split("\n")
-        for i, line in enumerate(lines):
-            if line.startswith("../"):
-                shutil.copy(os.path.join(atlas_dir, line), into)
-                lines[i] = os.path.basename(line)
-        with open(path, "w") as f:
-            f.write("\n".join(lines))
-    return into
-
-
-def carried_scenario(browser, work, stubs):
-    """A slider's step leaves what a kind runs on its own: a FLOOR's rows, a LURKER's sightings, a PARTICLES layer's snow."""
+def carried_scenario(browser, work, out, stubs):
+    """A slider's step leaves what a kind runs on its own: a FLOOR's rows, a LURKER's sightings, a PARTICLES layer's snow.
+    On their own folders, as they are: each atlas names its image in ../ (r74)."""
     for name, page_file, atlas_dir in (("floor", "engines/rounds/floor/g01.jplax", "core/test-data/floor"),
                                        ("lurker", "engines/rounds/lurker/l01.jplax", "core/test-data/lurker"),
                                        ("snow", "core/test-data/particles/p01.jplax", "core/test-data/particles")):
@@ -349,7 +332,7 @@ def carried_scenario(browser, work, stubs):
             model = json.load(f)
         page_path = os.path.join(work, name + ".jplax")
         write_json(page_path, model)
-        proc, url = start_stub(page_path, flat_copy(os.path.join(ROOT, atlas_dir), os.path.join(work, name)))
+        proc, url = start_stub(page_path, os.path.join(ROOT, atlas_dir))
         stubs.append(proc)
         context, page = new_page(browser)
         page.evaluate("u => connect(u)", url)
@@ -358,6 +341,10 @@ def carried_scenario(browser, work, stubs):
         # 14 s in small steps: past the lurker round's "gone at the next gap", its draws moved on.
         page.evaluate("for (let i = 0; i < 140; i++) { step(0.1); frame(); }")
         before = shot(page)
+        before.save(os.path.join(out, f"5-{name}.png"))
+        # A failed image draws the gradient alone, one colour along a row: its layers are what varies along one.
+        across = max(ImageStat.Stat(before.crop((0, y, 960, y + 1))).stddev[0] for y in range(0, 540, 10))
+        check(across > 5, f"{name}: its image is drawn: {across:.1f} along a row")
         state = page.evaluate("carried()")
         # A number that changes nothing drawn while the page does not scroll up or down.
         model["pageModel"]["pageList"][0]["parallaxScalingSpeedY"] = 0.123
@@ -398,7 +385,7 @@ def main():
             browser = launch(p, os.environ.get("CHROME") or shutil.which("google-chrome"))
             main_scenario(browser, work, out, stubs)
             merged_scenario(browser, work, stubs)
-            carried_scenario(browser, work, stubs)
+            carried_scenario(browser, work, out, stubs)
             refused_scenario(browser, work, stubs)
             browser.close()
     finally:

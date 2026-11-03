@@ -257,6 +257,80 @@ class StubTest(unittest.TestCase):
         self.assertEqual(self.get("/live/a.png")[1], png(), "the atlas page is served, not the loose file")
         self.assertEqual(self.get("/live/hills.png")[1], png(4, 3))
 
+    def outside(self, *pages):
+        """An atlas in the atlas folder naming `pages`, the first holding the page's region."""
+        text = "".join(f"\n{name}\nsize: 2,2\nfilter: Linear,Linear\nrepeat: none\nr{i}\n  bounds: 0,0,2,2\n"
+                       for i, name in enumerate(pages))
+        self.write(os.path.join(self.atlas_dir, "a.atlas"), text)
+        return text
+
+    def test_an_image_outside_the_atlas_folder_is_served_under_its_base_name(self):
+        samples = os.path.join(self.dir, "samples")
+        os.makedirs(samples)
+        self.write(os.path.join(samples, "Hiver.png"), png(shade=50))
+        text = self.outside("../samples/Hiver.png")
+        self.start()
+        s = self.stream()
+        self.assertEqual(s.next()["images"], ["a.atlas", "Hiver.png"])
+        self.assertEqual(self.get("/live/a.atlas")[1].decode(), text.replace("../samples/Hiver.png", "Hiver.png"),
+                         "the page line alone changes")
+        self.assertEqual(self.get("/live/Hiver.png")[1], png(shade=50))
+        self.assertEqual(self.get("/live/../samples/Hiver.png")[0].status, 404, "the name as written is not in the table")
+        self.assertEqual(self.get("/samples/Hiver.png")[0].status, 404, "what a browser makes of it")
+        self.write(os.path.join(samples, "Hiver.png"), png(shade=60))
+        edit = s.next()
+        self.assertEqual((edit["page"], edit["images"]), (False, ["Hiver.png"]), "a repaint goes by the served name")
+        self.assertEqual(self.get("/live/Hiver.png")[1], png(shade=60))
+        self.outside("../samples/Hiver.png", "a.png")
+        self.assertEqual(s.next()["images"], ["a.atlas", "a.png"], "an edit of the atlas names the atlas")
+
+    def test_a_base_name_taken_goes_to_the_moved_image_whatever_the_order(self):
+        for folder, shade in (("one", 10), ("two", 20)):
+            os.makedirs(os.path.join(self.dir, folder))
+            self.write(os.path.join(self.dir, folder, "a.png"), png(shade=shade))
+        self.outside("../one/a.png", "a.png", "../two/a.png")
+        self.start()
+        self.assertEqual(self.get("/live/a.png")[1], png(), "the image already in the folder keeps its name")
+        self.assertEqual(self.get("/live/a_2.png")[1], png(shade=10))
+        self.assertEqual(self.get("/live/a_3.png")[1], png(shade=20))
+        text = self.get("/live/a.atlas")[1].decode()
+        self.assertEqual([line for line in text.splitlines() if line.endswith(".png")], ["a_2.png", "a.png", "a_3.png"])
+
+    def test_a_name_a_browser_would_rewrite_inside_the_folder_loses_only_that(self):
+        os.makedirs(os.path.join(self.atlas_dir, "sub"))
+        self.write(os.path.join(self.atlas_dir, "sub", "b.png"), png(shade=30))
+        self.write(os.path.join(self.atlas_dir, "sub", "c.png"), png(shade=40))
+        self.write(os.path.join(self.atlas_dir, "d.png"), png(shade=70))
+        self.outside("./sub/b.png", "sub\\c.png", "sub/../d.png")
+        self.start()
+        self.assertEqual(self.get("/live/sub/b.png")[1], png(shade=30))
+        self.assertEqual(self.get("/live/sub/c.png")[1], png(shade=40))
+        self.assertEqual(self.get("/live/d.png")[1], png(shade=70))
+
+    def test_an_atlas_with_nothing_to_rename_is_the_file_and_a_region_named_alike_stays(self):
+        self.start()
+        with open(os.path.join(self.atlas_dir, "a.atlas"), "rb") as f:
+            self.assertEqual(self.get("/live/a.atlas")[1], f.read())
+        os.makedirs(os.path.join(self.dir, "up"))
+        self.write(os.path.join(self.dir, "up", "e.png"), png())
+        self.write(os.path.join(self.atlas_dir, "a.atlas"),
+                   "\n../up/e.png\r\nsize: 2,2\r\n../up/e.png\r\n  bounds: 0,0,2,2\r\n")
+        time.sleep(0.4)
+        self.assertEqual(self.get("/live/a.atlas")[1], b"\ne.png\r\nsize: 2,2\r\n../up/e.png\r\n  bounds: 0,0,2,2\r\n",
+                         "only the page's line, line ends kept")
+
+    def test_a_loose_image_follows_a_renamed_atlas_and_cannot_take_its_name(self):
+        os.makedirs(os.path.join(self.dir, "up"))
+        self.write(os.path.join(self.dir, "up", "e.png"), png(shade=5))
+        self.outside("../up/e.png")
+        self.write(os.path.join(self.loose_dir, "e.png"), png(9, 9))
+        self.write(os.path.join(self.loose_dir, "f.png"), png(4, 3))
+        self.start("--loose", self.loose_dir)
+        text = self.get("/live/a.atlas")[1].decode()
+        self.assertTrue(text.startswith("e.png\n"), text[:20])
+        self.assertLess(text.index("r0"), text.index("f.png"))
+        self.assertEqual(self.get("/live/e.png")[1], png(shade=5), "the atlas's page, not the loose file")
+
     def test_an_unreadable_page_keeps_the_last_good_one(self):
         self.start()
         s = self.stream()

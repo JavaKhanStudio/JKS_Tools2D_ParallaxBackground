@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import posixpath
 import queue
 import re
 import struct
@@ -46,16 +47,57 @@ def png_size(path):
     return struct.unpack(">II", head[16:24])
 
 
-def atlas_pages(text):
-    """The image names of a libGDX .atlas, whose pages start after a blank line, as engines/threejs loadAtlas reads."""
-    pages, fresh = [], True
-    for line in text.splitlines():
+def page_lines(lines):
+    """Which lines of a libGDX .atlas name an image: a page starts after a blank line, as engines/threejs loadAtlas reads."""
+    fresh = True
+    for i, line in enumerate(lines):
         if not line.strip():
             fresh = True
         elif fresh:
-            pages.append(line.strip())
+            yield i
             fresh = False
-    return pages
+
+
+def atlas_pages(text):
+    lines = text.splitlines()
+    return [lines[i].strip() for i in page_lines(lines)]
+
+
+def wanted_name(name):
+    """The name a browser can ask for: docs/live-link.md "An image outside the atlas's folder". A browser resolves . and
+    .. and turns a backslash into a slash before it asks, so a table holding the name as written never matches."""
+    slashed = name.replace("\\", "/")
+    clean = posixpath.normpath(slashed)
+    if clean == ".." or clean.startswith(("../", "/")) or ":" in clean:
+        return posixpath.basename(clean)
+    return clean
+
+
+def served_names(names):
+    """Each image name as written -> the name it is served under. A name that needs no change keeps it, whatever the
+    order, so only the moved one takes _2, _3, as a region name does."""
+    served = {name: name for name in names if wanted_name(name) == name}
+    taken = set(served.values())
+    for name in names:
+        if name in served:
+            continue
+        stem, ext = posixpath.splitext(wanted_name(name))
+        candidate, n = stem + ext, 1
+        while candidate in taken:
+            n += 1
+            candidate = f"{stem}_{n}{ext}"
+        served[name] = candidate
+        taken.add(candidate)
+    return served
+
+
+def renamed_atlas(text, served):
+    """The atlas's text with its page lines under their served names, every other byte as it was."""
+    lines = text.splitlines(keepends=True)
+    for i in page_lines(lines):
+        name = lines[i].strip()
+        lines[i] = lines[i].replace(name, served[name], 1)
+    return "".join(lines)
 
 
 def loose_atlas_text(entries):
@@ -84,12 +126,14 @@ def read_state(page_path, atlas_dir, loose_dir):
     atlas_path = os.path.join(atlas_dir, atlas_name) if atlas_name else ""
     text = ""
     if atlas_path and os.path.isfile(atlas_path):
-        with open(atlas_path, encoding="utf-8") as f:
+        with open(atlas_path, encoding="utf-8", newline="") as f:  # every byte but a renamed page line stays
             text = f.read()
     # name -> (path on disk, or None with the bytes in `generated`)
     files, generated = {}, {}
-    for name in atlas_pages(text):
-        files[name] = os.path.join(os.path.dirname(atlas_path), name)
+    served = served_names(atlas_pages(text))
+    for name, as_served in served.items():
+        files[as_served] = os.path.join(os.path.dirname(atlas_path), name.replace("\\", "/"))
+    text_served = renamed_atlas(text, served)
     for layer in layers.get("pageList") or []:
         for effect in (layer.get("particlesLibgdx"), layer.get("particlesGodot")):
             if effect and os.path.isfile(os.path.join(atlas_dir, effect)):
@@ -109,7 +153,9 @@ def read_state(page_path, atlas_dir, loose_dir):
             atlas_name = GENERATED_ATLAS
             layers["atlasName"] = atlas_name
             page = json.dumps(model).encode()
-        generated[atlas_name] = (text.rstrip("\n") + "\n" + loose_atlas_text(loose)).lstrip("\n").encode()
+        generated[atlas_name] = (text_served.rstrip("\n") + "\n" + loose_atlas_text(loose)).lstrip("\n").encode()
+    elif text_served != text:
+        generated[atlas_name] = text_served.encode()
     elif atlas_name:
         files[atlas_name] = atlas_path
     stamps = {}

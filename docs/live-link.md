@@ -69,6 +69,24 @@ Export itself differs from the link in one case, a page with loose images: see b
 The atlas, its images, the `.p` files and Godot scenes of the page's `PARTICLES` layers, under the names the page and the
 atlas use (a relative path keeps its folders, as in an export folder). The atlas is `text/plain`, a PNG `image/png`.
 
+### An image outside the atlas's folder
+
+An atlas may name its image above itself: `core/test-data/floor/HiverFloor.atlas` starts with `../samples/Hiver.png`.
+The link cannot serve that name: a browser turns `/live/../samples/Hiver.png` into `/samples/Hiver.png` before it asks,
+which is 404, and a reader reopens the stream every 2 s and draws nothing. So **the served name is what a browser would
+ask for, and the served atlas says it**:
+
+- A name that leaves the folder (`..` above it, an absolute path) is served under its base name: `Hiver.png`.
+- A name a browser would only tidy (`./a.png`, `sub/../a.png`, `sub\a.png`) is served tidied: `a.png`, `sub/a.png`.
+- A base name already taken goes to the moved image as `Hiver_2.png`, `Hiver_3.png`, as a region name does. An image that
+  needed no change keeps its name, whichever comes first in the atlas.
+- **The atlas's text changes on those page lines and nowhere else:** no region, no `regionPosition` moves, and a region
+  that happens to read like a path stays as it is. The atlas keeps its own name, the page's JSON is untouched, and an
+  atlas needing none of this is served byte for byte. The `images` of an event use the served names.
+
+The file on disk stays where it is, and that atlas stays as written: only the link's copy of the text changes. A reader
+sees an atlas with its image beside it, as in an export folder.
+
 An ETC2 copy (`.etc2.atlas`, `.zktx`) is not served: readers draw the atlas's own images here.
 
 ## A loose image
@@ -90,8 +108,8 @@ hills
 
 - **Nothing is repacked**, so painting costs one image's refetch, and no reader needs a new idea. libGDX's parser, Godot's
   and three.js's read this atlas (`tools/r492-live-link/atlas-parsers.sh`, `browser-check.py`).
-- **With an atlas**, its text comes first, unchanged, and each loose image's page after it, so no region's
-  `regionPosition` moves.
+- **With an atlas**, its text comes first, unchanged but for [an image outside its folder](#an-image-outside-the-atlass-folder),
+  and each loose image's page after it, so no region's `regionPosition` moves.
 - **With no atlas yet**, the served atlas is named `live.atlas`, and `atlasName` in the JSON says so: the one place the
   link changes a field.
 - **The JSON keeps every layer**, loose ones too, each naming its image's region at `regionPosition` 0. A region name is
