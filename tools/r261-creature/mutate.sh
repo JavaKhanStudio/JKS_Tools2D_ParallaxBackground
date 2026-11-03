@@ -41,7 +41,7 @@ mutate "crowd without size" " and 1 / 3 < n / size < 3" ""
 mutate "no edge rule" "if k in edge or not" "if not"
 mutate "solid only (alpha >= 0.95)" "solid = spread(alpha >= 0.5, -4)" "solid = spread(alpha >= 0.95, -4)"
 # r438's shading rule
-mutate "no shading rule" "if not shading(rgb, solid, blob, shade, hue):" "if True:"
+mutate "no shading rule" "if not (shading(rgb, solid, blob, shade, hue) or" "if not (False or"
 mutate "shading: any luminance" "return shade < dark < 1 / shade and off < hue" "return off < hue"
 mutate "shading: any hue" "return shade < dark < 1 / shade and off < hue" "return shade < dark < 1 / shade"
 # r349's ridge check

@@ -40,12 +40,19 @@ for f in "$B"/r242/run/*_layer.png "$B"/r246/*/strips/*_cut.png "$B"/ai/examples
 	src="${f%_cut.png}_ai.png" # ai-page.sh's names; r242's run.sh names are hills_ai.png, pinesw0.png
 	[ -f "$src" ] || src="${f%_layer.png}_ai.png"
 	[ -f "$src" ] || src="${f%_layer.png}.png"
+	[ -f "$src" ] || continue # its painting was pruned from build/ since
 	# The painted strip gives the sky's colour; pixel art (one pixel per art cell) is only seen there.
 	check 0 "$f" "$src"
 done
 # r438: DreamShaperXL Turbo's beach (r437), its dunes' slip faces a crescent of shadow on each crest: none a creature.
 for f in "$B"/r437/beach/strips/l?_cut.png "$B"/r437/dunes/s*_cut.png; do
 	[ -f "$f" ] && check 0 "$f" "${f%_cut.png}_ai.png"
+done
+# r500: DreamShaperXL Turbo's ruins (r496), each refused with no figure in it: rims of painted edges inside the mask,
+# rubble and masts off the strip's foot, slits of sky through a tower.
+for s in plain/s14/strips/l1 plain/s15/strips/l1 plain/s16/strips/l2 plain/s17/strips/l2 plain/s19/strips/l2 \
+	plain/s22/strips/l2 warp/s16/strips/l2 warp/s17/strips/l2 warp/s19/strips/l3 warp/s22/strips/l2; do
+	[ -f "$B/r496/${s}_cut.png" ] && check 0 "$B/r496/${s}_cut.png" "$B/r496/${s}_ai.png"
 done
 for k in hills mountains pines; do
 	[ -f "$B/r243/${k}_xl.png" ] && check 0 "$B/r243/${k}_xlcut.png" "$B/r243/${k}_xl.png"

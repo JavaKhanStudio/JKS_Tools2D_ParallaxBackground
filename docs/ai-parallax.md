@@ -229,6 +229,16 @@ it (r244); an SDXL ControlNet is untried.
   shading (dunes, folds between hills, a tuft on a ridge), and adds none. A creature that pale in the land's own hue
   is missed. The same dunes are still refused by `on_ridge` when SD paints the sea through a gap between them: blue,
   off the line from the sky to the sand, and half kept by the key.
+  Since r500, `find` also passes three shapes that hold no figure, all from ruins strips, where the mask holds a whole
+  painted wall opaque: a blob touching the strip's bottom three rows (rubble or a mast running off the foot); sky seen
+  through a slit or window (at least 1.5 times as tall as wide, on the line from the sky to the mass round it and within
+  0.35 of the sky's end); and the rim of a painted edge, a fifth of the ring round it in its own colour and that colour
+  connected over more than `--max` px (dark rubble against an orange wall stands out only where the box reaches over a
+  corner). `on_neck` takes a head of at most 14 r^2 px, so a tower top is no head (R1's giant's is 962 px, the tower's
+  6407). DreamShaperXL Turbo's ruins in r496 were refused 17 of 60, none holding a figure; they are now refused 2 of 60,
+  a pale far tower by `on_ridge` and a mast with a sliver of rim by `find`, neither a figure. The price, pinned in
+  `creature_test.py`: a neckless figure in the colour of the rubble it stands on is a block on rubble to `find`, and a
+  creature cut off by the strip's foot is missed.
 - Each layer is painted on its own: nothing makes their colours agree but `--colours`, which the init image carries.
   `ai-page.sh` paints them at full contrast and gives the distance with the page's depth fog (`fogStrength`, r217).
 

@@ -8,12 +8,19 @@ is compared with the mass's colour around it (a box mean, R px each way, taken a
 time) and with how much the mass varies there (that difference's mean, 2R px each way): a pixel stands out when it is
 both --far from the mean and --times the variation. A blob of them --min to --max px big is a creature unless:
   - it touches the mass's edge: sky or far haze at the foot of a gap between trees, which the silhouette mask made
-    opaque (a creature standing on the silhouette is the ridge check's, below);
+    opaque (a creature standing on the silhouette is the ridge check's, below). The strip's bottom rows are an edge too
+    (r500): rubble or a mast running off the foot; a creature cut off by the foot is missed;
   - another blob has its colour (within 30), its shape (height/width within 3x) and its size (within 3x): texture
     repeats, snow on pines and trees on a slope stand out in crowds. A wide bird among upright trees of its colour is
     still alone; a creature the colour, shape and size of the layer's own flecks is missed;
   - it is the mass's own shading (r438): its hue within 15 (chroma, 0..255) of the mass round it and its luminance
-    within 0.7 to 1/0.7 of it, as a dune's slip face is. A creature that pale in the land's own hue is missed.
+    within 0.7 to 1/0.7 of it, as a dune's slip face is. A creature that pale in the land's own hue is missed;
+  - it is sky seen through the mass (r500): a slit or a window in a tower, a mix of the top rows' sky and the mass round
+    it, far nearer the sky. A creature the sky's own colour, and that tall, is missed;
+  - it runs on into its own colour (r500): a fifth or more of the ring round it is within --far of its colour, and that
+    colour covers more than --max px: the rim of a painted edge, dark rubble against an orange wall inside the mask,
+    standing out only where the box reaches over that edge. A creature's own body ends within --max. A
+    figure the colour of the rubble it stands on is a block on rubble here and is missed: the neck check's, if it has one.
 The ridge check (r349), on a painted strip whose sky is given: a figure standing ON the outline (novaCartoonXL paints
 people on hilltops) is keyed mostly clear and never inside the mass. Above the mass, within 2R px of it, a pixel is
 odd when it is --ridge-far from the line between the sky and the mass's colour below it (a box mean, 2R px each way):
@@ -24,7 +31,7 @@ then the figure itself), is neither of the above; novaCartoonXL paints one stand
 and painted pixels near it nearer its colour than the sky's: masts sil.py keyed off) is opened along X, rows narrower
 than r/4 to 5r/12 each way taken out: a head on a neck comes off as an island. It is a figure when it is round (h/w
 0.6 to 1.8, filling 0.6 of its box), has sky over it (a pine's tier has its spire) and, down through the neck, widens
-again to shoulders 0.8 its width (a chunk on a mast does not).
+again to shoulders 0.8 its width (a chunk on a mast does not). A head wider than 4 r or so is a tower (r500).
 Exits 4 and names each one (x, y, size). layer.py and pixel.py call find() on the painted strip and exit 4 too, so
 ai-page.sh paints the strip again on the next seed. tools/r261-creature/sweep.sh holds it to every strip on disk and to
 planted creatures, mutate.sh proves each rule above is needed.
@@ -72,6 +79,30 @@ def shading(rgb, solid, blob, shade, hue):
     return shade < dark < 1 / shade and off < hue
 
 
+def sky_through(rgb, solid, blob, sky, near=0.35, off=40):
+    """Whether blob is sky seen through the mass: on the line from sky to the mass round it, within near of the sky's
+    end. A slit is at least 1.5 times as tall as wide; a bird the sky's colour, wider than tall, is not sky."""
+    ys, xs = np.nonzero(blob)
+    ring = spread(blob, 6) & ~spread(blob, 2) & solid
+    if not ring.any() or np.ptp(ys) + 1 < 1.5 * (np.ptp(xs) + 1):
+        return False
+    colour, seg = rgb[blob].mean(axis=0), rgb[ring].mean(axis=0) - sky
+    t = (colour - sky) @ seg / max(seg @ seg, 1)
+    return t < near and np.linalg.norm(colour - (sky + max(t, 0) * seg)) < off
+
+
+def runs_on(rgb, solid, blob, far, hi, share=0.2):
+    """Whether blob is the rim of something bigger than any creature: share or more of the ring round it is within far of
+    its colour, and that colour, connected to it, covers more than hi px. A creature wider than the box stands out only
+    round its rim, and its core and body are its colour too: those two end within hi."""
+    ring = spread(blob, 6) & ~spread(blob, 2) & solid
+    colour = rgb[blob].mean(axis=0)
+    if not ring.any() or (np.linalg.norm(rgb[ring] - colour, axis=1) < far).mean() < share:
+        return False
+    label, sizes = components(solid & (np.linalg.norm(rgb - colour, axis=2) < far) | blob)
+    return sizes[label[blob][0] - 1] > hi
+
+
 def find(rgb, alpha, lo=50, hi=3000, r=12, far=40, times=3.0, like=30, crowd=0, shade=0.7, hue=15):
     """[(x, y, size)] of each creature-like blob in rgb (h, w, 3 floats) inside alpha's (h, w, 0..1) mass."""
     # Half keyed is mass too: a creature painted nearer the sky's colour than the land's keys part clear. Sky seen
@@ -83,7 +114,8 @@ def find(rgb, alpha, lo=50, hi=3000, r=12, far=40, times=3.0, like=30, crowd=0, 
     label, sizes = components(out)
     # Sky or far haze at the foot of a gap between trees, which the silhouette mask made opaque, opens onto the
     # mass's edge; a creature inside the mass does not.
-    edge = set(np.unique(label[spread(~solid, 2)]))
+    edge = set(np.unique(label[spread(~solid, 2)])) | set(np.unique(label[-3:]))
+    sky = np.median(rgb[:8].reshape(-1, 3), axis=0)  # layer.py's
     blobs = []
     for k, size in enumerate(sizes):
         if size < 8:
@@ -108,7 +140,8 @@ def find(rgb, alpha, lo=50, hi=3000, r=12, far=40, times=3.0, like=30, crowd=0, 
         # creature far darker than the land it stands on, or in another colour.
         blob = np.zeros(label.shape, bool)
         blob[ys, xs % rgb.shape[1]] = True
-        if not shading(rgb, solid, blob, shade, hue):
+        if not (shading(rgb, solid, blob, shade, hue) or sky_through(rgb, solid, blob, sky)
+                or runs_on(rgb, solid, blob, far, hi)):
             found.append((int(xs.mean()) % rgb.shape[1], int(ys.mean()), int(size)))
     return found
 
@@ -134,9 +167,10 @@ def on_ridge(rgb, alpha, sky, lo=50, r=12, far=80):
     return found
 
 
-def on_neck(rgb, alpha, sky, r, cap=0.05):
+def on_neck(rgb, alpha, sky, r, cap=0.05, biggest=14):
     """[(x, y, size)] of each head on a neck in alpha's outline: a figure the mass's own colour, or too big for
-    find()'s box."""
+    find()'s box, its head biggest * r^2 px at most: r500's 6407 px was a tower, a figure under it taller than the strip,
+    R1's giant's is 962."""
     mass = alpha >= 0.5
     # The outline as painted: sil.py's cut may have keyed masts off a roof, which the painted strip still has over
     # what would be a head. Only what is nearer the mass's colour than the sky's (far grey towers behind are no
@@ -155,7 +189,7 @@ def on_neck(rgb, alpha, sky, r, cap=0.05):
             e |= np.roll(e, d, 1) | np.roll(e, -d, 1)
         label, sizes = components(e & m)
         for k, size in enumerate(sizes):
-            if size < (2 * n + 1) ** 2 // 2:
+            if size < (2 * n + 1) ** 2 // 2 or size > biggest * r * r:
                 continue
             ys, xs = np.nonzero(label == k + 1)
             w, h = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
