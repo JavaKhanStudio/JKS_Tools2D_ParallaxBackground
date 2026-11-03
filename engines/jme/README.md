@@ -30,8 +30,9 @@ from 2.5.0 on. The dependency, the setup and the gamma note: the root README,
   FAIL; `BREAK=particles`, `anchor` and `blend` must fail the particles round. `engines/rounds/rings` has no stills:
   `JmeRingsRound` (headless) loads each page as a game does and writes the numbers `PlaxRings` laid out, compared with
   core's by `tools/compare-rings.py` within 1e-4; `BREAK=rings` (each front 1 % out) must FAIL it.
+  CI's `jme-frames` job runs it under `xvfb-run` (`ATELIER_NO_OFFSCREEN=1`). Needs cage, Xwayland, Pillow.
 - `tools/rings-lab.sh` — the rings lab (below): a window, or `--shot DIR` off screen in cage. `tools/rings-sheet.py`
-  puts its stills beside three.js's lab's (`engines/threejs/tools/rings-lab.sh --shot`): three.js | jME | difference. CI's `jme-frames` job runs it under `xvfb-run` (`ATELIER_NO_OFFSCREEN=1`). Needs cage, Xwayland, Pillow.
+  puts its stills beside three.js's lab's (`engines/threejs/tools/rings-lab.sh --shot`): three.js | jME | difference.
 - `tools/bench.sh [OUT_JSON]` — jME's latency on [`engines/rounds/bench`](../rounds/bench/round.json)
   (`JmeParallaxBench`): each scene's load time, then 600 frames vsync off, act and render with the GPU finished (no swap, as libGDX's),
   into `build/bench/jme.json`. Off screen in cage; not in CI (llvmpipe's numbers mean nothing).
