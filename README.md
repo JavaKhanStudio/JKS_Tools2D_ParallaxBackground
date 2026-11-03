@@ -529,6 +529,12 @@ included: no colour management on the background. It draws IMAGE layers, cross-f
 `SEQUENCE`, `SHADER`, `PARTICLES`, `FLOOR` or `LURKER` layer fails to load until those are ported (the reader's README
 names each one's task).
 
+### Following the editor live
+
+The Parallax Editor serves the page it has open on `127.0.0.1`, and says when it changes: a game under development
+redraws as a slider moves, with no export and no reload. [docs/live-link.md](docs/live-link.md) is the protocol, every
+reader's and every project's; `tools/live-link-stub.py` serves a page from files the same way, to test against.
+
 ## File formats
 
 | Extension | Content                                              | Written by    | Read by                   |

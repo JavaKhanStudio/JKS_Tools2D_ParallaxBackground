@@ -17,6 +17,9 @@ it runs `core` itself, `.plax` included (see "jMonkeyEngine 3: done").
 So the interchange format already exists: `.jplax` plus its atlas. Nothing had to change in the editor or in `core`
 for Godot.
 
+The same two files can come from the editor as they are edited, over HTTP: [live-link.md](live-link.md) is how a reader
+follows the page the editor has open. A reader that can load a page from a URL has the first half already.
+
 ## What an engine has to do
 
 A reader is three pieces, and the third is where the work is:

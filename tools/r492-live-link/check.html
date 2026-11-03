@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- The page tools/r492-live-link/browser-check.py opens: the real three.js reader, drawn from the live link's URL, from
+     another origin, reloading on each event. The reader's own client is parallax-readers r57; this only proves the
+     protocol carries what a reader needs. -->
+<html><head><meta charset="utf-8"><title>live link check</title>
+<script type="importmap">{ "imports": { "three": "/engines/threejs/tests/vendor/three/three.module.min.js" } }</script>
+</head><body style="margin:0;background:#000"><script type="module">
+import * as THREE from 'three';
+import { PlaxBackground } from '/engines/threejs/src/plax.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
+renderer.setSize(960, 540);
+document.body.appendChild(renderer.domElement);
+const bg = new PlaxBackground();
+bg.setSize(960, 540);
+window.link = { events: [], loads: 0, errors: [], headerRev: null };
+
+window.connect = url => {
+  link.events = []; link.loads = 0; link.errors = [];
+  const stream = new EventSource(url + 'events');
+  link.close = () => stream.close();
+  stream.onerror = () => link.errors.push('stream, readyState ' + stream.readyState);
+  stream.onmessage = async e => {
+    const event = JSON.parse(e.data);
+    link.events.push(event);
+    if (!event.open) return;
+    try {
+      link.headerRev = (await fetch(url + 'page.jplax')).headers.get('X-Plax-Rev');
+      await bg.load(url + 'page.jplax', url);
+      bg.act(0);
+      bg.render(renderer);
+      link.loads++;
+    } catch (error) { link.errors.push(String(error)); }
+  };
+};
+window.frame = () => renderer.domElement.toDataURL('image/png');
+window.ready = true;
+</script></body></html>
