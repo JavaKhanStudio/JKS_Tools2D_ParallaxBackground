@@ -13,7 +13,8 @@
 #   tools/depth-lab.sh --clip F.mp4    a clip, headless: the slide from 2D into 3D, a turn round the page and back,
 #                                      12 s at 30 fps, stepped at game speed (window.depthLabAct)
 #   tools/depth-lab.sh --seam DIR      the check that the 3D view at 0 is the game's frame: every page drawn by the
-#                                      heart (&flat=1) and through the cards at 0, compared; fails on a difference
+#                                      heart (&flat=1), through the cards at 0 and through their 3D pictures
+#                                      (&pictures=1, r503), and back at 0 after 3D, compared; fails on a difference or a page warning
 #   tools/depth-lab.sh --big           before the rest: the canvas at 1280 x 720 (marketing captures)
 #   tools/depth-lab.sh --slider K=V    before --shot/--pages/--clip: start control K (its data-key) at V, a choice at its option's index
 # Builds with ./gradlew :core:browserTestWar first (--no-build skips it). Needs Chrome, python3 and, headless, Python

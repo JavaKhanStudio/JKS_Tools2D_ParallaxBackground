@@ -13,6 +13,8 @@ from browser import launch
 
 url, chrome, frames, mode, big, sliders = sys.argv[1:]
 PAGES = 5
+# How far the cards' pictures may stray from the game's frame at 0 (r503): their filtering softens edges, no more.
+PICTURE_OFF, PICTURE_SHARE, PICTURE_MEAN = 48, 0.01, 2.5
 
 
 def open_lab(browser, query="", viewport=(1540, 1100)):
@@ -58,10 +60,35 @@ def overlaps(page):
     return found
 
 
+# A frame drawn and copied onto a still canvas under the tags in one task, the live canvas hidden (r503): a screenshot of the
+# live one can catch the next frame half drawn, a layer or the sky missing, and a copy in a later animation frame can run before
+# the lab's own and read a cleared canvas. depthLabAct(0) moves nothing and draws.
+FREEZE = """() => {
+    window.depthLabAct(0);
+    const live = document.querySelector('#depth-lab canvas:not(#depth-frozen)');
+    let still = document.getElementById('depth-frozen');
+    if (!still) {
+        still = document.createElement('canvas');
+        still.id = 'depth-frozen';
+        still.style.position = 'absolute';
+        still.style.pointerEvents = 'none';
+        live.after(still);
+    }
+    still.width = live.width;
+    still.height = live.height;
+    const box = live.getBoundingClientRect(), parent = still.offsetParent.getBoundingClientRect();
+    still.style.left = (box.left - parent.left) + 'px';
+    still.style.top = (box.top - parent.top) + 'px';
+    still.style.width = box.width + 'px';
+    still.style.height = box.height + 'px';
+    still.getContext('2d').drawImage(live, 0, 0);
+    live.style.opacity = 0;
+}"""
+
+
 def shot(page, path, what="#depth-lab"):
-    # two animation frames: the step lands in the next render
-    page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
-    page.locator(what).screenshot(path=path)
+    page.evaluate(FREEZE)
+    page.locator(what.replace("canvas", "#depth-frozen")).screenshot(path=path)
 
 
 with sync_playwright() as p:
@@ -138,7 +165,9 @@ with sync_playwright() as p:
         print("OK: three angles shot; no tag covers another or is cut, and a card shows, at 54 angles in each of 3 units")
     elif mode == "seam":
         worst = []
+        pictures = []
         errors = []
+        warned = []
         for i in range(PAGES):
             shots = []
             for query in ("&flat=1", ""):
@@ -156,10 +185,47 @@ with sync_playwright() as p:
             Image.fromarray((np.minimum(255, diff * 16)).astype(np.uint8)).save(f"{frames}/s{i}diff.png")
             print(f"page {i}: max {diff.max()}/255, {off} of {diff.size} pixels off by more than 2/255, mean {diff.mean():.4f}")
             worst.append((off, diff.max()))
+            # In 3D the cards show mipmapped pictures (r503): at 0 those are the same frame, softened only by the filtering.
+            page, errs = open_lab(browser, "&pictures=1")
+            errors += errs
+            page.on("console", lambda m: m.type == "warning" and warned.append(m.text))
+            set_control(page, "page", i)
+            set_control(page, "view", 0)
+            page.evaluate("window.depthLabAct(4)")
+            path = f"{frames}/s{i}picture.png"
+            shot(page, path, "#depth-lab canvas")
+            page.close()
+            diff = np.abs(shots[0] - np.asarray(Image.open(path).convert("RGB")).astype(int)).max(axis=2)
+            off = int((diff > PICTURE_OFF).sum())
+            print(f"page {i} through its pictures: {off} of {diff.size} pixels off by more than {PICTURE_OFF}/255, mean {diff.mean():.4f}")
+            pictures.append((off / diff.size, diff.mean()))
+            # Back at 0 after drawing in 3D, nothing of the pictures may be left behind.
+            page, errs = open_lab(browser)
+            errors += errs
+            page.on("console", lambda m: m.type == "warning" and warned.append(m.text))
+            set_control(page, "page", i)
+            set_control(page, "view", 1)
+            page.evaluate("window.depthLabAct(0)")
+            page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+            set_control(page, "view", 0)
+            page.evaluate("window.depthLabAct(4)")
+            path = f"{frames}/s{i}back.png"
+            shot(page, path, "#depth-lab canvas")
+            page.close()
+            diff = np.abs(shots[0] - np.asarray(Image.open(path).convert("RGB")).astype(int)).max(axis=2)
+            off = int((diff > 2).sum())
+            print(f"page {i} back from 3D: {off} of {diff.size} pixels off by more than 2/255")
+            worst.append((off, diff.max()))
         if any(off > diff.size * 0.001 for off, _ in worst):
             print("FAIL: the 3D view at 0 is not the game's frame", file=sys.stderr)
             sys.exit(1)
-        print("OK: the 3D view at 0 is the game's frame on every page")
+        if any(off > PICTURE_SHARE or mean > PICTURE_MEAN for off, mean in pictures):
+            print("FAIL: the cards' pictures are not the game's frame", file=sys.stderr)
+            sys.exit(1)
+        if errors or warned:
+            print(f"FAIL: page errors or warnings: {errors + warned}", file=sys.stderr)
+            sys.exit(1)
+        print("OK: the 3D view at 0 is the game's frame on every page, back from 3D too, and so are the cards' pictures")
     else:
         page, errors = open_lab(browser)
         set_control(page, "view", 0)

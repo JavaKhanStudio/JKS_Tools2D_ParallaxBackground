@@ -9,13 +9,18 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap.Format;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.ScreenUtils;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
@@ -37,7 +42,7 @@ import jks.tools2d.parallax.pages.Utils_Page_Json;
  * <p>
  * Drag the canvas to turn round the page (from 2D, it turns into 3D first), the wheel to come closer; the button or the
  * space bar slides between 2D and 3D. {@code &clip=1}: nothing moves by itself, {@code window.depthLabAct(seconds)}
- * steps the heart and the slide at 1/60 s. {@code &flat=1}: the heart's own render instead of the cards, for the check
+ * steps the heart and the slide at 1/60 s. {@code &pictures=1}: the cards show their mipmapped pictures at 0 too, for the seam check (r503). {@code &flat=1}: the heart's own render instead of the cards, for the check
  * that the 3D view at 0 is the game's frame (tools/depth-lab.sh --seam). {@code &big=1}: the canvas shown at its full
  * 1280 x 720, for a marketing capture.
  */
@@ -65,6 +70,17 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	 */
 	static final int SIZE = 1, AXIS = 2;
 	static final float VIEW = 1, YAW = 66, PITCH = 14, CLOSER = 1, FOV = 60, SCROLL = 6;
+	/**
+	 * How opaque a card's pale pane is in 3D, none at 0 (the game's frame): a faint glass, or, behind a dark layer, a
+	 * backing it reads on over the dark ground (r503). Between the two lightnesses of the layer's own colour, the pane runs
+	 * from one to the other.
+	 */
+	static final float PANE = 0.1f, PANE_DARK = 0.6f, DARK = 0.25f, LIGHT = 0.5f;
+	/** The picture a card shows in 3D: a power of two, or WebGL 1 makes no mipmaps; finer than the biggest canvas across. */
+	static final int PAINTED_WIDTH = 2048, PAINTED_HEIGHT = 1024;
+	/** EXT_texture_filter_anisotropic's TEXTURE_MAX_ANISOTROPY_EXT, which GL20 does not name, and how much is asked of it. */
+	static final int TEXTURE_MAX_ANISOTROPY = 0x84FE;
+	static final float ANISOTROPY = 16;
 	/** How long the slide between 2D and 3D takes, in seconds. */
 	static final float SLIDE = 1.6f;
 	/** Where the sky (the page's gradients and any still layer) stands: this much farther than the farthest layer. */
@@ -76,12 +92,15 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 
 	private Parallax_Heart heart;
 	private SpriteBatch batch;
+	private FrameBuffer painted, sampled;
+	/** Each layer's {@link #PANE}, read from its picture the first time it is painted: -1 until then. */
+	private float[] pane = new float[0];
 	private ShapeRenderer shapes;
 	private OrthographicCamera flatCamera;
 	private SelectElement page, axis, sizes, units;
 	private InputElement view, yaw, pitch, closer, fov, scroll, across;
 	private Element readout, overlay, labels;
-	private boolean clip, flat;
+	private boolean clip, flat, pictures;
 	private int shownPage = -1;
 	/** The slide: where it is (0 the 2D frame, 1 the 3D view) and where it goes; -1 when the slider holds it. */
 	private float slide = VIEW, goal = -1;
@@ -111,6 +130,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		clip = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("clip"));
 		flat = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("flat"));
+		pictures = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("pictures"));
 		batch = new SpriteBatch();
 		shapes = new ShapeRenderer();
 		flatCamera = new OrthographicCamera();
@@ -174,6 +194,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		{
 			heart.setPage(Utils_Page_Json.loadPage(FILES[chosen]));
 			shownPage = chosen;
+			pane = null;
 		}
 		heart.screenSpeedConstantX = LabControls.read(scroll);
 		if (goal < 0)
@@ -197,6 +218,11 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 			distance = new float[n];
 			placed = new float[n];
 			names = new String[n];
+		}
+		if (pane == null || pane.length != n)
+		{
+			pane = new float[n];
+			java.util.Arrays.fill(pane, -1);
 		}
 		frontSpeed = ParallaxPageReader.frontSpeedOf(layers);
 		float farthest = 1;
@@ -288,6 +314,8 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 			stepSlide(1 / 60f);
 		}
 		applyControls();
+		// Drawn here too, so that a capture reads this frame in this same task (drive.py's FREEZE, r503).
+		render();
 	}
 
 	/** Moves the slide toward its goal; there, the slider holds it again. */
@@ -628,10 +656,75 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		cardTag(skyPlaced, vw, vh, d, "∞\nsky", "depth-card depth-sky", e, null, layers.size());
 	}
 
-	/** Layer {@code i} on its card: the reader draws it alone through the card's matrix. */
+	/** Layer {@code i} drawn alone by the reader into {@link #painted}, premultiplied, its mipmaps made; its draw calls. */
+	private int paint(int i)
+	{
+		if (painted == null)
+		{
+			painted = new FrameBuffer(Format.RGBA8888, PAINTED_WIDTH, PAINTED_HEIGHT, false);
+			Texture picture = painted.getColorBufferTexture();
+			picture.setFilter(TextureFilter.MipMapLinearLinear, TextureFilter.Linear);
+			// Sharp up the card while it is averaged across. Without the extension the mipmaps still average, blurrier.
+			if (Gdx.graphics.supportsExtension("EXT_texture_filter_anisotropic"))
+				Gdx.gl.glTexParameterf(GL20.GL_TEXTURE_2D, TEXTURE_MAX_ANISOTROPY, ANISOTROPY);
+		}
+		painted.begin();
+		Gdx.gl.glClearColor(0, 0, 0, 0);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		batch.setProjectionMatrix(flatCamera.combined);
+		batch.setTransformMatrix(toWorld.idt());
+		batch.setBlendFunctionSeparate(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA, GL20.GL_ONE, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		batch.begin();
+		heart.parallaxReader.drawLayer(flatCamera, batch, i);
+		batch.end();
+		int calls = batch.renderCalls;
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		painted.end();
+		painted.getColorBufferTexture().bind();
+		Gdx.gl.glGenerateMipmap(GL20.GL_TEXTURE_2D);
+		if (pane[i] < 0)
+			pane[i] = paneOf();
+		return calls;
+	}
+
+	/** The pane behind what {@link #painted} holds: from its colour, averaged over what it covers (its mipmaps, a few texels). */
+	private float paneOf()
+	{
+		if (sampled == null)
+			sampled = new FrameBuffer(Format.RGBA8888, 16, 8, false);
+		sampled.begin();
+		Gdx.gl.glClearColor(0, 0, 0, 0);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		batch.setProjectionMatrix(toWorld.setToOrtho2D(0, 0, 1, 1));
+		batch.setTransformMatrix(card.idt());
+		batch.disableBlending();
+		batch.begin();
+		batch.draw(painted.getColorBufferTexture(), 0, 0, 1, 1, 0, 0, 1, 1);
+		batch.end();
+		batch.enableBlending();
+		byte[] pixels = ScreenUtils.getFrameBufferPixels(0, 0, 16, 8, false);
+		sampled.end();
+		float lightness = 0, covered = 0;
+		for (int p = 0; p < pixels.length; p += 4)
+		{
+			lightness += 0.3f * (pixels[p] & 255) + 0.59f * (pixels[p + 1] & 255) + 0.11f * (pixels[p + 2] & 255);
+			covered += pixels[p + 3] & 255;
+		}
+		toWorld.idt();
+		if (covered == 0)
+			return PANE;
+		float light = (lightness / covered - DARK) / (LIGHT - DARK);
+		return PANE_DARK + (PANE - PANE_DARK) * Math.max(0, Math.min(1, light));
+	}
+
+	/** Layer {@code i} on its card: at 0 the reader draws it alone through the card's matrix, in 3D its {@link #paint picture}. */
 	private int card(int i, float e, float vw, float vh, float d)
 	{
 		float k = placed[i];
+		// In 3D the layer goes on its card as a mipmapped picture: a card seen nearly edge on shrinks it 25 times across,
+		// which drawn straight skips the texels between and leaves a thin dark shape in specks (r503).
+		boolean picture = e > 0 || pictures;
+		int layerCalls = picture ? paint(i) : 0;
 		cardAt(k, vw, d);
 		Color accent = ACCENTS[i % ACCENTS.length];
 		// The card's view into the stencil, a pane of glass the layer is painted on: its tiles past the view's edges are
@@ -642,18 +735,30 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_REPLACE);
 		shapes.setProjectionMatrix(cardCombined.set(combined).mul(card));
 		beginShapes(ShapeType.Filled);
-		shapes.setColor(accent.r * 0.5f + 0.5f, accent.g * 0.5f + 0.5f, accent.b * 0.5f + 0.5f, 0.1f * e);
+		shapes.setColor(accent.r * 0.5f + 0.5f, accent.g * 0.5f + 0.5f, accent.b * 0.5f + 0.5f, (picture ? pane[i] : PANE) * e);
 		shapes.rect(0, 0, vw, vh);
 		shapes.end();
 		Gdx.gl.glStencilFunc(GL20.GL_EQUAL, 1, 0xff);
 		Gdx.gl.glStencilOp(GL20.GL_KEEP, GL20.GL_KEEP, GL20.GL_KEEP);
 		batch.setProjectionMatrix(combined);
 		batch.setTransformMatrix(card);
-		batch.begin();
-		heart.parallaxReader.drawLayer(flatCamera, batch, i);
-		batch.end();
+		if (picture)
+		{
+			batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			batch.begin();
+			batch.draw(painted.getColorBufferTexture(), 0, 0, vw, vh, 0, 0, 1, 1);
+			batch.end();
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		}
+		else
+		{
+			batch.begin();
+			heart.parallaxReader.drawLayer(flatCamera, batch, i);
+			batch.end();
+			layerCalls = batch.renderCalls;
+		}
 		Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
-		int calls = batch.renderCalls;
+		int calls = layerCalls;
 		batch.setTransformMatrix(toWorld.idt());
 		frame(i, e, vw, vh, d, accent);
 		ParallaxLayer layer = layers.get(i);
@@ -1025,5 +1130,9 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		batch.dispose();
 		shapes.dispose();
+		if (painted != null)
+			painted.dispose();
+		if (sampled != null)
+			sampled.dispose();
 	}
 }
