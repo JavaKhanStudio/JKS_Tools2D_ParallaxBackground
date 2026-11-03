@@ -3,10 +3,10 @@
 
 Both labs' --shot stills (engines/threejs/tools/rings-lab.sh --shot, engines/jme/tools/rings-lab.sh --shot) open at the
 same knobs and fly the same path, so their panels (right of the 300 px controls) show the same rings: one row per still,
-three.js | jME | difference (x4), and each still's mean difference per channel (0-255) over the panels and over their
-sky (the top 40 %, where the bands are, below the panel tags), printed. Not a
-gate: two engines' perspective rasterisation and lighting do not agree at 2/255 (docs/page-as-3d-sky.md); the ground is
-lit by each engine's own lights. The bands are what to compare. STILL defaults to every PNG both folders hold.
+three.js | jME | difference (x4), and each still's mean difference per channel (0-255) over the panels, over their
+sky (the top 40 %, where the bands are, below the panel tags) and over their ground (the rest), printed. Not a gate:
+the panel tags are each engine's own text, and three.js's silhouettes are antialiased where the --shot is not. The ground
+is lit and fogged as three.js's (JmeRingsLab.valley, LabGround.j3md, r69). STILL defaults to every PNG both folders hold.
 """
 import os
 import sys
@@ -31,7 +31,8 @@ def main(a, b, sheet, names):
         x, y = (i.crop((CONTROLS, 0, i.width, h)) for i in (x, y))
         diff = ImageChops.difference(x, y)
         mean, sky = mean_of(diff), mean_of(diff.crop((0, 40, diff.width, diff.height * 4 // 10)))
-        print(f'{n}: mean {mean:.2f} / 255, sky {sky:.2f} (the top 40 % but the tags)')
+        ground = mean_of(diff.crop((0, diff.height * 4 // 10, diff.width, diff.height)))
+        print(f'{n}: mean {mean:.2f} / 255, sky {sky:.2f} (the top 40 % but the tags), ground {ground:.2f}')
         rows.append((n, mean, x, y, diff.point(lambda v: min(255, v * 4))))
     w = rows[0][2].width // 2
     out = Image.new('RGB', (3 * w, sum(r[2].height // 2 + 20 for r in rows)), 'black')

@@ -75,8 +75,10 @@ on r48: a valley, a ridge at the page's foot, a camera flying round; panel A at 
 front..far (a click on a panel zooms it). On the left the view pick, the scene, then every knob: up/down pick (or a
 click), left/right or the wheel move (shift: ten steps), V view, N next scene, F a cross-fade into it, Space pause, R
 reset, C Copy settings (JSON on the clipboard and in `build/jme/rings-lab/settings.json`). Its ground is lit as
-three.js's lab lights it, so beside three.js's stills (`tools/rings-sheet.py`) the sky and bands differ by 0.05 / 255
-and the whole panel by 2.3 (the ground's fog, mixed in sRGB here, in linear there). `round=shaders` or
+three.js's lab lights it and fogged as three.js fogs it (`LabGround.j3md`: by view depth on a smoothstep, where
+`Lighting.j3md` fogs by distance from the camera on a straight ramp), so beside three.js's stills (`tools/rings-sheet.py`)
+the sky and the ground differ by 0.05 / 255; what is left of the whole panel's 0.85 is the panel tags, each engine's own
+text. `round=shaders` or
 `round=/engines/threejs/tests/rings-seam` draws another round's pages, as three.js's lab; a page with a SHADER layer adds
 `<scene>-join-t8.png`, panel B turned (the `look` knob) to where that band closes its ring, and `BREAK=ringeffect`
 draws every SHADER band plain. `tools/ring-join.py JOIN PLAIN` measures the step at that join (r61).

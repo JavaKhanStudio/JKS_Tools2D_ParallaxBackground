@@ -26,7 +26,6 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
-import com.jme3.light.AmbientLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
@@ -201,7 +200,6 @@ public class JmeRingsLab extends SimpleApplication
 		for (Node root : new Node[] { rootNode, sceneB })
 		{
 			root.attachChild(valley());
-			root.addLight(new AmbientLight(ColorRGBA.White));
 		}
 		rootNode.attachChild(ringsA);
 		sceneB.attachChild(ringsB);
@@ -269,8 +267,8 @@ public class JmeRingsLab extends SimpleApplication
 				nor[index[t + c] * 3 + 2] += f.z;
 			}
 		}
-		// Lit once, as three.js's lab lights it (a hemisphere light and a sun that never move, MeshLambertMaterial, its
-		// output in sRGB): the ground looks the same in both labs, and only the rings differ by engine.
+		// Lit once, as three.js's lab lights it (a hemisphere light and a sun that never move, MeshLambertMaterial): the
+		// ground looks the same in both labs, and only the rings differ by engine. Linear: LabGround.frag encodes, then fogs.
 		Vector3f sun = new Vector3f(-300, 400, -200).normalizeLocal();
 		float[] sky = linear(0xdfe8ff), ground = linear(0x4a4030), sunColor = linear(0xfff2dd);
 		for (int v = 0; v < n; v++)
@@ -280,24 +278,22 @@ public class JmeRingsLab extends SimpleApplication
 			for (int c = 0; c < 3; c++)
 			{
 				float irradiance = 1.6f * (ground[c] + (sky[c] - ground[c]) * up) + 2.2f * lit * sunColor[c];
-				col[v * 4 + c] = srgb(irradiance * col[v * 4 + c] / FastMath.PI);
+				col[v * 4 + c] = irradiance * col[v * 4 + c] / FastMath.PI;
 			}
 		}
 		Mesh mesh = new Mesh();
 		mesh.setBuffer(Type.Position, 3, BufferUtils.createFloatBuffer(pos));
 		mesh.setBuffer(Type.Color, 4, BufferUtils.createFloatBuffer(col));
-		mesh.setBuffer(Type.Normal, 3, BufferUtils.createFloatBuffer(nor));
 		mesh.setBuffer(Type.Index, 3, BufferUtils.createIntBuffer(index));
 		mesh.updateBound();
 		Geometry g = new Geometry("valley", mesh);
-		// Lighting for its fog only: a white ambient light gives back the colours lit above.
-		Material m = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-		m.setBoolean("UseVertexColor", true);
-		m.setBoolean("UseMaterialColors", true);
-		m.setColor("Diffuse", ColorRGBA.Black);
-		m.setColor("Specular", ColorRGBA.Black);
-		m.setColor("Ambient", ColorRGBA.White);
-		m.setBoolean("UseFog", true);
+		// three.js's fog, not Lighting.j3md's: that one fogs by distance from the camera, three.js by view depth, and on a
+		// straight ramp, three.js on a smoothstep.
+		Material m = new Material(assetManager, "jks/tools2d/parallax/jme/LabGround.j3md");
+		String broken = System.getProperty("parallax.jme.break", "");
+		m.setBoolean("BreakDistance", "fogdistance".equals(broken));
+		m.setBoolean("BreakRamp", "fogramp".equals(broken));
+		m.setBoolean("BreakMix", "fogmix".equals(broken));
 		g.setMaterial(m);
 		grounds.add(m);
 		return g;
@@ -313,13 +309,6 @@ public class JmeRingsLab extends SimpleApplication
 			c[k] = v < 0.04045f ? v / 12.92f : (float) Math.pow((v + 0.055f) / 1.055f, 2.4f);
 		}
 		return c;
-	}
-
-	/** Linear to sRGB, as three.js encodes its output. */
-	private static float srgb(float v)
-	{
-		v = Math.max(0, Math.min(1, v));
-		return v < 0.0031308f ? v * 12.92f : 1.055f * (float) Math.pow(v, 1 / 2.4f) - 0.055f;
 	}
 
 	private static Vector3f vec(float[] a, int i)
@@ -397,9 +386,9 @@ public class JmeRingsLab extends SimpleApplication
 		float[] fog = ringsB.fogColor(bg.getPage());
 		for (Material m : grounds)
 		{
-			// three.js's Fog takes the colour as linear, and its ground's output is encoded to sRGB
-			m.setColor("FogColor", new ColorRGBA(srgb(fog[0]), srgb(fog[1]), srgb(fog[2]), 1));
-			m.setVector2("LinearFog", new Vector2f(knobs.get("front") * 0.3f, knobs.get("worldFog")));
+			// three.js's Fog takes the colour as linear
+			m.setVector3("FogColor", new Vector3f(fog[0], fog[1], fog[2]));
+			m.setVector2("Fog", new Vector2f(knobs.get("front") * 0.3f, knobs.get("worldFog")));
 		}
 		drawControls();
 	}

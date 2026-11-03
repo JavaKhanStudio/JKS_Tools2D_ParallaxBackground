@@ -1,0 +1,31 @@
+// The rings lab's valley (parallax-readers r69): a ground under three.js's THREE.Fog, so the lab's ground matches its twin's.
+// Its vertex colours are linear, already lit (JmeRingsLab.valley). Not part of what a game copies.
+MaterialDef LabGround {
+
+    MaterialParameters {
+        // Linear, as THREE.Fog takes it; the shader encodes it.
+        Vector3 FogColor : 1.0 1.0 1.0
+        // near, far
+        Vector2 Fog : 153.0 200.0
+        // BREAK=fogdistance, fogramp: jME's own fog back, one habit at a time; BREAK=fogmix: mixed in linear, three.js's not.
+        Boolean BreakDistance
+        Boolean BreakRamp
+        Boolean BreakMix
+    }
+
+    Technique {
+        VertexShader   GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/LabGround.vert
+        FragmentShader GLSL310 GLSL300 GLSL150 GLSL100 : jks/tools2d/parallax/jme/LabGround.frag
+
+        WorldParameters {
+            WorldViewProjectionMatrix
+            WorldViewMatrix
+        }
+
+        Defines {
+            BREAK_DISTANCE : BreakDistance
+            BREAK_RAMP : BreakRamp
+            BREAK_MIX : BreakMix
+        }
+    }
+}

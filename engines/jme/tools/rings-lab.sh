@@ -16,6 +16,8 @@
 #                                                     its ring (r61, as three.js's r58)
 #   BREAK=ringeffect ... --shot DIR                   every SHADER band drawn plain: r61's mutant (shoot it into
 #                                                     build/jme/.mutant/, never beside the real stills)
+#   BREAK=fogdistance|fogramp|fogmix ... --shot DIR   the valley's fog off three.js's by one thing (r69): by distance from
+#                                                     the camera, on a straight ramp (jME's own two), or mixed in linear
 #
 # Needs a JDK; --shot needs cage and Xwayland (tools/nested-x.sh).
 # on-screen: with no argument this is the rings lab, a window Simon asked for; --shot runs in cage.

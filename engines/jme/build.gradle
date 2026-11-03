@@ -22,7 +22,7 @@ sourceSets {
     // The frame runner of engines/jme/tools/frame-check.sh, and a demo: not part of what a game copies.
     shots {
         java.srcDirs = ['tests']
-        resources.srcDirs = []
+        resources.srcDirs = ['tests-resources']
         compileClasspath += main.output + main.compileClasspath
         runtimeClasspath += main.output + main.runtimeClasspath
     }
