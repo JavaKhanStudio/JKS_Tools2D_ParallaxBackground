@@ -52,7 +52,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	/** The canvas: 16:9, drawn at 960 wide over the sliders, its back buffer finer. */
 	static final int FRAME_WIDTH = 1280, FRAME_HEIGHT = 720, SHOWN_WIDTH = 960;
 	static final String[] PAGES = { "AI pines", "AI beach", "Purple fairy", "One night", "Hiver, misty" };
-	static final String[] FILES = { "pines-lab/forest.jplax", "anim-lab/beach.jplax", "fog-lab/s05.jplax", "fog-lab/s06.jplax", "fog-lab/s01.jplax" };
+	static final String[] FILES = { "pines-lab/forest.jplax", "anim-lab/beach.jplax", "fog-lab/s05.jplax", "fog-lab/s06.jplax", "depth-lab/hiver.jplax" };
 	static final String[] SIZES = { "as the camera sees them", "all the front's size" };
 	static final String[] AXES = { "true distances", "compressed (square root)", "compressed (log)" };
 	/** The units the ground, the tags and the readout speak (r458): metres first, a phone's length, or front distances. */

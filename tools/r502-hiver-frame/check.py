@@ -73,8 +73,10 @@ def main():
     with tempfile.TemporaryDirectory() as scratch:
         war = Path(scratch) / 'war'
         shutil.copytree(WAR, war)
+        # The lab has drawn its own lowered copy since r504 (core/test-data/depth): put the page r502 read back in its place.
+        target = next(war.glob('assets/depth-lab/hiver-*.jplax'))
+        target.write_text(json.dumps(page))
         still(war, out / 'asis.png')
-        target = next(war.glob('assets/fog-lab/s01-*.jplax'))
         page.update({'topHalf_top': SKY, 'topHalf_bottom': SKY, 'bottomHalf_top': SNOW, 'bottomHalf_bottom': SNOW})
         for layer in page['pageModel']['pageList']:
             layer['decal_Y_Ratio'] = layer['decal_Y_Ratio'] - DROP
