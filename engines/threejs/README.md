@@ -66,6 +66,25 @@ so the snow falls as in the editor. `bg.load` fetches it; a page handed to `setP
 first with `await loadParticles(page, atlas)`. The effect draws from `PlaxParticles.random`, libGDX's `RandomXS128`:
 `PlaxParticles.random.setSeed(n)` gives the same snow each run.
 
+## Following the editor: `connectLive`
+
+While a page is being made, the game can draw what the Parallax Editor has open and redraw it on each edit, with no
+Export and no reload ([docs/live-link.md](../../docs/live-link.md)):
+
+```js
+import { PlaxBackground, connectLive } from './jks_parallax_threejs/plax.js';
+
+const link = connectLive(bg, 'http://127.0.0.1:9797/live/', { onPage(page, atlas) { /* after each redraw */ } });
+link.close();                                          // stops following; the page stays drawn
+```
+
+Each edit rebuilds the layers in place: a slider costs `page.jplax`, a repaint that image. Each layer keeps what it has
+scrolled, and what the page does not hold stays the game's: `bg`'s speeds, tint, zoom, detail levels and hooks, the
+effect clock, and the options of a `PlaxRings` on `bg`, whose bands follow by themselves. A hook holding a region
+looks it up again in `onPage`, or it goes on drawing the old image. When the link drops it keeps drawing and reconnects
+every 2 s. From an https page Chrome asks for the site's permission first, and the console says so. A game
+that never calls it fetches nothing.
+
 ## The page as the sky of a 3D world: `PlaxRings`
 
 A game drawn in 3D can stand the page round its world instead of behind its screen
@@ -113,6 +132,7 @@ alone (radius, elevations, repeat, draw order, fog per band), core's to 1e-4 (th
     tests/bench.html, .js  the latency runner (engines/rounds/bench)
     tests/rings.html, .js  the rings check: PlaxRings' numbers for each scene of engines/rounds/rings
     tests/rings_lab.html, .js  the rings lab (tools/rings-lab.sh)
+    tests/live_link.html   connectLive on a background and its rings, stepped by tools/live-check.py
     tests/demo.html        Calm scrolling, T cross-fades into OneNight, SPACE stops the scroll
     tests/vendor/three/    three.js r170 (MIT), for the tests and the demo only
     tools/                 this reader's scripts, run from anywhere (each goes to the repository root first)
@@ -140,6 +160,10 @@ alone (radius, elevations, repeat, draw order, fog per band), core's to 1e-4 (th
   library's depths beside panel B compressed into `front..far`, a camera flying round, sliders for every option, a
   cross-fade into the next page, Copy settings. With no argument a Chrome window (the board's Labs button: `rings-lab`);
   `--shot DIR` stills and `--clip F.mp4` a 12 s flight, headless on the GPU, failing on any console warning.
+- `tools/live-check.py OUT` — `connectLive` against [`tools/live-link-stub.py`](../../tools/live-link-stub.py) in headless
+  Chrome on an https origin: a layer's speed, a decal and an image changed in the stub's files, the drawn frame following
+  within 2 s with no jump and no file the event did not name, then a repaint during a read, a refused page, a failed
+  read, no page open, the stream dropped, `close()`. Stills in `OUT`. Needs Playwright; not in CI.
 - `tools/mutate-effects.sh [MUTANT...]` — breaks one piece of the effects at a time (WAVE's ripple, FOG's patches,
   SWELL's waves, `wrappedX`, `wrappedY`, the page fog's haze; the dissolve's drift, the gradients' grade, the slots'
   stagger) and runs the round that should see it: each must FAIL (r39, r40: each failed, its worst still 7.9 to

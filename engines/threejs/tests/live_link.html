@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- The page tools/live-check.py opens: connectLive drawing a PlaxBackground and a PlaxRings on it, stepped by the check. -->
+<html><head><meta charset="utf-8"><title>live link</title>
+<script type="importmap">{ "imports": { "three": "/engines/threejs/tests/vendor/three/three.module.min.js" } }</script>
+</head><body style="margin:0;background:#000"><script type="module">
+import * as THREE from 'three';
+import { PlaxBackground, PlaxRings, connectLive } from '/engines/threejs/src/plax.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
+renderer.setSize(960, 540);
+renderer.autoClear = false;
+document.body.appendChild(renderer.domElement);
+const RING_OPTIONS = PlaxRings.options({ front: 77, pageDegrees: 33 });
+let bg, rings, scene3d, camera3d, link;
+
+window.live = { pages: 0 };
+window.connect = url => {
+  link?.close();
+  bg = new PlaxBackground();
+  bg.setSize(960, 540);
+  rings = new PlaxRings(bg, RING_OPTIONS);
+  scene3d = new THREE.Scene();
+  scene3d.add(rings.group);
+  camera3d = new THREE.PerspectiveCamera(70, 960 / 540, 0.1, 5000);
+  camera3d.position.set(0, 1, 0);
+  camera3d.lookAt(0, 8, -50);
+  live.pages = 0;
+  link = connectLive(bg, url, { onPage() { live.pages++; } });
+};
+window.close_ = () => link.close();
+window.step = seconds => bg.act(seconds);
+window.frame = () => {
+  renderer.clear();
+  bg.render(renderer);
+  return renderer.domElement.toDataURL('image/png');
+};
+window.ringFrame = () => {
+  rings.update();
+  renderer.clear();
+  renderer.render(scene3d, camera3d);
+  return renderer.domElement.toDataURL('image/png');
+};
+// What the page does not hold, set by the game and to be kept.
+window.gameState = () => ({ speed: bg.speedConstantX, tint: bg.tint, detail: bg.detail, clock: bg._effectTime,
+  hook: bg._hooks.has('game'), seed: bg._sequenceSeed, rings: { front: rings.options.front, pageDegrees: rings.options.pageDegrees } });
+window.setGame = () => { bg.speedConstantX = 60; bg.tintTo([1, 0.9, 0.8, 1], 0); bg.setLayerHook('game', () => {}); bg.setSequenceSeed(7); };
+window.distances = () => bg.layers.map(l => [l.distanceX, l.distanceY]);
+window.fade = () => bg.transfertInto(bg.page, bg.atlas, 5);
+window.fading = () => bg.isInTransfer();
+window.scenes = () => bg.scene.children.length;
+window.carried = () => bg.layers.filter(l => l.lurkerStarted || l.rowDistance).map(l => [l.lurkerState ?? null, l.lurkerThere ?? null, l.lurkerSeen ?? null, l.lurkerInSight ?? null, l.rowDistance?.[0] ?? null]);
+window.ready = true;
+</script></body></html>

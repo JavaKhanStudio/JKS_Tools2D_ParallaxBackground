@@ -204,6 +204,10 @@ never written, far first by renderOrder; the sky sphere and a still band follow 
 band draws its effect through the flat EFFECT_FRAGMENTS with RING defined (ringEffectMaterial, r53): change a flat
 effect's shader and the ring's changes with it. Judged by eye in tools/rings-lab.sh (--shot DIR, --clip F.mp4:
 headless on the GPU, fails on any console warning; round=shaders SCENES="s08 s09" draws the shaders round's pages).
+THE LIVE LINK (connectLive, class PlaxLiveLink, r57; docs/live-link.md's "What a reader does" is its spec) swaps through
+bg.rebuildPage, never setPage: a new per-layer state that runs on by itself goes in _carryOver, or it restarts on each
+slider step. Events during a read are merged, never the latest only: a later slider's images is false and a repaint
+would be lost. engines/threejs/tools/live-check.py against tools/live-link-stub.py (not in CI, Playwright).
 A bare rNN is a parallax-readers task; the mother board's are parallax:rNN.
 """
 

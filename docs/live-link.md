@@ -27,7 +27,8 @@ http://127.0.0.1:9797/live/
 await bg.load('http://127.0.0.1:9797/live/page.jplax');   // three.js: its atlas and images next to it
 ```
 
-The stream only says when to read it again.
+The stream only says when to read it again. A web reader has that done for it: three.js's `connectLive(bg, url)`
+([its README](../engines/threejs/README.md)).
 
 ## The server
 
@@ -140,8 +141,9 @@ Hold the `rev` and the `imagesRev` of the last event you read (`null` at the sta
 3. `imagesRev` differs from yours: read the files in `images`. You may read more than it names (a whole atlas again);
    never read any when `images` is `false`.
 4. **Draw only a complete set.** Build the new layers to one side and swap when all of it arrived, so a frame never
-   holds a new page on old regions. One read at a time: an event arriving during a read is remembered, the latest one
-   only, and read after it. A page your reader refuses (a kind it does not know) keeps the last page on screen, says
+   holds a new page on old regions. One read at a time: the events arriving during a read are merged, `page` or-ed and
+   `images` joined under the latest revs, and read after it: keep only the latest and a repaint it follows is lost, for
+   a later slider's `images` is `false`. A page your reader refuses (a kind it does not know) keeps the last page on screen, says
    why, and counts as read: the next edit may fix it. A read that failed (the connection, a 404) keeps the last page
    and holds no new rev: close the stream and open a new one after 2 s, whose first event names everything again.
 5. **Rebuild in place, not a cross-fade and not a reset.** What the page does not hold stays the game's: the camera, a
@@ -194,6 +196,7 @@ it is. The stub reads its files 25 times a second, stdlib only.
 - `tools/live_link_stub_test.py` (CI, `tools/python-tests.sh`) holds the stub to this document, over real HTTP.
 - `tools/r492-live-link/browser-check.py OUT` is the real three.js reader in a real Chrome on an https origin: a layer's
   number, an image repainted, a page with no atlas yet, each redrawn within 2 s, and the permission above.
+- `engines/threejs/tools/live-check.py OUT` is the three.js client, `connectLive`, holding to "What a reader does".
 - `tools/r492-live-link/atlas-parsers.sh` is the generated atlas in libGDX's and Godot's parsers.
 
 ## What this is not

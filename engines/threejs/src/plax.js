@@ -26,6 +26,10 @@
 //   bg.transfertInto(page, atlas, 3, PlaxTransfertStyle.dissolve(5, 0.08, 0.5))
 //   bg.tintTo([1, 0.6, 0.4, 1], 2)
 //
+// Following the page the Parallax Editor has open, each edit redrawn in place (docs/live-link.md), while making it:
+//
+//   const link = connectLive(bg, 'http://127.0.0.1:9797/live/', { onPage(page, atlas) {} });   // link.close() stops
+//
 // An EMPTY layer (kind "EMPTY") is drawn by the game, as ParallaxPageReader.setLayerHook:
 //
 //   const bird = bg.atlas.findRegion('bird');
@@ -107,7 +111,13 @@ const WHITE = [1, 1, 1, 1];
 // order, then index order when any region has one, a region without one last, as libGDX does: regionPosition counts
 // in that order. Each page's image is loaded as its own texture, filtered as the atlas says.
 export async function loadAtlas(url) {
-  const text = await (await fetchOk(url)).text(), dir = url.replace(/[^/]*$/, '');
+  const atlas = parseAtlas(await (await fetchOk(url)).text(), url.replace(/[^/]*$/, ''));
+  await Promise.all(atlas.pages.map(async p => { p.texture = await loadTexture(atlas.dir + p.file, p.mipmaps, p.nearest); }));
+  return atlas;
+}
+
+// An atlas's text, its pages' textures still to set.
+function parseAtlas(text, dir) {
   const pages = [], regions = [];
   let page = null, region = null, header = false;
   const close = () => {
@@ -154,7 +164,6 @@ export async function loadAtlas(url) {
     const key = r => r.index === -1 ? Infinity : r.index;
     regions.sort((a, b) => key(a) - key(b));
   }
-  await Promise.all(pages.map(async p => { p.texture = await loadTexture(dir + p.file, p.mipmaps, p.nearest); }));
   return {
     pages, regions, dir,
     // The n-th region called `name`, counting from 0 in libGDX's order: how a page names its layers.
@@ -184,7 +193,9 @@ async function loadTexture(url, mipmaps, nearest) {
 // A saved page: the JSON export (.jplax) or the editor project (.plaxpj), read field by field as
 // core's Utils_Page_Json does. A field missing from the file keeps its default.
 export async function loadPage(url) {
-  const json = await (await fetchOk(url)).json();
+  return pageOfJson(await (await fetchOk(url)).json());
+}
+function pageOfJson(json) {
   // A project holds its page under "saving", with a flag per layer telling whether it comes from the atlas.
   return json.saving ? readPage(json.saving, json.saving.inside) : readPage(json, null);
 }
@@ -284,6 +295,169 @@ async function fetchOk(url) {
   return r;
 }
 
+// --- the live link ---------------------------------------------------------------------------------------------------
+
+// Follows the page the Parallax Editor has open (docs/live-link.md, "What a reader does"): `background` draws it from
+// `url` and redraws it on each edit, in place (rebuildPage), so the PlaxRings on it follow too. onPage(page, atlas) is
+// called after each swap, for what a game looks up in the page or the atlas. close() stops it; the page stays drawn.
+// A tool for making a page: a shipped game never calls this, and then nothing here runs.
+export function connectLive(background, url = 'http://127.0.0.1:9797/live/', { onPage = null } = {}) {
+  return new PlaxLiveLink(background, url.endsWith('/') ? url : url + '/', onPage);
+}
+
+class PlaxLiveLink {
+  constructor(background, url, onPage) {
+    this.background = background;
+    this.url = url;
+    this.onPage = onPage;
+    this.closed = false;
+    this.rev = null;
+    this.imagesRev = null;
+    this.reading = false;
+    // The event waiting for the read under way: those that came during it merged, a repaint named by one of them not lost.
+    this.waiting = null;
+    // Files named by an event and not read yet: they outlive a refused page, whose atlas is not known.
+    this.owed = new Set();
+    this.page = null;
+    this.atlasName = null;
+    this.atlasText = null;
+    // By image's name: { texture, filter }.
+    this.textures = new Map();
+    // By .p's name: PlaxParticles.read's. A slider costs no effect.
+    this.effects = {};
+    this.stream = null;
+    this.retry = 0;
+    this.saidClosed = false;
+    this._open();
+  }
+
+  close() {
+    this.closed = true;
+    clearTimeout(this.retry);
+    this.stream?.close();
+  }
+
+  _open() {
+    this.retry = 0;
+    this.waiting = null;
+    const stream = this.stream = new EventSource(this.url + 'events');
+    stream.onopen = () => { this.saidClosed = false; };
+    stream.onmessage = e => this._heard(JSON.parse(e.data));
+    // A network error the browser retries by itself; CLOSED it never will, and a refused permission is just that.
+    stream.onerror = () => {
+      if (stream.readyState !== EventSource.CLOSED) return;
+      if (!this.saidClosed) {
+        this.saidClosed = true;
+        const https = globalThis.location?.protocol === 'https:' ? ' From an https page Chrome also refuses it until the'
+          + ' site is allowed: site settings (the icon left of the address), Local network access.' : '';
+        console.warn(`plax: the live link at ${this.url} cannot be reached, trying again every 2 s. Is the link on in the editor?${https}`);
+      }
+      this._reopen();
+    };
+  }
+
+  // Closes the stream and opens a new one after 2 s, whose first event names everything again.
+  _reopen() {
+    this.stream.close();
+    if (!this.closed && !this.retry) this.retry = setTimeout(() => this._open(), 2000);
+  }
+
+  _heard(event) {
+    if (this.closed) return;
+    if (event.v !== 1) {
+      console.warn(`plax: the live link at ${this.url} speaks version ${event.v}, this reader knows 1: stopped, the page stays as it is`);
+      this.close();
+      return;
+    }
+    if (!this.reading) { this._read(event); return; }
+    const w = this.waiting;
+    // An event with no page open, or one after it, says all there is: the opening one names every file.
+    this.waiting = !w || !w.open || !event.open ? event : { ...event, page: w.page || event.page,
+      images: w.images || event.images ? [...new Set([...(w.images || []), ...(event.images || [])])] : false };
+  }
+
+  async _read(event) {
+    this.reading = true;
+    try {
+      if (event.open) await this._readOpen(event);
+    } catch (error) {
+      // Nothing new is held: the next connection's first event names it all again.
+      console.warn(`plax: a read on the live link failed, the last page stays: ${error.message ?? error}`);
+      this.waiting = null;
+      this._reopen();
+    }
+    this.reading = false;
+    const next = this.waiting;
+    this.waiting = null;
+    if (next && !this.closed) this._read(next);
+  }
+
+  async _readOpen(event) {
+    const readPageToo = event.page && event.rev !== this.rev;
+    if (event.imagesRev !== this.imagesRev && event.images) for (const name of event.images) this.owed.add(name);
+    if (!readPageToo && !this.owed.size) { this.rev = event.rev; this.imagesRev = event.imagesRev; return; }
+    let page = this.page;
+    if (readPageToo) {
+      const json = await (await fetchOk(this.url + 'page.jplax')).json();
+      try {
+        page = pageOfJson(json);
+      } catch (error) {
+        // Counts as read: the next edit may fix it.
+        console.warn(`plax: the live link's page is refused, the last page stays: ${error.message ?? error}`);
+        this.rev = event.rev;
+        this.imagesRev = event.imagesRev;
+        return;
+      }
+    }
+    if (!page) { this.rev = event.rev; this.imagesRev = event.imagesRev; return; }
+    const files = await this._readFiles(page);
+    if (this.closed) return;
+    this.rev = event.rev;
+    this.imagesRev = event.imagesRev;
+    try {
+      this.background.rebuildPage(page, files.atlas, files.sameEffects);
+    } catch (error) {
+      // A page this reader cannot build (a particle image not in the atlas): refused too.
+      console.warn(`plax: the live link's page is refused, the last page stays: ${error.message ?? error}`);
+      return;
+    }
+    this._hold(page, files);
+    this.onPage?.(this.background.page, this.background.atlas);
+  }
+
+  // Every file `page` needs, to one side until all of it has arrived: what is owed and what was never read.
+  async _readFiles(page) {
+    const name = page.atlasName, read = name === this.atlasName && !this.owed.has(name) && this.atlasText !== null;
+    const text = !name ? '' : read ? this.atlasText : await (await fetchOk(this.url + name)).text();
+    const atlas = parseAtlas(text, this.url), textures = new Map();
+    await Promise.all(atlas.pages.map(async p => {
+      const had = this.textures.get(p.file), filter = `${p.mipmaps} ${p.nearest}`;
+      const same = had?.filter === filter && !this.owed.has(p.file);
+      const texture = same ? had.texture : await loadTexture(this.url + p.file, p.mipmaps, p.nearest);
+      p.texture = texture;
+      textures.set(p.file, { texture, filter });
+    }));
+    const effects = {};
+    for (const file of Object.keys(this.effects)) if (!this.owed.has(file)) effects[file] = this.effects[file];
+    page.effects = effects;
+    await loadParticles(page, atlas);
+    return { atlas, text, textures, sameEffects: text === this.atlasText && !this.owed.size };
+  }
+
+  _hold(page, { text, textures }) {
+    const before = this.textures;
+    this.page = page;
+    this.atlasName = page.atlasName;
+    this.atlasText = text;
+    this.textures = textures;
+    this.effects = page.effects;
+    this.owed.clear();
+    // A texture no layer draws any more. A game's hook still holding its region has it uploaded again, not lost.
+    const kept = new Set([...textures.values()].map(t => t.texture));
+    for (const { texture } of before.values()) if (!kept.has(texture)) texture.dispose();
+  }
+}
+
 // --- the background --------------------------------------------------------------------------------------------------
 
 export class PlaxBackground {
@@ -379,13 +553,48 @@ export class PlaxBackground {
     this._resetTransfert();
     this._updateWorld();
     this.layers = this._buildLayers(page, atlas);
+    this._takePageLook(page);
+    this.resetPositions();
+  }
+
+  _takePageLook(page) {
     this._repeatX = page.repeatOnX;
     this._repeatY = page.repeatOnY;
     this._gradient = [page.topHalfTop, page.topHalfBottom, page.bottomHalfTop, page.bottomHalfBottom];
     this._gradientFading = false;
     this._topHalfSize = page.topHalfSize;
     this._bottomHalfSize = page.bottomHalfSize;
-    this.resetPositions();
+  }
+
+  // The page swapped for an edit of itself (connectLive), at once and with nothing reset: each new layer takes what its
+  // counterpart, matched from the front, has scrolled from its decal, so an edited decal still moves it and nothing else
+  // jumps. A FLOOR's rows and a LURKER's sightings run on; so does a PARTICLES layer's snow when `sameEffects`, the
+  // effects and their images unchanged. What the page does not hold stays: the speeds, tint, zoom, detail levels, hooks,
+  // sequence seed, effect clock and a PlaxRings' options. A cross-fade under way ends first, on the page it was going to.
+  rebuildPage(page, atlas, sameEffects = false) {
+    if (!this.page) { this.setPage(page, atlas); return; }
+    if (this.transferLayers.length) this._finishTransfert();
+    this.transferLayers = this._buildLayers(page, atlas);
+    this.transferPage = page;
+    this.transferAtlas = atlas;
+    this._syncTransferPositions();
+    this._carryOver(sameEffects);
+    this._finishTransfert();
+    this._takePageLook(page);
+  }
+
+  // What _syncTransferPositions leaves out, slot by slot from the front: a cross-fade starts these afresh, a rebuild must not.
+  _carryOver(sameEffects) {
+    const from = this.layers, to = this.transferLayers;
+    for (let i = 1; i <= Math.min(from.length, to.length); i++) {
+      const a = from[from.length - i], b = to[to.length - i];
+      if (a.model.kind !== b.model.kind) continue;
+      b.wrappedX = a.wrappedX;
+      b.wrappedY = a.wrappedY;
+      if (a.rowDistance?.length === b.rowDistance?.length) b.rowDistance = a.rowDistance;
+      for (const key of Object.keys(a)) if (key.startsWith('lurker')) b[key] = a[key];
+      if (sameEffects && a.particles && b.particles && a.model.particlesLibgdx === b.model.particlesLibgdx) b.particles = a.particles;
+    }
   }
 
   // Cross-fades into `page` over `seconds` (0: at once), as Parallax_Heart.transfertIntoPage. The pages are matched
@@ -627,6 +836,16 @@ export class PlaxBackground {
 
   _buildLayers(page, atlas) {
     const built = [];
+    try {
+      this._buildLayersInto(built, page, atlas);
+    } catch (error) {
+      this._drop(built);
+      throw error;
+    }
+    return built;
+  }
+
+  _buildLayersInto(built, page, atlas) {
     for (const model of page.layers) {
       if (model.kind === 'SEQUENCE') {
         const sequence = PlaxSequence.build(this, model, page, atlas);
@@ -685,7 +904,6 @@ export class PlaxBackground {
       else if (l.haze > 0 && ['IMAGE', 'SEQUENCE', 'FLOOR', 'LURKER'].includes(l.model.kind)) l.quads.setEffect('PLAIN');
       PlaxDetail.apply(l, this._detail, PlaxDetail.ruleOf(this, l));
     }
-    return built;
   }
 
   _buildLayer(model, region, useOriginalSize) {

@@ -71,7 +71,8 @@ repair.
 - Change what a file holds and update README.md's "File formats" section in the same commit.
 - The live link (r492, `docs/live-link.md`) serves the `.jplax` as Export writes it, its rev in a header: never a field in
   the body. Its contract is read by the editor's server and each reader's client; change it with `tools/live-link-stub.py`
-  and `tools/live_link_stub_test.py`, and run `tools/r492-live-link/browser-check.py OUT` (real reader, https origin) and
+  and `tools/live_link_stub_test.py`, and run `tools/r492-live-link/browser-check.py OUT` (real reader, https origin),
+  `engines/threejs/tools/live-check.py OUT` (its client, `connectLive`) and
   `atlas-parsers.sh` there (its generated atlas's `bounds` line is indented, or the readers read a new region).
 
 ## Runtime (`core`)
