@@ -9,6 +9,8 @@ export LC_ALL=C # sort and join agree on the order
 export OMP_NUM_THREADS=1 # JOBS processes, not JOBS x every core: load 105 without it (r501)
 cd "$(dirname "$0")/../.." || exit 1
 REV="${1:-HEAD}"
+# A job runs in a worktree with no build/ of its own: the strips are the checkout's (r509).
+ROOT="${ATELIER_CHECKOUT:-.}"
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
 # With tools/parallax_rules.py, which layer.py imports from its parent since r400: without it REV refused every strip
@@ -24,10 +26,12 @@ one() { # DIR CUT: "<exit> <cut> <what it named>"
 export -f one
 run() { # DIR OUT
 	# shellcheck disable=SC2016 # $0 and $1 are bash -c's, not this shell's
-	find build ../JKS_Tools2D_ParallaxAI/build -name '*_cut.png' 2>/dev/null | sort |
+	find "$ROOT/build" "$ROOT/../JKS_Tools2D_ParallaxAI/build" -name '*_cut.png' 2>/dev/null | sort |
 		xargs -P "${JOBS:-8}" -I{} bash -c 'one "$0" "$1"' "$1" {} | sort -k2 >"$2"
 }
 run "$T/tools/r239-ai-strips" "$T/before"
 run tools/r239-ai-strips "$T/after"
+# No strip found is a run that saw nothing, not a run where nothing moved.
+[ -s "$T/after" ] || { echo "disk: no painted strip under $ROOT: nothing was compared"; exit 2; }
 join -j 2 <(cut -d' ' -f1,2 "$T/before") <(cut -d' ' -f1,2 "$T/after") | awk '$2 != $3 { print $2 " -> " $3 "  " $1 }'
 echo "disk: $(wc -l <"$T/after") strips; $REV refuses $(awk '$1 != 0' "$T/before" | wc -l), the working tree $(awk '$1 != 0' "$T/after" | wc -l)"
