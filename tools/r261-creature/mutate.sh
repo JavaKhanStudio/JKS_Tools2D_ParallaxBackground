@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # headless: numpy on PNGs, no window
-# mutate.sh [BUILD] — r261: each of creature.py's rules earns its place. Takes one out of a copy of
+# mutate.sh [FIXTURES] — r261: each of creature.py's rules earns its place. Takes one out of a copy of
 # tools/r239-ai-strips at a time and runs sweep.sh on it, which must then give a wrong answer (a strip flagged, or a
 # planted creature missed). A mutation the sweep still passes is a rule nothing proves: exits 1.
 set -u
@@ -24,19 +24,23 @@ s = open(p).read()
 assert old in s, old
 open(p, "w").write(s.replace(old, new))
 PY
-		if R239_DIR="$M/tools/r239-ai-strips" tools/r261-creature/sweep.sh "$B" >"$M/log" 2>&1; then
+		R239_DIR="$M/tools/r239-ai-strips" tools/r261-creature/sweep.sh "$B" >"$M/log" 2>&1
+		rc=$?
+		[ -n "${KEEP:-}" ] && cp "$M/log" "$KEEP/$(echo "$1" | tr -c 'a-zA-Z0-9\n' _).log" # for tools/r505-sweep-fixtures/matrix.py
+		if [ $rc = 0 ]; then
 			echo "SURVIVED $1: no strip proves this rule" | tee -a "$T/bad"
 		else
-			echo "killed   $1: $(grep -c WRONG "$M/log") wrong answer(s)"
+			echo "killed   $1: $(grep -c "  WRONG" "$M/log") wrong answer(s)"
 		fi
 		rm -rf "$M"
 	) &
 }
-B="${1:-build}"
+B="${1:-tools/r261-creature/fixtures}"
 # The control: the copy unmutated must give every answer right, or a kill below proves nothing.
 rm -rf "$D" && cp -r tools/r239-ai-strips "$D"
 R239_DIR="$D" tools/r261-creature/sweep.sh "$B" >"$T/log" 2>&1 ||
 	{ echo "control: the unmutated copy gives wrong answers:"; grep -B1 WRONG "$T/log" | head; exit 2; }
+[ -n "${KEEP:-}" ] && cp "$T/log" "$KEEP/control.log"
 mutate "one pass (the blob in its own mean)" \
 	"out = standing_out(rgb, solid, (solid & ~spread(out, 3))" "out = out & standing_out(rgb, solid, solid"
 mutate "no crowd rule" "if like_it > crowd:" "if False:"

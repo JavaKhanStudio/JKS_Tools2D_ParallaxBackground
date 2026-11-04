@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # headless: numpy on PNGs, no window
 # disk.sh [REV] — r362: creature.py at REV (default HEAD) and in the working tree over every *_cut.png on disk with its
-# painted *_ai.png beside it, here and in parallax-ai's build (../JKS_Tools2D_ParallaxAI/build): sweep.sh's strips and
-# every round since. Prints each strip whose answer changed, then how many each refuses. A rule change that refuses a
+# painted *_ai.png beside it, here and in parallax-ai's build (../JKS_Tools2D_ParallaxAI/build): whatever is on disk today,
+# which sweep.sh's committed fixtures are not (r505). Prints each strip whose answer changed, then how many each refuses. A rule change that refuses a
 # strip nobody looked at shows here first; look at it before trusting the sweep. JOBS=8 at a time.
 set -u
 export LC_ALL=C # sort and join agree on the order

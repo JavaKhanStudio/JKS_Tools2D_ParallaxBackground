@@ -204,9 +204,11 @@ it (r244); an SDXL ControlNet is untried.
   layer's mass (`creature.py`), and `ai-page.sh` paints the strip again: a blob far in colour from the mass around it,
   50 to 3000 px in a 1024 px strip (six art pixels at least in pixel art), not touching the mass's edge, and alone:
   no other blob of its colour, shape and size, as snow on pines or trees on a slope come in crowds.
-  `tools/r261-creature/sweep.sh` passes every strip on disk (r239, r242, r243, r246: 27) and flags the 8 creatures it
-  plants (`plant.py`: birds and deer on mountains, hills, pines, snowy pines, among painted trees, in pixel art); 15
-  strips it was not tuned on (r244, r239-run) pass too. `mutate.sh` takes each rule out in turn and the sweep fails.
+  `tools/r261-creature/sweep.sh` runs on whole strips committed in `tools/r261-creature/fixtures` (r505: `build/` is
+  scratch, a thinning left it proving almost nothing): the strips with nothing in them pass, R1's two painted figures
+  and what it plants (`plant.py`: birds, deer, people, in pixel art too) are flagged, and a fixture gone fails it, in CI
+  (`sweep_test.py`). `mutate.sh` takes each rule out in turn and the sweep fails; `disk.sh` shows what a rule change
+  moves on every strip on disk.
   Missed by design: one the colour, shape and size of the layer's own flecks (a white bird among snow flecks).
   Since r349, a figure standing *on* the silhouette (novaCartoonXL paints people on hilltops, r346) is refused too:
   `layer.py` keys it mostly clear, so `creature.on_ridge` looks just above the mass, for a blob of pixels 80 off the
@@ -220,7 +222,7 @@ it (r244); an SDXL ControlNet is untried.
   sky's: masts `sil.py` keyed off a roof still stand over it) along X: a head on a neck comes off as an island. A round
   one, with sky over it, whose column widens again to shoulders, is refused. Of the 365 strips on disk, it adds R1's two figures and
   nothing else (`tools/r261-creature/disk.sh`: a commit's answers against the working tree's, over every strip in this
-  checkout and parallax-ai's); the sweep checks them, two strips it must pass, and a figure planted on r239's ruins.
+  checkout and parallax-ai's); the sweep checks them, strips it must pass, and a planted figure.
   Since r438, `find` passes the mass's own shading: a blob within 0.7 to 1/0.7 of the luminance of the mass round it
   and within 15 (chroma, 0..255) of its hue, as the slip face under a dune's crest is (DreamShaperXL Turbo's beach
   dunes were refused 5 of 5 for theirs). SD paints a creature at a third of the land's luminance or in another

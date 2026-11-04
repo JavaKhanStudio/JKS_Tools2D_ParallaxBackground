@@ -1,6 +1,6 @@
 """r500: does layer.py still refuse a real creature? Plants birds, deer and figures on r496's own ruins strips, cuts each
-with two layer.py and counts who names the plant (a blob within 40 px of it). No GPU. sweep.sh's own plants need
-paintings since pruned from build/, so it no longer holds this.
+with two layer.py and counts who names the plant (a blob within 40 px of it). No GPU. sweep.sh holds a few plants on
+committed fixtures (r505); this is the wider count, on strips that may have gone from build/.
 
     python3 tools/r500-creature/planted.py BUILD/r496 OUT BEFORE_LAYERPY AFTER_LAYERPY
 

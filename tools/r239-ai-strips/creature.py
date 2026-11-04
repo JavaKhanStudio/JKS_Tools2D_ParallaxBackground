@@ -33,8 +33,8 @@ than r/4 to 5r/12 each way taken out: a head on a neck comes off as an island. I
 0.6 to 1.8, filling 0.6 of its box), has sky over it (a pine's tier has its spire) and, down through the neck, widens
 again to shoulders 0.8 its width (a chunk on a mast does not). A head wider than 4 r or so is a tower (r500).
 Exits 4 and names each one (x, y, size). layer.py and pixel.py call find() on the painted strip and exit 4 too, so
-ai-page.sh paints the strip again on the next seed. tools/r261-creature/sweep.sh holds it to every strip on disk and to
-planted creatures, mutate.sh proves each rule above is needed.
+ai-page.sh paints the strip again on the next seed. tools/r261-creature/sweep.sh holds it to committed strips and to
+planted creatures, disk.sh shows what a change moves on every strip on disk, mutate.sh proves each rule above is needed.
 --src: the painted strip the cut came from: what layer.py and pixel.py look at (pixel.py's cut is one pixel per art
 cell, too small to see a bird in). The cut's alpha is scaled to it, read as layer.read_alpha does (r501); sizes scale with its width (--min, --max and R are
 for 1024 px), and in pixel art a creature is six art pixels at least, R three.

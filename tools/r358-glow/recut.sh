@@ -2,7 +2,7 @@
 # headless: numpy on PNGs, no window
 # recut.sh [LAYERPY] OUT — r358: the painted examples' strips on disk (build/ai/examples/*-painted, ai-page.sh's) cut
 # again by LAYERPY (default tools/r239-ai-strips/layer.py) into OUT/<name>_<strip>.png, each with its _mask.png and its
-# kind's --grow from ai_page.py, no GPU. The examples' own _cut.png are left as they are (r261's sweep.sh reads them).
+# kind's --grow from ai_page.py, no GPU. The examples' own _cut.png are left as they are (r261's disk.sh reads them).
 # A LAYERPY that knows --edges-of (r474) cuts a front variant (l<k>v<n>) on its front's cut in OUT, as ai_page.py does.
 # Then: compose.py draws two OUTs side by side, cut_stats-style shares: python3 tools/r358-glow/share.py OUT/*.png
 set -u
