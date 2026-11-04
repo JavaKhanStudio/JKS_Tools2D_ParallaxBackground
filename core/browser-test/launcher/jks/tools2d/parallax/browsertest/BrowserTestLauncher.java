@@ -65,8 +65,9 @@ public class BrowserTestLauncher extends GwtApplication
 
 	/**
 	 * {@code config} antialiased (WebGL's multisampling): the depth lab's lines and card edges at any angle (r458).
-	 * {@code &noaa=1} leaves it off, for a clip and the seam check (r507): stepped and read back on the GPU (ANGLE on the NVIDIA driver), a
-	 * multisampled canvas loses the sky or a layer at random frames (r506, tools/r506-clip-flicker/matrix.py).
+	 * {@code &noaa=1} leaves it off, for everything tools/r444-depth/drive.py draws: in headless Chrome on the NVIDIA GPU (tools/browser.py) a
+	 * multisampled canvas loses the sky or a layer at random frames (r506, r507, r508). The live lab keeps it: a real window showed no such drop,
+	 * on NVIDIA or Intel's headless (tools/r508-stills/live.py).
 	 */
 	private static GwtApplicationConfiguration smooth(GwtApplicationConfiguration config)
 	{

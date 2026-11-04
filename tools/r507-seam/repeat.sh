@@ -2,7 +2,7 @@
 # r507: tools/depth-lab.sh --seam again and again under load, the count written down. A run that fails keeps its stills
 # in OUT/runNN; one that passes keeps its log only. The last line of OUT/summary.txt is the count.
 #   tools/r507-seam/repeat.sh OUT [RUNS, 20] [BURNERS, as many as there are cores; 0 when other work already loads the machine]
-# DEPTH_SEAM_AA=1 in the environment keeps the multisampling drive.py's seam turns off, the control: 5 of 20 runs failed
+# DEPTH_AA=1 in the environment keeps the multisampling drive.py turns off, the control: 5 of 20 runs failed
 # with it, each on a still with a layer gone, 0 of 25 without, side by side at load 15-115 (r507).
 # headless: --seam only, and depth-lab.sh's headless Chrome goes through tools/browser.py; no window opens.
 set -u

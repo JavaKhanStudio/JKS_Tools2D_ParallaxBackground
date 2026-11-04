@@ -15,6 +15,9 @@ url, chrome, frames, mode, big, sliders = sys.argv[1:]
 PAGES = 5
 # How far the cards' pictures may stray from the game's frame at 0 (r503): their filtering softens edges, no more.
 PICTURE_OFF, PICTURE_SHARE, PICTURE_MEAN = 48, 0.01, 2.5
+# No multisampling in anything this driver draws: on the GPU it loses the sky or a layer from a frame at random (r506 a clip,
+# r507 the seam, r508 a still). DEPTH_AA=1 keeps it, the control that counts that failure (tools/r508-stills/repeat.sh, r507's repeat.sh).
+AA = "" if os.environ.get("DEPTH_AA") == "1" else "&noaa=1"
 
 
 def open_lab(browser, query="", viewport=(1540, 1100)):
@@ -23,11 +26,14 @@ def open_lab(browser, query="", viewport=(1540, 1100)):
     page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and errors.append(m.text))
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.on("response", lambda r: r.status >= 400 and not r.url.endswith("/favicon.ico") and errors.append(f"{r.status} {r.url}"))
-    page.goto(url + "?clip=1" + ("&big=1" if big == "1" else "") + query)
+    page.goto(url + "?clip=1" + AA + ("&big=1" if big == "1" else "") + query)
     try:
         page.wait_for_function("window.depthLabReady === true", timeout=60000)
     except PlaywrightTimeout:
         sys.exit(f"the lab never started: {errors}")
+    multisampled = page.evaluate("(c => (c.getContext('webgl2') || c.getContext('webgl')).getContextAttributes().antialias)(document.querySelector('#depth-lab canvas'))")
+    if multisampled != (AA == ""):
+        sys.exit(f"the canvas's multisampling is {multisampled}, asked for {AA == ''}")
     for kv in sliders.split():
         key, value = kv.split("=", 1)
         set_control(page, key, value)
@@ -164,11 +170,8 @@ with sync_playwright() as p:
             sys.exit(1)
         print("OK: three angles shot; no tag covers another or is cut, and a card shows, at 54 angles in each of 3 units")
     elif mode == "seam":
-        # No multisampling here either: on the GPU it drops the sky and the first layers of a frame at random (r506), and
-        # the check then fails on that frame, not on the seam (r507: 775 pixels on Hiver, 180977 on the pines, always one
-        # odd still). At 0 every quad lies on the pixel grid, so multisampling changes nothing this compares.
-        # DEPTH_SEAM_AA=1 keeps it, to count that failure (tools/r507-seam/repeat.sh).
-        aa = "" if os.environ.get("DEPTH_SEAM_AA") == "1" else "&noaa=1"
+        # With multisampling a dropped layer failed this check on that frame, not on the seam (r507: 775 pixels on Hiver,
+        # 180977 on the pines, always one odd still). At 0 every quad lies on the pixel grid, so it changes nothing compared.
         worst = []
         pictures = []
         errors = []
@@ -176,11 +179,8 @@ with sync_playwright() as p:
         for i in range(PAGES):
             shots = []
             for query in ("&flat=1", ""):
-                page, errs = open_lab(browser, query + aa)
+                page, errs = open_lab(browser, query)
                 errors += errs
-                multisampled = page.evaluate("(c => (c.getContext('webgl2') || c.getContext('webgl')).getContextAttributes().antialias)(document.querySelector('#depth-lab canvas'))")
-                if multisampled != (aa == ""):
-                    sys.exit(f"the seam's canvas multisampling is {multisampled}, asked for {aa == ''}")
                 set_control(page, "page", i)
                 set_control(page, "view", 0)
                 page.evaluate("window.depthLabAct(4)")
@@ -194,7 +194,7 @@ with sync_playwright() as p:
             print(f"page {i}: max {diff.max()}/255, {off} of {diff.size} pixels off by more than 2/255, mean {diff.mean():.4f}")
             worst.append((off, diff.max()))
             # In 3D the cards show mipmapped pictures (r503): at 0 those are the same frame, softened only by the filtering.
-            page, errs = open_lab(browser, "&pictures=1" + aa)
+            page, errs = open_lab(browser, "&pictures=1")
             errors += errs
             page.on("console", lambda m: m.type == "warning" and warned.append(m.text))
             set_control(page, "page", i)
@@ -209,7 +209,7 @@ with sync_playwright() as p:
             print(f"page {i} through its pictures: {off} of {diff.size} pixels off by more than {PICTURE_OFF}/255, mean {diff.mean():.4f}")
             pictures.append((off / diff.size, diff.mean()))
             # Back at 0 after drawing in 3D, nothing of the pictures may be left behind.
-            page, errs = open_lab(browser, aa)
+            page, errs = open_lab(browser)
             errors += errs
             page.on("console", lambda m: m.type == "warning" and warned.append(m.text))
             set_control(page, "page", i)
@@ -237,9 +237,7 @@ with sync_playwright() as p:
             sys.exit(1)
         print("OK: the 3D view at 0 is the game's frame on every page, back from 3D too, and so are the cards' pictures")
     else:
-        # No multisampling in a clip: stepped on the GPU, a multisampled canvas loses the sky or a layer at random frames
-        # (r506). Its lines and card edges are harder for it; --shot, --pages, --angles and the live lab keep theirs.
-        page, errors = open_lab(browser, "&noaa=1")
+        page, errors = open_lab(browser)
         set_control(page, "view", 0)
         # The slide arrives where the turn below starts, or the view snaps there at 3.0 s (r506: every clip's frame 89).
         set_control(page, "yaw", 38)
