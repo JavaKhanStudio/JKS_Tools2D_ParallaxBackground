@@ -35,7 +35,7 @@ the dashboard's feature table judges it per reader from them. A new feature or s
 which make_round.py scripts rewrite. A reader's 'unsupported' entry in health.py names the round, its task and the feature.
 A MUTANT RUN (r26) never lands in build/<reader>/<round>: tools/shots-out.sh links a frame check run under BREAK,
 PLAX_MUTANT=1 or a tools/*/mutate.sh at build/<reader>/.mutant/<round>, so the dashboard keeps the last clean verdict.
-A mutate.sh that reads the stills it just made reads build/<reader>/.mutant/<round> (r277, r397 do).
+A mutate.sh that reads the stills it just made reads build/<reader>/.mutant/<round> (parallax:r277, parallax:r397 do: tools/r277-planet, tools/r397-shader-patch).
 REFS: a bare rNN on this board is a parallax-readers task; the mother board's are written parallax:rNN
 (atelier --project parallax show rNN). Mother r317 is this board's r1.
 SIMON'S LAYOUT (r1, ex parallax:r317, 11 Oct): ONE repository, each reader a sub project under engines/<reader>/ with its own build,
