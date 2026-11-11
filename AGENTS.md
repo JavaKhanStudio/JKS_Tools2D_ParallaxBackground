@@ -93,8 +93,8 @@ repair.
 - `engines/threejs/src/plax.js` ports the same pieces from `plax_background.gd`, `plax_page.gd` and `plax_atlas.gd`
   (`_actLayer`, `_tile`, `_drawRegion`, the cross-fade, the tint, the gradients; `loadAtlas`, `readPage`): change how a
   page scrolls, fades or draws, change it there too, and run `engines/threejs/tools/frame-check.sh` (`round1`,
-  `conformance`, `pixelart`, `sequence`, `shaders` and `fog` prove it; `pixelart` is its cross-fade round until the
-  transfer round plays, r40; a SEQUENCE layer's pieces are `PlaxSequence`'s, from `plax_sequence.gd`, the effects'
+  `conformance`, `pixelart`, `sequence`, `shaders`, `fog` and `transfer` prove it; `transfer` its cross-fade round since
+  r40; a SEQUENCE layer's pieces are `PlaxSequence`'s, from `plax_sequence.gd`, the effects'
   `PlaxEffects`', from `plax_effects.gd`; a FLOOR's `PlaxFloor`, a LURKER's `PlaxLurker` and the animated patch's
   `PlaxAnim`, from `plax_floor.gd`, `plax_lurker.gd` and `plax_anim.gd`, r42). Its PARTICLES layers draw the page's libGDX `.p` (`PlaxParticles`, r41):
   libGDX 1.14's `ParticleEmitter`, `Sprite` and `MathUtils` random and sine table ported in Java's float arithmetic
@@ -115,7 +115,7 @@ repair.
   each tile by `ParallaxLayer.drawAnim`, its frame `floor(effect time × fps)` modulo the count
   (`ParallaxLayer.setAnimTime`). Godot's copy is `plax_anim.gd`, three.js's `plax.js`'s `PlaxAnim`; jME runs core's. The shots never reset the effect
   clock between scenes: scene k's stills are at about 12k + 0, 6 and 12 s, which `core/test-data/animated/make_round.py`
-  reckons to keep every still off a frame change. Change the patch and run both frame checks on `engines/rounds/animated`;
+  reckons to keep every still off a frame change. Change the patch and run the three frame checks on `engines/rounds/animated`;
   `tools/r394-animated/mutate.sh` proves the round sees a wrong Godot copy. Its palms move too little to fail a wrong
   frame: the flags (a01) do. A SHADER layer's patches are drawn after all its tiles, its effect given the frame's
   region (`LayerEffects.beginPatch`; Godot's on a child canvas, jME's a second material: r397, a05).
@@ -125,7 +125,7 @@ repair.
   layers in front cover it is baked once from the atlas (`src-jvm` `LurkerCover`, `tools/lurker-cover.sh`), never read
   from a texture at run time. jME runs core's; Godot's copy is `plax_lurker.gd` (r371, `reveal_lurker(name)`), three.js's
   `plax.js`'s `PlaxLurker` (r42, `revealLurker(name)`). Change
-  the rule and run `LurkerCases` and both frame checks on `engines/rounds/lurker` (`pixelsOff`: the figure is too small
+  the rule and run `LurkerCases` and the three frame checks on `engines/rounds/lurker` (`pixelsOff`: the figure is too small
   for the mean); `BREAK=lurker` must fail jME's, `tools/r370-lurker/mutate.sh` proves `LurkerCases` sees a wrong rule,
   `tools/r371-lurker/mutate.sh` that Godot's check sees a wrong copy.
 - `ParallaxRings` (parallax-readers r47, docs/page-as-3d-sky.md) is a page round a 3D world as numbers only: each
@@ -150,15 +150,15 @@ repair.
   tiles (r229 on X, round `shaders` s06, `tools/r229-fog-seam/mutate.sh`; r262 on Y, s07,
   `tools/r262-fog-seam-y/mutate.sh`). WAVE's y is `along().y` too (r273, s08, `tools/r273-wave-seam-y/mutate.sh`).
 - A `SHADER` layer's glint (format 17, r427: `glintStrength`, its only stored number) ends every effect shader in
-  `glinted()`, before `hazed()`, written three times like the effects and fed `GdxLayerEffects.glintUniforms` (Godot's
+  `glinted()`, before `hazed()`, written four times like the effects and fed `GdxLayerEffects.glintUniforms` (Godot's
   `PlaxEffects._apply_glint`, its `GLINT_*` copied; three.js's `_applyGlint`). A glinting layer's period is at least FOG's
   (`ParallaxLayer.glints`, `periodAcross`/`periodUp`; Godot's `_across`/`_up`), so the glint loops across the wrap.
-  Change it and run both frame checks on `engines/rounds/glint`, gated by `pixelsOff` (the glint is too sparse for
+  Change it and run the three frame checks on `engines/rounds/glint`, gated by `pixelsOff` (the glint is too sparse for
   the mean); `tools/r427-glint/strength.sh` proves the round sees it, `mutate.sh` a wrong Godot or jME copy.
 - A `MIRROR` layer (r455, format 18: `mirrorHorizon`, `mirrorDepth`) is SWELL, then the water a mirror of its page's
   sky, the page's top gradient handed to each layer it builds (`ParallaxLayer.setMirrorSky`, Godot's and three.js's `l.sky`/`l.zenith`),
   its numbers in `GdxLayerEffects.mirrorUniforms`, its glint's sun `MIRROR_SUN_*` (every other effect keeps `GLINT_SUN_*`).
-  Change it and run both frame checks on `engines/rounds/shaders` (s12-s14) and `engines/rounds/glint` (g05);
+  Change it and run the three frame checks on `engines/rounds/shaders` (s12-s14) and `engines/rounds/glint` (g05);
   `tools/r455-mirror/strength.sh` proves the round sees the mirror past SWELL, `mutate.sh` a wrong Godot or jME copy.
 - Detail levels (r464, never stored: no format bump): `ParallaxPageReader.setDetail(Enum_Detail)` (the heart's and
   jME's `PlaxBackground.setDetail` forward to it) and per layer name a `LayerDetail` (`setLayerDetail`,
@@ -173,22 +173,22 @@ repair.
   every one of those shaders in `hazed()`, toward the fog's colour (`u_fog`), and draws an IMAGE or SEQUENCE layer
   through a `PLAIN` one (jME's `Plain` define, Godot's `"PLAIN"` material); libGDX instead draws them all through one
   `PAGE_FOG` shader, each layer's fog in the batch colour (`LayerEffects.beginPageFog`), so a fogged page costs no
-  flush per layer. The mix is written three times, `ParallaxPageReader.fogOf`/`frontSpeedOf` twice (Godot's
-  `PlaxEffects.fog_of`/`front_speed_of`). Run both frame checks on `engines/rounds/fog`;
+  flush per layer. The mix is written four times, `ParallaxPageReader.fogOf`/`frontSpeedOf` three (Godot's
+  `PlaxEffects.fog_of`/`front_speed_of`, three.js's `PlaxEffects.fogOf`/`frontSpeedOf`). Run the three frame checks on `engines/rounds/fog`;
   `tools/r217-fog/strength.sh` proves leaving it out fails there, `tools/r217-fog/mutate.sh` that a wrong copy does.
 - A transfert's dissolve (`TransfertStyle.dissolve`, r250, no format change) is in those shaders' `hazed()` too: its
   alpha times `dissolved()`, FOG's noise over the camera view (libGDX's and jME's vertex `v_view`/`viewPos`, Godot's
   `SCREEN_UV` with y turned up), set per layer through `LayerEffects.setDissolve`; the reader skips the page fog's
-  shared shader during one. Run both frame checks on `engines/rounds/transfer` (t09, t10; t15 a fogged page with WAVE and FOG layers);
+  shared shader during one. Run the three frame checks on `engines/rounds/transfer` (t09, t10; t15 a fogged page with WAVE and FOG layers);
   `tools/r250-dissolve/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A transfert through a colour (`TransfertStyle.throughColor`, r251, no format change) is in `hazed()` too: after the
   fog, mixed toward `u_grade`'s rgb by its a (jME `m_Grade`, Godot `grade`), set per layer through
   `LayerEffects.setGrade`; the gradients take `TransfertStyle.gradient` (SquareBackground, JmeGradient, Godot's
-  `_act_gradients`). Run both frame checks on `engines/rounds/transfer` (t11, t12, t16);
+  `_act_gradients`). Run the three frame checks on `engines/rounds/transfer` (t11, t12, t16);
   `tools/r251-through-color/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A fog creep (`TransfertStyle.fogCreep`, r252, no format change) is that same grade toward a mist, with its own
   amounts: `TransfertStyle.gradeAt`/`showsIncoming` (eased, far slots first, every slot swapped at the middle), copied
-  in `plax_transfert_style.gd`'s `grade_at`/`shows_incoming`. Run both frame checks on `engines/rounds/transfer`
+  in `plax_transfert_style.gd`'s `grade_at`/`shows_incoming`. Run the three frame checks on `engines/rounds/transfer`
   (t13, t14, t17); `tools/r252-fog-creep/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A `SEQUENCE` layer's cycle (format 8) is drawn by `SequenceCycle` from integers only: GWT and GDScript round a float
   differently, so a float anywhere in the pick draws another ground in the browser or Godot. Its picks are pinned in
@@ -203,7 +203,7 @@ repair.
   (`ParallaxLayer.measureFloor`/`drawFloor`, its strips cut when a setting changes, never in a frame), and
   `ParallaxPageReader.plant` moves every layer in front of it at the speed of the row under its foot, every `act()`,
   without touching its stored speed. Godot's copy is `plax_floor.gd`'s `measure`, `scroll`, `draw` and
-  `plant`, three.js's `plax.js`'s `PlaxFloor` (r42); jME runs core's. Change the rows, the mapping or the planting and run both frame checks on `engines/rounds/floor`;
+  `plant`, three.js's `plax.js`'s `PlaxFloor` (r42); jME runs core's. Change the rows, the mapping or the planting and run the three frame checks on `engines/rounds/floor`;
   `tools/r275-floor/strength.sh` proves the round sees a floor against its flat twin, `mutate.sh` a wrong Godot copy.
 - The dolly (r278, `ParallaxPageReader.setDolly`, no format change) draws each layer at its own zoom
   (`dollyZoom`: `1 - k (1 - zoom)`, k its speed over its page's front), tiled across its own view and placed from the
@@ -217,7 +217,7 @@ repair.
   (`ParallaxPageReader.towerRows` tiles it up): the front half of a cylinder in the view's middle, in
   `TOWER_STRIPS` strips of equal angle, each one `batch.draw`, its shade in the batch colour. Under libGDX's page fog
   the batch colour's red, green and alpha are the fog's: the shade rides in its blue, which `PAGE_FOG` reads as darkness
-  (0 for every other layer). Godot's copy is `plax_tower.gd`; jME runs core's. Change it and run both frame checks on
+  (0 for every other layer). Godot's copy is `plax_tower.gd`; jME runs core's. Change it and run the three frame checks on
   `engines/rounds/tower`; `tools/r276-tower/strength.sh` proves the round sees the wrap and the shade, `mutate.sh`
   a wrong Godot copy and a wrong core law. Seen from close by (r350, format 14: the tower layer's `towerCamera`, in
   radii from its axis, above 1), each strip is scaled about the view's middle (`ParallaxLayer.towerScaleAt`: the
@@ -235,13 +235,13 @@ repair.
   (`JmeBatch` draws the quads and the turned region draw). Godot's copy is `plax_planet.gd` (quads by
   `draw_primitive`, from `_draw_region`), `planet_place_at`/`planet_angle_at` and `plax_particles.gd`'s placing;
   three.js's is `plax.js`'s `PlaxPlanet` (quads by `Quads.addCorners`), `planetPlaceAt`/`planetAngleAt` and
-  `PlaxParticles.draw`'s `turn` (r43); jME runs core's. Change it and run both frame checks on `engines/rounds/planet` (p08: a hook) and
+  `PlaxParticles.draw`'s `turn` (r43); jME runs core's. Change it and run the three frame checks on `engines/rounds/planet` (p08: a hook) and
   `engines/rounds/particles` (q09, q10); `tools/r277-planet/strength.sh` proves the round sees the planet,
   `mutate.sh` a wrong Godot copy (a leaning-less one among them) and a wrong core law.
 - The browser suite's reader cases check tiling and cross-fades without a window, by recording draw calls on a
   `RecordingBatch`; `BrowserSuiteTest` runs them in `:core:test`. One class per subject (`TilingCases`,
   `TransferCases`, `HookCases`, `ParticleCases`, `ShaderCases`, `PageFogCases`, `SequenceCases`,
-  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`, `LurkerCases`, `DepthCases`, `DetailCases`), their builders in `ReaderFixtures`; a new subject's class goes in
+  `TransfertStyleCases`, `FloorCases`, `DollyCases`, `TowerCases`, `PlanetCases`, `LurkerCases`, `DepthCases`, `DetailCases`, `AnimatedPatchCases`, `RingsCases`), their builders in `ReaderFixtures`; a new subject's class goes in
   `BrowserSuite.all()`. Cover all four repeat modes (X, Y, XY, none).
 
 ## Browser (GWT)
