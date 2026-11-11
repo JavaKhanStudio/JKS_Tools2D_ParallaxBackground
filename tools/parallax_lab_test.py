@@ -261,11 +261,11 @@ class FaintAlphaSeams(unittest.TestCase):
 class TipSeams(unittest.TestCase):
     """(e) at a small join an outline carries across (r398): R1's ds8 forest put a pine's tip on its pines' edge, so
     every join of the SEQUENCE stepped 21-22 against a limit of 20, beside a step of 17 one column in. The fixture is
-    those columns: l3_0's last 8 and l3v2's first 8 (tools/r398-seq-seams/tip-join.png)."""
+    those columns: l3_0's last 8 and l3v2's first 8 (tools/r398-seq-seams/tip-join.webp)."""
 
     def setUp(self):
         from PIL import Image
-        img = Image.open(os.path.join(lab.ROOT, 'tools/r398-seq-seams/tip-join.png')).convert('RGBA')
+        img = Image.open(os.path.join(lab.ROOT, 'tools/r398-seq-seams/tip-join.webp')).convert('RGBA')
         self.left, self.right = img.crop((0, 0, 8, img.height)), img.crop((8, 0, 16, img.height))
         self.p = lab.Placed(0, {}, [1.0], 0.0, lab.SCREEN_H, True, False)
 
@@ -301,7 +301,7 @@ class MistySeams(unittest.TestCase):
 
     def setUp(self):
         from PIL import Image
-        img = Image.open(os.path.join(lab.ROOT, 'tools/r475-loop-step/misty-join.png')).convert('RGBA')
+        img = Image.open(os.path.join(lab.ROOT, 'tools/r475-loop-step/misty-join.webp')).convert('RGBA')
         half = img.width // 2
         self.left, self.right = img.crop((0, 0, half, img.height)), img.crop((half, 0, img.width, img.height))
         self.p = lab.Placed(0, {}, [1.0], 0.0, lab.SCREEN_H, True, False)

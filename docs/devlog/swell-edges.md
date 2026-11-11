@@ -31,12 +31,12 @@ On a page tiled on Y, the image's top row sits against the bottom row of the til
 wave stops at every tile edge: for a strip as tall as half the amplitude, every column reads the same edge row. That
 gives a band of straight, unwaved pixels across the whole layer, once per tile.
 
-![Before: SWELL holding its top and bottom rows on a checker tiled on X and Y. A flat band crosses the middle](swell-edges/tiled-xy-before.png)
+![Before: SWELL holding its top and bottom rows on a checker tiled on X and Y. A flat band crosses the middle](swell-edges/tiled-xy-before.webp)
 
 On a page that does *not* repeat on X, wrapping made the opposite mistake: at each side, up to an amplitude's width of
 the image's other side came in, even though no tile was there.
 
-![Before, on a checker tiled on Y only: the band across the middle, and the far side pulled in at the left edge](swell-edges/tiled-y-before.png)
+![Before, on a checker tiled on Y only: the band across the middle, and the far side pulled in at the left edge](swell-edges/tiled-y-before.webp)
 
 ## Seeing it before choosing
 
@@ -65,9 +65,9 @@ in Godot's shading language, and in jME's material (`m_Wrap`). When nothing sets
 effects without the reader), it keeps the old behaviour, wrapping across and holding up and down, so nothing that
 worked before changes under anyone's feet.
 
-![After: the same checker tiled on X and Y. The waves carry on across the tile edge](swell-edges/tiled-xy-shipped.png)
+![After: the same checker tiled on X and Y. The waves carry on across the tile edge](swell-edges/tiled-xy-shipped.webp)
 
-![Red where the two rules disagree: only along the tile edge](swell-edges/tiled-xy-differ.png)
+![Red where the two rules disagree: only along the tile edge](swell-edges/tiled-xy-differ.webp)
 
 ## Proving it, three times over
 

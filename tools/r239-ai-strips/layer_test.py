@@ -252,8 +252,8 @@ class MistyPinesTest(unittest.TestCase):
         # beside tools/, or under the current directory's when a mutant runs a copy of this file (r400's mutate.sh)
         here = next(d for d in (os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools")
                     if os.path.isdir(os.path.join(d, "r476-misty-rim")))
-        img = np.asarray(Image.open(os.path.join(here, "r476-misty-rim/join-ai.png")).convert("RGB")).astype(np.float32)
-        m = np.asarray(Image.open(os.path.join(here, "r476-misty-rim/join-mask.png")).convert("L")) > 127
+        img = np.asarray(Image.open(os.path.join(here, "r476-misty-rim/join-ai.webp")).convert("RGB")).astype(np.float32)
+        m = np.asarray(Image.open(os.path.join(here, "r476-misty-rim/join-mask.webp")).convert("L")) > 127
         alpha, rec = cut_ruled(img, m, grow=40)
         self.assertTrue(rec["applied"], rec)
         gap = alpha[329:335, 54:73]

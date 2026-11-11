@@ -137,7 +137,7 @@ jME runs core's.
    Done (parallax-editor r91): the cover baked with `LurkerCover` when the lurker panel shows and at every save
    (`Utils_Lurker.bakeCovers`), equal to `tools/lurker-cover.sh`'s value for value on the lurker round.
 6. README: a "Lurker layers" section (the rule, the depth size, the skating), and AGENTS.md's runtime line.
-   Done (r372): README's "Lurker layers", its picture `docs/lurker-size.png` (r363's v01 against v02, the giant;
+   Done (r372): README's "Lurker layers", its picture `docs/lurker-size.webp` (r363's v01 against v02, the giant;
    `tools/r372-lurker-size/make.py`), the three fields in its settings table.
 
 A page painted by `tools/ai-page.sh` gets one on request (`--lurker`, r366): the figure painted alone, standing on

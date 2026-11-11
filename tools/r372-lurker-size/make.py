@@ -1,8 +1,8 @@
-"""make.py FILM OUT.png — README's lurker size picture (r372): the r363 figure at the height its depth gives it, then
+"""make.py FILM OUT.webp — README's lurker size picture (r372): the r363 figure at the height its depth gives it, then
 the same layer at the size of parallax-ai R1's accident, a giant.
 
     tools/r363-reveal/film.sh build/r363
-    python3 tools/r372-lurker-size/make.py build/r363/film docs/lurker-size.png
+    python3 tools/r372-lurker-size/make.py build/r363/film docs/lurker-size.webp
 
 Reads FILM/frames (24 fps from 12 s on): v01 at 28 s (whole, in a gap) and v02 at 23.5 s, each cropped to the band of
 the view the pines stand in, labelled, stacked.
@@ -36,7 +36,10 @@ def main(film, out):
     for tile in tiles:
         sheet.paste(tile, (0, y))
         y += tile.height
-    sheet.save(out, optimize=True)
+    if out.endswith('.webp'):
+        sheet.save(out, quality=90, method=6)
+    else:
+        sheet.save(out, optimize=True)
 
 
 if __name__ == '__main__':

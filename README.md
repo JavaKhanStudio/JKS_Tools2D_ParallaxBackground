@@ -345,7 +345,7 @@ passes over it, and in the next gap, where they expect it, it is gone. The whole
   about 1.8 units tall there. Nothing enforces it.
 
   ![The same figure behind Hiver's pines: on top, 1.8 units tall, small in a gap between two trunks; below, 11 units
-  tall, a giant standing among the pines](docs/lurker-size.png)
+  tall, a giant standing among the pines](docs/lurker-size.webp)
 
   On top, the figure at the height its speed of 0.032 gives it behind Hiver's pines; below, the same layer as large as
   parallax-ai's first round drew it.
