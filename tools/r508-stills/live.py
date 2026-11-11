@@ -135,6 +135,9 @@ def main():
     totals = {}
     with sync_playwright() as p:
         chrome = shutil.which("google-chrome") or shutil.which("chromium")
+        # Not tools/browser.py's launch (AGENTS.md, r488) on either branch below: --window opens a real Chrome
+        # window on Wayland (headless=False), and FLAGS are the variable r508 probes, which browser.py would swap
+        # for its own and could hide behind its SwiftShader fallback.
         if window:
             browser = p.chromium.launch(executable_path=chrome, headless=False, args=["--ozone-platform=wayland"] + FLAGS)
         elif FLAGS:
