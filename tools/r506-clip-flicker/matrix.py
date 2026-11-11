@@ -64,6 +64,8 @@ def renderer(page):
 
 def run(p, chrome, url, name, out):
     flags, options, finish, screenshots = VARIANTS[name]
+    # Not tools/browser.py's launch (AGENTS.md, r488): the launch flags ARE what r506 varies, and browser.py would
+    # pick its own and fall back to SwiftShader, hiding the GPU drop being probed.
     browser = p.chromium.launch(executable_path=chrome, args=GPU + flags)
     page = browser.new_page(viewport={'width': 1540, 'height': 1100}, device_scale_factor=1)
     page.add_init_script(CONTEXT % options)
