@@ -1,6 +1,6 @@
 plugins {
     id 'java-library'
-    id 'com.vanniktech.maven.publish' version '0.37.0'
+    id 'com.vanniktech.maven.publish'
 }
 
 // The jMonkeyEngine reader (r112). jME is a Java engine: it reads and draws a page with core itself (Kryo .plax,

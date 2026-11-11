@@ -1,3 +1,10 @@
+// Plugin versions come from gradle.properties, as every other version does: the build.gradle files name the id only.
+pluginManagement {
+    plugins {
+        id 'com.vanniktech.maven.publish' version providers.gradleProperty('mavenPublishPluginVersion').get()
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
     repositories {
