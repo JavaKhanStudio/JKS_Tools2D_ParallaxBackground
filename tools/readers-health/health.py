@@ -229,6 +229,18 @@ def feature_rows(readers):
     return rows
 
 
+def check_features():
+    """features.json as the dashboard reads it, for the board's /inventories check (r79): (warnings, failures).
+    A feature no scene checks warns (the table shows it 'no round'); a scene id or round no round.json has fails."""
+    warn, fail = [], []
+    for f in features():
+        scenes = scene_list(f.get('scenes', {}))
+        if not any(ids for _, ids, _ in scenes) and not any(bad for _, _, bad in scenes):
+            warn.append(f"{f['id']}: no scene checks it")
+        fail += [f"{f['id']}: {FEATURES} names {i} in {rd}, which has no such scene" for rd, _, bad in scenes for i in bad]
+    return warn, fail
+
+
 def junit():
     """core's last JUnit run: (tests, failures, time) over core/build/test-results/test."""
     files = glob.glob(os.path.join(ROOT, 'core/build/test-results/test/TEST-*.xml'))
@@ -535,6 +547,11 @@ td.pass { background: #1a7f3722; } td.fail { background: #cf222e33; font-weight:
 """
 
 if __name__ == '__main__':
+    if '--check-features' in sys.argv:
+        warn, fail = check_features()
+        print('\n'.join([f'WARN {w}' for w in warn] + [f'FAIL {x}' for x in fail]
+                        + [f'{FEATURES}: {len(features())} features, ' + ('FAIL' if fail else 'PASS')]))
+        sys.exit(1 if fail else 0)
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     if len(args) != 1:
         sys.exit('usage: health.py OUT_DIR [--no-ci]')

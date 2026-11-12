@@ -114,6 +114,8 @@ cases = [
     ('a feature the reader cannot draw', cell['gone'], 'na not drawn'),
     ('a scene id no round.json has', str(rows['typo']['unknown']), "[('engines/rounds/a', 'x9')]"),
     ('the anchor the parallax board\'s Site button opens (r33)', '<h2 id="features">' in health.page(health.gather(False)), True),
+    ('the inventory check (r79): a feature no scene checks warns, a scene id no round has fails', health.check_features(),
+     (['none: no scene checks it'], ["typo: engines/rounds/features.json names x9 in engines/rounds/a, which has no such scene"])),
     ('scene ids shown as runs', health.scene_span(['s01', 's02', 's03', 's05', 'q1']), 's01-s03, s05, q1'),
 ]
 for name, got, want in cases:
