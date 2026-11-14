@@ -276,6 +276,9 @@ repair.
   1580x800 window, a text under 14px, a value or a choice's name out of its box, a slider over names, or a page wider
   than a 390px phone. A new lab also gets a tile on `index.html`, the labs page `tools/browser-test.sh --open` shows
   (r418: the suite folded under the tiles), its still from `tools/r418-lab-tiles/tiles.sh` (add it to its `tiles.py`).
+  Its launcher `tools/<name>-lab.sh` sources `tools/lab-serve.sh` (the WAR served, the window, the clip) and drives its
+  headless modes through `tools/lab_driver.py`'s `Lab` (r528: the error capture, WebGL warnings included, sliders, the
+  shot), keeping only its own modes: a fix to either reaches every lab.
 - A lab is built to be judged at a glance (Simon, r452): split what is compared into clear panels, each titled with
   what it is; the one under judgement the largest and the first seen (A, top left), never a look-alike beside it
   unnamed; and any panel can be looked at alone. That last is the kit's: a lab places every panel through

@@ -10,6 +10,7 @@ from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
 from browser import launch
+from lab_driver import watch
 
 url, chrome, frames, mode, big, sliders = sys.argv[1:]
 PAGES = 5
@@ -20,12 +21,13 @@ PICTURE_OFF, PICTURE_SHARE, PICTURE_MEAN = 48, 0.01, 2.5
 AA = "" if os.environ.get("DEPTH_AA") == "1" else "&noaa=1"
 
 
+WEBGL = []  # each page's WebGL warnings (lab_driver.watch, r419): any fails the run
+
+
 def open_lab(browser, query="", viewport=(1540, 1100)):
     page = browser.new_page(viewport={"width": viewport[0], "height": viewport[1]}, device_scale_factor=1)
-    errors = []
-    page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and errors.append(m.text))
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    page.on("response", lambda r: r.status >= 400 and not r.url.endswith("/favicon.ico") and errors.append(f"{r.status} {r.url}"))
+    errors, webgl = watch(page)
+    WEBGL.append(webgl)
     page.goto(url + "?clip=1" + AA + ("&big=1" if big == "1" else "") + query)
     try:
         page.wait_for_function("window.depthLabReady === true", timeout=60000)
@@ -259,3 +261,6 @@ with sync_playwright() as p:
     if errors:
         print(f"page errors: {errors}", file=sys.stderr)
     browser.close()
+warnings = [w for page in WEBGL for w in page]
+if warnings:
+    sys.exit(f"WebGL errors ({len(warnings)}), first: {warnings[0]}")

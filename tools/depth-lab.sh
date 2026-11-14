@@ -40,42 +40,14 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-if [ $MODE = open ]; then . tools/agent-window-guard.sh; refuse_agent_window tools/depth-lab.sh; fi
+. tools/lab-serve.sh
+[ $MODE = open ] && refuse_agent_window tools/depth-lab.sh
+lab_serve depth-lab.html $BUILD
+[ $MODE = open ] && lab_open
 
-CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || command -v chromium-browser)}"
-[ -n "$CHROME" ] || { echo "no Chrome found: set CHROME=" >&2; exit 2; }
-WAR="$PWD/core/build/browserTest/war"
-if [ $BUILD = 1 ]; then
-	./gradlew -q :core:browserTestWar >/dev/null || exit 1
-fi
-[ -f "$WAR/depth-lab.html" ] || { echo "$WAR has no depth-lab.html: run without --no-build" >&2; exit 2; }
-
-PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WAR" >/dev/null 2>&1 &
-SERVER=$!
-PROFILE=$(mktemp -d)
-trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE"' EXIT
-URL="http://127.0.0.1:$PORT/depth-lab.html"
-for _ in $(seq 50); do python3 -c "import urllib.request; urllib.request.urlopen('$URL')" 2>/dev/null && break; sleep 0.1; done
-
-if [ $MODE = open ]; then
-	FLAGS=(--user-data-dir="$PROFILE" --no-first-run --no-default-browser-check)
-	# As tools/browser-test.sh --open: the board's server has no DISPLAY, point Chrome at the session's Wayland socket.
-	if [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/wayland-0" ]; then
-		export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY=wayland-0
-		FLAGS+=(--ozone-platform=wayland)
-	fi
-	echo "serving $URL until the Chrome window closes"
-	START=$SECONDS
-	"$CHROME" "${FLAGS[@]}" --new-window --window-size=1580,800 "$URL" 2>&1 | grep -E 'ERROR|FATAL' >&2
-	[ $((SECONDS - START)) -ge 5 ] || { echo "Chrome closed at once: no window (see its errors above)" >&2; exit 1; }
-	exit 0
-fi
-
-# Headless: Playwright drives the system Chrome on the GPU (tools/browser.py), steps the lab through window.depthLabAct and screenshots
-# its canvas, one frame per 1/30 s of game time, so the clip plays at game speed.
-FRAMES=$(mktemp -d)
-trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT
+# Headless: Playwright drives the system Chrome on the GPU (tools/r444-depth/drive.py), steps the lab through window.depthLabAct and
+# screenshots its canvas, one frame per 1/30 s of game time, so the clip plays at game speed.
+lab_frames
 python3 tools/r444-depth/drive.py "$URL" "$CHROME" "$FRAMES" "$MODE" "$BIG" "$SLIDERS"
 DRIVER=$?
 if [ $MODE = pages ] || [ $MODE = seam ] || [ $MODE = angles ]; then
@@ -87,6 +59,5 @@ fi
 if [ $MODE = shot ]; then
 	cp "$FRAMES/still.png" "$OUT" && echo "still: $OUT"
 else
-	ffmpeg -loglevel error -y -framerate 30 -i "$FRAMES/f%04d.png" -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" \
-		-c:v libx264 -pix_fmt yuv420p -crf 18 "$OUT" && echo "clip: $OUT"
+	lab_encode "$OUT" 18
 fi

@@ -29,115 +29,50 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-if [ $MODE = open ]; then . tools/agent-window-guard.sh; refuse_agent_window tools/fog-lab.sh; fi
+. tools/lab-serve.sh
+[ $MODE = open ] && refuse_agent_window tools/fog-lab.sh
+lab_serve fog-lab.html $BUILD
+[ $MODE = open ] && lab_open
 
-CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || command -v chromium-browser)}"
-[ -n "$CHROME" ] || { echo "no Chrome found: set CHROME=" >&2; exit 2; }
-WAR="$PWD/core/build/browserTest/war"
-if [ $BUILD = 1 ]; then
-	./gradlew -q :core:browserTestWar >/dev/null || exit 1
-fi
-[ -f "$WAR/fog-lab.html" ] || { echo "$WAR has no fog-lab.html: run without --no-build" >&2; exit 2; }
-
-PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WAR" >/dev/null 2>&1 &
-SERVER=$!
-PROFILE=$(mktemp -d)
-trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE"' EXIT
-URL="http://127.0.0.1:$PORT/fog-lab.html"
-for _ in $(seq 50); do python3 -c "import urllib.request; urllib.request.urlopen('$URL')" 2>/dev/null && break; sleep 0.1; done
-
-if [ $MODE = open ]; then
-	FLAGS=(--user-data-dir="$PROFILE" --no-first-run --no-default-browser-check)
-	# As tools/browser-test.sh --open: the board's server has no DISPLAY, point Chrome at the session's Wayland socket.
-	if [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/wayland-0" ]; then
-		export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY=wayland-0
-		FLAGS+=(--ozone-platform=wayland)
-	fi
-	echo "serving $URL until the Chrome window closes"
-	START=$SECONDS
-	"$CHROME" "${FLAGS[@]}" --new-window --window-size=1580,800 "$URL" 2>&1 | grep -E 'ERROR|FATAL' >&2
-	[ $((SECONDS - START)) -ge 5 ] || { echo "Chrome closed at once: no window (see its errors above)" >&2; exit 1; }
-	exit 0
-fi
-
-# Headless: Playwright drives the system Chrome on the GPU (tools/browser.py), steps the lab through window.fogLabAct and screenshots
-# it, one frame per 1/30 s of game time, so the clip plays at game speed.
-FRAMES=$(mktemp -d)
-trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT
+# Headless: Playwright drives the system Chrome on the GPU (tools/lab_driver.py), steps the lab through window.fogLabAct and
+# screenshots it.
+lab_frames
 python3 - "$URL?clip=1" "$CHROME" "$FRAMES" "$MODE" "$SLIDERS" <<'PY' || exit 1
 import sys
-from playwright.sync_api import sync_playwright
 sys.path.insert(0, "tools")
-from browser import launch
+from lab_driver import Lab
 url, chrome, frames, mode, sliders = sys.argv[1:]
-with sync_playwright() as p:
-    browser = launch(p, chrome)
-    page = browser.new_page(viewport={"width": 1540, "height": 700})
-    errors = []
-    # A failed load is reported below with its URL: the console's line names none (r320: it was the favicon).
-    page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and errors.append(m.text))
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    # Chrome asks every page for a favicon: the lab has none.
-    page.on("response", lambda r: r.status >= 400 and not r.url.endswith("/favicon.ico") and errors.append("%d %s" % (r.status, r.url)))
-    page.goto(url)
-    try:
-        page.wait_for_function("window.fogLabReady === true", timeout=60000)
-    except Exception:
-        sys.exit("the lab never started: %s" % errors)
-    for kv in sliders.split():
-        key, value = kv.split("=", 1)
-        if page.query_selector("[data-key=%s]" % key) is None:
-            sys.exit("no slider %s" % key)
-        page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
-    def shot(path):
-        # two animation frames: the step lands in the next render
-        page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
-        page.screenshot(path=path, full_page=True)
+with Lab(url, chrome, "fog") as lab:
+    lab.sliders(sliders)
     if mode == "shot":
-        page.evaluate("window.fogLabAct(6)")
-        shot(frames + "/still.png")
+        lab.act(6)
+        lab.shot(frames + "/still.png")
     elif mode == "sets":
         # Every set the slider picks, one still each, then the last one with the mist grown to cover the frame.
         names = []
-        for i in range(int(page.eval_on_selector("[data-key=parallaxSet]", "e => e.options.length"))):
-            page.evaluate("window.fogLabPick(%d)" % i)
-            page.evaluate("window.fogLabAct(6)")
-            names.append(page.text_content("#fog-readout"))
-            shot(frames + "/set%d.png" % i)
-        page.eval_on_selector("[data-key=mistSize]", "e => { e.value = '2.5'; }")
-        page.evaluate("window.fogLabAct(1)")
-        shot(frames + "/set%d.png" % (i + 1))
+        for i in range(lab.options("parallaxSet")):
+            lab.page.evaluate("window.fogLabPick(%d)" % i)
+            lab.act(6)
+            names.append(lab.text("#fog-readout"))
+            lab.shot(frames + "/set%d.png" % i)
+        lab.set("mistSize", "2.5")
+        lab.act(1)
+        lab.shot(frames + "/set%d.png" % (i + 1))
         print("\n".join(names))
     elif mode == "copy":
-        page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        page.eval_on_selector("[data-key=patchHeightC]", "e => { e.value = '0.6'; }")
-        page.eval_on_selector("[data-key=mistLayer]", "e => { e.value = '7'; }")
-        page.evaluate("window.fogLabAct(6)")
-        page.click("#fog-copy")
-        page.wait_for_function("document.getElementById('fog-copy-state').textContent !== ''")
-        import json
-        got = json.loads(page.input_value("#fog-copy-json"))
-        keys = {"mistAmplitude", "mistWavelength", "mistSpeed", "patchHeightC", "cameraScroll", "treesWaveRipple", "mistLayer", "fogStrength",
-                "fogColor", "parallaxSet", "mistSize", "mistRise"}
-        moved = {"patchHeightC": {"started": 0.45, "now": 0.6}, "mistLayer": {"started": 5, "now": 7}}
-        if set(got["settings"]) != keys or got["changed"] != moved:
-            sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
-        print("Copy settings: %s; %s" % (page.text_content("#fog-copy-state"), json.dumps(got["settings"])))
-        shot(frames + "/still.png")
+        lab.set("patchHeightC", "0.6")
+        lab.set("mistLayer", "7")
+        lab.copy({"mistAmplitude", "mistWavelength", "mistSpeed", "patchHeightC", "cameraScroll", "treesWaveRipple", "mistLayer",
+                  "fogStrength", "fogColor", "parallaxSet", "mistSize", "mistRise"},
+                 {"patchHeightC": {"started": 0.45, "now": 0.6}, "mistLayer": {"started": 5, "now": 7}})
+        lab.shot(frames + "/still.png")
     else:
-        for i in range(360):
-            page.evaluate("window.fogLabAct(%r)" % (0 if i == 0 else 1 / 30))
-            shot(frames + "/f%04d.png" % i)
-    if errors:
-        print("page errors: %s" % errors, file=sys.stderr)
-    browser.close()
+        lab.clip(frames, 360)
 PY
 if [ $MODE = sets ]; then
 	mkdir -p "$OUT" && cp "$FRAMES"/set*.png "$OUT"/ && echo "stills: $OUT/set*.png (the last: the mist at 2.5x)"
 elif [ $MODE = shot ] || [ $MODE = copy ]; then
 	cp "$FRAMES/still.png" "$OUT" && echo "still: $OUT"
 else
-	ffmpeg -loglevel error -y -framerate 30 -i "$FRAMES/f%04d.png" -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" \
-		-c:v libx264 -pix_fmt yuv420p -crf 20 "$OUT" && echo "clip: $OUT"
+	lab_encode "$OUT"
 fi

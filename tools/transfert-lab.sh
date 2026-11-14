@@ -28,114 +28,52 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-if [ $MODE = open ]; then . tools/agent-window-guard.sh; refuse_agent_window tools/transfert-lab.sh; fi
+. tools/lab-serve.sh
+[ $MODE = open ] && refuse_agent_window tools/transfert-lab.sh
+lab_serve transfert-lab.html $BUILD
+[ $MODE = open ] && lab_open 1580,900
 
-CHROME="${CHROME:-$(command -v google-chrome || command -v chromium || command -v chromium-browser)}"
-[ -n "$CHROME" ] || { echo "no Chrome found: set CHROME=" >&2; exit 2; }
-WAR="$PWD/core/build/browserTest/war"
-if [ $BUILD = 1 ]; then
-	./gradlew -q :core:browserTestWar >/dev/null || exit 1
-fi
-[ -f "$WAR/transfert-lab.html" ] || { echo "$WAR has no transfert-lab.html: run without --no-build" >&2; exit 2; }
-
-PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WAR" >/dev/null 2>&1 &
-SERVER=$!
-PROFILE=$(mktemp -d)
-trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE"' EXIT
-URL="http://127.0.0.1:$PORT/transfert-lab.html"
-for _ in $(seq 50); do python3 -c "import urllib.request; urllib.request.urlopen('$URL')" 2>/dev/null && break; sleep 0.1; done
-
-if [ $MODE = open ]; then
-	FLAGS=(--user-data-dir="$PROFILE" --no-first-run --no-default-browser-check)
-	# As tools/browser-test.sh --open: the board's server has no DISPLAY, point Chrome at the session's Wayland socket.
-	if [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/wayland-0" ]; then
-		export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY=wayland-0
-		FLAGS+=(--ozone-platform=wayland)
-	fi
-	echo "serving $URL until the Chrome window closes"
-	START=$SECONDS
-	"$CHROME" "${FLAGS[@]}" --new-window --window-size=1580,900 "$URL" 2>&1 | grep -E 'ERROR|FATAL' >&2
-	[ $((SECONDS - START)) -ge 5 ] || { echo "Chrome closed at once: no window (see its errors above)" >&2; exit 1; }
-	exit 0
-fi
-
-# Headless: Playwright drives the system Chrome on the GPU (tools/browser.py) and steps the lab through window.transfertLabAct.
-FRAMES=$(mktemp -d)
-trap 'kill $SERVER 2>/dev/null; rm -rf "$PROFILE" "$FRAMES"' EXIT
+# Headless: Playwright drives the system Chrome on the GPU (tools/lab_driver.py) and steps the lab through window.transfertLabAct.
+lab_frames
 python3 - "$URL?clip=1" "$CHROME" "$FRAMES" "$MODE" "$SLIDERS" <<'PY' || exit 1
-import json, sys
-from playwright.sync_api import sync_playwright
+import sys
 sys.path.insert(0, "tools")
-from browser import launch
+from lab_driver import Lab
 url, chrome, frames, mode, sliders = sys.argv[1:]
-with sync_playwright() as p:
-    browser = launch(p, chrome)
-    page = browser.new_page(viewport={"width": 1540, "height": 740})
-    errors = []
-    page.on("console", lambda m: m.type == "error" and "favicon" not in m.location.get("url", "") and errors.append(m.text))
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    page.goto(url)
-    try:
-        page.wait_for_function("window.transfertLabReady === true", timeout=60000)
-    except Exception:
-        sys.exit("the lab never started: %s" % errors)
-    for kv in sliders.split():
-        key, value = kv.split("=", 1)
-        if page.query_selector("[data-key=%s]" % key) is None:
-            sys.exit("no slider %s" % key)
-        page.eval_on_selector("[data-key=%s]" % key, "(e, v) => { e.value = v; }", value)
-    page.evaluate("window.transfertLabAct(0)")
-    seconds = float(page.input_value("[data-key=seconds]"))
-    hold = float(page.input_value("[data-key=hold]"))
-    def shot(path):
-        # two animation frames: the step lands in the next render
-        page.evaluate("new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
-        page.screenshot(path=path, clip={"x": 0, "y": 0, "width": 1540, "height": 520})
-    def act(s):
-        page.evaluate("window.transfertLabAct(%r)" % s)
+TOP = {"clip": {"x": 0, "y": 0, "width": 1540, "height": 520}}
+with Lab(url, chrome, "transfert", viewport=(1540, 740), strict=True) as lab:
+    lab.sliders(sliders)
+    lab.act(0)
+    seconds = float(lab.page.input_value("[data-key=seconds]"))
+    hold = float(lab.page.input_value("[data-key=hold]"))
     if mode == "sheet":
-        act(hold + 1 / 60)
+        lab.act(hold + 1 / 60)
         done = 0.0
         for percent in (0, 25, 50, 75):
-            act(seconds * percent / 100 - done)
+            lab.act(seconds * percent / 100 - done)
             done = seconds * percent / 100
-            shot(frames + "/p%03d.png" % percent)
-            print("p%03d: %s" % (percent, page.text_content("#transfert-readout")))
-        act(seconds - done + 0.1)
-        shot(frames + "/p100.png")
-        print("p100: %s" % page.text_content("#transfert-readout"))
-        act(hold + seconds / 2)
-        shot(frames + "/back050.png")
-        print("back050: %s" % page.text_content("#transfert-readout"))
+            lab.shot(frames + "/p%03d.png" % percent, **TOP)
+            print("p%03d: %s" % (percent, lab.text("#transfert-readout")))
+        lab.act(seconds - done + 0.1)
+        lab.shot(frames + "/p100.png", **TOP)
+        print("p100: %s" % lab.text("#transfert-readout"))
+        lab.act(hold + seconds / 2)
+        lab.shot(frames + "/back050.png", **TOP)
+        print("back050: %s" % lab.text("#transfert-readout"))
     elif mode == "copy":
-        page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-        page.eval_on_selector("[data-key=pagePair]", "e => { e.value = '2'; }")
-        page.eval_on_selector("[data-key=depthStagger]", "e => { e.value = '1.2'; }")
-        act(1)
-        page.click("#transfert-copy")
-        page.wait_for_function("document.getElementById('transfert-copy-state').textContent !== ''")
-        got = json.loads(page.input_value("#transfert-copy-json"))
-        keys = {"pagePair", "seconds", "hold", "cameraScroll", "gradeColour", "mistColour", "throughColour", "depthStagger", "patches", "softEdge"}
-        moved = {"pagePair": {"started": 0, "now": 2}, "depthStagger": {"started": 0.5, "now": 1.2}}
-        if set(got["settings"]) != keys or got["changed"] != moved or got["pages"] != "PurpleFairy \u2194 calm" or got["through"] != "white" or got["mist"] != "white":
-            sys.exit("Copy settings gave the wrong JSON: %s" % json.dumps(got))
-        print("Copy settings: %s; %s" % (page.text_content("#transfert-copy-state"), json.dumps(got["settings"])))
-        page.screenshot(path=frames + "/still.png", full_page=True)
+        lab.set("pagePair", "2")
+        lab.set("depthStagger", "1.2")
+        lab.copy({"pagePair", "seconds", "hold", "cameraScroll", "gradeColour", "mistColour", "throughColour", "depthStagger", "patches",
+                  "softEdge"}, {"pagePair": {"started": 0, "now": 2}, "depthStagger": {"started": 0.5, "now": 1.2}}, then=1,
+                 pages="PurpleFairy \u2194 calm", through="white", mist="white")
+        lab.page.screenshot(path=frames + "/still.png", full_page=True)
     else:
-        frames_n = int(round(2 * (hold + seconds) * 30))
-        for i in range(frames_n):
-            act(0 if i == 0 else 1 / 30)
-            shot(frames + "/f%04d.png" % i)
-    if errors:
-        sys.exit("page errors: %s" % errors)
-    browser.close()
+        lab.clip(frames, int(round(2 * (hold + seconds) * 30)), **TOP)
 PY
 if [ $MODE = sheet ]; then
 	mkdir -p "$OUT" && cp "$FRAMES"/*.png "$OUT"/ && echo "stills: $OUT/{p000,p025,p050,p075,p100,back050}.png"
 elif [ $MODE = copy ]; then
 	cp "$FRAMES/still.png" "$OUT" && echo "still: $OUT"
 else
-	ffmpeg -loglevel error -y -framerate 30 -i "$FRAMES/f%04d.png" -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" \
-		-c:v libx264 -pix_fmt yuv420p -crf 20 "$OUT" && echo "clip: $OUT"
+	lab_encode "$OUT"
 fi
