@@ -90,7 +90,8 @@ repair.
   and run `engines/godot/tools/frame-check.sh` (`engines/rounds/transfer` is its cross-fade round). Its PARTICLES
   layers are placed by `plax_particles.gd` (ParallaxPageReader's particle branch; round `engines/rounds/particles`),
   a FLOOR's rows measured, scrolled and drawn by `plax_floor.gd`, a SEQUENCE's cycle laid out and drawn by
-  `plax_sequence.gd`, a tower's strips by `plax_tower.gd` (r307, r324: `gdlint` caps a script at 1000 lines).
+  `plax_sequence.gd`, a tower's strips by `plax_tower.gd`, the gradients (SquareBackground) faded and drawn by
+  `plax_gradients.gd` (r307, r324, r527: `gdlint` caps a script at 1000 lines).
 - `engines/threejs/src/plax.js` ports the same pieces from `plax_background.gd`, `plax_page.gd` and `plax_atlas.gd`
   (`_actLayer`, `_tile`, `_drawRegion`, the cross-fade, the tint, the gradients; `loadAtlas`, `readPage`): change how a
   page scrolls, fades or draws, change it there too, and run `engines/threejs/tools/frame-check.sh` (`round1`,
@@ -185,7 +186,7 @@ repair.
 - A transfert through a colour (`TransfertStyle.throughColor`, r251, no format change) is in `hazed()` too: after the
   fog, mixed toward `u_grade`'s rgb by its a (jME `m_Grade`, Godot `grade`), set per layer through
   `LayerEffects.setGrade`; the gradients take `TransfertStyle.gradient` (SquareBackground, JmeGradient, Godot's
-  `_act_gradients`). Run the three frame checks on `engines/rounds/transfer` (t11, t12, t16);
+  `plax_gradients.gd`). Run the three frame checks on `engines/rounds/transfer` (t11, t12, t16);
   `tools/r251-through-color/strength.sh` and `mutate.sh` prove the round sees it and a wrong copy.
 - A fog creep (`TransfertStyle.fogCreep`, r252, no format change) is that same grade toward a mist, with its own
   amounts: `TransfertStyle.gradeAt`/`showsIncoming` (eased, far slots first, every slot swapped at the middle), copied

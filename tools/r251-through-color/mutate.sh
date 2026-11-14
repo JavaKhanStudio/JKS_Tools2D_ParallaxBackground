@@ -7,7 +7,7 @@
 # headless: engines/godot/tools/frame-check.sh and engines/jme/tools/frame-check.sh render in cage.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
-FILES=(engines/godot/addons/jks_parallax/plax_background.gd engines/godot/addons/jks_parallax/plax_background.gd
+FILES=(engines/godot/addons/jks_parallax/plax_background.gd engines/godot/addons/jks_parallax/plax_gradients.gd
 	core/src/jks/tools2d/parallax/GdxLayerEffects.java engines/jme/resources/jks/tools2d/parallax/jme/ParallaxEffect.frag)
 SAVED=$(mktemp -d)
 for i in "${!FILES[@]}"; do cp "${FILES[$i]}" "$SAVED/$i"; done
@@ -32,7 +32,7 @@ mutate() {
 }
 mutate 0 's/and _style != null and _style.grades()$/and _style != null and false/' '_style != null and false' \
 	"Godot fading instead of grading" engines/godot/tools/frame-check.sh
-mutate 1 's/progress) if _gradient_style$/progress) if false/' 'progress) if false' \
+mutate 1 's/progress) if _style$/progress) if false/' 'progress) if false' \
 	"Godot's gradients fading straight" engines/godot/tools/frame-check.sh
 mutate 2 's/mix(mix(color.rgb, u_fog, u_haze), u_grade.rgb, u_grade.a)/mix(mix(color.rgb, u_grade.rgb, u_grade.a), u_fog, u_haze)/' 'mix(mix(color.rgb, u_grade.rgb' \
 	"libGDX grading before the fog" engines/godot/tools/frame-check.sh

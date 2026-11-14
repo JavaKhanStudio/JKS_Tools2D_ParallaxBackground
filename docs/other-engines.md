@@ -74,6 +74,8 @@ A reader is three pieces, and the third is where the work is:
   `transfert_into(page, atlas, seconds)` (`transfertIntoPage`) and `tint_to(color, seconds)` (`addColorTransfert`).
 - `plax_particles.gd` (`PlaxParticles`): the background's `PARTICLES` layers, ParallaxPageReader's particle branch:
   their Godot scene, instanced and placed between the layers' canvases.
+- `plax_gradients.gd` (`PlaxGradients`): the page's two gradients (`SquareBackground`), their cross-fade and
+  their drawing under the layers.
 - `plax_floor.gd` (`PlaxFloor`): a `FLOOR` layer's rows (`ParallaxLayer.measureFloor`), measured when it is built or
   resized; the background draws them.
 - `plax_lurker.gd` (`PlaxLurker`): a `LURKER` layer's sightings (`ParallaxPageReader.sightLurkers`): whether its

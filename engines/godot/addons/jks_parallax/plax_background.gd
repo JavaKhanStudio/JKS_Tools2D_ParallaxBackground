@@ -118,18 +118,8 @@ var _tint_from := Color.WHITE
 var _tint_to := Color.WHITE
 var _tint_duration := 0.0
 var _tint_elapsed := 0.0
-# The two gradients (SquareBackground): their colors top_top, top_bottom, bottom_top, bottom_bottom and the part of
-# the screen each leaves uncovered, set by set_page. A cross-fade fades the colors; the sizes stay.
-var _gradient: Array[Color] = [Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE]
-var _gradient_from: Array[Color] = []
-var _gradient_to: Array[Color] = []
-var _gradient_duration := 0.0
-var _gradient_elapsed := 0.0
-var _gradient_fading := false
-# How the gradients fade (TransfertStyle.gradient): null straight, as a plain fade.
-var _gradient_style: PlaxTransfertStyle = null
-var _top_half_size := 0.5
-var _bottom_half_size := 0.5
+# The two gradients (SquareBackground), their colors and sizes set by set_page, their colors cross-faded.
+var _gradients := PlaxGradients.new()
 
 ## Draws the gradients; its children draw the layers, one each, in draw order.
 var _canvas := Node2D.new()
@@ -208,10 +198,7 @@ func set_page(new_page: PlaxPage, new_atlas: PlaxAtlas) -> void:
 	layers = _build_layers(page, atlas)
 	_repeat_x = page.repeat_on_x
 	_repeat_y = page.repeat_on_y
-	_gradient = [page.top_half_top, page.top_half_bottom, page.bottom_half_top, page.bottom_half_bottom]
-	_gradient_fading = false
-	_top_half_size = page.top_half_size
-	_bottom_half_size = page.bottom_half_size
+	_gradients.set_page(page)
 	_update_filter()
 	reset_positions()
 	_order_canvases()
@@ -247,9 +234,7 @@ func transfert_into(new_page: PlaxPage, new_atlas: PlaxAtlas, seconds: float, st
 		else:
 			_fade_speed = 1.0 / seconds
 			_style = style
-	_fade_gradients(
-		[new_page.top_half_top, new_page.top_half_bottom, new_page.bottom_half_top, new_page.bottom_half_bottom],
-		seconds, style)
+	_gradients.fade_to(new_page, seconds, style)
 	_update_filter()
 	_order_canvases()
 	_redraw()
@@ -553,31 +538,6 @@ func _reset_transfert() -> void:
 	_old_alpha = 1
 
 
-## SquareBackground.transfertInto: both colors of both gradients, alpha included, toward the incoming page's, as
-## `style` goes (null: straight).
-func _fade_gradients(target: Array[Color], seconds: float, style: PlaxTransfertStyle = null) -> void:
-	_gradient_style = style
-	_gradient_from = _gradient.duplicate()
-	_gradient_to = target
-	_gradient_elapsed = 0
-	_gradient_duration = seconds
-	_gradient_fading = true
-	if seconds <= 0:
-		_act_gradients(0)
-
-
-func _act_gradients(delta: float) -> void:
-	if not _gradient_fading:
-		return
-	_gradient_elapsed += delta
-	var progress := minf(1, _gradient_elapsed / _gradient_duration) if _gradient_duration > 0 else 1.0
-	for i in 4:
-		_gradient[i] = (_gradient_style.gradient(_gradient_from[i], _gradient_to[i], progress) if _gradient_style
-				else _gradient_from[i].lerp(_gradient_to[i], progress))
-	if progress >= 1:
-		_gradient_fading = false
-
-
 ## Mipmapped sampling when a page on screen was packed with mipmaps. A Nearest page is not concerned: its texture is a
 ## CanvasTexture with its own filter (PlaxAtlas._load_texture), so it stays sharp mid-fade with a smooth page.
 func _update_filter() -> void:
@@ -621,7 +581,7 @@ func act(delta: float) -> void:
 	if page == null:
 		return
 	_effect_time += delta
-	_act_gradients(delta)
+	_gradients.act(delta)
 	PlaxFloor.plant(layers, _world_height)
 	PlaxFloor.plant(transfer_layers, _world_height)
 	for l in layers:
@@ -724,7 +684,7 @@ func _screen_size() -> Vector2:
 func _draw_page() -> void:
 	if page == null:
 		return
-	_draw_gradients(_screen_size())
+	_gradients.draw(_canvas, _screen_size())
 
 
 ## Pixels per page unit and the screen height, as the screen is now, for a layer drawn at `z` (_zoom_of).
@@ -895,25 +855,6 @@ func _draw_layer(l: Dictionary, patches := false) -> void:
 			_tile(l, x, y + m.padY + l.height, true, false, true, view_w, view_h)
 		else:
 			_tile(l, x + m.padX + l.width, y, false, true, true, view_w, view_h)
-
-
-## The two gradients, in screen pixels and opaque: the libGDX heart draws them without blending.
-func _draw_gradients(screen: Vector2) -> void:
-	var top_h := screen.y * (1.0 - _top_half_size)
-	if top_h > 0:
-		_draw_gradient(Rect2(0, 0, screen.x, top_h), _gradient[0], _gradient[1])
-	var bottom_h := screen.y * (1.0 - _bottom_half_size)
-	if bottom_h > 0:
-		_draw_gradient(Rect2(0, screen.y - bottom_h, screen.x, bottom_h), _gradient[2], _gradient[3])
-
-
-## Opaque, each channel cut to the byte libGDX's ShapeRenderer packs it to (Color.toFloatBits: (int)(255 * c)).
-func _draw_gradient(rect: Rect2, top: Color, bottom: Color) -> void:
-	top = Color(floorf(255 * top.r) / 255, floorf(255 * top.g) / 255, floorf(255 * top.b) / 255)
-	bottom = Color(floorf(255 * bottom.r) / 255, floorf(255 * bottom.g) / 255, floorf(255 * bottom.b) / 255)
-	_canvas.draw_polygon(PackedVector2Array(
-			[rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]),
-		PackedColorArray([top, top, bottom, bottom]))
 
 
 ## The layer at (x, y) plus every repetition, on the requested axes, that intersects the view

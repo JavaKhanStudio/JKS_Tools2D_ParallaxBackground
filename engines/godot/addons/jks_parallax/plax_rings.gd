@@ -556,10 +556,10 @@ func _draw_sky() -> void:
 	var page := bg.page
 	if page == null:
 		return
-	var g := gradient(bg._top_half_size, bg._bottom_half_size, bg.world_width, ring_options_of(page))
+	var g := gradient(bg._gradients.top_half_size, bg._gradients.bottom_half_size, bg.world_width, ring_options_of(page))
 	var names := ["top_to", "top_from", "bottom_to", "bottom_from"]
 	for i in 4:
-		var c := PlaxEffects.packed_rgb(_sky_tinted(bg._gradient[i]))
+		var c := PlaxEffects.packed_rgb(_sky_tinted(bg._gradients.colors[i]))
 		sky_material.set_shader_parameter(names[i], Vector3(c.r, c.g, c.b))
 	sky_material.set_shader_parameter("top", Vector2(g.topFrom, g.topTo))
 	sky_material.set_shader_parameter("bottom", Vector2(g.bottomFrom, g.bottomTo))
