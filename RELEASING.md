@@ -13,7 +13,8 @@ every push and pull request on JDK 17, 21 and 25.
 
 ## Test versions (snapshots)
 
-Every push to `develop` publishes the library, and the jMonkeyEngine reader (`parallax-background-jme`), as a snapshot,
+Every push to `develop` publishes the library, the jMonkeyEngine reader (`parallax-background-jme`) and the WebP
+pages (`parallax-background-webp`, r523) as a snapshot,
 under the `version` in `develop`'s `gradle.properties` (`X.Y.Z-SNAPSHOT`). A game can use it with:
 
 ```groovy
@@ -45,7 +46,7 @@ snapshot builds after 90 days: a game still on one then needs a newer snapshot o
 (`-Pparallax=<version>` for one pinned build).
 
 To try a change without publishing anything, `./gradlew :core:publishToMavenLocal` (and `:jme:publishToMavenLocal`
-for the jME reader) and add `mavenLocal()` to the game's repositories. `./gradlew -p engines/jme/tools/probe run` is such a
+for the jME reader, `:webp:publishToMavenLocal` for WebP) and add `mavenLocal()` to the game's repositories. `./gradlew -p engines/jme/tools/probe run` is such a
 game: a headless jME app that takes `parallax-background-jme` from `mavenLocal()` (or Central) and loads and
 scrolls a demo page with it (no pixels: jME's null renderer), then prints OK.
 

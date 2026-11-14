@@ -1,0 +1,28 @@
+// r523: a small Android app that decodes WebP through parallax-background-webp's Android path (BitmapFactory) and draws
+// a page from a PNG atlas page and from its WebP twin (tools/android-webp-check.sh). Its own build, out of the library's
+// (as tools/android-etc2-check, r140): settings.gradle, CI and tools/library-alone-check.sh never need an Android SDK.
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'android-webp-check'
+
+// core and webp from this checkout, not Maven Central's.
+includeBuild('../..') {
+    dependencySubstitution {
+        substitute module('io.github.javakhanstudio:parallax-background') using project(':core')
+        substitute module('io.github.javakhanstudio:parallax-background-webp') using project(':webp')
+    }
+}

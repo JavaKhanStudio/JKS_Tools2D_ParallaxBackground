@@ -58,7 +58,8 @@ own libGDX backend (LWJGL3, Android...) as usual. The jar, its sources and its j
 to add those dependencies yourself.
 
 Then see [Using the library in a game](#using-the-library-in-a-game). A jMonkeyEngine game depends on
-`parallax-background-jme` instead, see [In jMonkeyEngine 3](#in-jmonkeyengine-3).
+`parallax-background-jme` instead, see [In jMonkeyEngine 3](#in-jmonkeyengine-3). Atlas pages saved as WebP need
+`parallax-background-webp` too: see "WebP atlas pages", after the ETC2 atlases.
 
 A game that still uses the jar copied in from the 2019-2023 code moves to Maven Central with
 [docs/MIGRATING.md](docs/MIGRATING.md): what to change in the build, what no longer compiles, what behaves differently.
@@ -502,6 +503,17 @@ atlas has no ETC2 copy loads the PNG one either way. Desktops are left on PNG, t
 and so are browsers, where libGDX cannot read the gzipped pages. ETC2 is lossy: about 40 dB on painted art, and pixel
 art shifts its colours slightly. The Godot and jME readers load the PNG atlas; Godot compresses it on import itself.
 
+**WebP atlas pages.** libGDX reads images through stb_image, which has no WebP; `parallax-background-webp` adds it
+(r523). Add `implementation "io.github.javakhanstudio:parallax-background-webp:<version>"` beside the library and
+call `ParallaxWebp.install()` once, before loading a page: every atlas page named `.webp` then loads, from a folder
+(`heart.relativePath`) or through the AssetManager (`ParallaxWebp.register(manager)` does the same for a game's own
+`.webp` textures). On desktop it decodes in pure Java with TwelveMonkeys imageio-webp (BSD-3, no natives); on Android
+with the system's BitmapFactory, so an Android module can leave TwelveMonkeys out:
+`exclude group: 'com.twelvemonkeys.imageio'` and `exclude group: 'com.twelvemonkeys.common'`. iOS has neither: ship
+PNG there. A browser game needs nothing, the browser decodes WebP. A lossless WebP draws pixel for pixel as its PNG
+(`tools/r523-webp/frame-check.sh`) at about a quarter of its size on disk (parallax-ai's region3-loop: 881 KiB PNG, 242
+KiB WebP); in video memory both are RGBA8888 (ETC2 is what saves that).
+
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
 pages built without a heart. Two hearts can show the same `WholePage_Model`: the first shows the page's own layers
@@ -598,6 +610,8 @@ engines/jme/src/.../jme/          the jMonkeyEngine reader, published as paralla
                                   JmeLayerEffects (the SHADER effects, resources/.../ParallaxEffect.j3md)
 engines/jme/tests/                its frame runner and demo (:jme:run)
 engines/jme/tools/                its checks: frame-check.sh, probe/ (a fresh game on the published jars)
+webp/src/.../webp/ParallaxWebp     WebP pages for libGDX, published as parallax-background-webp (core's hook:
+                                  pages/PageImageDecoder, Gvars_Parallax.setImageDecoder); webp/tests its frame check
 engines/godot/addons/jks_parallax the Godot 4 reader
 engines/godot/tests/              Godot's runners for the rounds: shots.gd, particles.gd, sequence_cycle.gd
 engines/godot/tools/              its checks: frame-check.sh, addon-zip.sh (the release zip), addon-zip-check.sh

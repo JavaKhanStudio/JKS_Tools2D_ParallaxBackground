@@ -29,3 +29,6 @@ project(':rounds').projectDir = file('engines/rounds/reader')
 // The jMonkeyEngine reader (r112): a Java engine, so it draws pages with core itself.
 include 'jme'
 project(':jme').projectDir = file('engines/jme')
+
+// WebP pages for libGDX (r523): published as parallax-background-webp, beside core.
+include 'webp'

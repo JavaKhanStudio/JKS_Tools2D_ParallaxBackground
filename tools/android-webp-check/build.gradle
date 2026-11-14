@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.application' version '9.4.1'
+}
+
+def gdxVersion = '1.14.2' // gradle.properties' gdxVersion, which an included build does not hand down
+
+configurations {
+    natives
+}
+
+dependencies {
+    // Without TwelveMonkeys, as an Android game ships it (README "WebP pages"): Android decodes with BitmapFactory.
+    implementation('io.github.javakhanstudio:parallax-background-webp:+') {
+        exclude group: 'com.twelvemonkeys.imageio'
+        exclude group: 'com.twelvemonkeys.common'
+    }
+    implementation "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
+}
+
+// tools/android-webp-check.sh writes the assets (the fixtures and the two pages) into this folder.
+def assetsDir = providers.gradleProperty('webpAssets')
+
+android {
+    namespace = 'jks.tools2d.parallax.webpcheck'
+    compileSdk = 36
+    defaultConfig {
+        applicationId = 'jks.tools2d.parallax.webpcheck'
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = '1'
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            assets.srcDirs = [assetsDir.get()]
+            jniLibs.srcDirs = [layout.buildDirectory.dir('natives').get().asFile]
+        }
+    }
+    packaging {
+        resources.excludes += ['META-INF/**']
+    }
+}
+
+// libGDX's natives come as jars: their .so go to jniLibs/<abi>.
+def copyNatives = tasks.register('copyNatives', Sync) {
+    into layout.buildDirectory.dir('natives')
+    configurations.natives.files.each { jar ->
+        def abi = (jar.name =~ /natives-(.+)\.jar/)[0][1]
+        from(zipTree(jar)) {
+            include '*.so'
+            into abi
+        }
+    }
+}
+tasks.named('preBuild') { dependsOn copyNatives }

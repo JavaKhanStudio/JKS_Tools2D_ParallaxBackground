@@ -1,0 +1,104 @@
+plugins {
+    id 'java-library'
+    id 'com.vanniktech.maven.publish'
+}
+
+// WebP pages for libGDX (r523): libGDX's Pixmap reader is stb_image, which has no WebP. Its own artifact,
+// parallax-background-webp (Simon, r523), so core stays without java.awt/ImageIO, which Android lacks: a game adds it
+// and calls ParallaxWebp.install(). Desktop decodes with TwelveMonkeys (pure Java), Android with its BitmapFactory.
+
+base {
+    archivesName = 'parallax-background-webp'
+}
+// Same level as core: Android and desktop games.
+tasks.named('compileJava', JavaCompile) {
+    options.release = 11
+}
+tasks.withType(JavaCompile).matching { it.name != 'compileJava' }.configureEach {
+    options.release = 17
+}
+
+sourceSets {
+    main.java.srcDirs = ['src']
+    test.java.srcDirs = ['test']
+    // tools/r523-webp/frame-check.sh's runner: a page drawn from a PNG atlas and from its WebP twin. Not published.
+    check {
+        java.srcDirs = ['tests']
+        compileClasspath += main.output + main.compileClasspath
+        runtimeClasspath += main.output + main.runtimeClasspath
+    }
+}
+
+configurations {
+    checkImplementation.extendsFrom implementation
+}
+
+dependencies {
+    api project(':core')
+    // Desktop only: an Android game may exclude group 'com.twelvemonkeys.imageio' and 'com.twelvemonkeys.common'.
+    implementation "com.twelvemonkeys.imageio:imageio-webp:$twelvemonkeysVersion"
+
+    testImplementation platform("org.junit:junit-bom:$junitVersion")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+
+    checkImplementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    checkImplementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+    checkImplementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+tasks.named('test', Test) {
+    systemProperty 'parallax.repoRoot', rootDir.absolutePath
+}
+
+// The runner's classpath, for tools/r523-webp/frame-check.sh to start it inside cage without Gradle.
+tasks.register('checkClasspath') {
+    def out = layout.buildDirectory.file('check.classpath')
+    def files = sourceSets.check.runtimeClasspath
+    dependsOn sourceSets.check.runtimeClasspath
+    outputs.file(out)
+    doLast { out.get().asFile.text = files.files.join(File.pathSeparator) }
+}
+tasks.named('check') {
+    dependsOn 'checkClasses'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+/*
+ * Publishing, with core and jme (RELEASING.md): ./gradlew :webp:publishToMavenLocal, :webp:publishToMavenCentral.
+ */
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(project.group.toString(), 'parallax-background-webp', project.version.toString())
+
+    pom {
+        name = 'JKS Tools2D Parallax Background WebP'
+        description = 'Loads WebP atlas pages and images in a libGDX game: pure Java on desktop, the system decoder on Android.'
+        url = 'https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground'
+        inceptionYear = '2026'
+
+        licenses {
+            license {
+                name = 'The Apache License, Version 2.0'
+                url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
+        developers {
+            developer {
+                id = 'JavaKhanStudio'
+                name = 'Simon Bedard'
+                url = 'https://github.com/JavaKhanStudio'
+            }
+        }
+        scm {
+            url = 'https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground'
+            connection = 'scm:git:https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground.git'
+            developerConnection = 'scm:git:ssh://git@github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground.git'
+        }
+    }
+}

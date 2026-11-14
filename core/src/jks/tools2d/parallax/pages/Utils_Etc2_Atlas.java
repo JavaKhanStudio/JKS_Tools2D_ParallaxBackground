@@ -16,6 +16,8 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas.TextureAtlasData.Page;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
+import jks.tools2d.parallax.heart.Gvars_Parallax;
+
 /**
  * Loads the ETC2 copy of an atlas the editor writes ({@code name.etc2.atlas}, see
  * {@link jks.tools2d.parallax.heart.Gvars_Parallax#setCompressedAtlases}). Its {@code .zktx} pages carry their whole mip
@@ -42,12 +44,17 @@ public final class Utils_Etc2_Atlas
 
 	/**
 	 * The atlas in {@code atlasFile}, its pages next to it; an ETC2 copy's pages without generated mipmaps, a
-	 * non-power-of-two page without them where the GL cannot make them.
+	 * non-power-of-two page without them where the GL cannot make them; a page the image decoder reads
+	 * ({@link Gvars_Parallax#setImageDecoder}, a WebP one) decoded by it.
 	 */
 	public static TextureAtlas load(FileHandle atlasFile)
 	{
 		TextureAtlasData data = new TextureAtlasData(atlasFile, atlasFile.parent(), false);
 		fit(data, isEtc2Atlas(atlasFile.name()), npotMipMapsRefused());
+		PageImageDecoder decoder = Gvars_Parallax.getImageDecoder();
+		for (Page page : data.getPages())
+			if (DecodedTextureLoader.decodes(decoder, page.textureFile))
+				page.texture = new Texture(DecodedTextureLoader.data(decoder, page.textureFile, page.format, page.useMipMaps));
 		return new TextureAtlas(data);
 	}
 
@@ -108,6 +115,7 @@ public final class Utils_Etc2_Atlas
 	/**
 	 * Makes {@code manager} load every {@code .etc2.atlas} through {@link Loader}, and every {@code .atlas} the manager's
 	 * own TextureAtlasLoader would have loaded: its mag filter fitted, its mipmaps dropped where the GL cannot make them.
+	 * With an image decoder set ({@link Gvars_Parallax#setImageDecoder}), its files' textures load through it.
 	 */
 	public static void register(AssetManager manager)
 	{
@@ -115,6 +123,10 @@ public final class Utils_Etc2_Atlas
 			manager.setLoader(TextureAtlas.class, SUFFIX, new Loader(manager.getFileHandleResolver()));
 		if (manager.getLoader(TextureAtlas.class, "x.atlas").getClass() == TextureAtlasLoader.class)
 			manager.setLoader(TextureAtlas.class, ".atlas", new Loader(manager.getFileHandleResolver()));
+		PageImageDecoder decoder = Gvars_Parallax.getImageDecoder();
+		if (decoder != null && !(manager.getLoader(Texture.class, "x" + decoder.suffix()) instanceof DecodedTextureLoader
+				&& ((DecodedTextureLoader) manager.getLoader(Texture.class, "x" + decoder.suffix())).getDecoder() == decoder))
+			manager.setLoader(Texture.class, decoder.suffix(), new DecodedTextureLoader(manager.getFileHandleResolver(), decoder));
 	}
 
 	/** An AssetManager's TextureAtlasLoader whose pages get only the mipmaps {@link Utils_Etc2_Atlas#load} gives them. */

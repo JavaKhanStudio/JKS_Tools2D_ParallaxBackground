@@ -4,6 +4,8 @@ import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 
+import jks.tools2d.parallax.pages.PageImageDecoder;
+
 /**
  * The shared AssetManager, and the default world size: the one set by the last {@link Parallax_Heart} built, used by
  * layers and pages built without a heart. Each heart keeps its own world size, see
@@ -15,6 +17,7 @@ public class Gvars_Parallax
 	private static float worldWidth = 40 ;
 	private static float worldHeight = 40 ;
 	private static boolean compressedAtlases ;
+	private static PageImageDecoder imageDecoder ;
 	
 	public static AssetManager getManager() 
 	{
@@ -41,6 +44,17 @@ public class Gvars_Parallax
 	 */
 	public static void setCompressedAtlases(boolean on)
 	{compressedAtlases = on ;}
+
+	/**
+	 * Decodes the atlas pages whose file ends with its suffix, where libGDX's stb_image cannot (r523): a WebP page on
+	 * desktop or Android, through parallax-background-webp's {@code ParallaxWebp.install()}. Null (the default): every
+	 * page goes through libGDX.
+	 */
+	public static void setImageDecoder(PageImageDecoder decoder)
+	{imageDecoder = decoder ;}
+
+	public static PageImageDecoder getImageDecoder()
+	{return imageDecoder ;}
 
 	public static boolean isCompressedAtlases()
 	{return compressedAtlases ;}

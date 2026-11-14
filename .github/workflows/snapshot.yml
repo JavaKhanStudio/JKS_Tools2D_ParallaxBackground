@@ -43,7 +43,7 @@ jobs:
 
       - name: Publish
         if: env.MAVEN_CENTRAL_USERNAME != ''
-        run: ./gradlew :core:publishToMavenCentral :jme:publishToMavenCentral --no-configuration-cache
+        run: ./gradlew :core:publishToMavenCentral :jme:publishToMavenCentral :webp:publishToMavenCentral --no-configuration-cache
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}

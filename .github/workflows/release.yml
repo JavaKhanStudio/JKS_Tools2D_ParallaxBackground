@@ -89,9 +89,9 @@ jobs:
       - name: Publish the library and the jME reader to Maven Central
         if: steps.central.outputs.publish == 'true'
         run: |
-          ./gradlew :core:publishAndReleaseToMavenCentral :jme:publishAndReleaseToMavenCentral --no-configuration-cache
+          ./gradlew :core:publishAndReleaseToMavenCentral :jme:publishAndReleaseToMavenCentral :webp:publishAndReleaseToMavenCentral --no-configuration-cache
           echo "### ${GITHUB_REF_NAME} released to Maven Central" >> "$GITHUB_STEP_SUMMARY"
-          echo "It can take up to an hour before \`mavenCentral()\` serves it: https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background and https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background-jme" >> "$GITHUB_STEP_SUMMARY"
+          echo "It can take up to an hour before \`mavenCentral()\` serves it: https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background and https://central.sonatype.com/artifact/io.github.javakhanstudio/parallax-background-jme (and parallax-background-webp)" >> "$GITHUB_STEP_SUMMARY"
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
@@ -100,12 +100,14 @@ jobs:
 
       - name: Package the downloads
         run: |
-          ./gradlew :core:plainJavadocJar :jme:plainJavadocJar
+          ./gradlew :core:plainJavadocJar :jme:plainJavadocJar :webp:plainJavadocJar
           mkdir -p release
           # 1. The library, to use a parallax in a game (also on Maven Central).
           cp core/build/libs/parallax-background-*.jar release/
           # 1b. The jMonkeyEngine reader (also on Maven Central).
           cp engines/jme/build/libs/parallax-background-jme-*.jar release/
+          # 1c. WebP atlas pages for libGDX (r523, also on Maven Central).
+          cp webp/build/libs/parallax-background-webp-*.jar release/
           # 2. The Godot reader, addons/jks_parallax at the zip's root.
           engines/godot/tools/addon-zip.sh release
           # 3. The three.js reader, jks_parallax_threejs/plax.js at the zip's root.
@@ -127,6 +129,9 @@ jobs:
               echo
               echo "In a jMonkeyEngine 3 game: \`implementation \"io.github.javakhanstudio:parallax-background-jme:$VERSION\"\`"
               echo "(\`parallax-background-jme-$VERSION.jar\`), which brings the library in."
+              echo
+              echo "Atlas pages saved as WebP: add \`implementation \"io.github.javakhanstudio:parallax-background-webp:$VERSION\"\`"
+              echo "and call \`ParallaxWebp.install()\` (desktop and Android; see the README's \"WebP atlas pages\")."
             else
               echo "This version is not on Maven Central: add the jar to your game yourself."
             fi

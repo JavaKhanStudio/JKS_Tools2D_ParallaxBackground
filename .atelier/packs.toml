@@ -81,6 +81,10 @@ on OpenGL ES 3 only. pages/Utils_Etc2_Atlas loads the .zktx pages with their OWN
 glGenerateMipmap, and libGDX's own TextureAtlas loader raises GL_INVALID_OPERATION there (emulator and Adreno 650, r206).
 Fixtures core/test-data/etc2 (never re-exported), Etc2AtlasMipmapTest. tools/android-etc2-check.sh proves it on the
 atelier-phone emulator; memory only on a Qualcomm phone (tools/android-etc2-memory.sh: Hiver 65.8 MiB PNG, 17.9 ETC2).
+WebP (r523): libGDX's stb_image has none, so a .webp atlas page loads only in a game that installed the separate artifact
+parallax-background-webp (webp/, ParallaxWebp.install() -> Gvars_Parallax.setImageDecoder, read by both page loads in
+Utils_Etc2_Atlas). Core never takes ImageIO. The library's own atlases (test-data, rounds) stay PNG: the readers and
+the tests load them without it. Proofs: tools/r523-webp/frame-check.sh, mutate.sh, tools/android-webp-check.sh.
 """
 
 # No `docs` tag (doubt d2, decision B, 2026-09-14): documentation work carries the tag of the
