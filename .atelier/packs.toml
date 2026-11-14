@@ -84,7 +84,10 @@ atelier-phone emulator; memory only on a Qualcomm phone (tools/android-etc2-memo
 WebP (r523): libGDX's stb_image has none, so a .webp atlas page loads only in a game that installed the separate artifact
 parallax-background-webp (webp/, ParallaxWebp.install() -> Gvars_Parallax.setImageDecoder, read by both page loads in
 Utils_Etc2_Atlas). Core never takes ImageIO. The library's own atlases (test-data, rounds) stay PNG: the readers and
-the tests load them without it. Proofs: tools/r523-webp/frame-check.sh, mutate.sh, tools/android-webp-check.sh.
+the tests load them without it (Simon, r540). Proofs: tools/r523-webp/frame-check.sh, mutate.sh, tools/android-webp-check.sh.
+jME (r552): JmeWebp.register(assetManager), in the same artifact (jme3 compileOnly there), TwelveMonkeys then jME's
+AWTLoader; JmeParallaxShots registers it. TwelveMonkeys <= 3.15.3 drops the transparency of a palette lossless WebP
+(<= 256 colours; its #1364): City.webp in tools/r540-webp-rounds/probe.sh's pixelart twin, on libGDX and jME alike.
 """
 
 # No `docs` tag (doubt d2, decision B, 2026-09-14): documentation work carries the tag of the

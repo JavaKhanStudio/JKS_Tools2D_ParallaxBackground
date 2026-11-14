@@ -472,7 +472,9 @@ bg.setLayerDetail("birds", LayerDetail.DEFAULT.shownFrom(Enum_Detail.HIGH));  //
 ```
 
 The scrolling, tiling, cross-fade and tint are this library's own `ParallaxPageReader`; jME only draws the quads, and
-`engines/jme/tools/frame-check.sh` compares its frames with libGDX's. An `EMPTY` layer's hook draws through the same
+`engines/jme/tools/frame-check.sh` compares its frames with libGDX's. Atlas pages saved as WebP (desktop): add
+`parallax-background-webp` too and call `JmeWebp.register(assetManager)` once (r552): jME's loader has no WebP, this
+one decodes it with TwelveMonkeys and hands the pixels to jME's own PNG loader (`AWTLoader`). An `EMPTY` layer's hook draws through the same
 `JmeBatch`, whose only draw is `draw(region, x, y, width, height)` with a region of a `JmeAtlas`. A `SHADER` layer's
 tiles are a run of their own drawn with a `ParallaxEffect` material (`JmeLayerEffects`), the same frames as libGDX's.
 The background
@@ -512,7 +514,10 @@ with the system's BitmapFactory, so an Android module can leave TwelveMonkeys ou
 `exclude group: 'com.twelvemonkeys.imageio'` and `exclude group: 'com.twelvemonkeys.common'`. iOS has neither: ship
 PNG there. A browser game needs nothing, the browser decodes WebP. A lossless WebP draws pixel for pixel as its PNG
 (`tools/r523-webp/frame-check.sh`) at about a quarter of its size on disk (parallax-ai's region3-loop: 881 KiB PNG, 242
-KiB WebP); in video memory both are RGBA8888 (ETC2 is what saves that).
+KiB WebP); in video memory both are RGBA8888 (ETC2 is what saves that). A jMonkeyEngine game uses the same artifact
+through `JmeWebp.register(assetManager)` (see [In jMonkeyEngine 3](#in-jmonkeyengine-3)). TwelveMonkeys up to 3.15.3
+decodes a lossless WebP saved from a palette image (256 colours or fewer, with transparency) with its transparent
+pixels opaque (its issue 1364, fixed after that release): on desktop, save such a page as PNG.
 
 Each `Parallax_Heart` keeps its own world size (`heart.getWorldWidth()`, `getWorldHeight()`), so hearts of different
 sizes can run side by side. `Gvars_Parallax` only holds the size of the last heart built, the default for layers and
@@ -611,7 +616,8 @@ engines/jme/src/.../jme/          the jMonkeyEngine reader, published as paralla
 engines/jme/tests/                its frame runner and demo (:jme:run)
 engines/jme/tools/                its checks: frame-check.sh, probe/ (a fresh game on the published jars)
 webp/src/.../webp/ParallaxWebp     WebP pages for libGDX, published as parallax-background-webp (core's hook:
-                                  pages/PageImageDecoder, Gvars_Parallax.setImageDecoder); webp/tests its frame check
+                                  pages/PageImageDecoder, Gvars_Parallax.setImageDecoder); webp/tests its frame check;
+                                  JmeWebp the same pages' loader for jME's AssetManager
 engines/godot/addons/jks_parallax the Godot 4 reader
 engines/godot/tests/              Godot's runners for the rounds: shots.gd, particles.gd, sequence_cycle.gd
 engines/godot/tools/              its checks: frame-check.sh, addon-zip.sh (the release zip), addon-zip-check.sh

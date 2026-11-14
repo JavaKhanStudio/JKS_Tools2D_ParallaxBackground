@@ -37,6 +37,11 @@ dependencies {
     api project(':core')
     // Desktop only: an Android game may exclude group 'com.twelvemonkeys.imageio' and 'com.twelvemonkeys.common'.
     implementation "com.twelvemonkeys.imageio:imageio-webp:$twelvemonkeysVersion"
+    // JmeWebp (r552): a jME game's own jME, never brought by this artifact. jME 3 is Java 8 bytecode.
+    compileOnly "org.jmonkeyengine:jme3-core:$jmeVersion"
+    compileOnly "org.jmonkeyengine:jme3-desktop:$jmeVersion"
+    testImplementation "org.jmonkeyengine:jme3-core:$jmeVersion"
+    testImplementation "org.jmonkeyengine:jme3-desktop:$jmeVersion"
 
     testImplementation platform("org.junit:junit-bom:$junitVersion")
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -78,7 +83,7 @@ mavenPublishing {
 
     pom {
         name = 'JKS Tools2D Parallax Background WebP'
-        description = 'Loads WebP atlas pages and images in a libGDX game: pure Java on desktop, the system decoder on Android.'
+        description = 'Loads WebP atlas pages and images in a libGDX game (pure Java on desktop, the system decoder on Android) and in a jMonkeyEngine desktop game.'
         url = 'https://github.com/JavaKhanStudio/JKS_Tools2D_ParallaxBackground'
         inceptionYear = '2026'
 

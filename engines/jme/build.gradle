@@ -40,6 +40,8 @@ dependencies {
     api project(':core')
     api "org.jmonkeyengine:jme3-core:$jmeVersion"
     shotsImplementation project(':rounds')
+    // The runner reads a round whose atlas pages are WebP too (r552, tools/r540-webp-rounds/probe.sh).
+    shotsImplementation project(':webp')
     shotsImplementation "org.jmonkeyengine:jme3-desktop:$jmeVersion"
     shotsImplementation "org.jmonkeyengine:jme3-lwjgl3:$jmeVersion"
 }

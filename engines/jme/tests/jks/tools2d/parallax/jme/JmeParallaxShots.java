@@ -114,6 +114,7 @@ public class JmeParallaxShots extends SimpleApplication
 		setDisplayStatView(false);
 		flyCam.setEnabled(false);
 		assetManager.registerLocator(Paths.get("").toAbsolutePath().toString(), FileLocator.class);
+		jks.tools2d.parallax.webp.JmeWebp.register(assetManager);
 		try
 		{Files.createDirectories(outDir);}
 		catch (IOException e)

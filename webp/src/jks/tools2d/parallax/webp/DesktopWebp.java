@@ -25,12 +25,9 @@ final class DesktopWebp
 
 	static Pixmap decode(FileHandle file)
 	{
-		ImageReader reader = null;
-		try (InputStream in = file.read(); MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(in))
+		try (InputStream in = file.read())
 		{
-			reader = SPI.createReaderInstance();
-			reader.setInput(stream);
-			BufferedImage image = reader.read(0);
+			BufferedImage image = read(in);
 			int width = image.getWidth(), height = image.getHeight();
 			// getRGB: sRGB, ARGB, never premultiplied, whatever the decoded image's type.
 			int[] argb = image.getRGB(0, 0, width, height, null, 0, width);
@@ -38,10 +35,18 @@ final class DesktopWebp
 		}
 		catch (IOException e)
 		{throw new GdxRuntimeException("Couldn't decode WebP " + file, e);}
-		finally
+	}
+
+	/** The WebP image {@code in} holds, decoded by TwelveMonkeys; {@code in} is left open. */
+	static BufferedImage read(InputStream in) throws IOException
+	{
+		ImageReader reader = SPI.createReaderInstance();
+		try (MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(in))
 		{
-			if (reader != null)
-				reader.dispose();
+			reader.setInput(stream);
+			return reader.read(0);
 		}
+		finally
+		{reader.dispose();}
 	}
 }
