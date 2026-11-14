@@ -519,7 +519,7 @@ def parse_args():
     ap.add_argument("--small", metavar="WxH", help="paint every strip at WxH, then upscale it to the strip's size with"
                     " RealESRGAN (r471)")
     ap.add_argument("--warp", type=float, help="sil.py --warp on ruins strips: their shape bent by up to this fraction of"
-                    " the strip's height before painting (r496); default sil.py's, off")
+                    " the strip's height before painting (r496); default sil.py's 0.0243, 0 for straight towers")
     ap.add_argument("--timeout", type=int, default=TIMEOUT,
                     help="seconds a command (a strip: 10-60) may take before it is killed and run once more (r377)")
     a = ap.parse_args()

@@ -1,4 +1,4 @@
-"""sil.py --warp (r496): the ruins' shape bent, its loop and its variants' ends kept, off by default. No GPU.
+"""sil.py --warp (r496): the ruins' shape bent, its loop and its variants' ends kept, on by default at 0.0243. No GPU.
 
     python3 tools/r239-ai-strips/warp_test.py
 """
@@ -29,15 +29,15 @@ class Warp(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.d = self.tmp.name
-        self.plain, self.plain_init = run_sil(self.d, "plain", "ruins", "--seed", "5")
+        self.plain, self.plain_init = run_sil(self.d, "plain", "ruins", "--seed", "5", "--warp", "0")
         self.bent, self.bent_init = run_sil(self.d, "bent", "ruins", "--seed", "5", "--warp", "0.0243")
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_off_by_default_and_at_zero(self):
-        off, _ = run_sil(self.d, "off", "ruins", "--seed", "5", "--warp", "0")
-        self.assertTrue((off == self.plain).all())
+    def test_on_by_default_off_at_zero(self):
+        default, _ = run_sil(self.d, "default", "ruins", "--seed", "5")
+        self.assertTrue((default == self.bent).all(), "ruins are not warped at 0.0243 by default (Simon's pick, r496)")
         self.assertGreater(np.abs(self.bent - self.plain).mean(), 0.005, "the warp moved nothing")
 
     def test_the_bend_runs_on_across_the_join(self):

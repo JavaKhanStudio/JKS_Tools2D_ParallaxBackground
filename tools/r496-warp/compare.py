@@ -40,8 +40,7 @@ KEYED = 0.5  # a tower with under this share of its upper half opaque in the cut
 
 def pipeline(out, seed, arm, amount):
     sys.argv = ["ai_page", f"{out}/{arm}/s{seed}", *R3, "--seed", str(seed)]
-    if arm == "warp":
-        sys.argv += ["--warp", str(amount)]
+    sys.argv += ["--warp", str(amount if arm == "warp" else 0)]  # plain is --warp 0 since ruins warp by default
     return ai_page.Pipeline(ai_page.parse_args())
 
 

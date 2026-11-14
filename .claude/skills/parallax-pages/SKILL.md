@@ -176,7 +176,8 @@ What is yours to choose, from the theme:
 - **`--keep`** lays the page out again from the strips already painted: another `--sky`, `--fog` or `--front-speed`
   costs seconds, not a repaint. Another look needs another `--seed`.
 - **`--kinds`** sets every depth's shape, back to front: `mountains`, `hills`, `pines`, `dunes`, `sea` (a flat
-  horizon band), `ruins` (broken towers), `palms`. A beach is `mountains,sea,dunes,palms`, a ruined city
+  horizon band), `ruins` (broken towers, their shape bent
+  before painting for ledges over boxes, r496; `--warp 0` keeps them straight), `palms`. A beach is `mountains,sea,dunes,palms`, a ruined city
   `mountains,ruins,ruins,ruins` (`tools/r239-ai-strips/examples.sh`). Keep a word that has its own layer out of the
   theme: "turquoise sea" in a beach's theme paints sea haze into the palms' sky, which keys to a faint band ending at a
   SEQUENCE join.

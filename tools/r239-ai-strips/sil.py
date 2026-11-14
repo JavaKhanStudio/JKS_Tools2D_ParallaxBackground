@@ -9,8 +9,9 @@ img2img at 0.65 keeps much of that colour: --colour (hex) sets the layer's for a
 --texture 1 (r365) textures the fill of a kind whose SPEC has a "texture" (mountains, hills, sea, dunes): img2img
 paints detail only where its start has some, and a flat fill came out a flat bar. Its keys: amp (the noise's strength),
 aspect (its rows against its columns: the sea's thin streaks), light (the shape embossed), foot (darker toward it).
---warp F (r496) bends a kind with a "warp" in its SPEC (ruins, off by default), its mask and so its init, by wrapped noise
-up to F of the strip's height: img2img paints less rectangular towers from it, and the cut's mask still fits the init.
+--warp F (r496) bends a kind with a "warp" in its SPEC (ruins: 0.0243, on since Simon judged r496's sheets; --warp 0
+keeps them straight), its mask and so its init, by wrapped noise up to F of the strip's height: img2img paints less
+rectangular towers, more ledges, from it, and the cut's mask still fits the init.
 --quiet-join turns the shape so the loop's join falls where its outline is flattest (a tree's flank there
 steps past what a SEQUENCE's joins may show); a variant (--edges-of) turns by its kept seed's, so it still fits.
 Every curve is a sum of sines of whole frequencies over the width, and every tree sits at a
@@ -35,7 +36,7 @@ SPEC = {
     "dunes": {"base": 0.30, "waves": [(2, 0.05), (3, 0.04), (7, 0.012)], "ridge": False, "colour": (200, 175, 125),
               "sky": (210, 225, 240), "texture": {"light": 1.0, "amp": 1.5}},
     "ruins": {"base": 0.14, "waves": [(3, 0.02), (9, 0.01)], "ridge": False, "towers": 26, "colour": (60, 55, 55),
-              "sky": (210, 225, 240), "warp": 0.0},
+              "sky": (210, 225, 240), "warp": 0.0243},
     "sea": {"base": 0.22, "waves": [(17, 0.004), (29, 0.003)], "ridge": False, "colour": (70, 170, 170),
             "sky": (210, 225, 240), "texture": {"aspect": 20, "light": 0.0, "amp": 3}},
     "palms": {"base": 0.05, "waves": [(2, 0.025), (5, 0.012)], "ridge": False, "palms": 9, "colour": (40, 50, 35),
