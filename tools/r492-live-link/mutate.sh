@@ -43,7 +43,7 @@ run page-edit-moves-imagesrev 's/if p\["images"\]:$/if True:/'
 run restart-repeats-rev 's/self\.rev = self\.images_rev = int\(time\.time\(\) \* 1000\)/self.rev = self.images_rev = 1/'
 run no-page-closes-stream 's/if self\.state is None:\n?$/if False:/'
 run unindented-bounds 's/f"  bounds:/f"bounds:/'
-run loose-before-atlas 's/\(text\.rstrip\("\\n"\) \+ "\\n" \+ loose_atlas_text\(loose\)\)/(loose_atlas_text(loose) + "\\n" + text)/'
+run loose-before-atlas 's/\(text_served\.rstrip\("\\n"\) \+ "\\n" \+ loose_atlas_text\(loose\)\)/(loose_atlas_text(loose) + "\\n" + text_served)/'
 run no-live-atlas-name 's/layers\["atlasName"\] = atlas_name/pass/'
 run binds-everywhere 's/\("127\.0\.0\.1", args\.port\)/("0.0.0.0", args.port)/; s/http:\/\/127\.0\.0\.1:\{server/http:\/\/0.0.0.0:{server/'
 exit $status

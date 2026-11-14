@@ -114,15 +114,10 @@ def loose_atlas_text(entries):
 
 def read_state(page_path, atlas_dir, loose_dir):
     """What the link serves right now: the page's bytes and every other file by name. None when no page is open."""
-    try:
-        with open(page_path, "rb") as f:
-            page = f.read()
-        model = json.loads(page)
-        layers = model.setdefault("pageModel", {})
-    except FileNotFoundError:
+    read = read_page(page_path)
+    if read is None:
         return None
-    except (OSError, ValueError, AttributeError) as e:  # a file caught mid-write: the caller keeps what it has
-        raise ValueError(f"{page_path}: {e}") from e
+    page, model, layers = read
     atlas_name = layers.get("atlasName") or ""
     atlas_path = os.path.join(atlas_dir, atlas_name) if atlas_name else ""
     text = ""
@@ -130,31 +125,12 @@ def read_state(page_path, atlas_dir, loose_dir):
         with open(atlas_path, encoding="utf-8", newline="") as f:  # every byte but a renamed page line stays
             text = f.read()
     beside_atlas = os.path.dirname(atlas_path) if atlas_path else atlas_dir  # what the atlas and a layer name start there
-    effects = [(layer, field) for layer in layers.get("pageList") or [] for field in EFFECT_FIELDS if layer.get(field)]
-    page_names = atlas_pages(text)
-    served = served_names(page_names + [layer[field] for layer, field in effects])
     # name -> (path on disk, or None with the bytes in `generated`)
-    files, generated = {}, {}
-    for name in page_names:
-        files[served[name]] = os.path.join(beside_atlas, name.replace("\\", "/"))
-    text_served = renamed_atlas(text, served)
-    for layer, field in effects:
-        name = layer[field]
-        if os.path.isfile(os.path.join(beside_atlas, name.replace("\\", "/"))):
-            files[served[name]] = os.path.join(beside_atlas, name.replace("\\", "/"))
-        layer[field] = served[name]
+    files, text_served = named_files(layers, beside_atlas, text)
     if atlas_name:  # the served atlas sits beside its images, whose names a reader resolves from /live/
         layers["atlasName"] = atlas_name = posixpath.basename(atlas_name.replace("\\", "/"))
-    loose = []
-    if loose_dir and os.path.isdir(loose_dir):
-        for name in sorted(os.listdir(loose_dir)):
-            if not name.lower().endswith(".png"):
-                continue
-            if name in files:
-                say(f"loose {name} has the name of a file of the atlas: left out")
-                continue
-            loose.append((name, os.path.join(loose_dir, name)))
-            files[name] = loose[-1][1]
+    loose = loose_files(loose_dir, files)
+    generated = {}
     if loose or not text:
         if not atlas_name:  # a page with no atlas yet
             atlas_name = GENERATED_ATLAS
@@ -166,6 +142,61 @@ def read_state(page_path, atlas_dir, loose_dir):
         files[atlas_name] = atlas_path
     if model != json.loads(page):  # byte for byte unless a name had to change
         page = json.dumps(model).encode()
+    return {"page": page, "stamps": stamps_of(files, generated), "files": files, "generated": generated,
+            "atlas": atlas_name}
+
+
+def read_page(page_path):
+    """The page's bytes, its model and its pageModel, or None when there is no page."""
+    try:
+        with open(page_path, "rb") as f:
+            page = f.read()
+        model = json.loads(page)
+        layers = model.setdefault("pageModel", {})
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError, AttributeError) as e:  # a file caught mid-write: the caller keeps what it has
+        raise ValueError(f"{page_path}: {e}") from e
+    return page, model, layers
+
+
+def on_disk(folder, name):
+    return os.path.join(folder, name.replace("\\", "/"))
+
+
+def named_files(layers, beside_atlas, text):
+    """The atlas's images and the layers' effect files, each under the name it is served under, and the atlas's text
+    with its page lines renamed. A layer's effect field is rewritten to its served name."""
+    effects = [(layer, field) for layer in layers.get("pageList") or [] for field in EFFECT_FIELDS if layer.get(field)]
+    page_names = atlas_pages(text)
+    served = served_names(page_names + [layer[field] for layer, field in effects])
+    files = {served[name]: on_disk(beside_atlas, name) for name in page_names}
+    for layer, field in effects:
+        name = layer[field]
+        if os.path.isfile(on_disk(beside_atlas, name)):
+            files[served[name]] = on_disk(beside_atlas, name)
+        layer[field] = served[name]
+    return files, renamed_atlas(text, served)
+
+
+def loose_files(loose_dir, files):
+    """The loose PNGs, added to files: [(name, path)]. One named as a file of the atlas is left out."""
+    loose = []
+    if not (loose_dir and os.path.isdir(loose_dir)):
+        return loose
+    for name in sorted(os.listdir(loose_dir)):
+        if not name.lower().endswith(".png"):
+            continue
+        if name in files:
+            say(f"loose {name} has the name of a file of the atlas: left out")
+            continue
+        loose.append((name, os.path.join(loose_dir, name)))
+        files[name] = loose[-1][1]
+    return loose
+
+
+def stamps_of(files, generated):
+    """What tells a file changed: a file's mtime and size, a generated one's hash."""
     stamps = {}
     for name, path in files.items():
         if os.path.isfile(path):
@@ -173,7 +204,7 @@ def read_state(page_path, atlas_dir, loose_dir):
             stamps[name] = (s.st_mtime_ns, s.st_size)
     for name, data in generated.items():
         stamps[name] = hashlib.sha1(data).hexdigest()
-    return {"page": page, "stamps": stamps, "files": files, "generated": generated, "atlas": atlas_name}
+    return stamps
 
 
 class Link:
@@ -258,100 +289,109 @@ class Link:
 
 
 def handler_for(link):
-    class Handler(BaseHTTPRequestHandler):
-        protocol_version = "HTTP/1.1"
+    return type("Handler", (LinkHandler,), {"link": link})
 
-        def log_message(self, *args):
-            pass
 
-        def cors(self):
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Private-Network", "true")
-            self.send_header("Access-Control-Expose-Headers", "X-Plax-Rev")
-            self.send_header("Cache-Control", "no-store")
+class LinkHandler(BaseHTTPRequestHandler):
+    """docs/live-link.md's routes: /live/events, /live/page.jplax, and the files the page names. `link` is set by
+    handler_for."""
+    protocol_version = "HTTP/1.1"
+    link = None
 
-        def refuse(self, code):
-            self.send_response(code)
-            self.cors()
-            self.send_header("Content-Length", "0")
-            self.end_headers()
+    def log_message(self, *args):
+        pass
 
-        def do_OPTIONS(self):
-            self.send_response(204)
-            self.cors()
-            self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "*")
-            self.send_header("Content-Length", "0")
-            self.end_headers()
+    def cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.send_header("Access-Control-Expose-Headers", "X-Plax-Rev")
+        self.send_header("Cache-Control", "no-store")
 
-        def do_GET(self):
-            path = urllib.parse.urlsplit(self.path).path  # a query is ignored: a client may bust its cache with one
-            if not path.startswith("/live/"):
-                self.refuse(404)
-            elif path == "/live/events":
-                self.events()
-            else:
-                self.file(urllib.parse.unquote(path[len("/live/"):]))
+    def refuse(self, code):
+        self.send_response(code)
+        self.cors()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
-        def file(self, name):
-            with link.lock:
-                state, rev = link.state, link.page_rev
-            if state is None:
-                self.refuse(404)
-                return
-            extra = {}
-            if name == PAGE:
-                data, kind = state["page"], "application/json"
-                extra["X-Plax-Rev"] = str(rev)
-            elif name in state["generated"]:
-                data, kind = state["generated"][name], "text/plain; charset=utf-8"
-            elif name in state["files"]:  # only what the page names: never a path on disk
-                try:
-                    with open(state["files"][name], "rb") as f:
-                        data = f.read()
-                except OSError:
-                    self.refuse(404)
-                    return
-                if name == state["atlas"]:
-                    kind = "text/plain; charset=utf-8"
-                else:
-                    kind = "image/png" if name.lower().endswith(".png") else "application/octet-stream"
-            else:
-                self.refuse(404)
-                return
-            self.send_response(200)
-            self.cors()
-            self.send_header("Content-Type", kind)
-            self.send_header("Content-Length", str(len(data)))
-            for k, v in extra.items():
-                self.send_header(k, v)
-            self.end_headers()
-            self.wfile.write(data)
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.cors()
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
-        def events(self):
-            self.send_response(200)
-            self.cors()
-            self.send_header("Content-Type", "text/event-stream")
-            self.send_header("Connection", "close")
-            self.end_headers()
-            self.close_connection = True
-            q = link.listen()
+    def do_GET(self):
+        path = urllib.parse.urlsplit(self.path).path  # a query is ignored: a client may bust its cache with one
+        if not path.startswith("/live/"):
+            self.refuse(404)
+        elif path == "/live/events":
+            self.events()
+        else:
+            self.file(urllib.parse.unquote(path[len("/live/"):]))
+
+    def file(self, name):
+        with self.link.lock:
+            state, rev = self.link.state, self.link.page_rev
+        found = self.payload(state, name, rev) if state is not None else None
+        if found is None:
+            self.refuse(404)
+            return
+        data, kind, extra = found
+        self.send_response(200)
+        self.cors()
+        self.send_header("Content-Type", kind)
+        self.send_header("Content-Length", str(len(data)))
+        for k, v in extra.items():
+            self.send_header(k, v)
+        self.end_headers()
+        self.wfile.write(data)
+
+    @staticmethod
+    def payload(state, name, rev):
+        """(bytes, content type, extra headers) of a file the link serves, None when it serves no such file."""
+        extra = {}
+        if name == PAGE:
+            data, kind = state["page"], "application/json"
+            extra["X-Plax-Rev"] = str(rev)
+        elif name in state["generated"]:
+            data, kind = state["generated"][name], "text/plain; charset=utf-8"
+        elif name in state["files"]:  # only what the page names: never a path on disk
             try:
-                self.wfile.write(b"retry: 2000\n\n")
-                while True:
-                    try:
-                        message = q.get(timeout=KEEP_ALIVE)
-                        line = "data: " + json.dumps(message, separators=(",", ":")) + "\n\n"
-                    except queue.Empty:
-                        line = ": alive\n\n"
-                    self.wfile.write(line.encode())
-                    self.wfile.flush()
+                with open(state["files"][name], "rb") as f:
+                    data = f.read()
             except OSError:
-                pass  # the client left
-            finally:
-                link.drop(q)
+                return None
+            if name == state["atlas"]:
+                kind = "text/plain; charset=utf-8"
+            else:
+                kind = "image/png" if name.lower().endswith(".png") else "application/octet-stream"
+        else:
+            return None
+        return data, kind, extra
 
-    return Handler
+    def events(self):
+        self.send_response(200)
+        self.cors()
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+        q = self.link.listen()
+        try:
+            self.wfile.write(b"retry: 2000\n\n")
+            while True:
+                try:
+                    message = q.get(timeout=KEEP_ALIVE)
+                    line = "data: " + json.dumps(message, separators=(",", ":")) + "\n\n"
+                except queue.Empty:
+                    line = ": alive\n\n"
+                self.wfile.write(line.encode())
+                self.wfile.flush()
+        except OSError:
+            pass  # the client left
+        finally:
+            self.link.drop(q)
 
 
 def main():

@@ -9,22 +9,20 @@ Chrome, playwright and Pillow; not in CI, as tools/r492-live-link/browser-check.
 import base64
 import io
 import json
-import mimetypes
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
+import types
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from browser import launch  # noqa: E402
+from live_link_harness import ORIGIN, Stubs, moved, serve_repo, write_json  # noqa: E402
 from PIL import Image, ImageChops, ImageStat  # noqa: E402
 from playwright.sync_api import sync_playwright  # noqa: E402
 
-ORIGIN = "https://plax.test"
-STUB = os.path.join(ROOT, "tools", "live-link-stub.py")
 PAGE_PATH = "/engines/threejs/tests/live_link.html"
 SAMPLES = os.path.join(ROOT, "core", "test-data", "samples")
 failed = []
@@ -34,17 +32,6 @@ def check(ok, what):
     print(("PASS " if ok else "FAIL ") + what)
     if not ok:
         failed.append(what)
-
-
-def start_stub(*args, port=0):
-    proc = subprocess.Popen([sys.executable, STUB, *args, "--port", str(port)], stdout=subprocess.PIPE, text=True)
-    return proc, proc.stdout.readline().strip()
-
-
-def write_json(path, value):
-    with open(path + ".tmp", "w") as f:
-        json.dump(value, f)
-    os.replace(path + ".tmp", path)
 
 
 def save_image(image, path):
@@ -60,24 +47,9 @@ def swapped(path):
     save_image(Image.merge("RGBA", (b, g, r, a)), path)
 
 
-def serve_repo(route):
-    path = route.request.url[len(ORIGIN):].split("?")[0]
-    file = os.path.join(ROOT, path.lstrip("/"))
-    if ".." in path or not os.path.isfile(file):
-        route.fulfill(status=404)
-        return
-    with open(file, "rb") as f:
-        route.fulfill(status=200, body=f.read(),
-                      headers={"Content-Type": mimetypes.guess_type(file)[0] or "application/octet-stream"})
-
-
 def shot(page, what="frame()"):
     data = page.evaluate(what)
     return Image.open(io.BytesIO(base64.b64decode(data.split(",")[1]))).convert("RGB")
-
-
-def moved(a, b):
-    return sum(ImageStat.Stat(ImageChops.difference(a, b)).mean) / 3
 
 
 def wait_pages(page, count, seconds=2.0):
@@ -102,154 +74,188 @@ def new_page(browser, grant=True):
 
 
 def main_scenario(browser, work, out, stubs):
-    atlas_dir = os.path.join(work, "atlas")
-    os.makedirs(atlas_dir)
-    with open(os.path.join(SAMPLES, "Hiver.atlas")) as f:
-        image_name = next(line.strip() for line in f if line.strip().endswith((".png", ".jpg")))
-    shutil.copy(os.path.join(SAMPLES, "Hiver.atlas"), atlas_dir)
-    shutil.copy(os.path.join(SAMPLES, image_name), atlas_dir)
-    page_path = os.path.join(work, "s01.jplax")
-    with open(os.path.join(ROOT, "engines", "rounds", "round1", "s01.jplax")) as f:
-        model = json.load(f)
-    write_json(page_path, model)
-    proc, url = start_stub(page_path, atlas_dir)
-    stubs.append(proc)
-    port = url.split(":")[2].split("/")[0]
+    """round1's s01 on the link, then each of "What a reader does", one step after the other on the same page."""
+    t = open_main(browser, work, out, stubs)
+    speed_step(t)
+    decal_step(t)
+    image_step(t)
+    fade_and_refused(t)
+    failed_read(t)
+    no_page_open(t)
+    stream_dropped(t)
+    close_and_version(t)
+    t.context.close()
 
-    context, page = new_page(browser)
-    asked, said = [], []
-    page.on("request", lambda r: asked.append(r.url[len(url):]) if r.url.startswith(url) and not r.url.endswith("events") else None)
-    page.on("console", lambda m: said.append(m.text) if m.type in ("error", "warning") else None)
+
+def edit(t, change=5):
+    """A slider's step on the front layer's decal, written as the editor writes it."""
+    t.model["pageModel"]["pageList"][-1]["decal_Y_Ratio"] += change
+    write_json(t.page_path, t.model)
+
+
+def open_main(browser, work, out, stubs):
+    """The page and Hiver's atlas on a stub, connected, its first frame and rings: the steps' state."""
+    t = types.SimpleNamespace(out=out, stubs=stubs, asked=[], said=[])
+    t.atlas_dir = os.path.join(work, "atlas")
+    os.makedirs(t.atlas_dir)
+    with open(os.path.join(SAMPLES, "Hiver.atlas")) as f:
+        t.image_name = next(line.strip() for line in f if line.strip().endswith((".png", ".jpg")))
+    shutil.copy(os.path.join(SAMPLES, "Hiver.atlas"), t.atlas_dir)
+    shutil.copy(os.path.join(SAMPLES, t.image_name), t.atlas_dir)
+    t.page_path = os.path.join(work, "s01.jplax")
+    with open(os.path.join(ROOT, "engines", "rounds", "round1", "s01.jplax")) as f:
+        t.model = json.load(f)
+    write_json(t.page_path, t.model)
+    t.proc, url = stubs.start(t.page_path, t.atlas_dir)
+    t.url = url
+    t.port = url.split(":")[2].split("/")[0]
+
+    t.context, page = new_page(browser)
+    t.page = page
+    page.on("request", lambda r: t.asked.append(r.url[len(url):]) if r.url.startswith(url) and not r.url.endswith("events") else None)
+    page.on("console", lambda m: t.said.append(m.text) if m.type in ("error", "warning") else None)
 
     page.evaluate("u => connect(u)", url)
     check(wait_pages(page, 1, 15) is not None, "the first event draws the page")
-    check(sorted(asked) == sorted(["page.jplax", "Hiver.atlas", image_name]), f"it read the page and its files once: {asked}")
+    check(sorted(t.asked) == sorted(["page.jplax", "Hiver.atlas", t.image_name]), f"it read the page and its files once: {t.asked}")
     page.evaluate("setGame()")
     page.evaluate("step(2)")
-    kept = page.evaluate("gameState()")
-    before = shot(page)
-    before.save(os.path.join(out, "1-first.png"))
+    t.kept = page.evaluate("gameState()")
+    t.before = shot(page)
+    t.before.save(os.path.join(out, "1-first.png"))
     ring_before = shot(page, "ringFrame()")
     ring_before.save(os.path.join(out, "1-rings.png"))
     # The sky is one colour along a row: a band is what varies along one.
     across = max(ImageStat.Stat(ring_before.crop((0, y, 960, y + 1))).stddev[0] for y in range(0, 540, 10))
     check(across > 5, f"the rings draw the page, not only the sky: {across:.1f} along a row")
-    scene_size = page.evaluate("scenes()")
+    return t
 
+
+def speed_step(t):
+    """A layer's speed: one page read, nothing jumps, what each layer scrolled and the game's state kept."""
+    page = t.page
+    scene_size = page.evaluate("scenes()")
     # What the front layer would do at its old speed, to tell the new speed from it.
     page.evaluate("step(1)")
     old_speed = shot(page)
     page.evaluate("step(-1)")
     distances = page.evaluate("distances()")
 
-    asked.clear()
-    model["pageModel"]["pageList"][-1]["parallaxScalingSpeedX"] *= 4
-    write_json(page_path, model)
+    t.asked.clear()
+    t.model["pageModel"]["pageList"][-1]["parallaxScalingSpeedX"] *= 4
+    write_json(t.page_path, t.model)
     took = wait_pages(page, 2)
     check(took is not None, f"a layer's speed: redrawn within 2 s ({took})")
-    check(asked == ["page.jplax"], f"a slider costs the page, no image: {asked}")
+    check(t.asked == ["page.jplax"], f"a slider costs the page, no image: {t.asked}")
     same = shot(page)
-    check(moved(before, same) < 0.2, f"nothing jumps on a slider's step: {moved(before, same):.3f} / 255")
+    check(moved(t.before, same) < 0.2, f"nothing jumps on a slider's step: {moved(t.before, same):.3f} / 255")
     # Within rounding: a new layer's distance is decal + scrolled - decal.
     off = max(abs(a - b) for was, now in zip(distances, page.evaluate("distances()")) for a, b in zip(was, now))
     check(off < 1e-5, f"each layer keeps what it has scrolled: {off:.1e} off")
-    check(page.evaluate("gameState()") == kept, f"what the page does not hold stays: {page.evaluate('gameState()')}")
+    check(page.evaluate("gameState()") == t.kept, f"what the page does not hold stays: {page.evaluate('gameState()')}")
     check(page.evaluate("scenes()") == scene_size, "the old layers are gone from the scene")
     page.evaluate("step(1)")
-    new_speed = shot(page)
-    new_speed.save(os.path.join(out, "2-speed.png"))
-    check(moved(old_speed, new_speed) > 0.5, f"the new speed is what moves it: {moved(old_speed, new_speed):.2f} / 255")
+    t.settled = shot(page)
+    t.settled.save(os.path.join(t.out, "2-speed.png"))
+    check(moved(old_speed, t.settled) > 0.5, f"the new speed is what moves it: {moved(old_speed, t.settled):.2f} / 255")
 
-    settled = new_speed
-    model["pageModel"]["pageList"][-1]["decal_Y_Ratio"] += 25
-    write_json(page_path, model)
-    took = wait_pages(page, 3)
+
+def decal_step(t):
+    edit(t, 25)
+    took = wait_pages(t.page, 3)
     check(took is not None, f"a layer's decal: redrawn within 2 s ({took})")
-    decal = shot(page)
-    decal.save(os.path.join(out, "3-decal.png"))
-    check(moved(settled, decal) > 0.5, f"an edited decal still moves its layer: {moved(settled, decal):.2f} / 255")
+    t.decal = shot(t.page)
+    t.decal.save(os.path.join(t.out, "3-decal.png"))
+    check(moved(t.settled, t.decal) > 0.5, f"an edited decal still moves its layer: {moved(t.settled, t.decal):.2f} / 255")
 
-    asked.clear()
+
+def image_step(t):
+    """An image repainted: only it read, the frame and the rings on it follow, the rings' options kept."""
+    page = t.page
+    t.asked.clear()
     ring_old = shot(page, "ringFrame()")
-    swapped(os.path.join(atlas_dir, image_name))
+    swapped(os.path.join(t.atlas_dir, t.image_name))
     took = wait_pages(page, 4)
     check(took is not None, f"an image repainted: redrawn within 2 s ({took})")
-    check(asked == [image_name], f"an image costs only itself: {asked}")
+    check(t.asked == [t.image_name], f"an image costs only itself: {t.asked}")
     repainted = shot(page)
-    repainted.save(os.path.join(out, "4-image.png"))
-    check(moved(decal, repainted) > 1, f"the frame moved, {moved(decal, repainted):.2f} / 255")
+    repainted.save(os.path.join(t.out, "4-image.png"))
+    check(moved(t.decal, repainted) > 1, f"the frame moved, {moved(t.decal, repainted):.2f} / 255")
     ring_new = shot(page, "ringFrame()")
-    ring_new.save(os.path.join(out, "4-rings.png"))
+    ring_new.save(os.path.join(t.out, "4-rings.png"))
     check(moved(ring_old, ring_new) > 1, f"the rings on it follow, {moved(ring_old, ring_new):.2f} / 255")
-    check(page.evaluate("gameState()")["rings"] == kept["rings"], "a PlaxRings keeps its own options")
+    check(page.evaluate("gameState()")["rings"] == t.kept["rings"], "a PlaxRings keeps its own options")
 
+
+def fade_and_refused(t):
+    page = t.page
     # A cross-fade under way ends on its page, the edit on top of it.
     page.evaluate("fade()")
-    model["pageModel"]["pageList"][-1]["decal_Y_Ratio"] -= 5
-    write_json(page_path, model)
+    edit(t, -5)
     check(wait_pages(page, 5) is not None and not page.evaluate("fading()"), "an edit during a game's cross-fade ends it")
 
     # A page this reader refuses keeps the last one, and the next edit may fix it.
     last = shot(page)
-    said.clear()
-    bad = json.loads(json.dumps(model))
+    t.said.clear()
+    bad = json.loads(json.dumps(t.model))
     bad["pageModel"]["pageList"][-1]["kind"] = "NOT_A_KIND"
-    write_json(page_path, bad)
+    write_json(t.page_path, bad)
     page.wait_for_timeout(700)
-    check(any("refused" in s for s in said), f"a refused page says why: {said[:1]}")
+    check(any("refused" in s for s in t.said), f"a refused page says why: {t.said[:1]}")
     check(moved(last, shot(page)) < 0.01, "and keeps the last page")
-    model["pageModel"]["pageList"][-1]["decal_Y_Ratio"] += 5
-    write_json(page_path, model)
+    edit(t)
     check(wait_pages(page, 6) is not None, "the next edit fixes it")
     check(not page.evaluate("fading()"), "with no fade left over")
 
-    # A failed read holds nothing new and reads all again on a new stream.
-    said.clear()
-    context.route(url + "page.jplax", lambda r: r.abort(), times=1)
+
+def failed_read(t):
+    """A failed read holds nothing new and reads all again on a new stream."""
+    page = t.page
+    t.said.clear()
+    t.context.route(t.url + "page.jplax", lambda r: r.abort(), times=1)
     settled = shot(page)
-    model["pageModel"]["pageList"][-1]["decal_Y_Ratio"] += 5
-    write_json(page_path, model)
+    edit(t)
     page.wait_for_timeout(300)
-    check(any("a read on the live link failed" in s for s in said), f"a read that failed says so: {said[:2]}")
+    check(any("a read on the live link failed" in s for s in t.said), f"a read that failed says so: {t.said[:2]}")
     check(moved(settled, shot(page)) < 0.01, "and the last page stays")
     check(wait_pages(page, 7, 4) is not None, "a new stream after 2 s reads it")
     check(moved(settled, shot(page)) > 0.1, "and draws it")
 
-    # No page open: keep drawing. Opening one reads it.
-    settled = shot(page)
-    os.remove(page_path)
-    page.wait_for_timeout(500)
-    check(moved(settled, shot(page)) < 0.01, "no page open: what it has stays drawn")
-    model["pageModel"]["pageList"][-1]["decal_Y_Ratio"] += 5
-    write_json(page_path, model)
-    check(wait_pages(page, 8) is not None, "a page opened draws within 2 s")
 
-    # The stream dropped: the editor gone, and back on its port.
-    settled = shot(page)
-    proc.kill()
-    proc.wait()
-    proc.stdout.close()
-    stubs.remove(proc)
-    page.wait_for_timeout(500)
-    check(moved(settled, shot(page)) < 0.01, "the editor gone: what it has stays drawn")
-    model["pageModel"]["pageList"][-1]["decal_Y_Ratio"] += 5
-    write_json(page_path, model)
-    proc, _ = start_stub(page_path, atlas_dir, port=port)
-    stubs.append(proc)
-    check(wait_pages(page, 9, 8) is not None, "the editor back: it reconnects and draws")
-    check(moved(settled, shot(page)) > 0.1, "the edit made meanwhile")
+def no_page_open(t):
+    """No page open: keep drawing. Opening one reads it."""
+    settled = shot(t.page)
+    os.remove(t.page_path)
+    t.page.wait_for_timeout(500)
+    check(moved(settled, shot(t.page)) < 0.01, "no page open: what it has stays drawn")
+    edit(t)
+    check(wait_pages(t.page, 8) is not None, "a page opened draws within 2 s")
 
+
+def stream_dropped(t):
+    """The stream dropped: the editor gone, and back on its port."""
+    settled = shot(t.page)
+    t.stubs.stop(t.proc)
+    t.page.wait_for_timeout(500)
+    check(moved(settled, shot(t.page)) < 0.01, "the editor gone: what it has stays drawn")
+    edit(t)
+    t.proc, _ = t.stubs.start(t.page_path, t.atlas_dir, port=t.port)
+    check(wait_pages(t.page, 9, 8) is not None, "the editor back: it reconnects and draws")
+    check(moved(settled, shot(t.page)) > 0.1, "the edit made meanwhile")
+
+
+def close_and_version(t):
+    page = t.page
     # close() stops all of it.
     page.evaluate("close_()")
     settled = shot(page)
     count = page.evaluate("live.pages")
-    model["pageModel"]["pageList"][-1]["decal_Y_Ratio"] += 5
-    write_json(page_path, model)
+    edit(t)
     page.wait_for_timeout(600)
     check(page.evaluate("live.pages") == count and moved(settled, shot(page)) < 0.01, "close(): no more redraws, the page stays")
 
     # A version this reader does not know: stop, and say so.
-    said.clear()
+    t.said.clear()
     page.evaluate("""() => {
       const real = window.EventSource;
       window.EventSource = class extends EventTarget {
@@ -261,8 +267,7 @@ def main_scenario(browser, work, out, stubs):
       setTimeout(() => { window.EventSource = real; }, 100);
     }""")
     page.wait_for_timeout(200)
-    check(page.evaluate("window.closedIt === true") and any("version 2" in s for s in said), f"an unknown version: stopped and said: {said[:1]}")
-    context.close()
+    check(page.evaluate("window.closedIt === true") and any("version 2" in s for s in t.said), f"an unknown version: stopped and said: {t.said[:1]}")
 
 
 def merged_scenario(browser, work, stubs):
@@ -284,8 +289,7 @@ def merged_scenario(browser, work, stubs):
     model = {"pageModel": {"atlasName": "", "outside": False, "pageList": [layer_a, layer_b]}}
     page_path = os.path.join(work, "loose.jplax")
     write_json(page_path, model)
-    proc, url = start_stub(page_path, empty, "--loose", loose)
-    stubs.append(proc)
+    _, url = stubs.start(page_path, empty, "--loose", loose)
     context, page = new_page(browser)
     page.evaluate("u => connect(u)", url)
     check(wait_pages(page, 1, 15) is not None, "a page with no atlas yet draws from loose images")
@@ -332,8 +336,7 @@ def carried_scenario(browser, work, out, stubs):
             model = json.load(f)
         page_path = os.path.join(work, name + ".jplax")
         write_json(page_path, model)
-        proc, url = start_stub(page_path, os.path.join(ROOT, atlas_dir))
-        stubs.append(proc)
+        _, url = stubs.start(page_path, os.path.join(ROOT, atlas_dir))
         context, page = new_page(browser)
         page.evaluate("u => connect(u)", url)
         check(wait_pages(page, 1, 15) is not None, f"{name}: drawn")
@@ -374,8 +377,7 @@ def moved_names_scenario(browser, work, out, stubs):
     check(bool(effects), "the page names a .p to move")
     page_path = os.path.join(work, "moved.jplax")
     write_json(page_path, model)
-    proc, url = start_stub(page_path, assets)
-    stubs.append(proc)
+    _, url = stubs.start(page_path, assets)
     context, page = new_page(browser)
     missing = []
     page.on("response", lambda r: missing.append(r.url) if r.url.startswith("http://127.0.0.1") and r.status == 404 else None)
@@ -400,8 +402,7 @@ def refused_scenario(browser, work, stubs):
     page_path = os.path.join(work, "none.jplax")
     with open(os.path.join(ROOT, "engines", "rounds", "round1", "s01.jplax")) as f:
         write_json(page_path, json.load(f))
-    proc, url = start_stub(page_path, empty)
-    stubs.append(proc)
+    _, url = stubs.start(page_path, empty)
     context, page = new_page(browser, grant=False)
     said = []
     page.on("console", lambda m: said.append(m.text) if m.type == "warning" else None)
@@ -416,9 +417,8 @@ def main():
     out = os.path.abspath(sys.argv[1])
     os.makedirs(out, exist_ok=True)
     work = tempfile.mkdtemp(prefix="r57-")
-    stubs = []
     try:
-        with sync_playwright() as p:
+        with Stubs() as stubs, sync_playwright() as p:
             browser = launch(p, os.environ.get("CHROME") or shutil.which("google-chrome"))
             main_scenario(browser, work, out, stubs)
             merged_scenario(browser, work, stubs)
@@ -427,10 +427,6 @@ def main():
             refused_scenario(browser, work, stubs)
             browser.close()
     finally:
-        for proc in stubs:
-            proc.kill()
-            proc.wait()
-            proc.stdout.close()
         shutil.rmtree(work, ignore_errors=True)
     print(f"{len(failed)} failed" if failed else "all passed")
     sys.exit(1 if failed else 0)
