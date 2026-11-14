@@ -1,0 +1,22 @@
+# The frame jobs' shared setup (r535): JDK 17 and Gradle for the libGDX side, Xvfb and Mesa llvmpipe for its window,
+# Pillow for the compare. ci.yml's godot-frames, jme-frames and threejs-frames each run it right after checkout (a local
+# action is read from the checkout). An action's version or a new package changes here once, for all three readers.
+name: Frame jobs setup
+description: JDK 17, Gradle, Xvfb, Mesa and Pillow for a reader's frame-check.sh under xvfb-run
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK 17
+      uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v6
+
+    - name: Install Xvfb, Mesa and Pillow
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-pil

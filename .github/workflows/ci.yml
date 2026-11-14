@@ -83,19 +83,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Install Xvfb, Mesa and Pillow
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-pil
+      # JDK 17, Gradle, Xvfb, Mesa and Pillow: shared by the three frame jobs (r535).
+      - uses: ./.github/actions/frames-setup
 
       - name: Install Godot ${{ env.GODOT_VERSION }}
         run: |
@@ -134,19 +123,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Install Xvfb, Mesa and Pillow
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-pil
+      # JDK 17, Gradle, Xvfb, Mesa and Pillow: shared by the three frame jobs (r535).
+      - uses: ./.github/actions/frames-setup
 
       - name: Compare the frames
         env:
@@ -179,19 +157,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Install Xvfb, Mesa and Pillow
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-pil
+      # JDK 17, Gradle, Xvfb, Mesa and Pillow: shared by the three frame jobs (r535).
+      - uses: ./.github/actions/frames-setup
 
       - name: Compare the frames
         env:
