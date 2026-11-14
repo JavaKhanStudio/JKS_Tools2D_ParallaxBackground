@@ -103,8 +103,12 @@ with sync_playwright() as p:
     shot(out)
     if mode == "same":
         # Where the canvas is in the still, and its size in GL pixels: lab.css may scale it (r232), the panels with it.
+        # And where each panel's title chip ends, in GL pixels from the canvas top (r541: lab.css's chips outgrew a
+        # fixed 30-pixel band, and the check compared A's longer chip with B's picture).
         canvas = page.evaluate("""() => { const c = document.querySelector('canvas'), r = c.getBoundingClientRect();
-            return [r.left + scrollX, r.top + scrollY, r.width / c.width, r.height / c.height]; }""")
+            const sy = r.height / c.height;
+            const chips = [...document.querySelectorAll('.panel-label')].map(e => (e.getBoundingClientRect().bottom - r.top) / sy);
+            return [r.left + scrollX, r.top + scrollY, r.width / c.width, sy, chips]; }""")
         with open(out + ".canvas", "w") as f:
             json.dump(canvas, f)
     if errors:
@@ -113,16 +117,21 @@ with sync_playwright() as p:
 PY
 echo "still: $OUT"
 [ $MODE = same ] || exit 0
-# The panels are 760 x 250 GL pixels, 4 apart (HazeLab, FogLab's sizes), their titles over the top 30; where the canvas sits
-# and its scale come from the page (STILL.canvas), not from the layout of the day (r319: r232's kit moved them, and a
-# fixed crop failed a lab that drew right). Inside each, 3 px in from its edges (the scaling blends the gap in), no
-# pixel may differ from A's by more than 2/255, or the lab's drawing is not the reader's.
+# The panels are 760 x 250 GL pixels, 4 apart (HazeLab, FogLab's sizes), their title chips over their tops; where the
+# canvas sits, its scale and where the chips end come from the page (STILL.canvas), not from the layout of the day
+# (r319: r232's kit moved them, and a fixed crop failed a lab that drew right; r541: the chips grew past a fixed 30).
+# Under the lowest chip and 3 px in from the panels' edges (the scaling blends the gap in), no pixel may differ from
+# A's by more than 2/255, or the lab's drawing is not the reader's.
 python3 - "$OUT" <<'PY'
-import json, sys
+import json, math, sys
 from PIL import Image, ImageChops
 im = Image.open(sys.argv[1]).convert("RGB")
-left, top, sx, sy = json.load(open(sys.argv[1] + ".canvas"))
-W, H, GAP, TITLE, IN = 760, 250, 4, 30, 3
+left, top, sx, sy, chips = json.load(open(sys.argv[1] + ".canvas"))
+W, H, GAP, IN = 760, 250, 4, 3
+if len(chips) != 4:
+    sys.exit("expected 4 panel titles, the page has %d" % len(chips))
+# Each chip's bottom within its own panel's row, the lowest of them for every panel: A and the one compared are cut alike.
+TITLE = math.ceil(max(b - (H + GAP) * (b >= H + GAP) for b in chips)) + 1
 def box(col, row):
     x0, y0 = left + col * (W + GAP) * sx, top + row * (H + GAP) * sy
     return im.crop((round(x0 + IN), round(y0 + TITLE * sy), round(x0 + W * sx - IN), round(y0 + H * sy - IN)))
