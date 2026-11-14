@@ -186,14 +186,7 @@ public class PinesLab extends ApplicationAdapter implements LabKit.Clip
 	public void render()
 	{
 		LabKit.live(clip, this::applyControls, hearts);
-		int height = Gdx.graphics.getBackBufferHeight();
-		LabKit.beginPanels();
-		for (int i = 0; i < hearts.length; i++)
-		{
-			if (LabKit.panel(i * (FRAME_WIDTH + 4), height, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0))
-				hearts[i].render();
-		}
-		LabKit.endPanels();
+		LabKit.row(hearts.length, FRAME_WIDTH, FRAME_HEIGHT, FRAME_HEIGHT, 0, i -> hearts[i].render());
 	}
 
 	@Override

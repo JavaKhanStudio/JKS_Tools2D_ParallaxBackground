@@ -1,7 +1,6 @@
 package jks.tools2d.parallax.browsertest;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -355,19 +354,13 @@ public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 	public void render()
 	{
 		LabKit.live(clip, this::applyControls, set.hearts);
-		int height = Gdx.graphics.getBackBufferHeight();
-		LabKit.beginPanels();
-		for (int i = 0; i < 2; i++)
-		{
-			// A on the left, B on the right, a 4 px gap.
-			if (!LabKit.panel(i * (FRAME_WIDTH + 4), height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, set.frameDrop))
-				continue;
+		// A on the left, B on the right.
+		LabKit.row(2, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, set.frameDrop, i -> {
 			double start = now();
 			set.hearts[i].render();
 			panelMillis[i] += (float) (now() - start);
 			panelCalls[i] = batch.renderCalls;
-		}
-		LabKit.endPanels();
+		});
 		measure();
 	}
 

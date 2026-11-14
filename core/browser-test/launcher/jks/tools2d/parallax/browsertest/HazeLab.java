@@ -1,7 +1,6 @@
 package jks.tools2d.parallax.browsertest;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -199,15 +198,9 @@ public class HazeLab extends ApplicationAdapter implements LabKit.Clip
 	public void render()
 	{
 		LabKit.live(clip, this::applyControls, hearts);
-		int height = Gdx.graphics.getBackBufferHeight();
-		LabKit.beginPanels();
-		for (int i = 0; i < hearts.length; i++)
-		{
-			// A, B on top; C, D below; a 4 px gap.
-			if (LabKit.quarter(i, height, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, FRAME_DROP))
-				renderLab(hearts[i], effects[i], !same && HAZE_HOOKS[i], !same && TINT_WHITE[i]);
-		}
-		LabKit.endPanels();
+		// A, B on top; C, D below.
+		LabKit.quarters(hearts.length, FRAME_WIDTH, PANEL_HEIGHT, FRAME_HEIGHT, FRAME_DROP,
+			i -> renderLab(hearts[i], effects[i], !same && HAZE_HOOKS[i], !same && TINT_WHITE[i]));
 	}
 
 	/**

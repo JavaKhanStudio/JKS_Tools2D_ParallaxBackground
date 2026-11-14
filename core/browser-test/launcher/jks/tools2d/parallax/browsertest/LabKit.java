@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 
+import java.util.function.IntConsumer;
+
 import jks.tools2d.parallax.GdxLayerEffects;
 import jks.tools2d.parallax.LayerEffects;
 import jks.tools2d.parallax.ParallaxLayer;
@@ -225,6 +227,31 @@ final class LabKit
 	 */
 	static boolean quarter(int i, int height, int width, int panelHeight, int frameHeight, int frameDrop)
 	{return panel((i % 2) * (width + 4), i < 2 ? height : height - panelHeight - 4, width, panelHeight, frameHeight, frameDrop);}
+
+	/**
+	 * A lab's {@code count} panels side by side, {@code width} wide and a 4 px gap apart, under the canvas's top:
+	 * {@code draw} is handed each one shown, by its index (r544).
+	 */
+	static void row(int count, int width, int panelHeight, int frameHeight, int frameDrop, IntConsumer draw)
+	{
+		int height = Gdx.graphics.getBackBufferHeight();
+		beginPanels();
+		for (int i = 0; i < count; i++)
+			if (panel(i * (width + 4), height, width, panelHeight, frameHeight, frameDrop))
+				draw.accept(i);
+		endPanels();
+	}
+
+	/** A lab's {@code count} panels two by two, as {@link #quarter} places them: {@code draw} as in {@link #row}. */
+	static void quarters(int count, int width, int panelHeight, int frameHeight, int frameDrop, IntConsumer draw)
+	{
+		int height = Gdx.graphics.getBackBufferHeight();
+		beginPanels();
+		for (int i = 0; i < count; i++)
+			if (quarter(i, height, width, panelHeight, frameHeight, frameDrop))
+				draw.accept(i);
+		endPanels();
+	}
 
 	static void endPanels()
 	{
