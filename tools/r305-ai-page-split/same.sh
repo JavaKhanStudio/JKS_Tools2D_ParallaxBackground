@@ -7,11 +7,19 @@
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 DIR=tools/r239-ai-strips
-# BEFORE runs from beside ai_page.py, so its commands name the same paths; a hidden name, removed on exit.
-REF="$DIR/.r305-before.py"
-if [ -n "${1:-}" ]; then cp "$1" "$REF"; else git show HEAD:$DIR/ai_page.py > "$REF"; fi
 TMP=$(mktemp -d)
-trap 'rm -rf "$TMP" "$REF"' EXIT
+trap 'rm -rf "$TMP"' EXIT
+# BEFORE runs as ai_page.py in a mirror of the checkout (every entry a link, the strips dir a real one), so argparse
+# names it and wraps its usage as the working tree's, and its commands name the same paths once the mirror's root is
+# put back (r543: a longer name wrapped the usage elsewhere, and the error cases always differed).
+ROOT=$(pwd) MIR=$TMP/mirror
+mkdir -p "$MIR/$DIR"
+for e in "$ROOT"/* "$ROOT"/.[!.]*; do [ "$(basename "$e")" = tools ] || ln -s "$e" "$MIR/"; done
+for e in "$ROOT"/tools/*; do [ "$(basename "$e")" = r239-ai-strips ] || ln -s "$e" "$MIR/tools/"; done
+for e in "$ROOT/$DIR"/*; do ln -s "$e" "$MIR/$DIR/"; done
+REF="$MIR/$DIR/ai_page.py"
+rm "$REF"
+if [ -n "${1:-}" ]; then cp "$1" "$REF"; else git show HEAD:$DIR/ai_page.py > "$REF"; fi
 OUT=$TMP/out  # never made: --dry-run writes nothing
 fail=0 n=0
 while IFS='|' read -r name args; do
@@ -19,8 +27,7 @@ while IFS='|' read -r name args; do
   for side in before after; do
     script=$DIR/ai_page.py; [ $side = before ] && script=$REF
     # shellcheck disable=SC2086
-    # argparse names the script in its usage: one name, its lines unindented, for both.
-    python3 "$script" "$OUT" --dry-run $args 2>&1 | sed 's/\.r305-before\.py/ai_page.py/g; s/^ *//' > "$TMP/$name-$side.txt"
+    python3 "$script" "$OUT" --dry-run $args 2>&1 | sed "s#$MIR#$ROOT#g" > "$TMP/$name-$side.txt"
     echo "rc=${PIPESTATUS[0]}" >> "$TMP/$name-$side.txt"
   done
   n=$((n + 1))
