@@ -18,7 +18,7 @@ import shutil
 import sys
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from scipy import ndimage as ni
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -34,6 +34,8 @@ FADE = 24  # px over which a band's mask comes in past HALO
 NEAR_REACH = 60  # px: beside a NEARER band depth's ramp reaches this far on the river's meadow (mask at 14-60 px read 9-17%)
 SMOOTH = 2.5  # px, the depth before a band's hollows are measured
 NAME = "paint2"
+TITLE_FONT = tried.TITLE_FONT  # r493's sheets' type: 20 px over a 34 px band (r547: 8 px under the board's stamp)
+TITLE_SIZE, TITLE_BAND = tried.TITLE_SIZE, tried.TITLE_BAND
 
 
 def load(p, mode="RGB"):
@@ -139,15 +141,17 @@ def make(a):
 
 
 def sheet(path, panels, cols, crop, scale=1):
+    """Panels across, each titled above it, centred: the board stamps 1A/1B/1C on each panel's top left corner."""
     ims = [(t, Image.open(p).convert("RGB").crop(crop)) for t, p in panels]
     w, h = ims[0][1].width * scale, ims[0][1].height * scale
     rows = (len(ims) + cols - 1) // cols
-    out = Image.new("RGB", (cols * w + 6 * (cols - 1), rows * (h + 22)), "white")
+    out = Image.new("RGB", (cols * w + 6 * (cols - 1), rows * (h + TITLE_BAND)), "white")
     d = ImageDraw.Draw(out)
+    font = ImageFont.truetype(TITLE_FONT, TITLE_SIZE)
     for i, (t, im) in enumerate(ims):
-        x, y = (i % cols) * (w + 6), (i // cols) * (h + 22)
-        d.text((x + 60, y + 5), t, fill="black")
-        out.paste(im.resize((w, h), Image.LANCZOS), (x, y + 22))
+        x, y = (i % cols) * (w + 6), (i // cols) * (h + TITLE_BAND)
+        d.text((x + w // 2, y + TITLE_BAND // 2), t, fill="black", font=font, anchor="mm")
+        out.paste(im.resize((w, h), Image.LANCZOS), (x, y + TITLE_BAND))
     out.save(path)
 
 
