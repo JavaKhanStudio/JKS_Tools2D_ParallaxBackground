@@ -168,7 +168,9 @@ displacement shader on one image and its depth map is the other way, and the cos
   already scales and scrolls them.
 - Normal-mapped lighting: new art per layer, a shader three times; a look, not depth.
 - Occlusion baked from the depth map (r493, `tools/r493-material-ideas/try.py`): a dark halo on the meadow behind the
-  pines, and it falls on the farther layer, so it would slide off them at the first scroll.
+  pines, and it falls on the farther layer: run in the reader's scroll (r498, `tools/r498-occlusion-takes/takes.py`), its
+  shade hangs as dark teeth on the meadow 12 s in, still at strength 0.2. Shaded inside each band's own depth, nothing
+  slides, but the pines go blotchy. Simon's pick (r498): no occlusion; pages keep the painting as made.
 
 ## What I would build first
 
