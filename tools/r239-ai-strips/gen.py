@@ -320,18 +320,7 @@ def parse_args():
                     "(r315: leaves a pale veil)")
     ap.add_argument("--n", type=int, default=3)
     ap.add_argument("--edge", type=int, default=96, help="variants: kept columns at each end, px")
-    ap.add_argument("--control", help="ControlNet hint image (a silhouette mask with --control-edge)")
-    ap.add_argument("--control-model", default="control_v11p_sd15_lineart_fp16.safetensors")
-    ap.add_argument("--control-strength", type=float, default=1.0)
-    ap.add_argument("--control-end", type=float, default=1.0, help="fraction of the steps the hint guides")
-    ap.add_argument("--control-edge", action="store_true", help="feed the hint's outline, not the image")
-    ap.add_argument("--ipadapter", help="IP-Adapter's reference image (SDXL): its style goes into the strip")
-    ap.add_argument("--ipa-weight", type=float, default=0.6)
-    ap.add_argument("--ipa-type", default="style transfer", help="IPAdapterAdvanced's weight_type")
-    ap.add_argument("--ipa-model", default="ip-adapter-plus_sdxl_vit-h.safetensors")
-    ap.add_argument("--ipa-clip-vision", default="CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors")
-    ap.add_argument("--small", help="WxH: paint at that size, then upscale to --w x --h with --upscale-model")
-    ap.add_argument("--upscale-model", default="RealESRGAN_x4plus.pth")
+    guide_flags(ap)
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     for key, value in (DIT_SAMPLING if is_dit(a.ckpt) else SAMPLING).items():
@@ -346,6 +335,22 @@ def parse_args():
         except ValueError:
             ap.error("--small: WxH")
     return a
+
+
+def guide_flags(ap):
+    """What guides or resizes the painting: ControlNet, IP-Adapter, --small's upscale (r471)."""
+    ap.add_argument("--control", help="ControlNet hint image (a silhouette mask with --control-edge)")
+    ap.add_argument("--control-model", default="control_v11p_sd15_lineart_fp16.safetensors")
+    ap.add_argument("--control-strength", type=float, default=1.0)
+    ap.add_argument("--control-end", type=float, default=1.0, help="fraction of the steps the hint guides")
+    ap.add_argument("--control-edge", action="store_true", help="feed the hint's outline, not the image")
+    ap.add_argument("--ipadapter", help="IP-Adapter's reference image (SDXL): its style goes into the strip")
+    ap.add_argument("--ipa-weight", type=float, default=0.6)
+    ap.add_argument("--ipa-type", default="style transfer", help="IPAdapterAdvanced's weight_type")
+    ap.add_argument("--ipa-model", default="ip-adapter-plus_sdxl_vit-h.safetensors")
+    ap.add_argument("--ipa-clip-vision", default="CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors")
+    ap.add_argument("--small", help="WxH: paint at that size, then upscale to --w x --h with --upscale-model")
+    ap.add_argument("--upscale-model", default="RealESRGAN_x4plus.pth")
 
 
 SAMPLING = {"steps": 28, "cfg": 7.0, "sampler": "dpmpp_2m", "scheduler": "karras"}

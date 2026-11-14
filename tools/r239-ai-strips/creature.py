@@ -171,55 +171,74 @@ def on_neck(rgb, alpha, sky, r, cap=0.05, biggest=14):
     """[(x, y, size)] of each head on a neck in alpha's outline: a figure the mass's own colour, or too big for
     find()'s box, its head biggest * r^2 px at most: r500's 6407 px was a tower, a figure under it taller than the strip,
     R1's giant's is 962."""
-    mass = alpha >= 0.5
-    # The outline as painted: sil.py's cut may have keyed masts off a roof, which the painted strip still has over
-    # what would be a head. Only what is nearer the mass's colour than the sky's (far grey towers behind are no
-    # figure), and near the mass (a palm's fronds at the strip's top are not).
-    land = np.median(rgb[spread(mass, -4)], axis=0)
-    seg = land - sky
-    t = ((rgb - sky) * seg).sum(axis=2) / max((seg * seg).sum(), 1)
-    m = mass | (spread(mass, 4 * r) & (t > 0.5))
+    m = painted_outline(rgb, alpha, sky, r)
     found = []
     for n in (r // 4, r // 3, 5 * r // 12):
-        # Opened along X: rows narrower than 2n + 1 go, a neck with them, and the head is an island.
-        e = m.copy()
-        for d in range(1, n + 1):
-            e &= np.roll(m, d, 1) & np.roll(m, -d, 1)
-        for d in range(1, n + 1):
-            e |= np.roll(e, d, 1) | np.roll(e, -d, 1)
-        label, sizes = components(e & m)
+        label, sizes = components(opened(m, n) & m)
         for k, size in enumerate(sizes):
             if size < (2 * n + 1) ** 2 // 2 or size > biggest * r * r:
                 continue
             ys, xs = np.nonzero(label == k + 1)
             w, h = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
-            # A head is round: it fills most of its box (a disc 0.79); a ragged chunk on a spike does not.
-            if not 0.6 < h / w < 1.8 or size < 0.6 * w * h:
-                continue
-            # Sky over it: a pine's top tier has its spire, a palm's crown the next frond.
-            if ys.min() > 0 and m[max(ys.min() - h, 0):ys.min(), xs.min():xs.max() + 1].mean() >= cap:
-                continue
-            # Down from its middle, through the neck the opening took, to shoulders as wide as 0.8 of it. A chunk on a
-            # tower's mast never widens again; a palm's crown on its thin bent trunk loses the column before the ground.
-            x = int(np.median(xs[ys == ys.max()]))
-            for y in range(ys.max() + 1, m.shape[0]):
-                if not m[y, x]:
-                    break
-                a = b = x
-                while a > 0 and m[y, a - 1] and x - a < 3 * w:
-                    a -= 1
-                while b < m.shape[1] - 1 and m[y, b + 1] and b - x < 3 * w:
-                    b += 1
-                x = (a + b) // 2  # a neck leans: follow its middle
-                if b - a + 1 >= 0.8 * w:
-                    found.append((int(xs.mean()), int(ys.mean()), int(size), w, h))
-                    break
-    # Named once: the same head is found at each n.
+            if is_head(m, xs, ys, w, h, size, cap) and on_shoulders(m, xs, ys, w):
+                found.append((int(xs.mean()), int(ys.mean()), int(size), w, h))
+    return [f[:3] for f in named_once(found)]
+
+
+def painted_outline(rgb, alpha, sky, r):
+    """The outline as painted: sil.py's cut may have keyed masts off a roof, which the painted strip still has over
+    what would be a head. Only what is nearer the mass's colour than the sky's (far grey towers behind are no
+    figure), and near the mass (a palm's fronds at the strip's top are not)."""
+    mass = alpha >= 0.5
+    land = np.median(rgb[spread(mass, -4)], axis=0)
+    seg = land - sky
+    t = ((rgb - sky) * seg).sum(axis=2) / max((seg * seg).sum(), 1)
+    return mass | (spread(mass, 4 * r) & (t > 0.5))
+
+
+def opened(m, n):
+    """m opened along X: rows narrower than 2n + 1 go, a neck with them, and the head is an island."""
+    e = m.copy()
+    for d in range(1, n + 1):
+        e &= np.roll(m, d, 1) & np.roll(m, -d, 1)
+    for d in range(1, n + 1):
+        e |= np.roll(e, d, 1) | np.roll(e, -d, 1)
+    return e
+
+
+def is_head(m, xs, ys, w, h, size, cap):
+    """A head is round: it fills most of its box (a disc 0.79); a ragged chunk on a spike does not. And sky over it:
+    a pine's top tier has its spire, a palm's crown the next frond."""
+    if not 0.6 < h / w < 1.8 or size < 0.6 * w * h:
+        return False
+    return not (ys.min() > 0 and m[max(ys.min() - h, 0):ys.min(), xs.min():xs.max() + 1].mean() >= cap)
+
+
+def on_shoulders(m, xs, ys, w):
+    """Down from the head's middle, through the neck the opening took, to shoulders as wide as 0.8 of it. A chunk on a
+    tower's mast never widens again; a palm's crown on its thin bent trunk loses the column before the ground."""
+    x = int(np.median(xs[ys == ys.max()]))
+    for y in range(ys.max() + 1, m.shape[0]):
+        if not m[y, x]:
+            return False
+        a = b = x
+        while a > 0 and m[y, a - 1] and x - a < 3 * w:
+            a -= 1
+        while b < m.shape[1] - 1 and m[y, b + 1] and b - x < 3 * w:
+            b += 1
+        x = (a + b) // 2  # a neck leans: follow its middle
+        if b - a + 1 >= 0.8 * w:
+            return True
+    return False
+
+
+def named_once(found):
+    """found, biggest first, without the same head found again at another opening."""
     figs = []
     for f in sorted(found, key=lambda f: -f[2]):
         if not any(abs(f[0] - g[0]) < max(f[3], g[3]) and abs(f[1] - g[1]) < max(f[4], g[4]) for g in figs):
             figs.append(f)
-    return [f[:3] for f in figs]
+    return figs
 
 
 def show(src, alpha, found):

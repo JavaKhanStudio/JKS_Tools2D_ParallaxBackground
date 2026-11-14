@@ -58,7 +58,7 @@ def ridge_line(w, waves, rng, ridge):
     return y
 
 
-def main():
+def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("kind", choices=SPEC)
     ap.add_argument("out")
@@ -71,7 +71,11 @@ def main():
     ap.add_argument("--colour", help="the layer's colour in the init image, hex RRGGBB; default the kind's")
     ap.add_argument("--texture", type=float, default=0, help="texture in the init's fill, 0 (flat, r239) to 1 (r365)")
     ap.add_argument("--warp", type=float, help="bend the shape by up to this fraction of h (r496); default the kind's")
-    a = ap.parse_args()
+    return ap.parse_args()
+
+
+def main():
+    a = parse_args()
     spec, w, h = SPEC[a.kind], a.w, a.h
     ss = 4  # supersample for antialiased edges
     W, H = w * ss, h * ss

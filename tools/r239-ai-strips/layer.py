@@ -429,20 +429,31 @@ def key(img, sky, a, records=None, regions=None):
         regions["far"] = ranged
     ctx = {"kind": getattr(a, "kind", None), "ckpt": getattr(a, "ckpt", None), "img": img, "sky": sky, "alpha": alpha,
            "top": top, "m": m, "grow": a.grow, "ranged": ranged}
+    alpha = weigh_rules(a, ctx, records)
+    if not a.keep_islands:
+        alpha = cut_islands(a, alpha, ranged)
+    return alpha, sky
+
+
+def weigh_rules(a, ctx, records):
+    """key()'s RULES weighed on ctx, each one applied said, their records appended to records: ctx's alpha after."""
     weighed = parallax_rules.weigh(RULES, ctx, getattr(a, "forced", None))
-    alpha = ctx["alpha"]
     for r in weighed:
         if r["applied"]:
             print(f"{a.out}: rule {r['rule']}: {r['moved']} px", file=sys.stderr)
     if records is not None:
         records += weighed
-    if not a.keep_islands:
-        # a far range at --haze joins what stands in it to the mass (ds8-postapo l0's mesa, in its haze plain)
-        cut = islands((alpha > 0.5) | ranged, front_edges(a, alpha.shape))
-        if cut.any():
-            alpha = unspeck(alpha, cut)
-            print(f"{a.out}: {int(cut.sum())} px of alpha islands cut", file=sys.stderr)
-    return alpha, sky
+    return ctx["alpha"]
+
+
+def cut_islands(a, alpha, ranged):
+    """alpha with its islands cut. A far range at --haze joins what stands in it to the mass (ds8-postapo l0's mesa,
+    in its haze plain); --edges-of keeps what the front cut has on the laid-back columns."""
+    cut = islands((alpha > 0.5) | ranged, front_edges(a, alpha.shape))
+    if cut.any():
+        alpha = unspeck(alpha, cut)
+        print(f"{a.out}: {int(cut.sum())} px of alpha islands cut", file=sys.stderr)
+    return alpha
 
 
 # edges_of (r474): gen.py variants lays the source's own outer 8 px back over 16 px; the cut does the same with its cut.

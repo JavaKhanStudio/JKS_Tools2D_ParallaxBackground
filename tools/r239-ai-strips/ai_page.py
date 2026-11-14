@@ -457,6 +457,15 @@ def strip_of(path):
 
 
 def parse_args():
+    """The run's arguments, read and checked."""
+    ap = parser()
+    a = ap.parse_args()
+    check_args(ap, a)
+    return a
+
+
+def parser():
+    """Every flag, in --help's order: the checkpoint's and its sampler's from model_flags."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("out")
     ap.add_argument("--theme", required=True, help="what the page shows, in a few words: it goes in every prompt")
@@ -476,16 +485,7 @@ def parse_args():
     ap.add_argument("--keep", action="store_true", help="keep the strips OUT/strips holds: only cut and lay out again"
                     " (another --sky, --fog or --front-speed, with the same --seed)")
     ap.add_argument("--no-shots", action="store_true")
-    ap.add_argument("--ckpt", help="the checkpoint; default dreamshaper_8 (painted), sdXL_v10VAEFix (pixel); a .gguf is"
-                    " a DiT (z-image-turbo-Q5_K_M.gguf)")
-    ap.add_argument("--xl", action="store_true", help="the checkpoint is SDXL though its name does not say XL")
-    ap.add_argument("--lora", help="a LoRA; default none (painted), PixelArt_XL (pixel); 'none' drops the pixel one")
-    ap.add_argument("--lora-strength", type=float, help="default 0.8 (gen.py's), 1.0 for PixelArt_XL")
-    ap.add_argument("--steps", type=int, help="sampler steps, default gen.py's 28 (a Turbo checkpoint wants 6-8)")
-    ap.add_argument("--cfg", type=float, help="default gen.py's 7.0 (a Turbo checkpoint wants about 2)")
-    ap.add_argument("--sampler", help="default gen.py's dpmpp_2m")
-    ap.add_argument("--scheduler", help="default gen.py's karras")
-    ap.add_argument("--denoise", type=float, help="img2img strength over sil.py's shape: default 0.65, pixel 0.7, a DiT 0.75")
+    model_flags(ap)
     ap.add_argument("--clouds", action="store_true", help="paint the clouds on a layer of their own, behind the back"
                     " one (r409): a page's clouds are never in another layer")
     ap.add_argument("--cloud-rest", type=float, default=CLOUD_REST, help="the clouds' speed at rest (25-90)")
@@ -522,7 +522,25 @@ def parse_args():
                     " the strip's height before painting (r496); default sil.py's 0.0243, 0 for straight towers")
     ap.add_argument("--timeout", type=int, default=TIMEOUT,
                     help="seconds a command (a strip: 10-60) may take before it is killed and run once more (r377)")
-    a = ap.parse_args()
+    return ap
+
+
+def model_flags(ap):
+    """The checkpoint and its sampler, gen.py's flags a default run leaves at their defaults."""
+    ap.add_argument("--ckpt", help="the checkpoint; default dreamshaper_8 (painted), sdXL_v10VAEFix (pixel); a .gguf is"
+                    " a DiT (z-image-turbo-Q5_K_M.gguf)")
+    ap.add_argument("--xl", action="store_true", help="the checkpoint is SDXL though its name does not say XL")
+    ap.add_argument("--lora", help="a LoRA; default none (painted), PixelArt_XL (pixel); 'none' drops the pixel one")
+    ap.add_argument("--lora-strength", type=float, help="default 0.8 (gen.py's), 1.0 for PixelArt_XL")
+    ap.add_argument("--steps", type=int, help="sampler steps, default gen.py's 28 (a Turbo checkpoint wants 6-8)")
+    ap.add_argument("--cfg", type=float, help="default gen.py's 7.0 (a Turbo checkpoint wants about 2)")
+    ap.add_argument("--sampler", help="default gen.py's dpmpp_2m")
+    ap.add_argument("--scheduler", help="default gen.py's karras")
+    ap.add_argument("--denoise", type=float, help="img2img strength over sil.py's shape: default 0.65, pixel 0.7, a DiT 0.75")
+
+
+def check_args(ap, a):
+    """What argparse cannot check alone; --kinds sets --layers and --front, --lurker-between a.lurker_on."""
     try:
         parallax_rules.parse_forced(a.rule, layer.RULES)
     except ValueError as e:
@@ -547,8 +565,6 @@ def parse_args():
         a.lurker_on = between[0]
     a.motions, a.rows = animate_args(ap, a)
     tools_args(ap, a)
-    return a
-
 
 def tools_args(ap, a):
     """R3's flags (r471): checked, --small read as (w, h), --ipadapter made absolute (commands run from the root)."""
