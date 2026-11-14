@@ -38,7 +38,8 @@ repair.
   `tools/offscreen-lint.sh`, `tools/lint.sh`: ruff (`ruff.toml`), shellcheck and gdlint (`gdlintrc`) on every tracked
   `.py`, `.sh` and `.gd`, at versions pinned in it (r314), and `tools/python-tests.sh`: every tracked
   `tools/**/*_test.py`, each its own process at pinned numpy, Pillow and scipy (r411). A new `_test.py` runs there
-  without a word; one that needs a GPU or `../JKS_Tools2D_ParallaxAI` goes in its `SKIP`, with the reason. A clone wires `git config core.hooksPath tools/githooks`:
+  without a word; one that needs a GPU or `../JKS_Tools2D_ParallaxAI` goes in its `SKIP`, with the reason. So does
+  `tools/shell-tests.sh` every tracked `tools/**/*-test.sh` (r534): a new one needing a GPU or a cage goes in its `SKIP`. A clone wires `git config core.hooksPath tools/githooks`:
   a commit is refused when what it stages fails that lint or `offscreen-lint.sh` (`tools/pre-commit-check.sh`, r339),
   a push to develop, master or release/* when the pushed commit does (`tools/pre-push-check.sh`, r332).
   `./gradlew build` and `browser-test.sh` stay yours. After that push, `tools/ci-watch.sh` waits for CI in the

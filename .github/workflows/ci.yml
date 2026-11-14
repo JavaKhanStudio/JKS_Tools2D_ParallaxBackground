@@ -44,7 +44,7 @@ jobs:
 
       # A tools/*.sh that opens a window runs it in cage, or says why not (r171).
       - name: Check no script opens a window outside cage
-        run: tools/offscreen-lint.sh && tools/offscreen-lint-test.sh
+        run: tools/offscreen-lint.sh
 
       # ruff, shellcheck and gdlint at pinned versions: a rule cleaned once and gated by nothing came back (r314).
       - name: Set up uv
@@ -55,6 +55,11 @@ jobs:
       # today; one that does is skipped by name in the script's SKIP, with its reason.
       - name: Run the tools' Python tests
         run: tools/python-tests.sh
+
+      # Every tracked tools/**/*-test.sh: the git hooks' (r332, r339), ci-watch's, offscreen-lint's, the benches' OUT
+      # (r534). Each its own process; one that needs a GPU or a cage is skipped by name in the script's SKIP.
+      - name: Run the tools' shell tests
+        run: tools/shell-tests.sh
 
       - name: Lint Python, shell and GDScript
         run: tools/lint.sh
