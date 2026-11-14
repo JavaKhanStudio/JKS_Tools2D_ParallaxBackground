@@ -6,6 +6,7 @@ import copy
 import os
 import sys
 import unittest
+from types import MappingProxyType
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import parallax_lab as lab
@@ -497,6 +498,34 @@ class FairyLoop(unittest.TestCase):
         page = lab.fairy_from_art()
         page['pageModel']['atlasName'] = 'PurpleFairy.atlas'
         self.assertEqual(1, len([p for p in self.seams(page) if '(3#0)' in p]), self.seams(page))
+
+
+class FromArt(unittest.TestCase):
+    """Every *_from_art() page, the skill's worked examples, found by name so a new one is covered (r536): each builds
+    and lints to the faults it is known to keep, its layout too when its atlas is in this repository."""
+    # Their atlases are in the editor repository only, which nothing here may point into: their speeds, sizes and
+    # effects are linted, not their layout.
+    NO_ATLAS_HERE = frozenset({'boss_from_art', 'calm_tree_from_art', 'pure_from_art'})
+    KEPT = MappingProxyType({
+        # p3 and p2 do not tile cleanly, made 2.6 worlds wide so a seam passes rarely (its docstring).
+        'printemps_from_art': ['(e) layer 1 (parallax1#3)', '(e) layer 2 (parallax1#2)'],
+        # Written before r381's rule: two hills' bottom edges show through the nearer hills' clear notches.
+        'night_from_art': ['(b) layer 3 (ground#0)', '(b) layer 4 (ground#1)'],
+    })
+
+    def test_every_page_lints_to_what_it_keeps(self):
+        names = sorted(n for n in dir(lab) if n.endswith('_from_art'))
+        self.assertGreaterEqual(len(names), 8, names)
+        for name in names:
+            with self.subTest(name):
+                page = getattr(lab, name)()
+                atlas_dir = lab.find_atlas_dir('page.jplax', page)
+                self.assertEqual(name in self.NO_ATLAS_HERE, atlas_dir is None, page['pageModel']['atlasName'])
+                faults = lab.lint(page, atlas_dir)
+                kept = self.KEPT.get(name, [])
+                self.assertEqual(len(kept), len(faults), faults)
+                for want, got in zip(kept, faults):
+                    self.assertTrue(got.startswith(want), got)
 
 
 if __name__ == '__main__':

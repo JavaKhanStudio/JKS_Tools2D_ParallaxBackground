@@ -109,7 +109,9 @@ nothing there. README.md's "Snow, rain and smoke" says how wide a `VIEW` effect'
    slower than it, with a `speedXAtRest`; the sky behind them is a layer or the gradient, with no cloud left in it.
 
 `tools/parallax_lab.py` `fairy_from_art`, `hiver_from_art`, `calm_tree_from_art`, `night_from_art` and
-`calm_from_art` are worked examples of each kind, each explaining its choices.
+`calm_from_art` are worked examples of each kind, each explaining its choices; `printemps_from_art`, `boss_from_art`
+and `pure_from_art` were written from this skill on atlases it never saw (round 3, r128). `parallax_lab_test.py`'s
+`FromArt` lints every `*_from_art`, so a new one is held to the lint too.
 
 ## Check it
 
@@ -250,7 +252,7 @@ repaired join, which reads as a soft vertical band once the layers slide: paint 
 The grading lab is in the editor repository (JKS_Tools2D_ParallaxEditor, beside this checkout): there,
 `./gradlew :demo:lab --args="demo/lab/<round>"` shows the scenes blind, scrolling; a human grades 1-5 and the grades
 land in `demo/lab/<round>/grades.json`. Put the page next to variants of it that each break one rule
-(`tools/parallax_lab.py` has `flat`, `inverted`, `rescale_span`, `linear`, `shrunk`, `white_sky`, `aligned`…): what
+(`tools/parallax_lab.py` has `flat`, `inverted`, `rescale_span`, `linear`, `shrunk`, `white_sky`, `deepen_back`, `aligned`…): what
 the grades separate is what the rule is worth.
 
 To let Simon compare variants in the browser (a lab under `core/browser-test`), build it to be judged at a glance:

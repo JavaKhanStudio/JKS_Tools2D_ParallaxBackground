@@ -221,7 +221,7 @@ built by r227 with its `tools/parallax_lab.py round4`). One question: is there a
 
 | Atlas | Anchor (its round 3 grade) | 43x | 100x | 250x |
 |-------|----------------------------|-----|------|------|
-| calm | Calm-art-100x (4) | | 3 | 3 (front kept, the rest pushed back: `deepen_back`) |
+| calm | Calm-art-100x (4) | | 3 | 3 (front kept, the rest pushed back: `deepen_back(calm_from_art())`) |
 | Pure | Pure-art 43x (5) | 4 | 3 (x1.78 a layer) | **5** (x1.99 a layer) |
 | Printemps | Printemps-art 25x (4): 3 | | | |
 

@@ -738,7 +738,8 @@ def rescale_span(page, factor):
 
 
 def deepen_back(page, factor):
-    """Keeps the front speed and multiplies the span (in log space) by factor: only the layers behind it move."""
+    """Keeps the front speed and multiplies the span (in log space) by factor: only the layers behind it move. Round 4's
+    calm 250x was calm_from_art() deepened so (docs/parallax-design.md §9)."""
     p = copy.deepcopy(page)
     s = speeds(p)
     front = max(s)
@@ -776,13 +777,6 @@ def white_sky(page):
     p = copy.deepcopy(page)
     for k in ('topHalf_top', 'topHalf_bottom', 'bottomHalf_top', 'bottomHalf_bottom'):
         p[k] = color('ffffff')
-    return p
-
-
-def recolored(page, sky, ground):
-    p = copy.deepcopy(page)
-    p['topHalf_top'], p['topHalf_bottom'] = color(sky[0]), color(sky[1])
-    p['bottomHalf_top'], p['bottomHalf_bottom'] = color(ground[0]), color(ground[1])
     return p
 
 
