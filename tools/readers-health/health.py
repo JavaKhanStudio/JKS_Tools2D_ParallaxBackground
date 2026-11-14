@@ -182,16 +182,26 @@ def feature_cell(reader, fid, scenes, cases):
     if reader.get('paused'):
         return {'kind': 'na', 'text': 'paused', 'small': ''}
     if reader['id'] == 'gdx':
-        names = [n for cls, pattern in cases for n in case_names(cls, pattern)]
-        if not names:
-            return {'kind': 'na', 'text': 'no case', 'small': 'draws the stills the others match'}
-        ran = junit_cases()
-        seen = [n for n in names if n in ran]
-        if not seen:
-            return {'kind': 'never', 'text': 'never run', 'small': f'{len(names)} cases'}
-        bad = [n for n in seen if not ran[n]]
-        return {'kind': 'fail' if bad else 'pass', 'text': f'{len(bad)} FAIL' if bad else 'PASS',
-                'small': f'{len(seen)} cases' + (f', {len(names) - len(seen)} not run' if len(seen) < len(names) else '')}
+        return cases_cell(cases)
+    return scenes_cell(reader, fid, scenes)
+
+
+def cases_cell(cases):
+    """libGDX's verdict on a feature: its browser cases for it, in core's last JUnit run."""
+    names = [n for cls, pattern in cases for n in case_names(cls, pattern)]
+    if not names:
+        return {'kind': 'na', 'text': 'no case', 'small': 'draws the stills the others match'}
+    ran = junit_cases()
+    seen = [n for n in names if n in ran]
+    if not seen:
+        return {'kind': 'never', 'text': 'never run', 'small': f'{len(names)} cases'}
+    bad = [n for n in seen if not ran[n]]
+    return {'kind': 'fail' if bad else 'pass', 'text': f'{len(bad)} FAIL' if bad else 'PASS',
+            'small': f'{len(seen)} cases' + (f', {len(names) - len(seen)} not run' if len(seen) < len(names) else '')}
+
+
+def scenes_cell(reader, fid, scenes):
+    """Another reader's verdict on a feature: the worst still of the scenes that check it, judged scene by scene."""
     total = sum(len(ids) for _, ids, _ in scenes)
     played = [(rd, ids) for rd, ids, _ in scenes if rd in reader['rounds']]
     # A feature the reader cannot draw (its 'unsupported') is not drawn, whatever its other scenes pass: jME passes the
@@ -306,65 +316,85 @@ def bench(reader_id):
     return data
 
 
+def round_checks(r, row):
+    """A reader with a frame check: its rounds, their stills, and the reports they left. The runs found."""
+    checks, runs = [], []
+    for rd in rounds_of(r['check']):
+        scenes = scenes_of(rd)
+        rep = report(r['id'], rd)
+        stills = len(scenes) * (1 if os.path.basename(rd) == 'particles' else 3)
+        row['rounds'][rd] = {'scenes': len(scenes), 'stills': stills, 'report': rep}
+        checks.append(stills)
+        if rep:
+            runs.append(rep)
+    row['checks'] = f"{sum(checks)} stills over {len(checks)} rounds"
+    row['count'] = sum(checks)
+    return runs
+
+
+def core_checks(row):
+    """libGDX: core's JUnit tests and browser cases, and its last JUnit run. The runs found."""
+    tests = count(r'@Test\b', 'core/test/**/*.java')
+    cases = count(r'new BrowserCase\(', 'core/browser-test/cases/**/*.java')
+    row['checks'] = f'{tests} JUnit tests, {cases} browser cases; draws the stills the others match'
+    row['count'] = tests + cases
+    j = junit()
+    if not j:
+        return []
+    row['junit'] = j
+    return [('FAIL' if j[1] else 'PASS', None, j[2], 'core/build/reports/tests/test')]
+
+
+def reader_status(r, row, runs, ci_run, watch):
+    """A reader's (status, why), from its runs here and its CI jobs."""
+    # A CI job that failed judges over everything seen here.
+    if any(c[1] in ('failure', 'cancelled', 'timed_out') for c in row['ci']):
+        return 'fail', 'CI: ' + ', '.join(f'{c[0]} {c[1]}' for c in row['ci'] if c[1] != 'success')
+    if r.get('paused'):
+        return 'paused', 'not installed on this machine'
+    if not row['installed']:
+        return 'absent', f"{r['needs']} not found"
+    if row['failed']:
+        return 'fail', f"{len(row['failed'])} check(s) FAIL"
+    if not runs:
+        return 'never', 'never run on this machine'
+    if row['missing']:
+        return 'stale', f"{len(row['missing'])} round(s) never run here"
+    if row['changed'] and not ci_covers(ci_run, row['ci'], watch):
+        return 'stale', f"{len(row['changed'])} commit(s) since its oldest run"
+    if row['changed']:
+        return 'ok', 'CI passed since its last change; changed since its last run here'
+    return 'ok', 'every check passed, nothing changed since'
+
+
+def reader_row(r, ci_run):
+    """One reader as the dashboard shows it: its checks, its runs, what changed since, its CI, bench and status."""
+    row = dict(r)
+    row['installed'] = bool(shutil.which(r['needs'])) and not r.get('paused')
+    row['rounds'] = {}
+    if r.get('check'):
+        runs = round_checks(r, row)
+    elif r['id'] == 'gdx':
+        runs = core_checks(row)
+    else:
+        row['checks'], row['count'], runs = 'none', 0, []
+    row['last'] = max((x[2] for x in runs), default=0)
+    row['first'] = min((x[2] for x in runs), default=0)
+    row['failed'] = [x for x in runs if x[0] == 'FAIL']
+    row['missing'] = [rd for rd, v in row['rounds'].items() if not v['report']]
+    watch = r.get('watch', []) + list(row['rounds'])
+    row['changed'] = changed_since(watch, row['first']) if runs else []
+    row['ci'] = [(name,) + ci_run['jobs'][name] for name in r.get('jobs', []) if ci_run and name in ci_run['jobs']]
+    row['bench'] = bench(r['id'])
+    row['status'], row['why'] = reader_status(r, row, runs, ci_run, watch)
+    return row
+
+
 def gather(use_ci):
     now = datetime.datetime.now().timestamp()
     ci_run = ci() if use_ci else None
     bench_scenes = scenes_of('engines/rounds/bench')
-    rows = []
-    for r in READERS:
-        row = dict(r)
-        row['installed'] = bool(shutil.which(r['needs'])) and not r.get('paused')
-        row['rounds'] = {}
-        checks, runs = [], []
-        if r.get('check'):
-            for rd in rounds_of(r['check']):
-                scenes = scenes_of(rd)
-                rep = report(r['id'], rd)
-                stills = len(scenes) * (1 if os.path.basename(rd) == 'particles' else 3)
-                row['rounds'][rd] = {'scenes': len(scenes), 'stills': stills, 'report': rep}
-                checks.append(stills)
-                if rep:
-                    runs.append(rep)
-            row['checks'] = f"{sum(checks)} stills over {len(checks)} rounds"
-            row['count'] = sum(checks)
-        elif r['id'] == 'gdx':
-            tests = count(r'@Test\b', 'core/test/**/*.java')
-            cases = count(r'new BrowserCase\(', 'core/browser-test/cases/**/*.java')
-            row['checks'] = f'{tests} JUnit tests, {cases} browser cases; draws the stills the others match'
-            row['count'] = tests + cases
-            j = junit()
-            if j:
-                runs.append(('FAIL' if j[1] else 'PASS', None, j[2], 'core/build/reports/tests/test'))
-                row['junit'] = j
-        else:
-            row['checks'], row['count'] = 'none', 0
-        row['last'] = max((x[2] for x in runs), default=0)
-        row['first'] = min((x[2] for x in runs), default=0)
-        row['failed'] = [x for x in runs if x[0] == 'FAIL']
-        row['missing'] = [rd for rd, v in row['rounds'].items() if not v['report']]
-        watch = r.get('watch', []) + list(row['rounds'])
-        row['changed'] = changed_since(watch, row['first']) if runs else []
-        row['ci'] = [(name,) + ci_run['jobs'][name] for name in r.get('jobs', []) if ci_run and name in ci_run['jobs']]
-        row['bench'] = bench(r['id'])
-        if r.get('paused'):
-            row['status'], row['why'] = 'paused', 'not installed on this machine'
-        elif not row['installed']:
-            row['status'], row['why'] = 'absent', f"{r['needs']} not found"
-        elif row['failed']:
-            row['status'], row['why'] = 'fail', f"{len(row['failed'])} check(s) FAIL"
-        elif not runs:
-            row['status'], row['why'] = 'never', 'never run on this machine'
-        elif row['missing']:
-            row['status'], row['why'] = 'stale', f"{len(row['missing'])} round(s) never run here"
-        elif row['changed'] and not ci_covers(ci_run, row['ci'], watch):
-            row['status'], row['why'] = 'stale', f"{len(row['changed'])} commit(s) since its oldest run"
-        elif row['changed']:
-            row['status'], row['why'] = 'ok', 'CI passed since its last change; changed since its last run here'
-        else:
-            row['status'], row['why'] = 'ok', 'every check passed, nothing changed since'
-        if any(c[1] in ('failure', 'cancelled', 'timed_out') for c in row['ci']):
-            row['status'], row['why'] = 'fail', 'CI: ' + ', '.join(f'{c[0]} {c[1]}' for c in row['ci'] if c[1] != 'success')
-        rows.append(row)
+    rows = [reader_row(r, ci_run) for r in READERS]
     head = sh('git', 'log', '-1', '--format=%h %s')
     return {'now': now, 'head': head, 'ci': ci_run, 'readers': rows, 'bench_scenes': bench_scenes,
             'features': feature_rows(rows)}
@@ -390,18 +420,24 @@ def text(d):
 
 
 def page(d):
-    e = html.escape
-    now = d['now']
     readers = d['readers']
     played = [r for r in readers if r.get('check')]
-    all_rounds = []
-    for r in played:
-        for rd in r['rounds']:
-            if rd not in all_rounds:
-                all_rounds.append(rd)
+    p = header(d)
+    p.append('<h2>Readers</h2><div class="cards">')
+    p += [reader_card(r, d['now']) for r in readers]
+    p.append('</div>')
+    p += feature_table(d['features'], readers)
+    p += frame_table(played, d['now'])
+    p += bench_table(d['bench_scenes'], readers, d['now'])
+    return '\n'.join(p)
+
+
+def header(d):
+    """The title, when and where the page was built, and the last CI run."""
+    e = html.escape
     p = ['<!doctype html><meta charset="utf-8"><title>Readers health</title>', f'<style>{CSS}</style>',
          '<h1>Readers health</h1>',
-         (f'<p class="sub">Built {e(when(now))} at <code>{e(d["head"])}</code>. '
+         (f'<p class="sub">Built {e(when(d["now"]))} at <code>{e(d["head"])}</code>. '
           'Rebuild: <code>tools/readers-health.sh</code>; rerun every check first: <code>tools/readers-health.sh --run</code>.</p>')]
     if d['ci']:
         r = d['ci']['run']
@@ -410,39 +446,46 @@ def page(d):
                  + (f'; a run on <code>{e(r["running"])}</code> is still going' if r['running'] else '') + '.</p>')
     else:
         p.append('<p class="sub">CI: not read (gh missing, offline, or --no-ci).</p>')
+    return p
 
-    p.append('<h2>Readers</h2><div class="cards">')
-    for r in readers:
-        label, colour = STATUS[r['status']]
-        p.append(f'<div class="card" style="border-top-color:{colour}">'
-                 f'<div class="top"><b>{e(r["name"])}</b><span class="badge" style="background:{colour}">{label}</span></div>'
-                 f'<div class="role">{e(r["role"])}</div><div class="why">{e(r["why"])}</div><dl>'
-                 f'<dt>Checks ready</dt><dd>{e(r["checks"])}</dd>'
-                 f'<dt>Last run here</dt><dd>{e(age(r["last"], now))}{" (" + e(when(r["last"])) + ")" if r["last"] else ""}</dd>')
-        if r['ci']:
-            p.append('<dt>CI</dt><dd>' + '<br>'.join(f'{e(c[0])}: <b>{e(str(c[1]))}</b>' for c in r['ci']) + '</dd>')
-        b = r['bench']
-        if b:
-            worst = max(b['scenes'], key=lambda s: s['meanMs'])
-            p.append(f'<dt>Latency</dt><dd>{worst["meanMs"]:.2f} ms a frame at worst ({e(worst["id"])}, '
-                     f'{worst["layers"]} layers), {age(b["time"], now)}</dd>')
-        elif r.get('bench_task'):
-            p.append(f'<dt>Latency</dt><dd>not measured yet: parallax-readers:{e(r["bench_task"])}</dd>')
-        if r['changed']:
-            p.append('<dt>Changed since</dt><dd>' + '<br>'.join(e(c) for c in r['changed'][:4])
-                     + (f'<br>and {len(r["changed"]) - 4} more' if len(r['changed']) > 4 else '') + '</dd>')
-        if r.get('run'):
-            p.append(f'<dt>Run it</dt><dd><code>{e(r["run"])}</code></dd>')
-        p.append('</dl></div>')
-    p.append('</div>')
 
-    p.append('<h2 id="features">Features: each one, its scenes, each reader</h2><p class="sub">From <code>engines/rounds/features.json</code>. '
-             'Godot and jME: the worst still of the scenes that check the feature (mean difference from libGDX, out of 255; a '
-             'check fails over 2), judged scene by scene. libGDX: its browser cases for the feature, in core\'s last JUnit run. '
-             '"No round": no scene checks it. Tickets are the parallax board\'s.</p>'
-             '<table><tr><th>Feature</th><th>Format</th><th>Tickets</th><th>Scenes</th>'
-             + ''.join(f'<th>{e(r["name"])}</th>' for r in readers) + '</tr>')
-    for row in d['features']:
+def reader_card(r, now):
+    """One reader's card: its status, checks, last run, CI, latency, what changed since, how to run it."""
+    e = html.escape
+    label, colour = STATUS[r['status']]
+    p = [(f'<div class="card" style="border-top-color:{colour}">'
+         f'<div class="top"><b>{e(r["name"])}</b><span class="badge" style="background:{colour}">{label}</span></div>'
+         f'<div class="role">{e(r["role"])}</div><div class="why">{e(r["why"])}</div><dl>'
+         f'<dt>Checks ready</dt><dd>{e(r["checks"])}</dd>'
+         f'<dt>Last run here</dt><dd>{e(age(r["last"], now))}{" (" + e(when(r["last"])) + ")" if r["last"] else ""}</dd>')]
+    if r['ci']:
+        p.append('<dt>CI</dt><dd>' + '<br>'.join(f'{e(c[0])}: <b>{e(str(c[1]))}</b>' for c in r['ci']) + '</dd>')
+    b = r['bench']
+    if b:
+        worst = max(b['scenes'], key=lambda s: s['meanMs'])
+        p.append(f'<dt>Latency</dt><dd>{worst["meanMs"]:.2f} ms a frame at worst ({e(worst["id"])}, '
+                 f'{worst["layers"]} layers), {age(b["time"], now)}</dd>')
+    elif r.get('bench_task'):
+        p.append(f'<dt>Latency</dt><dd>not measured yet: parallax-readers:{e(r["bench_task"])}</dd>')
+    if r['changed']:
+        p.append('<dt>Changed since</dt><dd>' + '<br>'.join(e(c) for c in r['changed'][:4])
+                 + (f'<br>and {len(r["changed"]) - 4} more' if len(r['changed']) > 4 else '') + '</dd>')
+    if r.get('run'):
+        p.append(f'<dt>Run it</dt><dd><code>{e(r["run"])}</code></dd>')
+    p.append('</dl></div>')
+    return '\n'.join(p)
+
+
+def feature_table(features_rows, readers):
+    """The feature table: each feature, its scenes, each reader's verdict."""
+    e = html.escape
+    p = ['<h2 id="features">Features: each one, its scenes, each reader</h2><p class="sub">From <code>engines/rounds/features.json</code>. '
+         'Godot and jME: the worst still of the scenes that check the feature (mean difference from libGDX, out of 255; a '
+         'check fails over 2), judged scene by scene. libGDX: its browser cases for the feature, in core\'s last JUnit run. '
+         '"No round": no scene checks it. Tickets are the parallax board\'s.</p>'
+         '<table><tr><th>Feature</th><th>Format</th><th>Tickets</th><th>Scenes</th>'
+         + ''.join(f'<th>{e(r["name"])}</th>' for r in readers) + '</tr>']
+    for row in features_rows:
         f = row['feature']
         where = '; '.join(f'{os.path.basename(rd)} {scene_span(ids)}' for rd, ids, _ in row['scenes'] if ids)
         bad = ''.join(f'<small class="bad">{e(i)}: no such scene in {e(os.path.basename(rd))}</small>' for rd, i in row['unknown'])
@@ -456,43 +499,59 @@ def page(d):
                      f'<td class="{c["kind"]}">{e(c["text"])}<small>{e(c["small"])}</small></td>')
         p.append('</tr>')
     p.append('</table>')
+    return p
 
-    p.append('<h2>Frame checks: each round, each reader</h2><p class="sub">Mean difference from libGDX\'s stills per '
-             'channel, out of 255; a check fails over 2. "Not drawn": the reader cannot draw that round yet, its task named. '
-             'A dash: the reader does not play that round.</p>'
-             '<table><tr><th>Round</th><th>Scenes</th>' + ''.join(f'<th>{e(r["name"])}</th>' for r in played) + '</tr>')
+
+def frame_table(played, now):
+    """The frame checks: each round any reader plays, each such reader's verdict on it."""
+    e = html.escape
+    all_rounds = []
+    for r in played:
+        all_rounds += [rd for rd in r['rounds'] if rd not in all_rounds]
+    p = ['<h2>Frame checks: each round, each reader</h2><p class="sub">Mean difference from libGDX\'s stills per '
+         'channel, out of 255; a check fails over 2. "Not drawn": the reader cannot draw that round yet, its task named. '
+         'A dash: the reader does not play that round.</p>'
+         '<table><tr><th>Round</th><th>Scenes</th>' + ''.join(f'<th>{e(r["name"])}</th>' for r in played) + '</tr>']
     for rd in all_rounds:
-        name = os.path.basename(rd)
         scenes = next(r['rounds'][rd]['scenes'] for r in played if rd in r['rounds'])
-        p.append(f'<tr><td><code>{e(name)}</code></td><td class="n">{scenes}</td>')
-        for r in played:
-            v = r['rounds'].get(rd)
-            if not v and rd in r.get('unsupported', {}):
-                ref, why = r['unsupported'][rd][:2]
-                p.append(f'<td class="na" title="{e(why)}">not drawn<small>{e(ref)}</small></td>')
-            elif not v:
-                p.append('<td class="na">&ndash;</td>')
-            elif not v['report']:
-                p.append('<td class="never">never run</td>')
-            else:
-                verdict, worst, ts, folder = v['report']
-                link = os.path.relpath(os.path.join(ROOT, folder, 'compare.png' if worst is not None else 'report.txt'), OUT)
-                cls = 'pass' if verdict == 'PASS' else 'fail'
-                val = f'{worst:.2f}' if worst is not None else verdict
-                p.append(f'<td class="{cls}"><a href="{e(link)}">{e(val)}</a><small>{e(age(ts, now))}</small></td>')
+        p.append(f'<tr><td><code>{e(os.path.basename(rd))}</code></td><td class="n">{scenes}</td>')
+        p += [round_cell(r, rd, now) for r in played]
         p.append('</tr>')
     p.append('</table>')
+    return p
 
-    p.append('<h2>Latency: the bench round</h2><p class="sub"><code>engines/rounds/bench</code>: each scene loaded (load: '
-             'page, atlas and first frame), then 600 frames at 1/60 s, vsync off, each finished on the GPU, each scene\'s best of a '
-             'few runs (this GPU is shared: another session on it slows a run tenfold). '
-             'Frame time in ms, mean / 95th percentile. Numbers from different GPUs do not compare: each column names its own.</p>')
+
+def round_cell(r, rd, now):
+    """One reader's cell for one round: not drawn, not played, never run, or its worst still linked to its sheet."""
+    e = html.escape
+    v = r['rounds'].get(rd)
+    if not v and rd in r.get('unsupported', {}):
+        ref, why = r['unsupported'][rd][:2]
+        return f'<td class="na" title="{e(why)}">not drawn<small>{e(ref)}</small></td>'
+    if not v:
+        return '<td class="na">&ndash;</td>'
+    if not v['report']:
+        return '<td class="never">never run</td>'
+    verdict, worst, ts, folder = v['report']
+    link = os.path.relpath(os.path.join(ROOT, folder, 'compare.png' if worst is not None else 'report.txt'), OUT)
+    cls = 'pass' if verdict == 'PASS' else 'fail'
+    val = f'{worst:.2f}' if worst is not None else verdict
+    return f'<td class="{cls}"><a href="{e(link)}">{e(val)}</a><small>{e(age(ts, now))}</small></td>'
+
+
+def bench_table(bench_scenes, readers, now):
+    """The bench round's latency: each scene, each reader that measured it, and who has no bench yet."""
+    e = html.escape
+    p = [('<h2>Latency: the bench round</h2><p class="sub"><code>engines/rounds/bench</code>: each scene loaded (load: '
+         'page, atlas and first frame), then 600 frames at 1/60 s, vsync off, each finished on the GPU, each scene\'s best of a '
+         'few runs (this GPU is shared: another session on it slows a run tenfold). '
+         'Frame time in ms, mean / 95th percentile. Numbers from different GPUs do not compare: each column names its own.</p>')]
     benches = [r for r in readers if r['bench']]
     p.append('<table><tr><th>Scene</th><th>Layers</th>' + ''.join(
         f'<th>{e(r["name"])}<small>{e(r["bench"].get("renderer", ""))}<br>{e(r["bench"].get("measure", ""))}, best of {r["bench"].get("runs", 1)}'
         f'<br>{e(age(r["bench"]["time"], now))}</small></th>'
         for r in benches) + '</tr>')
-    for s in d['bench_scenes']:
+    for s in bench_scenes:
         by = {r['id']: next((x for x in r['bench']['scenes'] if x['id'] == s['id']), None) for r in benches}
         layers = next((x['layers'] for x in by.values() if x), '')
         p.append(f'<tr><td><code>{e(s["id"])}</code> {e(s["name"])}<small>{e(s["about"])}</small></td><td class="n">{layers}</td>')
@@ -506,7 +565,7 @@ def page(d):
     if missing:
         p.append('<p class="sub">No bench yet: ' + ', '.join(
             f'{e(r["name"])} (parallax-readers:{e(r["bench_task"])})' for r in missing) + '.</p>')
-    return '\n'.join(p)
+    return p
 
 
 def scene_span(ids):
