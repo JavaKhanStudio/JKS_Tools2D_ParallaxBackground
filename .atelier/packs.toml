@@ -197,9 +197,14 @@ color = "#8fb3e0"
 sort = 61
 context = """
 The parallax-pages skill's "From one painting (r279)" says how to run it and what each sheet shows;
-docs/depth-tricks.md §5 why. Everything is tools/r279-depth-page/depth_page.py, run in the ComfyUI venv
-(tools/depth-page.sh): Depth Anything V2 Small, depth bands, SAM 2.1 small's masks, then gen.py inpaint in a
-subprocess for what each band hid. gen.py is #ai's file: change it and say so on the #ai lane's ticket.
+docs/depth-tricks.md §5 why. tools/r279-depth-page/depth_page.py, run in the ComfyUI venv (tools/depth-page.sh), is
+the command line and the pipeline; each step is a module beside it (r533): dp_models.py (the GPU side: Depth Anything
+V2 Small, SAM 2.1 small's masks and prompted fields), dp_bands.py, dp_objects.py, dp_outline.py, dp_sky.py,
+dp_rules.py (RULES), dp_page.py, dp_common.py (looped, grow, fill); then gen.py inpaint in a subprocess for what each
+band hid. depth_page.py imports back every name the harnesses read as depth_page.X, and the probes, tests and
+replay.py patch depth_page.gen, log, depth_of, masks_of, fields_of, sky_apart and gpu_lock: a function calling one of
+those stays in depth_page.py, or the patch no longer reaches it. A mutate.sh breaks the module that holds its line.
+gen.py is #ai's file: change it and say so on the #ai lane's ticket.
 ONE GPU, 8 GB, and two lanes (#ai, #depth) may run at once: depth_page's depth, masks and fields steps and gen.py
 take tools/gpu_lock.py's lock (r391) and wait their turn ("gpu_lock: waiting" in the log). A new GPU step goes under
 gpu_lock.held() and runs in a child (depth_page.in_child, r396: the parent never opens CUDA, which torch never frees),
@@ -209,7 +214,7 @@ another one (r386: r322's olive slab back on HEAD). Run the examples (tools/r279
 and after, in a HEAD worktree for the before, and compare them all, not only the painting the ticket names.
 A metric must see the fault on the before image: tools/r279-depth-page/see_through.py OUT counts sky each layer
 carries; a count that reads the same before and after proves nothing.
-A fix right for one model or one kind of painting only goes in depth_page.RULES (tools/parallax_rules.py, r378):
+A fix right for one model or one kind of painting only goes in RULES, dp_rules.py (tools/parallax_rules.py, r378):
 named conditions asked in order, the cheap ones first, recorded per layer in recipe.json's "rules"; --rule NAME=on|off
 forces one. Its cases go in tools/r279-depth-page/rules_test.py (no GPU), each check failing one when removed.
 Look at OUT/cut/sheet.png, objects.png, fields.png AND the 6 and 12 s frames: a repaint shows only once layers slide.
