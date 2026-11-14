@@ -35,7 +35,7 @@ repair.
   (r130-r133, docs/repo-split.md). Beside this checkout, its build compiles this `core` instead of Maven's: run a `core` change in `:editor:run` or `:demo:stress`
   there. Nothing here may point into it.
 - CI (`.github/workflows/ci.yml`, JDK 17, 21 and 25) runs `./gradlew build`, `tools/browser-test.sh`,
-  `tools/offscreen-lint.sh`, `tools/lint.sh`: ruff (`ruff.toml`), shellcheck and gdlint (`gdlintrc`) on every tracked
+  `tools/offscreen-lint.sh`, `tools/lint.sh`: ruff (`ruff.toml`, function complexity included since r538: split a function it refuses), shellcheck and gdlint (`gdlintrc`) on every tracked
   `.py`, `.sh` and `.gd`, at versions pinned in it (r314), and `tools/python-tests.sh`: every tracked
   `tools/**/*_test.py`, each its own process at pinned numpy, Pillow and scipy (r411). A new `_test.py` runs there
   without a word; one that needs a GPU or `../JKS_Tools2D_ParallaxAI` goes in its `SKIP`, with the reason. So does

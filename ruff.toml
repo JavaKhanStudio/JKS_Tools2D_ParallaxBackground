@@ -3,7 +3,29 @@
 # '# noqa: E731' (a named lambda) is then a used one, and any pycodestyle run agrees. The version is pinned: a new
 # ruff changes its defaults, and the findings would move without the code moving. Raise it here and in tools/lint.sh
 # in one commit, with what the new release flags fixed.
+#
+# Complexity is gated too (r538, Simon's pick): C901 (branches through a function), PLR0912 (its branches) and
+# PLR0915 (its statements). Three refacto days measured them by hand and filed the same splits (r155, r305/r306,
+# r530-r533), and they came back between days: ai_page.py's main went from 122 statements to 72 again. A function past
+# these limits is now a refused commit (tools/pre-commit-check.sh) and a red CI: split it, never raise a limit for one.
+# Only the kept probes below are exempt, by file: proofs of a closed ticket, run as they were, not living code. A new
+# probe is gated like the rest.
 required-version = "==0.17.0"
 
 [lint]
-extend-select = ["E402", "E731"]
+extend-select = ["E402", "E731", "C901", "PLR0912", "PLR0915"]
+
+[lint.mccabe]
+max-complexity = 10
+
+[lint.pylint]
+max-branches = 12
+max-statements = 50
+
+[lint.per-file-ignores]
+"tools/r269-history/purge-board-shas.py" = ["C901"]
+"tools/r366-lurker/moments.py" = ["C901", "PLR0915"]
+"tools/r369-lurker-cover/story.py" = ["C901", "PLR0915"]
+"tools/r369-lurker-cover/xray.py" = ["C901"]
+"tools/r375-animated-layer/anim.py" = ["PLR0915"]
+"tools/r514-read-jobs/moved.py" = ["C901"]
