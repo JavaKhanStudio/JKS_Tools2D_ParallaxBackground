@@ -166,18 +166,13 @@ public class SwellLab extends ApplicationAdapter implements LabKit.Clip
 	@Override
 	public void act(float seconds)
 	{
-		applyControls();
-		LabKit.clip(seconds, hearts);
+		LabKit.clip(seconds, this::applyControls, hearts);
 	}
 
 	@Override
 	public void render()
 	{
-		if (!clip)
-		{
-			applyControls();
-			LabKit.act(LabKit.liveDelta(), hearts);
-		}
+		LabKit.live(clip, this::applyControls, hearts);
 		int i = LabControls.read(view), height = Gdx.graphics.getBackBufferHeight();
 		float z = LabControls.read(zoom);
 		int frameWidth = Math.round(PANEL_WIDTH * z), frameHeight = Math.round(frameWidth * WORLD_HEIGHT / WORLD_WIDTH);

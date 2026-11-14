@@ -267,7 +267,7 @@ repair.
   back on the CPU: about 5 cores a browser, 3-5 fps on a loaded machine.
 - The HTML labs (`core/browser-test/webapp/*-lab.html`, r232) share one kit: `lab.css`, `lab.js` (Copy settings),
   `LabKit` (r311: the clip's clock, the panels, `exportClip`'s `<name>Act` that `tools/*-lab.sh` call, a lab shader's
-  uniforms) and `LabControls.slider`, whose name shows up to its first " (", the rest a tooltip, one effect's sliders
+  uniforms; r529: a lab's step, `clip`/`live` with its sliders, and its readout's `FrameCost`) and `LabControls.slider`, whose name shows up to its first " (", the rest a tooltip, one effect's sliders
   under its name in a `LabControls.section` (r419); a pick among names is a
   `LabControls.choice` (a select, its option's index as the value: r248), never a slider; a pick of what the panels
   show is on their titles over the canvas, `LabControls.panelChoice` (one panel's) or `stageChoice` (every panel's: a

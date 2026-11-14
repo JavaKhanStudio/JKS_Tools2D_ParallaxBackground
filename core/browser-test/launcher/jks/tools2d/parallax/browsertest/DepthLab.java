@@ -122,8 +122,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	private final Matrix4 toScreen = new Matrix4();
 	private final List<Element> tags = new ArrayList<>();
 	private int tagsUsed;
-	private String costLine = "";
-	private float frameSeconds, frames;
+	private final LabKit.FrameCost cost = new LabKit.FrameCost();
 
 	@Override
 	public void create()
@@ -251,7 +250,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 				line.append(", ");
 		}
 		readout.setInnerText("distances from the camera, in front distances (the front layer's, " + two(cameraDistance)
-				+ " world units, " + metres(cameraDistance * metresPerUnit) + " at this view and width): " + line + "; " + costLine);
+				+ " world units, " + metres(cameraDistance * metresPerUnit) + " at this view and width): " + line + "; " + cost.line());
 	}
 
 	/** Where a layer {@code d} front distances away stands on the axis chosen: true, or compressed (1 stays 1). */
@@ -349,13 +348,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		}
 		eased = ease(slide);
 		int calls = draw3D(eased);
-		frames++;
-		frameSeconds += Gdx.graphics.getDeltaTime();
-		if (frameSeconds >= 1 || clip)
-		{
-			costLine = (clip ? "" : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ") + calls + " draw calls";
-			frames = frameSeconds = 0;
-		}
+		cost.count(clip, calls);
 	}
 
 	private static float ease(float t)

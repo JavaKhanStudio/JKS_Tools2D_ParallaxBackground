@@ -139,7 +139,7 @@ public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 	private float[] snowBase;
 	private float appliedDensity = -1, appliedSize = -1, appliedWind = Float.NaN;
 	/** Frame time and per-panel cost, averaged over the last second. */
-	private float frameSeconds, frames;
+	private final LabKit.FrameCost cost = new LabKit.FrameCost();
 	private final float[] panelMillis = new float[2];
 	private final int[] panelCalls = new int[2];
 	private String costLine = "";
@@ -346,8 +346,7 @@ public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 	@Override
 	public void act(float seconds)
 	{
-		applyControls();
-		LabKit.clip(seconds, set.hearts);
+		LabKit.clip(seconds, this::applyControls, set.hearts);
 		applyControls();
 	}
 
@@ -355,11 +354,7 @@ public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 	@Override
 	public void render()
 	{
-		if (!clip)
-		{
-			applyControls();
-			LabKit.act(LabKit.liveDelta(), set.hearts);
-		}
+		LabKit.live(clip, this::applyControls, set.hearts);
 		int height = Gdx.graphics.getBackBufferHeight();
 		LabKit.beginPanels();
 		for (int i = 0; i < 2; i++)
@@ -379,14 +374,13 @@ public class EffectsLab extends ApplicationAdapter implements LabKit.Clip
 	/** The cost line, once a second of frames: frame time, and each panel's draw calls and CPU time to submit. */
 	private void measure()
 	{
-		frames++;
-		frameSeconds += Gdx.graphics.getDeltaTime();
-		if (frameSeconds < 1 && !(clip && frames >= 1))
+		if (!cost.count(clip))
 			return;
-		costLine = (clip ? "cost (stepped, not timed): " : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ")
+		float frames = cost.frames();
+		costLine = (clip ? "cost (stepped, not timed): " : cost.frameTime())
 				+ "A " + panelCalls[0] + " draw calls, " + LabControls.text(panelMillis[0] / frames) + " ms CPU; B " + panelCalls[1]
 				+ " draw calls, " + LabControls.text(panelMillis[1] / frames) + " ms CPU";
-		frames = frameSeconds = 0;
+		cost.reset();
 		panelMillis[0] = panelMillis[1] = 0;
 	}
 

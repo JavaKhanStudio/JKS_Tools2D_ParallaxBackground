@@ -64,6 +64,74 @@ final class LabKit
 	static float liveDelta()
 	{return Math.min(Gdx.graphics.getDeltaTime(), 1 / 15f);}
 
+	/** A lab's sliders, read into what it draws: applied before each step, clip or live. */
+	interface Controls
+	{
+		void apply();
+	}
+
+	/** A lab's {@link Clip#act}: its sliders applied, then every heart stepped by {@code seconds} of the clip's clock. */
+	static void clip(float seconds, Controls controls, Parallax_Heart... hearts)
+	{
+		controls.apply();
+		clip(seconds, hearts);
+	}
+
+	/**
+	 * A lab's render's step: nothing in a clip ({@link Clip#act} steps it), else its sliders applied and every heart moved
+	 * by the frame's time ({@link #liveDelta}).
+	 */
+	static void live(boolean clip, Controls controls, Parallax_Heart... hearts)
+	{
+		if (clip)
+			return;
+		controls.apply();
+		act(liveDelta(), hearts);
+	}
+
+	/**
+	 * A lab's readout of what its frames cost: {@link #count} each frame; once a second of them, or every frame of a clip
+	 * (stepped, so not timed), it is true, and the line is remade from {@link #frameTime} and {@link #frames} before
+	 * {@link #reset}. {@link #line} is the usual whole: the frame time and the draw calls.
+	 */
+	static final class FrameCost
+	{
+		private float seconds, frames;
+		private String line = "";
+
+		/** This frame counted: true when the readout's cost is due. */
+		boolean count(boolean clip)
+		{
+			frames++;
+			seconds += Gdx.graphics.getDeltaTime();
+			return seconds >= 1 || clip;
+		}
+
+		/** The frames counted since the last {@link #reset}. */
+		float frames()
+		{return frames;}
+
+		/** "frame N ms; ", the mean over the frames counted. */
+		String frameTime()
+		{return "frame " + LabControls.text(1000 * seconds / frames) + " ms; ";}
+
+		void reset()
+		{seconds = frames = 0;}
+
+		/** Counts this frame, and once due remakes the line: "frame N ms; M draw calls", the time left out in a clip. */
+		void count(boolean clip, int drawCalls)
+		{
+			if (!count(clip))
+				return;
+			line = (clip ? "" : frameTime()) + drawCalls + " draw calls";
+			reset();
+		}
+
+		/** The last line {@link #count(boolean, int)} made, "" before the first. */
+		String line()
+		{return line;}
+	}
+
 	/** The whole canvas black, its viewport the whole back buffer. */
 	static void clear()
 	{

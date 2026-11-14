@@ -64,9 +64,7 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 	private Element readout;
 	private boolean clip;
 	private int towerMode;
-	private float frameSeconds, frames;
-	private int drawCalls;
-	private String costLine = "";
+	private final LabKit.FrameCost cost = new LabKit.FrameCost();
 	private final Vector2 place = new Vector2();
 
 	/**
@@ -178,7 +176,7 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 		float units = r * WORLD_WIDTH / 100, side = units > 0 ? WORLD_WIDTH / 2 / units : 0;
 		readout.setInnerText((r > 0 ? "radius " + two(units) + " units; at the view's side the ground drops "
 				+ two(units * (1 - (float) Math.cos(side))) + " units and leans " + two(side * MathUtils.radiansToDegrees) + "°"
-				: "flat") + "; " + costLine);
+				: "flat") + "; " + cost.line());
 	}
 
 	/** {@code value} to two decimals, for the readout. */
@@ -189,29 +187,17 @@ public class PlanetLab extends ApplicationAdapter implements LabKit.Clip
 	@Override
 	public void act(float seconds)
 	{
-		applyControls();
-		LabKit.clip(seconds, heart);
+		LabKit.clip(seconds, this::applyControls, heart);
 		applyControls();
 	}
 
 	@Override
 	public void render()
 	{
-		if (!clip)
-		{
-			applyControls();
-			LabKit.act(LabKit.liveDelta(), heart);
-		}
+		LabKit.live(clip, this::applyControls, heart);
 		LabKit.clear();
 		heart.render();
-		drawCalls = batch.renderCalls;
-		frames++;
-		frameSeconds += Gdx.graphics.getDeltaTime();
-		if (frameSeconds >= 1 || clip)
-		{
-			costLine = (clip ? "" : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ") + drawCalls + " draw calls";
-			frames = frameSeconds = 0;
-		}
+		cost.count(clip, batch.renderCalls);
 	}
 
 	@Override

@@ -44,9 +44,7 @@ public class TowerLab extends ApplicationAdapter implements LabKit.Clip
 	private InputElement radius, shade, speed, around, camera, scroll;
 	private Element readout;
 	private boolean clip;
-	private float frameSeconds, frames;
-	private int drawCalls;
-	private String costLine = "";
+	private final LabKit.FrameCost cost = new LabKit.FrameCost();
 
 	@Override
 	public void create()
@@ -103,7 +101,7 @@ public class TowerLab extends ApplicationAdapter implements LabKit.Clip
 				+ two(tower.getRegionWidth()) + " by " + two(tower.getRegionHeight()) + " units; "
 				+ (turn > 0 ? "a turn every " + two(turn) + " s" : "not turning")
 				+ (c > 1 ? "; the camera " + two(c * units) + " units from the axis" : "; the camera far away")
-				+ "; " + costLine);
+				+ "; " + cost.line());
 	}
 
 	/** {@code value} to two decimals, for the readout. */
@@ -114,29 +112,17 @@ public class TowerLab extends ApplicationAdapter implements LabKit.Clip
 	@Override
 	public void act(float seconds)
 	{
-		applyControls();
-		LabKit.clip(seconds, heart);
+		LabKit.clip(seconds, this::applyControls, heart);
 		applyControls();
 	}
 
 	@Override
 	public void render()
 	{
-		if (!clip)
-		{
-			applyControls();
-			LabKit.act(LabKit.liveDelta(), heart);
-		}
+		LabKit.live(clip, this::applyControls, heart);
 		LabKit.clear();
 		heart.render();
-		drawCalls = batch.renderCalls;
-		frames++;
-		frameSeconds += Gdx.graphics.getDeltaTime();
-		if (frameSeconds >= 1 || clip)
-		{
-			costLine = (clip ? "" : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ") + drawCalls + " draw calls";
-			frames = frameSeconds = 0;
-		}
+		cost.count(clip, batch.renderCalls);
 	}
 
 	@Override

@@ -84,9 +84,7 @@ public class FloorLab extends ApplicationAdapter implements LabKit.Clip
 	private float travel;
 	/** Where the pointer was last frame, in canvas pixels. */
 	private int lastPointer;
-	private float frameSeconds, frames;
-	private int drawCalls;
-	private String costLine = "";
+	private final LabKit.FrameCost cost = new LabKit.FrameCost();
 
 	/** The hook drawing the ground, once a frame (the reader calls it once per tile of the EMPTY layer). */
 	final class Floor implements LayerHook
@@ -284,7 +282,7 @@ public class FloorLab extends ApplicationAdapter implements LabKit.Clip
 		float sTop = LabControls.read(top), sBottom = LabControls.read(bottom);
 		readout.setInnerText(SET_NAMES[shownSet] + ": rows from " + LabControls.text(sBottom) + " (bottom) to " + LabControls.text(sTop) + " (top), depth "
 				+ LabControls.text(sTop > 0 ? sBottom / sTop : 0) + "x the bottom row's at the top; planted in front, back to front: "
-				+ frontSpeeds() + "; " + costLine);
+				+ frontSpeeds() + "; " + cost.line());
 	}
 
 	/**
@@ -371,14 +369,7 @@ public class FloorLab extends ApplicationAdapter implements LabKit.Clip
 		LabKit.clear();
 		floors[shownSet].drawn = false;
 		shown.render();
-		drawCalls = batch.renderCalls;
-		frames++;
-		frameSeconds += Gdx.graphics.getDeltaTime();
-		if (frameSeconds >= 1 || clip)
-		{
-			costLine = (clip ? "" : "frame " + LabControls.text(1000 * frameSeconds / frames) + " ms; ") + drawCalls + " draw calls";
-			frames = frameSeconds = 0;
-		}
+		cost.count(clip, batch.renderCalls);
 	}
 
 	@Override
