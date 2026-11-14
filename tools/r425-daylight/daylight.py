@@ -2,7 +2,7 @@
 behaves in real life [...] colour of the light [...] the moon"). docs/daylight.md says where each number comes from.
 
     python3 tools/r425-daylight/daylight.py           the tables, as text
-    python3 tools/r425-daylight/daylight.py --java    the same, as ShadowLab's arrays
+    python3 tools/r425-daylight/daylight.py --java    the same, as Daylight.java's arrays (the shadow lab's light; daylight_test.py holds them equal)
 
 A clear sky, the sun h degrees over the horizon:
 - the air mass (Kasten and Young 1989), the sun's beam through it (Meinel and Meinel 1976: 1361 W/m2 times

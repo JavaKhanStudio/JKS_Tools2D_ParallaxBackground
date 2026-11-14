@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -98,12 +97,15 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	private ShapeRenderer shapes;
 	private OrthographicCamera flatCamera;
 	private SelectElement page, axis, sizes, units;
-	private InputElement view, yaw, pitch, closer, fov, scroll, across;
-	private Element readout, overlay, labels;
+	private InputElement view, fov, scroll, across;
+	/** The sliders {@link DepthOrbit} turns. */
+	InputElement yaw, pitch, closer;
+	private Element readout;
+	private DepthTags tags;
 	private boolean clip, flat, pictures;
 	private int shownPage = -1;
 	/** The slide: where it is (0 the 2D frame, 1 the 3D view) and where it goes; -1 when the slider holds it. */
-	private float slide = VIEW, goal = -1;
+	float slide = VIEW, goal = -1;
 
 	// Each layer of the page, back to front: how far it is (front distances), where it stands (the axis's), its name.
 	private final List<ParallaxLayer> layers = new ArrayList<>();
@@ -120,8 +122,6 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 	/** Metres a world unit; the side of the page the eye is on (1 its right, -1 its left). */
 	private float metresPerUnit = 1, side = 1;
 	private final Matrix4 toScreen = new Matrix4();
-	private final List<Element> tags = new ArrayList<>();
-	private int tagsUsed;
 	private final LabKit.FrameCost cost = new LabKit.FrameCost();
 
 	@Override
@@ -137,7 +137,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		heart = new Parallax_Heart(flatCamera, batch, WORLD_WIDTH, WORLD_HEIGHT);
 		buildControls();
 		applyControls();
-		Gdx.input.setInputProcessor(new Orbit());
+		Gdx.input.setInputProcessor(new DepthOrbit(this));
 		if (clip)
 			LabKit.exportClip("depthLab", this);
 	}
@@ -171,8 +171,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		controls.appendChild(button);
 		onClick(button, this);
 		readout = LabControls.readout(document, controls, "depth-readout");
-		overlay = document.getElementById("depth-tags");
-		labels = document.getElementById("depth-labels");
+		tags = new DepthTags(document.getElementById("depth-tags"), document.getElementById("depth-labels"));
 	}
 
 	private static native void onClick(Element element, DepthLab lab) /*-{
@@ -343,7 +342,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		if (flat)
 		{
 			heart.render();
-			hideTags();
+			tags.hideRest();
 			return;
 		}
 		eased = ease(slide);
@@ -392,7 +391,7 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		side = eye.x >= cx ? 1 : -1;
 
 		int calls = 0;
-		tagsUsed = 0;
+		tags.begin();
 		studio(e);
 		ground(e, vw, d);
 
@@ -411,8 +410,8 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		}
 		person(e, vw, d);
 		camera(e, vw, vh, d);
-		hideTags();
-		spread(overlay, labels);
+		tags.hideRest();
+		tags.spread();
 		return calls;
 	}
 
@@ -864,6 +863,10 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		tag(x, h * 1.05f, z, "a person · " + size, "depth-person", e, null, 150, "up");
 	}
 
+	/** A tag at the world point (x, y, z), placed by {@link DepthTags#tag} from this frame's eye. */
+	private void tag(float x, float y, float z, String text, String kind, float e, Color accent, int rank, String move)
+	{tags.tag(eye, target, combined, x, y, z, text, kind, e, accent, rank, move);}
+
 	/** Shapes begun in the back buffer's pixels, for {@link #line}. */
 	private void beginLines()
 	{
@@ -923,199 +926,6 @@ public class DepthLab extends ApplicationAdapter implements LabKit.Clip
 		Gdx.gl.glEnable(GL20.GL_BLEND);
 		Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		shapes.begin(type);
-	}
-
-	/**
-	 * A tag over the canvas at the world point (x, y, z), {@code e} its opacity; hidden behind the eye. {@link #spread}
-	 * lays the tags out by {@code rank}, the lowest first, and moves one that would cover another {@code move}: "up",
-	 * "down", or "hide".
-	 */
-	private void tag(float x, float y, float z, String text, String kind, float e, Color accent, int rank, String move)
-	{
-		if (overlay == null || !(e > 0.02f))
-			return;
-		projected.set(x, y, z);
-		// Behind the eye: not shown.
-		Vector3 toPoint = new Vector3(x, y, z).sub(eye), ahead = new Vector3(target).sub(eye);
-		if (toPoint.dot(ahead) <= 0)
-			return;
-		projected.prj(combined);
-		if (Math.abs(projected.x) > 1.2f || Math.abs(projected.y) > 1.2f)
-			return;
-		Element tag;
-		if (tagsUsed < tags.size())
-			tag = tags.get(tagsUsed);
-		else
-		{
-			tag = Document.get().createDivElement();
-			overlay.appendChild(tag);
-			tags.add(tag);
-		}
-		tagsUsed++;
-		tag.setClassName("depth-tag " + kind);
-		tag.setInnerText(text);
-		tag.getStyle().setProperty("left", (projected.x + 1) * 50 + "%");
-		tag.getStyle().setProperty("top", (1 - projected.y) * 50 + "%");
-		tag.getStyle().setProperty("opacity", String.valueOf(Math.min(1, e * 1.4f)));
-		tag.getStyle().setProperty("borderColor", accent == null ? "" : "rgb(" + (int) (accent.r * 255) + "," + (int) (accent.g * 255) + "," + (int) (accent.b * 255) + ")");
-		tag.getStyle().setProperty("display", "");
-		tag.setAttribute("data-rank", String.valueOf(rank));
-		tag.setAttribute("data-move", move);
-	}
-
-	/**
-	 * No tag over another (r449), readable whichever way the page is turned (r458). The tags are taken by rank, the
-	 * front card's first; each stays where {@link #tag} put it unless it covers one already laid or the page's chip, or
-	 * the stage cuts it. Then it takes the nearest free place, its way ("up" or "down") cheaper than the other and
-	 * sideways, within a few tag heights, else it is hidden; a rule's number ("hide") is hidden at once. A leader line
-	 * in its colour runs from what it labels to the tag, every tag but a rule's: the card's, the sky's, the camera's,
-	 * the person's at once, a gap's once moved. One measure of every tag, then numbers only.
-	 */
-	private static native void spread(Element overlay, Element labels) /*-{
-		var GAP = 4, laid = [], tags = [];
-		var svgNs = 'http://www.w3.org/2000/svg';
-		var svg = overlay.querySelector('svg.depth-leaders');
-		if (!svg)
-		{
-			svg = $doc.createElementNS(svgNs, 'svg');
-			svg.setAttribute('class', 'depth-leaders');
-			overlay.insertBefore(svg, overlay.firstChild);
-		}
-		while (svg.firstChild)
-			svg.removeChild(svg.firstChild);
-		var chips = labels.children;
-		for (var c = 0; c < chips.length; c++)
-			laid.push(chips[c].getBoundingClientRect());
-		var kids = overlay.querySelectorAll('.depth-tag');
-		for (var i = 0; i < kids.length; i++)
-		{
-			kids[i].style.marginTop = '';
-			kids[i].style.marginLeft = '';
-			if (kids[i].style.display !== 'none')
-				tags.push(kids[i]);
-		}
-		tags.sort(function (a, b) { return a.getAttribute('data-rank') - b.getAttribute('data-rank'); });
-		var boxes = tags.map(function (t) { return t.getBoundingClientRect(); });
-		var stage = overlay.getBoundingClientRect();
-		// The places a tag may take, nearest first: on an 8 px grid, up (its way) cheaper than sideways, down dearer.
-		var offsets = $wnd.depthTagOffsets;
-		if (!offsets)
-		{
-			offsets = [];
-			for (var x = -240; x <= 240; x += 8)
-				for (var y = -160; y <= 160; y += 8)
-					offsets.push([x, y, Math.sqrt(x * x + (y < 0 ? 0.6 * y * y : 2.2 * y * y))]);
-			offsets.sort(function (a, b) { return a[2] - b[2]; });
-			$wnd.depthTagOffsets = offsets;
-		}
-		function fits(b, dx, dy)
-		{
-			if (b.left + dx < stage.left || b.right + dx > stage.right || b.top + dy < stage.top || b.bottom + dy > stage.bottom)
-				return false;
-			for (var j = 0; j < laid.length; j++)
-			{
-				var o = laid[j];
-				if (b.left + dx < o.right + GAP && o.left < b.right + dx + GAP && b.top + dy < o.bottom + GAP && o.top < b.bottom + dy + GAP)
-					return false;
-			}
-			return true;
-		}
-		for (var i = 0; i < tags.length; i++)
-		{
-			var b = boxes[i], move = tags[i].getAttribute('data-move'), at = null;
-			if (fits(b, 0, 0))
-				at = [0, 0];
-			else if (move !== 'hide')
-				for (var c = 1; c < offsets.length && !at; c++)
-				{
-					var dy = move === 'down' ? -offsets[c][1] : offsets[c][1];
-					if (fits(b, offsets[c][0], dy))
-						at = [offsets[c][0], dy];
-				}
-			if (!at)
-			{
-				tags[i].style.display = 'none';
-				continue;
-			}
-			tags[i].style.marginLeft = at[0] + 'px';
-			tags[i].style.marginTop = at[1] + 'px';
-			var box = { left: b.left + at[0], right: b.right + at[0], top: b.top + at[1], bottom: b.bottom + at[1] };
-			laid.push(box);
-			// The leader: from the point the tag labels to the nearest point of its box.
-			if (move === 'hide' || (move === 'down' && at[0] === 0 && at[1] === 0))
-				continue;
-			var ax = stage.width * parseFloat(tags[i].style.left) / 100, ay = stage.height * parseFloat(tags[i].style.top) / 100;
-			var tx = Math.max(box.left - stage.left, Math.min(box.right - stage.left, ax)), ty = Math.max(box.top - stage.top, Math.min(box.bottom - stage.top, ay));
-			var colour = tags[i].style.borderColor || 'rgba(255, 255, 255, 0.7)', opacity = tags[i].style.opacity;
-			var lead = $doc.createElementNS(svgNs, 'line');
-			lead.setAttribute('x1', ax);
-			lead.setAttribute('y1', ay);
-			lead.setAttribute('x2', tx);
-			lead.setAttribute('y2', ty);
-			lead.setAttribute('stroke', colour);
-			lead.setAttribute('stroke-width', '1.5');
-			lead.setAttribute('opacity', opacity);
-			svg.appendChild(lead);
-			var dot = $doc.createElementNS(svgNs, 'circle');
-			dot.setAttribute('cx', ax);
-			dot.setAttribute('cy', ay);
-			dot.setAttribute('r', '2.5');
-			dot.setAttribute('fill', colour);
-			dot.setAttribute('opacity', opacity);
-			svg.appendChild(dot);
-		}
-	}-*/;
-
-	private void hideTags()
-	{
-		for (int i = tagsUsed; i < tags.size(); i++)
-			tags.get(i).getStyle().setProperty("display", "none");
-	}
-
-	/** Drag: turn round the page; the wheel: closer or farther; space: the slide. */
-	private final class Orbit extends InputAdapter
-	{
-		private int lastX, lastY;
-
-		@Override
-		public boolean touchDown(int screenX, int screenY, int pointer, int button)
-		{
-			lastX = screenX;
-			lastY = screenY;
-			return true;
-		}
-
-		@Override
-		public boolean touchDragged(int screenX, int screenY, int pointer)
-		{
-			float dx = screenX - lastX, dy = screenY - lastY;
-			lastX = screenX;
-			lastY = screenY;
-			if (slide < 1 && goal != 1)
-				goal = 1;
-			set(yaw, LabControls.read(yaw) - dx * 0.25f, -85, 85);
-			set(pitch, LabControls.read(pitch) + dy * 0.2f, 2, 80);
-			return true;
-		}
-
-		@Override
-		public boolean scrolled(float amountX, float amountY)
-		{
-			set(closer, LabControls.read(closer) * (float) Math.pow(1.1, -amountY), 0.3f, 2.5f);
-			return true;
-		}
-
-		@Override
-		public boolean keyDown(int keycode)
-		{
-			if (keycode != com.badlogic.gdx.Input.Keys.SPACE)
-				return false;
-			toggle();
-			return true;
-		}
-
-		private void set(InputElement slider, float value, float min, float max)
-		{slider.setValue(LabControls.text(Math.max(min, Math.min(max, value))));}
 	}
 
 	@Override

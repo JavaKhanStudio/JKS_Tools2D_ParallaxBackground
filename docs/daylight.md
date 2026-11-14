@@ -5,7 +5,7 @@ zenith, can climb back up while it's going down. It should not do so in a linear
 research about it and how it behaves in real life. [...] Color of the light, color when the sun is going down, going
 up, and how it affects the sky and the world. Also do the same for the moon."
 
-This page is that research, and what of it the shadow lab (`core/browser-test/launcher/.../ShadowLab.java`, its `Light`)
+This page is that research, and what of it the shadow lab (`core/browser-test/launcher/.../ShadowLab.java`, its light `Daylight.java`)
 uses. The numbers are the published clear-sky ones, from the sources named at the end; this session had no web access,
 so they are as those sources give them, not re-measured. `tools/r425-daylight/daylight.py` computes the lab's tables
 from the models below, and checks itself against the measured values (its lux at 30 degrees is 50,000, the published
