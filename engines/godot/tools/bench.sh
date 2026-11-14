@@ -17,19 +17,7 @@ GODOT="${GODOT:-godot}"
 LOG="${OUT%.json}.log"
 "$GODOT" --headless --path engines/godot --import >/dev/null 2>&1
 RUN="$GODOT --path \"$ROOT/engines/godot\" --resolution 1280x720 res://tests/bench.tscn -- \"$ROOT\" engines/rounds/bench \"@PART@\" >\"$LOG\" 2>&1"
-# The GPU is shared with the board's other sessions: one run measured 0.08 ms a frame, the next 2 ms. RUNS runs (3),
-# each scene's best kept by tools/readers-health/best-of.py.
-PARTS=()
-for i in $(seq "${RUNS:-3}"); do
-	rm -f "$OUT.$i"
-	if [ "${ATELIER_NO_OFFSCREEN:-0}" = 1 ]; then
-		timeout 300 bash -c "${RUN//@PART@/$OUT.$i}"
-	else
-		WLR_BACKENDS=headless ALSOFT_DRIVERS=null timeout 300 cage -- tools/nested-x.sh 1280x1280 bash -c "${RUN//@PART@/$OUT.$i}" >"${OUT%.json}.cage.log" 2>&1
-	fi
-	[ -s "$OUT.$i" ] || { echo "no bench:"; tail -20 "$LOG"; exit 1; }
-	PARTS+=("$OUT.$i")
-done
-python3 tools/readers-health/best-of.py "$OUT" "${PARTS[@]}" || exit 1
-rm -f "${PARTS[@]}"
-echo "bench: $OUT"
+# RUNS runs (3) in cage, each scene's best kept (tools/bench-runs.sh).
+# shellcheck source=tools/bench-runs.sh
+. tools/bench-runs.sh
+bench_runs "$OUT" "$LOG" "$RUN"
