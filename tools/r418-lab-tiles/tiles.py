@@ -38,7 +38,8 @@ with sync_playwright() as p:
     browser = launch(p, chrome)
     for name, path, ready, cols, rows, *which in LABS:
         page = browser.new_page(viewport={"width": 1580, "height": 710})
-        page.goto(f"{base}/{path}{'&' if '?' in path else '?'}clip=1")
+        # &noaa=1: multisampled, headless Chrome on the NVIDIA GPU drops the sky or a layer (r508).
+        page.goto(f"{base}/{path}{'&' if '?' in path else '?'}clip=1&noaa=1")
         page.wait_for_function(f"window.{ready} === true", timeout=90000)
         page.evaluate(f"window.{ready[:-5]}Act && window.{ready[:-5]}Act(6)")
         page.add_style_tag(content=".lab-labels { display: none; }")  # the panels' titles: the tile names the lab
