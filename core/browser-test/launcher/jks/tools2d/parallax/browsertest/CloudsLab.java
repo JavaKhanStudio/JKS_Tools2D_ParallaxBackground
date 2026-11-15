@@ -301,6 +301,16 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 	public void act(float seconds)
 	{
 		LabKit.clip(seconds, this::applyControls, hearts);
+		// Where the painted clouds' churn starts across, and its period: along() jumps a period when the start wraps, and
+		// a term that is not whole turns over it jumps there. tools/clouds-lab.sh --before-wrap steps a clip to it (r559).
+		int[][] shown = VIEW_PANELS[LabControls.read(view)];
+		int s = shown[0][0];
+		for (int[] panel : shown)
+			if (panel[1] == RELIT)
+				s = panel[0];
+		ParallaxLayer painted = clouds[s][RELIT];
+		readout.setAttribute("data-billow-start", String.valueOf(painted.getEffectStartX()));
+		readout.setAttribute("data-billow-period", String.valueOf(painted.getShaderPeriod()));
 	}
 
 	@Override
