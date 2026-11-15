@@ -4,13 +4,13 @@
 # connected device or, with none, on the atelier-phone emulator booted in cage (tools/offscreen.sh, as
 # tools/android-etc2-check.sh), and pulls into OUT (default build/r523-android): results.txt (the lossless fixture's
 # bytes against its PNG, the page's frame from a PNG atlas page against its WebP twin, PASS/FAIL), page-png.png and
-# page-webp.png. IMAGE (the page's picture) defaults to parallax-ai's assets/fairy/region3-loop.png beside this
+# page-webp.png. IMAGE (the page's picture) defaults to parallax-ai's assets/fairy/region3-loop.webp beside this
 # checkout, else webp/test-data/fairy-crop.png. Needs ANDROID_HOME (default ~/Android/Sdk) and Pillow. Exit 1 on FAIL.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT=$(realpath -m "${1:-build/r523-android}")
-IMAGE=${2:-../JKS_Tools2D_ParallaxAI/assets/fairy/region3-loop.png}
-[ -f "$IMAGE" ] || IMAGE=webp/test-data/fairy-crop.png
+IMAGE=${2:-../JKS_Tools2D_ParallaxAI/assets/fairy/region3-loop.webp}
+[ -f "$IMAGE" ] || { echo "$IMAGE not found: running on webp/test-data/fairy-crop.png"; IMAGE=webp/test-data/fairy-crop.png; }
 export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
 ADB=$ANDROID_HOME/platform-tools/adb
 PKG=jks.tools2d.parallax.webpcheck

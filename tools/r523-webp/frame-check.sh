@@ -3,12 +3,12 @@
 # (default build/r523): png/ and webp/ (make_pages.py: one page, one IMAGE layer of IMAGE, its atlas page a PNG or its
 # lossless WebP twin), the frames of webp/tests WebpFrameCheck (both ways a page loads, two moments of a scroll),
 # results.txt (pixels differing a frame pair, WEBP PASS/FAIL) and r523-png-vs-webp.png (PNG frame | WebP frame |
-# difference x16). IMAGE defaults to parallax-ai's assets/fairy/region3-loop.png beside this checkout, else the test
+# difference x16). IMAGE defaults to parallax-ai's assets/fairy/region3-loop.webp beside this checkout, else the test
 # fixture webp/test-data/fairy-crop.png. Runs in cage's headless display (tools/nested-x.sh). Exit 1 on FAIL.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-IMAGE=${1:-../JKS_Tools2D_ParallaxAI/assets/fairy/region3-loop.png}
-[ -f "$IMAGE" ] || IMAGE=webp/test-data/fairy-crop.png
+IMAGE=${1:-../JKS_Tools2D_ParallaxAI/assets/fairy/region3-loop.webp}
+[ -f "$IMAGE" ] || { echo "$IMAGE not found: running on webp/test-data/fairy-crop.png"; IMAGE=webp/test-data/fairy-crop.png; }
 OUT=$(realpath -m "${2:-build/r523}")
 rm -rf "$OUT/png" "$OUT/webp"
 mkdir -p "$OUT/png" "$OUT/webp"
