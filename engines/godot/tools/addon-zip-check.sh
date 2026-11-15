@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 ROOT=$(pwd)
 GODOT="${GODOT:-godot}"
-ZIP=$(engines/godot/tools/addon-zip.sh)
+ZIP="${ZIP:-$(engines/godot/tools/addon-zip.sh)}"   # ZIP=<a downloaded release zip> checks that one
 P=$(mktemp -d)
 trap 'rm -rf "$P"' EXIT
 
