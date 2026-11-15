@@ -15,7 +15,7 @@ In the module that uses the library (usually `core/build.gradle` in a libGDX pro
 repositories { mavenCentral() }   // or in settings.gradle, wherever the project declares repositories
 
 dependencies {
-    api "io.github.javakhanstudio:parallax-background:2.4.0"
+    api "io.github.javakhanstudio:parallax-background:2.5.0"
 }
 ```
 
@@ -94,7 +94,7 @@ These compile unchanged but can change what the game shows.
 
 1. `./gradlew clean build`, then check the old jar is really gone:
    `./gradlew :core:dependencies --configuration runtimeClasspath | grep -iE 'parallax|kryo|gdx:'` shows
-   `parallax-background:2.4.0`, `kryo:5.6.2` and a single `gdx` version.
+   `parallax-background:2.5.0`, `kryo:5.6.2` and a single `gdx` version.
 2. Run the game: every background shows, scrolls, fills the screen after resizing the window, and page changes
    and tints look right.
 3. Android: build a release APK if the game shrinks code (R8/ProGuard). Kryo builds the page serializers by

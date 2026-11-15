@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    implementation "io.github.javakhanstudio:parallax-background:2.4.0"
+    implementation "io.github.javakhanstudio:parallax-background:2.5.0"
 }
 ```
 
@@ -38,7 +38,7 @@ Gradle Kotlin DSL (`build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("io.github.javakhanstudio:parallax-background:2.4.0")
+    implementation("io.github.javakhanstudio:parallax-background:2.5.0")
 }
 ```
 
@@ -48,7 +48,7 @@ Maven (`pom.xml`):
 <dependency>
     <groupId>io.github.javakhanstudio</groupId>
     <artifactId>parallax-background</artifactId>
-    <version>2.4.0</version>
+    <version>2.5.0</version>
 </dependency>
 ```
 
@@ -442,9 +442,7 @@ of its periods so the ring closes without a step; no glint and no dissolve's pat
 The reader's own folder, its checks and demo: [engines/jme/README.md](engines/jme/README.md).
 
 jME is a Java engine, so it reads pages with this library itself, `.plax` included. The jME reader is on Maven Central
-as `io.github.javakhanstudio:parallax-background-jme`, released with the library under the same version from 2.5.0 on
-(before 2.5.0 is out, as `2.5.0-SNAPSHOT` in the snapshot repository, see
-[RELEASING.md](RELEASING.md#test-versions-snapshots)):
+as `io.github.javakhanstudio:parallax-background-jme`, released with the library under the same version from 2.5.0 on:
 
 ```groovy
 dependencies {
@@ -506,7 +504,7 @@ and so are browsers, where libGDX cannot read the gzipped pages. ETC2 is lossy: 
 art shifts its colours slightly. The Godot and jME readers load the PNG atlas; Godot compresses it on import itself.
 
 **WebP atlas pages.** libGDX reads images through stb_image, which has no WebP; `parallax-background-webp` adds it
-(r523). Add `implementation "io.github.javakhanstudio:parallax-background-webp:<version>"` beside the library and
+(r523). Add `implementation "io.github.javakhanstudio:parallax-background-webp:2.5.0"` beside the library and
 call `ParallaxWebp.install()` once, before loading a page: every atlas page named `.webp` then loads, from a folder
 (`heart.relativePath`) or through the AssetManager (`ParallaxWebp.register(manager)` does the same for a game's own
 `.webp` textures). On desktop it decodes in pure Java with TwelveMonkeys imageio-webp (BSD-3, no natives); on Android
