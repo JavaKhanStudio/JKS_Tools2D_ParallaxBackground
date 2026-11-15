@@ -15,8 +15,8 @@ import com.google.gwt.dom.client.Document;
  * {@code ?lab=planet}, the planet lab (r330, {@link PlanetLab}), the same; with {@code ?lab=lurker}, the lurker lab
  * (r369, {@link LurkerLab}), the same; with {@code ?lab=swell}, the SWELL edges lab (r434, {@link SwellLab}), three
  * panels in a row. anim-lab.html, with an {@code #anim-lab}: the animation lab (r407,
- * {@link AnimLab}), four panels. clouds-lab.html, with a {@code #clouds-lab}: the clouds lab (r451, {@link CloudsLab}), four
- * panels. hills-lab.html, with a {@code #hills-lab}: the hills lab (r384, {@link HillsLab}), two
+ * {@link AnimLab}), four panels. clouds-lab.html, with a {@code #clouds-lab}: the clouds lab (r451, {@link CloudsLab}), six
+ * panels, three a row. hills-lab.html, with a {@code #hills-lab}: the hills lab (r384, {@link HillsLab}), two
  * panels side by side. pines-lab.html, with a {@code #pines-lab}: the pines lab (r421, {@link PinesLab}), two panels.
  * shadow-lab.html, with a {@code #shadow-lab}: the shadow lab (r425, {@link ShadowLab}), two panels
  * side by side, with a stencil buffer. depth-lab.html, with a {@code #depth-lab}: the depth lab (r444, {@link DepthLab}),
@@ -52,7 +52,7 @@ public class BrowserTestLauncher extends GwtApplication
 			: has("pines-lab") ? new GwtApplicationConfiguration(2 * PinesLab.FRAME_WIDTH + 4, PinesLab.FRAME_HEIGHT)
 			: has("shadow-lab") ? stencil(new GwtApplicationConfiguration(2 * ShadowLab.FRAME_WIDTH + 4, ShadowLab.FRAME_HEIGHT))
 			: has("anim-lab") ? new GwtApplicationConfiguration(2 * AnimLab.PANEL_WIDTH + 4, 2 * AnimLab.PANEL_HEIGHT + 4)
-			: has("clouds-lab") ? new GwtApplicationConfiguration(2 * CloudsLab.PANEL_WIDTH + 4, 2 * CloudsLab.PANEL_HEIGHT + 4)
+			: has("clouds-lab") ? new GwtApplicationConfiguration(CloudsLab.COLUMNS * (CloudsLab.PANEL_WIDTH + 4) - 4, 2 * CloudsLab.PANEL_HEIGHT + 4)
 			: has("transfert-lab") ? new GwtApplicationConfiguration(TransfertLab.COLUMNS * (FogLab.FRAME_WIDTH + 4) - 4, 2 * FogLab.PANEL_HEIGHT + 4)
 			: has("fog-lab") || has("haze-lab") ? new GwtApplicationConfiguration(2 * FogLab.FRAME_WIDTH + 4, 2 * FogLab.PANEL_HEIGHT + 4) : new GwtApplicationConfiguration(320, 24);}
 

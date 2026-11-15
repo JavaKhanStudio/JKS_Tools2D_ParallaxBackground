@@ -3,19 +3,19 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Clouds lab (r451): BILLOW</title>
+	<title>Clouds lab (r556): PUFFS, WISPS and the painted clouds</title>
 	<link rel="stylesheet" href="lab.css">
-	<!-- CloudsLab (r451): r375's BILLOW as lab GLSL, by the real reader: round1 calm's clouds under BILLOW beside them still. -->
+	<!-- CloudsLab (r451, r556): candidate cloud shaders as lab GLSL, by the real reader, in three settings, day and night. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
 	<header class="lab-bar">
-		<h1>Clouds lab <span class="lab-question">how should the clouds churn?</span></h1>
+		<h1>Clouds lab <span class="lab-question">which clouds, for day and for night?</span></h1>
 		<a class="lab-home" href="index.html">&larr; all labs</a>
 		<span id="clouds-copy-state" class="lab-copy-state"></span>
 		<button id="clouds-copy" class="lab-copy">Copy settings</button>
 	</header>
-	<div id="clouds-lab" class="lab-stage">
+	<div id="clouds-lab" class="lab-stage lab-three">
 		<div id="embed-browsertests"></div>
 		<div id="clouds-labels" class="lab-labels"></div>
 	</div>
@@ -23,16 +23,19 @@
 	<textarea id="clouds-copy-json" class="lab-copy-json" hidden readonly></textarea>
 	<details class="lab-about">
 		<summary>What this lab shows</summary>
-		<p id="clouds-about">The cloud animation r375 proposed, <b>BILLOW</b>, written as it would ship (GLSL ES 1.0, sines
-	only, in world units across the layer, so it runs on across its tiles), drawn by the real reader compiled to
-	JavaScript. It is not in the library yet: tune it here, then it is written three times (libGDX, Godot, jME).
-	The clouds are round1's calm page, its clouds on a layer of their own (as a generated page will have them, r409).
-	<b>A</b> churns them under BILLOW, <b>B</b> leaves them still, in the page; <b>C</b> and <b>D</b> the same with the
-	mountains in front left out. BILLOW pushes each pixel of the clouds by a slow warp: amplitude is how far, wavelength
-	how wide its swirls, speed how fast they turn. Their drift (the page's at rest speed) can be slowed to judge the
-	churn alone. The view picks all four panels or two side by side; a click on a panel zooms it over the stage. Zoom
-	enlarges the frame (the panels stay sharp: it is drawn at that size). Amplitudes and wavelengths are in world units,
-	the readout gives them in the image's pixels. Copy settings gives every slider as JSON for the card.</p>
+		<p id="clouds-about">Candidate cloud shaders (r556), written as they would ship (GLSL ES 1.0) and drawn by the
+	real reader compiled to JavaScript, in the three settings Ficelle needs first: a <b>Mediterranean day</b>, a
+	<b>night in a cold forest</b> and a <b>medieval fantasy</b> evening. None is in the library yet.
+	<b>PUFFS</b> (cumulus, round puffs heaped on a flat foot) and <b>WISPS</b> (streaks) are two shaders: the clouds are
+	made in the shader, nothing is painted, so a page needs no cloud art; they are lit from where the sun or moon stands in the picture, in two
+	colours a page would store (the lit and the shaded), which is all that changes from day to night.
+	<b>Painted, churned and relit</b> is calm's painted clouds under BILLOW (a slow warp of their pixels), their colours
+	replaced by the same two. <b>Painted, still</b> is what a page does today: the painting under the page's tint.
+	The view picks PUFFS over WISPS in each setting, or one setting under every kind (PUFFS again in 3 flat bands, the
+	toon way); a click on a panel zooms it over the
+	stage. The sliders of PUFFS and WISPS scale each setting's own numbers, so one move shows in every setting; light
+	turns the sun or moon round the sky, and the clouds' lit side follows. Copy settings gives every slider as JSON for
+	the card.</p>
 	</details>
 	<script src="lab.js"></script>
 	<script>
