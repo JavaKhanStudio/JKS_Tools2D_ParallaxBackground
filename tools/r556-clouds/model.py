@@ -1,9 +1,10 @@
-"""r556: the clouds lab's PUFFS and WISPS shaders modelled in numpy, to tune a formula without a GWT build per try.
+"""r556: the clouds lab's PUFFS, WISPS and LOBES shaders modelled in numpy, to tune a formula without a GWT build per try.
 
     python3 tools/r556-clouds/model.py OUT.png
 
-Draws the three settings (a Mediterranean day, a cold forest night, a medieval fantasy evening), PUFFS over WISPS, as
-CloudsLab.PUFFS_FRAGMENT and WISPS_FRAGMENT do: the same hash, lattice, union, octaves, cost and light, in float32, over
+Draws the three settings (a Mediterranean day, a cold forest night, a medieval fantasy evening), LOBES over WISPS as
+cumulus (WISPS under other numbers) over PUFFS over WISPS, as CloudsLab.LOBES_FRAGMENT, PUFFS_FRAGMENT and
+WISPS_FRAGMENT do: the same hash, lattice, lobes, union, octaves, cost and light, in float32, over
 the sky's gradient alone (no page). The numbers are CloudsLab's (SKY_TOP, SKY_LOW, LIT, SHADE, SUN_ANGLE, STYLES):
 change the shader there, change it here. A picture to read, not a test: the shader in the lab is the one judged.
 The hash is a permutation polynomial on whole numbers: the sine hash this began with drew other clouds in float64 than
@@ -23,11 +24,14 @@ SKY_LOW = [(0.74, 0.88, 0.97), (0.09, 0.15, 0.27), (0.99, 0.74, 0.50)]
 LIT = [(1, 1, 1), (0.60, 0.68, 0.84), (1, 0.88, 0.66)]
 SHADE = [(0.70, 0.80, 0.93), (0.05, 0.08, 0.16), (0.62, 0.42, 0.56)]
 SUN_ANGLE = [118, 62, 35]
-# coverage, size, stretch, softness, base, flat, rim, opacity, churn
+# coverage, size, stretch, softness, base, flat, rim, opacity, churn: PUFFS, WISPS, LOBES, WISPS as cumulus
 STYLES = [
-    [(0.40, 3.4, 1.3, 0.035, 0.24, 5, 0.3, 1, 1), (0.52, 2.2, 6, 0.30, 0.45, 0.6, 0.2, 0.75, 0.04)],
-    [(0.44, 3.6, 1.5, 0.08, 0.24, 4, 0.9, 0.9, 1), (0.60, 2, 7, 0.35, 0.45, 0.5, 0.9, 0.7, 0.03)],
-    [(0.48, 4.2, 1.2, 0.03, 0.22, 6, 0.6, 1, 1), (0.56, 2.4, 6, 0.30, 0.45, 0.6, 0.6, 0.8, 0.04)],
+    [(0.40, 3.4, 1.3, 0.035, 0.24, 5, 0.3, 1, 1), (0.52, 2.2, 6, 0.30, 0.45, 0.6, 0.2, 0.75, 0.04),
+     (0.70, 2.5, 2.8, 0.012, 0.42, 0, 0.3, 1, 1), (0.62, 3.6, 1.7, 0.10, 0.34, 7, 0.2, 1, 0.04)],
+    [(0.44, 3.6, 1.5, 0.08, 0.24, 4, 0.9, 0.9, 1), (0.60, 2, 7, 0.35, 0.45, 0.5, 0.9, 0.7, 0.03),
+     (0.70, 2.5, 3.0, 0.02, 0.46, 0, 0.9, 0.92, 1), (0.62, 3.6, 1.7, 0.10, 0.34, 7, 0.9, 1, 0.04)],
+    [(0.48, 4.2, 1.2, 0.03, 0.22, 6, 0.6, 1, 1), (0.56, 2.4, 6, 0.30, 0.45, 0.6, 0.6, 0.8, 0.04),
+     (0.75, 2.8, 2.8, 0.012, 0.48, 0, 0.6, 1, 1), (0.62, 3.6, 1.7, 0.10, 0.34, 7, 0.6, 1, 0.04)],
 ]
 f32 = np.float32
 
@@ -72,7 +76,7 @@ def field(px, py, t, cells):
 
 
 def clouds(setting, style=1, t=3.0, scroll=0.0, steps=0):
-    """WISPS."""
+    """WISPS (style 1), or WISPS as cumulus (style 3): the same shader under other numbers."""
     coverage, size, stretch, soft, base, flat, rim, opacity, _ = STYLES[setting][style]
     ys, xs = np.mgrid[0:H, 0:W].astype(f32)
     wx, wy = (xs + 0.5) / W * WORLD_W, (H - ys - 0.5) / H * WORLD_H
@@ -178,10 +182,77 @@ def puffs(setting, t=3.0, steps=0, coverage=None):
     return out * (1 - a) + color * a
 
 
+def lobes_field(qx, qy, cells, slot, t, coverage, sx, sy, soft):
+    """Each slot's cloud, seven round lobes painted back to front on a flat foot: d (inside > 0) and how lit."""
+    first = np.floor(qx / slot)
+    d = np.full(qx.shape, -9.0, f32)
+    lit = np.zeros(qx.shape, f32)
+    for o in (-1, 0, 1):
+        c = first + o
+        hx = np.mod(c, cells)
+        zero = 0 * hx
+        keep = hash1(hx, 7 + zero, 5) <= coverage
+        scale = 0.55 + 0.75 * hash1(hx, zero, 3)
+        reach = min(0.5 * slot, 2.6) * (0.75 + 0.25 * hash1(hx, zero, 2)) * scale
+        x, y = qx - (c + 0.35 + 0.3 * hash1(hx, zero, 1)) * slot, qy - 1.1 * (hash1(hx, zero, 4) - 0.5)
+        foot = 0.14 * scale
+        dc = foot - np.hypot(x - np.clip(x, -reach, reach), y - foot)
+        lc = np.full(qx.shape, 0.2, f32)
+        belly = 0.55 + 0.45 * smoothstep(0.0, 0.5 * scale, y)
+        for k in range(7):
+            u = np.floor(0.5 * k + 0.5) * (1 - 2 * (k % 2)) / 3.0
+            a, b = hash1(hx, k + zero, 6), hash1(hx, k + zero, 7)
+            r = scale * (1 - 0.6 * abs(u) ** 1.5) * (0.55 + 0.45 * a) * (1 + 0.1 * np.sin(TAU * (0.07 * t + b)))
+            fx = (x - (u * (reach - 0.6 * r) + 0.1 * reach * (b - 0.5) + 0.05 * np.sin(TAU * (0.05 * t + a)))) / r
+            fy = (y - r * (0.35 + 0.4 * b)) / r
+            dk = np.minimum(r * (1 - np.hypot(fx, fy)), y)
+            ball = np.sqrt(np.maximum(0, 1 - fx * fx - fy * fy))
+            lk = (0.48 + 0.32 * (fx * sx + fy * sy) + 0.1 * ball + 0.08 * fy + 0.2 * (y / scale - 0.6)) * belly
+            w = smoothstep(0, soft, dk)
+            lc = lc * (1 - w) + lk * w
+            dc = np.maximum(dc, dk)
+        dc = np.where(keep, dc, -9.0)
+        w = smoothstep(0, soft, dc)
+        lit = lit * (1 - w) + lc * w
+        d = np.maximum(d, dc)
+    return d, lit
+
+
+def lobes(setting, t=3.0, steps=0):
+    """LOBES."""
+    cov, size, stretch, soft, base, _flat, rim, opacity, _ = STYLES[setting][2]
+    ys, xs = np.mgrid[0:H, 0:W].astype(f32)
+    wx, wy = (xs + 0.5) / W * WORLD_W, (H - ys - 0.5) / H * WORLD_H
+    lx, ly = np.mod(wx, SIZE[0]), wy - FOOT
+    inside = (ly >= 0) & (ly <= SIZE[1])
+    cells = max(1, round(SIZE[0] / (size * stretch)))
+    slot = SIZE[0] / cells / size
+    angle = np.radians(SUN_ANGLE[setting])
+    sun = (WORLD_W / 2 + 16 * np.cos(angle), 12 + 8.5 * np.sin(angle))
+    dx, dy = sun[0] - wx, sun[1] - wy
+    dist = np.maximum(np.hypot(dx, dy), 1e-4)
+    soft = max(soft, 0.004)
+    d, lit = lobes_field(lx / size, (ly - base * SIZE[1]) / size, cells, slot, t, cov, dx / dist, dy / dist, soft)
+    lit = np.clip(lit, 0, 1)
+    if steps:
+        lit = np.floor(lit * steps + 0.5) / steps
+    sky_t = (wy / WORLD_H)[..., None]
+    sky = np.array(SKY_LOW[setting], f32) * (1 - sky_t) + np.array(SKY_TOP[setting], f32) * sky_t
+    color = np.array(SHADE[setting], f32) * (1 - lit[..., None]) + np.array(LIT[setting], f32) * lit[..., None]
+    near = 1 - smoothstep(0, 0.55, np.hypot(dx / WORLD_H, dy / WORLD_H))
+    k = (rim * (1 - smoothstep(0, 0.06, d)) * near)[..., None]
+    color = color * (1 - k) + np.minimum(1, 1.15 * np.array(LIT[setting], f32)) * k
+    a = (smoothstep(0, soft, d) * opacity * inside)[..., None]
+    disc = np.clip((1.5 - np.hypot(wx - sun[0], wy - sun[1])) * 8, 0, 1)[..., None]
+    out = sky * (1 - disc) + np.array((1, 0.97, 0.85), f32) * disc
+    return out * (1 - a) + color * a
+
+
 def sheet(steps=0):
-    """PUFFS over WISPS, in the three settings."""
-    return np.concatenate([np.concatenate([puffs(i, steps=steps) for i in range(3)], axis=1),
-                           np.concatenate([clouds(i, 1) for i in range(3)], axis=1)], axis=0)
+    """LOBES, WISPS as cumulus, PUFFS and WISPS, in the three settings."""
+    rows = [[lobes(i, steps=steps) for i in range(3)], [clouds(i, 3) for i in range(3)],
+            [puffs(i, steps=steps) for i in range(3)], [clouds(i, 1) for i in range(3)]]
+    return np.concatenate([np.concatenate(row, axis=1) for row in rows], axis=0)
 
 
 if __name__ == "__main__":

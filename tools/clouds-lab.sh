@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The clouds lab (r451, r556): candidate cloud shaders as lab GLSL, drawn by the real reader compiled with GWT, in
-# WebGL, in three settings (a Mediterranean day, a cold forest night, a medieval fantasy evening): PUFFS and WISPS made
-# in the shader, calm's painted clouds churned (BILLOW) and relit, and the painting still. Sliders: zoom, the camera's
+# WebGL, in three settings (a Mediterranean day, a cold forest night, a medieval fantasy evening): WISPS, LOBES and PUFFS
+# made in the shader, OneNight's and calm's painted clouds churned (BILLOW) and relit, and the painting still. Sliders: zoom, the camera's
 # scroll, the clouds' drift, the made clouds' numbers and BILLOW's amplitude; the view on the first panel's title.
 #   tools/clouds-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/clouds-lab.sh --shot F.png    one still, headless (6 s in)
