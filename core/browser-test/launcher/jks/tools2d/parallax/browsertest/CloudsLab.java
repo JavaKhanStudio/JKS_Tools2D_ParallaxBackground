@@ -115,7 +115,7 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 	 */
 	static final float[] ONENIGHT_PAINT = { 0.05f, 0.55f, 0.75f, 1 }, BANK_PAINT = { 0, 1, 0, 0 };
 	/** The views the choice picks: CUMULUS in each setting, a setting under CUMULUS's three looks, the earlier rounds. Each panel: setting, kind. */
-	static final String[] VIEWS = { "three settings", SETTINGS[0], SETTINGS[1], SETTINGS[2], "earlier rounds" };
+	static final String[] VIEWS = { "CUMULUS", SETTINGS[0], SETTINGS[1], SETTINGS[2], "earlier rounds" };
 	static final int[][][] VIEW_PANELS = { { { 0, CUMULUS }, { 1, CUMULUS }, { 2, CUMULUS } }, { { 0, CUMULUS }, { 0, CUT }, { 0, SOFT } },
 			{ { 1, CUMULUS }, { 1, CUT }, { 1, SOFT } }, { { 2, CUMULUS }, { 2, CUT }, { 2, SOFT } },
 			{ { 0, WISPS }, { 1, WISPS }, { 2, WISPS }, { 2, RELIT }, { 2, RELIT_CUMULUS }, { 2, STILL } } };
@@ -282,7 +282,7 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			chip.appendChild(labels[i]);
 			labelGrid.appendChild(chip);
 		}
-		view = LabControls.stageChoice(document, "clouds-labels", "view", "view (CUMULUS in each setting, one setting under CUMULUS's three looks, or the earlier rounds: WISPS, the painted clouds relit, the painting today)", VIEWS, 0);
+		view = LabControls.stageChoice(document, "clouds-labels", "view", "view (CUMULUS in the three settings, one setting under CUMULUS's three looks, or the earlier rounds: WISPS, the painted clouds relit, the painting today)", VIEWS, 0);
 		Element controls = document.getElementById("clouds-controls");
 		zoom = LabControls.slider(document, controls, "zoom", "zoom (x the panel's view)", 1, 4, 0.25f, 1);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (world units/s)", 0, 120, 5, 20);
@@ -361,7 +361,8 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 		for (int k = 0; k < labels.length; k++)
 		{
 			boolean titled = k < shown.length;
-			labels[k].setInnerText(titled ? (char) ('A' + k) + ": " + (v == 0 || v > SETTINGS.length ? SETTINGS[shown[k][0]] + ", " : "") + KINDS[shown[k][1]] : "");
+			// The first view's name is its kind, each setting's its setting: a title says the rest, short enough for a narrow panel.
+			labels[k].setInnerText(!titled ? "" : (char) ('A' + k) + ": " + (v == 0 ? SETTINGS[shown[k][0]] : v > SETTINGS.length ? SETTINGS[shown[k][0]] + ", " + KINDS[shown[k][1]] : KINDS[shown[k][1]]));
 			// A chip over no panel is hidden, not a dark dash; it keeps its cell in the grid.
 			labels[k].getParentElement().getStyle().setProperty("visibility", titled ? "visible" : "hidden");
 		}

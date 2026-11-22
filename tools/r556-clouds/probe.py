@@ -15,10 +15,11 @@ import re
 import shutil
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # tools/: browser.py
+from browser import launch
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 LAB = os.path.join(HERE, "../../core/browser-test/launcher/jks/tools2d/parallax/browsertest/CloudsLab.java")
-sys.path.insert(0, os.path.join(HERE, ".."))
-from browser import launch  # noqa: E402
 
 WORLD_W = 40.0
 SETTINGS = [
