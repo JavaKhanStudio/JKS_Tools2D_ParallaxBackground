@@ -3,14 +3,14 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Clouds lab (r556): WISPS, LOBES and the painted clouds</title>
+	<title>Clouds lab (r556): CUMULUS, a cloud shader for day and night</title>
 	<link rel="stylesheet" href="lab.css">
-	<!-- CloudsLab (r451, r556): candidate cloud shaders as lab GLSL, by the real reader, in three settings, day and night. -->
+	<!-- CloudsLab (r451, r556): CUMULUS, a cloud shader as lab GLSL, by the real reader, in three settings, day and night. -->
 	<script type="text/javascript" src="browsertests/browsertests.nocache.js"></script>
 </head>
 <body class="lab">
 	<header class="lab-bar">
-		<h1>Clouds lab <span class="lab-question">which clouds, for day and for night?</span></h1>
+		<h1>Clouds lab <span class="lab-question">do these clouds hold, by day and by night?</span></h1>
 		<a class="lab-home" href="index.html">&larr; all labs</a>
 		<span id="clouds-copy-state" class="lab-copy-state"></span>
 		<button id="clouds-copy" class="lab-copy">Copy settings</button>
@@ -23,21 +23,20 @@
 	<textarea id="clouds-copy-json" class="lab-copy-json" hidden readonly></textarea>
 	<details class="lab-about">
 		<summary>What this lab shows</summary>
-		<p id="clouds-about">Candidate cloud shaders (r556), written as they would ship (GLSL ES 1.0) and drawn by the
-	real reader compiled to JavaScript, in the three settings Ficelle needs first: a <b>Mediterranean day</b>, a
-	<b>night in a cold forest</b> and a <b>medieval fantasy</b> evening. None is in the library yet.
-	<b>WISPS</b> (streaks, the one picked), <b>LOBES</b> (cut-paper cumulus: round lobes heaped on a flat foot, each
-	keeping its outline as a painter draws one) and <b>PUFFS</b> (soft cumulus, set aside) are made in the shader,
-	nothing is painted, so a page needs no cloud art; they are lit from where the sun or moon stands in the picture, in
-	two colours a page would store (the lit and the shaded), which is all that changes from day to night.
-	<b>WISPS as cumulus</b> is WISPS under other numbers (short, heaped on a flat base): the same shader.
-	<b>Painted, relit</b> is a page's painted clouds under BILLOW (a slow warp of their pixels), their colours replaced
-	by the same two: OneNight's cumulus, and calm's bank. <b>Painted, still</b> is what a page does today: the painting
-	under the page's tint.
-	The view picks LOBES over the painted cumulus in each setting, one setting under every kind, WISPS both ways, or
-	PUFFS; a click on a panel zooms it over the
-	stage. The sliders of the made clouds scale each setting's own numbers, so one move shows in every setting; light
-	turns the sun or moon round the sky, and the clouds' lit side follows; toon steps cuts the shade in flat bands.
+		<p id="clouds-about"><b>CUMULUS</b> (r556, round 3) is a cloud shader written as it would ship (GLSL ES 1.0)
+	and drawn by the real reader compiled to JavaScript. It is not in the library yet. Nothing is painted: a page
+	needs no cloud art, the clouds tile, and they are lit from where the sun or moon stands in the picture, between
+	two colours a page would store (the lit and the shaded), which is all that changes from day to night. Each panel
+	is a whole sky of three layers of that one shader (a far bank on the horizon, a middle, the near clouds), each at
+	its own size, speed and haze, in a view as tall as it is wide, as a phone held upright sees a page: a
+	<b>Mediterranean day</b>, a <b>night in a cold forest</b>, a <b>medieval fantasy</b> evening, its sun low so the
+	clouds' bellies are the lit side.
+	The view puts one setting under the shader's three looks, which are numbers of it: <b>CUMULUS</b> (painted: a
+	shade in three soft tones), <b>cut in flat tones</b> (a drawn look) and <b>soft</b> (a frayed, softer edge).
+	<b>Earlier rounds</b> keeps what rounds 1 and 2 showed: WISPS, a page's painted clouds churned and relit, and the
+	painting still under the page's tint, which is what a page does today.
+	A click on a panel zooms it over the stage. The CUMULUS sliders scale each layer's own numbers, so one move shows
+	in every setting; light turns the sun or moon round the sky, and the clouds' lit side follows.
 	Copy settings gives every slider as JSON for the card.</p>
 	</details>
 	<script src="lab.js"></script>

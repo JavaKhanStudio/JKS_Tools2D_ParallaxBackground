@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# r451: does the clouds lab's BILLOW jump? Two clips of its view 'medieval fantasy' (r556), one with BILLOW's amplitude 0,
+# r451: does the clouds lab's BILLOW jump? Two clips of its view 'earlier rounds' (r556), one with BILLOW's amplitude 0,
 # through tools/r419-swell-loop/jumps.py on panel D (the painted clouds, churned and relit): BILLOW's own change is even
 # from frame to frame, a term that is not a whole number of turns over the layer's period (FOG's, 8 wavelengths across)
 # jumps each time along() wraps there (MUTATE=1: the 2 turns a wavelength of dy's first wave made 2.1, a 0.8 turn jump).
@@ -20,6 +20,6 @@ if [ "${MUTATE:-0}" = 1 ]; then
 	sed -i 's/sin(TAU \* (2.0 \* p.x + p.y - t + 0.6))/sin(TAU * (2.1 * p.x + p.y - t + 0.6))/' "$LAB"
 	grep -q '2.1 \* p.x + p.y' "$LAB" || { echo "the mutant no longer applies: update billow-loop.sh" >&2; exit 2; }
 fi
-tools/clouds-lab.sh --slider view=3 --slider cameraScroll=0 --before-wrap 3 --clip "$OUT/billow.mp4" || exit 2
-tools/clouds-lab.sh --no-build --slider view=3 --slider cameraScroll=0 --slider billowAmplitude=0 --before-wrap 3 --clip "$OUT/flat.mp4" || exit 2
+tools/clouds-lab.sh --slider view=4 --slider cameraScroll=0 --before-wrap 3 --clip "$OUT/billow.mp4" || exit 2
+tools/clouds-lab.sh --no-build --slider view=4 --slider cameraScroll=0 --slider billowAmplitude=0 --before-wrap 3 --clip "$OUT/flat.mp4" || exit 2
 python3 tools/r419-swell-loop/jumps.py "$OUT/billow.mp4" "$OUT/flat.mp4" --top 306 --bottom 430 --left 12 --right 515 --ratio 2.0

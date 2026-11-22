@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# The clouds lab (r451, r556): candidate cloud shaders as lab GLSL, drawn by the real reader compiled with GWT, in
-# WebGL, in three settings (a Mediterranean day, a cold forest night, a medieval fantasy evening): WISPS, LOBES and PUFFS
-# made in the shader, OneNight's and calm's painted clouds churned (BILLOW) and relit, and the painting still. Sliders: zoom, the camera's
-# scroll, the clouds' drift, the made clouds' numbers and BILLOW's amplitude; the view on the first panel's title.
+# The clouds lab (r451, r556): CUMULUS, a cloud shader as lab GLSL, drawn by the real reader compiled with GWT, in WebGL,
+# as a whole sky of three layers in three settings (a Mediterranean day, a cold forest night, a medieval fantasy evening),
+# under its three looks; and the earlier rounds: WISPS, calm's and OneNight's painted clouds churned (BILLOW) and relit,
+# the painting still. Sliders: zoom, the camera's scroll, the clouds' drift, the light, CUMULUS's numbers and BILLOW's
+# amplitude; the view on the first panel's title.
 #   tools/clouds-lab.sh                 the lab: a Chrome window, served until it closes
 #   tools/clouds-lab.sh --shot F.png    one still, headless (6 s in)
 #   tools/clouds-lab.sh --views DIR     one still per view, headless: DIR/view0.png ...
@@ -95,8 +96,8 @@ with Lab(url, chrome, "clouds") as lab:
     elif mode == "copy":
         lab.set("billowAmplitude", "0.5")
         lab.set("view", "2")
-        lab.copy({"view", "zoom", "cameraScroll", "cloudDrift", "cloudCoverage", "cloudSize", "cloudSoftness", "cloudChurn", "lightAngle",
-                  "toonSteps", "billowAmplitude"},
+        lab.copy({"view", "zoom", "cameraScroll", "cloudDrift", "lightAngle", "cloudCoverage", "cloudSize", "cloudHeight", "cloudSoftness",
+                  "shadeCut", "cloudChurn", "billowAmplitude"},
                  {"billowAmplitude": {"started": 0.3, "now": 0.5}, "view": {"started": 0, "now": 2}})
         lab.shot(frames + "/still.png")
     else:

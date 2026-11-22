@@ -15,8 +15,8 @@ import com.google.gwt.dom.client.Document;
  * {@code ?lab=planet}, the planet lab (r330, {@link PlanetLab}), the same; with {@code ?lab=lurker}, the lurker lab
  * (r369, {@link LurkerLab}), the same; with {@code ?lab=swell}, the SWELL edges lab (r434, {@link SwellLab}), three
  * panels in a row. anim-lab.html, with an {@code #anim-lab}: the animation lab (r407,
- * {@link AnimLab}), four panels. clouds-lab.html, with a {@code #clouds-lab}: the clouds lab (r451, {@link CloudsLab}), six
- * panels, three a row. hills-lab.html, with a {@code #hills-lab}: the hills lab (r384, {@link HillsLab}), two
+ * {@link AnimLab}), four panels. clouds-lab.html, with a {@code #clouds-lab}: the clouds lab (r451, {@link CloudsLab}), three
+ * tall panels a row, or six. hills-lab.html, with a {@code #hills-lab}: the hills lab (r384, {@link HillsLab}), two
  * panels side by side. pines-lab.html, with a {@code #pines-lab}: the pines lab (r421, {@link PinesLab}), two panels.
  * shadow-lab.html, with a {@code #shadow-lab}: the shadow lab (r425, {@link ShadowLab}), two panels
  * side by side, with a stencil buffer. depth-lab.html, with a {@code #depth-lab}: the depth lab (r444, {@link DepthLab}),

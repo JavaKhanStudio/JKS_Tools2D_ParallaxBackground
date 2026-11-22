@@ -1,5 +1,7 @@
 package jks.tools2d.parallax.browsertest;
 
+import java.util.List;
+
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -25,25 +27,21 @@ import jks.tools2d.parallax.pages.WholePage_Model;
 
 /**
  * The clouds lab (r451, reworked by r556: "do for clouds what we have done for water: a solid shader [...] it should
- * work for both day and night"): candidate cloud shaders as lab GLSL (GLSL ES 1.0), drawn by the real reader in WebGL,
- * side by side in the three settings Ficelle needs first: a Mediterranean day (the animation lab's beach), a night in a
- * cold forest (the hills lab's forest, tinted) and a medieval fantasy evening (round1's calm, which Ficelle's saga
- * wears). Each panel is a page's gradients, the hour's sun or moon, a clouds layer, then the page's own layers.
+ * work for both day and night"): cloud shaders as lab GLSL (GLSL ES 1.0), drawn by the real reader in WebGL, in the
+ * three settings Ficelle needs first: a Mediterranean day (the animation lab's beach), a night in a cold forest (the
+ * hills lab's forest, tinted) and a medieval fantasy evening (round1's calm, which Ficelle's saga wears). Each panel is
+ * a page's gradients, the hour's sun or moon, the clouds, then the page's own layers.
  * <ul>
- * <li>WISPS ({@link #WISPS_FRAGMENT}), LOBES ({@link #LOBES_FRAGMENT}) and PUFFS ({@link #PUFFS_FRAGMENT}) are made
- * in the shader, nothing is painted: streaks as value noise, cut-paper cumulus as heaps of round lobes painted back
- * to front on a flat foot, cumulus as a smooth union of round puffs; all whole cells across the layer, so they tile;
- * lit from where the sun or moon stands in the view, in two colours, the lit and the shaded. Day or night is those
- * two colours. Simon on r556: WISPS ships ("kinda work for realistic settings"), "puff is not great", and "I want to
- * see an exemple of D and another suggestion": LOBES is that suggestion, for the drawn settings WISPS does not suit;
- * WISPS as cumulus is WISPS under other numbers (short, heaped on a flat base), no other shader.</li>
- * <li>painted, churned and relit (his D): a page's painted clouds under r375's BILLOW ({@link #PAINTED}), their
- * colours replaced by the same two: OneNight's cumulus, whose painter put the shapes in the opacity (read as the
- * shade), and calm's bank.</li>
- * <li>painted, still: what a page does today, the painting under the page's tint.</li>
+ * <li>CUMULUS ({@link #CUMULUS_FRAGMENT}, round 3: Simon refused rounds 1 and 2 whole, "It's so bad [...] Try again"):
+ * cumulus made in the shader, nothing painted, worn as a whole sky of three layers ({@link #SKY_LAYERS}: a far bank at
+ * the horizon, a middle, the near clouds), in a panel as tall as it is wide so the sky is what shows. One shader, three
+ * looks by its numbers ({@link #LOOKS}): painted, cut in flat tones, soft.</li>
+ * <li>the earlier rounds, kept in the last view: WISPS ({@link #WISPS_FRAGMENT}, streaks as value noise), a page's
+ * painted clouds under r375's BILLOW and relit ({@link #PAINTED}: calm's bank and OneNight's cumulus), and the
+ * painting still under the page's tint, which is what a page does today.</li>
  * </ul>
- * The sliders scale each setting's own numbers ({@link #STYLES}), so one move shows in every setting. Opened with
- * clouds-lab.html: tools/clouds-lab.sh.
+ * The sliders scale each layer's own numbers, so one move shows in every setting. Opened with clouds-lab.html:
+ * tools/clouds-lab.sh.
  * <p>
  * {@code &clip=1}: nothing moves by itself, {@code window.cloudsLabAct(seconds)} steps every heart at 1/60 s.
  */
@@ -51,79 +49,92 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 {
 	static final String CLOUDS_PAGE = "fog-lab/s02.jplax", CLOUDS_REGION = "Clouds";
 	/** OneNight's page and its painted cumulus (the first of its two "clouds" regions). */
-	static final String CUMULUS_PAGE = "fog-lab/s06.jplax", CUMULUS_REGION = "clouds";
+	static final String ONENIGHT_PAGE = "fog-lab/s06.jplax", ONENIGHT_REGION = "clouds";
 	static final float WORLD_WIDTH = FogLab.WORLD_WIDTH, WORLD_HEIGHT = FogLab.WORLD_HEIGHT;
-	/** Three panels a row, two rows: each nearly the page's whole 16:9 frame, cut at its foot. */
-	static final int COLUMNS = 3, PANEL_WIDTH = FogLab.FRAME_WIDTH, PANEL_HEIGHT = 376;
+	/**
+	 * Three panels a row. A sky's view is one row of them, each as tall as two: a view nearly as tall as it is wide, as
+	 * a phone held upright sees a page, the land at its foot. The earlier rounds' are two rows, each panel nearly the
+	 * page's whole 16:9 frame, cut at its foot.
+	 */
+	static final int COLUMNS = 3, PANEL_WIDTH = FogLab.FRAME_WIDTH, PANEL_HEIGHT = 376, SKY_HEIGHT = 2 * PANEL_HEIGHT + 4;
 
 	static final String[] SETTINGS = { "Mediterranean day", "cold forest night", "medieval fantasy" };
 	static final String[] PAGES = { "anim-lab/beach.jplax", "hills-lab/forest.jplax", CLOUDS_PAGE };
 	/** The hills lab's atlas holds the forest's hills layer once per candidate: the page's own strip. */
 	static final String FOREST_HILLS = "l2", FOREST_HILLS_STRIP = "h_today_7020";
-	static final int PUFFS = 0, WISPS = 1, LOBES = 2, HEAPED = 3, RELIT = 4, CUMULUS = 5, STILL = 6;
-	static final String[] KINDS = { "PUFFS (set aside)", "WISPS", "LOBES", "WISPS as cumulus", "painted bank, relit", "painted cumulus, relit",
-			"painted, still (today)" };
-	/** The shader a kind is drawn through ({@link CloudEffects}): PUFFS, WISPS, the painted relit, LOBES; none for the still painting. */
-	static final int[] SHADER = { 0, 1, 3, 1, 2, 2, -1 };
-	/** The numbers of {@link #STYLES} a made kind takes. */
-	static final int[] STYLE = { 0, 1, 2, 3 };
+	/** What a panel wears. The first {@link #OLD_KINDS} are one clouds layer each; the last three one CUMULUS sky, by its look. */
+	static final int WISPS = 0, RELIT = 1, RELIT_CUMULUS = 2, STILL = 3, CUMULUS = 4, CUT = 5, SOFT = 6, OLD_KINDS = 4;
+	static final String[] KINDS = { "WISPS (round 1)", "painted bank, relit (round 2)", "painted cumulus, relit (round 2)", "the painting, still (today)",
+			"CUMULUS", "CUMULUS, cut in flat tones", "CUMULUS, soft" };
+	/** The shader an old kind is drawn through ({@link CloudEffects}): WISPS, the painted relit; none for the still painting. */
+	static final int[] SHADER = { 0, 1, 1, -1 };
 	/** BILLOW's wavelength (world units) and speed (world units a second), as r451 left them. */
 	static final float BILLOW_WAVELENGTH = 6, BILLOW_SPEED = 0.4f;
 	/** Each setting's sky, top and horizon; its layers' tint; its clouds' lit and shaded colours; its sun's or moon's. */
 	static final float[][] SKY_TOP = { { 0.16f, 0.45f, 0.86f }, { 0.015f, 0.03f, 0.085f }, { 0.27f, 0.33f, 0.64f } };
 	static final float[][] SKY_LOW = { { 0.74f, 0.88f, 0.97f }, { 0.09f, 0.15f, 0.27f }, { 0.99f, 0.74f, 0.50f } };
 	static final float[][] TINT = { { 1, 1, 1 }, { 0.26f, 0.34f, 0.56f }, { 1, 0.84f, 0.70f } };
-	static final float[][] LIT = { { 1, 1, 1 }, { 0.60f, 0.68f, 0.84f }, { 1, 0.88f, 0.66f } };
-	static final float[][] SHADE = { { 0.70f, 0.80f, 0.93f }, { 0.05f, 0.08f, 0.16f }, { 0.62f, 0.42f, 0.56f } };
+	static final float[][] LIT = { { 1, 1, 1 }, { 0.50f, 0.60f, 0.80f }, { 1, 0.90f, 0.68f } };
+	static final float[][] SHADE = { { 0.50f, 0.64f, 0.86f }, { 0.045f, 0.07f, 0.15f }, { 0.56f, 0.38f, 0.56f } };
 	static final float[][] DISC = { { 1, 0.98f, 0.88f }, { 0.92f, 0.94f, 1 }, { 1, 0.86f, 0.55f } };
-	/** Where each setting's sun or moon stands: degrees round the view's arc from its right end, and its radius, world units. */
-	static final float[] SUN_ANGLE = { 118, 62, 35 }, SUN_RADIUS = { 1.5f, 1.1f, 2 };
 	/**
-	 * The made clouds' numbers, per setting, PUFFS, WISPS, LOBES, then WISPS as cumulus: coverage (0 to 1), a puff's size
-	 * (world units), how many times longer than tall (LOBES: a cloud's slot), the edge's softness, the base (how far up
-	 * the layer), how flat WISPS' is, the silver lining, the opacity, the churn (PUFFS and LOBES: x their breaths' own
-	 * pace; WISPS: cells a second).
+	 * Where each setting's sun or moon stands: degrees round an arc from its right end, and its radius, world units. The
+	 * arc in a page's 16:9 frame, and in a sky's tall view: its foot and its rise, world units. The fantasy's sun is low,
+	 * under the near clouds: their bellies are the lit side.
 	 */
-	static final float[][][] STYLES = {
-			{ { 0.40f, 3.4f, 1.3f, 0.035f, 0.24f, 5, 0.3f, 1, 1 }, { 0.52f, 2.2f, 6, 0.30f, 0.45f, 0.6f, 0.2f, 0.75f, 0.04f },
-					{ 0.70f, 2.5f, 2.8f, 0.012f, 0.42f, 0, 0.3f, 1, 1 }, { 0.62f, 3.6f, 1.7f, 0.10f, 0.34f, 7, 0.2f, 1, 0.04f } },
-			{ { 0.44f, 3.6f, 1.5f, 0.08f, 0.24f, 4, 0.9f, 0.9f, 1 }, { 0.60f, 2, 7, 0.35f, 0.45f, 0.5f, 0.9f, 0.7f, 0.03f },
-					{ 0.70f, 2.5f, 3.0f, 0.02f, 0.46f, 0, 0.9f, 0.92f, 1 }, { 0.62f, 3.6f, 1.7f, 0.10f, 0.34f, 7, 0.9f, 1, 0.04f } },
-			{ { 0.48f, 4.2f, 1.2f, 0.03f, 0.22f, 6, 0.6f, 1, 1 }, { 0.56f, 2.4f, 6, 0.30f, 0.45f, 0.6f, 0.6f, 0.8f, 0.04f },
-					{ 0.75f, 2.8f, 2.8f, 0.012f, 0.48f, 0, 0.6f, 1, 1 }, { 0.62f, 3.6f, 1.7f, 0.10f, 0.34f, 7, 0.6f, 1, 0.04f } } };
-	/** The clouds layer of a made kind and of a painted one: its size (x the world's width) and its foot (% of the world's height). */
-	static final float MADE_SIZE = 1.6f, MADE_FOOT = 50, PAINTED_SIZE = 1.1f, PAINTED_FOOT = 60, CUMULUS_SIZE = 0.9f, CUMULUS_FOOT = 13;
+	static final float[] SUN_ANGLE = { 118, 60, 20 }, SUN_RADIUS = { 1.5f, 1.1f, 2 };
+	static final float SUN_FOOT = 12, SUN_RISE = 8.5f, SKY_SUN_FOOT = 10, SKY_SUN_RISE = 26;
+	/**
+	 * A CUMULUS sky's layers, back to front: the far bank on the horizon, the middle, the near clouds. Each: its size (x
+	 * the world's width), its foot (% of the world's height), the lobes across it (a whole number: it tiles), how many
+	 * lobes long a cloud's slot is, how tall a cloud may stand (lobes), its base (how far up the layer), its coverage
+	 * (0 to 1), its haze toward the horizon's colour, its pace (x the drift and the scroll), its seed.
+	 */
+	static final float[][] SKY_LAYERS = { { 1.5f, 35.5f, 40, 5, 1.6f, 0.12f, 0.75f, 0.55f, 0.35f, 1 },
+			{ 1.8f, 55.5f, 22, 4, 2.0f, 0.10f, 0.60f, 0.25f, 0.6f, 5 }, { 3.5f, 89, 22, 4, 2.4f, 0.08f, 0.60f, 0, 1, 11 } };
+	/**
+	 * CUMULUS's looks, by kind from {@link #CUMULUS}: how flat its shade is cut (0 smooth, 1 three flat tones), its
+	 * edge's softness (lobes), how frayed its edge is, its silver lining.
+	 */
+	static final float[][] LOOKS = { { 0.8f, 0.03f, 0, 0.6f }, { 1, 0.012f, 0, 0.5f }, { 0.5f, 0.08f, 0.3f, 0.8f } };
+	/** CUMULUS's churn: turns a second of its large lobes round their places (the middle ones twice, the small thrice). */
+	static final float CHURN = 0.03f;
+	/**
+	 * WISPS' numbers, per setting: coverage (0 to 1), a cell's height (world units), how many times longer than tall,
+	 * the edge's softness, the base (how far up the layer), how flat it is, the silver lining, the opacity, the churn
+	 * (cells a second).
+	 */
+	static final float[][] WISPS_STYLE = { { 0.52f, 2.2f, 6, 0.30f, 0.45f, 0.6f, 0.2f, 0.75f, 0.04f }, { 0.60f, 2, 7, 0.35f, 0.45f, 0.5f, 0.9f, 0.7f, 0.03f },
+			{ 0.56f, 2.4f, 6, 0.30f, 0.45f, 0.6f, 0.6f, 0.8f, 0.04f } };
+	/** An old kind's clouds layer, made or painted: its size (x the world's width) and its foot (% of the world's height). */
+	static final float MADE_SIZE = 1.6f, MADE_FOOT = 50, PAINTED_SIZE = 1.1f, PAINTED_FOOT = 60, ONENIGHT_SIZE = 0.9f, ONENIGHT_FOOT = 13;
 	/**
 	 * How the painted cumulus is read: OneNight's painter put the shapes in the opacity (5% at a cloud's thin foot to 55%
 	 * at its lit crown, the colour nearly one white), so the relit copy takes that opacity as its shade, lowest to
 	 * highest, by this weight, and is made this solid past a faint edge. Calm's bank is one flat fill: none of it.
 	 */
-	static final float[] CUMULUS_PAINT = { 0.05f, 0.55f, 0.75f, 1 }, BANK_PAINT = { 0, 1, 0, 0 };
-	/**
-	 * The views the choice picks: PUFFS over WISPS in each setting, or a setting under every kind. Each panel: setting,
-	 * kind.
-	 */
-	static final String[] VIEWS = { "LOBES over painted", SETTINGS[0], SETTINGS[1], SETTINGS[2], "WISPS, two ways", "PUFFS" };
-	static final int[][][] VIEW_PANELS = {
-			{ { 0, LOBES }, { 1, LOBES }, { 2, LOBES }, { 0, CUMULUS }, { 1, CUMULUS }, { 2, CUMULUS } },
-			{ { 0, LOBES }, { 0, WISPS }, { 0, CUMULUS }, { 0, RELIT }, { 0, HEAPED }, { 0, STILL } },
-			{ { 1, LOBES }, { 1, WISPS }, { 1, CUMULUS }, { 1, RELIT }, { 1, HEAPED }, { 1, STILL } },
-			{ { 2, LOBES }, { 2, WISPS }, { 2, CUMULUS }, { 2, RELIT }, { 2, HEAPED }, { 2, STILL } },
-			{ { 0, WISPS }, { 1, WISPS }, { 2, WISPS }, { 0, HEAPED }, { 1, HEAPED }, { 2, HEAPED } },
-			{ { 0, PUFFS }, { 1, PUFFS }, { 2, PUFFS } } };
-	/** Where a frame is held, as a fraction of its height from its bottom, at the panel's middle: the sky. */
-	static final float FOCUS = 0.75f;
+	static final float[] ONENIGHT_PAINT = { 0.05f, 0.55f, 0.75f, 1 }, BANK_PAINT = { 0, 1, 0, 0 };
+	/** The views the choice picks: CUMULUS in each setting, a setting under CUMULUS's three looks, the earlier rounds. Each panel: setting, kind. */
+	static final String[] VIEWS = { "three settings", SETTINGS[0], SETTINGS[1], SETTINGS[2], "earlier rounds" };
+	static final int[][][] VIEW_PANELS = { { { 0, CUMULUS }, { 1, CUMULUS }, { 2, CUMULUS } }, { { 0, CUMULUS }, { 0, CUT }, { 0, SOFT } },
+			{ { 1, CUMULUS }, { 1, CUT }, { 1, SOFT } }, { { 2, CUMULUS }, { 2, CUT }, { 2, SOFT } },
+			{ { 0, WISPS }, { 1, WISPS }, { 2, WISPS }, { 2, RELIT }, { 2, RELIT_CUMULUS }, { 2, STILL } } };
+	/** Where a frame is held, as a fraction of its height from its bottom, at the panel's middle: the sky. A page's frame, a sky's view. */
+	static final float FOCUS = 0.75f, SKY_FOCUS = 0.6f;
 
 	private final Parallax_Heart[] lands = new Parallax_Heart[SETTINGS.length];
-	private final Parallax_Heart[][] skies = new Parallax_Heart[SETTINGS.length][KINDS.length];
-	private final ParallaxLayer[][] clouds = new ParallaxLayer[SETTINGS.length][KINDS.length];
-	private final CloudEffects[][] effects = new CloudEffects[SETTINGS.length][KINDS.length];
-	private final Parallax_Heart[] hearts = new Parallax_Heart[SETTINGS.length * (1 + KINDS.length)];
-	/** Each setting's sun or moon, in world units; the clouds layer's own drift (its at rest speed), which the drift slider scales. */
-	private final float[] sunX = new float[SETTINGS.length], sunY = new float[SETTINGS.length];
+	private final Parallax_Heart[][] skies = new Parallax_Heart[SETTINGS.length][OLD_KINDS];
+	private final ParallaxLayer[][] clouds = new ParallaxLayer[SETTINGS.length][OLD_KINDS];
+	private final CloudEffects[][] effects = new CloudEffects[SETTINGS.length][OLD_KINDS];
+	/** Each setting's CUMULUS sky: one page of {@link #SKY_LAYERS}, drawn through one {@link SkyEffects}. */
+	private final Parallax_Heart[] cumulus = new Parallax_Heart[SETTINGS.length];
+	private final SkyEffects[] cumulusEffects = new SkyEffects[SETTINGS.length];
+	private final Parallax_Heart[] hearts = new Parallax_Heart[SETTINGS.length * (2 + OLD_KINDS)];
+	/** Each setting's sun or moon, degrees round its arc; the clouds layer's own drift (its at rest speed), which the drift slider scales. */
+	private final float[] sunAngle = new float[SETTINGS.length];
 	private float ownDrift;
 	private SelectElement view;
-	private InputElement zoom, scroll, drift, coverage, size, softness, churn, light, steps, amplitude;
+	private InputElement zoom, scroll, drift, coverage, size, tall, softness, cut, churn, light, amplitude;
 	private Element readout;
 	private final Element[] labels = new Element[2 * COLUMNS];
 	private boolean clip;
@@ -134,8 +145,8 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 	public void create()
 	{
 		clip = "1".equals(com.google.gwt.user.client.Window.Location.getParameter("clip"));
-		// PUFFS and WISPS never read the layer's image, so the GPU drops u_texture, which SpriteBatch sets by name: a shipped
-		// one must keep it alive or be set another way (r290).
+		// CUMULUS and WISPS never read the layer's image, so the GPU drops u_texture, which SpriteBatch sets by name: a
+		// shipped one must keep it alive or be set another way (r290).
 		ShaderProgram.pedantic = false;
 		batch = new SpriteBatch();
 		disc = discTexture();
@@ -158,42 +169,72 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			land.fogColor = color(SKY_LOW[s]);
 			lands[s] = hearts[n++] = heart(land);
 			lands[s].parallaxReader.addColorTransfert(color(TINT[s]), 0);
-			for (int kind = 0; kind < KINDS.length; kind++)
+			for (int kind = 0; kind < OLD_KINDS; kind++)
 			{
-				String page = kind == CUMULUS ? CUMULUS_PAGE : CLOUDS_PAGE, region = kind == CUMULUS ? CUMULUS_REGION : CLOUDS_REGION;
-				WholePage_Model sky = Utils_Page_Json.loadPage(page);
-				Parallax_Model model = null;
-				for (Parallax_Model each : sky.pageModel.pageList)
-					if (model == null && region.equals(each.regionName))
-						model = each;
-				if (model == null)
-					throw new IllegalStateException(page + " has no layer " + region);
-				sky.pageModel.pageList.clear();
-				sky.pageModel.pageList.add(model);
-				boolean made = kind < RELIT;
-				model.sizeRatio = made ? MADE_SIZE : kind == CUMULUS ? CUMULUS_SIZE : PAINTED_SIZE;
-				model.decal_Y_Ratio = made ? MADE_FOOT : kind == CUMULUS ? CUMULUS_FOOT : PAINTED_FOOT;
+				boolean oneNight = kind == RELIT_CUMULUS, made = kind == WISPS;
+				WholePage_Model sky = cloudsPage(oneNight ? ONENIGHT_PAGE : CLOUDS_PAGE, oneNight ? ONENIGHT_REGION : CLOUDS_REGION, 1);
+				Parallax_Model model = sky.pageModel.pageList.get(0);
+				model.sizeRatio = made ? MADE_SIZE : oneNight ? ONENIGHT_SIZE : PAINTED_SIZE;
+				model.decal_Y_Ratio = made ? MADE_FOOT : oneNight ? ONENIGHT_FOOT : PAINTED_FOOT;
 				if (kind != STILL)
-				{
-					// What a page would store: a SHADER layer, under FOG's periods until one ships (the lab draws its own).
-					model.kind = Enum_LayerKind.SHADER;
-					model.shaderEffect = Enum_ShaderEffect.FOG;
-				}
+					shaderLayer(model);
 				skies[s][kind] = hearts[n++] = heart(sky);
 				clouds[s][kind] = skies[s][kind].parallaxReader.layers.get(0);
 				// Every kind drifts as calm's clouds do: OneNight's own stand still at rest.
-				if (kind != CUMULUS)
+				if (!oneNight)
 					ownDrift = clouds[s][kind].getSpeedAtRest();
 				if (kind == STILL)
 					skies[s][kind].parallaxReader.addColorTransfert(color(TINT[s]), 0);
 				else
 					skies[s][kind].parallaxReader.setLayerEffects(
-							effects[s][kind] = new CloudEffects(SHADER[kind], LIT[s], SHADE[s], kind == CUMULUS ? CUMULUS_PAINT : BANK_PAINT));
+							effects[s][kind] = new CloudEffects(SHADER[kind], LIT[s], SHADE[s], oneNight ? ONENIGHT_PAINT : BANK_PAINT));
 			}
+			// The CUMULUS sky: calm's clouds layer three times over, for its quad alone (the shader never reads its image).
+			WholePage_Model sky = cloudsPage(CLOUDS_PAGE, CLOUDS_REGION, SKY_LAYERS.length);
+			for (int i = 0; i < SKY_LAYERS.length; i++)
+			{
+				Parallax_Model model = sky.pageModel.pageList.get(i);
+				model.sizeRatio = SKY_LAYERS[i][0];
+				model.decal_Y_Ratio = SKY_LAYERS[i][1];
+				model.parallaxScalingSpeedX *= SKY_LAYERS[i][8];
+				shaderLayer(model);
+			}
+			cumulus[s] = hearts[n++] = heart(sky);
+			cumulus[s].parallaxReader.setLayerEffects(cumulusEffects[s] = new SkyEffects(cumulus[s].parallaxReader.layers, LIT[s], SHADE[s], SKY_LOW[s]));
 		}
 		buildControls();
 		if (clip)
 			LabKit.exportClip("cloudsLab", this);
+	}
+
+	/** A page of {@code page}'s layer {@code region} alone, {@code times} over. */
+	private static WholePage_Model cloudsPage(String page, String region, int times)
+	{
+		WholePage_Model sky = null;
+		for (int i = 0; i < times; i++)
+		{
+			WholePage_Model loaded = Utils_Page_Json.loadPage(page);
+			Parallax_Model model = null;
+			for (Parallax_Model each : loaded.pageModel.pageList)
+				if (model == null && region.equals(each.regionName))
+					model = each;
+			if (model == null)
+				throw new IllegalStateException(page + " has no layer " + region);
+			if (sky == null)
+			{
+				sky = loaded;
+				sky.pageModel.pageList.clear();
+			}
+			sky.pageModel.pageList.add(model);
+		}
+		return sky;
+	}
+
+	/** What a page would store: a SHADER layer, under FOG's periods until a cloud effect ships (the lab draws its own). */
+	private static void shaderLayer(Parallax_Model model)
+	{
+		model.kind = Enum_LayerKind.SHADER;
+		model.shaderEffect = Enum_ShaderEffect.FOG;
 	}
 
 	private static Color color(float[] rgb)
@@ -241,20 +282,22 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			chip.appendChild(labels[i]);
 			labelGrid.appendChild(chip);
 		}
-		view = LabControls.stageChoice(document, "clouds-labels", "view", "view (LOBES over the painted cumulus relit in each setting, one setting under every kind of clouds, WISPS as streaks and as cumulus, or PUFFS)", VIEWS, 0);
+		view = LabControls.stageChoice(document, "clouds-labels", "view", "view (CUMULUS in each setting, one setting under CUMULUS's three looks, or the earlier rounds: WISPS, the painted clouds relit, the painting today)", VIEWS, 0);
 		Element controls = document.getElementById("clouds-controls");
-		zoom = LabControls.slider(document, controls, "zoom", "zoom (x the page's frame)", 1, 4, 0.25f, 1);
+		zoom = LabControls.slider(document, controls, "zoom", "zoom (x the panel's view)", 1, 4, 0.25f, 1);
 		scroll = LabControls.slider(document, controls, "cameraScroll", "camera scroll (world units/s)", 0, 120, 5, 20);
 		drift = LabControls.slider(document, controls, "cloudDrift", "clouds' drift (x calm's own at rest speed: 0 to judge the churn alone)", 0, 3, 0.05f, 1);
-		amplitude = LabControls.slider(document, controls, "billowAmplitude", "painted churn (BILLOW's amplitude, world units: how far the painted clouds' pixels are pushed; its wavelength "
+		// With the first three, not in a section of its own: a heading costs a row, and the window has none to spare (r232).
+		amplitude = LabControls.slider(document, controls, "billowAmplitude", "painted churn (the earlier rounds' painted clouds alone: BILLOW's amplitude, world units, how far their pixels are pushed; its wavelength "
 				+ LabControls.text(BILLOW_WAVELENGTH) + " and speed " + LabControls.text(BILLOW_SPEED) + " are r451's)", 0, 1.5f, 0.02f, 0.3f);
-		Element made = LabControls.section(document, controls, "WISPS, LOBES and PUFFS (made in the shader, no painting: each slider scales every setting's own number)");
-		coverage = LabControls.slider(document, made, "cloudCoverage", "coverage (x the setting's: how much of the sky is cloud)", 0, 2, 0.05f, 1);
-		size = LabControls.slider(document, made, "cloudSize", "size (x the setting's: how large a puff is)", 0.4f, 1.6f, 0.05f, 1);
-		softness = LabControls.slider(document, made, "cloudSoftness", "softness (x the setting's: 0 a cut-out edge)", 0, 4, 0.1f, 1);
-		churn = LabControls.slider(document, made, "cloudChurn", "churn (x the setting's: how fast the shapes change)", 0, 6, 0.25f, 1);
-		light = LabControls.slider(document, made, "lightAngle", "light (degrees added to where the setting's sun or moon stands; the painted, relit clouds follow it too)", -60, 60, 2, 0);
-		steps = LabControls.slider(document, made, "toonSteps", "toon steps (0: a smooth shade; more: that many flat bands, lit to shaded)", 0, 5, 1, 0);
+		Element made = LabControls.section(document, controls, "CUMULUS (made in the shader, no painting: each slider scales every layer's own number)");
+		coverage = LabControls.slider(document, made, "cloudCoverage", "coverage (x the layer's: how much of the sky is cloud)", 0, 1.6f, 0.05f, 1);
+		size = LabControls.slider(document, made, "cloudSize", "size (x the layer's: how large a lobe is)", 0.5f, 2, 0.05f, 1);
+		tall = LabControls.slider(document, made, "cloudHeight", "height (x the layer's: how tall a cloud may stand)", 0.3f, 1.2f, 0.05f, 1);
+		softness = LabControls.slider(document, made, "cloudSoftness", "softness (x the look's: 0 a cut-out edge)", 0, 4, 0.1f, 1);
+		cut = LabControls.slider(document, made, "shadeCut", "shade cut (x the look's: 0 a smooth shade, up to three flat tones)", 0, 1.25f, 0.05f, 1);
+		churn = LabControls.slider(document, made, "cloudChurn", "churn (x " + LabControls.text(CHURN) + " turns a second: how fast the lobes move)", 0, 6, 0.25f, 1);
+		light = LabControls.slider(document, made, "lightAngle", "light (degrees added to where the setting's sun or moon stands; the clouds' lit side follows, the earlier rounds' too)", -60, 60, 2, 0);
 		readout = LabControls.readout(document, controls, "clouds-readout");
 	}
 
@@ -263,17 +306,31 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 	{
 		int v = LabControls.read(view);
 		LabControls.read(zoom);
-		float sc = LabControls.read(scroll), dr = LabControls.read(drift);
-		float co = LabControls.read(coverage), si = LabControls.read(size), so = LabControls.read(softness), ch = LabControls.read(churn);
-		float li = LabControls.read(light), st = LabControls.read(steps);
+		float sc = LabControls.read(scroll), dr = LabControls.read(drift), li = LabControls.read(light);
+		float co = LabControls.read(coverage), si = LabControls.read(size), he = LabControls.read(tall), so = LabControls.read(softness);
+		float cu = LabControls.read(cut), ch = LabControls.read(churn);
 		float ba = LabControls.read(amplitude);
 		for (int s = 0; s < SETTINGS.length; s++)
 		{
-			double angle = Math.toRadians(SUN_ANGLE[s] + li);
-			sunX[s] = WORLD_WIDTH / 2 + 16 * (float) Math.cos(angle);
-			sunY[s] = 12 + 8.5f * (float) Math.sin(angle);
+			sunAngle[s] = SUN_ANGLE[s] + li;
 			lands[s].screenSpeedConstantX = sc;
-			for (int kind = 0; kind < KINDS.length; kind++)
+			cumulus[s].screenSpeedConstantX = sc;
+			SkyEffects sky = cumulusEffects[s];
+			sky.softness = so;
+			sky.cut = cu;
+			sky.churn = CHURN * ch;
+			for (int i = 0; i < SKY_LAYERS.length; i++)
+			{
+				float[] layer = SKY_LAYERS[i];
+				cumulus[s].parallaxReader.layers.get(i).setSpeedAtRest(ownDrift * dr * layer[8]);
+				// Whole lobes across the layer: the clouds run on across its tiles.
+				sky.lobes[i] = Math.max(4, Math.round(layer[2] / si));
+				// A cloud keeps its slot's and its height's world size when its lobes change theirs.
+				sky.slot[i] = layer[3] * sky.lobes[i] / layer[2];
+				sky.tall[i] = layer[4] * he * sky.lobes[i] / layer[2];
+				sky.coverage[i] = Math.min(1, layer[6] * co);
+			}
+			for (int kind = 0; kind < OLD_KINDS; kind++)
 			{
 				ParallaxLayer layer = clouds[s][kind];
 				layer.setSpeedAtRest(ownDrift * dr);
@@ -283,24 +340,21 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 				layer.setShaderAmplitude(ba);
 				layer.setShaderWavelength(BILLOW_WAVELENGTH);
 				layer.setShaderSpeed(BILLOW_SPEED);
-				CloudEffects e = effects[s][kind];
-				e.sunX = sunX[s] / WORLD_WIDTH;
-				e.sunY = sunY[s] / WORLD_HEIGHT;
-				e.steps = st;
-				if (kind >= RELIT)
+				if (kind != WISPS)
 					continue;
-				float[] style = STYLES[s][STYLE[kind]];
+				CloudEffects e = effects[s][kind];
+				float[] style = WISPS_STYLE[s];
 				float width = layer.getWidth() * layer.getPackedWidthRatio();
-				e.coverage = Math.min(1, style[0] * co);
-				e.cellHeight = style[1] * si;
+				e.coverage = style[0];
+				e.cellHeight = style[1];
 				// Whole cells across the layer: the clouds run on across its tiles.
-				e.cells = Math.max(1, Math.round(width / (style[1] * si * style[2])));
-				e.softness = style[3] * so;
+				e.cells = Math.max(1, Math.round(width / (style[1] * style[2])));
+				e.softness = style[3];
 				e.base = style[4];
 				e.flat = style[5];
 				e.rim = style[6];
 				e.opacity = style[7];
-				e.churn = style[8] * ch;
+				e.churn = style[8];
 			}
 		}
 		int[][] shown = VIEW_PANELS[v];
@@ -311,12 +365,21 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			// A chip over no panel is hidden, not a dark dash; it keeps its cell in the grid.
 			labels[k].getParentElement().getStyle().setProperty("visibility", titled ? "visible" : "hidden");
 		}
-		CloudEffects a = effects[shown[0][0]][shown[0][1]];
-		ParallaxLayer cloud = clouds[shown[0][0]][shown[0][1]];
-		readout.setInnerText("A (" + SETTINGS[shown[0][0]] + ", " + KINDS[shown[0][1]] + "): coverage " + round(a.coverage) + ", a puff "
-				+ round(cloud.getWidth() / a.cells) + " x " + round(a.cellHeight) + " world units (" + Math.round(a.cells) + " across the layer's "
-				+ round(cloud.getWidth()) + "), softness " + round(a.softness) + ", churn " + round(a.churn) + ". The world is "
-				+ round(WORLD_WIDTH) + " units wide.");
+		int s = shown[0][0], kind = shown[0][1];
+		if (kind < CUMULUS)
+		{
+			readout.setInnerText("A (" + SETTINGS[s] + ", " + KINDS[kind] + "): the earlier rounds' clouds, at their own numbers; of the sliders, only the "
+					+ "painted churn (" + round(ba) + " world units), the drift, the scroll and the light move them. The world is " + round(WORLD_WIDTH) + " units wide.");
+			return;
+		}
+		SkyEffects a = cumulusEffects[s];
+		float[] look = LOOKS[kind - CUMULUS];
+		int near = SKY_LAYERS.length - 1;
+		float width = cumulus[s].parallaxReader.layers.get(near).getWidth();
+		readout.setInnerText("A (" + SETTINGS[s] + ", " + KINDS[kind] + "): three layers of one shader; the near clouds' lobes " + round(width / a.lobes[near])
+				+ " world units (" + Math.round(a.lobes[near]) + " across the layer's " + round(width) + "), a cloud up to " + round(a.tall[near]) + " lobes tall, coverage "
+				+ round(a.coverage[near]) + "; shade cut " + round(Math.min(1, look[0] * cu)) + ", softness " + round(look[1] * so) + ", churn " + round(a.churn)
+				+ " turns/s. The world is " + round(WORLD_WIDTH) + " units wide.");
 	}
 
 	private static float round(float value)
@@ -347,36 +410,61 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 		float z = Float.parseFloat(zoom.getValue());
 		LabKit.beginPanels();
 		for (int k = 0; k < shown.length; k++)
-			panel(shown[k][0], shown[k][1], (k % COLUMNS) * (PANEL_WIDTH + 4), k < COLUMNS ? height : height - PANEL_HEIGHT - 4, PANEL_WIDTH, PANEL_HEIGHT, z);
+			if (shown[k][1] >= CUMULUS)
+				panel(shown[k][0], shown[k][1], k * (PANEL_WIDTH + 4), height, PANEL_WIDTH, SKY_HEIGHT, z);
+			else
+				panel(shown[k][0], shown[k][1], (k % COLUMNS) * (PANEL_WIDTH + 4), k < COLUMNS ? height : height - PANEL_HEIGHT - 4, PANEL_WIDTH, PANEL_HEIGHT, z);
 		LabKit.endPanels();
 	}
 
 	/**
 	 * Draws setting {@code s} under the clouds of {@code kind} into the panel {@code w} by {@code h} whose top-left is
-	 * at {@code x}, {@code top}: through a 16:9 frame {@code z} times the panel's width, its middle across at the
-	 * panel's, its {@link #FOCUS} at the panel's middle up, kept over the whole panel. The sky's gradient, the sun or
-	 * moon, the clouds, then the page's layers.
+	 * at {@code x}, {@code top}. An earlier round's: through the page's 16:9 frame. A CUMULUS sky's: through a view as
+	 * tall as the panel, the page's world at its foot and that much more sky over it. Either {@code z} times the
+	 * panel's width, its middle across at the panel's, its focus at the panel's middle up, kept over the whole panel.
+	 * The sky's gradient, the sun or moon, the clouds, then the page's layers.
 	 */
 	private void panel(int s, int kind, int x, int top, int w, int h, float z)
 	{
-		int frameWidth = Math.round(w * z), frameHeight = Math.round(frameWidth * WORLD_HEIGHT / WORLD_WIDTH);
-		int bottom = Math.round(top - h / 2f - FOCUS * frameHeight);
+		boolean made = kind >= CUMULUS;
+		float viewHeight = made ? WORLD_WIDTH * h / w : WORLD_HEIGHT;
+		int frameWidth = Math.round(w * z), frameHeight = Math.round(frameWidth * viewHeight / WORLD_WIDTH);
+		int bottom = Math.round(top - h / 2f - (made ? SKY_FOCUS : FOCUS) * frameHeight);
 		bottom = Math.max(top - frameHeight, Math.min(top - h, bottom));
 		if (!LabKit.frame(x, top - h, w, h, x - (frameWidth - w) / 2, bottom, frameWidth, frameHeight))
 			return;
-		Parallax_Heart land = lands[s], sky = skies[s][kind];
-		land.worldCamera.update();
+		Parallax_Heart land = lands[s], sky = made ? cumulus[s] : skies[s][kind];
+		see(land.worldCamera, viewHeight);
+		see(sky.worldCamera, viewHeight);
+		double angle = Math.toRadians(sunAngle[s]);
+		float sunX = WORLD_WIDTH / 2 + 16 * (float) Math.cos(angle);
+		float sunY = made ? SKY_SUN_FOOT + SKY_SUN_RISE * (float) Math.sin(angle) : SUN_FOOT + SUN_RISE * (float) Math.sin(angle);
+		if (made)
+			cumulusEffects[s].see(LOOKS[kind - CUMULUS], sunX / WORLD_WIDTH, sunY / viewHeight, WORLD_WIDTH / viewHeight);
+		else if (kind != STILL)
+		{
+			effects[s][kind].sunX = sunX / WORLD_WIDTH;
+			effects[s][kind].sunY = sunY / viewHeight;
+		}
 		land.drawBackGround();
 		batch.setProjectionMatrix(land.worldCamera.combined);
 		batch.enableBlending();
 		batch.begin();
 		float r = SUN_RADIUS[s] / 0.3f;
 		batch.setColor(DISC[s][0], DISC[s][1], DISC[s][2], 1);
-		batch.draw(disc, sunX[s] - r, sunY[s] - r, 2 * r, 2 * r);
+		batch.draw(disc, sunX - r, sunY - r, 2 * r, 2 * r);
 		batch.setColor(Color.WHITE);
 		sky.parallaxReader.draw(sky.worldCamera, batch);
 		land.parallaxReader.draw(land.worldCamera, batch);
 		batch.end();
+	}
+
+	/** {@code camera} sees the world's width and {@code height} world units up from the world's floor. */
+	private static void see(OrthographicCamera camera, float height)
+	{
+		camera.viewportHeight = height;
+		camera.position.y = height / 2;
+		camera.update();
 	}
 
 	@Override
@@ -386,17 +474,79 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 		disc.dispose();
 	}
 
-	/** A clouds layer's effects: through {@link #CLOUDS}, or {@link #PAINTED} for the painted clouds relit. */
+	/** A CUMULUS sky's effects: each of its layers through {@link #CUMULUS_FRAGMENT}, at its own numbers. */
+	static final class SkyEffects extends LabKit.Effects
+	{
+		private final List<ParallaxLayer> layers;
+		private final float[] lit, shade, horizon;
+		final float[] coverage = new float[SKY_LAYERS.length], lobes = new float[SKY_LAYERS.length], slot = new float[SKY_LAYERS.length],
+				tall = new float[SKY_LAYERS.length];
+		/** The sliders: x the look's softness, x its cut; the churn, turns a second. */
+		float softness = 1, cut = 1, churn;
+		private float[] look = LOOKS[0];
+		private float sunX, sunY, aspect = 1;
+		private ShaderProgram previous;
+
+		SkyEffects(List<ParallaxLayer> layers, float[] lit, float[] shade, float[] horizon)
+		{
+			this.layers = layers;
+			this.lit = lit;
+			this.shade = shade;
+			this.horizon = horizon;
+		}
+
+		/** What the next draw wears and sees: its look, the sun or moon in the view (0 to 1), the view's width over its height. */
+		void see(float[] look, float sunX, float sunY, float aspect)
+		{
+			this.look = look;
+			this.sunX = sunX;
+			this.sunY = sunY;
+			this.aspect = aspect;
+		}
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase)
+		{return begin(batch, layer, phase, 0, Color.WHITE);}
+
+		@Override
+		public boolean begin(Batch batch, ParallaxLayer layer, float phase, float fogAmount, Color fogColor)
+		{
+			int i = Math.max(0, layers.indexOf(layer));
+			float[] numbers = SKY_LAYERS[i];
+			ShaderProgram program = CloudEffects.program(2);
+			previous = batch.getShader();
+			batch.setShader(program);
+			if (!batch.isDrawing())
+				program.bind();
+			LabKit.setEffect(program, numbers(layer, phase), numbers[7], horizon[0], horizon[1], horizon[2]);
+			program.setUniformf(program.fetchUniformLocation("u_sun", false), sunX, sunY, aspect);
+			program.setUniformf(program.fetchUniformLocation("u_lit", false), lit[0], lit[1], lit[2]);
+			program.setUniformf(program.fetchUniformLocation("u_shade", false), shade[0], shade[1], shade[2]);
+			program.setUniformf(program.fetchUniformLocation("u_cloud", false), coverage[i], lobes[i], slot[i], look[1] * softness);
+			program.setUniformf(program.fetchUniformLocation("u_shape", false), numbers[5], tall[i], (float) (layer.getEffectTime() * churn % 100.0), numbers[9]);
+			program.setUniformf(program.fetchUniformLocation("u_tone", false), Math.min(1, look[0] * cut), look[3], 1, look[2]);
+			return true;
+		}
+
+		@Override
+		public void end(Batch batch, ParallaxLayer layer)
+		{
+			batch.setShader(previous);
+			previous = null;
+		}
+	}
+
+	/** An earlier round's clouds layer's effects: through {@link #WISPS_FRAGMENT}, or {@link #PAINTED} for the painted clouds relit. */
 	static final class CloudEffects extends LabKit.Effects
 	{
-		private static final ShaderProgram[] PROGRAMS = new ShaderProgram[4];
-		private static final String[] FRAGMENTS = { PUFFS_FRAGMENT, WISPS_FRAGMENT, PAINTED, LOBES_FRAGMENT };
-		private static final String[] NAMES = { "PUFFS", "WISPS", "painted clouds", "LOBES" };
+		private static final ShaderProgram[] PROGRAMS = new ShaderProgram[3];
+		private static final String[] FRAGMENTS = { WISPS_FRAGMENT, PAINTED, CUMULUS_FRAGMENT };
+		private static final String[] NAMES = { "WISPS", "painted clouds", "CUMULUS" };
 
-		/** 0 PUFFS, 1 WISPS, 2 the painted clouds relit, 3 LOBES. */
+		/** 0 WISPS, 1 the painted clouds relit. */
 		private final int shader;
 		private final float[] lit, shade, paint;
-		float sunX, sunY, steps, coverage, cellHeight, cells = 1, softness, base, flat, rim, opacity = 1, churn;
+		float sunX, sunY, coverage, cellHeight, cells = 1, softness, base, flat, rim, opacity = 1, churn;
 		private ShaderProgram previous;
 
 		CloudEffects(int shader, float[] lit, float[] shade, float[] paint)
@@ -423,7 +573,7 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			program.setUniformf(program.fetchUniformLocation("u_sun", false), sunX, sunY, WORLD_WIDTH / WORLD_HEIGHT);
 			program.setUniformf(program.fetchUniformLocation("u_lit", false), lit[0], lit[1], lit[2]);
 			program.setUniformf(program.fetchUniformLocation("u_shade", false), shade[0], shade[1], shade[2]);
-			program.setUniformf(program.fetchUniformLocation("u_tone", false), steps, rim, opacity);
+			program.setUniformf(program.fetchUniformLocation("u_tone", false), 0, rim, opacity);
 			program.setUniformf(program.fetchUniformLocation("u_paint", false), paint[0], paint[1], paint[2], paint[3]);
 			program.setUniformf(program.fetchUniformLocation("u_wrap", false), 1 - paint[3]);
 			program.setUniformf(program.fetchUniformLocation("u_cloud", false), coverage, softness, cells, cellHeight);
@@ -454,7 +604,7 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 		}
 	}
 
-	/** What both shaders open with, as GdxLayerEffects writes its own effects' head, and the light they share. */
+	/** What every shader here opens with, as GdxLayerEffects writes its own effects' head, and the light they share. */
 	static final String HEAD = "#ifdef GL_ES\n"
 			+ "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
 			+ "precision highp float;\n"
@@ -476,7 +626,6 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			+ "uniform vec3 u_sun;\n"
 			+ "uniform vec3 u_lit;\n"
 			+ "uniform vec3 u_shade;\n"
-			+ "uniform vec3 u_tone;\n"
 			+ "const float TAU = 6.2831853;\n"
 			+ "vec4 hazed(vec4 color)\n"
 			+ "{\n"
@@ -497,7 +646,10 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			+ "float sunNear()\n"
 			+ "{\n"
 			+ "	return 1.0 - smoothstep(0.0, 0.55, length((u_sun.xy - v_view) * vec2(u_sun.z, 1.0)));\n"
-			+ "}\n"
+			+ "}\n";
+
+	/** WISPS' and the painted clouds' two colours by how lit: smooth, or {@code u_tone.x} flat bands; y the silver lining, z the opacity. */
+	static final String TONED = "uniform vec3 u_tone;\n"
 			// The two colours by how lit: smooth, or u_tone.x flat bands.
 			+ "vec3 toned(float lit)\n"
 			+ "{\n"
@@ -508,9 +660,153 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			+ "}\n";
 
 	/**
-	 * What PUFFS and WISPS pick their shapes with: whole numbers in, a 289th out, by a permutation polynomial exact in a
-	 * float's 24 bits, so every GPU draws the same sky (a sine hash does not: tools/r556-clouds/model.py drew other
-	 * clouds in float64 than in float32).
+	 * CUMULUS (r556, round 3): cumulus made in the shader, the layer's image never read. Lengths are in lobes: the
+	 * layer holds {@code u_cloud.y} of them across (a whole number, so it tiles), from the base ({@code u_shape.x} up
+	 * the layer).
+	 * <ul>
+	 * <li>Where a cloud stands and how tall ({@code crown}): two octaves of value noise along the layer, a slot
+	 * {@code u_cloud.z} lobes long, against the coverage {@code u_cloud.x}; up to {@code u_shape.y} lobes, never past
+	 * the layer's top.</li>
+	 * <li>Its outline ({@code cloud}): the crown, heaped with three sizes of round domes ({@code billow}: one a cell,
+	 * its place, size and slow orbit hashed; the highest wins, so the outline is scallops, as cumulus is drawn), on a
+	 * nearly flat foot. {@code u_tone.w} frays it with noise, for a soft cloud.</li>
+	 * <li>Its light: no second read. The surface turns as a mound does (the crown up, the belly down, the flanks out),
+	 * each large dome a ball on it, the middle ones a little; that against the sun or moon where it stands in the view,
+	 * so a noon sun whitens the crowns over shaded bellies, and a low one lights the bellies under shaded crowns. Cut
+	 * into three tones by {@code u_tone.x} (0 smooth, 1 flat), between {@code u_shade} and {@code u_lit}; a silver
+	 * lining ({@code u_tone.y}) on thin edges near the sun.</li>
+	 * </ul>
+	 * {@code u_cloud.w} is the edge's softness, {@code u_tone.z} the opacity, {@code u_shape.w} the seed (a layer's
+	 * own), {@code u_shape.z} the churn's clock in turns (wrapped at 100: every motion a whole number of turns of it).
+	 * The hash is a permutation polynomial on whole numbers, exact in a float's 24 bits: every GPU draws the same sky.
+	 * tools/r556-clouds/probe.py draws this very text alone, in seconds: tune it there.
+	 */
+	static final String CUMULUS_FRAGMENT = HEAD
+			+ "uniform vec4 u_cloud;\n"
+			+ "uniform vec4 u_shape;\n"
+			+ "uniform vec4 u_tone;\n"
+			+ "float permute(float x)\n"
+			+ "{\n"
+			+ "	return mod((34.0 * x + 1.0) * x, 289.0);\n"
+			+ "}\n"
+			+ "float hash(float x, float y, float k)\n"
+			+ "{\n"
+			+ "	return permute(permute(permute(mod(x, 289.0)) + mod(y, 289.0)) + k) / 289.0;\n"
+			+ "}\n"
+			// Round domes, one a cell, the nine round the pixel. x: the highest at the pixel, 1 at a dome's middle (its creases
+			// sharp: an outline's scallops). zw: where the pixel is on its dome, from the middle to 1 at its rim, the domes melted
+			// into one another by their height (what the light reads: each dome a ball). period: whole cells across.
+			+ "vec4 billow(vec2 p, float period, float k, float t)\n"
+			+ "{\n"
+			+ "	vec2 i = floor(p);\n"
+			+ "	vec2 f = p - i;\n"
+			+ "	float best = -1.0;\n"
+			+ "	float sum = 0.0;\n"
+			+ "	vec2 on = vec2(0.0);\n"
+			+ "	for (int oy = -1; oy <= 1; oy++)\n"
+			+ "		for (int ox = -1; ox <= 1; ox++)\n"
+			+ "		{\n"
+			+ "			vec2 o = vec2(float(ox), float(oy));\n"
+			+ "			float hx = mod(i.x + o.x, period);\n"
+			+ "			float hy = i.y + o.y;\n"
+			+ "			float a = hash(hx, hy, k);\n"
+			+ "			float b = hash(hx, hy, k + 1.0);\n"
+			+ "			float r = hash(hx, hy, k + 2.0);\n"
+			+ "			vec2 at = o + 0.2 + 0.6 * vec2(a, b) + 0.1 * vec2(sin(TAU * (t + a)), cos(TAU * (t + b)));\n"
+			+ "			vec2 q = (f - at) / (0.64 + 0.38 * r + 0.07 * sin(TAU * (t + r)));\n"
+			+ "			float v = 1.0 - dot(q, q);\n"
+			+ "			best = max(best, v);\n"
+			+ "			float w = exp(8.0 * max(v, -2.0));\n"
+			+ "			sum += w;\n"
+			+ "			on += w * q;\n"
+			+ "		}\n"
+			+ "	return vec4(best, 0.0, on / sum);\n"
+			+ "}\n"
+			// Where the clouds stand: 0 to 1 along the layer, whole slots across.
+			+ "float mass(float x, float period, float k)\n"
+			+ "{\n"
+			+ "	float i = floor(x);\n"
+			+ "	float f = x - i;\n"
+			+ "	f = f * f * (3.0 - 2.0 * f);\n"
+			+ "	return mix(hash(mod(i, period), 3.0, k), hash(mod(i + 1.0, period), 3.0, k), f);\n"
+			+ "}\n"
+			// Value noise, 0 to 1, whole cells across: what frays a soft cloud's edge.
+			+ "float grain(vec2 p, float period, float k)\n"
+			+ "{\n"
+			+ "	vec2 i = floor(p);\n"
+			+ "	vec2 f = p - i;\n"
+			+ "	f = f * f * (3.0 - 2.0 * f);\n"
+			+ "	float x0 = mod(i.x, period);\n"
+			+ "	float x1 = mod(i.x + 1.0, period);\n"
+			+ "	return mix(mix(hash(x0, i.y, k), hash(x1, i.y, k), f.x), mix(hash(x0, i.y + 1.0, k), hash(x1, i.y + 1.0, k), f.x), f.y);\n"
+			+ "}\n"
+			// A cloud's top over its base at x, in lobes: under 0 where none stands.
+			+ "float crown(float x)\n"
+			+ "{\n"
+			+ "	float slots = max(1.0, floor(u_cloud.y / u_cloud.z + 0.5));\n"
+			+ "	float s = x * slots / u_cloud.y;\n"
+			+ "	float m = 0.55 * mass(s, slots, u_shape.w) + 0.3 * mass(2.0 * s + 0.5, 2.0 * slots, u_shape.w + 9.0)\n"
+			+ "		+ 0.15 * mass(4.0 * s + 0.25, 4.0 * slots, u_shape.w + 10.0);\n"
+			+ "	float none = (1.0 - u_cloud.x) * 0.8;\n"
+			// Never past the layer's top, where its quad would cut it.
+			+ "	float room = (1.0 - u_shape.x) * u_size.y * u_cloud.y / u_size.x - 0.6;\n"
+			+ "	return min(u_shape.y * (m - none) / (0.85 - none), room);\n"
+			+ "}\n"
+			// The cloud at p (lobes, y from the base): x over 0 inside its top, y over 0 above its foot. facing: which way its
+			// surface turns there, as a painter shades one: the whole heap a mound (its crown up, its belly down, its flanks out),
+			// each large lobe a ball on it, the middle ones a little; the small bumps are the outline's alone.
+			+ "vec2 cloud(vec2 p, float t, out vec2 facing)\n"
+			+ "{\n"
+			+ "	float top = crown(p.x);\n"
+			+ "	vec4 b1 = billow(p, u_cloud.y, u_shape.w + 20.0, t);\n"
+			// The finer domes: about 2.3 and 5.3 a lobe, a whole number of them across the layer, or its tiles show a seam.
+			+ "	float across2 = floor(2.3 * u_cloud.y + 0.5);\n"
+			+ "	float across5 = floor(5.3 * u_cloud.y + 0.5);\n"
+			+ "	vec4 b2 = billow(across2 / u_cloud.y * p + 7.0, across2, u_shape.w + 30.0, 2.0 * t);\n"
+			+ "	float b3 = billow(across5 / u_cloud.y * p + 3.0, across5, u_shape.w + 40.0, 3.0 * t).x;\n"
+			// Steeper over the crown than under it: a dome's tip alone, over the crown, would float as a ball.
+			+ "	float rise = top - p.y;\n"
+			+ "	float tall = (rise < 0.0 ? 1.5 : 0.8) * rise - 0.67 + 0.75 * b1.x + 0.22 * b2.x + 0.08 * b3;\n"
+			+ "	if (u_tone.w > 0.0)\n"
+			+ "		tall += u_tone.w * (0.3 * grain(3.0 * p + 0.6 * vec2(sin(TAU * t), cos(TAU * t)), 3.0 * u_cloud.y, u_shape.w + 50.0)\n"
+			+ "			+ 0.2 * grain(7.0 * p - 0.6 * vec2(cos(TAU * 2.0 * t), sin(TAU * 2.0 * t)), 7.0 * u_cloud.y, u_shape.w + 51.0) - 0.3);\n"
+			+ "	float foot = 3.0 * p.y + 0.35 * (b2.x - 0.5) + 0.15;\n"
+			+ "	float lean = (crown(p.x + 0.25) - crown(p.x - 0.25)) / 0.5;\n"
+			+ "	vec2 mound = vec2(-0.5 * lean, 1.6 * p.y / max(top, 0.4) - 0.75);\n"
+			// The lobes show under the crown and fade toward the belly, which a painter leaves broad.
+			+ "	float show = 1.0 - 0.65 * smoothstep(0.5, 1.9, top - p.y);\n"
+			+ "	facing = 0.45 * clamp(mound, -1.0, 1.0) + show * (0.5 * b1.zw + 0.22 * b2.zw);\n"
+			+ "	return vec2(tall, foot);\n"
+			+ "}\n"
+			+ "void main()\n"
+			+ "{\n"
+			+ "	vec2 l = local();\n"
+			+ "	float lobe = u_size.x / u_cloud.y;\n"
+			+ "	vec2 p = vec2(l.x, l.y - u_shape.x * u_size.y) / lobe;\n"
+			+ "	float t = u_shape.z;\n"
+			+ "	vec2 turned;\n"
+			+ "	vec2 c = cloud(p, t, turned);\n"
+			+ "	float d = min(c.x, c.y);\n"
+			+ "	float soft = max(u_cloud.w, 0.004);\n"
+			// A cloud's thin end, where its top meets its foot, melts away: cut, it is a hairline.
+			+ "	float alpha = smoothstep(0.0, soft, c.x) * smoothstep(0.0, soft + 0.3 * u_tone.w, c.y) * smoothstep(0.1, 0.45, c.x + c.y);\n"
+			+ "	vec2 s = sunward();\n"
+			+ "	vec3 normal = vec3(turned, sqrt(max(0.04, 1.0 - dot(turned, turned))));\n"
+			+ "	float lit = 0.5 + 0.5 * dot(normalize(normal), normalize(vec3(s, 0.35)));\n"
+			+ "	lit = clamp(lit, 0.0, 1.0);\n"
+			+ "	float w = mix(0.5, 0.03, u_tone.x);\n"
+			+ "	float cut = 0.5 * smoothstep(0.42 - w, 0.42 + w, lit) + 0.5 * smoothstep(0.66 - w, 0.66 + w, lit);\n"
+			+ "	vec3 color = mix(u_shade, u_lit, mix(lit, cut, min(1.0, 1.5 * u_tone.x)));\n"
+			+ "	float thin = 1.0 - smoothstep(0.0, 0.2 + soft, d);\n"
+			+ "	float near = sunNear();\n"
+			+ "	color = mix(color, min(vec3(1.0), 1.25 * u_lit), u_tone.y * thin * near * near);\n"
+			+ "	gl_FragColor = hazed(v_color * vec4(color, alpha * u_tone.z));\n"
+			+ "}\n";
+
+	/**
+	 * What WISPS picks its shapes with (CUMULUS holds its own copy): whole numbers in, a 289th out, by a permutation
+	 * polynomial exact in a float's 24 bits, so every GPU draws the same sky (a sine hash does not: round 1's numpy
+	 * model drew other clouds in float64 than in float32).
 	 */
 	static final String HASH = "uniform vec4 u_cloud;\n"
 			+ "uniform vec3 u_shape;\n"
@@ -524,67 +820,6 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			+ "}\n";
 
 	/**
-	 * PUFFS (r556): cumulus made in the shader, the layer's image never read. A lattice of {@code u_cloud.z} whole cells
-	 * across the layer (so it tiles), {@code u_cloud.w} world units tall, two rows of them over the base
-	 * ({@code u_shape.x} up the layer): each cell holds one round puff, its place, size and breath hashed; which
-	 * columns hold a cloud is a slow wave of hashes against the coverage, and the upper row only stands on a full
-	 * lower one. The cloud is the smooth union of the nine puffs round the pixel (a log of summed exponentials), cut
-	 * flat at its foot, its outline pushed in and out by two crossing waves (the small bumps). Lit by how the union
-	 * falls toward the sun (a second read), more toward the top; a silver lining on thin edges near the sun. Every
-	 * motion is a sine on the churn's clock ({@code u_shape.z}, wrapped at 100: whole turns).
-	 */
-	static final String PUFFS_FRAGMENT = HEAD + HASH
-			+ "const float UNION = 9.0;\n"
-			+ "float body(vec2 p, float stretch, float t)\n"
-			+ "{\n"
-			+ "	vec2 i = floor(p);\n"
-			+ "	float sum = 0.0;\n"
-			+ "	for (int oy = -1; oy <= 1; oy++)\n"
-			+ "		for (int ox = -1; ox <= 1; ox++)\n"
-			+ "		{\n"
-			+ "			vec2 c = i + vec2(float(ox), float(oy));\n"
-			+ "			float hx = mod(c.x, u_cloud.z);\n"
-			+ "			float a = hash(hx, c.y, 1.0);\n"
-			+ "			float b = hash(hx, c.y, 2.0);\n"
-			+ "			float e = hash(hx, c.y, 3.0);\n"
-			+ "			float d = hash(hx, c.y, 4.0);\n"
-			+ "			float g = 0.5 * hash(floor(hx / 4.0), 0.0, 5.0) + 0.3 * hash(floor(mod(hx + 2.0, u_cloud.z) / 4.0), 0.0, 7.0)\n"
-			+ "				+ 0.2 * hash(hx, 0.0, 6.0);\n"
-			+ "			float keep = smoothstep(0.9 - u_cloud.x, 1.1 - u_cloud.x, g);\n"
-			+ "			float low = 1.0 - step(0.5, abs(c.y));\n"
-			+ "			float high = 1.0 - step(0.5, abs(c.y - 1.0));\n"
-			+ "			float r = (0.62 + 0.3 * e) * keep * (low + high * 0.8 * smoothstep(0.45, 0.8, keep * (0.5 + 0.5 * e)))\n"
-			+ "				* (1.0 + 0.1 * sin(TAU * (0.07 * t + d)));\n"
-			+ "			vec2 centre = c + vec2(0.3 + 0.4 * a + 0.08 * sin(TAU * (0.05 * t + b)), mix(0.05 + 0.3 * b, 0.25 + 0.2 * b, low));\n"
-			+ "			vec2 q = (p - centre) * vec2(stretch / 1.25, 1.0);\n"
-			+ "			float rr = max(r, 0.001);\n"
-			+ "			sum += step(0.02, r) * exp(clamp(UNION * rr * (1.0 - dot(q, q) / (rr * rr)), -40.0, 40.0));\n"
-			+ "		}\n"
-			+ "	return log(max(sum, 1.0e-12)) / UNION;\n"
-			+ "}\n"
-			+ "void main()\n"
-			+ "{\n"
-			+ "	vec2 l = local();\n"
-			+ "	vec2 cell = vec2(u_size.x / u_cloud.z, u_cloud.w);\n"
-			+ "	float stretch = cell.x / cell.y;\n"
-			+ "	vec2 p = vec2(l.x, l.y - u_shape.x * u_size.y) / cell;\n"
-			+ "	float t = u_shape.z;\n"
-			+ "	float wide = p.x * stretch / 1.25;\n"
-			+ "	float bumps = 0.035 * (sin(TAU * (2.3 * wide + 0.9 * p.y + 0.11 * t)) * sin(TAU * (2.1 * p.y - 0.7 * p.x + 0.3 - 0.08 * t))\n"
-			+ "		+ sin(TAU * (3.7 * wide - 1.3 * p.y - 0.13 * t)) * sin(TAU * (3.1 * p.y + 1.9 * p.x + 0.09 * t)));\n"
-			+ "	float whole = body(p, stretch, t);\n"
-			+ "	float d = whole + bumps;\n"
-			+ "	float alpha = smoothstep(0.0, 2.0 * max(u_cloud.y, 0.004), d) * smoothstep(0.0, 0.1, p.y - 0.2);\n"
-			+ "	vec2 s = sunward();\n"
-			+ "	float toward = body(p + 0.12 * s / vec2(stretch, 1.0), stretch, t);\n"
-			+ "	float lit = 0.5 + 0.26 * (whole - toward) / 0.12 + 0.35 * ((p.y - 0.2) / 1.6 - 0.4) + 0.5 * bumps;\n"
-			+ "	vec3 color = toned(lit);\n"
-			+ "	float thin = 1.0 - smoothstep(0.0, 0.12, d);\n"
-			+ "	color = mix(color, min(vec3(1.0), 1.15 * u_lit), u_tone.y * thin * sunNear());\n"
-			+ "	gl_FragColor = hazed(v_color * vec4(color, alpha * u_tone.z));\n"
-			+ "}\n";
-
-	/**
 	 * WISPS (r556): streaks made in the shader, the layer's image never read. Value noise over a lattice of
 	 * {@code u_cloud.z} whole cells across the layer (so it tiles), {@code u_cloud.w} world units tall, four octaves,
 	 * each finer one sliding and rising on the churn's clock ({@code u_shape.z}) so the shapes change as they drift.
@@ -592,7 +827,7 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 	 * under the base, slowly above, and all of it toward the layer's foot and top. Lit by how the noise falls toward
 	 * the sun (a second, three-octave read); a silver lining on thin edges near the sun.
 	 */
-	static final String WISPS_FRAGMENT = HEAD + HASH
+	static final String WISPS_FRAGMENT = HEAD + TONED + HASH
 			+ "float noise(vec2 p, float period)\n"
 			+ "{\n"
 			+ "	vec2 i = floor(p);\n"
@@ -633,63 +868,6 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 			+ "}\n";
 
 	/**
-	 * LOBES (r556, Simon's "another suggestion"): cut-paper cumulus made in the shader, the layer's image never read.
-	 * {@code u_cloud.z} whole slots across the layer (so it tiles), each holding one cloud or none (a hash against the
-	 * coverage), its place, size and height hashed; lengths in units of {@code u_cloud.w} world units, from the base
-	 * ({@code u_shape.x} up the layer). A cloud is seven round lobes heaped on a flat foot (a bar with round ends lying
-	 * on its base), tallest in the middle, painted back to front, the middle one first: a pixel wears the last lobe it
-	 * is in, so every lobe keeps its round outline inside the cloud, as a painter draws one (a union's creases are
-	 * straight). Each lobe is lit as a ball from the sun, darker toward the foot; a silver lining on the outline near
-	 * the sun. The lobes swell and sway on the churn's clock ({@code u_shape.z}, wrapped at 100: whole turns).
-	 */
-	static final String LOBES_FRAGMENT = HEAD + HASH
-			+ "void main()\n"
-			+ "{\n"
-			+ "	vec2 l = local();\n"
-			+ "	float slot = u_size.x / u_cloud.z / u_cloud.w;\n"
-			+ "	vec2 q = vec2(l.x, l.y - u_shape.x * u_size.y) / u_cloud.w;\n"
-			+ "	float t = u_shape.z;\n"
-			+ "	float soft = max(u_cloud.y, 0.004);\n"
-			+ "	vec2 s = sunward();\n"
-			+ "	float first = floor(q.x / slot);\n"
-			+ "	float d = -9.0;\n"
-			+ "	float lit = 0.0;\n"
-			+ "	for (int o = -1; o <= 1; o++)\n"
-			+ "	{\n"
-			+ "		float c = first + float(o);\n"
-			+ "		float hx = mod(c, u_cloud.z);\n"
-			+ "		float keep = step(hash(hx, 7.0, 5.0), u_cloud.x);\n"
-			+ "		float scale = 0.55 + 0.75 * hash(hx, 0.0, 3.0);\n"
-			+ "		float reach = min(0.5 * slot, 2.6) * (0.75 + 0.25 * hash(hx, 0.0, 2.0)) * scale;\n"
-			+ "		vec2 p = q - vec2((c + 0.35 + 0.3 * hash(hx, 0.0, 1.0)) * slot, 1.1 * (hash(hx, 0.0, 4.0) - 0.5));\n"
-			+ "		float foot = 0.14 * scale;\n"
-			+ "		float dc = foot - length(vec2(p.x - clamp(p.x, -reach, reach), p.y - foot));\n"
-			+ "		float lc = 0.2;\n"
-			+ "		float belly = 0.55 + 0.45 * smoothstep(0.0, 0.5 * scale, p.y);\n"
-			+ "		for (int k = 0; k < 7; k++)\n"
-			+ "		{\n"
-			+ "			float fk = float(k);\n"
-			+ "			float u = floor(0.5 * fk + 0.5) * (1.0 - 2.0 * mod(fk, 2.0)) / 3.0;\n"
-			+ "			float a = hash(hx, fk, 6.0);\n"
-			+ "			float b = hash(hx, fk, 7.0);\n"
-			+ "			float r = scale * (1.0 - 0.6 * pow(abs(u), 1.5)) * (0.55 + 0.45 * a) * (1.0 + 0.1 * sin(TAU * (0.07 * t + b)));\n"
-			+ "			vec2 f = (p - vec2(u * (reach - 0.6 * r) + 0.1 * reach * (b - 0.5) + 0.05 * sin(TAU * (0.05 * t + a)), r * (0.35 + 0.4 * b))) / r;\n"
-			+ "			float dk = min(r * (1.0 - length(f)), p.y);\n"
-			+ "			float lk = (0.48 + 0.32 * dot(f, s) + 0.1 * sqrt(max(0.0, 1.0 - dot(f, f))) + 0.08 * f.y + 0.2 * (p.y / scale - 0.6)) * belly;\n"
-			+ "			lc = mix(lc, lk, smoothstep(0.0, soft, dk));\n"
-			+ "			dc = max(dc, dk);\n"
-			+ "		}\n"
-			+ "		dc = mix(-9.0, dc, keep);\n"
-			+ "		lit = mix(lit, lc, smoothstep(0.0, soft, dc));\n"
-			+ "		d = max(d, dc);\n"
-			+ "	}\n"
-			+ "	vec3 color = toned(lit);\n"
-			+ "	float thin = 1.0 - smoothstep(0.0, 0.06, d);\n"
-			+ "	color = mix(color, min(vec3(1.0), 1.15 * u_lit), u_tone.y * thin * sunNear());\n"
-			+ "	gl_FragColor = hazed(v_color * vec4(color, smoothstep(0.0, soft, d) * u_tone.z));\n"
-			+ "}\n";
-
-	/**
 	 * The painted clouds, churned and relit: r375's BILLOW (the pixels pushed by a slow warp of wavelength L, written
 	 * in world units over {@code along()}, as WAVE and FOG are, under FOG's periods, where every term is a whole number
 	 * of turns), then the painting's colours replaced by the lit and the shaded: more lit up the layer and where the
@@ -701,7 +879,7 @@ public class CloudsLab extends ApplicationAdapter implements LabKit.Clip
 	 * whose shapes are in its opacity (x lowest, y highest) gives it as its shade, by the weight z, and is drawn solid
 	 * past a faint edge, by w ({@link #CUMULUS_PAINT}).
 	 */
-	static final String PAINTED = HEAD
+	static final String PAINTED = HEAD + TONED
 			+ "uniform vec4 u_paint;\n"
 			+ "uniform float u_wrap;\n"
 			+ "vec2 along()\n"
