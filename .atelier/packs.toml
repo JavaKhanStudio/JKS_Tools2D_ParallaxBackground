@@ -30,6 +30,7 @@ noise slides off its image.
 README.md's layer-settings table is the documented meaning of each field: rename, rescale or repurpose one and fix it
 in the same commit. MEMORY_LANE.md §5 is HISTORY at b5a7441: a defect you fix that it lists moves to its §10 table.
 See it: tools/parallax-lab-shots.sh ROUND OUT (stills off screen), ./gradlew :jme:run, the editor repo's :demo:run.
+THE ROUND (board skill §4, r4524): an ask's first picture is framed close on its subject, captioned "Shows: <it>" (a closer camera, or magick <shot> -crop WxH+X+Y +repage <lead>); then the takes; at most one context picture.
 """
 
 [tags.format]
@@ -148,6 +149,8 @@ tools/r217-fog/strength.sh fail under 2.5/255; tools/r217-fog/mutate.sh fails un
 GLINT (format 17, r427) is no effect but a layer's glintStrength: glinted() ends every effect before hazed(), in all
 four copies. Its round, engines/rounds/glint, gates on pixelsOff, not the mean: the glint is sparse, and leaving it out
 moves a still by under 1/255 (tools/r427-glint/strength.sh, mutate.sh). A glinting layer's period is at least FOG's.
+SEE IT: tools/parallax-lab-shots.sh engines/rounds/shaders build/lab/shaders (stills off screen, contact.png)
+THE ROUND (board skill §4, r4524): an ask's first picture is framed close on its subject, captioned "Shows: <it>" (a closer camera, or magick <shot> -crop WxH+X+Y +repage <lead>); then the takes; at most one context picture.
 """
 
 [tags.ai]
