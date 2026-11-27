@@ -1,0 +1,54 @@
+{
+ "reader": "threejs",
+ "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 5060 Laptop GPU/PCIe/SSE2, OpenGL ES 3.2)",
+ "measure": "act, render, gl.finish by readPixels (no swap), performance.now",
+ "frames": 600,
+ "scenes": [
+  {
+   "id": "b01",
+   "layers": 6,
+   "loadMs": 335,
+   "meanMs": 0.415,
+   "p50Ms": 0.4,
+   "p95Ms": 0.7,
+   "maxMs": 2.2
+  },
+  {
+   "id": "b02",
+   "layers": 12,
+   "loadMs": 191.1,
+   "meanMs": 0.567,
+   "p50Ms": 0.5,
+   "p95Ms": 0.8,
+   "maxMs": 2.3
+  },
+  {
+   "id": "b03",
+   "layers": 8,
+   "loadMs": 139.4,
+   "meanMs": 0.276,
+   "p50Ms": 0.3,
+   "p95Ms": 0.5,
+   "maxMs": 1.7
+  },
+  {
+   "id": "b04",
+   "layers": 9,
+   "loadMs": 96.3,
+   "meanMs": 0.481,
+   "p50Ms": 0.5,
+   "p95Ms": 0.7,
+   "maxMs": 1.5
+  },
+  {
+   "id": "b05",
+   "layers": 21,
+   "loadMs": 238.8,
+   "meanMs": 0.674,
+   "p50Ms": 0.6,
+   "p95Ms": 1,
+   "maxMs": 2.5
+  }
+ ],
+ "runs": 5
+}

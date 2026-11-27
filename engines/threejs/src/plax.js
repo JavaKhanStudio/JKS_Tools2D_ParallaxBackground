@@ -4136,18 +4136,17 @@ function particlesOf(model, page, atlas) {
   return new PlaxParticles(emitters, atlas);
 }
 
-// The quads of a PARTICLES layer: one Mesh per run of one texture and one blend, each particle its own corners and
-// colour (libGDX's SpriteBatch.draw(texture, vertices)), in screen pixels.
-class ParticleQuads {
+// What ParticleQuads and Quads share: their runs, drawn in order inside `group`, refilled every update. A quad on another
+// texture (or, for particles, another blend) starts the next run, as SpriteBatch flushes on a switch, so draw order holds.
+class RunPool {
   constructor() {
     this.group = new THREE.Group();
     this.runs = [];
     this.used = 0;
+    // Drawn through a PlaxEffects shader (Quads.setEffect): its name, and the uniforms every run shares; null for none.
     this.effect = null;
     this.uniforms = null;
   }
-
-  setEffect() {}
 
   begin(order) {
     for (const run of this.runs) run.count = 0;
@@ -4155,17 +4154,17 @@ class ParticleQuads {
     this.group.renderOrder = order;
   }
 
-  setColor() {}
-
-  add(texture, blend, xy, uv, rgba) {
+  // The run the next quad on `texture` with `blend` goes in: the last one, or the next, made by _newRun and fitted by
+  // _fit, on a switch.
+  _run(texture, blend) {
     let run = this.used ? this.runs[this.used - 1] : null;
     if (!run || run.texture !== texture || run.blend !== blend) {
-      run = this.runs[this.used] ??= new ParticleRun(this.runs.length);
-      run.set(texture, blend);
+      run = this.runs[this.used] ??= this._newRun(this.runs.length);
+      this._fit(run, texture, blend);
       if (run.mesh.parent !== this.group) this.group.add(run.mesh);
       this.used++;
     }
-    run.add(xy, uv, rgba);
+    return run;
   }
 
   end() {
@@ -4178,30 +4177,21 @@ class ParticleQuads {
   }
 }
 
-class ParticleRun {
-  constructor(order) {
+// One run of quads: one texture, one draw, a growing buffer of positions, uvs and a per-corner colour of `width`
+// components (3: Quads' shade, 4: a particle's RGBA), doubled when full.
+class QuadBuffer {
+  constructor(order, material, width, capacity) {
     this.texture = null;
     this.blend = null;
     this.count = 0;
     this.capacity = 0;
+    this.width = width;
     this.geometry = new THREE.BufferGeometry();
-    this.material = new THREE.MeshBasicMaterial({ ...LAYER_BLENDING, vertexColors: true, toneMapped: false });
+    this.material = material;
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = order;
-    this._grow(64);
-  }
-
-  set(texture, blend) {
-    if (this.texture !== texture) {
-      this.texture = texture;
-      this.material.map = texture;
-      this.material.needsUpdate = true;
-    }
-    if (this.blend !== blend) {
-      this.blend = blend;
-      [this.material.blendSrc, this.material.blendDst] = PARTICLE_BLENDS[blend];
-    }
+    this._grow(capacity);
   }
 
   _grow(capacity) {
@@ -4209,7 +4199,7 @@ class ParticleRun {
     this.capacity = capacity;
     this.position = new Float32Array(capacity * 12);
     this.uv = new Float32Array(capacity * 8);
-    this.color = new Float32Array(capacity * 16);
+    this.color = new Float32Array(capacity * 4 * this.width).fill(1);
     if (old) {
       this.position.set(old.position);
       this.uv.set(old.uv);
@@ -4221,19 +4211,22 @@ class ParticleRun {
     this.geometry = new THREE.BufferGeometry();
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.position, 3));
     this.geometry.setAttribute('uv', new THREE.BufferAttribute(this.uv, 2));
-    this.geometry.setAttribute('color', new THREE.BufferAttribute(this.color, 4));
+    this.geometry.setAttribute('color', new THREE.BufferAttribute(this.color, this.width));
     this.geometry.setIndex(new THREE.BufferAttribute(index, 1));
     this.mesh.geometry = this.geometry;
   }
 
-  add(xy, uv, rgba) {
+  // The next quad's corners `xy` ([x0, y0, .. x3, y3]) and `uv`; returns its index, for its colour.
+  _quad(xy, uv) {
     if (this.count === this.capacity) this._grow(this.capacity * 2);
     const i = this.count++;
     for (let k = 0; k < 4; k++) {
-      this.position.set([xy[2 * k], xy[2 * k + 1], 0], i * 12 + k * 3);
-      this.color.set(rgba, i * 16 + k * 4);
+      this.position[i * 12 + k * 3] = xy[k * 2];
+      this.position[i * 12 + k * 3 + 1] = xy[k * 2 + 1];
+      this.position[i * 12 + k * 3 + 2] = 0;
     }
     this.uv.set(uv, i * 8);
+    return i;
   }
 
   end(used) {
@@ -4249,19 +4242,57 @@ class ParticleRun {
   }
 }
 
+// The quads of a PARTICLES layer: one Mesh per run of one texture and one blend, each particle its own corners and
+// colour (libGDX's SpriteBatch.draw(texture, vertices)), in screen pixels.
+class ParticleQuads extends RunPool {
+  setEffect() {}
+
+  setColor() {}
+
+  add(texture, blend, xy, uv, rgba) {
+    this._run(texture, blend).add(xy, uv, rgba);
+  }
+
+  _newRun(order) {
+    return new ParticleRun(order);
+  }
+
+  _fit(run, texture, blend) {
+    run.set(texture, blend);
+  }
+}
+
+class ParticleRun extends QuadBuffer {
+  constructor(order) {
+    super(order, new THREE.MeshBasicMaterial({ ...LAYER_BLENDING, vertexColors: true, toneMapped: false }), 4, 64);
+  }
+
+  set(texture, blend) {
+    if (this.texture !== texture) {
+      this.texture = texture;
+      this.material.map = texture;
+      this.material.needsUpdate = true;
+    }
+    if (this.blend !== blend) {
+      this.blend = blend;
+      [this.material.blendSrc, this.material.blendDst] = PARTICLE_BLENDS[blend];
+    }
+  }
+
+  add(xy, uv, rgba) {
+    const i = this._quad(xy, uv);
+    for (let k = 0; k < 4; k++) this.color.set(rgba, i * 16 + k * 4);
+  }
+}
+
 // The quads of one layer, refilled every update: libGDX's SpriteBatch, one colour. A run of quads on one texture is
 // one Mesh; a quad on another texture starts the next run, as SpriteBatch flushes on a texture switch, so a sequence
 // whose segments sit on several atlas pages keeps its draw order. The runs are drawn in order inside `group`.
-class Quads {
+class Quads extends RunPool {
   constructor() {
-    this.group = new THREE.Group();
-    this.runs = [];
-    this.used = 0;
+    super();
     this.color = new THREE.Color(1, 1, 1);
     this.opacity = 1;
-    // Drawn through a PlaxEffects shader (setEffect): its name, and the uniforms every run shares; null for none.
-    this.effect = null;
-    this.uniforms = null;
     // What the next quads' colour is multiplied by, [r, g, b] (a tower's darkness, PlaxTower.draw); null for 1.
     this.shade = null;
   }
@@ -4279,12 +4310,6 @@ class Quads {
     this.used = 0;
   }
 
-  begin(order) {
-    for (const run of this.runs) run.count = 0;
-    this.used = 0;
-    this.group.renderOrder = order;
-  }
-
   setColor(rgb, alpha) {
     this.color.setRGB(rgb[0], rgb[1], rgb[2]);
     this.opacity = alpha;
@@ -4293,28 +4318,25 @@ class Quads {
 
   // A quad at (x, y) in screen pixels, y down, `src` the texels drawn of `texture`, mirrored by fx, fy.
   add(texture, x, y, w, h, src, fx, fy) {
-    this._runOf(texture).add(x, y, w, h, src, fx, fy, this.shade);
+    this._run(texture, null).add(x, y, w, h, src, fx, fy, this.shade);
   }
 
   // A quad of any shape: its four corners `xy` ([x0, y0, .. x3, y3], screen pixels, y down) and their `uv`, as
   // SpriteBatch.draw(texture, vertices) takes them (PlaxPlanet.draw).
   addCorners(texture, xy, uv) {
-    this._runOf(texture).addCorners(xy, uv, this.shade);
+    this._run(texture, null).addCorners(xy, uv, this.shade);
   }
 
-  _runOf(texture) {
-    let run = this.used ? this.runs[this.used - 1] : null;
-    if (!run || run.texture !== texture) {
-      run = this.runs[this.used] ??= new QuadRun(this.runs.length, this.effect, this.uniforms);
-      if (run.texture !== texture) run.setTexture(texture);
-      if (!this.effect) {
-        run.material.color.copy(this.color);
-        run.material.opacity = this.opacity;
-      }
-      if (run.mesh.parent !== this.group) this.group.add(run.mesh);
-      this.used++;
+  _newRun(order) {
+    return new QuadRun(order, this.effect, this.uniforms);
+  }
+
+  _fit(run, texture) {
+    if (run.texture !== texture) run.setTexture(texture);
+    if (!this.effect) {
+      run.material.color.copy(this.color);
+      run.material.opacity = this.opacity;
     }
-    return run;
   }
 
   // An atlas region (atlas.findRegion) stretched over a box at (x, y) in screen pixels, y down, as Batch.draw(region,
@@ -4334,15 +4356,6 @@ class Quads {
     this.addCorners(region.page.texture, [...at(x, y), ...at(x + w, y), ...at(x + w, y + h), ...at(x, y + h)],
       [u0, v0, u1, v0, u1, v1, u0, v1]);
   }
-
-  end() {
-    this.runs.forEach((run, i) => run.end(i < this.used));
-  }
-
-  dispose() {
-    for (const run of this.runs) run.dispose();
-    this.runs = [];
-  }
 }
 
 // SpriteBatch's SRC_ALPHA, ONE_MINUS_SRC_ALPHA on the colour; the alpha stays 1, the background opaque: an alpha under
@@ -4356,19 +4369,11 @@ const LAYER_BLENDING = {
 };
 
 // One run of Quads: one texture, one draw; through `effect`'s shader, its `uniforms` shared with the layer's other
-// runs, when it has one.
-class QuadRun {
+// runs, when it has one. Its colour is each corner's shade (Quads.shade): 1 but on a tower's pieces.
+class QuadRun extends QuadBuffer {
   constructor(order, effect = null, uniforms = null) {
-    this.texture = null;
-    this.count = 0;
-    this.capacity = 0;
-    this.geometry = new THREE.BufferGeometry();
-    this.material = effect ? PlaxEffects.material(effect, uniforms)
-      : new THREE.MeshBasicMaterial({ ...LAYER_BLENDING, vertexColors: true, toneMapped: false });
-    this.mesh = new THREE.Mesh(this.geometry, this.material);
-    this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = order;
-    this._grow(4);
+    super(order, effect ? PlaxEffects.material(effect, uniforms)
+      : new THREE.MeshBasicMaterial({ ...LAYER_BLENDING, vertexColors: true, toneMapped: false }), 3, 4);
   }
 
   setTexture(texture) {
@@ -4381,23 +4386,6 @@ class QuadRun {
     this.material.needsUpdate = true;
   }
 
-  _grow(capacity) {
-    this.capacity = capacity;
-    this.position = new Float32Array(capacity * 12);
-    this.uv = new Float32Array(capacity * 8);
-    // Each corner's shade (Quads.shade): 1 but on a tower's pieces.
-    this.shade = new Float32Array(capacity * 12).fill(1);
-    const index = new Uint32Array(capacity * 6);
-    for (let i = 0; i < capacity; i++) index.set([0, 1, 2, 0, 2, 3].map(v => v + i * 4), i * 6);
-    this.geometry.dispose();
-    this.geometry = new THREE.BufferGeometry();
-    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.position, 3));
-    this.geometry.setAttribute('uv', new THREE.BufferAttribute(this.uv, 2));
-    this.geometry.setAttribute('color', new THREE.BufferAttribute(this.shade, 3));
-    this.geometry.setIndex(new THREE.BufferAttribute(index, 1));
-    this.mesh.geometry = this.geometry;
-  }
-
   add(x, y, w, h, src, fx, fy, shade = null) {
     const image = this.texture.image;
     let u0 = src.x / image.width, u1 = (src.x + src.w) / image.width;
@@ -4408,35 +4396,12 @@ class QuadRun {
   }
 
   addCorners(xy, uv, shade = null) {
-    if (this.count === this.capacity) {
-      const pos = this.position, uvs = this.uv, shades = this.shade;
-      this._grow(this.capacity * 2);
-      this.position.set(pos);
-      this.uv.set(uvs);
-      this.shade.set(shades);
-    }
-    const i = this.count++;
+    const i = this._quad(xy, uv);
     for (let k = 0; k < 4; k++) {
-      this.position[i * 12 + k * 3] = xy[k * 2];
-      this.position[i * 12 + k * 3 + 1] = xy[k * 2 + 1];
-      this.position[i * 12 + k * 3 + 2] = 0;
-      this.shade[i * 12 + k * 3] = shade ? shade[0] : 1;
-      this.shade[i * 12 + k * 3 + 1] = shade ? shade[1] : 1;
-      this.shade[i * 12 + k * 3 + 2] = shade ? shade[2] : 1;
+      this.color[i * 12 + k * 3] = shade ? shade[0] : 1;
+      this.color[i * 12 + k * 3 + 1] = shade ? shade[1] : 1;
+      this.color[i * 12 + k * 3 + 2] = shade ? shade[2] : 1;
     }
-    this.uv.set(uv, i * 8);
-  }
-
-  end(used) {
-    this.geometry.setDrawRange(0, this.count * 6);
-    this.geometry.attributes.position.needsUpdate = this.geometry.attributes.uv.needsUpdate = true;
-    this.geometry.attributes.color.needsUpdate = true;
-    this.mesh.visible = used && this.count > 0;
-  }
-
-  dispose() {
-    this.geometry.dispose();
-    this.material.dispose();
   }
 }
 
