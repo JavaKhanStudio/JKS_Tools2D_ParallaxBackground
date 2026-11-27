@@ -131,17 +131,20 @@ function parseAtlas(text, dir) {
     const line = raw.trimEnd();
     // A blank line ends a page: the next line names the image of the next one.
     if (!line.trim()) { close(); page = null; continue; }
-    const indented = /^\s/.test(line), colon = line.indexOf(':');
+    // A line is a field when it has a colon, a region's name when not, indented or not: libGDX's
+    // TextureAtlasData.readEntry trims it first, and TexturePacker without prettyPrint writes its fields at
+    // column 0 (r567).
+    const colon = line.indexOf(':');
     if (!page) {
       page = { file: line.trim(), mipmaps: false, nearest: false };
       pages.push(page); header = true;
-    } else if (header && !indented && colon >= 0) {
+    } else if (header && colon >= 0) {
       if (line.slice(0, colon).trim() === 'filter') {
         page.mipmaps = line.includes('MipMap');
         // "Nearest,Nearest": a pixel-art export (r126). A minification filter alone set to Nearest is drawn linear.
         page.nearest = line.slice(colon + 1).trim().endsWith('Nearest');
       }
-    } else if (!indented) {
+    } else if (colon < 0) {
       close(); header = false;
       region = { name: line.trim(), index: -1, page, rotate: false, x: 0, y: 0, width: 0, height: 0,
         originalWidth: 0, originalHeight: 0, offsetX: 0, offsetY: 0 };

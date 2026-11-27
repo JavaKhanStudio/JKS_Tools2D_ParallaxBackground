@@ -58,7 +58,9 @@ func _parse(text: String) -> void:
 			region = {}
 			_page_path = ""
 			continue
-		var indented := line.begins_with(" ") or line.begins_with("\t")
+		# A line is a field when it has a colon, a region's name when not, indented or not: libGDX's
+		# TextureAtlasData.readEntry trims it first, and TexturePacker without prettyPrint writes its fields at
+		# column 0 (r567).
 		var colon := line.find(":")
 		if _page_path.is_empty():
 			_page_path = _dir.path_join(line.strip_edges())
@@ -66,12 +68,12 @@ func _parse(text: String) -> void:
 			_page_nearest = false
 			_page_texture = null
 			in_header = true
-		elif in_header and not indented and colon >= 0:
+		elif in_header and colon >= 0:
 			if line.substr(0, colon).strip_edges() == "filter":
 				_page_mipmaps = line.contains("MipMap")
 				# "Nearest,Nearest": a pixel-art export (r126). A minification filter alone set to Nearest is drawn linear.
 				_page_nearest = line.substr(colon + 1).strip_edges().ends_with("Nearest")
-		elif not indented:
+		elif colon < 0:
 			_close(region)
 			in_header = false
 			if _page_texture == null:

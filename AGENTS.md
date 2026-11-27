@@ -75,7 +75,8 @@ repair.
   the body. Its contract is read by the editor's server and each reader's client; change it with `tools/live-link-stub.py`
   and `tools/live_link_stub_test.py`, and run `tools/r492-live-link/browser-check.py OUT` (real reader, https origin),
   `engines/threejs/tools/live-check.py OUT` (its client, `connectLive`) and
-  `atlas-parsers.sh` there (its generated atlas's `bounds` line is indented, or the readers read a new region).
+  `atlas-parsers.sh` there. Every tracked atlas, indented or not, is read alike by libGDX and both readers'
+  parsers in `tools/r565-atlas-net/atlas-check.sh` (`--unindented`, `--swapped` its control; r567).
 
 ## Runtime (`core`)
 

@@ -112,7 +112,8 @@ hills
   bounds: 0,0,4096,1024
 ```
 
-(The `bounds` line is indented: unindented, the readers' parsers take it for a new region.)
+(The `bounds` line is indented, as libGDX's TexturePacker writes it by default; since r567 the readers' parsers, like
+libGDX's, read a line with a colon as a field at any indentation.)
 
 - **Nothing is repacked**, so painting costs one image's refetch, and no reader needs a new idea. libGDX's parser, Godot's
   and three.js's read this atlas (`tools/r492-live-link/atlas-parsers.sh`, `browser-check.py`).
