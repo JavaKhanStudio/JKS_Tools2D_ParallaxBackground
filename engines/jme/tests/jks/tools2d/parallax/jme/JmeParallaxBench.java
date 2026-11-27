@@ -13,8 +13,6 @@ import org.lwjgl.opengl.GL11;
 
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.FileLocator;
-import com.jme3.system.AppSettings;
 
 import jks.tools2d.parallax.pages.WholePage_Model;
 import jks.tools2d.parallax.rounds.Round;
@@ -59,28 +57,13 @@ public class JmeParallaxBench extends SimpleApplication
 			System.exit(2);
 		}
 		JmeParallaxBench app = new JmeParallaxBench(Paths.get(args[0]), Paths.get(args[1]));
-		AppSettings settings = new AppSettings(true);
-		settings.setRenderer(AppSettings.LWJGL_OPENGL32);
-		settings.setResolution(1280, 720);
-		settings.setGammaCorrection(false);
-		settings.setSamples(0);
-		settings.setVSync(false);
-		settings.setFrameRate(-1);
-		settings.setTitle("jME parallax bench");
-		settings.setAudioRenderer(null);
-		app.setSettings(settings);
-		app.setShowSettings(false);
-		app.setPauseOnLostFocus(false);
-		app.start();
+		JmeApps.start(app, JmeApps.settings("jME parallax bench", 1280, 720));
 	}
 
 	@Override
 	public void simpleInitApp()
 	{
-		setDisplayFps(false);
-		setDisplayStatView(false);
-		flyCam.setEnabled(false);
-		assetManager.registerLocator(Paths.get("").toAbsolutePath().toString(), FileLocator.class);
+		JmeApps.bare(this);
 		scenes = Round.read(roundDir).scenes;
 		bg = new PlaxBackground();
 		bg.autoAct = false;

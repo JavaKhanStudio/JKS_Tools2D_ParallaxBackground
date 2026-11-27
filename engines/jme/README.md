@@ -18,7 +18,7 @@ from 2.5.0 on. The dependency, the setup and the gamma note: the root README,
     src/            the reader, published as parallax-background-jme: public API (PlaxBackground, PlaxRings)
     resources/      its materials and shaders: the effects', the rings' and their sky's
     tests/          the frame runner (JmeParallaxShots), the rings round (JmeRingsRound), the rings lab (JmeRingsLab), the
-                    bench (JmeParallaxBench) and the demo (JmeParallaxDemo): not published
+                    bench (JmeParallaxBench) and the demo (JmeParallaxDemo), all started by JmeApps: not published
     tools/          this reader's checks, run from anywhere (each goes to the repository root first)
 
 ## Checks

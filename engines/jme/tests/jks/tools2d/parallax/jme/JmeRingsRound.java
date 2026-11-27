@@ -8,8 +8,6 @@ import java.nio.file.Paths;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.FileLocator;
-import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
 
 import jks.tools2d.parallax.ParallaxRings;
@@ -44,19 +42,15 @@ public class JmeRingsRound extends SimpleApplication
 	public static void main(String[] args)
 	{
 		JmeRingsRound app = new JmeRingsRound(Paths.get(args[0]), Paths.get(args[1]));
-		AppSettings settings = new AppSettings(true);
 		// 16:9, as a ring's page is (ParallaxRings.pageHeightOf): the world PlaxBackground builds the layers in.
-		settings.setResolution(1280, 720);
-		settings.setAudioRenderer(null);
-		app.setSettings(settings);
-		app.setShowSettings(false);
-		app.start(JmeContext.Type.Headless);
+		JmeApps.start(app, JmeApps.settings("jME rings round", 1280, 720), JmeContext.Type.Headless);
 	}
 
 	@Override
 	public void simpleInitApp()
 	{
-		assetManager.registerLocator(Paths.get("").toAbsolutePath().toString(), FileLocator.class);
+		// No app states (the constructor's null): no fly camera to turn off, only the locator.
+		JmeApps.locate(this, "");
 		try
 		{
 			Files.createDirectories(outDir);

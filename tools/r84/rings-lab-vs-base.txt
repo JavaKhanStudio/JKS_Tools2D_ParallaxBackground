@@ -1,0 +1,11 @@
+g01-both-t0.png 0.0 0
+g01-both-t20.png 0.0 0
+g01-both-t8.png 0.0 0
+g02-both-t0.png 0.0 0
+g02-both-t20.png 0.0 0
+g02-both-t8.png 0.0 0
+g04-both-t0.png 0.0 0
+g04-both-t20.png 0.0 0
+g04-both-t8.png 0.0 0
+g04-fade-done.png 0.0 0
+g04-fade-half.png 0.0 0

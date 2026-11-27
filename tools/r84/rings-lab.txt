@@ -1,0 +1,2 @@
+ * Renderer: NVIDIA GeForce RTX 5060 Laptop GPU/PCIe/SSE2
+rings lab: 3 scenes into /home/simon/Documents/GitHub/parralax/JKS_Tools2D_ParallaxBackground/build/r84-rings-lab, PASS

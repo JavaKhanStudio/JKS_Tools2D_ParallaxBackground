@@ -17,7 +17,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.FileLocator;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
@@ -150,27 +149,16 @@ public class JmeRingsLab extends SimpleApplication
 			else if (args[i].contains("="))
 				given.put(args[i].substring(0, args[i].indexOf('=')), Float.parseFloat(args[i].substring(args[i].indexOf('=') + 1)));
 		JmeRingsLab app = new JmeRingsLab(shot, scenes, given);
-		AppSettings settings = new AppSettings(true);
-		settings.setRenderer(AppSettings.LWJGL_OPENGL32);
-		settings.setResolution(1600, shot != null ? 760 : 820);
-		settings.setGammaCorrection(false);
+		AppSettings settings = JmeApps.settings("Rings lab (jME): a page round a 3D world", 1600, shot != null ? 760 : 820);
 		settings.setSamples(shot != null ? 0 : 4);
 		settings.setVSync(shot == null);
-		settings.setTitle("Rings lab (jME): a page round a 3D world");
-		settings.setAudioRenderer(null);
-		app.setSettings(settings);
-		app.setShowSettings(false);
-		app.setPauseOnLostFocus(false);
-		app.start();
+		JmeApps.start(app, settings);
 	}
 
 	@Override
 	public void simpleInitApp()
 	{
-		setDisplayFps(false);
-		setDisplayStatView(false);
-		flyCam.setEnabled(false);
-		assetManager.registerLocator(Paths.get("").toAbsolutePath().toString(), FileLocator.class);
+		JmeApps.bare(this);
 		try
 		{
 			for (JsonValue s = new JsonReader().parse(Files.readString(Paths.get(round, "round.json"))).get("scenes").child; s != null; s = s.next)

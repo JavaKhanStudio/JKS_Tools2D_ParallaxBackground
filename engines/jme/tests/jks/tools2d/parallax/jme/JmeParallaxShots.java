@@ -19,7 +19,6 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.FileLocator;
 import com.jme3.system.AppSettings;
 import com.jme3.system.lwjgl.LwjglWindow;
 
@@ -91,29 +90,15 @@ public class JmeParallaxShots extends SimpleApplication
 	public static void main(String[] args)
 	{
 		JmeParallaxShots app = new JmeParallaxShots(Paths.get(args[0]), Paths.get(args[1]));
-		AppSettings settings = new AppSettings(true);
-		settings.setRenderer(AppSettings.LWJGL_OPENGL32);
-		settings.setResolution(1280, 720);
+		AppSettings settings = JmeApps.settings("jME parallax shots", 1280, 720);
 		settings.setResizable(true);
-		settings.setGammaCorrection(false);
-		settings.setSamples(0);
-		settings.setVSync(false);
-		settings.setFrameRate(-1);
-		settings.setTitle("jME parallax shots");
-		settings.setAudioRenderer(null);
-		app.setSettings(settings);
-		app.setShowSettings(false);
-		app.setPauseOnLostFocus(false);
-		app.start();
+		JmeApps.start(app, settings);
 	}
 
 	@Override
 	public void simpleInitApp()
 	{
-		setDisplayFps(false);
-		setDisplayStatView(false);
-		flyCam.setEnabled(false);
-		assetManager.registerLocator(Paths.get("").toAbsolutePath().toString(), FileLocator.class);
+		JmeApps.bare(this);
 		jks.tools2d.parallax.webp.JmeWebp.register(assetManager);
 		try
 		{Files.createDirectories(outDir);}

@@ -1,11 +1,8 @@
 package jks.tools2d.parallax.jme;
 
-import java.nio.file.Paths;
-
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.FileLocator;
 import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
@@ -61,22 +58,18 @@ public class JmeParallaxDemo extends SimpleApplication implements ActionListener
 	public static void main(String[] args)
 	{
 		JmeParallaxDemo app = new JmeParallaxDemo();
-		AppSettings settings = new AppSettings(true);
-		settings.setResolution(1280, 720);
+		AppSettings settings = JmeApps.settings("JKS parallax in jMonkeyEngine", 1280, 720);
 		settings.setResizable(true);
-		settings.setGammaCorrection(false);
-		settings.setTitle("JKS parallax in jMonkeyEngine");
-		app.setSettings(settings);
-		app.setShowSettings(false);
-		app.start();
+		// A window to watch, not to measure: synced to the screen, its frame rate shown.
+		settings.setVSync(true);
+		JmeApps.start(app, settings);
 	}
 
 	@Override
 	public void simpleInitApp()
 	{
-		setDisplayStatView(false);
-		flyCam.setEnabled(false);
-		assetManager.registerLocator(Paths.get("core/test-data/samples").toAbsolutePath().toString(), FileLocator.class);
+		JmeApps.bare(this, "core/test-data/samples");
+		setDisplayFps(true);
 
 		winter = PlaxBackground.loadPage(assetManager, "hiver/Hiver.plax");
 		spring = PlaxBackground.loadPage(assetManager, "printemps/Printemps.plax");
