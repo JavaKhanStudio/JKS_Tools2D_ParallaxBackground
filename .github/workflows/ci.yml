@@ -101,6 +101,10 @@ jobs:
           xvfb-run -a -s "-screen 0 1920x1440x24" engines/godot/tools/frame-check.sh
           grep -h "Using Device" build/godot/*/godot.log
 
+      # Every tracked atlas, read by libGDX's parser and the Godot reader's, region by region (r565).
+      - name: Read every atlas alike
+        run: tools/r565-atlas-net/atlas-check.sh
+
       - name: Upload the frames
         if: always()
         uses: actions/upload-artifact@v7
